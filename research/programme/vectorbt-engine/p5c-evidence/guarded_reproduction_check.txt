@@ -1,0 +1,16 @@
+_p5_core17_ensemble_sp500.json: 0 differing fields []
+_p5_core17_ensemble_sp500_dsr0.json: 0 differing fields []
+_p5_ref_bb_reversion.json: 0 differing fields []
+_p5_ref_conviction_bb.json: 0 differing fields []
+_p5_ref_cross_asset_sleeve.json: 0 differing fields []
+_p5_ref_cross_asset_sleeve_17fold.json: 0 differing fields []
+_p5_ref_ema_cross.json: 0 differing fields []
+_p5_ref_macd_divergence.json: 0 differing fields []
+_p5_ref_retail_attention.json: 0 differing fields []
+_p5_ref_rsi_reversion.json: 0 differing fields []
+_p5_ref_volume_bb_reversion.json: 0 differing fields []
+_p5_ref_xs_momentum.json: 0 differing fields []
+_p5_smoke2_ensemble_sp500.json: 0 differing fields []
+TOTAL differing fields: 0
+core17_ensemble_sp500 {'anchor_folds': 17}
+core17_ensemble_sp500_dsr0 {'anchor_folds': 0}

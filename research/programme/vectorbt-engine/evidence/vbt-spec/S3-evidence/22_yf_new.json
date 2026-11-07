@@ -1,0 +1,60 @@
+{
+ "pandas": "3.1.1",
+ "yfinance": "1.7.0",
+ "raw_index_dtype": "datetime64[s]",
+ "raw_columns_names": [
+  "Price",
+  "Ticker"
+ ],
+ "raw_col_level0": [
+  "Close",
+  "High",
+  "Low",
+  "Open",
+  "Volume"
+ ],
+ "loader_shape": [
+  9,
+  10
+ ],
+ "loader_index_dtype": "datetime64[s, UTC]",
+ "loader_index_first": "2026-10-20 00:00:00+00:00",
+ "loader_index_last": "2026-10-30 00:00:00+00:00",
+ "loader_col_names": [
+  "Ticker",
+  "Price"
+ ],
+ "loader_col_level0_dtype": "str",
+ "loader_dtypes": [
+  "float64",
+  "int64"
+ ],
+ "loader_col_sample": [
+  [
+   "AAPL",
+   "close"
+  ],
+  [
+   "AAPL",
+   "high"
+  ],
+  [
+   "AAPL",
+   "low"
+  ],
+  [
+   "AAPL",
+   "open"
+  ],
+  [
+   "AAPL",
+   "volume"
+  ],
+  [
+   "SPY",
+   "close"
+  ]
+ ],
+ "SPY_close_first": 769.0499877929688,
+ "SPY_close_last": 755.719970703125
+}

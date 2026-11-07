@@ -1,0 +1,3 @@
+UTC hour-of-day counts in YFData index: {5: 171, 4: 330}
+Duplicated normalized dates if we naively .normalize(): 0
+tz_localize(None).normalize() first: [Timestamp('2023-01-03 00:00:00'), Timestamp('2023-01-04 00:00:00')] (summer bars: [Timestamp('2023-07-03 04:00:00+0000', tz='UTC')] )

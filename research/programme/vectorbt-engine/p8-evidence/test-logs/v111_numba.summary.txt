@@ -1,0 +1,8 @@
+# v111_numba
+FAILED tests/engine/test_defaults.py::test_vectorbt_defaults_have_not_changed
+FAILED tests/engine/test_lock_consistency.py::test_installed_version_equals_the_lock[vectorbt]
+FAILED tests/engine/test_lock_consistency.py::test_installed_version_equals_the_lock[vectorbt-rust]
+FAILED tests/engine/test_selfcheck.py::test_major_minor_pair_check_rejects_a_mismatch
+FAILED tests/engine/test_selfcheck.py::test_patch_difference_is_allowed - ggT...
+5 failed, 326 passed, 2 warnings in 115.24s (0:01:55)
+exit=1

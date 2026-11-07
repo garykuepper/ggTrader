@@ -1,0 +1,8 @@
+{
+ "arm": "vbt_m",
+ "tag": "C_vbt_matched",
+ "pandas": "3.1.1",
+ "full_tape_s": 2.13,
+ "vectorbt": "1.2.0",
+ "engine_setting": "auto"
+}

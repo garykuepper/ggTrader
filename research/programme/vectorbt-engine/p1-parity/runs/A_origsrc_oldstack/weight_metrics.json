@@ -1,0 +1,92 @@
+[
+ {
+  "combo": "xs_momentum__lookback126_skip0_top_n10",
+  "params": {
+   "lookback": 126,
+   "skip": 0,
+   "top_n": 10
+  },
+  "n_trades": 143,
+  "total_return_pct": 12.587349525374258,
+  "cagr_pct": 8.30152596201701,
+  "sharpe": 0.4355585210365002,
+  "sortino": 0.693953443179314,
+  "ann_vol_pct": 25.97735280133864,
+  "max_drawdown_pct": -20.18746699238918
+ },
+ {
+  "combo": "xs_momentum__lookback126_skip0_top_n20",
+  "params": {
+   "lookback": 126,
+   "skip": 0,
+   "top_n": 20
+  },
+  "n_trades": 285,
+  "total_return_pct": 8.634638646400617,
+  "cagr_pct": 5.729009287247977,
+  "sharpe": 0.3643651837322957,
+  "sortino": 0.5702471602177175,
+  "ann_vol_pct": 21.670091783892413,
+  "max_drawdown_pct": -19.861662888864316
+ },
+ {
+  "combo": "xs_momentum__lookback126_skip0_top_n50",
+  "params": {
+   "lookback": 126,
+   "skip": 0,
+   "top_n": 50
+  },
+  "n_trades": 627,
+  "total_return_pct": 9.62871702359205,
+  "cagr_pct": 6.37882250818711,
+  "sharpe": 0.4309044948575682,
+  "sortino": 0.6457647904998786,
+  "ann_vol_pct": 18.096983202535714,
+  "max_drawdown_pct": -19.370116052887266
+ },
+ {
+  "combo": "xs_momentum__lookback126_skip21_top_n10",
+  "params": {
+   "lookback": 126,
+   "skip": 21,
+   "top_n": 10
+  },
+  "n_trades": 128,
+  "total_return_pct": 5.446950519859817,
+  "cagr_pct": 3.6320003605856632,
+  "sharpe": 0.26648851455866196,
+  "sortino": 0.4294011493173906,
+  "ann_vol_pct": 26.765216714940205,
+  "max_drawdown_pct": -24.457121208476284
+ },
+ {
+  "combo": "xs_momentum__lookback126_skip21_top_n20",
+  "params": {
+   "lookback": 126,
+   "skip": 21,
+   "top_n": 20
+  },
+  "n_trades": 253,
+  "total_return_pct": 5.4115842385837665,
+  "cagr_pct": 3.6086193385153287,
+  "sharpe": 0.2687385038708735,
+  "sortino": 0.4318963124895317,
+  "ann_vol_pct": 22.813312259896954,
+  "max_drawdown_pct": -21.43011231672185
+ },
+ {
+  "combo": "xs_momentum__lookback126_skip21_top_n50",
+  "params": {
+   "lookback": 126,
+   "skip": 21,
+   "top_n": 50
+  },
+  "n_trades": 574,
+  "total_return_pct": 9.559108155915318,
+  "cagr_pct": 6.33338327897266,
+  "sharpe": 0.4236323890596908,
+  "sortino": 0.6445322846448631,
+  "ann_vol_pct": 18.46484421931713,
+  "max_drawdown_pct": -17.55562276170921
+ }
+]

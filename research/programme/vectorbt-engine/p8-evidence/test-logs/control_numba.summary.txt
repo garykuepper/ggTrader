@@ -1,0 +1,3 @@
+# control_numba
+331 passed in 125.17s (0:02:05)
+exit=0

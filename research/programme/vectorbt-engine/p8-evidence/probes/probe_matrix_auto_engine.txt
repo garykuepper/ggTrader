@@ -1,0 +1,107 @@
+SAME   ann_return_252
+SAME   ann_vol_252
+SAME   atr14_sma
+DIFFER atr_unsigned_ints
+      v110     n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 fv=0
+      v111     n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 fv=0
+      v112     n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 fv=0
+      control  n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 fv=0
+      master   n=400 nan=0 sum=25396 last=61 fv=0
+SAME   bb_default_lower
+SAME   bbands_ddof1_lower
+SAME   cond_var_clean
+SAME   cond_var_with_nan
+DIFFER diff_int8_overflow
+      v110     n=3 nan=1 sum=56 last=56 fv=1
+      v111     n=3 nan=1 sum=56 last=56 fv=1
+      v112     n=3 nan=1 sum=56 last=56 fv=1
+      control  n=3 nan=1 sum=56 last=56 fv=1
+      master   n=3 nan=1 sum=-200 last=-200 fv=1
+DIFFER drawdown_records_trailing_nan
+      v110     0
+      v111     0
+      v112     0
+      control  1
+      master   1
+SAME   drawdowns_empty_input
+DIFFER dsr_fat_tail_bias_false
+      v110     0.00401924221307
+      v111     0.00402299443974
+      v112     0.00402299443974
+      control  0.00402299443974
+      master   0.00402299443974
+DIFFER dsr_fat_tail_bias_true
+      v110     0.00401885806548
+      v111     0.00402261010825
+      v112     0.00402261010825
+      control  0.00402261010825
+      master   0.00402261010825
+DIFFER dsr_with_nan_returns
+      v110     0.00574893982426
+      v111     0.00591921706838
+      v112     0.00591921706838
+      control  0.00591921706838
+      master   0.00591921706838
+SAME   ewm_std_span
+SAME   expanding_mean_minp_gt_len
+SAME   expanding_std_minp_gt_len
+SAME   is_sorted_nb_nan
+SAME   ma20
+SAME   macd_ewm_hist
+SAME   maxdd_normal
+SAME   maxdd_returns_trailing_nan
+DIFFER maxdd_value_trailing_nan
+      v110     nan
+      v111     nan
+      v112     nan
+      control  -0.306515383637
+      master   -0.306515383637
+DIFFER mstd_ewm_true
+      v110     n=381 nan=19 sum=659.9901344 last=1.082241485 fv=19
+      v111     n=381 nan=19 sum=659.9901344 last=1.082241485 fv=19
+      v112     n=381 nan=19 sum=659.9901344 last=1.082241485 fv=19
+      control  n=381 nan=19 sum=643.098509 last=1.054838519 fv=19
+      master   n=381 nan=19 sum=643.098509 last=1.054838519 fv=19
+SAME   mstd_window20_ddof1
+DIFFER obv_ties
+      v110     n=35 nan=0 sum=4700 last=250 fv=0
+      v111     n=35 nan=0 sum=4700 last=250 fv=0
+      v112     n=35 nan=0 sum=4700 last=250 fv=0
+      control  n=35 nan=0 sum=1400 last=60 fv=0
+      master   n=35 nan=0 sum=1400 last=60 fv=0
+DIFFER obv_ties_panel
+      v110     n=400 nan=0 sum=160944016 last=807360 fv=0
+      v111     n=400 nan=0 sum=160944016 last=807360 fv=0
+      v112     n=400 nan=0 sum=160944016 last=807360 fv=0
+      control  n=400 nan=0 sum=-9651788 last=-32074 fv=0
+      master   n=400 nan=0 sum=-9651788 last=-32074 fv=0
+SAME   rolling_max
+SAME   rolling_min
+DIFFER rolling_std_large_offset
+      v110     n=381 nan=19 sum=9.098451379 last=0 fv=19
+      v111     n=381 nan=19 sum=3.712543508 last=0.007591727768 fv=19
+      v112     n=381 nan=19 sum=3.712543508 last=0.007591727768 fv=19
+      control  n=381 nan=19 sum=3.712543508 last=0.007591727768 fv=19
+      master   n=381 nan=19 sum=3.712543508 last=0.007591727768 fv=19
+SAME   rsi_wilder27
+SAME   sharpe_252_normal
+SAME   sharpe_const_positive
+SAME   sharpe_flat_zero_returns
+SAME   sortino_252_normal
+SAME   sortino_const_positive
+SAME   sortino_flat_zero_returns
+DIFFER trades_expectancy_breakeven
+      v110     -2.67272122579
+      v111     -2.67272122579
+      v112     -2.67272122579
+      control  -1.12630489281
+      master   -1.12630489281
+SAME   trades_profit_factor
+SAME   trades_win_rate
+DIFFER ulcer_index_exists
+      v110     absent
+      v111     absent
+      v112     absent
+      control  0.209126691554
+      master   0.209126691554
+SAME   value_at_risk_nan

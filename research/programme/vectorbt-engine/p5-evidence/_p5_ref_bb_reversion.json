@@ -1,0 +1,208 @@
+{
+  "n_folds": 2,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "bb_reversion__bb_period20_bb_std3.0",
+    "bb_reversion__bb_period20_bb_std3.0"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31T00:00:00+00:00",
+      "train_end": "2022-01-31T00:00:00+00:00",
+      "test_start": "2022-01-31T00:00:00+00:00",
+      "test_end": "2022-04-30T00:00:00+00:00",
+      "winner_combo": "bb_reversion__bb_period20_bb_std3.0",
+      "winner_params": {
+        "bb_period": 20,
+        "bb_std": 3.0
+      },
+      "train_score": 0.7531376323632514,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.4088365892576182,
+      "wfe": 0.8428897365291187,
+      "is_sharpe": 1.581992248343132,
+      "oos_sharpe": 1.3334450293970506,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "winner_trades_in_window": 279,
+      "winner_trades_whole_simulation": 336,
+      "od12_ndh_flip": false
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30T00:00:00+00:00",
+      "train_end": "2022-04-30T00:00:00+00:00",
+      "test_start": "2022-04-30T00:00:00+00:00",
+      "test_end": "2022-07-30T00:00:00+00:00",
+      "winner_combo": "bb_reversion__bb_period20_bb_std3.0",
+      "winner_params": {
+        "bb_period": 20,
+        "bb_std": 3.0
+      },
+      "train_score": 0.7523149836004338,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.3058125470484912,
+      "wfe": 0.626812838378957,
+      "is_sharpe": 1.3116465776181747,
+      "oos_sharpe": 0.822156914266893,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "winner_trades_in_window": 327,
+      "winner_trades_whole_simulation": 412,
+      "od12_ndh_flip": false
+    }
+  ],
+  "live_params": {
+    "combo": "bb_reversion__bb_period20_bb_std3.0",
+    "params": {
+      "bb_period": 20,
+      "bb_std": 3.0
+    },
+    "train_metrics": {
+      "sharpe": 0.9151890968480154,
+      "cagr_pct": 8.808466055606278,
+      "max_drawdown_pct": -4.885174109812407
+    },
+    "stability": 2,
+    "train_start": "2021-07-31T00:00:00+00:00",
+    "train_end": "2022-07-31T00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: bb_reversion | 16 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      bb_period20_bb_std3.0       1.58  1.33  FAIL  0.84 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      bb_period20_bb_std3.0       1.31  0.82  FAIL  0.63 [A]\n\nOOS Aggregate: Sharpe 1.02 | CAGR 12.0% | MaxDD -4.9%\nSPY baseline:  Sharpe -0.52 | CAGR -15.1% | MaxDD -20.6%\nAggregate WFE: 0.73 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       bb_reversion__bb_period20_bb_std3.0\nTrain Sharpe: 0.92 | CAGR 8.8% | MaxDD -4.9%\nStability:    selected in 2/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    bb_reversion__bb_period20_bb_std3.0\nMaxDD:    -3.3% | CAGR 6.3% | Sharpe 1.31",
+  "oos_bars": 125,
+  "oos_first": "2022-01-31T00:00:00+00:00",
+  "oos_last": "2022-07-29T00:00:00+00:00",
+  "diagnostics": {
+    "engine": "rust",
+    "definitions": "vbt",
+    "strategy_kind": "signals",
+    "n_combos": 16,
+    "n_symbols": 519,
+    "n_bars": 860,
+    "n_folds": 2,
+    "n_simulations": 1,
+    "n_chunks": 1,
+    "legacy_equivalent_simulations": 7,
+    "od12_ndh_flips_folds": [],
+    "timings_s": {
+      "build_s": 0.738,
+      "simulate_s": 2.219,
+      "folds_s": 0.454,
+      "total_s": 3.424
+    },
+    "peak_rss_mb": 1457,
+    "max_bytes": 3221225472,
+    "oos_metrics": {
+      "total_return_pct": 5.720306431333255,
+      "cagr_pct": 11.96856961656787,
+      "sharpe": 1.0175053306896678,
+      "sortino": 1.5287013396682738,
+      "ann_vol_pct": 11.790342767278,
+      "max_drawdown_pct": -4.8851741098123735
+    },
+    "spy_metrics": {
+      "total_return_pct": -7.747078536196417,
+      "cagr_pct": -15.115072262675366,
+      "sharpe": -0.5150733529934634,
+      "sortino": -0.6900684107517806,
+      "ann_vol_pct": 25.51378057804196,
+      "max_drawdown_pct": -20.561146708583077
+    },
+    "pit_masked": true
+  },
+  "run": "ref_bb_reversion",
+  "stem": "ref_bb_reversion",
+  "engine": "vectorbt-1.2.0",
+  "spec": {
+    "strategy": "bb_reversion",
+    "end": "2022-07-31",
+    "universe": "sp500"
+  },
+  "run_wfo_kwargs": {},
+  "definitions": "vbt",
+  "grid_size": 16,
+  "symbols_loaded": 519,
+  "data_start": "2019-03-03",
+  "last_bar": "2022-07-29",
+  "bars_summary": {
+    "source": "snapshot",
+    "n_symbols": 519,
+    "n_bars": 860,
+    "first_bar": "2019-03-04",
+    "last_bar": "2022-07-29",
+    "requested": 519,
+    "missing_symbols": [],
+    "early_ending_min_bars": 5,
+    "early_ending": {
+      "ALXN": "2021-07-28",
+      "FLIR": "2021-05-14",
+      "KSU": "2021-12-13",
+      "MXIM": "2021-09-01",
+      "PBCT": "2022-04-04",
+      "SBNY": "2022-06-30",
+      "VAR": "2021-04-16",
+      "VIAC": "2019-12-04",
+      "XLNX": "2022-02-14"
+    },
+    "last_bar_coverage": 0.9826589595375722
+  },
+  "tape": {
+    "path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": null,
+    "rows": 1110874,
+    "symbols": 605,
+    "date_min": "2019-03-01",
+    "date_max": "2026-10-30",
+    "deep_checked": false
+  },
+  "ok": true,
+  "wall_seconds": 4.4,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:21:50Z"
+  }
+}

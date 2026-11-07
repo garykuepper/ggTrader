@@ -1,0 +1,157 @@
+{
+ "vectorbt": "1.2.0",
+ "pandas": "3.1.1",
+ "engine": {
+  "plain_cash_shared": {
+   "numba": {
+    "rust_kernel_calls": 0,
+    "orders": 6036,
+    "trades": 3029
+   },
+   "rust": {
+    "rust_kernel_calls": 11,
+    "orders": 6036,
+    "trades": 3029
+   },
+   "auto": {
+    "rust_kernel_calls": 11,
+    "orders": 6036,
+    "trades": 3029
+   },
+   "max_abs_value_diff_numba_rust": 0.0,
+   "max_abs_value_diff_numba_auto": 0.0
+  },
+  "trail8_cash_shared": {
+   "numba": {
+    "rust_kernel_calls": 0,
+    "orders": 6870,
+    "trades": 3444
+   },
+   "rust": {
+    "rust_kernel_calls": 11,
+    "orders": 6870,
+    "trades": 3444
+   },
+   "auto": {
+    "rust_kernel_calls": 11,
+    "orders": 6870,
+    "trades": 3444
+   },
+   "max_abs_value_diff_numba_rust": 0.0,
+   "max_abs_value_diff_numba_auto": 0.0
+  },
+  "trail8_tp15_per_symbol": {
+   "numba": {
+    "rust_kernel_calls": 0,
+    "orders": 6873,
+    "trades": 3445
+   },
+   "rust": {
+    "rust_kernel_calls": 9,
+    "orders": 6873,
+    "trades": 3445
+   },
+   "auto": {
+    "rust_kernel_calls": 9,
+    "orders": 6873,
+    "trades": 3445
+   },
+   "max_abs_value_diff_numba_rust": 0.0,
+   "max_abs_value_diff_numba_auto": 0.0
+  },
+  "indicators_numba_vs_rust": {
+   "BBANDS_ddof1_lower": {
+    "rust_calls_numba_run": 0,
+    "rust_calls_rust_run": 2,
+    "max_abs_diff": 1.3301360013429075e-11,
+    "nan_mask_equal": true
+   },
+   "RSI_27_ewm": {
+    "rust_calls_numba_run": 0,
+    "rust_calls_rust_run": 2,
+    "max_abs_diff": 0.0,
+    "nan_mask_equal": true
+   },
+   "MACD_ewm_hist": {
+    "rust_calls_numba_run": 0,
+    "rust_calls_rust_run": 2,
+    "max_abs_diff": 0.0,
+    "nan_mask_equal": true
+   },
+   "MA_50_ewm": {
+    "rust_calls_numba_run": 0,
+    "rust_calls_rust_run": 2,
+    "max_abs_diff": 0.0,
+    "nan_mask_equal": true
+   }
+  }
+ },
+ "invariants": {
+  "min_cash_cash_shared": 1774.497943301377,
+  "fees_recorded_vs_expected": [
+   1043.3810685304693,
+   1043.3810685305275
+  ],
+  "buy_fills_outside_mask": 0,
+  "buy_fills_on_non_entry_bar": 0
+ },
+ "metrics": {
+  "ggtrader_curve_stats": {
+   "total_return_pct": 12.625789932553566,
+   "cagr_pct": 2.2949249738972055,
+   "sharpe": 0.3358251368319688,
+   "sortino": 0.43145446907250157,
+   "ann_vol_pct": 7.642137425261428,
+   "max_drawdown_pct": -9.541077291116862
+  },
+  "vbt_year_freq_365": {
+   "sharpe": 0.4041656147399017,
+   "sortino": 0.5866846558127505,
+   "annualized_return_pct": 3.3501647624037068,
+   "ann_vol_pct": 9.197313814996022,
+   "max_drawdown_pct": -9.541077291116917,
+   "deflated_sharpe_ntrials48": NaN
+  },
+  "vbt_year_freq_252": {
+   "sharpe": 0.3358251368319687,
+   "sortino": 0.48748198171763474,
+   "annualized_return_pct": 2.3011676935868364,
+   "ann_vol_pct": 7.6421374252614305,
+   "max_drawdown_pct": -9.541077291116917,
+   "deflated_sharpe_ntrials48": NaN
+  },
+  "flat_curve_sharpe_vbt": Infinity,
+  "flat_curve_sharpe_ggt": NaN,
+  "one_gain_sortino_vbt": Infinity,
+  "one_gain_sortino_ggt": NaN
+ },
+ "rust_kernel_names_seen": [
+  "indicators.bb_apply_rs",
+  "indicators.bb_cache_rs",
+  "indicators.ma_apply_rs",
+  "indicators.ma_cache_rs",
+  "indicators.macd_apply_rs",
+  "indicators.macd_cache_rs",
+  "indicators.rsi_apply_rs",
+  "indicators.rsi_cache_rs",
+  "portfolio.asset_flow_rs",
+  "portfolio.asset_value_grouped_rs",
+  "portfolio.asset_value_rs",
+  "portfolio.assets_rs",
+  "portfolio.cash_flow_grouped_rs",
+  "portfolio.cash_flow_rs",
+  "portfolio.cash_grouped_rs",
+  "portfolio.cash_rs",
+  "portfolio.get_exit_trades_rs",
+  "portfolio.init_cash_grouped_rs",
+  "portfolio.init_cash_rs",
+  "portfolio.simulate_from_signals_rs",
+  "portfolio.value_rs",
+  "records.col_map_rs",
+  "returns.annualized_return_rs",
+  "returns.annualized_volatility_rs",
+  "returns.max_drawdown_rs",
+  "returns.sharpe_ratio_rs",
+  "returns.sortino_ratio_rs"
+ ]
+}

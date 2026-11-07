@@ -1,0 +1,55 @@
+{
+  "run": "spy_bh_smoke_window",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "spy",
+    "eval_start": "2021-01-31",
+    "eval_end": "2022-07-31",
+    "oos_ref": "smoke2_ensemble_sp500"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:04:58-0800",
+  "eval_window": {
+    "first": "2021-02-01 00:00:00+00:00",
+    "last": "2022-07-29 00:00:00+00:00",
+    "bars": 377,
+    "stats": {
+      "total_return_pct": 11.790050568048649,
+      "cagr_pct": 7.7850367654326735,
+      "sharpe": 0.5013940095104029,
+      "sortino": 0.6791382058410994,
+      "ann_vol_pct": 18.206484287256252,
+      "max_drawdown_pct": -23.009971436177523
+    }
+  },
+  "oos_index_of": {
+    "run": "smoke2_ensemble_sp500",
+    "first": "2022-01-31 00:00:00+00:00",
+    "last": "2022-07-29 00:00:00+00:00",
+    "stats": {
+      "total_return_pct": -7.747078536196361,
+      "cagr_pct": -15.17148703500364,
+      "sharpe": -0.5150733529934675,
+      "sortino": -0.7785287659816804,
+      "ann_vol_pct": 25.51378057804194,
+      "max_drawdown_pct": -20.561146708583156
+    }
+  },
+  "ok": true,
+  "wall_seconds": 5.8
+}

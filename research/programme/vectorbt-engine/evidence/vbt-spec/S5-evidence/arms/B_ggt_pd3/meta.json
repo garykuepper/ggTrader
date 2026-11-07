@@ -1,0 +1,8 @@
+{
+ "arm": "ggt",
+ "tag": "B_ggt_pd3",
+ "pandas": "3.1.1",
+ "full_tape_s": 0.17,
+ "vectorbt": "1.2.0",
+ "engine_setting": "auto"
+}

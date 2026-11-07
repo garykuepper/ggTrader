@@ -1,0 +1,57 @@
+{
+ "min_hist=400 (lab default)": {
+  "vector_build_s": 0.05,
+  "eligible_at_loop_s": 88.0,
+  "dates": 457,
+  "symbol_mismatches": 0,
+  "dates_with_mismatch": 0,
+  "mean_eligible": 394.1,
+  "mask_shape": [
+   1933,
+   646
+  ],
+  "mask_mb": 1.2
+ },
+ "min_hist=60 (live)": {
+  "vector_build_s": 0.05,
+  "eligible_at_loop_s": 87.3,
+  "dates": 457,
+  "symbol_mismatches": 0,
+  "dates_with_mismatch": 0,
+  "mean_eligible": 485.9,
+  "mask_shape": [
+   1933,
+   646
+  ],
+  "mask_mb": 1.2
+ },
+ "min_hist=60 + max_stocks=50": {
+  "vector_build_s": 0.08,
+  "eligible_at_loop_s": 88.7,
+  "dates": 457,
+  "symbol_mismatches": 0,
+  "dates_with_mismatch": 0,
+  "mean_eligible": 49.2,
+  "mask_shape": [
+   1933,
+   646
+  ],
+  "mask_mb": 1.2
+ },
+ "min_hist=60 + max_sector_count=3": {
+  "vector_build_s": 0.12,
+  "eligible_at_loop_s": 85.3,
+  "dates": 457,
+  "symbol_mismatches": 0,
+  "dates_with_mismatch": 0,
+  "mean_eligible": 35.4,
+  "mask_shape": [
+   1933,
+   646
+  ],
+  "mask_mb": 1.2
+ },
+ "original_per_bar_s": 0.173,
+ "original_full_tape_est_s": 334.0,
+ "maxrss_mb": 260.875
+}

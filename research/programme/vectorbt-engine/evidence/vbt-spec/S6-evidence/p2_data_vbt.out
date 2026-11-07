@@ -1,0 +1,19 @@
+download->Data 42.7 s; symbols 646 missing 17
+missing_symbols (no rows in cache): ['ABC', 'ADS', 'ANTM', 'BLL', 'CBS', 'COG', 'CTL', 'FBHS', 'FRC', 'GPS', 'HCP', 'HFC', 'MMC', 'PKI', 'RE', 'TMK', 'WLTW']
+index UTC 2019-03-01 00:00:00+00:00 2026-11-05 00:00:00+00:00 1933 dups 0
+RSS MB 1067.5
+get('Close') [vectorised concat override] 0.41 s (1933, 646)
+get(['High','Low']) 0.53 s
+stock vbt.Data.concat, 100 symbols: 0.39 s (x6.5 for 646 symbols ~ 2.5 s)
+stock concat == override on Close: True
+vbt.RSI.run(close,14) 0.11 s (1933, 646)
+vbt.MA.run(close,[20,50]) 0.04 s (1933, 1292)
+vbt.ATR.run 0.09 s
+MA20 diff vs pandas rolling 0.0
+RSI AAPL tail nan
+Data.loc slice: 2024-01-02 00:00:00+00:00 2024-12-31 00:00:00+00:00 646
+saved parquet; RSS MB 1067.5
+Data has .run? False | has .close? False | has .features? False | has fetch_symbol/pull? False False
+Data public attrs: ['align_columns', 'align_index', 'build_metrics_doc', 'build_subplots_doc', 'concat', 'config', 'copy', 'data', 'deep_getattr', 'download', 'download_kwargs', 'download_symbol', 'dumps', 'from_data', 'get', 'iloc', 'indexing_func', 'indexing_kwargs', 'load', 'loads', 'loc', 'metrics', 'missing_columns', 'missing_index', 'override_metrics_doc', 'override_subplots_doc', 'plot', 'plots', 'plots_defaults', 'post_resolve_attr', 'pre_resolve_attr', 'regroup', 'replace', 'resolve_attr', 'resolve_self', 'save', 'select_one', 'select_one_from_obj', 'select_symbol_kwargs', 'self_aliases', 'stats', 'stats_defaults', 'subplots', 'symbols', 'to_doc', 'tz_convert', 'tz_localize', 'update', 'update_config', 'update_symbol', 'wrapper', 'writeable_attrs', 'xs']
+d['AAPL'] -> KeyError 'AAPL'
+d.data['AAPL'] cols: ['Open', 'High', 'Low', 'Close', 'Volume'] float64

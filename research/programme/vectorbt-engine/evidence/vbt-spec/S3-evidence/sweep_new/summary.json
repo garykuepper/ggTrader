@@ -1,0 +1,11 @@
+{
+ "pandas": "3.1.1",
+ "numpy": "2.5.4",
+ "n_symbols": 100,
+ "rows": 860,
+ "pit_mask_s": 36.11038422584534,
+ "sweep_signal_s": 20.805025815963745,
+ "signal_combos": 48,
+ "sweep_weight_s": 13.337692737579346,
+ "weight_combos": 6
+}

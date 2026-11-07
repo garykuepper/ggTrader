@@ -1,0 +1,50 @@
+{
+ "tag": "B1_newsrc_newstack_numba",
+ "pandas": "3.1.1",
+ "numpy": "2.5.4",
+ "src": "(installed)",
+ "engine_requested": "numba",
+ "numba": "0.68.1",
+ "vectorbt": "1.2.0",
+ "rust_available": true,
+ "vbt_engine_setting": "numba",
+ "ggtrader_file": "/home/flynn/ggTrader-vbt12/src/ggTrader/__init__.py",
+ "load_s": 0.08833456039428711,
+ "ohlcv_index_dtype": "datetime64[us, UTC]",
+ "n_symbols": 150,
+ "rows": 860,
+ "grid": 48,
+ "pit_mask_s": 59.604182720184326,
+ "sweep_signal_s": 21.99561047554016,
+ "sweep_weight_s": 29.309619903564453,
+ "wfo_s": 104.21853113174438,
+ "folds": 2,
+ "wfo_oos_len": 125,
+ "wfo_skipped_folds": [],
+ "peak_rss_mb": 1632.85546875,
+ "pct_change_probe": {
+  "calls": {
+   "simulate.py:296": 8,
+   "metrics.py:15": 304,
+   "simulate.py:82": 1,
+   "wfo.py:592": 2,
+   "p1_parity_driver.py:367": 2,
+   "p1_parity_driver.py:368": 2,
+   "returns.py:27": 29,
+   "overlay.py:90": 2
+  },
+  "explicit_fill_method": {
+   "simulate.py:296": 8,
+   "metrics.py:15": 304,
+   "simulate.py:82": 1,
+   "wfo.py:592": 2,
+   "p1_parity_driver.py:367": 2,
+   "p1_parity_driver.py:368": 2,
+   "returns.py:27": 29,
+   "overlay.py:90": 2
+  },
+  "calls_with_nonleading_nan": {
+   "p1_parity_driver.py:368": 2
+  }
+ }
+}

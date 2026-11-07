@@ -1,0 +1,3 @@
+rolling_mean #elements != (numba,rust): 919926 | #!= (numba,pandas): 919517 | max |x| 3247.247676844627
+rolling_std #!=(numba,rust): 0 (numba,pandas): 0 max abs (numba,pandas): 0.0
+MSTD(vbt, default ddof) vs pandas ddof=0 max abs: 0.0 | vs ddof=1: 4.048537346927617

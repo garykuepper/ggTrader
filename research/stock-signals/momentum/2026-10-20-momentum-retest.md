@@ -245,7 +245,7 @@ cannot prove it.
 ## 8. Phases 4–5: paper trading and real money (terms fixed now)
 
 - **At the freeze lift (about 2026-12-29).** Retire the ensemble picks regardless
-  of this study.
+  of this study. [Superseded: owner instructions 2026-10-20 forbid retirement recommendations; documentation defect corrected 2026-11-06.]
 - **Phase 4, paper.** Starts at the freeze lift only if *Big* passed Phase 1 and
   Phase 2 did not kill. It does not wait for Phase 3. If only Small passed, see
   §5.

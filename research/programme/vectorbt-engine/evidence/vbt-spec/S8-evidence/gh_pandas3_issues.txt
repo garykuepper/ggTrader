@@ -1,0 +1,43 @@
+== ranaroussi/quantstats
+closed	2019-07-13	CAGR seems incorrect	https://github.com/ranaroussi/quantstats/issues/3
+open	2026-10-23	Matplotlib tick-label warning with pandas 3.1.0	https://github.com/ranaroussi/quantstats/issues/582
+open	2026-10-30	Benchmark comparisons can pair returns covering different periods	https://github.com/ranaroussi/quantstats/issues/584
+closed	2026-10-26	rolling_sharpe / rolling_sortino de-annualize rf with the window lengt	https://github.com/ranaroussi/quantstats/issues/549
+== pmorissette/ffn
+closed	2026-10-16	limit_weights recurses indefinitely for float16/float32 weights with a	https://github.com/pmorissette/ffn/issues/424
+closed	2026-08-11	infer_nperiods multiplies multi-period frequencies instead of dividing	https://github.com/pmorissette/ffn/issues/303
+closed	2026-02-22	Pandas 3.0.0 breaks calc_inv_vol_weights	https://github.com/pmorissette/ffn/issues/279
+closed	2024-11-02	A ffn.get() issue in Python 3.12.2 with ffn 1.1.0	https://github.com/pmorissette/ffn/issues/250
+== dcajasn/Riskfolio-Lib
+closed	2021-01-10	Back test tutorials - Transactions costs.	https://github.com/dcajasn/Riskfolio-Lib/issues/3
+closed	2025-07-15	Bug: UnboundLocalError in multiple covariance estimation methods	https://github.com/dcajasn/Riskfolio-Lib/issues/226
+closed	2025-07-15	Bug: ValueError 'object arrays are not supported' in HRP optimizatio	https://github.com/dcajasn/Riskfolio-Lib/issues/225
+closed	2025-02-24	IndexError in port.binequality = b even though shape(A)=(10,25) and sh	https://github.com/dcajasn/Riskfolio-Lib/issues/217
+== skfolio/skfolio
+open	2026-10-27	[BUG] All-cash periods are reported as NaN in long_short_exposure	https://github.com/skfolio/skfolio/issues/472
+open	2026-10-28	[BUG] MultiPeriodPortfolio replaces failed-period NaN weights with zer	https://github.com/skfolio/skfolio/issues/476
+closed	2026-09-25	[BUG] MultiPeriodPortfolio.append accepts a shared boundary observatio	https://github.com/skfolio/skfolio/issues/333
+closed	2026-10-10	[BUG] CombinatorialPurgedCV never tests the trailing observations when	https://github.com/skfolio/skfolio/issues/413
+== xgboosted/pandas-ta-classic
+closed	2025-08-02	Setup CI pipeline and fix pages	https://github.com/xgboosted/pandas-ta-classic/issues/3
+open	2026-07-15	Can someone Explain what happened with pandas-ta?	https://github.com/xgboosted/pandas-ta-classic/issues/30
+closed	2026-09-13	Install verification failed	https://github.com/xgboosted/pandas-ta-classic/issues/152
+closed	2026-09-14	Should `verify_series` return `None`, or raise?	https://github.com/xgboosted/pandas-ta-classic/issues/145
+== bukosabino/ta
+closed	2019-08-06	can we have function of generating simple moving average?	https://github.com/bukosabino/ta/issues/3
+open	2020-05-11	Any way to use numpy array instead of pandas series?	https://github.com/bukosabino/ta/issues/157
+open	2026-03-05	Bug Report - Incorrect Series Indexing in trend.py (Line 1030)	https://github.com/bukosabino/ta/issues/354
+open	2020-11-13	Calculating derivative indicators	https://github.com/bukosabino/ta/issues/203
+== TA-Lib/ta-lib-python
+closed	2013-10-03	API change rationale?	https://github.com/TA-Lib/ta-lib-python/issues/3
+open	2026-08-15	Examples of Candlestick Pattern Recognition	https://github.com/TA-Lib/ta-lib-python/issues/74
+open	2022-11-16	Calling functions from within Numba	https://github.com/TA-Lib/ta-lib-python/issues/332
+closed	2026-07-24	talib.MIN performance issue	https://github.com/TA-Lib/ta-lib-python/issues/715
+== stefan-jansen/empyrical-reloaded
+closed	2026-10-16	Make performance-attribution concat sorting explicit for pandas 3	https://github.com/stefan-jansen/empyrical-reloaded/issues/67
+closed	2026-10-15	Declare pytz so fresh pandas 3 installations can import empyrical	https://github.com/stefan-jansen/empyrical-reloaded/issues/60
+closed	2026-10-17	Return cache cannot read its own timezone-aware CSV on pandas 3	https://github.com/stefan-jansen/empyrical-reloaded/issues/109
+closed	2026-10-15	Restore Fama-French retrieval with daily PeriodIndex provider results	https://github.com/stefan-jansen/empyrical-reloaded/issues/89
+== robertmartin8/PyPortfolioOpt
+Invalid search query "\"pandas 3\" repo:robertmartin8/PyPortfolioOpt type:issue".
+The listed users and repositories cannot be searched either because the resources do not exist or you do not have permission to view them.

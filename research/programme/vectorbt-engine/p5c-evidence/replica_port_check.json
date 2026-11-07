@@ -1,0 +1,64 @@
+{
+ "shape": [
+  1085,
+  119
+ ],
+ "entries_legacy": 1080,
+ "entries_new": 1080,
+ "entry_cells_differ": 0,
+ "exits_legacy": 11005,
+ "exits_new": 10884,
+ "exit_cells_differ": 121,
+ "equity_final_legacy": 149602.32625627914,
+ "equity_final_new": 149602.32625627914,
+ "equity_max_abs_diff": 0.0,
+ "equity_max_rel_diff": 0.0,
+ "first_entry_diffs": [],
+ "first_exit_diffs": [
+  [
+   "2022-01-04",
+   "A"
+  ],
+  [
+   "2022-01-04",
+   "AAPL"
+  ],
+  [
+   "2022-01-04",
+   "ABBV"
+  ],
+  [
+   "2022-01-04",
+   "ABNB"
+  ],
+  [
+   "2022-01-04",
+   "ABT"
+  ],
+  [
+   "2022-01-04",
+   "ACN"
+  ],
+  [
+   "2022-01-04",
+   "ADBE"
+  ],
+  [
+   "2022-01-04",
+   "ADI"
+  ],
+  [
+   "2022-01-04",
+   "ADSK"
+  ],
+  [
+   "2022-01-04",
+   "AEE"
+  ]
+ ],
+ "note": "Legacy EnsembleSignal replica panel (captured before P5c deletion) vs the ported build_signal_panel on the frozen tape: 119 SP500 symbols, tape bars 2022-01-04.., decision window 2024-01-02..2026-04-29, PIT eligibility eligible_at(min_history_bars=60). Entries identical in every cell; the 121 exit cells where the legacy fired and the new build does not all lie between 2022-01-04 and 2022-03-11 (indicator burn-in, before the evaluation window); replica equity is bit-identical (max abs diff 0.0) over 1085 bars.",
+ "exit_diff_date_range": [
+  "2022-01-04",
+  "2022-03-11"
+ ]
+}

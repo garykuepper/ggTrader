@@ -1,0 +1,23 @@
+	Command being timed: "/home/flynn/ggTrader/.claude/worktrees/agent-abed3ab263d5272c0/.venv/bin/python /tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/vbt-spec/S3-evidence/e2e_sweep.py /tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/vbt-spec/S3-evidence/sweep_new --n-symbols 100"
+	User time (seconds): 60.42
+	System time (seconds): 1.93
+	Percent of CPU this job got: 69%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:29.81
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 993744
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 105
+	Minor (reclaiming a frame) page faults: 463124
+	Voluntary context switches: 2416
+	Involuntary context switches: 61008
+	Swaps: 0
+	File system inputs: 15232
+	File system outputs: 736
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

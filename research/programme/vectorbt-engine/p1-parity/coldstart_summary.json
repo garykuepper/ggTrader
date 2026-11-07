@@ -1,0 +1,87 @@
+{
+ "new_rust_cold": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 3.93,
+   "median": 4.01,
+   "max": 4.17
+  },
+  "import_vbt_wall_s": 2.74,
+  "first_simulate_signals_wall_s": 0.7,
+  "first_simulate_weights_wall_s": 0.04,
+  "vectorbt": "1.2.0",
+  "pandas": "3.1.1",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "new_rust_warm": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 3.81,
+   "median": 3.87,
+   "max": 4.67
+  },
+  "import_vbt_wall_s": 2.77,
+  "first_simulate_signals_wall_s": 0.41,
+  "first_simulate_weights_wall_s": 0.04,
+  "vectorbt": "1.2.0",
+  "pandas": "3.1.1",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "new_numba_cold": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 29.15,
+   "median": 29.24,
+   "max": 30.41
+  },
+  "import_vbt_wall_s": 2.87,
+  "first_simulate_signals_wall_s": 23.36,
+  "first_simulate_weights_wall_s": 2.49,
+  "vectorbt": "1.2.0",
+  "pandas": "3.1.1",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "new_numba_warm": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 8.67,
+   "median": 8.84,
+   "max": 8.89
+  },
+  "import_vbt_wall_s": 2.76,
+  "first_simulate_signals_wall_s": 5.47,
+  "first_simulate_weights_wall_s": 0.06,
+  "vectorbt": "1.2.0",
+  "pandas": "3.1.1",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "old_numba_cold": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 21.87,
+   "median": 22.02,
+   "max": 22.42
+  },
+  "import_vbt_wall_s": 3.22,
+  "first_simulate_signals_wall_s": 16.79,
+  "first_simulate_weights_wall_s": 1.32,
+  "vectorbt": "0.28.5",
+  "pandas": "2.3.3",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "old_numba_warm": {
+  "n": 3,
+  "total_wall_s": {
+   "min": 7.88,
+   "median": 7.99,
+   "max": 8.01
+  },
+  "import_vbt_wall_s": 3.2,
+  "first_simulate_signals_wall_s": 4.06,
+  "first_simulate_weights_wall_s": 0.04,
+  "vectorbt": "0.28.5",
+  "pandas": "2.3.3",
+  "load1_during": "~4-5 on a 4-core shared box"
+ },
+ "_note": "Fresh process per row; cold = empty NUMBA_CACHE_DIR, warm = cache the cold row just filled. 'old' = vectorbt 0.28.5 / pandas 2.3.3 / original source (production today). Rust rows never use the numba cache."
+}

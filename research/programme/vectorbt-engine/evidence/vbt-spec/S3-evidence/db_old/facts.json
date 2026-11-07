@@ -1,0 +1,47 @@
+{
+ "pandas": "2.3.3",
+ "psycopg2": "2.9.11 (dt dec pq3 ext lo64)",
+ "shape": [
+  250,
+  35
+ ],
+ "index_type": "DatetimeIndex",
+ "index_dtype": "datetime64[ns, UTC]",
+ "index_tz": "UTC",
+ "index_unit": "ns",
+ "index_first": "2022-01-03 00:00:00+00:00",
+ "index_last": "2022-12-29 00:00:00+00:00",
+ "index_freq": "None",
+ "col_type": "MultiIndex",
+ "col_level0_dtype": "object",
+ "col_level1_dtype": "object",
+ "col_level0_vals": [
+  "AAPL",
+  "BRK-B",
+  "JPM",
+  "MNST",
+  "MSFT",
+  "SPY",
+  "XOM"
+ ],
+ "col_level1_vals": [
+  "close",
+  "high",
+  "low",
+  "open",
+  "volume"
+ ],
+ "dtypes": [
+  "float64"
+ ],
+ "nan_count": 0,
+ "weekday_hist": {
+  "0": 45,
+  "1": 52,
+  "2": 52,
+  "3": 51,
+  "4": 50
+ },
+ "epoch_first_astype_int64": 1641168000000000000,
+ "col_level0_is_object": true
+}

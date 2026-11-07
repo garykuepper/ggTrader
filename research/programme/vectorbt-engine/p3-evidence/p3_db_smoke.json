@@ -1,0 +1,11 @@
+{
+ "what": "load_bars(source='db') on a server-enforced read-only session versus the frozen snapshot",
+ "date": "2026-11-06",
+ "symbols": ["AAPL", "MSFT", "SPY", "BRK-B", "SIVB"],
+ "window": ["2021-01-31", "2026-04-29"],
+ "db_seconds": 1.0,
+ "shape": [1317, 5],
+ "fields_identical_to_snapshot": {"close": true, "open": true, "high": true, "low": true, "volume": true},
+ "provenance": {"source": "db", "read_only": true},
+ "note": "Run once by hand (connection string taken from the production config in a subshell, never printed). Only SHOW and SELECT were issued. Not part of the automated suite, which mocks psycopg2."
+}

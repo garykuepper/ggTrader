@@ -22,16 +22,21 @@ git clone https://github.com/garykuepper/ggTrader.git
 # 2. Enter the project folder
 cd ggTrader
 
-# 3. Create a clean virtual environment named ".venv"
-python -m venv .venv
+# 3. Install uv (https://docs.astral.sh/uv/) if you do not have it, then create the
+#    virtual environment ".venv" from the committed lock file. This installs the exact
+#    versions that CI and the Docker image use (Python 3.12, pandas 3, numpy 2.5,
+#    vectorbt 1.2.0 with its Rust engine).
+uv sync --frozen --extra test --extra dev
 
 # 4. Activate the virtual environment
 # (On macOS/Linux use this command. On Windows, use: .venv\Scripts\activate)
 source .venv/bin/activate
-
-# 5. Install the project in "editable" mode (so changes to code take effect immediately)
-pip install -e .
 ```
+
+`--frozen` makes uv fail instead of re-resolving if `uv.lock` is out of date with
+`pyproject.toml`; after editing a dependency, run `uv lock` and commit both files. Check that
+vectorbt really runs on its Rust engine (the numba fallback costs 20-30 s of compile time per
+fresh process) with `python scripts/check_vbt_engine.py`.
 
 Verify that the command-line interface (CLI) is working by running:
 
@@ -80,7 +85,7 @@ Open `.env` in a text editor and fill in the details:
 # Database connection settings
 POSTGRES_CONNECTION_STRING=postgresql+psycopg2://ggtrader:ggtrader@localhost:5433/ggtrader
 
-# Exchange API keys (only required if you use 'ggt ingest' to download raw data)
+# Exchange API keys (only needed by archived crypto tooling; the equity research and paper path do not use them)
 BINANCEUS_KEY=...
 BINANCEUS_SECRET=...
 KRAKEN_KEY=...
@@ -110,7 +115,7 @@ If it successfully connects, it will print out table sizes and row counts (which
 Next, run a quick simulation to confirm that the entire backtesting pipeline works:
 
 ```bash
-ggt lab --strategy wfo_tournament --top-n 10 --eval-start 2024-01-01 --eval-end 2024-12-31
+ggt lab --strategy ensemble --wfo --max-stocks 10 --eval-start 2021-01-31 --eval-end 2022-07-31
 ```
 
 If the command finishes without errors and prints out a "run ID" and summary table, your installation is complete!
@@ -132,7 +137,7 @@ docker compose up -d
 To run simulations inside the Docker container, prefix your commands like this:
 
 ```bash
-docker compose run --rm ggtrader_live python ggt.py lab --strategy wfo_tournament
+docker compose run --rm ggtrader_live python ggt.py lab --strategy ensemble --wfo --eval-end 2022-07-31 --max-stocks 40
 ```
 
 The container is pre-configured to reach the database running on your host machine automatically.

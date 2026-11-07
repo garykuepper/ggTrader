@@ -1,0 +1,130 @@
+{
+  "run": "ref_bb_reversion",
+  "ends": {
+    "2022-01-31": {
+      "bars": 736,
+      "last_bar": "2022-01-31",
+      "combos": 16,
+      "bit_identical_combos": 14,
+      "max_abs_diff_all_combos": 6.131520153056044,
+      "trade_counts_equal_combos": 15,
+      "differences": {
+        "bb_reversion__bb_period10_bb_std1.5": {
+          "max_abs_diff": 4.134388302014486,
+          "new_trades": 6514,
+          "legacy_trades": 6515
+        },
+        "bb_reversion__bb_period10_bb_std2.0": {
+          "max_abs_diff": 6.131520153056044,
+          "new_trades": 3607,
+          "legacy_trades": 3607
+        }
+      },
+      "seconds": 2.9
+    },
+    "2022-04-30": {
+      "bars": 798,
+      "last_bar": "2022-04-29",
+      "combos": 16,
+      "bit_identical_combos": 14,
+      "max_abs_diff_all_combos": 6.131520153056044,
+      "trade_counts_equal_combos": 15,
+      "differences": {
+        "bb_reversion__bb_period10_bb_std1.5": {
+          "max_abs_diff": 4.134388302014486,
+          "new_trades": 7933,
+          "legacy_trades": 7934
+        },
+        "bb_reversion__bb_period10_bb_std2.0": {
+          "max_abs_diff": 6.131520153056044,
+          "new_trades": 4318,
+          "legacy_trades": 4318
+        }
+      },
+      "seconds": 3.1
+    },
+    "2022-07-30": {
+      "bars": 860,
+      "last_bar": "2022-07-29",
+      "combos": 16,
+      "bit_identical_combos": 14,
+      "max_abs_diff_all_combos": 6.131520153056044,
+      "trade_counts_equal_combos": 15,
+      "differences": {
+        "bb_reversion__bb_period10_bb_std1.5": {
+          "max_abs_diff": 4.134388302014486,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "bb_reversion__bb_period10_bb_std2.0": {
+          "max_abs_diff": 6.131520153056044,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        }
+      },
+      "seconds": 3.4
+    },
+    "2022-07-31": {
+      "bars": 860,
+      "last_bar": "2022-07-29",
+      "combos": 16,
+      "bit_identical_combos": 14,
+      "max_abs_diff_all_combos": 6.131520153056044,
+      "trade_counts_equal_combos": 15,
+      "differences": {
+        "bb_reversion__bb_period10_bb_std1.5": {
+          "max_abs_diff": 4.134388302014486,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "bb_reversion__bb_period10_bb_std2.0": {
+          "max_abs_diff": 6.131520153056044,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        }
+      },
+      "seconds": 3.0
+    }
+  },
+  "summary": {
+    "ends": 4,
+    "all_combos_bit_identical": false,
+    "all_trade_counts_equal": false,
+    "max_abs_diff": 6.131520153056044
+  },
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "legacy curve_stats: mean / std(negative returns) * sqrt(252)",
+      "cagr": "legacy curve_stats: calendar days / 365.25"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T23:29:45Z"
+  }
+}

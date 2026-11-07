@@ -1,0 +1,120 @@
+{
+  "run": "ref_conviction_bb",
+  "twin": "ref_conviction_bb",
+  "note": "vectorbt Sortino and CAGR versus the legacy forms, same simulation and tape",
+  "winners_changed": 0,
+  "ndh_changed": 0,
+  "dsr_changed": 0,
+  "gates_changed": 0,
+  "anchor_use_changed": 0,
+  "halt_changed": 0,
+  "gate_changes_without_a_winner_change": [],
+  "gates": {
+    "legacy_definitions": "0/2",
+    "vbt_definitions": "0/2"
+  },
+  "anchor_folds": {
+    "legacy_definitions": 2,
+    "vbt_definitions": 2
+  },
+  "aggregate": {
+    "sharpe": {
+      "legacy_definitions": 0.2916356125757253,
+      "vbt_definitions": 0.2916356125757253,
+      "spy_legacy_definitions": -0.5150733529934634,
+      "spy_vbt_definitions": -0.5150733529934634
+    },
+    "cagr_pct": {
+      "legacy_definitions": 2.821645696878239,
+      "vbt_definitions": 2.810086024892411,
+      "spy_legacy_definitions": -15.17148703500374,
+      "spy_vbt_definitions": -15.115072262675366
+    },
+    "max_drawdown_pct": {
+      "legacy_definitions": -6.6770609076302945,
+      "vbt_definitions": -6.6770609076302945,
+      "spy_legacy_definitions": -20.561146708583077,
+      "spy_vbt_definitions": -20.561146708583077
+    },
+    "sortino": {
+      "legacy_definitions": 0.3994944234364258,
+      "vbt_definitions": 0.4281397583780058,
+      "spy_legacy_definitions": -0.7785287659816743,
+      "spy_vbt_definitions": -0.6900684107517806
+    }
+  },
+  "attribution": null,
+  "folds": [
+    {
+      "fold": 1,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.3443495888896748,
+        1.3443495888896748
+      ],
+      "oos_sharpe": [
+        0.08652889938367476,
+        0.08652889938367476
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 2,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        0.8584778708736807,
+        0.8584778708736807
+      ],
+      "oos_sharpe": [
+        0.47065236973279473,
+        0.47065236973279473
+      ],
+      "any_change": false
+    }
+  ],
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:21:07Z"
+  }
+}

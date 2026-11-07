@@ -1,0 +1,148 @@
+{
+  "run": "smoke2_ensemble_sp500",
+  "twin": "smoke2_ensemble_sp500_legacydefs",
+  "note": "vectorbt Sortino and CAGR versus the legacy forms, same simulation and tape",
+  "winners_changed": 0,
+  "ndh_changed": 0,
+  "dsr_changed": 0,
+  "gates_changed": 0,
+  "anchor_use_changed": 0,
+  "halt_changed": 0,
+  "gate_changes_without_a_winner_change": [],
+  "gates": {
+    "legacy_definitions": "0/2",
+    "vbt_definitions": "0/2"
+  },
+  "anchor_folds": {
+    "legacy_definitions": 2,
+    "vbt_definitions": 2
+  },
+  "aggregate": {
+    "sharpe": {
+      "legacy_definitions": 0.6232026295618195,
+      "vbt_definitions": 0.6232026295618195,
+      "spy_legacy_definitions": -0.5150733529934634,
+      "spy_vbt_definitions": -0.5150733529934634
+    },
+    "cagr_pct": {
+      "legacy_definitions": 7.539117441475751,
+      "vbt_definitions": 7.50753951887535,
+      "spy_legacy_definitions": -15.17148703500374,
+      "spy_vbt_definitions": -15.115072262675366
+    },
+    "max_drawdown_pct": {
+      "legacy_definitions": -6.981119723675588,
+      "vbt_definitions": -6.981119723675588,
+      "spy_legacy_definitions": -20.561146708583077,
+      "spy_vbt_definitions": -20.561146708583077
+    },
+    "sortino": {
+      "legacy_definitions": 0.9476027716853341,
+      "vbt_definitions": 0.9698338916919151,
+      "spy_legacy_definitions": -0.7785287659816743,
+      "spy_vbt_definitions": -0.6900684107517806
+    }
+  },
+  "attribution": {
+    "winner_flips": 0,
+    "winner_flips_explained_by_sortino_alone": 0,
+    "anchor_flips": 0,
+    "max_sharpe_diff_between_sets": 0.0,
+    "max_drawdown_diff_between_sets": 0.0,
+    "folds": [
+      {
+        "fold": 1,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 2,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      }
+    ]
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        2.2260488538735688,
+        2.2260488538735688
+      ],
+      "oos_sharpe": [
+        0.5953449921223283,
+        0.5953449921223283
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 2,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.4672733022730398,
+        1.4672733022730398
+      ],
+      "oos_sharpe": [
+        0.65019697096413,
+        0.65019697096413
+      ],
+      "any_change": false
+    }
+  ],
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:34:18Z"
+  }
+}

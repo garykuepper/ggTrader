@@ -1,0 +1,66 @@
+{
+ "eligible_at_40dates": {
+  "plain_s": 6.5862270850047935,
+  "profiled_s": 13.45981572099845,
+  "ratio": 2.0436306776672053
+ },
+ "generate_signals_1combo": {
+  "plain_s": 0.33630602101038676,
+  "profiled_s": 0.48786289399140514,
+  "ratio": 1.4506516788658315
+ },
+ "simulate_signals_12groups": {
+  "plain_s": 0.7982073559978744,
+  "profiled_s": 0.8475963620003313,
+  "ratio": 1.0618749071044498
+ },
+ "pit_vectorised": {
+  "vec_build_s": 1.0148101770028006,
+  "sample_dates": 123,
+  "symbol_mismatches": 0
+ },
+ "causality_real_sweep": [
+  {
+   "train_end": "2022-01-31",
+   "n_combos": 80,
+   "max_abs_equity_diff": 0.0,
+   "max_abs_sharpe_diff": 0.0,
+   "combos_with_n_trades_diff": 72,
+   "n_trades_example": [
+    [
+     344,
+     485
+    ],
+    [
+     370,
+     547
+    ],
+    [
+     381,
+     539
+    ]
+   ]
+  },
+  {
+   "train_end": "2022-04-30",
+   "n_combos": 80,
+   "max_abs_equity_diff": 0.0,
+   "max_abs_sharpe_diff": 0.0,
+   "combos_with_n_trades_diff": 72,
+   "n_trades_example": [
+    [
+     419,
+     485
+    ],
+    [
+     459,
+     547
+    ],
+    [
+     463,
+     539
+    ]
+   ]
+  }
+ ]
+}

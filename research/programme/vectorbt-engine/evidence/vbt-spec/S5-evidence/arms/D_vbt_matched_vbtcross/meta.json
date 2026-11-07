@@ -1,0 +1,8 @@
+{
+ "arm": "vbt_mx",
+ "tag": "D_vbt_matched_vbtcross",
+ "pandas": "3.1.1",
+ "full_tape_s": 2.27,
+ "vectorbt": "1.2.0",
+ "engine_setting": "auto"
+}

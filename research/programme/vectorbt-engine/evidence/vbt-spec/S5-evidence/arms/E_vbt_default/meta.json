@@ -1,0 +1,8 @@
+{
+ "arm": "vbt_def",
+ "tag": "E_vbt_default",
+ "pandas": "3.1.1",
+ "full_tape_s": 3.11,
+ "vectorbt": "1.2.0",
+ "engine_setting": "auto"
+}

@@ -1,0 +1,12 @@
+OK   skfolio HRP: HRP w sum=1.000
+OK   skfolio MeanRisk CVaR (cvxpy backend): MeanRisk CVaR sum=1.000
+OK   riskfolio-lib MV Sharpe: Riskfolio sum=1.000
+OK   PyPortfolioOpt max_sharpe (prices): PyPortfolioOpt sum=1.000
+OK   skfolio weights -> vbt from_orders targetpercent: vbt from_orders targetpercent total_return=0.000
+OK   optuna + vbt objective: optuna best=1.080 {'f': 21, 's': 32}
+OK   duckdb parquet + pandas3 df scan: parquet [(799, 0.0005705877564101511)] df-scan [(799,)]
+OK   duckdb postgres ext (timescale read): postgres ext install ok
+OK   bt monthly equal-weight: bt total_return=0.437
+OK   edgartools import: edgar
+OK   fredapi import: fredapi
+OK   yfinance import: 1.8.0

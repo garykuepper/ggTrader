@@ -1,0 +1,234 @@
+{
+  "section": "grids",
+  "strategies": {
+    "conviction_bb": {
+      "kind": "signals",
+      "raw_combinations": 36,
+      "valid_new": 36,
+      "valid_legacy": 36,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "bb_period",
+        "bb_std",
+        "max_size"
+      ]
+    },
+    "cross_asset_sleeve": {
+      "kind": "weights",
+      "raw_combinations": 3,
+      "valid_new": 3,
+      "valid_legacy": 3,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "lookback"
+      ]
+    },
+    "ensemble": {
+      "kind": "signals",
+      "raw_combinations": 48,
+      "valid_new": 48,
+      "valid_legacy": 48,
+      "combos_equal_in_order": true,
+      "rules": [
+        "ema_fast < ema_slow",
+        "macd_fast < macd_slow"
+      ],
+      "swept_levels": [
+        "bb_std",
+        "ema_fast",
+        "min_agree",
+        "min_agree_exit",
+        "rsi_oversold"
+      ]
+    },
+    "retail_attention": {
+      "kind": "weights",
+      "raw_combinations": 6,
+      "valid_new": 6,
+      "valid_legacy": 6,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "lookback_months",
+        "quintile"
+      ]
+    },
+    "ema_cross": {
+      "kind": "signals",
+      "raw_combinations": 20,
+      "valid_new": 16,
+      "valid_legacy": 16,
+      "combos_equal_in_order": true,
+      "rules": [
+        "ema_fast < ema_slow"
+      ],
+      "swept_levels": [
+        "ema_fast",
+        "ema_slow"
+      ]
+    },
+    "bb_reversion": {
+      "kind": "signals",
+      "raw_combinations": 16,
+      "valid_new": 16,
+      "valid_legacy": 16,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "bb_period",
+        "bb_std"
+      ]
+    },
+    "rsi_reversion": {
+      "kind": "signals",
+      "raw_combinations": 27,
+      "valid_new": 27,
+      "valid_legacy": 27,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "rsi_exit",
+        "rsi_oversold",
+        "rsi_period"
+      ]
+    },
+    "macd_divergence": {
+      "kind": "signals",
+      "raw_combinations": 8,
+      "valid_new": 8,
+      "valid_legacy": 8,
+      "combos_equal_in_order": true,
+      "rules": [
+        "macd_fast < macd_slow"
+      ],
+      "swept_levels": [
+        "divergence_window",
+        "macd_fast",
+        "macd_slow"
+      ]
+    },
+    "volume_bb_reversion": {
+      "kind": "signals",
+      "raw_combinations": 12,
+      "valid_new": 12,
+      "valid_legacy": 12,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "bb_period",
+        "bb_std",
+        "vol_mult"
+      ]
+    },
+    "xs_momentum": {
+      "kind": "weights",
+      "raw_combinations": 12,
+      "valid_new": 12,
+      "valid_legacy": 12,
+      "combos_equal_in_order": true,
+      "rules": [],
+      "swept_levels": [
+        "lookback",
+        "skip",
+        "top_n"
+      ]
+    }
+  },
+  "all_equal": true,
+  "ensemble_live_defaults": {
+    "min_agree": 2,
+    "min_agree_exit": 2,
+    "bb_period": 20,
+    "bb_std": 2.0,
+    "rsi_period": 14,
+    "rsi_oversold": 30,
+    "rsi_exit": 50,
+    "ema_fast": 20,
+    "ema_slow": 50,
+    "macd_fast": 12,
+    "macd_slow": 26,
+    "macd_signal": 9,
+    "divergence_window": 20,
+    "vol_period": 20,
+    "vol_mult": 2.0
+  },
+  "ensemble_live_inside_wfo_grid": false,
+  "ported": [
+    "bb_reversion",
+    "conviction_bb",
+    "cross_asset_sleeve",
+    "ema_cross",
+    "ensemble",
+    "macd_divergence",
+    "retail_attention",
+    "rsi_reversion",
+    "volume_bb_reversion",
+    "xs_momentum"
+  ],
+  "not_ported_legacy_only": [
+    "commodity_trend",
+    "congress_trades",
+    "dual_momentum",
+    "ensemble_conviction",
+    "ensemble_ic",
+    "ensemble_kelly",
+    "fomc_drift",
+    "fx_hedge_overlay",
+    "headline_sentiment",
+    "idio_vol",
+    "index_deletion_fade",
+    "insider_cluster_buy",
+    "leveraged_rotation_nasdaq100",
+    "leveraged_rotation_russell2000",
+    "leveraged_rotation_sp500",
+    "leveraged_trend_nasdaq100",
+    "leveraged_trend_russell2000",
+    "leveraged_trend_sp500",
+    "max_effect",
+    "month_end_treasury",
+    "mtf_reversion",
+    "overnight_gap",
+    "pairs_stat_arb",
+    "pead",
+    "short_interest",
+    "short_volume_ratio",
+    "treasury_curve",
+    "wfo_tournament"
+  ],
+  "n_legacy_registry": 38,
+  "seconds": 2.3,
+  "peak_rss_mb": 344,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sortino": "vectorbt downside deviation",
+      "cagr": "bar-annualised 252",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T21:43:18Z"
+  }
+}

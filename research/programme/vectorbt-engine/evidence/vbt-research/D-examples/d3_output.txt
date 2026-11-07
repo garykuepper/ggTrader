@@ -1,0 +1,48 @@
+SMA20: pandas rolling vs vbt.MA(ewm=False)                 warm(ggt/vbt)=19/19  max|d|=4.576e-12 corr=1.00000000 nanmismatch=0
+rolling std20 ddof=1: pandas vs vbt.MSTD default (ddof=0)  warm(ggt/vbt)=19/19  max|d|=4.439e-01 corr=1.00000000 nanmismatch=0
+rolling std20 ddof=1: pandas vs vbt.MSTD(ddof=1)           warm(ggt/vbt)=19/19  max|d|=3.797e-10 corr=1.00000000 nanmismatch=0
+Bollinger lower(20,2): ggt formula vs vbt.BBANDS(ddof=1)   warm(ggt/vbt)=19/19  max|d|=7.635e-10 corr=1.00000000 nanmismatch=0
+Bollinger lower(20,2): ggt formula vs vbt.BBANDS default   warm(ggt/vbt)=19/19  max|d|=8.879e-01 corr=0.99999906 nanmismatch=0
+Bollinger -%b: gi.bb_raw vs -vbt.percent_b(ddof=1)         warm(ggt/vbt)=19/19  max|d|=2.007e-10 corr=1.00000000 nanmismatch=0
+EMA20 span adjust=False: pandas vs vbt.MA(ewm=True)        warm(ggt/vbt)=0/19  max|d|=0.000e+00 corr=1.00000000 nanmismatch=114
+EMA20 ...same, after 100-bar burn-in                       warm(ggt/vbt)=0/19  max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+RSI14 Wilder(ggt) vs vbt.RSI(14, ewm=False) [SMA/Cutler]   warm(ggt/vbt)=14/14  max|d|=3.099e+01 corr=0.88897618 nanmismatch=0
+RSI14 Wilder(ggt) vs vbt.RSI(14, ewm=True) [span=14]       warm(ggt/vbt)=14/14  max|d|=2.101e+01 corr=0.94562318 nanmismatch=0
+RSI14 Wilder(ggt) vs vbt.RSI(27, ewm=True) [alpha=1/14]    warm(ggt/vbt)=14/27  max|d|=0.000e+00 corr=1.00000000 nanmismatch=78
+RSI14 Wilder(ggt) vs vbt.RSI(27, ewm=True) after 150-bar burn-in warm(ggt/vbt)=14/27  max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+RSI on monotonic rise (last bar): ggt = nan | vbt(27,ewm) = 100.0
+MACD hist(12,26,9): gi.macd_raw vs vbt.MACD(ewm both)      warm(ggt/vbt)=0/33  max|d|=1.095e-01 corr=0.99999171 nanmismatch=198
+MACD hist ... after 60-bar burn-in                         warm(ggt/vbt)=0/33  max|d|=2.647e-04 corr=1.00000000 nanmismatch=0
+MACD hist ... after 200-bar burn-in                        warm(ggt/vbt)=0/33  max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+MACD hist(12,26,9): vs vbt.MACD DEFAULT (macd_ewm=False => SMA) warm(ggt/vbt)=0/33  max|d|=5.482e+00 corr=0.78720770 nanmismatch=0
+ATR14: ggt SMA-of-TR vs vbt.ATR(14, ewm=False)             warm(ggt/vbt)=14/13  max|d|=1.159e-13 corr=1.00000000 nanmismatch=6
+ATR14: ggt SMA-of-TR vs vbt.ATR default (ewm=True)         warm(ggt/vbt)=14/13  max|d|=1.232e+00 corr=0.98924280 nanmismatch=6
+ATR14: Wilder (alpha=1/14) vs vbt.ATR(27, ewm=True)        warm(ggt/vbt)=14/26  max|d|=3.401e-05 corr=1.00000000 nanmismatch=0
+Stoch %K14: textbook(high/low) vs vbt.STOCH                warm(ggt/vbt)=13/13  max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+Stoch %D3 (SMA of %K): textbook vs vbt.STOCH               warm(ggt/vbt)=15/15  max|d|=3.524e-12 corr=1.00000000 nanmismatch=0
+OBV w/ tied closes: textbook sign(0)=0 vs vbt.OBV          warm(ggt/vbt)=0/0   max|d|=3.336e+07 corr=-0.19888360 nanmismatch=0
+tied-close bars in OBV test: 1919
+OBV ties: 'tie=+volume' rule vs vbt.OBV (diagnosis check)  warm(ggt/vbt)=0/0   max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+OBV no ties: textbook vs vbt.OBV (raw)                     warm(ggt/vbt)=0/0   max|d|=8.972e+04 corr=0.99991074 nanmismatch=0
+OBV no ties: textbook vs vbt.OBV minus first-bar volume    warm(ggt/vbt)=0/0   max|d|=0.000e+00 corr=1.00000000 nanmismatch=0
+Keltner channel: no built-in in vbt 0.28.5 (no class named KELTNER/KC): []
+RSI entry signals: ggt=98 vbt(27,ewm)=96 symmetric diff=2 | after 150 burn-in diff=0
+   (vbt crossed_below is strict '<' now and '>=' before; ggt uses prev>=30 & now<30: same convention?) ggt exits= 431 vbt exits= 430
+
+--- metrics (same curve) ---
+Sharpe   ggt=0.9285248657 vbt(year_freq=252d)=0.9285248657 vbt(default 365d)=1.1174798488
+Sortino  ggt=1.5241396507 vbt=1.3876899651  (definitions differ: ggt=mean/std(neg rets), vbt=mean/sqrt(mean(min(r,0)^2)))
+MaxDD%   ggt=-16.5403780426 vbt=-16.5403780426
+CAGR%    ggt=16.123176 vbt annualized()(252-bar year)=15.509146 (ggt uses calendar days/365.25; vbt uses bar-count/252)
+AnnVol%  ggt=17.10510773 vbt=17.10510773
+Calmar   vbt=0.937654 (ggt curve_stats has no Calmar)
+flat curve Sharpe: ggt = nan | vbt = inf
+
+--- DSR ---
+best col SR=2.585  ggt DSR=0.623630 (E[maxSR]ann=2.265)  vbt0.28.5 DSR[best col]=0.602228
+vbt fn with excess kurt (0.28.5 behaviour)=0.60222791  with non-excess (1.1.1 fix)=0.60125239
+vbt fn with var_sharpe=1/(T-1) + non-excess kurt = 0.6236297914  vs ggt dsr_check = 0.6236297914  |diff|=0.00e+00
+
+vol scalar: ggt vs vbt rolling_annualized_volatility max|d|=3.775e-15
+td_stop/time-stop kwarg in Portfolio.from_signals: False
+sl_stop/sl_trail/tp_stop present: True

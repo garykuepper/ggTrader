@@ -1,0 +1,211 @@
+path,action,reason,evidence,lines
+src/ggTrader/lab/harness.py,delete,non-WFO runs retired; ggt lab needs --wfo or --blend (spec 5.1: one-fold WFO),"4 importers; 4 outside the deleted/archived set: lab/cli.py, tests/lab/test_harness.py, tests/lab/test_harness_signals.py, tests/paper/test_paper_boundary.py",148
+src/ggTrader/lab/kelly.py,delete,"only importer is ensemble_kelly (closed NO-GO, not in the port set, OD11(b))",2 importers; 1 outside the deleted/archived set: tests/lab/test_kelly.py,178
+src/ggTrader/lab/metrics.py,delete,curve_stats/benchmark replaced by wfo_v2.report.curve_summary over engine.stats; oracle copy moves to tests/,"21 importers; 9 outside the deleted/archived set: scripts/legacy_reference_runs.py, scripts/production_replica_audit.py, lab/blend.py, lab/significance.py, tests/lab/test_metrics.py, tests/lab/test_significance.py, tests/lab/wfo_v2/helpers.py, tests/lab/wfo_v2/test_report_inputs_weights.py",56
+src/ggTrader/lab/simulate.py,delete,"hand-rolled simulator replaced by engine.portfolio (864/864 curves bit-identical, P5)","26 importers; 13 outside the deleted/archived set: scripts/shadow_cross_asset.py, tests/engine/test_portfolio.py, tests/lab/strategies_v2/test_conviction_bb.py, tests/lab/strategies_v2/test_ensemble.py, tests/lab/strategies_v2/test_weights.py, tests/lab/test_conviction.py, tests/lab/test_ensemble_conviction.py, tests/lab/test_simulate.py",304
+src/ggTrader/lab/strategies/commodity_trend.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_commodity_trend.py",149
+src/ggTrader/lab/strategies/congress_trades.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_congress_trades_strategy.py",137
+src/ggTrader/lab/strategies/conviction.py,delete,superseded by strategies/v2/conviction_bb.py (ensemble_conviction not ported),"4 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/strategies_v2/test_conviction_bb.py, tests/lab/test_conviction.py",94
+src/ggTrader/lab/strategies/cross_asset_sleeve.py,delete,superseded by strategies/v2/cross_asset_sleeve.py,"8 importers; 6 outside the deleted/archived set: scripts/legacy_reference_runs.py, scripts/shadow_cross_asset.py, lab/strategies/__init__.py, tests/lab/strategies_v2/test_weights.py, tests/lab/test_cross_asset_sleeve.py, tests/lab/wfo_v2/test_legacy_equivalence.py",94
+src/ggTrader/lab/strategies/ensemble.py,delete,"superseded by strategies/v2/ensemble.py (signals within class (ii), live golden 120/120)","32 importers; 14 outside the deleted/archived set: scripts/legacy_reference_runs.py, lab/replica.py, lab/strategies/__init__.py, lab/train_gate.py, tests/lab/strategies_v2/test_ensemble.py, tests/lab/strategies_v2/test_registry.py, tests/lab/test_ensemble.py, tests/lab/test_ensemble_conviction.py",489
+src/ggTrader/lab/strategies/ensemble_ic.py,delete,"closed NO-GO, not in the port set (OD11(b)); reproducible at legacy tag","2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_ensemble_ic.py",205
+src/ggTrader/lab/strategies/ensemble_kelly.py,delete,"closed NO-GO, not in the port set (OD11(b))","2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_ensemble_kelly.py",183
+src/ggTrader/lab/strategies/fomc_drift.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"4 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_fomc_drift.py",149
+src/ggTrader/lab/strategies/fx_hedge_overlay.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_fx_hedge_overlay.py",222
+src/ggTrader/lab/strategies/headline_sentiment.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_headline_sentiment_strategy.py",102
+src/ggTrader/lab/strategies/ic_weights.py,delete,"only importer is ensemble_ic (closed NO-GO, not in the port set)",2 importers; 1 outside the deleted/archived set: tests/lab/test_ic_weights.py,87
+src/ggTrader/lab/strategies/idio_vol.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_idio_vol.py, tests/test_pandas3_compat.py",101
+src/ggTrader/lab/strategies/index_deletion.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_index_deletion_strategy.py",129
+src/ggTrader/lab/strategies/indicators.py,delete,hand-written pandas indicators replaced by engine.indicators presets; no kept importer remains,"46 importers; 15 outside the deleted/archived set: scripts/legacy_reference_runs.py, scripts/shadow_cross_asset.py, tests/lab/strategies_v2/test_voters.py, tests/lab/test_ensemble.py, tests/lab/test_macd_signals.py, tests/lab/test_mtf_signals.py, tests/lab/test_overnight_gap_signals.py, tests/lab/test_raw_values.py",400
+src/ggTrader/lab/strategies/insider_cluster.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_insider_cluster_strategy.py",168
+src/ggTrader/lab/strategies/leveraged_rotation.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"5 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_leveraged_rotation.py, tests/scripts/test_leveraged_rotation_research.py",190
+src/ggTrader/lab/strategies/leveraged_trend.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_leveraged_trend.py",180
+src/ggTrader/lab/strategies/max_effect.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"4 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_max_effect.py, tests/test_pandas3_compat.py",80
+src/ggTrader/lab/strategies/momentum.py,delete,superseded by strategies/v2/xs_momentum.py; dual_momentum not ported,"10 importers; 9 outside the deleted/archived set: lab/cli.py, lab/strategies/__init__.py, tests/lab/strategies_v2/test_weights.py, tests/lab/test_harness.py, tests/lab/test_harness_signals.py, tests/lab/test_momentum.py, tests/lab/test_sector_constraints.py, tests/lab/test_sweep.py",95
+src/ggTrader/lab/strategies/month_end_treasury.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_month_end_treasury.py",108
+src/ggTrader/lab/strategies/pairs_stat_arb.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"4 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_pairs_stat_arb.py, tests/lab/test_sweep.py",269
+src/ggTrader/lab/strategies/pead.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"3 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_pead_strategy.py",139
+src/ggTrader/lab/strategies/registry.py,delete,"legacy registry helpers (build_strategy, apply_sector_constraints); v2/registry.py is the registry","8 importers; 3 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_ensemble_kelly.py, tests/lab/test_sector_constraints.py",69
+src/ggTrader/lab/strategies/retail_attention.py,delete,superseded by strategies/v2/retail_attention.py,"4 importers; 4 outside the deleted/archived set: scripts/legacy_reference_runs.py, lab/strategies/__init__.py, tests/lab/strategies_v2/test_weights.py, tests/lab/test_retail_attention_strategy.py",130
+src/ggTrader/lab/strategies/short_interest.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_short_interest_strategy.py",134
+src/ggTrader/lab/strategies/short_volume_ratio.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_short_volume_ratio_strategy.py",142
+src/ggTrader/lab/strategies/signals.py,delete,per-combo loops over hand-written indicators; the five voters are ported in strategies/v2/voter_strategies.py; mtf/overnight_gap/wfo_tournament not ported (OD11(b)),"16 importers; 15 outside the deleted/archived set: lab/cli.py, lab/strategies/__init__.py, tests/lab/strategies_v2/test_voter_strategies.py, tests/lab/test_conviction.py, tests/lab/test_ensemble_conviction.py, tests/lab/test_ensemble_ic.py, tests/lab/test_ensemble_kelly.py, tests/lab/test_harness_signals.py",754
+src/ggTrader/lab/strategies/treasury_curve.py,delete,closed NO-GO / untested strategy not in the OD11(b) port set; kept reproducible at tag legacy-engine-vbt0285 (scripts/legacy_env.sh),"2 importers; 2 outside the deleted/archived set: lab/strategies/__init__.py, tests/lab/test_treasury_curve.py",150
+src/ggTrader/lab/sweep.py,delete,"per-combo sweep loops, pit_entry_mask and --sweep replaced by one grouped engine simulation, lab.universe and wfo_v2.inputs","44 importers; 16 outside the deleted/archived set: scripts/legacy_reference_runs.py, lab/blend.py, lab/cli.py, tests/lab/strategies_v2/test_conviction_bb.py, tests/lab/strategies_v2/test_ensemble.py, tests/lab/strategies_v2/test_voter_strategies.py, tests/lab/strategies_v2/test_weights.py, tests/lab/test_ensemble.py",350
+src/ggTrader/lab/wfo.py,delete,"replaced by lab/wfo_v2 (P5, P5b); breaker, folds, anchor, gates live there","31 importers; 12 outside the deleted/archived set: scripts/legacy_reference_runs.py, scripts/wfo_policy_synthetic.py, lab/blend.py, lab/cli.py, lab/wfo_policy_synthetic.py, tests/lab/test_blend.py, tests/lab/test_wfo.py, tests/lab/test_wfo_policy_synthetic.py",1076
+src/ggTrader/lab/blend.py,port,drop _legacy_curves/engine flag; run each sleeve through wfo_v2; curve_stats -> curve_summary,"imports deleted: metrics.py, sweep.py, wfo.py",273
+src/ggTrader/lab/cli.py,port,remove --engine/--sweep/plain run; --wfo/--blend on wfo_v2; explicit legacy-tag error for unported names,"imports deleted: harness.py, momentum.py, signals.py, sweep.py, wfo.py",301
+src/ggTrader/lab/replica.py,port,build_signal_panel uses the v2 live ensemble (Ensemble.build) with the monthly PIT entry mask; equity-level check against captured legacy panel,imports deleted: ensemble.py,290
+src/ggTrader/lab/significance.py,port,curve_stats -> curve_summary (vectorbt definitions win),imports deleted: metrics.py,90
+src/ggTrader/lab/strategies/__init__.py,port,no legacy classes left to import; package kept for strategies/vote.py and strategies/v2,"imports deleted: commodity_trend.py, congress_trades.py, conviction.py, cross_asset_sleeve.py, ensemble.py, ensemble_ic.py, ensemble_kelly.py, fomc_drift.py, fx_hedge_overlay.py, headline_sentiment.py, idio_vol.py, index_deletion.py, insider_cluster.py, leveraged_rotation.py, leveraged_trend.py, max_effect.py, momentum.py, month_end_treasury.py, pairs_stat_arb.py, pead.py, registry.py, retail_attention.py, short_interest.py, short_volume_ratio.py, signals.py, treasury_curve.py",143
+src/ggTrader/lab/strategies/v2/registry.py,port,add LEGACY_ONLY_STRATEGIES (the 28 names) so the CLI can name the tag,imports deleted: none,46
+src/ggTrader/lab/strategy.py,port,keep LabConfig only; Plan/SignalTargets/Strategy protocol belonged to the legacy classes,imports deleted: none,60
+src/ggTrader/lab/train_gate.py,port,entry labels from the v2 live ensemble frames instead of EnsembleSignal._generate_signals,imports deleted: ensemble.py,275
+src/ggTrader/lab/wfo_policy_synthetic.py,port,imports WfoPolicy/WfoState/breaker from wfo_v2.breaker (same functions),imports deleted: wfo.py,115
+scripts/ablation_voters.py,archive,closed voter ablation on legacy EnsembleSignal/lab.wfo,"imports deleted/archived: ensemble.py, sweep.py, wfo.py",301
+scripts/anchor_fix_reproduction_wfo.py,archive,legacy WFO driver (lab.wfo/sweep/ensemble); numbers live in its research report,"imports deleted/archived: ensemble.py, metrics.py, sweep.py, wfo.py",411
+scripts/audit_reruns_wfo.py,archive,legacy WFO driver for xs/dual momentum and fomc_drift reruns,"imports deleted/archived: anchor_fix_reproduction_wfo.py, fomc_drift.py, indicators.py, metrics.py, sweep.py, wfo.py",421
+scripts/congress_trades_correlation_check.py,archive,closed NO-GO diversification check on unported congress_trades,"imports deleted/archived: congress_trades.py, ensemble.py, sweep.py, wfo.py",96
+scripts/core_spy_blend.py,archive,legacy WFO + simulate driver; closed core+SPY blend study,"imports deleted/archived: metrics.py, simulate.py, sweep.py, wfo.py",159
+scripts/cross_asset_sleeve_wfo.py,archive,legacy WFO driver of the closed cross-asset study (sleeve is ported; the study is not rerun here),"imports deleted/archived: cross_asset_sleeve.py, indicators.py, metrics.py, simulate.py, sweep.py, wfo.py",485
+scripts/deployment_audit.py,archive,one-off capital-deployment audit on the legacy simulator,"imports deleted/archived: ensemble.py, simulate.py",122
+scripts/fomc_clustered_event_study.py,archive,closed FOMC drift event study on unported fomc_drift/indicators,"imports deleted/archived: audit_reruns_wfo.py, fomc_drift.py, indicators.py",148
+scripts/fx_hedge_overlay_static_baseline_check.py,archive,closed NO-GO check of unported fx_hedge_overlay,"imports deleted/archived: fx_hedge_overlay.py, metrics.py, simulate.py, sweep.py, wfo.py",118
+scripts/gate_value_ablation.py,archive,closed ML-gate ablation on legacy EnsembleSignal,imports deleted/archived: ensemble.py,195
+scripts/ic_kelly_rebaseline_wfo.py,archive,closed ensemble_ic/kelly rebaseline; imports anchor_fix_reproduction_wfo,imports deleted/archived: anchor_fix_reproduction_wfo.py,97
+scripts/insider_cluster_correlation_check.py,archive,closed NO-GO check of unported insider_cluster_buy,"imports deleted/archived: ensemble.py, insider_cluster.py, sweep.py, wfo.py",96
+scripts/lever_diagnostic.py,archive,closed lever diagnostic on legacy wfo/simulate,"imports deleted/archived: ablation_voters.py, ensemble.py, simulate.py, sweep.py, wfo.py",451
+scripts/leveraged_rotation_research.py,archive,closed NO-GO leveraged rotation study (unported),"imports deleted/archived: leveraged_rotation.py, sweep.py, wfo.py",78
+scripts/leveraged_trend_research.py,archive,closed NO-GO leveraged trend study (unported); also a raw-vectorbt importer,"imports deleted/archived: leveraged_trend.py, metrics.py, sweep.py, wfo.py",117
+scripts/live_indicator_warmup.py,archive,one-off live-vs-backtest drift study on legacy EnsembleSignal/indicators,"imports deleted/archived: ensemble.py, indicators.py",213
+scripts/max_effect_correlation_check.py,archive,closed NO-GO check of unported max_effect,"imports deleted/archived: ensemble.py, max_effect.py, sweep.py, wfo.py",93
+scripts/midcap_bias_calibration.py,archive,closed midcap survivorship calibration on legacy lab.wfo,"imports deleted/archived: ablation_voters.py, ensemble.py, sweep.py, wfo.py",163
+scripts/midcap_research.py,archive,closed MidCap 400 study on legacy lab.wfo,"imports deleted/archived: ablation_voters.py, ensemble.py, sweep.py, wfo.py",248
+scripts/ml_signal_screen.py,archive,closed ML pre-screen on legacy signals/indicators,"imports deleted/archived: indicators.py, signals.py",186
+scripts/month_end_treasury_wfo.py,archive,closed A10 study on unported month_end_treasury,"imports deleted/archived: indicators.py, metrics.py, month_end_treasury.py, simulate.py, sweep.py, wfo.py",296
+scripts/new_stack_parity_compare.py,archive,P1 evidence: compares new-stack legacy-code runs with P0 references,imports deleted/archived: ,220
+scripts/new_stack_reference_runs.py,archive,P1 parity driver running the legacy WFO code on the new stack; raw-vectorbt importer,imports deleted/archived: ,190
+scripts/p4_strategy_parity.py,archive,P4 evidence driver: ported strategies vs legacy implementations (needs both),"imports deleted/archived: conviction.py, cross_asset_sleeve.py, ensemble.py, indicators.py, momentum.py, simulate.py, sweep.py",1130
+scripts/p5_equity_parity.py,archive,P5 evidence driver: single-pass simulation vs legacy lab.wfo._sweep_fold,"imports deleted/archived: sweep.py, wfo.py",235
+scripts/p5_tie_audit.py,archive,P5 evidence: tie audit built on p4_strategy_parity (archived with it),imports deleted/archived: p4_strategy_parity.py,65
+scripts/pairs_stat_arb_research.py,archive,closed NO-GO pairs study (unported),"imports deleted/archived: pairs_stat_arb.py, sweep.py, wfo.py",84
+scripts/pead_correlation_check.py,archive,closed NO-GO check of unported pead,"imports deleted/archived: ensemble.py, pead.py, sweep.py, wfo.py",95
+scripts/position_sizing_regimes.py,archive,closed position-sizing study on legacy simulate; raw-vectorbt importer,"imports deleted/archived: ensemble.py, metrics.py, simulate.py",312
+scripts/position_sizing_wfo.py,archive,closed position-sizing WFO on legacy lab.wfo/simulate; raw-vectorbt importer,"imports deleted/archived: ensemble.py, metrics.py, position_sizing_regimes.py, simulate.py, wfo.py",436
+scripts/run_position_sizing_wfo_scheduled.sh,archive,launcher for position_sizing_wfo.py (archived with it),imports deleted/archived: ,35
+scripts/wfo_conviction_comparison.sh,archive,docker launcher of `ggt lab --strategy ensemble_conviction` (unported),imports deleted/archived: ,47
+scripts/legacy_reference_runs.py,keep,documented exception (task decision e): runs under the legacy 0.28.5 interpreter against the tag extracted by legacy_env.sh; imports legacy modules by design and is the last file on the vectorbt allow-list,imports legacy modules by design (legacy interpreter only),733
+scripts/daily_pnl_report.sh,keep,operating workflow (daily report; not touched),"shell script, outside the python import graph",67
+scripts/guard_snapshot.sh,keep,"investigation guard snapshot, no code dependency","shell script, outside the python import graph",120
+scripts/legacy_env.sh,keep,operating workflow (rebuilds the legacy environment at the tag),"shell script, outside the python import graph",49
+scripts/paper_trade.sh,keep,operating workflow (paper trader cron entry; not touched),"shell script, outside the python import graph",56
+scripts/run_capped.sh,keep,"generic memory-capped runner, has tests","shell script, outside the python import graph",66
+scripts/run_tests.sh,keep,operating workflow (memory-capped test runner),"shell script, outside the python import graph",54
+scripts/update_universe_ccxt.py,delete,docstring says BROKEN (ImportError on load); crypto arc parked; recoverable at the tag,BROKEN per its own docstring; no importer,284
+scripts/update_venue_listings.py,delete,docstring says BROKEN (ImportError on load); crypto arc parked; recoverable at the tag,BROKEN per its own docstring; no importer,67
+scripts/engine_parity_evidence.py,port,vectorbt-upgrade tape pass: indicators + voters sections kept (voter oracle moved to tests/oracles/legacy_voters.py); simulator section dropped (frozen in tests/engine/golden/legacy_simulate.npz); full P2 script archived as engine_parity_evidence_p2_full.py,"imports deleted/archived: indicators.py, simulate.py",373
+scripts/production_replica_audit.py,port,curve_stats -> curve_summary; replica signal panel now v2 ensemble,imports deleted: metrics.py,369
+scripts/shadow_cross_asset.py,port,ongoing static 80/20 shadow: simulate_weights/legacy strategy -> engine.run_weights + v2 CrossAssetSleeve (hand-computed test kept),"imports deleted: cross_asset_sleeve.py, indicators.py, simulate.py",112
+scripts/wfo_policy_synthetic.py,port,imports from wfo_v2.breaker,imports deleted: wfo.py,77
+tests/lab/test_commodity_trend.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: commodity_trend.py,98
+tests/lab/test_congress_trades_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: congress_trades.py,173
+tests/lab/test_conviction.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: conviction.py, signals.py, simulate.py",207
+tests/lab/test_cross_asset_sleeve.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: cross_asset_sleeve.py,64
+tests/lab/test_ensemble.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, indicators.py, sweep.py",402
+tests/lab/test_ensemble_conviction.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, signals.py, simulate.py",197
+tests/lab/test_ensemble_ic.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, ensemble_ic.py, signals.py",102
+tests/lab/test_ensemble_kelly.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, ensemble_kelly.py, registry.py, signals.py",138
+tests/lab/test_fomc_drift.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: audit_reruns_wfo.py, fomc_drift.py, sweep.py",489
+tests/lab/test_fx_hedge_overlay.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: fx_hedge_overlay.py,132
+tests/lab/test_harness.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: harness.py, momentum.py",87
+tests/lab/test_harness_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: harness.py, momentum.py, signals.py",109
+tests/lab/test_headline_sentiment_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: headline_sentiment.py,84
+tests/lab/test_ic_weights.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: ic_weights.py,127
+tests/lab/test_idio_vol.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: idio_vol.py,131
+tests/lab/test_index_deletion_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: index_deletion.py,234
+tests/lab/test_insider_cluster_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: insider_cluster.py,309
+tests/lab/test_kelly.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: kelly.py,290
+tests/lab/test_leveraged_rotation.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, leveraged_rotation.py",333
+tests/lab/test_leveraged_trend.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: leveraged_trend.py, sweep.py",285
+tests/lab/test_macd_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",157
+tests/lab/test_max_effect.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: max_effect.py,130
+tests/lab/test_metrics.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: metrics.py,22
+tests/lab/test_momentum.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: momentum.py,111
+tests/lab/test_month_end_treasury.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: month_end_treasury.py, sweep.py",50
+tests/lab/test_mtf_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",133
+tests/lab/test_overnight_gap_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",184
+tests/lab/test_pairs_stat_arb.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: pairs_stat_arb.py,410
+tests/lab/test_pead_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: pead.py,181
+tests/lab/test_raw_values.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: indicators.py,104
+tests/lab/test_registry.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: ,36
+tests/lab/test_retail_attention_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: retail_attention.py,155
+tests/lab/test_reversion_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",251
+tests/lab/test_sector_constraints.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: ensemble.py, momentum.py, registry.py",119
+tests/lab/test_short_interest_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: short_interest.py,177
+tests/lab/test_short_volume_ratio_strategy.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: short_volume_ratio.py,139
+tests/lab/test_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",229
+tests/lab/test_simulate.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: simulate.py,107
+tests/lab/test_simulate_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: simulate.py,249
+tests/lab/test_strength_indicators.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: indicators.py,101
+tests/lab/test_sweep.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: momentum.py, pairs_stat_arb.py, signals.py, sweep.py",785
+tests/lab/test_treasury_curve.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: treasury_curve.py,96
+tests/lab/test_validation_gate.py,delete,tests a deleted legacy module (see SRC_DELETE),imports deleted: momentum.py,53
+tests/lab/test_vol_target.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: simulate.py, sweep.py",179
+tests/lab/test_volume_bb_signals.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: indicators.py, signals.py",150
+tests/lab/test_wfo.py,delete,tests a deleted legacy module (see SRC_DELETE),"imports deleted: simulate.py, sweep.py, wfo.py",1637
+tests/lab/wfo_v2/test_legacy_equivalence.py,delete,compared wfo_v2 with legacy lab.wfo/sweep; the proof is recorded in p5-evidence/ (P5-completion section 2),"imports deleted: cross_asset_sleeve.py, sweep.py, wfo.py",164
+tests/scripts/test_leveraged_rotation_research.py,delete,tests an archived script,"imports deleted: leveraged_rotation.py, wfo.py",109
+tests/engine/test_portfolio.py,port,engine-vs-lab.simulate comparisons now read tests/engine/golden/legacy_simulate.npz (frozen legacy output),imports deleted: simulate.py,425
+tests/lab/strategies_v2/test_conviction_bb.py,port,drop legacy-vs-new halves,"imports deleted: conviction.py, simulate.py, sweep.py",97
+tests/lab/strategies_v2/test_ensemble.py,port,drop legacy-vs-new halves,"imports deleted: ensemble.py, simulate.py, sweep.py",188
+tests/lab/strategies_v2/test_registry.py,port,no legacy registry to compare with,imports deleted: ensemble.py,45
+tests/lab/strategies_v2/test_voter_strategies.py,port,drop legacy-vs-new halves,"imports deleted: signals.py, sweep.py",85
+tests/lab/strategies_v2/test_voters.py,port,drop legacy-indicator comparisons,imports deleted: indicators.py,106
+tests/lab/strategies_v2/test_weights.py,port,drop legacy-vs-new halves,"imports deleted: cross_asset_sleeve.py, momentum.py, retail_attention.py, simulate.py, sweep.py",245
+tests/lab/test_blend.py,port,legacy path gone; vbt path and blend maths kept,imports deleted: wfo.py,265
+tests/lab/test_cli.py,port,new parser (no --engine/--sweep),imports deleted: ,60
+tests/lab/test_replica.py,port,build_signal_panel on the v2 ensemble,imports deleted: ,225
+tests/lab/test_significance.py,port,curve_summary instead of curve_stats,imports deleted: metrics.py,84
+tests/lab/test_wfo_policy_synthetic.py,port,imports from wfo_v2.breaker,imports deleted: wfo.py,146
+tests/lab/wfo_v2/helpers.py,port,curve_stats oracle moves into tests/,imports deleted: metrics.py,189
+tests/lab/wfo_v2/test_logic_units.py,port,drop legacy-comparison halves (docstring-marked in P5),imports deleted: wfo.py,285
+tests/lab/wfo_v2/test_report_inputs_weights.py,port,curve_stats oracle from tests/,"imports deleted: metrics.py, wfo.py",239
+tests/paper/test_overlay.py,port,drop legacy-overlay comparison,"imports deleted: ensemble.py, indicators.py, simulate.py",217
+tests/paper/test_paper_boundary.py,keep,names the deleted modules only as banned-import strings; unchanged and still valid,"imports deleted: ensemble.py, harness.py, indicators.py, metrics.py, simulate.py, sweep.py",72
+tests/scripts/test_check_vbt_engine.py,port,move under tests/engine/ so the boundary allow-list reaches zero,imports deleted: ,46
+tests/scripts/test_driver_default_paths.py,port,CHANGED_SCRIPTS lists archived drivers,imports deleted: ,140
+tests/test_pandas3_compat.py,port,drop legacy strategy/indicator cases,"imports deleted: idio_vol.py, indicators.py, max_effect.py",248
+scripts/a23_rebalance_check.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,224
+scripts/century_leverage.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,246
+scripts/century_leverage_a23_x.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,83
+scripts/century_leverage_calibrate.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,62
+scripts/check_lens_report.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,131
+scripts/check_reading_edition.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,546
+scripts/check_vbt_engine.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,54
+scripts/earnings_surprise_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,56
+scripts/equity_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,76
+scripts/event_timing_audit.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,7
+scripts/factor_french_screen.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,45
+scripts/fetch_midcap400_snapshot.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,41
+scripts/fomc_calendar_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,24
+scripts/form4_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,133
+scripts/google_trends_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,50
+scripts/headline_sentiment_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,93
+scripts/house_ptr_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,111
+scripts/insider_acceptance_diagnostic.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,7
+scripts/intraday_coverage_probe.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,42
+scripts/intraday_momentum_research.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,80
+scripts/intraday_observe.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,20
+scripts/intraday_observer_job.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,20
+scripts/legacy_reference_compare.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,91
+scripts/lens2_build.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,2204
+scripts/make_tape_snapshot.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,403
+scripts/mcp_server.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,312
+scripts/migrate_paper_dates_20260822.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,197
+scripts/momentum_french_screen.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,46
+scripts/net_issuance_screen.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,41
+scripts/one_off/restate_mnst_snapshots_20260911.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,100
+scripts/p3_pit_parity.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,204
+scripts/p5_wfo_validation.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,403
+scripts/p5b_guard_compare.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,112
+scripts/p7_live_golden.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,130
+scripts/replica_parity_check.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,165
+scripts/research_reorg.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,1862
+scripts/research_retarget.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,1038
+scripts/root_cause_figures.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,564
+scripts/short_interest_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,49
+scripts/short_volume_backfill.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,55
+scripts/static_leverage_aftertax.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,391
+scripts/vbt_latest.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,135
+scripts/wfo_fold_attribution.py,keep,operating workflow / kept-module tool / evidence driver that runs on kept code,no deleted or archived import,189
+tests/oracles/curve_stats.py,added,legacy hand-written curve_stats kept verbatim as an independent oracle for Sharpe/vol/drawdown,tests/oracles/test_curve_stats_oracle.py,
+tests/oracles/legacy_voters.py,added,five legacy voter signal functions (pure pandas) kept as oracle for voters and the upgrade tape pass,used by test_voters.py and scripts/engine_parity_evidence.py,
+tests/engine/golden/legacy_simulate.npz,added,frozen legacy simulate_signals/simulate_weights outputs,capture_legacy_simulate.py,
+tests/lab/strategies_v2/golden/legacy_grids.json,added,frozen legacy build_grid output and constructor defaults,capture_legacy_grids.py,
+tests/lab/strategies_v2/golden/legacy_signals.npz,added,"frozen legacy per-combination signals (ensemble, five voters, conviction_bb)",capture_legacy_signals.py,
+tests/lab/strategies_v2/golden/legacy_weights.npz,added,frozen legacy weight targets and equity,capture_legacy_weights.py,
+tests/lab/wfo_v2/golden/legacy_logic_units.json,added,frozen legacy folds/composite/breaker/shadow/grid-array/table outputs,capture_legacy_logic_units.py,
+tests/paper/golden/legacy_overlay_curve.npz,added,frozen legacy overlay sleeve curve,capture_legacy_overlay_curve.py,
+tests/lab/wfo_v2/test_policy_units.py,added,hand-written known-answer WFO policy tests moved from the deleted tests/lab/test_wfo.py,"34 tests, pointed at wfo_v2",
+research/programme/vectorbt-engine/legacy-scripts/,added,32 archived drivers + engine_parity_evidence_p2_full.py + README,README states they run only at the tag,
+research/programme/vectorbt-engine/p5c-evidence/,added,"import graph, ledger builder, capture scripts, closure and replica-port evidence",,

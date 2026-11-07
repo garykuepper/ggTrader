@@ -1,0 +1,128 @@
+
+== A_ggt_pd2 -> B_ggt_pd3
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7154      0   0.0000       0    0  None
+bb.exits          16627  16627      0   0.0000       0    0  None
+rsi.entries        3209   3209      0   0.0000       0    0  None
+rsi.exits         15834  15834      0   0.0000       0    0  None
+ema.entries        2779   2779      0   0.0000       0    0  None
+ema.exits          2813   2813      0   0.0000       0    0  None
+macd.entries      14553  14553      0   0.0000       0    0  None
+macd.exits        11332  11332      0   0.0000       0    0  None
+vbb.entries        1258   1258      0   0.0000       0    0  None
+vbb.exits         16627  16627      0   0.0000       0    0  None
+ENS.entries        4936   4936      0   0.0000       0    0  None
+ENS.exits         24829  24829      0   0.0000       0    0  None
+
+== A_ggt_pd2 -> C_vbt_matched
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7154      0   0.0000       0    0  None
+bb.exits          16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+rsi.entries        3209   3193     16   0.0050       0   14  2019-01-24 CRM ref=True
+rsi.exits         15834  15745     89   0.0056       0   68  2019-01-24 DHI ref=True
+ema.entries        2779   2613    166   0.0597       0  149  2019-01-03 AEE ref=True
+ema.exits          2813   2649    164   0.0583       0  134  2019-01-03 A ref=True
+macd.entries      14553  14539     14   0.0010       0    4  2019-04-04 CTLT ref=True
+macd.exits        11332  11061    313   0.0276       0  148  2019-01-03 A ref=True
+vbb.entries        1258   1258      0   0.0000       0    0  None
+vbb.exits         16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+ENS.entries        4936   4935      1   0.0002       0    1  2019-02-07 EQT ref=True
+ENS.exits         24829  24616    215   0.0087       1  131  2019-01-03 A ref=True
+
+== A_ggt_pd2 -> D_vbt_matched_vbtcross
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7154      0   0.0000       0    0  None
+bb.exits          16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+rsi.entries        3209   3193     16   0.0050       0   14  2019-01-24 CRM ref=True
+rsi.exits         15834  15745     89   0.0056       0   68  2019-01-24 DHI ref=True
+ema.entries        2779   2613    166   0.0597       0  149  2019-01-03 AEE ref=True
+ema.exits          2813   2649    164   0.0583       0  134  2019-01-03 A ref=True
+macd.entries      14553  14539     14   0.0010       0    4  2019-04-04 CTLT ref=True
+macd.exits        11332  11061    313   0.0276       0  148  2019-01-03 A ref=True
+vbb.entries        1258   1258      0   0.0000       0    0  None
+vbb.exits         16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+ENS.entries        4936   4935      1   0.0002       0    1  2019-02-07 EQT ref=True
+ENS.exits         24829  24616    215   0.0087       1  131  2019-01-03 A ref=True
+
+== A_ggt_pd2 -> E_vbt_default
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7708   1292   0.1600    1185  150  2019-02-27 DLTR ref=False
+bb.exits          16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+rsi.entries        3209   7590   9027   0.9106    8284  150  2019-01-24 CRM ref=True
+rsi.exits         15834  16603  23483   0.8399   21108  150  2019-01-24 AAPL ref=False
+ema.entries        2779   2613    166   0.0597       0  149  2019-01-03 AEE ref=True
+ema.exits          2813   2649    164   0.0583       0  134  2019-01-03 A ref=True
+macd.entries      14553  18413   8318   0.4030    7707  150  2019-03-22 BAC ref=False
+macd.exits        11332   9565  18799   0.9471   16848  150  2019-01-03 A ref=True
+vbb.entries        1258   1286    100   0.0756      98   64  2019-04-24 AVY ref=False
+vbb.exits         16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+ENS.entries        4936   7531   5161   0.5855    4732  150  2019-02-13 LW ref=True
+ENS.exits         24829  27436  16469   0.4792   14682  150  2019-01-03 A ref=True
+
+== B_ggt_pd3 -> C_vbt_matched
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7154      0   0.0000       0    0  None
+bb.exits          16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+rsi.entries        3209   3193     16   0.0050       0   14  2019-01-24 CRM ref=True
+rsi.exits         15834  15745     89   0.0056       0   68  2019-01-24 DHI ref=True
+ema.entries        2779   2613    166   0.0597       0  149  2019-01-03 AEE ref=True
+ema.exits          2813   2649    164   0.0583       0  134  2019-01-03 A ref=True
+macd.entries      14553  14539     14   0.0010       0    4  2019-04-04 CTLT ref=True
+macd.exits        11332  11061    313   0.0276       0  148  2019-01-03 A ref=True
+vbb.entries        1258   1258      0   0.0000       0    0  None
+vbb.exits         16627  16627      2   0.0001       2    1  2021-12-31 PARA ref=True
+ENS.entries        4936   4935      1   0.0002       0    1  2019-02-07 EQT ref=True
+ENS.exits         24829  24616    215   0.0087       1  131  2019-01-03 A ref=True
+
+== C_vbt_matched -> D_vbt_matched_vbtcross
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7154      0   0.0000       0    0  None
+bb.exits          16627  16627      0   0.0000       0    0  None
+rsi.entries        3193   3193      0   0.0000       0    0  None
+rsi.exits         15745  15745      0   0.0000       0    0  None
+ema.entries        2613   2613      0   0.0000       0    0  None
+ema.exits          2649   2649      0   0.0000       0    0  None
+macd.entries      14539  14539      0   0.0000       0    0  None
+macd.exits        11061  11061      0   0.0000       0    0  None
+vbb.entries        1258   1258      0   0.0000       0    0  None
+vbb.exits         16627  16627      0   0.0000       0    0  None
+ENS.entries        4935   4935      0   0.0000       0    0  None
+ENS.exits         24616  24616      0   0.0000       0    0  None
+
+== D_vbt_matched_vbtcross -> E_vbt_default
+voter.side          ref    new    xor  xor/sig post200 syms  first
+bb.entries         7154   7708   1292   0.1600    1185  150  2019-02-27 DLTR ref=False
+bb.exits          16627  16627      0   0.0000       0    0  None
+rsi.entries        3193   7590   9017   0.9108    8284  150  2019-01-28 PFE ref=False
+rsi.exits         15745  16603  23416   0.8398   21108  150  2019-01-24 AAPL ref=False
+ema.entries        2613   2613      0   0.0000       0    0  None
+ema.exits          2649   2649      0   0.0000       0    0  None
+macd.entries      14539  18413   8304   0.4026    7707  150  2019-03-22 BAC ref=False
+macd.exits        11061   9565  18530   0.9465   16848  150  2019-02-21 AAPL ref=False
+vbb.entries        1258   1286    100   0.0756      98   64  2019-04-24 AVY ref=False
+vbb.exits         16627  16627      0   0.0000       0    0  None
+ENS.entries        4935   7531   5162   0.5857    4732  150  2019-02-07 EQT ref=False
+ENS.exits         24616  27436  16270   0.4763   14681  150  2019-01-24 AAPL ref=False
+
+== one-at-a-time attribution (swap one voter into legacy set; ensemble XOR)
+C_vbt_matched:bb                         ent xor     0 (post    0)  exit xor     0 (post    0)
+C_vbt_matched:rsi                        ent xor     1 (post    0)  exit xor    81 (post    0)
+C_vbt_matched:ema                        ent xor     0 (post    0)  exit xor   133 (post    0)
+C_vbt_matched:macd                       ent xor     0 (post    0)  exit xor   133 (post    0)
+C_vbt_matched:vbb                        ent xor     0 (post    0)  exit xor     0 (post    0)
+D_vbt_matched_vbtcross:bb                ent xor     0 (post    0)  exit xor     0 (post    0)
+D_vbt_matched_vbtcross:rsi               ent xor     1 (post    0)  exit xor    81 (post    0)
+D_vbt_matched_vbtcross:ema               ent xor     0 (post    0)  exit xor   133 (post    0)
+D_vbt_matched_vbtcross:macd              ent xor     0 (post    0)  exit xor   133 (post    0)
+D_vbt_matched_vbtcross:vbb               ent xor     0 (post    0)  exit xor     0 (post    0)
+E_vbt_default:bb                         ent xor   509 (post  474)  exit xor     0 (post    0)
+E_vbt_default:rsi                        ent xor  3099 (post 2842)  exit xor 16086 (post 14454)
+E_vbt_default:ema                        ent xor     0 (post    0)  exit xor   133 (post    0)
+E_vbt_default:macd                       ent xor  2153 (post 1946)  exit xor   388 (post  232)
+E_vbt_default:vbb                        ent xor    48 (post   47)  exit xor     0 (post    0)
+
+== live window (365 cal days, last bar, last N sessions)
+B_ggt_pd3                  entries: ref 301 new 301 diff 0 sessions 0/120  exits: ref 1466 new 1466 diff 0 sessions 0/120
+C_vbt_matched              entries: ref 301 new 301 diff 0 sessions 0/120  exits: ref 1466 new 1466 diff 0 sessions 0/120
+D_vbt_matched_vbtcross     entries: ref 301 new 301 diff 0 sessions 0/120  exits: ref 1466 new 1466 diff 0 sessions 0/120
+E_vbt_default              entries: ref 301 new 456 diff 315 sessions 95/120  exits: ref 1466 new 1631 diff 927 sessions 119/120

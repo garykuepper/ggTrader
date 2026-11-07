@@ -1,0 +1,53 @@
+{
+ "max_abs_difference": {
+  "cagr": 2.6645352591003757e-14,
+  "max_drawdown": 2.886579864025407e-15,
+  "sharpe": 1.8762769116165146e-14,
+  "sortino": 0.0,
+  "volatility": 3.694822225952521e-13
+ },
+ "provenance": {
+  "baseline_epoch": "E1",
+  "contract_version": 1,
+  "created_utc": "2026-11-06T22:18:49Z",
+  "definitions": {
+   "atr": "sma ewm=False",
+   "bb_ddof": 1,
+   "cagr": "legacy curve_stats: calendar days / 365.25",
+   "dsr": "var_sharpe=252/(T-1) bias=False",
+   "macd": "ema macd_ewm=signal_ewm=True",
+   "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+   "rsi": "wilder window=2n-1 ewm",
+   "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+   "sortino": "legacy curve_stats: mean / std(negative returns) * sqrt(252)",
+   "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+   "window": "legacy: equity rebased at the first bar, returns from the second bar",
+   "year_freq": "252 days"
+  },
+  "engine_effective": "rust",
+  "engine_requested": "rust",
+  "git_dirty": true,
+  "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "llvmlite": "0.50.0",
+  "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+  "numba": "0.68.1",
+  "numpy": "2.5.4",
+  "pandas": "3.1.1",
+  "python": "3.12.3",
+  "rust_calls": 1,
+  "schema": 1,
+  "scipy": "1.18.1",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "vectorbt": "1.2.0",
+  "vectorbt_rust": "1.2.0"
+ },
+ "symbols": 599,
+ "windows_bit_identical": {
+  "cagr": 262,
+  "max_drawdown": 337,
+  "sharpe": 805,
+  "sortino": 2367,
+  "volatility": 710
+ },
+ "windows_compared": 2367
+}

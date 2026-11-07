@@ -1,0 +1,3 @@
+OK   numpy-ledger (fee convention: shares=cash/(p*(1+fee))) vs vbt from_signals max |equity diff| = 1.455e-11
+OK   Sharpe: vbt(252d)=-0.626010 empyrical=-0.626010 quantstats=-0.626010 ffn=-0.626323 | vbt default(365d)=-0.753403
+INFO pf.sharpe_ratio() default = -0.753403

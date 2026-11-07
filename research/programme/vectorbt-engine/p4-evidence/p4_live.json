@@ -1,0 +1,1160 @@
+{
+  "section": "live",
+  "sessions": 120,
+  "first": "2026-05-12",
+  "last": "2026-10-30",
+  "sessions_with_any_difference": 0,
+  "sessions_with_buy_or_sell_difference": 0,
+  "symbol_sessions_last_exit_differs": 0,
+  "total_buys_golden": 1028,
+  "total_sells_golden": 5519,
+  "total_buys_new": 1028,
+  "total_sells_new": 5519,
+  "short_history_symbol_sessions": 100,
+  "seconds": 28.0,
+  "mismatches": [],
+  "per_session": [
+    {
+      "as_of": "2026-05-12",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 2,
+      "sells": 26,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-13",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 14,
+      "sells": 18,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-14",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 2,
+      "sells": 31,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-15",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 14,
+      "sells": 20,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-18",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 3,
+      "sells": 68,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-19",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 10,
+      "sells": 26,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-20",
+      "universe": 502,
+      "eligible": 502,
+      "buys": 4,
+      "sells": 74,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-21",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 3,
+      "sells": 62,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-22",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 1,
+      "sells": 73,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-26",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 3,
+      "sells": 55,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-27",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 5,
+      "sells": 38,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-28",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 5,
+      "sells": 49,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-05-29",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 9,
+      "sells": 30,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-01",
+      "universe": 501,
+      "eligible": 501,
+      "buys": 22,
+      "sells": 50,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-02",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 65,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-03",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 15,
+      "sells": 43,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-04",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 93,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-05",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 70,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-08",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 33,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-09",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 105,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-10",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 12,
+      "sells": 32,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-11",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 4,
+      "sells": 99,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-12",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 71,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-15",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 51,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-16",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 38,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-17",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 6,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-18",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 17,
+      "sells": 56,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-22",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 44,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-23",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 0,
+      "sells": 63,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-24",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 62,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-25",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 41,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-26",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 47,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-29",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 29,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-06-30",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 4,
+      "sells": 18,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-01",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 7,
+      "sells": 53,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-02",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 56,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-06",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 33,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-07",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 28,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-08",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 23,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-09",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 52,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-10",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 0,
+      "sells": 62,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-13",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 47,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-14",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 30,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-15",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 47,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-16",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 127,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-17",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 24,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-20",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 4,
+      "sells": 19,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-21",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 56,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-22",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 64,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-23",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 15,
+      "sells": 41,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-24",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 109,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-27",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 0,
+      "sells": 112,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-28",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 10,
+      "sells": 72,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-29",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 26,
+      "sells": 26,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-30",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 12,
+      "sells": 40,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-07-31",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 10,
+      "sells": 40,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-03",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 65,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-04",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 74,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-05",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 36,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-06",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 34,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-07",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 55,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-10",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 10,
+      "sells": 29,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-11",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 4,
+      "sells": 26,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-12",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 0,
+      "sells": 40,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-13",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 59,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-14",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 0,
+      "sells": 35,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-17",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 15,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-18",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 33,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-19",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 11,
+      "sells": 59,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-20",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 10,
+      "sells": 24,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-21",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 53,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-24",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 54,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-25",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 24,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-26",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 39,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-27",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 15,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-28",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 12,
+      "sells": 37,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-08-31",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 17,
+      "sells": 17,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-01",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 13,
+      "sells": 22,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-02",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 9,
+      "sells": 59,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-03",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 80,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-04",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 4,
+      "sells": 20,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-08",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 18,
+      "sells": 35,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-09",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 37,
+      "sells": 17,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-10",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 21,
+      "sells": 28,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-11",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 65,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-14",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 17,
+      "sells": 76,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-15",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 27,
+      "sells": 22,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-16",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 31,
+      "sells": 15,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-17",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 9,
+      "sells": 36,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-18",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 26,
+      "sells": 25,
+      "short_history_symbols": 0,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-21",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 22,
+      "sells": 58,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-22",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 25,
+      "sells": 44,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-23",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 29,
+      "sells": 25,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-24",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 27,
+      "sells": 23,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-25",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 42,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-28",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 19,
+      "sells": 18,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-29",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 9,
+      "sells": 14,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-09-30",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 29,
+      "sells": 10,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-01",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 15,
+      "sells": 44,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-02",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 11,
+      "sells": 33,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-05",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 11,
+      "sells": 65,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-06",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 74,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-07",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 29,
+      "sells": 24,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-08",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 3,
+      "sells": 99,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-09",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 65,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-12",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 7,
+      "sells": 65,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-13",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 7,
+      "sells": 55,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-14",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 15,
+      "sells": 51,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-15",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 2,
+      "sells": 121,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-16",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 42,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-19",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 9,
+      "sells": 13,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-20",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 1,
+      "sells": 85,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-21",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 29,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-22",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 17,
+      "sells": 55,
+      "short_history_symbols": 1,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-23",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 6,
+      "sells": 12,
+      "short_history_symbols": 2,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-26",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 32,
+      "short_history_symbols": 2,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-27",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 5,
+      "sells": 35,
+      "short_history_symbols": 2,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-28",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 35,
+      "short_history_symbols": 2,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-29",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 8,
+      "sells": 64,
+      "short_history_symbols": 2,
+      "differs": false
+    },
+    {
+      "as_of": "2026-10-30",
+      "universe": 500,
+      "eligible": 500,
+      "buys": 13,
+      "sells": 17,
+      "short_history_symbols": 2,
+      "differs": false
+    }
+  ],
+  "tape": {
+    "source": "snapshot",
+    "snapshot": {
+      "path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+      "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+      "content_sha256": null,
+      "rows": 1110874,
+      "symbols": 605,
+      "date_min": "2019-03-01",
+      "date_max": "2026-10-30",
+      "deep_checked": false
+    },
+    "start": "2019-03-01 00:00:00",
+    "end": "2026-10-30 00:00:00",
+    "symbols_loaded": 605,
+    "missing_symbols": [
+      "ABC",
+      "ANTM",
+      "BLL",
+      "COG",
+      "FBHS",
+      "FRC",
+      "GPS",
+      "HFC",
+      "MMC",
+      "PKI",
+      "RE",
+      "WLTW"
+    ]
+  },
+  "peak_rss_mb": 667,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sortino": "vectorbt downside deviation",
+      "cagr": "bar-annualised 252",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T21:45:21Z"
+  }
+}

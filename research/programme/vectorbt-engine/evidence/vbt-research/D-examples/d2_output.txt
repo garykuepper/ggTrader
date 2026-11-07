@@ -1,0 +1,63 @@
+=== A. param_product=True vs zipped ===
+product: shape (500, 24) levels ['ma_window', 'ma_ewm', None]
+zipped : shape (500, 12) levels ['ma_window', 'ma_ewm', None]
+unequal lengths w/o param_product -> ValueError Parameters at index 1 have length 2 that cannot be broadcast to 3
+
+=== B. run_combs: all unordered pairs of one param list (fast < slow) ===
+fast cols: [5, 5, 5, 10, 10, 20]
+entries: (500, 6) (6 pairs = C(4,2)); fast<slow built in)
+
+=== C. Portfolio-level param broadcasting ===
+C1 plain Index -> ValueError shape mismatch: objects cannot be broadcast to a single shape.  Mismatch is betw
+C2 tile+row -> ['sl_stop', 'rsi_window', None] (500, 12)
+C3 factory -> ['custom_rsi_lo', 'custom_sl'] groups: 6
+
+=== D. selection ===
+custom_rsi_lo  custom_sl
+25             0.02        -0.938
+               0.05        -0.469
+               0.10        -0.502
+30             0.02        -0.050
+               0.05         0.372
+               0.10         0.203
+idxmax (rsi_lo, sl): (np.int64(30), np.float64(0.05))
+
+pf.stats() for the winning group:
+ Start                               2022-01-03 00:00:00
+End                                 2023-12-01 00:00:00
+Period                                500 days 00:00:00
+Start Value                                    100000.0
+End Value                                 101056.463056
+Total Return [%]                               1.056463
+Benchmark Return [%]                          16.582357
+Max Gross Exposure [%]                        32.938981
+Total Fees Paid                                     0.0
+Max Drawdown [%]                               2.409985
+Max Drawdown Duration                 222 days 00:00:00
+Total Trades                                         38
+Total Closed Trades                                  38
+Total Open Trades                                     0
+Open Trade PnL                                      0.0
+Win Rate [%]                                  60.526316
+Best Trade [%]                                 9.036597
+Worst Trade [%]                               -5.843873
+Avg Winning Trade [%]                          3.239019
+Avg Losing Trade [%]                          -4.321304
+Avg Winning Trade Duration    9 days 07:18:15.652173913
+Avg Losing Trade Duration               8 days 16:00:00
+Profit Factor                                  1.177356
+Expectancy                                    27.801659
+Sharpe Ratio                                   0.371652
+Calmar Ratio                                   0.319555
+Omega Ratio                                    1.073664
+Sortino Ratio                                   0.54735
+
+Default year_freq = 365 days | pass year_freq='252 days' to match ggTrader
+Sharpe with year_freq=252:
+ custom_rsi_lo  custom_sl
+25             0.02        -0.780
+               0.05        -0.390
+               0.10        -0.417
+30             0.02        -0.041
+               0.05         0.309
+               0.10         0.169

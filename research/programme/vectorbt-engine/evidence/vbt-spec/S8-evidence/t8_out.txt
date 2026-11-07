@@ -1,0 +1,5 @@
+files=12 distinct vbt.* symbols=8 missing_in_1.2.0=1
+  MISSING to_returns 1
+from_signals kwargs used 15 unknown to 1.2.0 signature: {'pf': 1}
+from_orders kwargs used 11 unknown to 1.2.0 signature: {}
+pf.<method>( distinct 10 missing on Portfolio: {}

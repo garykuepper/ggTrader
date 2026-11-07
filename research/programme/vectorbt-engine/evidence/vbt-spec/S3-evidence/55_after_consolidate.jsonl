@@ -1,0 +1,5 @@
+load=3.73 new_auto_patched
+{"vectorbt": "1.2.0", "pandas": "3.1.1", "engine": "auto", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[4.87, 4.75], [4.68, 4.54], [4.56, 4.47]]}
+load=3.88 new_numba_patched
+{"vectorbt": "1.2.0", "pandas": "3.1.1", "engine": "numba", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[9.08, 8.95], [4.58, 4.34], [4.82, 4.53]]}
+DONE

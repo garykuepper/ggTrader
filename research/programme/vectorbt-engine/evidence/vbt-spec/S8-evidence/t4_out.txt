@@ -1,0 +1,15 @@
+talib 0.8.3 funcs 237
+OK   talib.RSI numpy: 68.3040880803222
+OK   vbt.IndicatorFactory.from_talib('RSI'): (800, 18)
+OK   vbt.IndicatorFactory.from_talib('BBANDS'): (800, 6)
+OK   vbt.IndicatorFactory.from_talib('ATR') OHLC: (800, 6)
+OK   vbt.talib('MACD'): (800, 6)
+OK   ta lib RSIIndicator: 68.3040880803222
+OK   vbt.IndicatorFactory.from_ta('RSIIndicator'): (800, 12)
+OK   pandas_ta_classic rsi: 68.3040880803222
+FAIL vbt.IndicatorFactory.from_pandas_ta('RSI') (needs pandas_ta): AttributeError: 'RSI' object has no attribute 'shape' | ^^^^
+IndicatorFactory attrs: ['from_apply_func', 'from_custom_func', 'from_pandas_ta', 'from_ta', 'from_talib']
+OK   vbt.RSI.run default: (800, 6)
+max |talib RSI14 - vbt RSI(27,ewm)| after bar200: 3.646689906844358e-05
+max |talib - ta lib| after 200: 1.099403849735836e-05
+max |talib - pandas_ta_classic| after 200: 4.973799150320701e-14

@@ -1,0 +1,40 @@
+pandas 3.1.1 numpy 2.5.4
+- MultiIndex ohlcv['AAA']['close'] works: 6.0
+- dtype of datetime index (bdate_range): datetime64[us]
+- to_datetime(['2024-01-02']) dtype: datetime64[us]
+- pd.Timestamp('2024-01-02').unit: us
+- DatetimeIndex.astype('int64')[0] (epoch units): 1704153600000000
+- DatetimeIndex.view('i8')[0]: 1704153600000000
+- dates .values dtype: datetime64[us]
+- str column dtype: str
+- str columns Index dtype (symbols): str
+- Series(['a',None]).isna() / dtype==object?: (False, [False, True])
+- .values is read-only?: False
+- close.to_numpy() writeable?: False
+- chained assignment df['a'][mask]=0 -> a: [1, 2, 3]   [warnings: ['ChainedAssignmentError: A value is being set on a copy of a DataFrame or Series through chaine']]
+- subset mutation leaks to parent? df['a'] after s=df['a']; s.iloc[0]=99: 1.0
+- Series[int] on DatetimeIndex-ed series s[0]: RAISES KeyError: 0
+- Series[int] on int index [10,20]: s[0]: RAISES KeyError: 0
+- pct_change(fill_method='pad') (default in 2.x): [nan, nan, nan]
+- pct_change(fill_method=None): [nan, nan, nan]
+- df.stack() on 2-level columns (future_stack): (30, 2)
+- df.stack() default dropna behaviour w/ NaN: (2,)
+- groupby.agg(np.std) value (numpy ddof=0 vs pandas ddof=1): [0.5, 0.5]
+- groupby.apply include_groups default: [3.0, 7.0]
+- groupby(categorical key, observed default): {'x': 3.0, 'y': 7.0}
+- groupby(axis=1) removed: RAISES TypeError: DataFrame.groupby() got an unexpected keyword argument 'axis'
+- resample('M'): RAISES ValueError: Invalid frequency: M. Failed to parse with error message: ValueError("'M' is no longer sup
+- resample('ME'): 1
+- date_range freq='H': RAISES ValueError: Invalid frequency: H. Failed to parse with error message: ValueError('Invalid frequency: H
+- date_range freq='h': 3
+- fillna(method='ffill'): RAISES TypeError: NDFrame.fillna() got an unexpected keyword argument 'method'
+- DataFrame.applymap: RAISES AttributeError: 'DataFrame' object has no attribute 'applymap'
+- tz_localize('UTC') index -> tz object type: timezone/zoneinfo
+- tz-aware .values (drops tz?): datetime64[us]   [warnings: ['Pandas4Warning: Series.values returning an ndarray that drops timezone information for']]
+- to_sql/read_sql round trip dtypes (sqlite): {'ts': 'str', 'symbol': 'str', 'close': 'float64'}
+- read_sql parse_dates ts dtype: datetime64[us]
+- naive UTC timestamp survives to_sql(sqlite) as: 2024-01-02 14:30:00.000000
+- read_sql_query with chunksize works: 6
+- to_sql method='multi' with None/NaN in str col: ['x', nan]
+- yfinance imports: 1.2.0
+- yf.download 2 tickers (network): cols=['Price', 'Ticker'] idxdtype=datetime64[s] lvl0=['Close', 'High', 'Low', 'Open', 'Volume'] shape=(8, 10)   [warnings: ['Pandas4Warning: The inplace keyword in DataFrame.drop is deprecated and will be remove', 'Pandas4Warning: The inplace keyword in DataFrame.rename is deprecated and will be remo']]

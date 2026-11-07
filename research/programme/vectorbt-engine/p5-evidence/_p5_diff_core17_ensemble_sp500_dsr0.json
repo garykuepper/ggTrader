@@ -1,0 +1,612 @@
+{
+  "run": "core17_ensemble_sp500_dsr0",
+  "twin": "core17_ensemble_sp500_dsr0",
+  "note": "vectorbt Sortino and CAGR versus the legacy forms, same simulation and tape",
+  "winners_changed": 4,
+  "ndh_changed": 1,
+  "dsr_changed": 0,
+  "gates_changed": 1,
+  "anchor_use_changed": 1,
+  "halt_changed": 0,
+  "gate_changes_without_a_winner_change": [],
+  "gates": {
+    "legacy_definitions": "17/17",
+    "vbt_definitions": "16/17"
+  },
+  "anchor_folds": {
+    "legacy_definitions": 0,
+    "vbt_definitions": 1
+  },
+  "aggregate": {
+    "sharpe": {
+      "legacy_definitions": 0.6223684144547851,
+      "vbt_definitions": 0.8861970405430518,
+      "spy_legacy_definitions": 0.779216885606789,
+      "spy_vbt_definitions": 0.779216885606789
+    },
+    "cagr_pct": {
+      "legacy_definitions": 3.305871135512306,
+      "vbt_definitions": 4.9053551528969175,
+      "spy_legacy_definitions": 12.958679736211455,
+      "spy_vbt_definitions": 13.019685441934946
+    },
+    "max_drawdown_pct": {
+      "legacy_definitions": -5.278102080265268,
+      "vbt_definitions": -5.278102080265301,
+      "spy_legacy_definitions": -22.0948355324869,
+      "spy_vbt_definitions": -22.0948355324869
+    },
+    "sortino": {
+      "legacy_definitions": 0.6632444851875148,
+      "vbt_definitions": 1.577388437079867,
+      "spy_legacy_definitions": 1.0738850605091097,
+      "spy_vbt_definitions": 1.1326308038780573
+    }
+  },
+  "attribution": {
+    "winner_flips": 4,
+    "winner_flips_explained_by_sortino_alone": 4,
+    "anchor_flips": 0,
+    "max_sharpe_diff_between_sets": 0.0,
+    "max_drawdown_diff_between_sets": 0.0,
+    "folds": [
+      {
+        "fold": 1,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 2,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 3,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 4,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 5,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 6,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 7,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 8,
+        "winner_changed": true,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": true,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0,
+        "sortino_of_the_two_winners": {
+          "legacy_definition": [
+            1.0260024006301822,
+            0.6507120546828304
+          ],
+          "vbt_definition": [
+            3.0065928465247582,
+            3.531456104414798
+          ],
+          "order": "[legacy winner, vbt winner]"
+        }
+      },
+      {
+        "fold": 9,
+        "winner_changed": true,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": true,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0,
+        "sortino_of_the_two_winners": {
+          "legacy_definition": [
+            1.1772350902985855,
+            0.555235000476235
+          ],
+          "vbt_definition": [
+            1.4532584256586158,
+            1.9105203749999067
+          ],
+          "order": "[legacy winner, vbt winner]"
+        }
+      },
+      {
+        "fold": 10,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 11,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 12,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 13,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 14,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 15,
+        "winner_changed": false,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": null,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0
+      },
+      {
+        "fold": 16,
+        "winner_changed": true,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": true,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0,
+        "sortino_of_the_two_winners": {
+          "legacy_definition": [
+            2.0287553088345383,
+            1.1701545941286937
+          ],
+          "vbt_definition": [
+            2.8813293986020234,
+            1.6866852862159833
+          ],
+          "order": "[legacy winner, vbt winner]"
+        }
+      },
+      {
+        "fold": 17,
+        "winner_changed": true,
+        "winner_legacy": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast20_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "winner_vbt": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+        "explained_by_sortino_alone": true,
+        "anchor_changed": false,
+        "sharpe_max_abs_diff_between_sets": 0.0,
+        "max_drawdown_max_abs_diff_between_sets": 0.0,
+        "sortino_of_the_two_winners": {
+          "legacy_definition": [
+            1.6672018163557007,
+            null
+          ],
+          "vbt_definition": [
+            3.961779852551866,
+            28.58929444516349
+          ],
+          "order": "[legacy winner, vbt winner]"
+        }
+      }
+    ]
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        2.2260488538735688,
+        2.2260488538735688
+      ],
+      "oos_sharpe": [
+        1.095136495164147,
+        1.095136495164147
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 2,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.4672733022730398,
+        1.4672733022730398
+      ],
+      "oos_sharpe": [
+        1.0966353773751252,
+        1.0966353773751252
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 3,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.1652585101544495,
+        1.1652585101544495
+      ],
+      "oos_sharpe": [
+        -0.42998248251090615,
+        -0.42998248251090615
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 4,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.093219226675907,
+        1.093219226675907
+      ],
+      "oos_sharpe": [
+        3.3419810988261927,
+        3.3419810988261927
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 5,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.2811211328779333,
+        1.2811211328779333
+      ],
+      "oos_sharpe": [
+        0.6527829336176662,
+        0.6527829336176662
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 6,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.265956937053324,
+        1.265956937053324
+      ],
+      "oos_sharpe": [
+        null,
+        null
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 7,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.115960392509539,
+        1.115960392509539
+      ],
+      "oos_sharpe": [
+        null,
+        null
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 8,
+      "winner_changed": true,
+      "ndh_changed": true,
+      "dsr_changed": false,
+      "gates_changed": true,
+      "anchor_changed": true,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.660814968947015,
+        1.63910627566725
+      ],
+      "oos_sharpe": [
+        null,
+        4.929491905213705
+      ],
+      "any_change": true
+    },
+    {
+      "fold": 9,
+      "winner_changed": true,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        0.9572382686541168,
+        1.0822935179115751
+      ],
+      "oos_sharpe": [
+        1.67628292557149,
+        -0.7353183686983809
+      ],
+      "any_change": true
+    },
+    {
+      "fold": 10,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.8405428066672298,
+        1.8405428066672298
+      ],
+      "oos_sharpe": [
+        5.00149450777407,
+        5.00149450777407
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 11,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        2.1835323398313005,
+        2.1835323398313005
+      ],
+      "oos_sharpe": [
+        0.15034870093337363,
+        0.15034870093337363
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 12,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        3.0106712044530606,
+        3.0106712044530606
+      ],
+      "oos_sharpe": [
+        0.2602101148372389,
+        0.2602101148372389
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 13,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.8614846769954585,
+        1.8614846769954585
+      ],
+      "oos_sharpe": [
+        0.7147412755519259,
+        0.7147412755519259
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 14,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.0989741818092162,
+        1.0989741818092162
+      ],
+      "oos_sharpe": [
+        0.7025545161702941,
+        0.7025545161702941
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 15,
+      "winner_changed": false,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.1089962151906183,
+        1.1089962151906183
+      ],
+      "oos_sharpe": [
+        2.3072981966765,
+        2.3072981966765
+      ],
+      "any_change": false
+    },
+    {
+      "fold": 16,
+      "winner_changed": true,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.1216418597632571,
+        1.0409756692620051
+      ],
+      "oos_sharpe": [
+        0.6937082189488926,
+        3.449695580754697
+      ],
+      "any_change": true
+    },
+    {
+      "fold": 17,
+      "winner_changed": true,
+      "ndh_changed": false,
+      "dsr_changed": false,
+      "gates_changed": false,
+      "anchor_changed": false,
+      "halted_changed": false,
+      "is_sharpe": [
+        1.5563426558731117,
+        0.9673763181899084
+      ],
+      "oos_sharpe": [
+        -0.8317911550624535,
+        -0.45953916407946355
+      ],
+      "any_change": true
+    }
+  ],
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:20:16Z"
+  }
+}

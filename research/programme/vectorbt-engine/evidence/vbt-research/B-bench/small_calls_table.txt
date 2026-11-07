@@ -1,0 +1,16 @@
+venv0285 vbt 0.28.5 engine=none  from_orders ta first=0.32s median=27.8ms min=25.8 p90=29.9 chk=317947.8879
+venv0285 vbt 0.28.5 engine=none  from_signals t first=3.27s median=27.1ms min=25.6 p90=29.2 chk=315731.1020
+venv100  vbt 1.0.0  engine=numba from_orders ta first=0.21s median=29.5ms min=27.3 p90=31.2 chk=317947.8879
+venv100  vbt 1.0.0  engine=numba from_signals t first=3.14s median=28.5ms min=26.8 p90=30.6 chk=315731.1020
+venv100  vbt 1.0.0  engine=rust  from_orders ta first=0.15s median=31.3ms min=29.0 p90=34.2 chk=317947.8879
+venv100  vbt 1.0.0  engine=rust  from_signals t first=0.03s median=30.5ms min=27.4 p90=33.1 chk=315731.1020
+venv120  vbt 1.2.0  engine=numba from_orders ta first=0.34s median=40.7ms min=37.7 p90=43.8 chk=317947.8879
+venv120  vbt 1.2.0  engine=numba from_signals t first=4.56s median=38.1ms min=35.3 p90=41.5 chk=315731.1020
+venv120  vbt 1.2.0  engine=rust  from_orders ta first=0.26s median=35.9ms min=33.5 p90=38.3 chk=317947.8879
+venv120  vbt 1.2.0  engine=rust  from_signals t first=0.04s median=36.9ms min=33.9 p90=39.8 chk=315731.1020
+venv0285 vbt 0.28.5 engine=none  from_orders ta first=0.30s median=28.1ms min=25.9 p90=29.5 chk=317947.8879
+venv0285 vbt 0.28.5 engine=none  from_signals t first=3.25s median=28.2ms min=26.1 p90=30.9 chk=315731.1020
+venv120  vbt 1.2.0  engine=numba from_orders ta first=0.33s median=39.8ms min=36.8 p90=44.2 chk=317947.8879
+venv120  vbt 1.2.0  engine=numba from_signals t first=4.35s median=37.6ms min=34.8 p90=40.6 chk=315731.1020
+venv120  vbt 1.2.0  engine=rust  from_orders ta first=0.24s median=34.2ms min=32.6 p90=36.9 chk=317947.8879
+venv120  vbt 1.2.0  engine=rust  from_signals t first=0.03s median=36.9ms min=33.0 p90=40.7 chk=315731.1020

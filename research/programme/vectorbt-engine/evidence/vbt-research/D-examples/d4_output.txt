@@ -1,0 +1,4 @@
+fold  1: prefix sim to 2022-01-31 vs full sim sliced -> max |equity diff| = 0.000e+00; max |Sharpe diff| over 48 combos = 0.000e+00
+fold  9: prefix sim to 2024-01-30 vs full sim sliced -> max |equity diff| = 0.000e+00; max |Sharpe diff| over 48 combos = 0.000e+00
+fold 17: prefix sim to 2026-01-30 vs full sim sliced -> max |equity diff| = 0.000e+00; max |Sharpe diff| over 48 combos = 0.000e+00
+WORST: equity 0.000e+00, sharpe 0.000e+00

@@ -1,0 +1,4 @@
+pandas 3.1.1 | blocks in extract_close frame: 100 | consolidated copy blocks: 1
+rsi_signals-like on concat-built frame :    66.04 ms
+rsi_signals-like on same frame, .copy() :    13.39 ms
+rsi_signals-like on np-built 2D frame   :    11.82 ms

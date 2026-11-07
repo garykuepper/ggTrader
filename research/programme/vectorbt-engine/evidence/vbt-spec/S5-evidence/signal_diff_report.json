@@ -1,0 +1,1278 @@
+{
+ "burnin_bars": 200,
+ "valid_cells": 283251,
+ "pairs": {
+  "A_ggt_pd2 -> B_ggt_pd3": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7154,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "rsi.entries": {
+    "ref_true": 3209,
+    "new_true": 3209,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "rsi.exits": {
+    "ref_true": 15834,
+    "new_true": 15834,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ema.entries": {
+    "ref_true": 2779,
+    "new_true": 2779,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ema.exits": {
+    "ref_true": 2813,
+    "new_true": 2813,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "macd.entries": {
+    "ref_true": 14553,
+    "new_true": 14553,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "macd.exits": {
+    "ref_true": 11332,
+    "new_true": 11332,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1258,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ENS.entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ENS.exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "A_ggt_pd2 -> C_vbt_matched": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7154,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "rsi.entries": {
+    "ref_true": 3209,
+    "new_true": 3193,
+    "xor_cells": 16,
+    "xor_frac_of_valid_cells": 5.648700269372394e-05,
+    "xor_frac_of_signal_cells": 0.004985976939856653,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 14,
+    "first_diff": "2019-01-24 CRM ref=True"
+   },
+   "rsi.exits": {
+    "ref_true": 15834,
+    "new_true": 15745,
+    "xor_cells": 89,
+    "xor_frac_of_valid_cells": 0.0003142089524838394,
+    "xor_frac_of_signal_cells": 0.005620815965643552,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 68,
+    "first_diff": "2019-01-24 DHI ref=True"
+   },
+   "ema.entries": {
+    "ref_true": 2779,
+    "new_true": 2613,
+    "xor_cells": 166,
+    "xor_frac_of_valid_cells": 0.0005860526529473859,
+    "xor_frac_of_signal_cells": 0.05973371716444764,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 149,
+    "first_diff": "2019-01-03 AEE ref=True"
+   },
+   "ema.exits": {
+    "ref_true": 2813,
+    "new_true": 2649,
+    "xor_cells": 164,
+    "xor_frac_of_valid_cells": 0.0005789917776106704,
+    "xor_frac_of_signal_cells": 0.05830074653394952,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 134,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "macd.entries": {
+    "ref_true": 14553,
+    "new_true": 14539,
+    "xor_cells": 14,
+    "xor_frac_of_valid_cells": 4.942612735700845e-05,
+    "xor_frac_of_signal_cells": 0.000962000962000962,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 4,
+    "first_diff": "2019-04-04 CTLT ref=True"
+   },
+   "macd.exits": {
+    "ref_true": 11332,
+    "new_true": 11061,
+    "xor_cells": 313,
+    "xor_frac_of_valid_cells": 0.0011050269901959745,
+    "xor_frac_of_signal_cells": 0.027569805337796176,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 148,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1258,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "ENS.entries": {
+    "ref_true": 4936,
+    "new_true": 4935,
+    "xor_cells": 1,
+    "xor_frac_of_valid_cells": 3.5304376683577464e-06,
+    "xor_frac_of_signal_cells": 0.0002025931928687196,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 1,
+    "first_diff": "2019-02-07 EQT ref=True"
+   },
+   "ENS.exits": {
+    "ref_true": 24829,
+    "new_true": 24616,
+    "xor_cells": 215,
+    "xor_frac_of_valid_cells": 0.0007590440986969155,
+    "xor_frac_of_signal_cells": 0.008658880386629078,
+    "xor_cells_after_burnin": 1,
+    "symbols_affected": 131,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "A_ggt_pd2 -> D_vbt_matched_vbtcross": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7154,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "rsi.entries": {
+    "ref_true": 3209,
+    "new_true": 3193,
+    "xor_cells": 16,
+    "xor_frac_of_valid_cells": 5.648700269372394e-05,
+    "xor_frac_of_signal_cells": 0.004985976939856653,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 14,
+    "first_diff": "2019-01-24 CRM ref=True"
+   },
+   "rsi.exits": {
+    "ref_true": 15834,
+    "new_true": 15745,
+    "xor_cells": 89,
+    "xor_frac_of_valid_cells": 0.0003142089524838394,
+    "xor_frac_of_signal_cells": 0.005620815965643552,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 68,
+    "first_diff": "2019-01-24 DHI ref=True"
+   },
+   "ema.entries": {
+    "ref_true": 2779,
+    "new_true": 2613,
+    "xor_cells": 166,
+    "xor_frac_of_valid_cells": 0.0005860526529473859,
+    "xor_frac_of_signal_cells": 0.05973371716444764,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 149,
+    "first_diff": "2019-01-03 AEE ref=True"
+   },
+   "ema.exits": {
+    "ref_true": 2813,
+    "new_true": 2649,
+    "xor_cells": 164,
+    "xor_frac_of_valid_cells": 0.0005789917776106704,
+    "xor_frac_of_signal_cells": 0.05830074653394952,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 134,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "macd.entries": {
+    "ref_true": 14553,
+    "new_true": 14539,
+    "xor_cells": 14,
+    "xor_frac_of_valid_cells": 4.942612735700845e-05,
+    "xor_frac_of_signal_cells": 0.000962000962000962,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 4,
+    "first_diff": "2019-04-04 CTLT ref=True"
+   },
+   "macd.exits": {
+    "ref_true": 11332,
+    "new_true": 11061,
+    "xor_cells": 313,
+    "xor_frac_of_valid_cells": 0.0011050269901959745,
+    "xor_frac_of_signal_cells": 0.027569805337796176,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 148,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1258,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "ENS.entries": {
+    "ref_true": 4936,
+    "new_true": 4935,
+    "xor_cells": 1,
+    "xor_frac_of_valid_cells": 3.5304376683577464e-06,
+    "xor_frac_of_signal_cells": 0.0002025931928687196,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 1,
+    "first_diff": "2019-02-07 EQT ref=True"
+   },
+   "ENS.exits": {
+    "ref_true": 24829,
+    "new_true": 24616,
+    "xor_cells": 215,
+    "xor_frac_of_valid_cells": 0.0007590440986969155,
+    "xor_frac_of_signal_cells": 0.008658880386629078,
+    "xor_cells_after_burnin": 1,
+    "symbols_affected": 131,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "A_ggt_pd2 -> E_vbt_default": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7708,
+    "xor_cells": 1292,
+    "xor_frac_of_valid_cells": 0.004561325467518208,
+    "xor_frac_of_signal_cells": 0.1599603813297016,
+    "xor_cells_after_burnin": 1185,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-27 DLTR ref=False"
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "rsi.entries": {
+    "ref_true": 3209,
+    "new_true": 7590,
+    "xor_cells": 9027,
+    "xor_frac_of_valid_cells": 0.03186926083226538,
+    "xor_frac_of_signal_cells": 0.9106224150105922,
+    "xor_cells_after_burnin": 8284,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-24 CRM ref=True"
+   },
+   "rsi.exits": {
+    "ref_true": 15834,
+    "new_true": 16603,
+    "xor_cells": 23483,
+    "xor_frac_of_valid_cells": 0.08290526776604495,
+    "xor_frac_of_signal_cells": 0.8398783977110157,
+    "xor_cells_after_burnin": 21108,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-24 AAPL ref=False"
+   },
+   "ema.entries": {
+    "ref_true": 2779,
+    "new_true": 2613,
+    "xor_cells": 166,
+    "xor_frac_of_valid_cells": 0.0005860526529473859,
+    "xor_frac_of_signal_cells": 0.05973371716444764,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 149,
+    "first_diff": "2019-01-03 AEE ref=True"
+   },
+   "ema.exits": {
+    "ref_true": 2813,
+    "new_true": 2649,
+    "xor_cells": 164,
+    "xor_frac_of_valid_cells": 0.0005789917776106704,
+    "xor_frac_of_signal_cells": 0.05830074653394952,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 134,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "macd.entries": {
+    "ref_true": 14553,
+    "new_true": 18413,
+    "xor_cells": 8318,
+    "xor_frac_of_valid_cells": 0.029366180525399733,
+    "xor_frac_of_signal_cells": 0.40296482898943903,
+    "xor_cells_after_burnin": 7707,
+    "symbols_affected": 150,
+    "first_diff": "2019-03-22 BAC ref=False"
+   },
+   "macd.exits": {
+    "ref_true": 11332,
+    "new_true": 9565,
+    "xor_cells": 18799,
+    "xor_frac_of_valid_cells": 0.06636869772745728,
+    "xor_frac_of_signal_cells": 0.9471483272873841,
+    "xor_cells_after_burnin": 16848,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1286,
+    "xor_cells": 100,
+    "xor_frac_of_valid_cells": 0.0003530437668357746,
+    "xor_frac_of_signal_cells": 0.07564296520423601,
+    "xor_cells_after_burnin": 98,
+    "symbols_affected": 64,
+    "first_diff": "2019-04-24 AVY ref=False"
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "ENS.entries": {
+    "ref_true": 4936,
+    "new_true": 7531,
+    "xor_cells": 5161,
+    "xor_frac_of_valid_cells": 0.01822058880639433,
+    "xor_frac_of_signal_cells": 0.5855457227138643,
+    "xor_cells_after_burnin": 4732,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-13 LW ref=True"
+   },
+   "ENS.exits": {
+    "ref_true": 24829,
+    "new_true": 27436,
+    "xor_cells": 16469,
+    "xor_frac_of_valid_cells": 0.058142777960183724,
+    "xor_frac_of_signal_cells": 0.4792097069863532,
+    "xor_cells_after_burnin": 14682,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "B_ggt_pd3 -> C_vbt_matched": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7154,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "rsi.entries": {
+    "ref_true": 3209,
+    "new_true": 3193,
+    "xor_cells": 16,
+    "xor_frac_of_valid_cells": 5.648700269372394e-05,
+    "xor_frac_of_signal_cells": 0.004985976939856653,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 14,
+    "first_diff": "2019-01-24 CRM ref=True"
+   },
+   "rsi.exits": {
+    "ref_true": 15834,
+    "new_true": 15745,
+    "xor_cells": 89,
+    "xor_frac_of_valid_cells": 0.0003142089524838394,
+    "xor_frac_of_signal_cells": 0.005620815965643552,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 68,
+    "first_diff": "2019-01-24 DHI ref=True"
+   },
+   "ema.entries": {
+    "ref_true": 2779,
+    "new_true": 2613,
+    "xor_cells": 166,
+    "xor_frac_of_valid_cells": 0.0005860526529473859,
+    "xor_frac_of_signal_cells": 0.05973371716444764,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 149,
+    "first_diff": "2019-01-03 AEE ref=True"
+   },
+   "ema.exits": {
+    "ref_true": 2813,
+    "new_true": 2649,
+    "xor_cells": 164,
+    "xor_frac_of_valid_cells": 0.0005789917776106704,
+    "xor_frac_of_signal_cells": 0.05830074653394952,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 134,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "macd.entries": {
+    "ref_true": 14553,
+    "new_true": 14539,
+    "xor_cells": 14,
+    "xor_frac_of_valid_cells": 4.942612735700845e-05,
+    "xor_frac_of_signal_cells": 0.000962000962000962,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 4,
+    "first_diff": "2019-04-04 CTLT ref=True"
+   },
+   "macd.exits": {
+    "ref_true": 11332,
+    "new_true": 11061,
+    "xor_cells": 313,
+    "xor_frac_of_valid_cells": 0.0011050269901959745,
+    "xor_frac_of_signal_cells": 0.027569805337796176,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 148,
+    "first_diff": "2019-01-03 A ref=True"
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1258,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 2,
+    "xor_frac_of_valid_cells": 7.060875336715493e-06,
+    "xor_frac_of_signal_cells": 0.00012027904738994468,
+    "xor_cells_after_burnin": 2,
+    "symbols_affected": 1,
+    "first_diff": "2021-12-31 PARA ref=True"
+   },
+   "ENS.entries": {
+    "ref_true": 4936,
+    "new_true": 4935,
+    "xor_cells": 1,
+    "xor_frac_of_valid_cells": 3.5304376683577464e-06,
+    "xor_frac_of_signal_cells": 0.0002025931928687196,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 1,
+    "first_diff": "2019-02-07 EQT ref=True"
+   },
+   "ENS.exits": {
+    "ref_true": 24829,
+    "new_true": 24616,
+    "xor_cells": 215,
+    "xor_frac_of_valid_cells": 0.0007590440986969155,
+    "xor_frac_of_signal_cells": 0.008658880386629078,
+    "xor_cells_after_burnin": 1,
+    "symbols_affected": 131,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "C_vbt_matched -> D_vbt_matched_vbtcross": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7154,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "rsi.entries": {
+    "ref_true": 3193,
+    "new_true": 3193,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "rsi.exits": {
+    "ref_true": 15745,
+    "new_true": 15745,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ema.entries": {
+    "ref_true": 2613,
+    "new_true": 2613,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ema.exits": {
+    "ref_true": 2649,
+    "new_true": 2649,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "macd.entries": {
+    "ref_true": 14539,
+    "new_true": 14539,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "macd.exits": {
+    "ref_true": 11061,
+    "new_true": 11061,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1258,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ENS.entries": {
+    "ref_true": 4935,
+    "new_true": 4935,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ENS.exits": {
+    "ref_true": 24616,
+    "new_true": 24616,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "D_vbt_matched_vbtcross -> E_vbt_default": {
+   "bb.entries": {
+    "ref_true": 7154,
+    "new_true": 7708,
+    "xor_cells": 1292,
+    "xor_frac_of_valid_cells": 0.004561325467518208,
+    "xor_frac_of_signal_cells": 0.1599603813297016,
+    "xor_cells_after_burnin": 1185,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-27 DLTR ref=False"
+   },
+   "bb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "rsi.entries": {
+    "ref_true": 3193,
+    "new_true": 7590,
+    "xor_cells": 9017,
+    "xor_frac_of_valid_cells": 0.0318339564555818,
+    "xor_frac_of_signal_cells": 0.9108080808080808,
+    "xor_cells_after_burnin": 8284,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-28 PFE ref=False"
+   },
+   "rsi.exits": {
+    "ref_true": 15745,
+    "new_true": 16603,
+    "xor_cells": 23416,
+    "xor_frac_of_valid_cells": 0.08266872844226499,
+    "xor_frac_of_signal_cells": 0.8398249766874686,
+    "xor_cells_after_burnin": 21108,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-24 AAPL ref=False"
+   },
+   "ema.entries": {
+    "ref_true": 2613,
+    "new_true": 2613,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ema.exits": {
+    "ref_true": 2649,
+    "new_true": 2649,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "macd.entries": {
+    "ref_true": 14539,
+    "new_true": 18413,
+    "xor_cells": 8304,
+    "xor_frac_of_valid_cells": 0.029316754398042724,
+    "xor_frac_of_signal_cells": 0.40255962769051773,
+    "xor_cells_after_burnin": 7707,
+    "symbols_affected": 150,
+    "first_diff": "2019-03-22 BAC ref=False"
+   },
+   "macd.exits": {
+    "ref_true": 11061,
+    "new_true": 9565,
+    "xor_cells": 18530,
+    "xor_frac_of_valid_cells": 0.06541900999466904,
+    "xor_frac_of_signal_cells": 0.9464705281438349,
+    "xor_cells_after_burnin": 16848,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-21 AAPL ref=False"
+   },
+   "vbb.entries": {
+    "ref_true": 1258,
+    "new_true": 1286,
+    "xor_cells": 100,
+    "xor_frac_of_valid_cells": 0.0003530437668357746,
+    "xor_frac_of_signal_cells": 0.07564296520423601,
+    "xor_cells_after_burnin": 98,
+    "symbols_affected": 64,
+    "first_diff": "2019-04-24 AVY ref=False"
+   },
+   "vbb.exits": {
+    "ref_true": 16627,
+    "new_true": 16627,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "ENS.entries": {
+    "ref_true": 4935,
+    "new_true": 7531,
+    "xor_cells": 5162,
+    "xor_frac_of_valid_cells": 0.018224119244062687,
+    "xor_frac_of_signal_cells": 0.5856591785795325,
+    "xor_cells_after_burnin": 4732,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-07 EQT ref=False"
+   },
+   "ENS.exits": {
+    "ref_true": 24616,
+    "new_true": 27436,
+    "xor_cells": 16270,
+    "xor_frac_of_valid_cells": 0.05744022086418053,
+    "xor_frac_of_signal_cells": 0.47627411375545214,
+    "xor_cells_after_burnin": 14681,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-24 AAPL ref=False"
+   }
+  }
+ },
+ "attribution_ensemble": {
+  "C_vbt_matched:bb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "C_vbt_matched:rsi": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4935,
+    "xor_cells": 1,
+    "xor_frac_of_valid_cells": 3.5304376683577464e-06,
+    "xor_frac_of_signal_cells": 0.0002025931928687196,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 1,
+    "first_diff": "2019-02-07 EQT ref=True"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24748,
+    "xor_cells": 81,
+    "xor_frac_of_valid_cells": 0.00028596545113697744,
+    "xor_frac_of_signal_cells": 0.003262314229328608,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 65,
+    "first_diff": "2019-01-24 DHI ref=True"
+   }
+  },
+  "C_vbt_matched:ema": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24696,
+    "xor_cells": 133,
+    "xor_frac_of_valid_cells": 0.00046954820989158027,
+    "xor_frac_of_signal_cells": 0.0053566394135889485,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 128,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "C_vbt_matched:macd": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24696,
+    "xor_cells": 133,
+    "xor_frac_of_valid_cells": 0.00046954820989158027,
+    "xor_frac_of_signal_cells": 0.0053566394135889485,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 128,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "C_vbt_matched:vbb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "D_vbt_matched_vbtcross:bb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "D_vbt_matched_vbtcross:rsi": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4935,
+    "xor_cells": 1,
+    "xor_frac_of_valid_cells": 3.5304376683577464e-06,
+    "xor_frac_of_signal_cells": 0.0002025931928687196,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 1,
+    "first_diff": "2019-02-07 EQT ref=True"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24748,
+    "xor_cells": 81,
+    "xor_frac_of_valid_cells": 0.00028596545113697744,
+    "xor_frac_of_signal_cells": 0.003262314229328608,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 65,
+    "first_diff": "2019-01-24 DHI ref=True"
+   }
+  },
+  "D_vbt_matched_vbtcross:ema": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24696,
+    "xor_cells": 133,
+    "xor_frac_of_valid_cells": 0.00046954820989158027,
+    "xor_frac_of_signal_cells": 0.0053566394135889485,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 128,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "D_vbt_matched_vbtcross:macd": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24696,
+    "xor_cells": 133,
+    "xor_frac_of_valid_cells": 0.00046954820989158027,
+    "xor_frac_of_signal_cells": 0.0053566394135889485,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 128,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "D_vbt_matched_vbtcross:vbb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "E_vbt_default:bb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 5197,
+    "xor_cells": 509,
+    "xor_frac_of_valid_cells": 0.0017969927731940928,
+    "xor_frac_of_signal_cells": 0.09565871076865251,
+    "xor_cells_after_burnin": 474,
+    "symbols_affected": 145,
+    "first_diff": "2019-03-22 LHX ref=False"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  },
+  "E_vbt_default:rsi": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 5707,
+    "xor_cells": 3099,
+    "xor_frac_of_valid_cells": 0.010940826334240655,
+    "xor_frac_of_signal_cells": 0.4510260515208849,
+    "xor_cells_after_burnin": 2842,
+    "symbols_affected": 150,
+    "first_diff": "2019-02-13 LW ref=True"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 27575,
+    "xor_cells": 16086,
+    "xor_frac_of_valid_cells": 0.05679062033320271,
+    "xor_frac_of_signal_cells": 0.4697328077091546,
+    "xor_cells_after_burnin": 14454,
+    "symbols_affected": 150,
+    "first_diff": "2019-01-24 AAPL ref=False"
+   }
+  },
+  "E_vbt_default:ema": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4936,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24696,
+    "xor_cells": 133,
+    "xor_frac_of_valid_cells": 0.00046954820989158027,
+    "xor_frac_of_signal_cells": 0.0053566394135889485,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 128,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "E_vbt_default:macd": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 6417,
+    "xor_cells": 2153,
+    "xor_frac_of_valid_cells": 0.0076010322999742275,
+    "xor_frac_of_signal_cells": 0.3188212646231305,
+    "xor_cells_after_burnin": 1946,
+    "symbols_affected": 150,
+    "first_diff": "2019-03-22 CBRE ref=False"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24687,
+    "xor_cells": 388,
+    "xor_frac_of_valid_cells": 0.0013698098153228056,
+    "xor_frac_of_signal_cells": 0.015549855722988138,
+    "xor_cells_after_burnin": 232,
+    "symbols_affected": 147,
+    "first_diff": "2019-01-03 A ref=True"
+   }
+  },
+  "E_vbt_default:vbb": {
+   "entries": {
+    "ref_true": 4936,
+    "new_true": 4944,
+    "xor_cells": 48,
+    "xor_frac_of_valid_cells": 0.00016946100808117184,
+    "xor_frac_of_signal_cells": 0.009669621273166801,
+    "xor_cells_after_burnin": 47,
+    "symbols_affected": 37,
+    "first_diff": "2019-09-10 MRK ref=True"
+   },
+   "exits": {
+    "ref_true": 24829,
+    "new_true": 24829,
+    "xor_cells": 0,
+    "xor_frac_of_valid_cells": 0.0,
+    "xor_frac_of_signal_cells": 0.0,
+    "xor_cells_after_burnin": 0,
+    "symbols_affected": 0,
+    "first_diff": null
+   }
+  }
+ },
+ "live_window": {
+  "B_ggt_pd3": {
+   "entries": {
+    "sessions": 120,
+    "ref_signals": 301,
+    "new_signals": 301,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   },
+   "exits": {
+    "sessions": 120,
+    "ref_signals": 1466,
+    "new_signals": 1466,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   }
+  },
+  "C_vbt_matched": {
+   "entries": {
+    "sessions": 120,
+    "ref_signals": 301,
+    "new_signals": 301,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   },
+   "exits": {
+    "sessions": 120,
+    "ref_signals": 1466,
+    "new_signals": 1466,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   }
+  },
+  "D_vbt_matched_vbtcross": {
+   "entries": {
+    "sessions": 120,
+    "ref_signals": 301,
+    "new_signals": 301,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   },
+   "exits": {
+    "sessions": 120,
+    "ref_signals": 1466,
+    "new_signals": 1466,
+    "differing_cells": 0,
+    "sessions_with_any_diff": 0,
+    "examples": []
+   }
+  },
+  "E_vbt_default": {
+   "entries": {
+    "sessions": 120,
+    "ref_signals": 301,
+    "new_signals": 456,
+    "differing_cells": 315,
+    "sessions_with_any_diff": 95,
+    "examples": [
+     "2026-05-11 CFG ref=False",
+     "2026-05-11 CMG ref=False",
+     "2026-05-11 GPC ref=False",
+     "2026-05-11 IDXX ref=False",
+     "2026-05-11 ISRG ref=True"
+    ]
+   },
+   "exits": {
+    "sessions": 120,
+    "ref_signals": 1466,
+    "new_signals": 1631,
+    "differing_cells": 927,
+    "sessions_with_any_diff": 119,
+    "examples": [
+     "2026-05-11 AEE ref=False",
+     "2026-05-11 CINF ref=True",
+     "2026-05-11 COHR ref=False",
+     "2026-05-11 CPT ref=False",
+     "2026-05-11 GE ref=False"
+    ]
+   }
+  }
+ }
+}

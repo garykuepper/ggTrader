@@ -1,0 +1,5 @@
+signals_1group_500sym_trailSL_pct sim=0.046s value=5.269s trades.count=1.208s
+signals_1group_500sym_nostop_pct sim=0.042s value=0.081s trades.count=0.004s
+signals_48grp_x100sym_trailSL_pct sim=0.473s value=0.860s trades.count=0.535s
+orders_48grp_x100sym_targetpct_auto sim=1.150s value=0.573s trades.count=0.034s
+orders_1group_500sym_targetpct_auto sim=0.349s value=0.089s trades.count=0.004s

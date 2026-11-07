@@ -1,0 +1,4 @@
+# masterrs_default
+FAILED tests/engine/test_defaults.py::test_flat_curve_sharpe_is_still_inf_upstream
+1 failed, 330 passed in 112.41s (0:01:52)
+exit=1

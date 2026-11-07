@@ -237,6 +237,7 @@ retire the stock picks so only the SPY sweep remains in the stock-trading path
 ([next steps](../../../docs/next_steps.md), [brief §§1 and 8](2026-10-20-momentum-retest.md)).
 This is a future owner action. Production remains frozen; this study changes
 research code and documentation only. The owner's separate A23 allocation is unchanged.
+[Superseded: owner instructions 2026-10-20 forbid retirement recommendations; documentation defect corrected 2026-11-06.]
 
 ## 6. Contrarian Evaluation & Parked Research
 

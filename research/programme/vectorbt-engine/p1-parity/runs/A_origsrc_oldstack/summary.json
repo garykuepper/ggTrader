@@ -1,0 +1,61 @@
+{
+ "tag": "A_origsrc_oldstack",
+ "pandas": "2.3.3",
+ "numpy": "2.2.6",
+ "src": "/tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/p1/orig/src",
+ "engine_requested": "default",
+ "numba": "0.61.2",
+ "vectorbt": "0.28.5",
+ "rust_available": null,
+ "vbt_engine_setting": null,
+ "ggtrader_file": "/tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/p1/orig/src/ggTrader/__init__.py",
+ "load_s": 0.06837582588195801,
+ "ohlcv_index_dtype": "datetime64[us, UTC]",
+ "n_symbols": 150,
+ "rows": 860,
+ "grid": 48,
+ "pit_mask_s": 50.92512130737305,
+ "sweep_signal_s": 16.071332216262817,
+ "sweep_weight_s": 27.78245997428894,
+ "wfo_s": 109.8335587978363,
+ "folds": 2,
+ "wfo_oos_len": 125,
+ "wfo_skipped_folds": [],
+ "peak_rss_mb": 1669.08203125,
+ "pct_change_probe": {
+  "calls": {
+   "simulate.py:296": 8,
+   "metrics.py:15": 304,
+   "simulate.py:82": 1,
+   "wfo.py:592": 2,
+   "p1_parity_driver.py:365": 2,
+   "p1_parity_driver.py:368": 2,
+   "event_study.py:122": 1,
+   "idio_vol.py:72": 4,
+   "max_effect.py:52": 4,
+   "feature_gate.py:50": 18,
+   "overlay.py:88": 2
+  },
+  "explicit_fill_method": {
+   "simulate.py:296": 8,
+   "metrics.py:15": 0,
+   "simulate.py:82": 1,
+   "wfo.py:592": 0,
+   "p1_parity_driver.py:365": 0,
+   "p1_parity_driver.py:368": 2,
+   "event_study.py:122": 0,
+   "idio_vol.py:72": 0,
+   "max_effect.py:52": 0,
+   "feature_gate.py:50": 0,
+   "overlay.py:88": 0
+  },
+  "calls_with_nonleading_nan": {
+   "p1_parity_driver.py:365": 2,
+   "p1_parity_driver.py:368": 2,
+   "event_study.py:122": 1,
+   "idio_vol.py:72": 3,
+   "max_effect.py:52": 3,
+   "feature_gate.py:50": 9
+  }
+ }
+}

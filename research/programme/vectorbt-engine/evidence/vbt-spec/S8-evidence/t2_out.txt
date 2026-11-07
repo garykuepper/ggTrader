@@ -1,0 +1,11 @@
+OK   sklearn TimeSeriesSplit(gap): [(680, 63), (743, 63), (806, 63), (869, 63), (932, 63)]
+OK   skfolio CombinatorialPurgedCV: CPCV n_splits=28 paths=7 first_train=740 test_parts=2
+OK   skfolio WalkForward calendar freq: WalkForward freq=MS folds=33 train_len0=261 test_len0=23
+OK   purgedcv exports: ['ArrayLike1D', 'BaseTemporalSplitter', 'CombinatorialPurgedCV', 'CombinatoriallySymmetricCV', 'DSRDiagnostics', 'EmbargoViolationError', 'GroupLeakageError', 'HorizonLike', 'PBOResult', 'PathMetricFn', 'PerformanceMetric', 'PurgedGroupKFold', 'PurgedKFold', 'TemporalCVError', 'TemporalLeakageError', 'TimesLike', 'WalkForwardSplit', 'apply_embargo', 'audit_splitter', 'default_backtest_metrics', 'deflated_sharpe_ratio', 'deflated_sharpe_ratio_full', 'diagnostics', 'effective_n_trials', 'exceptions']
+FAIL purgedcv PurgedKFold sig: TypeError: PurgedKFold.__init__() missing 2 required keyword-only arguments: 'prediction_times' and 'evaluation_times' | ^^^^
+OK   timeseriescv: ['CombPurgedKFoldCV', 'PurgedWalkForwardCV']
+OK   jsharpe exports: ['FDR_critical_value', 'adjusted_p_values_bonferroni', 'adjusted_p_values_holm', 'adjusted_p_values_sidak', 'autocorrelation', 'control_for_FDR', 'critical_sharpe_ratio', 'effective_rank', 'expected_maximum_sharpe_ratio', 'generate_autocorrelated_non_gaussian_data', 'generate_non_gaussian_data', 'get_random_correlation_matrix', 'make_expectation_gh', 'minimum_track_record_length', 'minimum_variance_weights_for_correlated_assets', 'number_of_clusters', 'oFDR', 'pFDR', 'ppoints', 'probabilistic_sharpe_ratio', 'robust_covariance_inverse', 'sharpe', 'sharpe_ratio_power', 'sharpe_ratio_variance', 'variance_of_the_maximum_of_k_Sharpe_ratios']
+OK   deflated_sharpe exports: ['DecayAssessment', 'DecaySignal', 'RegimeDecayDetector', 'RegimeDetectorConfig', 'StrategyBaseline', 'TradeResult', 'benjamini_hochberg', 'deflated_sharpe_ratio', 'gates', 'min_backtest_length', 'regime']
+OK   arch SPA: SPA pvalues={'lower': 0.77, 'consistent': 0.827, 'upper': 0.847}
+OK   arch StationaryBootstrap CI: Sharpe 95% CI [0.38 2.36]
+OK   scipy.stats.bootstrap: scipy bootstrap CI ConfidenceInterval(low=np.float64(0.36684611883387974), high=np.float64(2.3773788411223657))

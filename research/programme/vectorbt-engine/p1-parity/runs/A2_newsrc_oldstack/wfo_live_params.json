@@ -1,0 +1,30 @@
+{
+ "combo": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+ "params": {
+  "bb_period": 20,
+  "bb_std": 2.5,
+  "divergence_window": 10,
+  "ema_fast": 10,
+  "ema_slow": 50,
+  "macd_fast": 12,
+  "macd_signal": 9,
+  "macd_slow": 26,
+  "min_agree": 4,
+  "min_agree_exit": 2,
+  "rsi_oversold": 30,
+  "rsi_period": 14,
+  "vol_mult": 1.5,
+  "vol_period": 20,
+  "weekly_rsi_exit": 50,
+  "weekly_rsi_oversold": 30,
+  "weekly_rsi_period": 14
+ },
+ "train_metrics": {
+  "sharpe": 1.9169603615059008,
+  "cagr_pct": 1.6065753614766365,
+  "max_drawdown_pct": -0.43493038662922867
+ },
+ "stability": 1,
+ "train_start": "2021-07-31 00:00:00+00:00",
+ "train_end": "2022-07-31 00:00:00+00:00"
+}

@@ -1,0 +1,414 @@
+{
+  "snapshot": "/tmp/claude-1000/-home-flynn-ggTrader/6c9c1710-29af-4adf-b77b-ad700b6fcc23/scratchpad/p8/copy/data/snapshots/ohlcv_20261106.parquet",
+  "symbols_requested": 150,
+  "tape": {
+    "symbols": 150,
+    "bars": 1929,
+    "first": "2019-03-01",
+    "last": "2026-10-30"
+  },
+  "indicators": {
+    "wilder_rsi_14": {
+      "all_valid": {
+        "cells": 284761,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 1950
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "bb_lower_20_2": {
+      "all_valid": {
+        "cells": 284659,
+        "max_abs": 1.1368683772161603e-12,
+        "max_rel": 4.935922799027652e-15,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      },
+      "after_burn_in": {
+        "cells": 257509,
+        "max_abs": 1.1368683772161603e-12,
+        "max_rel": 4.935922799027652e-15,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "bb_middle_20": {
+      "all_valid": {
+        "cells": 284659,
+        "max_abs": 1.1368683772161603e-12,
+        "max_rel": 4.516284578890422e-15,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      },
+      "after_burn_in": {
+        "cells": 257509,
+        "max_abs": 1.1368683772161603e-12,
+        "max_rel": 4.516284578890422e-15,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "ema_10": {
+      "all_valid": {
+        "cells": 287461,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 1350
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "ema_20": {
+      "all_valid": {
+        "cells": 285961,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 2850
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "ema_50": {
+      "all_valid": {
+        "cells": 281461,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 7350
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "macd_line": {
+      "all_valid": {
+        "cells": 285061,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 3750
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 0.0,
+        "max_rel": 0.0,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "macd_signal": {
+      "all_valid": {
+        "cells": 283861,
+        "max_abs": 0.8303515870055449,
+        "max_rel": 7.425361041683255,
+        "only_new_valid": 0,
+        "only_old_valid": 4950
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 2.7755575615628914e-17,
+        "max_rel": 9.200388337619578e-16,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "macd_hist": {
+      "all_valid": {
+        "cells": 283861,
+        "max_abs": 0.8303515870055449,
+        "max_rel": 175.40370718031303,
+        "only_new_valid": 0,
+        "only_old_valid": 4950
+      },
+      "after_burn_in": {
+        "cells": 258811,
+        "max_abs": 2.7755575615628914e-17,
+        "max_rel": 6.81359914720616e-15,
+        "only_new_valid": 0,
+        "only_old_valid": 0
+      }
+    },
+    "atr_14": {
+      "all_valid": {
+        "cells": 285414,
+        "max_abs": 2.1316282072803006e-14,
+        "max_rel": 0.0040602442043434295,
+        "only_new_valid": 152,
+        "only_old_valid": 0
+      },
+      "after_burn_in": {
+        "cells": 257514,
+        "max_abs": 2.1316282072803006e-14,
+        "max_rel": 0.0040602442043434295,
+        "only_new_valid": 2,
+        "only_old_valid": 0
+      }
+    }
+  },
+  "voters": {
+    "bb_entry": {
+      "cells_legacy": 7240,
+      "cells_engine": 7240,
+      "xor_total": 0,
+      "xor_within_burn_in": 0,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "bb_exit": {
+      "cells_legacy": 16830,
+      "cells_engine": 16829,
+      "xor_total": 1,
+      "xor_within_burn_in": 0,
+      "xor_after_burn_in": 1,
+      "after_burn_in_explained_by_tie": 1,
+      "after_burn_in_unexplained": 0
+    },
+    "rsi_entry": {
+      "cells_legacy": 3275,
+      "cells_engine": 3248,
+      "xor_total": 27,
+      "xor_within_burn_in": 27,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "rsi_exit": {
+      "cells_legacy": 16123,
+      "cells_engine": 16040,
+      "xor_total": 83,
+      "xor_within_burn_in": 83,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "ema_entry": {
+      "cells_legacy": 2878,
+      "cells_engine": 2695,
+      "xor_total": 183,
+      "xor_within_burn_in": 183,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "ema_exit": {
+      "cells_legacy": 2892,
+      "cells_engine": 2712,
+      "xor_total": 180,
+      "xor_within_burn_in": 180,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "macd_exit": {
+      "cells_legacy": 11593,
+      "cells_engine": 11307,
+      "xor_total": 328,
+      "xor_within_burn_in": 328,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    },
+    "macd_entry_ggtrader_rule_on_engine_hist": {
+      "cells_legacy": 13856,
+      "cells_engine": 13854,
+      "xor_total": 6,
+      "xor_within_burn_in": 6,
+      "xor_after_burn_in": 0,
+      "after_burn_in_explained_by_tie": 0,
+      "after_burn_in_unexplained": 0
+    }
+  },
+  "simulator": {
+    "rust": {
+      "signals_tape_plain": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.28,
+        "seconds_engine": 0.26
+      },
+      "signals_tape_trail5": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.11,
+        "seconds_engine": 0.24
+      },
+      "weights_tape": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          2
+        ],
+        "n_trades_equal": true
+      },
+      "signals_synthetic_plain": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.05,
+        "seconds_engine": 0.15
+      },
+      "signals_synthetic_trail5": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.05,
+        "seconds_engine": 0.16
+      },
+      "weights_synthetic": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          2
+        ],
+        "n_trades_equal": true
+      }
+    },
+    "numba": {
+      "signals_tape_plain": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 4.91,
+        "seconds_engine": 0.24
+      },
+      "signals_tape_trail5": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.14,
+        "seconds_engine": 0.23
+      },
+      "weights_tape": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          1929,
+          2
+        ],
+        "n_trades_equal": true
+      },
+      "signals_synthetic_plain": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.05,
+        "seconds_engine": 0.15
+      },
+      "signals_synthetic_trail5": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          3
+        ],
+        "n_trades_equal": true,
+        "seconds_legacy": 0.05,
+        "seconds_engine": 0.16
+      },
+      "weights_synthetic": {
+        "bit_identical": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          500,
+          2
+        ],
+        "n_trades_equal": true
+      }
+    }
+  },
+  "simulator_summary": {
+    "all_bit_identical": true
+  },
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": null,
+    "git_dirty": false,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "equity rebased at the first bar, returns from the second bar (curve_stats window)",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-07T00:51:54Z"
+  }
+}

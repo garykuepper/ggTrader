@@ -1,0 +1,11 @@
+load=2.67 old_numba
+{"vectorbt": "0.28.5", "pandas": "2.3.3", "engine": "na", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[19.44, 19.21], [4.3, 4.3], [4.29, 4.29]]}
+load=3.39 new_numba
+{"vectorbt": "1.2.0", "pandas": "3.1.1", "engine": "numba", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[32.83, 32.71], [13.5, 13.35], [13.25, 13.25]]}
+load=2.42 new_auto
+{"vectorbt": "1.2.0", "pandas": "3.1.1", "engine": "auto", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[13.76, 13.74], [13.09, 13.08], [13.18, 13.1]]}
+load=2.40 old_numba2
+{"vectorbt": "0.28.5", "pandas": "2.3.3", "engine": "na", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[18.96, 18.82], [4.25, 4.25], [4.45, 4.42]]}
+load=2.52 new_auto2
+{"vectorbt": "1.2.0", "pandas": "3.1.1", "engine": "auto", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[15.47, 14.07], [15.27, 13.88], [15.01, 13.82]]}
+DONE

@@ -1,0 +1,3 @@
+FAILS     pandas-ta |   × No solution found when resolving dependencies:   ╰─▶ Because only vectorbt==1.2.0 is available and vectorbt==1.2.0 depends 
+RESOLVES  pandas-ta-openbb |  + pandas-ta-openbb==0.4.25 
+RESOLVES  talipp |  + talipp==2.7.0 

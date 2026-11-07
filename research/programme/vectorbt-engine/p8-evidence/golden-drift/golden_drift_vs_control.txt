@@ -1,0 +1,14 @@
+control/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+control/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v112/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v112/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v111/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v111/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v110/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+v110/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+master/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+master/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+masterrs/rust vs control/rust : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+masterrs/numba vs control/numba : max_abs=0.000e+00 max_rel=0.000e+00 discrete_or_scalar_diffs=0
+control rust vs numba: max_abs=1.110e-16 max_rel=1.011e-14 discrete_or_scalar_diffs=1
+    ('/mini_wfo/folds[1]/test_max_drawdown', 'val', -0.010982891467746891, -0.010982891467747002)

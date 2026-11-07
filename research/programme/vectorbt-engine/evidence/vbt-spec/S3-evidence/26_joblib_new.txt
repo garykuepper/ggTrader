@@ -1,0 +1,3 @@
+lightgbm 4.7.0 sklearn 1.9.1 LGBMClassifier
+pred [0.577714003302, 0.578312529157, 0.527515454264, 0.580844309515, 0.483242355215]
+warnings: ['InconsistentVersionWarning: Trying to unpickle estimator LabelEncoder from version 1.9.0 when using version 1.9.1. Thi']

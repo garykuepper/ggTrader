@@ -1,0 +1,5 @@
+vectorbt==1.2.0
+vectorbt-rust==1.2.0
+pandas>=3.0.3
+numpy>=2.4.6
+numba>=0.66

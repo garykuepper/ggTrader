@@ -1,0 +1,950 @@
+{
+  "run": "ref_cross_asset_sleeve_17fold",
+  "reference": "ref_cross_asset_sleeve_17fold",
+  "n_folds": {
+    "new": 17,
+    "reference": 17
+  },
+  "grid_size": {
+    "new": 3,
+    "reference": 3
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.7436385376179655,
+          "ref": 0.743638537617966,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.5192433517070816,
+          "ref": 1.519243351707083,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -1.211228177162545,
+          "ref": -1.2112281771625462,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": -0.7972575136179213,
+          "ref": -0.7972575136179214,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.6302866943978277,
+          "ref": 0.6302866943978831,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 2,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.2740087069972463,
+          "ref": 0.27400870699724655,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.25044510282541377,
+          "ref": 0.2504451028254146,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -0.10400771266213012,
+          "ref": -0.10400771266213012,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 3,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.0,
+          "ref": 0.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.183300412203785,
+          "ref": 0.18330041220378473,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": -0.04971775286561218,
+          "ref": -0.04971775286561354,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -0.5870033388624616,
+          "ref": -0.5870033388624589,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.6904018813536111,
+          "ref": 0.6904018813536353,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 4,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.0,
+          "ref": 0.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.08246923844771759,
+          "ref": 0.08246923844771775,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": -0.5344987445095812,
+          "ref": -0.5344987445095806,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.9786475286459048,
+          "ref": 0.9786475286459135,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7247733865170339,
+          "ref": 0.7247733865170554,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 5,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.0,
+          "ref": 0.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.12747235029499865,
+          "ref": 0.12747235029499854,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": -0.2870852223729876,
+          "ref": -0.28708522237298806,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.7056325783935128,
+          "ref": 0.7056325783935116,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 6,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.24920761443690237,
+          "ref": 0.2492076144369022,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.17719759248235484,
+          "ref": 0.17719759248235425,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 4.123461128098158,
+          "ref": 4.123461128098145,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 7,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.4816574517896052,
+          "ref": 0.4816574517896051,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.8135022247146512,
+          "ref": 0.8135022247146511,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -2.7839331447574787,
+          "ref": -2.783933144757478,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": -3.422157998073069,
+          "ref": -3.422157998073069,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 8,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.4238132822567964,
+          "ref": 0.423813282256796,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.667042012529706,
+          "ref": 0.667042012529705,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 6.632044858673755,
+          "ref": 6.6320448586738,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 9.94246949082297,
+          "ref": 9.942469490823052,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.6000000000000001,
+          "ref": 0.6000000000000001,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 9,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.7889017919264043,
+          "ref": 0.7889017919264064,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.6672155974987803,
+          "ref": 1.667215597498788,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.88784906697243,
+          "ref": 1.8878490669724135,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 1.132336495534622,
+          "ref": 1.1323364955346071,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7835777630615776,
+          "ref": 0.7270582647459044,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 10,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.8790570946788474,
+          "ref": 0.879057094678847,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 2.03939616645626,
+          "ref": 2.039396166456257,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 3.433604431696928,
+          "ref": 3.433604431696918,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 1.6836377787564947,
+          "ref": 1.683637778756492,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 11,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.8360105941995002,
+          "ref": 0.8360105941994985,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.8561089596085873,
+          "ref": 1.8561089596085805,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.7966887650198753,
+          "ref": 1.7966887650198733,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.9679866883454716,
+          "ref": 0.9679866883454742,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7306103159875645,
+          "ref": 0.7306103159875951,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 12,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.9848564501597371,
+          "ref": 0.9848564501597379,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 3.144246857700234,
+          "ref": 3.1442468577002565,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.9102082595721255,
+          "ref": 1.9102082595721228,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.6075249005637205,
+          "ref": 0.6075249005637153,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 13,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.8828195979478096,
+          "ref": 0.8828195979478087,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 2.107052508444875,
+          "ref": 2.10705250844487,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -0.6813825369965414,
+          "ref": -0.6813825369965365,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": -0.3233818494155329,
+          "ref": -0.32338184941553133,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 14,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.46346774353462367,
+          "ref": 0.4634677435346224,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.7680838564443074,
+          "ref": 0.7680838564443043,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 4.9909562996687,
+          "ref": 4.99095629966869,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 6.497931518536722,
+          "ref": 6.497931518536735,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 15,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.5283780403739615,
+          "ref": 0.5283780403739617,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.9274321154638455,
+          "ref": 0.927432115463846,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 3.26358711108722,
+          "ref": 3.263587111087209,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 3.518949858076643,
+          "ref": 3.5189498580766294,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7365703447105892,
+          "ref": 0.7365703447105831,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 16,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.630421657895005,
+          "ref": 0.6304216578950039,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.1804222987429556,
+          "ref": 1.180422298742953,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.3221689139085575,
+          "ref": 1.322168913908537,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 1.1200812754185934,
+          "ref": 1.1200812754185785,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7365703447105887,
+          "ref": 0.7365703447105821,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 17,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.6051991198851323,
+          "ref": 0.6051991198851316,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.1133545979289372,
+          "ref": 1.1133545979289357,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.3533364722930008,
+          "ref": 1.3533364722929873,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 1.2155484648022095,
+          "ref": 1.215548464802199,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    }
+  ],
+  "folds_identical": 16,
+  "winners_identical": 17,
+  "gates_identical": 17,
+  "anchor_identical": 17,
+  "halt_state_identical": 17,
+  "first_differences": [
+    {
+      "fold": 9,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.7889017919264043,
+          "ref": 0.7889017919264064,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.6672155974987803,
+          "ref": 1.667215597498788,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.88784906697243,
+          "ref": 1.8878490669724135,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 1.132336495534622,
+          "ref": 1.1323364955346071,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7835777630615776,
+          "ref": 0.7270582647459044,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    }
+  ],
+  "oos_equity": {
+    "same_index": true,
+    "bars": 1065,
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "max_abs_diff_date": "2022-01-31 00:00:00+00:00",
+    "identical_within_ulp_floor": true
+  },
+  "aggregate": {
+    "oos_sharpe": {
+      "new": 0.9292961960287678,
+      "ref": 0.9292961960287683,
+      "equal_within_ulp_floor": true
+    },
+    "spy_sharpe": {
+      "new": 0.779216885606789,
+      "ref": 0.7792168856067855,
+      "equal_within_ulp_floor": true
+    },
+    "oos_cagr_pct": {
+      "new": 13.152217898755802,
+      "ref": 13.090555969276219,
+      "equal_within_ulp_floor": false
+    },
+    "spy_cagr_pct": {
+      "new": 13.019685441934946,
+      "ref": 12.958679736211497,
+      "equal_within_ulp_floor": false
+    },
+    "oos_mdd": {
+      "new": -18.539705107136438,
+      "ref": -18.539705107136484,
+      "equal_within_ulp_floor": true
+    },
+    "spy_mdd": {
+      "new": -22.0948355324869,
+      "ref": -22.09483553248699,
+      "equal_within_ulp_floor": true
+    }
+  },
+  "live_params_combo_equal": true,
+  "gates": {
+    "new": "4/17",
+    "reference": "4/17"
+  },
+  "anchor_folds": {
+    "new": 15,
+    "reference": 15
+  },
+  "skipped_folds_equal": true,
+  "wall_seconds": {
+    "new": 6.2,
+    "reference": 21.2
+  },
+  "peak_rss_mb": {
+    "new": 3738,
+    "reference": null
+  },
+  "simulations": {
+    "new": 4,
+    "legacy_equivalent": 52
+  },
+  "od12_ndh_flips_folds": [],
+  "verdict": "DIFFERENCES - classify (see first_differences / oos_equity)",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "equity rebased at the first bar, returns from the second bar (curve_stats window)",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "sortino_guard": "NaN below 20 losing days (degeneracy guard)",
+      "zero_trade_guard": "NaN Sharpe and Sortino when no entry falls inside a selection window",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-07T00:48:21Z"
+  }
+}

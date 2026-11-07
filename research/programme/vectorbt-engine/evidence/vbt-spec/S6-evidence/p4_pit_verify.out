@@ -1,0 +1,7 @@
+tape (1933, 646) UTC
+snapshot changes in range: 114 | edge dates: 317 | random: 160 | total sampled: 457
+min_hist=400 (lab default) {'vector_build_s': 0.05, 'eligible_at_loop_s': 88.0, 'dates': 457, 'symbol_mismatches': 0, 'dates_with_mismatch': 0, 'mean_eligible': 394.1, 'mask_shape': [1933, 646], 'mask_mb': 1.2}
+min_hist=60 (live) {'vector_build_s': 0.05, 'eligible_at_loop_s': 87.3, 'dates': 457, 'symbol_mismatches': 0, 'dates_with_mismatch': 0, 'mean_eligible': 485.9, 'mask_shape': [1933, 646], 'mask_mb': 1.2}
+min_hist=60 + max_stocks=50 {'vector_build_s': 0.08, 'eligible_at_loop_s': 88.7, 'dates': 457, 'symbol_mismatches': 0, 'dates_with_mismatch': 0, 'mean_eligible': 49.2, 'mask_shape': [1933, 646], 'mask_mb': 1.2}
+min_hist=60 + max_sector_count=3 {'vector_build_s': 0.12, 'eligible_at_loop_s': 85.3, 'dates': 457, 'symbol_mismatches': 0, 'dates_with_mismatch': 0, 'mean_eligible': 35.4, 'mask_shape': [1933, 646], 'mask_mb': 1.2}
+original per-bar 0.173 s -> est full tape 334 s (ESTIMATE; cost grows with past length)

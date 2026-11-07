@@ -1,0 +1,226 @@
+{
+  "run": "core17_ensemble_sp500",
+  "ends": {
+    "2022-01-31": {
+      "bars": 736,
+      "last_bar": "2022-01-31",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 24.7
+    },
+    "2022-04-30": {
+      "bars": 798,
+      "last_bar": "2022-04-29",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 24.3
+    },
+    "2022-07-30": {
+      "bars": 860,
+      "last_bar": "2022-07-29",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 26.2
+    },
+    "2022-10-30": {
+      "bars": 924,
+      "last_bar": "2022-10-28",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 29.9
+    },
+    "2023-01-30": {
+      "bars": 986,
+      "last_bar": "2023-01-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 31.7
+    },
+    "2023-04-30": {
+      "bars": 1048,
+      "last_bar": "2023-04-28",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 39.0
+    },
+    "2023-07-30": {
+      "bars": 1110,
+      "last_bar": "2023-07-28",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 36.5
+    },
+    "2023-10-30": {
+      "bars": 1175,
+      "last_bar": "2023-10-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 36.4
+    },
+    "2024-01-30": {
+      "bars": 1237,
+      "last_bar": "2024-01-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 43.9
+    },
+    "2024-04-30": {
+      "bars": 1300,
+      "last_bar": "2024-04-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 36.8
+    },
+    "2024-07-30": {
+      "bars": 1362,
+      "last_bar": "2024-07-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 35.5
+    },
+    "2024-10-30": {
+      "bars": 1427,
+      "last_bar": "2024-10-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 37.2
+    },
+    "2025-01-30": {
+      "bars": 1488,
+      "last_bar": "2025-01-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 42.8
+    },
+    "2025-04-30": {
+      "bars": 1550,
+      "last_bar": "2025-04-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 42.0
+    },
+    "2025-07-30": {
+      "bars": 1612,
+      "last_bar": "2025-07-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 45.7
+    },
+    "2025-10-30": {
+      "bars": 1677,
+      "last_bar": "2025-10-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 45.4
+    },
+    "2026-01-30": {
+      "bars": 1739,
+      "last_bar": "2026-01-30",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 45.5
+    },
+    "2026-04-30": {
+      "bars": 1800,
+      "last_bar": "2026-04-29",
+      "combos": 48,
+      "bit_identical_combos": 48,
+      "max_abs_diff_all_combos": 0.0,
+      "trade_counts_equal_combos": 48,
+      "differences": {},
+      "seconds": 51.5
+    }
+  },
+  "summary": {
+    "ends": 18,
+    "all_combos_bit_identical": true,
+    "all_trade_counts_equal": true,
+    "max_abs_diff": 0.0
+  },
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "legacy curve_stats: mean / std(negative returns) * sqrt(252)",
+      "cagr": "legacy curve_stats: calendar days / 365.25"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T23:28:57Z"
+  }
+}

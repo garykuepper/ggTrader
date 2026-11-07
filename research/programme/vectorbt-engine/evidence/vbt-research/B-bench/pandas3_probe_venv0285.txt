@@ -1,0 +1,40 @@
+pandas 2.3.3 numpy 2.2.6
+- MultiIndex ohlcv['AAA']['close'] works: 6.0
+- dtype of datetime index (bdate_range): datetime64[ns]
+- to_datetime(['2024-01-02']) dtype: datetime64[ns]
+- pd.Timestamp('2024-01-02').unit: s
+- DatetimeIndex.astype('int64')[0] (epoch units): 1704153600000000000
+- DatetimeIndex.view('i8')[0]: 1704153600000000000
+- dates .values dtype: datetime64[ns]
+- str column dtype: object
+- str columns Index dtype (symbols): object
+- Series(['a',None]).isna() / dtype==object?: (True, [False, True])
+- .values is read-only?: False
+- close.to_numpy() writeable?: True
+- chained assignment df['a'][mask]=0 -> a: [1, 0, 0]   [warnings: ['FutureWarning: ChainedAssignmentError: behaviour will change in pandas 3.0!\nYou are s']]
+- subset mutation leaks to parent? df['a'] after s=df['a']; s.iloc[0]=99: 99.0
+- Series[int] on DatetimeIndex-ed series s[0]: 1.0   [warnings: ['FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a futu']]
+- Series[int] on int index [10,20]: s[0]: RAISES KeyError: 0
+- pct_change(fill_method='pad') (default in 2.x): [nan, 0.0, 1.0]   [warnings: ["FutureWarning: The default fill_method='pad' in Series.pct_change is deprecated and w"]]
+- pct_change(fill_method=None): [nan, nan, nan]
+- df.stack() on 2-level columns (future_stack): (30, 2)   [warnings: ['FutureWarning: The previous implementation of stack is deprecated and will be removed']]
+- df.stack() default dropna behaviour w/ NaN: (1,)
+- groupby.agg(np.std) value (numpy ddof=0 vs pandas ddof=1): [0.7071, 0.7071]   [warnings: ['FutureWarning: The provided callable <function std at 0x766daf1ab380> is currently us']]
+- groupby.apply include_groups default: [3.0, 7.0]   [warnings: ['FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior']]
+- groupby(categorical key, observed default): {'x': 3.0, 'y': 7.0, 'z': 0.0}   [warnings: ['FutureWarning: The default of observed=False is deprecated and will be changed to Tru']]
+- groupby(axis=1) removed: (4, 1)   [warnings: ['FutureWarning: DataFrame.groupby with axis=1 is deprecated. Do `frame.T.groupby(...)`']]
+- resample('M'): 1   [warnings: ["FutureWarning: 'M' is deprecated and will be removed in a future version, please use "]]
+- resample('ME'): 1
+- date_range freq='H': 3   [warnings: ["FutureWarning: 'H' is deprecated and will be removed in a future version, please use "]]
+- date_range freq='h': 3
+- fillna(method='ffill'): [1.0, 1.0]   [warnings: ["FutureWarning: Series.fillna with 'method' is deprecated and will raise in a future v"]]
+- DataFrame.applymap: (1, 1)   [warnings: ['FutureWarning: DataFrame.applymap has been deprecated. Use DataFrame.map instead.']]
+- tz_localize('UTC') index -> tz object type: timezone/pytz.tzfile
+- tz-aware .values (drops tz?): datetime64[ns]
+- to_sql/read_sql round trip dtypes (sqlite): {'ts': 'object', 'symbol': 'object', 'close': 'float64'}
+- read_sql parse_dates ts dtype: datetime64[ns]
+- naive UTC timestamp survives to_sql(sqlite) as: 2024-01-02 14:30:00.000000
+- read_sql_query with chunksize works: 6
+- to_sql method='multi' with None/NaN in str col: ['x', None]
+- yfinance imports: 1.2.0
+- yf.download 2 tickers (network): cols=['Price', 'Ticker'] idxdtype=datetime64[ns] lvl0=['Close', 'High', 'Low', 'Open', 'Volume'] shape=(8, 10)

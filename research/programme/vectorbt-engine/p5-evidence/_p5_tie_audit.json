@@ -1,0 +1,807 @@
+{
+  "window": [
+    "2021-01-31",
+    "2022-07-31"
+  ],
+  "symbols": 519,
+  "bars": 860,
+  "bb_reversion": {
+    "n_combos": 16,
+    "entries_xor_after_burn_in": 0,
+    "exits_xor_after_burn_in": 28,
+    "entries_xor_within_burn_in": 0,
+    "exits_xor_within_burn_in": 4
+  },
+  "bb_voter_level": {
+    "voter": "bb",
+    "n_param_tuples": 16,
+    "entries": {
+      "cells_legacy": 144259,
+      "cells_new": 144259,
+      "xor_total": 0,
+      "burn_in": 0,
+      "tie": 0,
+      "real": 0,
+      "real_examples": [],
+      "tie_examples": []
+    },
+    "exits": {
+      "cells_legacy": 468680,
+      "cells_new": 468688,
+      "xor_total": 32,
+      "burn_in": 4,
+      "tie": 28,
+      "real": 0,
+      "real_examples": [],
+      "tie_examples": [
+        {
+          "symbol": "NWSA",
+          "date": "2020-05-08",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.0088551521301277
+        },
+        {
+          "symbol": "KO",
+          "date": "2021-08-12",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 0.11298751831054688
+        },
+        {
+          "symbol": "V",
+          "date": "2021-09-08",
+          "new": false,
+          "legacy": true,
+          "distance_to_threshold": 0.0
+        },
+        {
+          "symbol": "CTXS",
+          "date": "2022-05-25",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.4210854715202004e-14
+        },
+        {
+          "symbol": "CTXS",
+          "date": "2022-05-26",
+          "new": false,
+          "legacy": true,
+          "distance_to_threshold": 0.730000000000004
+        },
+        {
+          "symbol": "NWSA",
+          "date": "2020-05-08",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.0088551521301277
+        }
+      ]
+    },
+    "per_tuple": [
+      {
+        "params": [
+          10,
+          1.5
+        ],
+        "entries": {
+          "cells_legacy": 26122,
+          "cells_new": 26122,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 38892,
+          "cells_new": 38893,
+          "xor_total": 5,
+          "burn_in": 0,
+          "tie": 5,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "NWSA",
+              "date": "2020-05-08",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.0088551521301277
+            },
+            {
+              "symbol": "KO",
+              "date": "2021-08-12",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 0.11298751831054688
+            },
+            {
+              "symbol": "V",
+              "date": "2021-09-08",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-25",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.4210854715202004e-14
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-26",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.730000000000004
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          10,
+          2.0
+        ],
+        "entries": {
+          "cells_legacy": 11404,
+          "cells_new": 11404,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 38892,
+          "cells_new": 38893,
+          "xor_total": 5,
+          "burn_in": 0,
+          "tie": 5,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "NWSA",
+              "date": "2020-05-08",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.0088551521301277
+            },
+            {
+              "symbol": "KO",
+              "date": "2021-08-12",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 0.11298751831054688
+            },
+            {
+              "symbol": "V",
+              "date": "2021-09-08",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-25",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.4210854715202004e-14
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-26",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.730000000000004
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          10,
+          2.5
+        ],
+        "entries": {
+          "cells_legacy": 1367,
+          "cells_new": 1367,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 38892,
+          "cells_new": 38893,
+          "xor_total": 5,
+          "burn_in": 0,
+          "tie": 5,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "NWSA",
+              "date": "2020-05-08",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.0088551521301277
+            },
+            {
+              "symbol": "KO",
+              "date": "2021-08-12",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 0.11298751831054688
+            },
+            {
+              "symbol": "V",
+              "date": "2021-09-08",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-25",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.4210854715202004e-14
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-26",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.730000000000004
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          10,
+          3.0
+        ],
+        "entries": {
+          "cells_legacy": 0,
+          "cells_new": 0,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 38892,
+          "cells_new": 38893,
+          "xor_total": 5,
+          "burn_in": 0,
+          "tie": 5,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "NWSA",
+              "date": "2020-05-08",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.0088551521301277
+            },
+            {
+              "symbol": "KO",
+              "date": "2021-08-12",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 0.11298751831054688
+            },
+            {
+              "symbol": "V",
+              "date": "2021-09-08",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-25",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 1.4210854715202004e-14
+            },
+            {
+              "symbol": "CTXS",
+              "date": "2022-05-26",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.730000000000004
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          15,
+          1.5
+        ],
+        "entries": {
+          "cells_legacy": 21717,
+          "cells_new": 21717,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 31057,
+          "cells_new": 31057,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          15,
+          2.0
+        ],
+        "entries": {
+          "cells_legacy": 11963,
+          "cells_new": 11963,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 31057,
+          "cells_new": 31057,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          15,
+          2.5
+        ],
+        "entries": {
+          "cells_legacy": 3937,
+          "cells_new": 3937,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 31057,
+          "cells_new": 31057,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          15,
+          3.0
+        ],
+        "entries": {
+          "cells_legacy": 583,
+          "cells_new": 583,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 31057,
+          "cells_new": 31057,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          20,
+          1.5
+        ],
+        "entries": {
+          "cells_legacy": 18842,
+          "cells_new": 18842,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 26211,
+          "cells_new": 26211,
+          "xor_total": 2,
+          "burn_in": 0,
+          "tie": 2,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "PARA",
+              "date": "2021-12-31",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "PARA",
+              "date": "2022-01-03",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 23.320361328124818
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          20,
+          2.0
+        ],
+        "entries": {
+          "cells_legacy": 11442,
+          "cells_new": 11442,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 26211,
+          "cells_new": 26211,
+          "xor_total": 2,
+          "burn_in": 0,
+          "tie": 2,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "PARA",
+              "date": "2021-12-31",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "PARA",
+              "date": "2022-01-03",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 23.320361328124818
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          20,
+          2.5
+        ],
+        "entries": {
+          "cells_legacy": 4541,
+          "cells_new": 4541,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 26211,
+          "cells_new": 26211,
+          "xor_total": 2,
+          "burn_in": 0,
+          "tie": 2,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "PARA",
+              "date": "2021-12-31",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "PARA",
+              "date": "2022-01-03",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 23.320361328124818
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          20,
+          3.0
+        ],
+        "entries": {
+          "cells_legacy": 1178,
+          "cells_new": 1178,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 26211,
+          "cells_new": 26211,
+          "xor_total": 2,
+          "burn_in": 0,
+          "tie": 2,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": [
+            {
+              "symbol": "PARA",
+              "date": "2021-12-31",
+              "new": false,
+              "legacy": true,
+              "distance_to_threshold": 0.0
+            },
+            {
+              "symbol": "PARA",
+              "date": "2022-01-03",
+              "new": true,
+              "legacy": false,
+              "distance_to_threshold": 23.320361328124818
+            }
+          ]
+        }
+      },
+      {
+        "params": [
+          30,
+          1.5
+        ],
+        "entries": {
+          "cells_legacy": 14650,
+          "cells_new": 14650,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 21010,
+          "cells_new": 21011,
+          "xor_total": 1,
+          "burn_in": 1,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          30,
+          2.0
+        ],
+        "entries": {
+          "cells_legacy": 9790,
+          "cells_new": 9790,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 21010,
+          "cells_new": 21011,
+          "xor_total": 1,
+          "burn_in": 1,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          30,
+          2.5
+        ],
+        "entries": {
+          "cells_legacy": 4925,
+          "cells_new": 4925,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 21010,
+          "cells_new": 21011,
+          "xor_total": 1,
+          "burn_in": 1,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      },
+      {
+        "params": [
+          30,
+          3.0
+        ],
+        "entries": {
+          "cells_legacy": 1798,
+          "cells_new": 1798,
+          "xor_total": 0,
+          "burn_in": 0,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        },
+        "exits": {
+          "cells_legacy": 21010,
+          "cells_new": 21011,
+          "xor_total": 1,
+          "burn_in": 1,
+          "tie": 0,
+          "real": 0,
+          "real_examples": [],
+          "tie_examples": []
+        }
+      }
+    ]
+  },
+  "conviction_bb": {
+    "n_combos": 36,
+    "entries": {
+      "cells_legacy": 422100,
+      "cells_new": 422100,
+      "xor_total": 0,
+      "burn_in": 0,
+      "tie": 0,
+      "real": 0,
+      "real_examples": [],
+      "tie_examples": []
+    },
+    "exits": {
+      "cells_legacy": 1054530,
+      "cells_new": 1054548,
+      "xor_total": 72,
+      "burn_in": 9,
+      "tie": 63,
+      "real": 0,
+      "real_examples": [],
+      "tie_examples": [
+        {
+          "symbol": "NWSA",
+          "date": "2020-05-08",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.0088551521301277
+        },
+        {
+          "symbol": "KO",
+          "date": "2021-08-12",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 0.11298751831054688
+        },
+        {
+          "symbol": "V",
+          "date": "2021-09-08",
+          "new": false,
+          "legacy": true,
+          "distance_to_threshold": 0.0
+        },
+        {
+          "symbol": "CTXS",
+          "date": "2022-05-25",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.4210854715202004e-14
+        },
+        {
+          "symbol": "CTXS",
+          "date": "2022-05-26",
+          "new": false,
+          "legacy": true,
+          "distance_to_threshold": 0.730000000000004
+        },
+        {
+          "symbol": "NWSA",
+          "date": "2020-05-08",
+          "new": true,
+          "legacy": false,
+          "distance_to_threshold": 1.0088551521301277
+        }
+      ]
+    },
+    "max_size_diff": 7.85205234166142e-14
+  },
+  "conclusion": "after the 200-bar burn-in every differing cell is a tie within 1e-9 of its threshold (real == 0); see 'real' in each block",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "legacy curve_stats: mean / std(negative returns) * sqrt(252)",
+      "cagr": "legacy curve_stats: calendar days / 365.25"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T23:32:43Z"
+  }
+}

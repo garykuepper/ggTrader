@@ -1,0 +1,7 @@
+shape (250, 35) (250, 35)
+index values equal (as UTC instants): True
+columns equal as strings: True
+max abs value diff: 0.0 bit-identical: True
+old idx dtype datetime64[ns, UTC] | new datetime64[us, UTC]
+old col dtype str | new str
+write_capture_utc_midnight.json identical: True

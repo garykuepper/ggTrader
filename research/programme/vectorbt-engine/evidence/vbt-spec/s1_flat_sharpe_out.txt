@@ -1,0 +1,2 @@
+flat sharpe 1.2.0: inf
+const pos sharpe: 4.5295291272868744e+16

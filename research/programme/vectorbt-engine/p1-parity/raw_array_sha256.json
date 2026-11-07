@@ -1,0 +1,40 @@
+{
+ "A_origsrc_oldstack": {
+  "pit_mask.npy": "69aba2bf490a333bda6f50a6f93d0c18996ad35809bb8e9774040f6297d657e6",
+  "probe_legacy_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_legacy_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "signal_equity.npz": "e66c56db35f88f1832b0f600ac5c716ce7de886742a3ef14134a80aa7fcfed5b",
+  "weight_equity.npz": "7e9eafdee47adce87b328b0e0c7c6aabf0b4e6668def771daa06c487025debee",
+  "wfo_oos_equity.npz": "ee4d0e87fae33db9e49d181cd08e883f4c3a9bbaa89f3855aba691fa1e1b59fa"
+ },
+ "A2_newsrc_oldstack": {
+  "pit_mask.npy": "69aba2bf490a333bda6f50a6f93d0c18996ad35809bb8e9774040f6297d657e6",
+  "probe_legacy_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_legacy_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "probe_padded_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_padded_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "signal_equity.npz": "e66c56db35f88f1832b0f600ac5c716ce7de886742a3ef14134a80aa7fcfed5b",
+  "weight_equity.npz": "7e9eafdee47adce87b328b0e0c7c6aabf0b4e6668def771daa06c487025debee",
+  "wfo_oos_equity.npz": "ee4d0e87fae33db9e49d181cd08e883f4c3a9bbaa89f3855aba691fa1e1b59fa"
+ },
+ "B1_newsrc_newstack_numba": {
+  "pit_mask.npy": "69aba2bf490a333bda6f50a6f93d0c18996ad35809bb8e9774040f6297d657e6",
+  "probe_legacy_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_legacy_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "probe_padded_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_padded_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "signal_equity.npz": "e66c56db35f88f1832b0f600ac5c716ce7de886742a3ef14134a80aa7fcfed5b",
+  "weight_equity.npz": "7e9eafdee47adce87b328b0e0c7c6aabf0b4e6668def771daa06c487025debee",
+  "wfo_oos_equity.npz": "ee4d0e87fae33db9e49d181cd08e883f4c3a9bbaa89f3855aba691fa1e1b59fa"
+ },
+ "B2_newsrc_newstack_rust": {
+  "pit_mask.npy": "69aba2bf490a333bda6f50a6f93d0c18996ad35809bb8e9774040f6297d657e6",
+  "probe_legacy_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_legacy_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "probe_padded_pct_2021_22.npy": "352435fe8c675a369d850ecfb465446b15d50725b4aef8f3d2a74b2ca44b5149",
+  "probe_padded_pct_2025_26.npy": "26d3b94c4219ecbe7610cd22c684edc53954128a61801445870198b230151e0a",
+  "signal_equity.npz": "e66c56db35f88f1832b0f600ac5c716ce7de886742a3ef14134a80aa7fcfed5b",
+  "weight_equity.npz": "7e9eafdee47adce87b328b0e0c7c6aabf0b4e6668def771daa06c487025debee",
+  "wfo_oos_equity.npz": "ee4d0e87fae33db9e49d181cd08e883f4c3a9bbaa89f3855aba691fa1e1b59fa"
+ }
+}

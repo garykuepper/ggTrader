@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ggTrader"
+version = "0.1.0"
+description = "A sleek algorithmic trading bot"
+requires-python = ">=3.11"
+dependencies = [
+    "ccxt",
+    "defusedxml",
+    "fsspec",
+    "joblib",
+    "matplotlib",
+    "mplfinance",
+    "numba",
+    "numpy",
+    "optuna",
+    "pandas",
+    "pandas-market-calendars",
+    "pandas-ta",
+    # Capped: plotly 7 removed `scattermapbox`, which vectorbt 0.28 references at
+    # import time -- the unpinned 2026-09-23 image crashed the live run.
+    "plotly>=6.6,<7",
+    "psycopg2-binary",
+    "pyarrow",
+    "pypdf",
+    "python-dotenv",
+    "pytrends",
+    "requests",
+    "scikit-learn",
+    "seaborn",
+    "sqlalchemy",
+    "ta",
+    "tabulate",
+    "tqdm",
+    # Capped at the validated minor: the same rebuild pulled vectorbt 1.0.0.
+    "vectorbt>=0.28.5,<0.29",
+    # Reads Shiller's legacy .xls dividend workbook (century leverage study).
+    "xlrd>=2.0.1",
+    "xlsxwriter",
+    "yfinance",
+    "alpaca-py",
+    "pydantic>=2.0",
+    "typer>=0.12",
+    "typing-extensions",
+    "hmmlearn",
+    "lightgbm",
+]
+
+[project.optional-dependencies]
+gpu = ["cupy-cuda13x"]
+test = ["pytest"]
+# ruff is PINNED exactly: `ruff format` output changes between minor
+# versions, so an unpinned CI would fail the format check against code a
+# developer just formatted locally. Bump deliberately, reformatting in the
+# same commit.
+dev = ["ruff==0.15.12", "mypy>=1.8"]
+
+[project.scripts]
+ggt = "ggTrader.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ggTrader*"]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not integration'"
+pythonpath = ["."]
+markers = [
+    "integration: tests that hit live external services (network, DB); run with -m integration",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false

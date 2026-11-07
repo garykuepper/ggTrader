@@ -1,0 +1,24 @@
+{
+ "n_records": 500,
+ "first_ts": "datetime.datetime(2022, 1, 3, 0, 0)",
+ "ts_type": "datetime",
+ "ts_tzinfo": "None",
+ "sample_tuple": [
+  "datetime.datetime(2022, 1, 3, 0, 0)",
+  "'AAPL'",
+  "'1d'",
+  "'yfinance'",
+  "173.70339765267045",
+  "178.6362137085352",
+  "173.58618706197944",
+  "177.78639221191406",
+  "104487900.0",
+  "0"
+ ],
+ "nan_to_none_types": [
+  "float"
+ ],
+ "sym_types": [
+  "str"
+ ]
+}

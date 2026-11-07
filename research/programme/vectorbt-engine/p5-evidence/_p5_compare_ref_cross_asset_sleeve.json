@@ -1,0 +1,211 @@
+{
+  "run": "ref_cross_asset_sleeve",
+  "reference": "ref_cross_asset_sleeve",
+  "n_folds": {
+    "new": 2,
+    "reference": 2
+  },
+  "grid_size": {
+    "new": 3,
+    "reference": 3
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.7436385376179655,
+          "ref": 0.743638537617966,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.5192433517070816,
+          "ref": 1.519243351707083,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -1.211228177162545,
+          "ref": -1.2112281771625462,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": -0.7972575136179213,
+          "ref": -0.7972575136179214,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.6302866943978277,
+          "ref": 0.6302866943978831,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 2,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.2740087069972463,
+          "ref": 0.27400870699724655,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 0.25044510282541377,
+          "ref": 0.2504451028254146,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -0.10400771266213012,
+          "ref": -0.10400771266213012,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.8,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    }
+  ],
+  "folds_identical": 2,
+  "winners_identical": 2,
+  "gates_identical": 2,
+  "anchor_identical": 2,
+  "halt_state_identical": 2,
+  "first_differences": [],
+  "oos_equity": {
+    "same_index": true,
+    "bars": 125,
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "max_abs_diff_date": "2022-01-31 00:00:00+00:00",
+    "identical_within_ulp_floor": true
+  },
+  "aggregate": {
+    "oos_sharpe": {
+      "new": -0.5928948678135563,
+      "ref": -0.5928948678135563,
+      "equal_within_ulp_floor": true
+    },
+    "spy_sharpe": {
+      "new": -0.5150733529934634,
+      "ref": -0.5150733529934675,
+      "equal_within_ulp_floor": true
+    },
+    "oos_cagr_pct": {
+      "new": -13.26990146492082,
+      "ref": -13.319980736576586,
+      "equal_within_ulp_floor": false
+    },
+    "spy_cagr_pct": {
+      "new": -15.115072262675366,
+      "ref": -15.17148703500364,
+      "equal_within_ulp_floor": false
+    },
+    "oos_mdd": {
+      "new": -16.849224226332083,
+      "ref": -16.849224226332083,
+      "equal_within_ulp_floor": true
+    },
+    "spy_mdd": {
+      "new": -20.561146708583077,
+      "ref": -20.561146708583156,
+      "equal_within_ulp_floor": true
+    }
+  },
+  "live_params_combo_equal": true,
+  "gates": {
+    "new": "0/2",
+    "reference": "0/2"
+  },
+  "anchor_folds": {
+    "new": 2,
+    "reference": 2
+  },
+  "skipped_folds_equal": true,
+  "wall_seconds": {
+    "new": 1.5,
+    "reference": 17.3
+  },
+  "peak_rss_mb": {
+    "new": 641,
+    "reference": null
+  },
+  "simulations": {
+    "new": 4,
+    "legacy_equivalent": 7
+  },
+  "od12_ndh_flips_folds": [],
+  "verdict": "DIFFERENCES - classify (see first_differences / oos_equity)",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:21:13Z"
+  }
+}

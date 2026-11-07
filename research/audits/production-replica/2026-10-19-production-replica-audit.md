@@ -17,7 +17,7 @@ and changing them requires a new dated brief.
 - **Decision.** What happens to the stock-picking sleeve when the parity freeze lifts
   (~2026-12-29): keep it, shrink it, or retire it. This audit produces a
   recommendation only. Any live change is a separate owner decision, made through
-  the `ggtrader-deploy` skill.
+  the `ggtrader-deploy` skill. [Superseded: owner instructions 2026-10-20 forbid retirement recommendations; documentation defect corrected 2026-11-06.]
 - **Real money is not affected.** The 2026-09-30 70/30 SPY/SSO decision stands; §6
   only puts bounds on its tax number.
 

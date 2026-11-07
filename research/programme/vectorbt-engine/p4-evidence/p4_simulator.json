@@ -1,0 +1,555 @@
+{
+  "section": "simulator",
+  "base_config": {
+    "START_CASH": 10000.0,
+    "FEES": 0.0,
+    "SLIPPAGE": 0.0005,
+    "FREQ": "1D",
+    "SIGNAL_POSITION_SIZE": 0.03
+  },
+  "mask": "pit_mask(min_history_bars=400, sp500 PIT), applied before the time stop",
+  "symbols": 200,
+  "bars": 1929,
+  "cases": {
+    "ensemble": [
+      {
+        "combo_index": 0,
+        "params": {
+          "bb_std": 2.0,
+          "ema_fast": 10,
+          "min_agree": 2,
+          "min_agree_exit": 1,
+          "rsi_oversold": 25
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 2222,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 12923.106152256629,
+          "final_equity_legacy_signals": 12923.106152256629,
+          "n_trades_new": 2222,
+          "n_trades_legacy_signals": 2222
+        }
+      },
+      {
+        "combo_index": 9,
+        "params": {
+          "bb_std": 2.0,
+          "ema_fast": 10,
+          "min_agree": 4,
+          "min_agree_exit": 1,
+          "rsi_oversold": 30
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 69,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 10294.287161427506,
+          "final_equity_legacy_signals": 10294.287161427506,
+          "n_trades_new": 69,
+          "n_trades_legacy_signals": 69
+        }
+      },
+      {
+        "combo_index": 18,
+        "params": {
+          "bb_std": 2.0,
+          "ema_fast": 20,
+          "min_agree": 3,
+          "min_agree_exit": 2,
+          "rsi_oversold": 25
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 593,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 12651.186749565528,
+          "final_equity_legacy_signals": 12651.186749565528,
+          "n_trades_new": 593,
+          "n_trades_legacy_signals": 593
+        }
+      },
+      {
+        "combo_index": 27,
+        "params": {
+          "bb_std": 2.5,
+          "ema_fast": 10,
+          "min_agree": 2,
+          "min_agree_exit": 2,
+          "rsi_oversold": 30
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 1765,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14160.110560399062,
+          "final_equity_legacy_signals": 14160.110560399062,
+          "n_trades_new": 1765,
+          "n_trades_legacy_signals": 1765
+        }
+      },
+      {
+        "combo_index": 36,
+        "params": {
+          "bb_std": 2.5,
+          "ema_fast": 20,
+          "min_agree": 2,
+          "min_agree_exit": 1,
+          "rsi_oversold": 25
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 1236,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 12744.163204412098,
+          "final_equity_legacy_signals": 12744.163204412098,
+          "n_trades_new": 1236,
+          "n_trades_legacy_signals": 1236
+        }
+      },
+      {
+        "combo_index": 47,
+        "params": {
+          "bb_std": 2.5,
+          "ema_fast": 20,
+          "min_agree": 4,
+          "min_agree_exit": 2,
+          "rsi_oversold": 30
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 48,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 10195.1688678532,
+          "final_equity_legacy_signals": 10195.1688678532,
+          "n_trades_new": 48,
+          "n_trades_legacy_signals": 48
+        }
+      }
+    ],
+    "conviction_bb": [
+      {
+        "combo_index": 0,
+        "params": {
+          "bb_period": 10,
+          "bb_std": 1.5,
+          "max_size": 0.03
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 10159,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": false,
+          "max_abs_equity_diff": 2.546585164964199e-11,
+          "final_equity_new": 13105.927808999255,
+          "final_equity_legacy_signals": 13105.92780899927,
+          "n_trades_new": 10159,
+          "n_trades_legacy_signals": 10159
+        }
+      },
+      {
+        "combo_index": 14,
+        "params": {
+          "bb_period": 15,
+          "bb_std": 2.0,
+          "max_size": 0.08
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 5155,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": false,
+          "max_abs_equity_diff": 3.637978807091713e-11,
+          "final_equity_new": 16050.318537961803,
+          "final_equity_legacy_signals": 16050.31853796178,
+          "n_trades_new": 5155,
+          "n_trades_legacy_signals": 5155
+        }
+      },
+      {
+        "combo_index": 35,
+        "params": {
+          "bb_period": 30,
+          "bb_std": 2.5,
+          "max_size": 0.08
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 1814,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": false,
+          "max_abs_equity_diff": 1.2732925824820995e-11,
+          "final_equity_new": 16167.995457851217,
+          "final_equity_legacy_signals": 16167.995457851226,
+          "n_trades_new": 1814,
+          "n_trades_legacy_signals": 1814
+        }
+      }
+    ],
+    "bb_reversion": [
+      {
+        "combo_index": 0,
+        "params": {
+          "bb_period": 10,
+          "bb_std": 1.5
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 10159,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14430.080549153192,
+          "final_equity_legacy_signals": 14430.080549153192,
+          "n_trades_new": 10159,
+          "n_trades_legacy_signals": 10159
+        }
+      },
+      {
+        "combo_index": 7,
+        "params": {
+          "bb_period": 15,
+          "bb_std": 3.0
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 392,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 11345.725847739934,
+          "final_equity_legacy_signals": 11345.725847739934,
+          "n_trades_new": 392,
+          "n_trades_legacy_signals": 392
+        }
+      },
+      {
+        "combo_index": 15,
+        "params": {
+          "bb_period": 30,
+          "bb_std": 3.0
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 771,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14161.496297977374,
+          "final_equity_legacy_signals": 14161.496297977374,
+          "n_trades_new": 771,
+          "n_trades_legacy_signals": 771
+        }
+      }
+    ],
+    "rsi_reversion": [
+      {
+        "combo_index": 0,
+        "params": {
+          "rsi_exit": 50,
+          "rsi_oversold": 20,
+          "rsi_period": 7
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 2188,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 15586.308471331711,
+          "final_equity_legacy_signals": 15586.308471331711,
+          "n_trades_new": 2188,
+          "n_trades_legacy_signals": 2188
+        }
+      },
+      {
+        "combo_index": 13,
+        "params": {
+          "rsi_exit": 55,
+          "rsi_oversold": 25,
+          "rsi_period": 14
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 676,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 15428.745221115922,
+          "final_equity_legacy_signals": 15428.745221115922,
+          "n_trades_new": 676,
+          "n_trades_legacy_signals": 676
+        }
+      },
+      {
+        "combo_index": 26,
+        "params": {
+          "rsi_exit": 60,
+          "rsi_oversold": 30,
+          "rsi_period": 21
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 495,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 16504.298116006954,
+          "final_equity_legacy_signals": 16504.298116006954,
+          "n_trades_new": 495,
+          "n_trades_legacy_signals": 495
+        }
+      }
+    ],
+    "ema_cross": [
+      {
+        "combo_index": 0,
+        "params": {
+          "ema_fast": 5,
+          "ema_slow": 20
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 7713,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14391.179451958213,
+          "final_equity_legacy_signals": 14391.179451958213,
+          "n_trades_new": 7713,
+          "n_trades_legacy_signals": 7713
+        }
+      },
+      {
+        "combo_index": 8,
+        "params": {
+          "ema_fast": 10,
+          "ema_slow": 100
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 2429,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14418.996886397108,
+          "final_equity_legacy_signals": 14418.996886397108,
+          "n_trades_new": 2429,
+          "n_trades_legacy_signals": 2429
+        }
+      },
+      {
+        "combo_index": 15,
+        "params": {
+          "ema_fast": 50,
+          "ema_slow": 200
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 751,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 16044.876721551347,
+          "final_equity_legacy_signals": 16044.876721551347,
+          "n_trades_new": 751,
+          "n_trades_legacy_signals": 751
+        }
+      }
+    ],
+    "macd_divergence": [
+      {
+        "combo_index": 0,
+        "params": {
+          "divergence_window": 10,
+          "macd_fast": 8,
+          "macd_slow": 21
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 4000,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14722.97616092159,
+          "final_equity_legacy_signals": 14722.97616092159,
+          "n_trades_new": 4000,
+          "n_trades_legacy_signals": 4000
+        }
+      },
+      {
+        "combo_index": 4,
+        "params": {
+          "divergence_window": 20,
+          "macd_fast": 8,
+          "macd_slow": 21
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 3775,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 16219.85958898356,
+          "final_equity_legacy_signals": 16219.85958898356,
+          "n_trades_new": 3775,
+          "n_trades_legacy_signals": 3775
+        }
+      },
+      {
+        "combo_index": 7,
+        "params": {
+          "divergence_window": 20,
+          "macd_fast": 12,
+          "macd_slow": 26
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 3282,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 18670.61506179486,
+          "final_equity_legacy_signals": 18670.61506179486,
+          "n_trades_new": 3282,
+          "n_trades_legacy_signals": 3282
+        }
+      }
+    ],
+    "volume_bb_reversion": [
+      {
+        "combo_index": 0,
+        "params": {
+          "bb_period": 15,
+          "bb_std": 2.0,
+          "vol_mult": 1.5
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 2167,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 13830.538372625677,
+          "final_equity_legacy_signals": 13830.538372625677,
+          "n_trades_new": 2167,
+          "n_trades_legacy_signals": 2167
+        }
+      },
+      {
+        "combo_index": 6,
+        "params": {
+          "bb_period": 20,
+          "bb_std": 2.0,
+          "vol_mult": 1.5
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 1977,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 14411.061021176465,
+          "final_equity_legacy_signals": 14411.061021176465,
+          "n_trades_new": 1977,
+          "n_trades_legacy_signals": 1977
+        }
+      },
+      {
+        "combo_index": 11,
+        "params": {
+          "bb_period": 20,
+          "bb_std": 2.5,
+          "vol_mult": 2.5
+        },
+        "same_signals_equity_bit_identical": true,
+        "same_signals_trade_counts_equal": true,
+        "n_trades_new": 468,
+        "legacy_signals_vs_new_signals": {
+          "equity_bit_identical": true,
+          "max_abs_equity_diff": 0.0,
+          "final_equity_new": 11157.468703948922,
+          "final_equity_legacy_signals": 11157.468703948922,
+          "n_trades_new": 468,
+          "n_trades_legacy_signals": 468
+        }
+      }
+    ]
+  },
+  "all_same_signal_equity_bit_identical": true,
+  "tape": {
+    "source": "snapshot",
+    "snapshot": {
+      "path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+      "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+      "content_sha256": null,
+      "rows": 1110874,
+      "symbols": 605,
+      "date_min": "2019-03-01",
+      "date_max": "2026-10-30",
+      "deep_checked": false
+    },
+    "start": "2019-03-01 00:00:00",
+    "end": "2026-10-30 00:00:00",
+    "symbols_loaded": 605,
+    "missing_symbols": [
+      "ABC",
+      "ANTM",
+      "BLL",
+      "COG",
+      "FBHS",
+      "FRC",
+      "GPS",
+      "HFC",
+      "MMC",
+      "PKI",
+      "RE",
+      "WLTW"
+    ]
+  },
+  "seconds": 19.9,
+  "peak_rss_mb": 1643,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sortino": "vectorbt downside deviation",
+      "cagr": "bar-annualised 252",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T21:44:47Z"
+  }
+}

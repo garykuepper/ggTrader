@@ -1,0 +1,90 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 45c7a8a8..6319162d 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -19,7 +19,6 @@ dependencies = [
+     "optuna",
+     "pandas",
+     "pandas-market-calendars",
+-    "pandas-ta",
+     # Capped: plotly 7 removed `scattermapbox`, which vectorbt 0.28 references at
+     # import time -- the unpinned 2026-09-23 image crashed the live run.
+     "plotly>=6.6,<7",
+@@ -36,7 +35,6 @@ dependencies = [
+     "tabulate",
+     "tqdm",
+     # Capped at the validated minor: the same rebuild pulled vectorbt 1.0.0.
+-    "vectorbt>=0.28.5,<0.29",
+     # Reads Shiller's legacy .xls dividend workbook (century leverage study).
+     "xlrd>=2.0.1",
+     "xlsxwriter",
+diff --git a/scripts/run_tests.sh b/scripts/run_tests.sh
+index 4c91df96..4a64f9c3 100755
+--- a/scripts/run_tests.sh
++++ b/scripts/run_tests.sh
+@@ -18,7 +18,7 @@ set -euo pipefail
+ 
+ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ MEM_MAX="${GGT_TEST_MEM_MAX:-8G}"
+-PYTHON="$REPO/.venv/bin/python"
++PYTHON="${GGT_PYTHON:-$REPO/.venv/bin/python}"
+ 
+ if [[ ! -x "$PYTHON" ]]; then
+     echo "error: no venv interpreter at $PYTHON" >&2
+diff --git a/src/ggTrader/lab/event_study.py b/src/ggTrader/lab/event_study.py
+index e13f6b01..bd10f80b 100644
+--- a/src/ggTrader/lab/event_study.py
++++ b/src/ggTrader/lab/event_study.py
+@@ -45,8 +45,9 @@ def split_event_returns(returns: pd.DataFrame, mask: pd.DataFrame) -> tuple[pd.S
+     """Flatten a (time x symbol) returns frame into (event, non-event)
+     long-format series using a matching boolean mask."""
+     mask = mask.reindex_like(returns).fillna(False)
+-    event_returns = returns.where(mask).stack()
+-    nonevent_returns = returns.where(~mask).stack()
++    # pandas 3 stack() keeps NaN rows (pandas 2 dropped them); dropna() restores the old meaning.
++    event_returns = returns.where(mask).stack().dropna()
++    nonevent_returns = returns.where(~mask).stack().dropna()
+     return event_returns, nonevent_returns
+ 
+ 
+diff --git a/src/ggTrader/lab/strategies/indicators.py b/src/ggTrader/lab/strategies/indicators.py
+index 690c5ed7..53c093e1 100644
+--- a/src/ggTrader/lab/strategies/indicators.py
++++ b/src/ggTrader/lab/strategies/indicators.py
+@@ -9,16 +9,25 @@ import numpy as np
+ import pandas as pd
+ 
+ 
++def _consolidated(frame: pd.DataFrame) -> pd.DataFrame:
++    """Merge the one-block-per-column layout pandas 3 leaves after concat(axis=1).
++
++    pandas 2 consolidated lazily; on pandas 3 every later frame op walks ~100 blocks
++    (measured 66 ms vs 13 ms per RSI-style chain), a ~3x sweep slowdown. Values unchanged.
++    """
++    return frame.copy()
++
++
+ def extract_close(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+     """Extract a (time x symbol) close-price DataFrame from multi-level OHLCV data."""
+     have = set(data.columns.get_level_values(0))
+-    return pd.concat({s: data[s]["close"] for s in symbols if s in have}, axis=1)
++    return _consolidated(pd.concat({s: data[s]["close"] for s in symbols if s in have}, axis=1))
+ 
+ 
+ def extract_open(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+     """Extract a (time x symbol) open-price DataFrame from multi-level OHLCV data."""
+     have = set(data.columns.get_level_values(0))
+-    return pd.concat({s: data[s]["open"] for s in symbols if s in have}, axis=1)
++    return _consolidated(pd.concat({s: data[s]["open"] for s in symbols if s in have}, axis=1))
+ 
+ 
+ def eligible_symbols(data: pd.DataFrame, eligible: List[str], min_history_bars: int) -> List[str]:
+@@ -231,7 +240,7 @@ def macd_strength(close: pd.DataFrame, fast: int, slow: int, signal_period: int)
+ def extract_volume(data: pd.DataFrame, symbols: List[str]) -> pd.DataFrame:
+     """Extract a (time x symbol) volume DataFrame from multi-level OHLCV data."""
+     have = set(data.columns.get_level_values(0))
+-    return pd.concat({s: data[s]["volume"] for s in symbols if s in have}, axis=1)
++    return _consolidated(pd.concat({s: data[s]["volume"] for s in symbols if s in have}, axis=1))
+ 
+ 
+ def volume_bb_signals(
