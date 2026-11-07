@@ -40,8 +40,10 @@ Strategies are split into two kinds:
 | `xs_momentum` | Weight | Ranks stocks by their past 12-month returns and holds the top performers. |
 | `dual_momentum` | Weight | Ranks stocks by momentum, but moves the entire portfolio to safe cash if the overall market is falling. |
 
-The registry holds **36** strategies in total — the rest are closed NO-GO
-research kept for reproducibility. See
+**Ten** strategies are ported to the current engine and registered (`REGISTRY`);
+another **28** historical names (`LEGACY_ONLY_STRATEGIES`) are closed NO-GO or
+untested research whose code lives only at git tag `legacy-engine-vbt0285`, kept
+for reproducibility. See
 [CLI Reference](docs/cli_reference.md) for the full list and
 [Research Snapshot](research/RESEARCH_SNAPSHOT.md) for each verdict.
 
