@@ -10,8 +10,13 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      # ruff gets its own group: a version that changes `ruff format` output fails its own PR
+      # instead of blocking every other minor/patch bump. ruff stays an exact pin in pyproject.toml.
+      ruff:
+        patterns: ["ruff"]
       minor-and-patch:
         update-types: ["minor", "patch"]
+        exclude-patterns: ["ruff"]
     ignore:
       # Engine stack: keep in step with ENGINE_STACK in tests/engine/test_lock_consistency.py
       - dependency-name: "vectorbt"
