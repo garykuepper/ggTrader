@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-
-from ggTrader.lab.wfo.report import curve_summary
 
 T_BAR = 3.0
 NW_LAGS = 5
@@ -47,6 +46,8 @@ def excess_stats(
     periods_per_year: int = 252,
 ) -> ExcessStats:
     """Measure excess returns after aligning curves, using the shared CAGR calculation."""
+    from ggTrader.lab.wfo.report import curve_summary  # lazy: keeps the module import light
+
     curves = (
         pd.concat(
             [strategy_equity.rename("strategy"), benchmark_equity.rename("benchmark")],
@@ -88,3 +89,16 @@ def passes_pretax_bar(
 ) -> bool:
     """Require both the pre-registered statistical and economic thresholds."""
     return stats.t_stat >= t_bar and stats.cagr_diff_pp >= cagr_bar_pp
+
+
+def holm(p_values: Sequence[float], alpha: float = 0.05) -> tuple[np.ndarray, np.ndarray]:
+    """Holm step-down correction over a family of p-values (statsmodels' ``multipletests``).
+
+    Returns:
+        ``(reject, adjusted)``: which hypotheses survive at ``alpha`` and the Holm-adjusted
+        p-values, both in the input order.
+    """
+    from statsmodels.stats.multitest import multipletests
+
+    reject, adjusted, _, _ = multipletests(np.asarray(p_values, dtype=float), alpha, "holm")
+    return reject, adjusted

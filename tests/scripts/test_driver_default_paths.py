@@ -16,6 +16,8 @@ from types import ModuleType
 
 import pytest
 
+pytestmark = pytest.mark.tooling
+
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv"
 #: Closed-study drivers that need the legacy engine were archived here in P5c (they run only at

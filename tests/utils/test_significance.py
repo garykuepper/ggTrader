@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.significance import (
+from ggTrader.lab.wfo.report import curve_summary
+from ggTrader.utils.significance import (
     CAGR_BAR_PP,
     NW_LAGS,
     T_BAR,
@@ -16,7 +17,6 @@ from ggTrader.lab.significance import (
     passes_pretax_bar,
     years_for_t,
 )
-from ggTrader.lab.wfo.report import curve_summary
 
 
 def test_newey_west_lag0_is_plain_se():
@@ -82,3 +82,15 @@ def test_pretax_bar_requires_both_thresholds_inclusive():
 def test_newey_west_rejects_invalid_inputs(x, lags):
     with pytest.raises(ValueError):
         newey_west_se(x, lags)
+
+
+def test_holm_matches_a_hand_computed_step_down() -> None:
+    from ggTrader.utils.significance import holm
+
+    reject, adjusted = holm([0.04, 0.001, 0.02], alpha=0.05)
+    # sorted p: 0.001*3, 0.02*2, 0.04*1 -> 0.003, 0.04, 0.04 (running max keeps it monotone)
+    assert adjusted.tolist() == pytest.approx([0.04, 0.003, 0.04])
+    assert reject.tolist() == [True, True, True]
+    reject, adjusted = holm([0.04, 0.03], alpha=0.05)
+    assert adjusted.tolist() == pytest.approx([0.06, 0.06])
+    assert reject.tolist() == [False, False]

@@ -16,7 +16,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from ggTrader.lab.fred_data import parse_fred_csv  # noqa: E402
+from ggTrader.utils.fred_data import parse_fred_csv  # noqa: E402
 
 INPUTS = ROOT / "data" / "external" / "a23_inputs"
 GATE = ROOT / "research/allocation/century-leverage/_century_leverage_a23_gate.json"
@@ -34,16 +34,21 @@ def main() -> None:
         if actual_hash != expected_hash or actual_hash != manifest[filename]["sha256"]:
             raise ValueError(f"Frozen input differs from A23 gate: {filename}")
 
+    old_script = f"{gate['baseline_commit']}:scripts/static_leverage_aftertax.py"  # history-read
     source = subprocess.run(
-        ["git", "show", f"{gate['baseline_commit']}:scripts/static_leverage_aftertax.py"],
+        ["git", "show", old_script],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
     ).stdout
     baseline = types.ModuleType("a23_frozen_baseline")
-    baseline.__file__ = str(ROOT / "scripts" / "static_leverage_aftertax.py")
+    baseline.__file__ = str(ROOT / "scripts" / "static_leverage_aftertax.py")  # history-read
     sys.modules[baseline.__name__] = baseline
+    # The replayed source imports the pre-move module path, so serve it the moved module.
+    import ggTrader.utils.fred_data as _moved_fred  # history-read
+
+    sys.modules.setdefault("ggTrader.lab.fred_data", _moved_fred)  # history-read: pre-move path
     exec(compile(source, baseline.__file__, "exec"), baseline.__dict__)
 
     class FrozenTicker:
@@ -69,7 +74,7 @@ def main() -> None:
     baseline.load_fred_series = frozen_fred
     with tempfile.TemporaryDirectory() as directory:
         out = Path(directory) / "x.json"
-        sys.argv = ["static_leverage_aftertax.py", "--out", str(out)]
+        sys.argv = ["static_leverage_aftertax.py", "--out", str(out)]  # history-read
         # shortcut: baseline A23 cannot resume, add checkpointing if gate runs become routine.
         baseline.main()
         actual_hash = sha256(out.read_bytes()).hexdigest()
