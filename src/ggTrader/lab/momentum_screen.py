@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from ggTrader.lab.significance import newey_west_se
+from ggTrader.utils.significance import newey_west_se
 
 FULL = ("1927-01", "2026-04")
 POST = ("1994-01", "2026-04")

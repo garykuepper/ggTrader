@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.fred_data import PUBLISH_LAG_DAYS, available_as_of, parse_fred_csv
+from ggTrader.utils.fred_data import PUBLISH_LAG_DAYS, available_as_of, parse_fred_csv
 
 
 def _csv(series_id: str, rows: list[tuple[str, str]]) -> str:
@@ -77,7 +77,7 @@ class TestRowsForUpsert:
         row's value to NaT for some rows once enough rows are present --
         a genuine pandas dtype-unification gotcha, not user error. Must
         use a row-construction method immune to it (e.g. to_dict('records'))."""
-        from ggTrader.lab.fred_data import _rows_for_upsert
+        from ggTrader.utils.fred_data import _rows_for_upsert
 
         idx = pd.date_range("2020-01-01", periods=954, freq="MS")
         df = pd.DataFrame({"date": idx, "value": np.linspace(20.0, 330.0, 954)})
@@ -90,8 +90,8 @@ class TestRowsForUpsert:
 def test_cache_and_load_roundtrip():
     from sqlalchemy import text
 
-    from ggTrader.lab.fred_data import cache_series, ensure_schema, load_fred_series
     from ggTrader.lab.persist import get_engine
+    from ggTrader.utils.fred_data import cache_series, ensure_schema, load_fred_series
 
     ensure_schema()
     marker = "ZZTEST_FRED"

@@ -15,7 +15,7 @@ from ggTrader.lab.century_leverage import (
     recommendation_rule,
     simulate,
 )
-from ggTrader.lab.fred_data import parse_fred_csv
+from ggTrader.utils.fred_data import parse_fred_csv
 from scripts import static_leverage_aftertax as a23
 
 pytestmark = pytest.mark.study

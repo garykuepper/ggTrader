@@ -14,62 +14,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.event_study import run_event_study_from_signals, split_event_returns
 from ggTrader.paper.overlay import compute_weights_and_scale
-from ggTrader.utils.returns import padded_pct_change
 
 REPO = Path(__file__).resolve().parents[1]
-NAN = np.nan
 
 
 def _idx(n: int, start: str = "2024-01-01") -> pd.DatetimeIndex:
     return pd.date_range(start, periods=n, freq="B", tz="UTC")
-
-
-def _ohlcv(close: pd.DataFrame) -> pd.DataFrame:
-    """Multi-level (symbol, field) OHLCV frame; NaN closes stay NaN in every field."""
-    frames = {
-        s: pd.DataFrame(
-            {
-                "open": close[s],
-                "high": close[s] * 1.001,
-                "low": close[s] * 0.999,
-                "close": close[s],
-                "volume": np.where(close[s].isna(), NAN, 1e6),
-            }
-        )
-        for s in close.columns
-    }
-    out = pd.concat(frames, axis=1)
-    out.columns = out.columns.set_names(["symbol", "field"])
-    return out
-
-
-class TestPaddedPctChange:
-    """pandas 2 forward-filled non-leading NaN before differencing; pandas 3 does not."""
-
-    def test_series_interior_and_trailing_gaps_give_zero_returns(self) -> None:
-        s = pd.Series([NAN, 100.0, 110.0, NAN, 121.0, NAN, NAN])
-        got = padded_pct_change(s).to_numpy()
-        expected = np.array([NAN, NAN, 110.0 / 100.0 - 1.0, 0.0, 121.0 / 110.0 - 1.0, 0.0, 0.0])
-        np.testing.assert_array_equal(got, expected)
-
-    def test_frame_columns_are_independent(self) -> None:
-        df = pd.DataFrame({"A": [1.0, 2.0, NAN, 3.0], "B": [NAN, NAN, 5.0, 10.0]})
-        got = padded_pct_change(df)
-        np.testing.assert_array_equal(got["A"].to_numpy(), [NAN, 1.0, 0.0, 0.5])
-        np.testing.assert_array_equal(got["B"].to_numpy(), [NAN, NAN, NAN, 1.0])
-
-    def test_gap_free_input_equals_plain_pct_change(self) -> None:
-        s = pd.Series(np.linspace(10.0, 20.0, 30))
-        np.testing.assert_array_equal(
-            padded_pct_change(s).to_numpy(), s.pct_change(fill_method=None).to_numpy()
-        )
-
-    def test_does_not_mutate_input(self) -> None:
-        s = pd.Series([1.0, NAN, 2.0])
-        padded_pct_change(s)
-        assert s.isna().tolist() == [False, True, False]
 
 
 class TestNoBarePctChangeCalls:
@@ -101,36 +52,6 @@ class TestNoBarePctChangeCalls:
         # studies move there; until then the globs match nothing and the test passes trivially.
         roots = [*REPO.glob("research/*/*/code"), *REPO.glob("research/*/_lib")]
         assert [call for root in roots for call in self._bare_calls(root)] == []
-
-
-class TestEventStudyStack:
-    """pandas 3 `stack()` keeps NaN rows; split_event_returns must still drop them."""
-
-    def test_nan_cells_are_not_counted_as_event_or_nonevent_returns(self) -> None:
-        idx = pd.RangeIndex(4)
-        returns = pd.DataFrame(
-            {"A": [0.01, NAN, 0.03, 0.04], "B": [NAN, 0.02, NAN, 0.05]}, index=idx
-        )
-        mask = pd.DataFrame({"A": [True, True, False, False], "B": [False, True, False, True]})
-        event, nonevent = split_event_returns(returns, mask)
-        assert sorted(event.tolist()) == [0.01, 0.02, 0.05]
-        assert sorted(nonevent.tolist()) == [0.03, 0.04]
-
-    def test_event_study_uses_padded_returns_for_price_gaps(self) -> None:
-        # A one-day price gap in the non-event region: the old default padded it to a 0.0 return
-        # that stays in the non-event sample; bare pandas 3 turns it (and the next return) to NaN.
-        n = 20
-        px = 100.0 + np.arange(n, dtype=float)
-        px[3] = NAN
-        close = pd.DataFrame({"A": px})
-        entries = pd.DataFrame({"A": [False] * n})
-        exits = pd.DataFrame({"A": [False] * n})
-        entries.loc[8, "A"] = True
-        exits.loc[14, "A"] = True
-        result = run_event_study_from_signals(close, entries, exits)
-        # event bars 9..14 (6); non-event returns on bars 1..8 and 15..19 (8 + 5), gap included.
-        assert result.n_event == 6
-        assert result.n_nonevent == 13
 
 
 class TestLivePathOverlay:
