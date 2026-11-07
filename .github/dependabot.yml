@@ -21,11 +21,26 @@ updates:
       - dependency-name: "numba"
       - dependency-name: "llvmlite"
       - dependency-name: "plotly"
+      # Pinned exactly in pyproject.toml on purpose: `ruff format` output changes between
+      # versions (0.16 started formatting Markdown code blocks). Bump by hand, with the reformat.
+      - dependency-name: "ruff"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+    groups:
+      # upload and download must move together (same artifact backend): one PR, never two.
+      artifact-actions:
+        patterns:
+          - "actions/upload-artifact"
+          - "actions/download-artifact"
+    ignore:
+      # Upstream removed the GitHub Action in opencode v2.2.0 (#59032); v2.x has no github/action.yml.
+      # The pinned v1 still works for the dormant .github/workflows/opencode.yml.
+      - dependency-name: "anomalyco/opencode/github"
 
   - package-ecosystem: "docker"
     directory: "/"
