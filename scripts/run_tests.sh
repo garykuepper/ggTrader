@@ -14,19 +14,29 @@
 #   scripts/run_tests.sh                 FAST CORE: the developer loop, about a minute and a half.
 #   scripts/run_tests.sh --fast [ARGS]   Same as no arguments, with extra pytest ARGS.
 #   scripts/run_tests.sh --full [ARGS]   EVERYTHING except `integration`: the merge, deploy and
-#                                        vectorbt-upgrade gate. Includes the live golden, the
-#                                        real-tape oracles, the numba engine and the study tests.
-#   scripts/run_tests.sh --studies [ARGS]  Only the study tier (`-m study`). It always names `tests`
-#                                        (study tests still live there) plus every existing
-#                                        research/*/*/code/tests and research/*/_lib/tests folder,
-#                                        explicitly: never pass the bare `research` directory to
-#                                        pytest (it holds frozen test_*.py files that import deleted
-#                                        modules). When such folders exist it adds
-#                                        --import-mode=importlib (study test file names may repeat).
-#                                        Collecting no test at all is an error (pytest exit 5).
+#                                        vectorbt-upgrade gate. Two pytest runs, one after the
+#                                        other: (1) `pytest --tier full tests` (the live golden,
+#                                        the real-tape oracles, the numba engine), then (2) the
+#                                        study half below.
+#   scripts/run_tests.sh --studies [ARGS]  The study tier. Two pytest runs: (1) `pytest --tier
+#                                        studies tests` (exit 5, nothing collected, is accepted:
+#                                        study tests are leaving tests/), then (2) the study half.
+#                                        The study half is `pytest --import-mode=importlib -m "not
+#                                        integration" --min-collected N <folders>` over the
+#                                        research/*/*/code/tests and research/*/_lib/tests folders
+#                                        that exist (tests/tiers.py: STUDY_TEST_GLOBS, and N =
+#                                        STUDIES_MIN_COLLECTED, which a run below fails). importlib
+#                                        mode because study test file names may repeat. It never
+#                                        passes the bare `research` folder to pytest: that holds
+#                                        frozen test_*.py files that import deleted modules. With no
+#                                        folder yet and N = 0 the half is skipped with a note.
+#                                        The exit status is non-zero if either run fails.
 #   scripts/run_tests.sh <pytest args>   Anything else goes to pytest unchanged and, as always,
 #                                        runs every test in the paths named (default: all of
 #                                        tests/ except `integration`), i.e. the FULL semantics.
+#
+#   A path among the ARGS of --full or --studies (an existing file or folder, or file::test)
+#   makes it a targeted run: ONE pytest run of the tier over just those paths, no study half.
 #
 # Examples:
 #   scripts/run_tests.sh tests/paper -q     # any pytest args
@@ -35,7 +45,7 @@
 #   GGT_TEST_PYTHON=/absolute/frozen/venv/bin/python scripts/run_tests.sh tests/lab -q
 #   (GGT_PYTHON is accepted as a shorter alias and wins if both are set)
 #   GGT_TEST_NO_CGROUP=1  skip systemd-run (CI runners; the cap is for the developer host)
-#   GGT_TEST_DRY_RUN=1    print the pytest command and exit (used by tests/test_root_conftest.py)
+#   GGT_TEST_DRY_RUN=1    print the pytest command(s) and exit (used by tests/test_root_conftest.py)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -68,43 +78,112 @@ fi
 
 cd "$REPO"
 
-if [[ "$TIER" == "studies" ]]; then
-    # Explicit paths only. nullglob: no match means no extra path, not a literal pattern.
-    shopt -s nullglob
-    study_dirs=(research/*/*/code/tests research/*/_lib/tests)
-    shopt -u nullglob
-    if [[ ${#study_dirs[@]} -gt 0 ]]; then
-        set -- --import-mode=importlib tests "${study_dirs[@]}" "$@"
-    else
-        set -- tests "$@"
+run_pytest() {
+    # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1. Returns its status.
+    if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
+        echo "$PYTHON -m pytest $*"
+        return 0
     fi
-fi
+    if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
+        env PYTHONPATH=src "$PYTHON" -m pytest "$@"
+    else
+        systemd-run --user --scope -q --collect \
+            -p MemoryMax="$MEM_MAX" \
+            -p MemorySwapMax=0 \
+            env PYTHONPATH=src "$PYTHON" -m pytest "$@"
+    fi
+}
+
+study_plan() {
+    # Prints the STUDIES_MIN_COLLECTED minimum, then each existing study test folder, one per
+    # line. tests/tiers.py is loaded by file path: an installed top-level `tests` package could
+    # otherwise win the import.
+    "$PYTHON" -c '
+import importlib.util
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("ggt_tiers", "tests/tiers.py")
+tiers = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(tiers)
+print(tiers.STUDIES_MIN_COLLECTED)
+for folder in tiers.study_test_dirs(Path.cwd()):
+    print(folder)
+'
+}
+
+# A path among the user's arguments makes this a targeted run of one pytest invocation.
+# The value of an option that takes one (`-k research`, `-m slow`, `--ignore tests/x`) is not a
+# target path even when a file or folder of that name exists, so it is skipped.
+has_path=0
+skip_value=0
+for arg in "$@"; do
+    if [[ $skip_value -eq 1 ]]; then
+        skip_value=0
+        continue
+    fi
+    case "$arg" in
+        -k|-m|-p|-c|-o|-n|-W|-r|--tier|--deselect|--ignore|--ignore-glob|--maxfail|--durations|\
+        --durations-min|--min-collected|--rootdir|--import-mode|--junitxml|--basetemp|\
+        --log-level|--confcutdir|--golden-reason|--override-ini|--capture|--tb|--color)
+            skip_value=1
+            continue
+            ;;
+        -*) continue ;;
+    esac
+    [[ -e "${arg%%::*}" ]] && has_path=1
+done
 
 if [[ -n "$TIER" ]]; then
-    # -rs names every skip: the real-tape oracles skip silently on a checkout without the
-    # git-ignored tape, and a green run that skipped them must say so.
-    set -- --tier "$TIER" -rs "$@"
     echo "running the $TIER test tier under MemoryMax=$MEM_MAX (no swap)" >&2
 else
     echo "running pytest under MemoryMax=$MEM_MAX (no swap)" >&2
 fi
 
-if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
-    echo "$PYTHON -m pytest $*"
-    exit 0
+# The tests/ run (the whole run for fast, targeted and pass-through calls).
+if [[ -z "$TIER" ]]; then
+    first=("$@")
+elif [[ "$TIER" == "fast" || $has_path -eq 1 ]]; then
+    # -rs names every skip: the real-tape oracles skip silently on a checkout without the
+    # git-ignored tape, and a green run that skipped them must say so.
+    first=(--tier "$TIER" -rs "$@")
+else
+    first=(--tier "$TIER" -rs tests "$@")
 fi
 
-set +e
-if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
-    env PYTHONPATH=src "$PYTHON" -m pytest "$@"
-else
-    systemd-run --user --scope -q --collect \
-        -p MemoryMax="$MEM_MAX" \
-        -p MemorySwapMax=0 \
-        env PYTHONPATH=src "$PYTHON" -m pytest "$@"
+status=0
+run_pytest "${first[@]}" || status=$?
+# Nothing collected from tests/ is fine for the studies tier: the study tests are leaving it.
+if [[ "$TIER" == "studies" && $has_path -eq 0 && $status -eq 5 ]]; then
+    status=0
 fi
-status=$?
-set -e
+
+if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 ]]; then
+    mapfile -t plan < <(study_plan)
+    min_collected="${plan[0]}"
+    study_dirs=()
+    for folder in "${plan[@]:1}"; do
+        [[ -n "$folder" ]] && study_dirs+=("$folder")
+    done
+    if [[ ${#study_dirs[@]} -eq 0 && "$min_collected" -eq 0 ]]; then
+        echo "no study test folders yet (STUDIES_MIN_COLLECTED = 0): skipping the study half" >&2
+    elif [[ ${#study_dirs[@]} -eq 0 ]]; then
+        echo "error: no study test folder exists but STUDIES_MIN_COLLECTED = $min_collected" >&2
+        status=$(( status == 0 ? 1 : status ))
+    else
+        half=0
+        run_pytest --import-mode=importlib -m "not integration" \
+            --min-collected "$min_collected" -rs "${study_dirs[@]}" "$@" || half=$?
+        # Exit 5 (nothing collected) is only acceptable while no minimum is promised.
+        if [[ $half -eq 5 && "$min_collected" -eq 0 ]]; then
+            half=0
+        fi
+        status=$(( status == 0 ? half : status ))
+    fi
+fi
+
+if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
+    exit "$status"
+fi
 
 # 137 = SIGKILL, which from inside this scope means the cap was hit.
 if [[ $status -eq 137 ]]; then

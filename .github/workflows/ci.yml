@@ -4,11 +4,14 @@ name: CI
 #   test  FAST CORE: lint + engine check + the developer-loop tests (about two minutes). Runs on
 #         every pull request and on every push to main. Its job id stays `test`, so a branch
 #         protection rule that requires the check named "test" keeps working.
-#   studies  The study tier (tests of closed research studies, `scripts/run_tests.sh --studies`).
-#         Runs on every pull request and push to main, so a change under src/ cannot break a
-#         study's code unseen. It names `tests` plus the explicit research/*/*/code/tests and
-#         research/*/_lib/tests folders (never the bare research folder); collecting no test at
-#         all fails the job (pytest exit 5), so it cannot go green by finding nothing.
+#   studies  The study tier: the pins of the frozen research evidence still resolve to real code
+#         (scripts/verify_pins.py, which needs the full git history), then the tests of closed
+#         research studies (`scripts/run_tests.sh --studies`: `--tier studies tests`, then the
+#         explicit research/*/*/code/tests and research/*/_lib/tests folders under
+#         `--min-collected`; never the bare research folder). Runs on every pull request, push to
+#         main, weekly and by hand, with no path filter: a path-filtered required check never
+#         reports on an unrelated pull request and stays pending, so a change under src/ cannot
+#         break a study's code unseen.
 #   full  EVERYTHING except `integration`: the merge, deploy and vectorbt-upgrade gate. Runs on
 #         every push to main and weekly, because the fast core leaves out the slow, numba,
 #         tripwire, study and tooling tests. The real-tape oracles and the live golden still skip
@@ -82,12 +85,14 @@ jobs:
 
   studies:
     name: studies
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          # verify_pins walks the history of moved and edited files; a shallow clone is refused.
+          fetch-depth: 0
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -103,7 +108,15 @@ jobs:
           python-version: '3.12'
 
       - name: Install
-        run: uv sync --frozen --extra test --extra dev
+        run: |
+          uv sync --frozen --extra test --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Evidence pins
+        # 22 code hashes recorded in frozen research reports must keep resolving: at their path
+        # (MATCH), at the new path research/CODEMOVED.csv names (MOVED-MATCH), or in history
+        # (HISTORY-MATCH). Each slice that moves pinned code updates these counts in this line.
+        run: python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0
 
       - name: Test (study tier)
         # run_tests.sh builds the explicit path list; GGT_TEST_NO_CGROUP skips the developer

@@ -67,3 +67,22 @@ def test_the_fast_tier_drops_the_live_golden_and_the_full_tier_keeps_it() -> Non
     assert "test_rebuilt_signal_runner_reproduces_the_live_golden" in _collect(
         golden, "--tier", "full"
     )
+
+
+def test_the_study_half_promises_a_non_negative_minimum_and_two_folder_patterns() -> None:
+    assert isinstance(tiers.STUDIES_MIN_COLLECTED, int) and tiers.STUDIES_MIN_COLLECTED >= 0
+    assert tiers.STUDY_TEST_GLOBS == ("research/*/*/code/tests", "research/*/_lib/tests")
+    # Never the bare research folder: it holds frozen test_*.py files that import deleted modules.
+    assert all(
+        glob != "research" and glob.startswith("research/") for glob in tiers.STUDY_TEST_GLOBS
+    )
+
+
+def test_study_test_dirs_lists_only_existing_folders(tmp_path: Path) -> None:
+    (tmp_path / "research/a/s/code/tests").mkdir(parents=True)
+    (tmp_path / "research/a/_lib/tests").mkdir(parents=True)
+    (tmp_path / "research/a/s2/code").mkdir(parents=True)  # no tests folder
+    (tmp_path / "research/b/t/code").mkdir(parents=True)
+    (tmp_path / "research/b/t/code/tests").write_text("a file, not a folder")
+    assert tiers.study_test_dirs(tmp_path) == ["research/a/_lib/tests", "research/a/s/code/tests"]
+    assert tiers.study_test_dirs(tmp_path / "missing") == []

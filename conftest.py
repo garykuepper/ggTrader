@@ -22,6 +22,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         help="fast = developer loop, full = merge/deploy gate, studies = study tests only "
         "(scripts/run_tests.sh picks one; a bare pytest is the full tier)",
     )
+    parser.getgroup("test tiers").addoption(
+        "--min-collected",
+        type=int,
+        default=0,
+        help="fail with a usage error if fewer tests than this are collected "
+        "(the study half of scripts/run_tests.sh sets it from tests/tiers.py)",
+    )
     group = parser.getgroup("engine goldens")
     group.addoption(
         "--update-golden",
@@ -39,6 +46,16 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Apply the chosen tier's marker expression (it replaces the pyproject default)."""
     tiers.apply_tier(config.option, config.getoption("--tier"))
+
+
+def pytest_collection_finish(session: pytest.Session) -> None:
+    """Fail loudly when a run collected fewer tests than ``--min-collected`` promised."""
+    minimum = session.config.getoption("--min-collected")
+    if len(session.items) < minimum:
+        raise pytest.UsageError(
+            f"collected {len(session.items)} tests but --min-collected is {minimum}: "
+            "a study test folder is missing or failed to collect"
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")

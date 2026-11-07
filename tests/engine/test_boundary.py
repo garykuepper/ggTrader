@@ -25,6 +25,8 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SCAN_ROOTS = ("src", "scripts", "tests")
+#: Study code is scanned too: it must reach vectorbt only through ``ggTrader.engine`` like the rest.
+SCAN_GLOBS = ("research/*/*/code", "research/*/_lib")
 SCAN_FILES = ("ggt.py",)
 ENGINE_DIR = "src/ggTrader/engine/"
 ENGINE_TESTS = "tests/engine/"
@@ -164,6 +166,9 @@ def _python_files() -> list[Path]:
     files = [ROOT / name for name in SCAN_FILES if (ROOT / name).exists()]
     for top in SCAN_ROOTS:
         files += sorted((ROOT / top).rglob("*.py"))
+    for pattern in SCAN_GLOBS:
+        for folder in sorted(ROOT.glob(pattern)):
+            files += sorted(folder.rglob("*.py"))
     return [f for f in files if ".venv" not in f.parts and "__pycache__" not in f.parts]
 
 
@@ -187,6 +192,29 @@ def test_only_the_engine_package_touches_vectorbt() -> None:
     }
     assert not offenders, f"vectorbt boundary violated: {offenders}"
     assert not engine_private
+
+
+def test_study_code_and_libraries_are_scanned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A vectorbt import or ``.vbt`` call in research/*/*/code or research/*/_lib is a violation."""
+    code = tmp_path / "research/alloc/study/code/run.py"
+    lib = tmp_path / "research/alloc/_lib/helper.py"
+    clean = tmp_path / "research/alloc/study/code/clean.py"
+    frozen = tmp_path / "research/alloc/artifacts-2026/old.py"
+    for path, source in (
+        (code, "import vectorbt\n"),
+        (lib, "x = close.vbt.crossed_above(y)\n"),
+        (clean, "import pandas\n"),
+        (frozen, "import vectorbt\n"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(source)
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    assert set(_scan_repo()) == {
+        "research/alloc/study/code/run.py",
+        "research/alloc/_lib/helper.py",
+    }
 
 
 def test_legacy_only_allowlist_has_no_stale_entries() -> None:
