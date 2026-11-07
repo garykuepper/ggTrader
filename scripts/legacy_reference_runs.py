@@ -360,11 +360,7 @@ def run_wfo_case(name: str, spec: dict[str, Any], tape: Tape, out_dir: Path) -> 
     """Walk-forward run for one strategy, mirroring ``run_core`` of the anchor-fix driver."""
     import joblib  # noqa: PLC0415
     import pandas as pd  # noqa: PLC0415
-    from ggTrader.lab.strategies.cross_asset_sleeve import (  # noqa: PLC0415
-        CROSS_ASSET_SLEEVE_UNIVERSE,
-    )
     from ggTrader.lab.sweep import build_grid  # noqa: PLC0415
-    from ggTrader.lab.wfo import run_wfo  # noqa: PLC0415
 
     from ggTrader.lab.data import (  # noqa: PLC0415
         STOCK_BASE_CONFIG,
@@ -372,7 +368,11 @@ def run_wfo_case(name: str, spec: dict[str, Any], tape: Tape, out_dir: Path) -> 
         equity_universe_between,
     )
     from ggTrader.lab.strategies import STRATEGY_REGISTRY  # noqa: PLC0415
+    from ggTrader.lab.strategies.cross_asset_sleeve import (  # noqa: PLC0415
+        CROSS_ASSET_SLEEVE_UNIVERSE,
+    )
     from ggTrader.lab.strategy import LabConfig  # noqa: PLC0415
+    from ggTrader.lab.wfo import run_wfo  # noqa: PLC0415
 
     t0 = time.time()
     result = _common_header(name, spec, tape)
@@ -507,7 +507,6 @@ def run_spy_case(name: str, spec: dict[str, Any], tape: Tape, out_dir: Path) -> 
 def run_golden_case(name: str, spec: dict[str, Any], tape: Tape, out_dir: Path) -> dict[str, Any]:
     """Boolean entry/exit frames for the five voters and the ensemble (first 150 symbols)."""
     import numpy as np  # noqa: PLC0415
-    from ggTrader.lab.strategies.ensemble import EnsembleSignal  # noqa: PLC0415
     from ggTrader.lab.strategies.indicators import (  # noqa: PLC0415
         bb_signals,
         ema_signals,
@@ -516,6 +515,7 @@ def run_golden_case(name: str, spec: dict[str, Any], tape: Tape, out_dir: Path) 
         volume_bb_signals,
     )
 
+    from ggTrader.lab.strategies.ensemble import EnsembleSignal  # noqa: PLC0415
     from ggTrader.lab.strategy import LabConfig  # noqa: PLC0415
 
     t0 = time.time()
@@ -577,12 +577,12 @@ def run_live_golden_case(
     window, exactly as the live code derives them (the ML gate is off by default and skipped).
     """
     import pandas as pd  # noqa: PLC0415
-    from ggTrader.lab.strategies.ensemble import EnsembleSignal  # noqa: PLC0415
 
     from ggTrader.data.core.index_constituents import (  # noqa: PLC0415
         normalize_yf_ticker,
         universe_members_asof,
     )
+    from ggTrader.lab.strategies.ensemble import EnsembleSignal  # noqa: PLC0415
     from ggTrader.lab.strategy import LabConfig  # noqa: PLC0415
 
     t0 = time.time()
