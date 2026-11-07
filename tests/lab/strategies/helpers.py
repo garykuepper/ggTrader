@@ -1,4 +1,11 @@
-"""Synthetic bars and comparison helpers for the engine-contract strategy tests."""
+"""Synthetic bars and comparison helpers for the engine-contract strategy tests.
+
+The parameter sets in ``FROZEN_BARS`` feed bit-exact comparisons against the frozen legacy
+goldens, so their arrays are read from ``golden/bars.npz`` instead of being generated: the
+generator uses ``np.exp`` and ``np.sin``, whose float64 loops are CPU-dependent (AVX-512 versus
+AVX2 can differ in the last bit), which made those tests fail on GitHub runners. Other parameter
+sets are generated. Rewrite or verify the file with ``scripts/freeze_test_inputs.py``.
+"""
 
 from __future__ import annotations
 
@@ -9,23 +16,37 @@ import numpy as np
 import pandas as pd
 
 from ggTrader.data.bars import Bars
+from tests.frozen_inputs import load_frozen
 
 BURN_IN = 200
+BARS_FILE = Path(__file__).parent / "golden" / "bars.npz"
+BAR_ARRAYS = ("close", "open", "high", "low", "volume")
+# The cross-asset sleeve's UNIVERSE, sorted (the bar names test_weights.py asks for).
+SLEEVE_SYMBOLS = ("BIL", "GLD", "PDBC", "SPY", "TLT")
+# (seed, n_bars, n_syms, holes, symbols) of every bar set a golden comparison reads; ``symbols``
+# None means the default S00.. names.
+FROZEN_BARS: tuple[tuple[int, int, int, bool, tuple[str, ...] | None], ...] = (
+    (21, 900, 10, True, None),  # test_ensemble: legacy_signals.npz
+    (33, 800, 8, True, None),  # test_voter_strategies: legacy_signals.npz
+    (51, 800, 8, True, None),  # test_conviction_bb: legacy_signals.npz
+    (41, 900, 14, True, None),  # test_weights xs_momentum: legacy_weights.npz
+    (7, 700, 5, False, SLEEVE_SYMBOLS),  # test_weights sleeve: legacy_weights.npz
+)
 
 
-def make_bars(
-    seed: int = 11,
-    n_bars: int = 700,
-    n_syms: int = 10,
-    *,
-    holes: bool = False,
-    symbols: list[str] | None = None,
-) -> Bars:
-    """Mean-reverting log-normal bars (UTC business days) with optional holes and late listing."""
+def bars_key(
+    seed: int, n_bars: int, n_syms: int, holes: bool, symbols: tuple[str, ...] | None
+) -> str:
+    """The archive key of one parameter set."""
+    names = ",".join(symbols) if symbols else "-"
+    return f"bars|seed={seed}|n_bars={n_bars}|n_syms={n_syms}|holes={holes}|symbols={names}"
+
+
+def generate_bar_arrays(
+    seed: int, n_bars: int, n: int, *, holes: bool = False
+) -> dict[str, np.ndarray]:
+    """Generate the bar arrays live (CPU-dependent in the last bit; see the module docstring)."""
     rng = np.random.default_rng(seed)
-    index = pd.bdate_range("2019-03-01", periods=n_bars, tz="UTC")
-    names = symbols or [f"S{i:02d}" for i in range(n_syms)]
-    n = len(names)
     noise = rng.normal(0.0003, 0.02, (n_bars, n))
     wave = 0.012 * np.sin(np.arange(n_bars)[:, None] / (6.0 + np.arange(n)[None, :]))
     close = 100.0 * np.exp(np.cumsum(noise + np.diff(wave, axis=0, prepend=0.0), axis=0))
@@ -39,16 +60,28 @@ def make_bars(
         close[500:, 3] = np.nan  # delisting
         mask = np.isnan(close)
         high, low, open_, volume = (np.where(mask, np.nan, a) for a in (high, low, open_, volume))
-    frames = {
-        name: pd.DataFrame(arr, index=index, columns=names)
-        for name, arr in (
-            ("close", close),
-            ("open", open_),
-            ("high", high),
-            ("low", low),
-            ("volume", volume),
-        )
-    }
+    return {"close": close, "open": open_, "high": high, "low": low, "volume": volume}
+
+
+def make_bars(
+    seed: int = 11,
+    n_bars: int = 700,
+    n_syms: int = 10,
+    *,
+    holes: bool = False,
+    symbols: list[str] | None = None,
+) -> Bars:
+    """Mean-reverting log-normal bars (UTC business days) with optional holes and late listing.
+
+    A frozen parameter set (see the module docstring) is read from ``golden/bars.npz``.
+    """
+    index = pd.bdate_range("2019-03-01", periods=n_bars, tz="UTC")
+    names = symbols or [f"S{i:02d}" for i in range(n_syms)]
+    key = bars_key(seed, n_bars, n_syms, holes, tuple(symbols) if symbols else None)
+    arrays = load_frozen(BARS_FILE, key, BAR_ARRAYS)
+    if arrays is None:
+        arrays = generate_bar_arrays(seed, n_bars, len(names), holes=holes)
+    frames = {name: pd.DataFrame(arrays[name], index=index, columns=names) for name in BAR_ARRAYS}
     last = frames["close"].apply(lambda s: s.last_valid_index())
     return Bars(
         requested=tuple(names),

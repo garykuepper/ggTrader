@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-06 (CI: CPU-independent golden inputs)
+
+- **CI run 42336425002 failed 17 tests that pass locally; the cause is the test inputs, not the engine.** All 17 compare an equity curve bit for bit (`np.array_equal`) with a golden frozen on an AVX2 machine, using prices the test generators build with `np.exp` (and `np.sin`). NumPy picks the float64 `exp`/`sin` loop by CPU, so on the AVX-512 GitHub runners the generated prices can differ in the last bit and the equity curves differ by 2e-16 to 4e-16 relative (the printed arrays in the CI log are identical to eight decimals; trade counts are unchanged). Reproduced locally by moving the generated closes by one ulp (19 tests fail the same way, 2 to 4 ulp of equity difference, same trades).
+  - **Fix.** The parameter sets that golden comparisons read are frozen: `tests/engine/golden/panels.npz` (6 panels, 326 KB) for `make_panel` and `tests/lab/strategies/golden/bars.npz` (5 bar sets, 1.2 MB) for `make_bars`. Both factories read the frozen arrays for those parameter sets and generate the others live. `scripts/freeze_test_inputs.py` writes (`--write`) or verifies the files; they were generated on the machine that froze the goldens and equal a fresh regeneration there bit for bit. `tests/test_frozen_inputs.py` fails if a factory change makes it fall back to live generation, or if a frozen set drifts from its generator by more than 1e-12. The bit-identity assertions themselves are unchanged.
+  - **Audit.** A full-suite run with the generators' `exp`/`sin` perturbed by one ulp fails only these 19 tests (the 17 of CI plus `trail_and_tp` on both engines, which passed on the runner by chance) and none after the fix. Other golden tests (`test_golden.py`, the mini-WFO golden, the legacy signal and logic-unit goldens, the boolean signal comparisons) are tolerant or discrete and stay green under the perturbation.
+
 ## 2026-11-06 (P10)
 
 - **P10: the uncontroversial part of the final audit's punch list (code, tests and docs; nothing run against the broker, the database, Docker, cron or Telegram).** Details and numbers: `research/programme/vectorbt-engine/P10-completion.md`; deletion ledger: `P10-ledger.csv`.

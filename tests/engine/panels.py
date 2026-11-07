@@ -1,14 +1,41 @@
 """Seeded synthetic panels and independent numpy reference formulas for the engine tests.
 
 Nothing here imports vectorbt: the references are the oracles the adapter is held to.
+
+The parameter sets in ``FROZEN_PANELS`` feed bit-exact comparisons against the frozen legacy
+goldens, so their arrays are read from ``golden/panels.npz`` instead of being generated: the
+generator uses ``np.exp``, whose float64 loop is CPU-dependent (AVX-512 versus AVX2 can differ in
+the last bit), which made those tests fail on GitHub runners. Other parameter sets are generated.
+Rewrite or verify the file with ``scripts/freeze_test_inputs.py``.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
+from tests.frozen_inputs import load_frozen
+
 GOLDEN_SEED = 20261106
+PANELS_FILE = Path(__file__).parent / "golden" / "panels.npz"
+PANEL_ARRAYS = ("close", "high", "low", "volume")
+# (seed, n_bars, n_syms, holes) of every panel a golden comparison reads (test_portfolio.py).
+FROZEN_PANELS: tuple[tuple[int, int, int, bool], ...] = (
+    (3, 500, 6, True),
+    (4, 400, 4, False),
+    (6, 500, 4, False),
+    (6, 300, 5, True),
+    (8, 400, 6, False),
+    (8, 120, 3, False),
+)
+START = "2020-01-01"
+
+
+def panel_key(seed: int, n_bars: int, n_syms: int, holes: bool, start: str) -> str:
+    """The archive key of one parameter set."""
+    return f"panel|seed={seed}|n_bars={n_bars}|n_syms={n_syms}|holes={holes}|start={start}"
 
 
 def make_panel(
@@ -17,12 +44,25 @@ def make_panel(
     n_syms: int = 8,
     *,
     holes: bool = False,
-    start: str = "2020-01-01",
+    start: str = START,
 ) -> dict[str, pd.DataFrame]:
-    """Log-normal close panel with high/low/volume; optional NaN holes and a price gap."""
-    rng = np.random.default_rng(seed)
+    """Log-normal close panel with high/low/volume; optional NaN holes and a price gap.
+
+    A frozen parameter set (see the module docstring) is read from ``golden/panels.npz``.
+    """
+    frozen = load_frozen(PANELS_FILE, panel_key(seed, n_bars, n_syms, holes, start), PANEL_ARRAYS)
+    if frozen is None:
+        frozen = generate_panel_arrays(seed, n_bars, n_syms, holes=holes)
     index = pd.bdate_range(start, periods=n_bars)
     symbols = [f"S{i:02d}" for i in range(n_syms)]
+    return {k: pd.DataFrame(frozen[k], index=index, columns=symbols) for k in PANEL_ARRAYS}
+
+
+def generate_panel_arrays(
+    seed: int, n_bars: int, n_syms: int, *, holes: bool = False
+) -> dict[str, np.ndarray]:
+    """Generate the panel arrays live (CPU-dependent in the last bit; see the module docstring)."""
+    rng = np.random.default_rng(seed)
     close = 100.0 * np.exp(np.cumsum(rng.normal(0.0002, 0.02, (n_bars, n_syms)), axis=0))
     high = close * (1.0 + rng.uniform(0.0, 0.01, close.shape))
     low = close * (1.0 - rng.uniform(0.0, 0.01, close.shape))
@@ -33,13 +73,7 @@ def make_panel(
         close[400:, 3] = np.nan  # delisting
         close[300:, 4] *= 0.5  # a price gap
         high, low = np.where(np.isnan(close), np.nan, high), np.where(np.isnan(close), np.nan, low)
-    frame = {
-        "close": close,
-        "high": high,
-        "low": low,
-        "volume": volume,
-    }
-    return {k: pd.DataFrame(v, index=index, columns=symbols) for k, v in frame.items()}
+    return {"close": close, "high": high, "low": low, "volume": volume}
 
 
 def ref_sma(x: np.ndarray, window: int) -> np.ndarray:
