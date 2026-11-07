@@ -78,3 +78,6 @@ backups/
 
 # cProfile dumps from ad-hoc profiling (regenerable; never evidence)
 *.prof
+
+# graphify knowledge-graph output (regenerable: graph.json, graph.html, cache, manifest)
+graphify-out/
