@@ -172,6 +172,7 @@ def _clean_env() -> dict[str, str]:
     }
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("script", SAFE, ids=_ids(SAFE))
 def test_script_help_exits_zero_with_usage(script: Path, tmp_path: Path) -> None:
     result = subprocess.run(

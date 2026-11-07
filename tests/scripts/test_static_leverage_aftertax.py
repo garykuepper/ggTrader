@@ -8,6 +8,8 @@ import sys
 import pandas as pd
 import pytest
 
+pytestmark = pytest.mark.study
+
 
 def test_distribution_taxed_as_short_term_goes_to_st_bucket():
     from scripts.static_leverage_aftertax import Book

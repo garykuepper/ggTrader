@@ -72,6 +72,7 @@ def _check(bars, make_mask, ends, extra, td_stop) -> None:
 
 
 @pytest.mark.parametrize("variant", sorted(VARIANTS))
+@pytest.mark.slow
 def test_single_pass_equals_truncated_simulations_on_a_synthetic_panel(variant: str) -> None:
     bars = h.small_wfo_bars(seed=17, n_syms=6)
     extra, td_stop = VARIANTS[variant]
@@ -81,6 +82,7 @@ def test_single_pass_equals_truncated_simulations_on_a_synthetic_panel(variant: 
 
 
 @h.needs_real
+@pytest.mark.slow
 @pytest.mark.parametrize("variant", sorted(VARIANTS))
 def test_single_pass_equals_truncated_simulations_on_the_real_tape(variant: str) -> None:
     from ggTrader.lab.strategy import LabConfig

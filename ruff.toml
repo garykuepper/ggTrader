@@ -42,6 +42,10 @@ exclude = [
 # by design. tests/engine/test_boundary.py fails if this entry has no violation left, and if it
 # disagrees with ``LEGACY_ONLY``.
 "scripts/legacy_reference_runs.py" = ["TID251"]  # legacy-interpreter-only reference runner
+# Study code (research/<category>/<study>/code/) calls its bootstrap before the ggTrader imports so
+# it runs from any checkout, which is what E402 flags. research/ is still excluded above until the
+# study-code lint scan lands (S3); this entry is ready for it.
+"research/**/code/*.py" = ["E402"]
 
 [format]
 quote-style = "double"

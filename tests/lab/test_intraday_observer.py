@@ -17,6 +17,8 @@ import pytest
 
 from ggTrader.lab import intraday_observer as obs
 
+pytestmark = pytest.mark.study
+
 
 def test_review_live_activation_requires_readiness_evidence(tmp_path):
     ob, _, _ = make_observer(tmp_path, start=(ACTIVATION, "10:00:00"))

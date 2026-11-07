@@ -21,6 +21,8 @@ from ggTrader.lab.net_issuance_screen import (
     screen,
 )
 
+pytestmark = pytest.mark.study
+
 
 def _archive(text: str) -> bytes:
     """Build a tiny frozen French CSV for exact-header tests."""

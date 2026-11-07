@@ -11,6 +11,8 @@ import pytest
 from scripts import root_cause_figures as rcf
 from scripts.root_cause_figures import FIGURES, OPTIONS, REPO_ROOT, Point, main, render
 
+pytestmark = pytest.mark.study
+
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 EXPECTED_NAMES = {"gap-vs-measured", "verdict-trust", "paper-shortfall", "options-at-a-glance"}
 

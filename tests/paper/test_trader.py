@@ -648,9 +648,15 @@ class TestRunDateIsSessionDateNotAsOf:
         assert logged_run_date == tuesday.isoformat()
         assert logged_run_date != monday.isoformat()
 
+    # The order stays "accepted", so _poll_orders waits out its budget: stub the clock and the sleep
+    # (as the sibling poll tests do) instead of burning 15 real seconds.
+    @patch("ggTrader.paper.trader.time.sleep")
+    @patch("ggTrader.paper.trader.time.time", side_effect=_clock_after(2))
     @patch("ggTrader.paper.trader.log_trade")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_log_pending_order_stamps_today_et_not_as_of(self, mock_signals, _log_trade, *_):
+    def test_log_pending_order_stamps_today_et_not_as_of(
+        self, mock_signals, _log_trade, _time, _sleep, *_
+    ):
         tuesday = date(2026, 6, 23)
         monday = date(2026, 6, 22)
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())

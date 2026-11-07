@@ -6,6 +6,8 @@ import pytest
 
 from scripts.check_vbt_engine import check_engine, main
 
+pytestmark = pytest.mark.slow
+
 
 @pytest.fixture(autouse=True)
 def _restore_engine_setting():

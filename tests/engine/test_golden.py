@@ -44,6 +44,7 @@ def _assert_sim(actual: dict, expected: dict) -> None:
         np.testing.assert_allclose(actual["value"][group], curve, rtol=RTOL)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "name", ["signals_trailing", "signals_masked_time_stop", "weights_monthly"]
 )
@@ -52,6 +53,7 @@ def test_simulation_goldens_hold_on_both_engines(engine: str, golden: dict, name
     _assert_sim(actual, golden[name])
 
 
+@pytest.mark.slow
 def test_mini_wfo_golden_holds_on_both_engines(engine: str, golden: dict) -> None:
     actual = scenarios.mini_wfo()["folds"]
     expected = golden["mini_wfo"]["folds"]
@@ -62,6 +64,7 @@ def test_mini_wfo_golden_holds_on_both_engines(engine: str, golden: dict) -> Non
             assert a[key] == pytest.approx(e[key], rel=RTOL, abs=1e-12), key
 
 
+@pytest.mark.numba
 def test_numba_and_rust_agree_on_every_scenario() -> None:
     """The simulators are exact; indicators agree to 1e-10 (spec L3b)."""
     config.set_engine("rust")

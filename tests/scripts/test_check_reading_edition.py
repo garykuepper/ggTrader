@@ -10,6 +10,8 @@ import pytest
 
 from scripts.check_reading_edition import check_file, load_sheet_terms, main
 
+pytestmark = pytest.mark.tooling
+
 EM_DASH = "—"
 TERMS = {"DSR", "NO-GO"}
 

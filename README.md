@@ -111,6 +111,7 @@ src/ggTrader/
 | `data/universe/` | Historical S&P 500 membership records. |
 | `scripts/` | Script utilities for cleaning and backfilling data. |
 | `tests/lab/` | Code tests to ensure the simulator is working correctly. |
+| `tests/` | `scripts/run_tests.sh` runs the fast core (about two minutes); `scripts/run_tests.sh --full` runs everything and is the gate before a merge, a deploy or a vectorbt upgrade. |
 
 ---
 

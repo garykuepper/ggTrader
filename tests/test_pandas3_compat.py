@@ -96,6 +96,12 @@ class TestNoBarePctChangeCalls:
     def test_scripts_have_no_bare_pct_change(self) -> None:
         assert self._bare_calls(REPO / "scripts") == []
 
+    def test_study_code_has_no_bare_pct_change(self) -> None:
+        # Study code lives under research/<category>/<study>/code and research/<category>/_lib once
+        # studies move there; until then the globs match nothing and the test passes trivially.
+        roots = [*REPO.glob("research/*/*/code"), *REPO.glob("research/*/_lib")]
+        assert [call for root in roots for call in self._bare_calls(root)] == []
+
 
 class TestEventStudyStack:
     """pandas 3 `stack()` keeps NaN rows; split_event_returns must still drop them."""

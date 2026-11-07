@@ -1,18 +1,37 @@
 name: CI
 
+# Two tiers (tests/tiers.py is the one place that says which tests are in which):
+#   test  FAST CORE: lint + engine check + the developer-loop tests (about two minutes). Runs on
+#         every pull request and on every push to main. Its job id stays `test`, so a branch
+#         protection rule that requires the check named "test" keeps working.
+#   studies  The study tier (tests of closed research studies, `scripts/run_tests.sh --studies`).
+#         Runs on every pull request and push to main, so a change under src/ cannot break a
+#         study's code unseen. It names `tests` plus the explicit research/*/*/code/tests and
+#         research/*/_lib/tests folders (never the bare research folder); collecting no test at
+#         all fails the job (pytest exit 5), so it cannot go green by finding nothing.
+#   full  EVERYTHING except `integration`: the merge, deploy and vectorbt-upgrade gate. Runs on
+#         every push to main and weekly, because the fast core leaves out the slow, numba,
+#         tripwire, study and tooling tests. The real-tape oracles and the live golden still skip
+#         here (the tape is git-ignored): run `scripts/run_tests.sh --full` locally before a merge.
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Mondays 07:15 UTC: catches dependency or runner drift between pushes.
+    - cron: "15 7 * * 1"
   workflow_dispatch:
 
 concurrency:
-  # A newer push to the same ref supersedes an in-flight run.
-  group: ci-${{ github.ref }}
+  # A newer push to the same ref supersedes an in-flight run; the weekly run has its own group.
+  group: ci-${{ github.event_name == 'schedule' && 'weekly' || github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
+    name: test
+    # The weekly schedule runs the full job only.
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,8 +72,79 @@ jobs:
           ruff check .
           ruff format --check .
 
-      - name: Test
+      - name: Test (fast core)
         # Integration tests are deselected by the `-m 'not integration'` default
         # in pyproject.toml -- they need a live TimescaleDB and network access,
-        # neither of which exists on the runner.
-        run: pytest tests -q
+        # neither of which exists on the runner. `--tier fast` also leaves out the
+        # slow, numba, tripwire, study and tooling tests (tests/tiers.py); the `full`
+        # job runs them.
+        run: pytest tests -q --tier fast
+
+  studies:
+    name: studies
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          # Same uv that wrote uv.lock.
+          version: "0.11.25"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          # Must match requires-python in pyproject.toml.
+          python-version: '3.12'
+
+      - name: Install
+        run: uv sync --frozen --extra test --extra dev
+
+      - name: Test (study tier)
+        # run_tests.sh builds the explicit path list; GGT_TEST_NO_CGROUP skips the developer
+        # host's systemd memory cap, which a runner does not have.
+        run: GGT_TEST_NO_CGROUP=1 scripts/run_tests.sh --studies -q
+
+  full:
+    name: full
+    # Every push to main, the weekly schedule and a manual run; pull requests run the fast core.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          # Same uv that wrote uv.lock.
+          version: "0.11.25"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          # Must match requires-python in pyproject.toml.
+          python-version: '3.12'
+
+      - name: Install
+        run: |
+          uv sync --frozen --extra test --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Engine check
+        run: |
+          uv lock --check
+          uv pip check
+          python scripts/check_vbt_engine.py --engine rust
+
+      - name: Test (full suite)
+        # The pyproject default: everything except `integration`. Reports skips (-rs) so a
+        # run that skipped the tape-dependent oracles says so.
+        run: pytest tests -q -rs

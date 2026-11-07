@@ -11,6 +11,8 @@ from ggTrader.lab.earnings_surprise_data import (
     fetch_symbol_surprises,
 )
 
+pytestmark = pytest.mark.study
+
 
 def _yf_earnings_dates_frame(rows: list[tuple[str, float, float, float]]) -> pd.DataFrame:
     """Mimics yfinance's Ticker.get_earnings_dates() return shape: a

@@ -1,0 +1,60 @@
+{
+ "host_load_average_during_runs": "about 2.4 (a concurrent read-only verification workflow ran on the same 4-core host)",
+ "baseline_full_seconds": 721.05,
+ "after_full_seconds": 620.31,
+ "fast_runs": [
+  {
+   "passed": 1316,
+   "seconds": 93.08,
+   "wall": "1m34.8s"
+  },
+  {
+   "passed": 1316,
+   "seconds": 97.52,
+   "wall": "1m39.4s"
+  }
+ ],
+ "fast_before_slow_moves": [
+  {
+   "passed": 1340,
+   "seconds": 125.72
+  },
+  {
+   "passed": 1306,
+   "seconds": 127.01,
+   "note": "before the root conftest, sentinel tests and boundary test were added"
+  },
+  {
+   "passed": 1306,
+   "seconds": 131.31
+  }
+ ],
+ "fast_durations_top25_run1": [
+  "4.66s call     tests/engine/test_portfolio.py::test_simulation_really_runs_on_the_configured_engine",
+  "3.69s call     tests/engine/test_selfcheck.py::test_probe_fails_when_the_kernel_runs_on_another_engine",
+  "3.00s call     tests/engine/test_defaults.py::test_default_sharpe_uses_a_365_day_year",
+  "2.93s call     tests/engine/test_config.py::test_importing_the_engine_installs_the_mismatch_filter",
+  "2.79s setup    tests/engine/test_defaults.py::test_vectorbt_defaults_have_not_changed",
+  "2.32s call     tests/lab/test_a23_rebalance.py::test_frozen_a23_shadow_rebalance_dates_and_lots_match",
+  "2.09s call     tests/lab/wfo/test_p5b_review_fixes.py::test_the_anchor_equals_a_fresh_simulation_on_data_truncated_at_train_end",
+  "2.08s call     tests/engine/test_portfolio.py::test_each_chunk_is_released_before_the_next_one_runs",
+  "1.90s call     tests/lab/wfo/test_p5b_review_fixes.py::test_bars_after_an_interior_train_end_cannot_change_that_folds_selection_or_anchor",
+  "1.72s call     tests/engine/test_boundary.py::test_legacy_only_allowlist_has_no_stale_entries",
+  "1.63s call     tests/lab/wfo/test_report_inputs_weights.py::test_stacking_windows_changes_no_number",
+  "1.61s call     tests/lab/wfo/test_report_inputs_weights.py::test_a_weight_wfo_runs_end_to_end_and_needs_an_eligibility_mask",
+  "1.60s call     tests/scripts/test_ruff_excludes_research.py::test_ruff_force_excludes_research_python_files",
+  "1.58s call     tests/engine/test_boundary.py::test_only_the_engine_package_touches_vectorbt",
+  "1.47s call     tests/test_tiers.py::test_the_fast_tier_drops_the_live_golden_and_the_full_tier_keeps_it",
+  "1.43s call     tests/lab/wfo/test_toy_known_answers.py::test_list_grids_and_legacy_frames_are_accepted",
+  "1.42s call     tests/lab/wfo/test_p5b_review_fixes.py::test_the_run_stamps_the_guards_it_used",
+  "1.38s call     tests/lab/wfo/test_toy_known_answers.py::test_the_oracle_also_holds_when_entries_fall_inside_the_train_windows",
+  "1.30s call     tests/engine/test_portfolio.py::test_six_chunks_equal_one_call_bit_for_bit",
+  "1.26s call     tests/lab/wfo/test_p5b_review_fixes.py::test_perturbing_bars_after_an_interior_train_end_leaves_that_anchor_unchanged[1]",
+  "1.19s call     tests/data/test_snapshot.py::test_real_snapshot_verifies_against_manifest",
+  "1.06s call     tests/lab/strategies/test_leak.py::test_signal_strategies_have_no_lookahead[ensemble-small]",
+  "1.05s call     tests/lab/strategies/test_leak.py::test_signal_strategies_have_no_lookahead[ensemble-extra1]",
+  "0.94s call     tests/data/test_bars.py::test_real_tape_universe_load_and_missing_symbols",
+  "0.90s call     tests/lab/wfo/test_p5b_review_fixes.py::test_perturbing_bars_after_an_interior_train_end_leaves_that_anchor_unchanged[0]"
+ ],
+ "decision": "over the 100 s budget at 125.7 s, so universe synthetic parity, causality synthetic and four non-memory leak_golden tests were marked slow (FULL tier) rather than relaxing the target"
+}

@@ -14,6 +14,8 @@ from ggTrader.lab import intraday_momentum as core
 from ggTrader.lab import intraday_momentum_data as data
 from ggTrader.lab.intraday_probe import utc_bounds
 
+pytestmark = pytest.mark.study
+
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts/intraday_momentum_research.py"
 SECRET = "SECRET-456-do-not-log"
 

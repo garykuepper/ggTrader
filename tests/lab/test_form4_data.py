@@ -13,6 +13,8 @@ from ggTrader.lab.form4_data import (
     parse_form4_transactions,
 )
 
+pytestmark = pytest.mark.study
+
 
 class TestLoadTickerCikMap:
     def test_parses_ticker_to_cik(self):

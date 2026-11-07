@@ -226,6 +226,7 @@ def _synthetic_world(seed: int, n_days: int = 90, n_sym: int = 30):
         {"min_history_bars": 20, "max_stocks": 3},
     ],
 )
+@pytest.mark.slow
 def test_synthetic_parity_with_eligible_at(seed, kw, monkeypatch) -> None:
     close, hist = _synthetic_world(seed)
     monkeypatch.setattr(
@@ -449,14 +450,17 @@ REAL_CONFIGS = {
 
 
 @needs_real
-def test_real_tape_parity_with_eligible_at_on_200_plus_dates_x_4_configs() -> None:
+@pytest.mark.slow
+def test_real_tape_parity_with_eligible_at_on_70_plus_dates_x_4_configs() -> None:
     close = _real_close()
     ohlcv = pd.concat({s: close[[s]].rename(columns={s: "close"}) for s in close.columns}, axis=1)
     hist = ic.load_sp500_history()
-    # 150 random bars + the neighbourhood of ~17 constituent changes (>= 200 dates in total).
-    # scripts/p3_pit_parity.py runs every change date; eligible_at costs ~0.19 s per call.
-    all_dates = sample_dates(close, n_random=150, seed=20261106)
-    assert len(all_dates) >= 200
+    # 20 random bars + the neighbourhood of ~19 constituent changes (57 dates, 77 in total). It was
+    # 150 random bars (202 dates, 139 s of the suite): scripts/p3_pit_parity.py runs every change
+    # date and the synthetic parity above covers the edge cases, so the random sample only
+    # spot-checks. eligible_at costs ~0.19 s per call.
+    all_dates = sample_dates(close, n_random=20, seed=20261106)
+    assert len(all_dates) >= 70
     masks = {
         name: uni.pit_mask(close, hist, on_stale="ignore", **kw)
         for name, kw in REAL_CONFIGS.items()

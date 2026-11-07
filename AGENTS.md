@@ -115,10 +115,11 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
 
 * **Running the test suite**:
   * Always run tests via `scripts/run_tests.sh` (takes any pytest args), never a bare `pytest`. It wraps the run in a transient cgroup with `MemoryMax=8G` and swap disabled.
+  * **Tiers (2026-11-07).** `scripts/run_tests.sh` with no arguments (or `--fast`) runs the FAST CORE, the developer loop (the Rust engine only; the `slow`, `numba`, `tripwire`, `study`, `tooling` and `integration` markers are left out, and it says so). `scripts/run_tests.sh --full` runs everything except `integration` and is the gate before any merge, deploy or vectorbt upgrade; `--studies` runs the study tests only. Any other arguments go to pytest unchanged and run every test in the paths named. The markers are registered in `pyproject.toml` and the tiers are defined once in `tests/tiers.py`. CI runs the fast core on every pull request and the full suite on every push to main and weekly; it cannot run the real-tape oracles or the live golden (the tape is git-ignored), so run `--full` locally before a merge.
   * This is not optional hygiene. On 2026-09-16 a full `pytest tests/` run hit ~10 GB, exhausted 31 GB of RAM *and* the 8 GB swap file, and wedged the whole Encom host for minutes at a time — five separate times in one day. Swap-file thrashing, not the allocation itself, is what made the box unreachable over SSH and Telegram.
   * **Likely root cause (2026-09-22): not a leak but an infinite loop.** `main` shows no growth; the branch built that day reproduces the blowup. An unstubbed DB read in `run()`-level paper tests let the connection pool's `time.time()` calls consume a mocked clock, so `_poll_orders` spun forever while allocating. Fixed in `6a052fa`; the full suite now peaks at ~650 MB in ~75 s.
   * A `137` exit means the run hit the cap — almost certainly a hang, not a big suite. Look for a test that touches a real DB, network, or clock before raising `GGT_TEST_MEM_MAX`. Do not remove the cap.
-  * Tests must never read the real `.env`: `tests/conftest.py` makes `load_dotenv` a no-op, so live flags (e.g. `CASH_SWEEP_ENABLED`) can't leak in. Any new `trader.py` persist import needs a stub in `tests/paper/test_trader.py`'s autouse fixtures.
+  * Tests must never read the real `.env`: the repo-root `conftest.py` makes `load_dotenv` a no-op for every test, wherever it lives, so live flags (e.g. `CASH_SWEEP_ENABLED`) can't leak in. Any new `trader.py` persist import needs a stub in `tests/paper/test_trader.py`'s autouse fixtures.
 
 ---
 

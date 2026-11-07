@@ -18,6 +18,8 @@ from ggTrader.lab.french_data import (
 )
 from ggTrader.lab.momentum_screen import cagr_diff_pp, holm, net_excess, nw_t
 
+pytestmark = pytest.mark.study
+
 
 def _panels() -> list[pd.DataFrame]:
     """Build only the histories required by the brief, without external services."""
