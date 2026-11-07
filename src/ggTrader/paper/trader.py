@@ -10,7 +10,8 @@ from zoneinfo import ZoneInfo
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
-from ggTrader.paper.notifier import TelegramNotifier
+from ggTrader.paper.gates import SignalGateError, late_run_reason
+from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
     clear_pending_order,
     clear_split_correction,
@@ -40,6 +41,11 @@ from ggTrader.paper.split_check import (
     compute_split_corrections,
     find_split_applied_symbols,
 )
+from ggTrader.paper.untradable import (
+    configured_untradable,
+    is_untradable_error,
+    resolve_untradable,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -56,6 +62,7 @@ _SPLIT_LOOKBACK_DAYS = 14
 _STALE_PENDING_DAYS = 5
 
 _ET = ZoneInfo("America/New_York")
+_PT = ZoneInfo("America/Los_Angeles")
 
 # Signals are built from the most recent *completed* daily bar, so on a healthy
 # run `as_of` is the prior trading session, not today -- requiring today's date
@@ -81,6 +88,11 @@ def _today_et() -> date:
     return datetime.now(_ET).date()
 
 
+def _now_pt() -> datetime:
+    """Current time in Pacific, the zone of the 12:45 cron and the late-run cutoff."""
+    return datetime.now(_PT)
+
+
 def _as_date(value) -> date:
     """`paper_trades.run_date` as a `date` (drivers may return a datetime)."""
     return value.date() if isinstance(value, datetime) else value
@@ -95,11 +107,39 @@ class PaperTrader:
         notifier: TelegramNotifier,
         risk_cfg: RiskConfig | None = None,
         dry_run: bool = True,
+        read_only: bool | None = None,
     ) -> None:
+        """Wire the trader.
+
+        Args:
+            broker: order and account access.
+            notifier: Telegram (or a stand-in).
+            risk_cfg: risk limits (default: from the environment).
+            dry_run: log intended orders instead of submitting them.
+            read_only: write nothing: no DDL, no ledger, snapshot, peak, split or dividend row,
+                no tape refresh and no reconcile booking. Defaults to ``dry_run``, so a dry run
+                is read-only unless the caller opts out (``ggt paper --dry-run-writes``).
+                Only a dry run may be read-only.
+        """
         self._broker = broker
         self._notifier = notifier
         self._risk = RiskGuard(risk_cfg or config_from_env())
         self._dry_run = dry_run
+        self._read_only = dry_run if read_only is None else read_only
+        if self._read_only and not dry_run:
+            raise ValueError("read_only requires dry_run: a live run must book its trades")
+        #: Names of the persistence calls a read-only run skipped (for the run record).
+        self.skipped_writes: list[str] = []
+
+    def _write(self, fn, *args, **kwargs):
+        """Call a persistence function, or record and skip it in read-only mode."""
+        if self._read_only:
+            # `_mock_name`: a patched persist function (tests) has no `__name__`.
+            name = getattr(fn, "__name__", None) or getattr(fn, "_mock_name", None) or repr(fn)
+            self.skipped_writes.append(name)
+            _log.info("read-only: skipped write %s", name)
+            return None
+        return fn(*args, **kwargs)
 
     def _missed_exits(
         self, positions: dict, last_exit: dict[str, str], already: set[str]
@@ -176,6 +216,11 @@ class PaperTrader:
         except Exception as exc:
             _log.warning("Could not load pending orders (non-fatal): %s", exc)
             return still_pending
+
+        if self._read_only:
+            # Booking a fill or dropping an order are writes: leave every pending order for the
+            # next real run, and only keep its symbol out of today's intended orders.
+            return {po["symbol"] for po in pending}
 
         now = datetime.now(timezone.utc)
         for po in pending:
@@ -323,7 +368,7 @@ class PaperTrader:
         for symbol in list(persisted_states):
             if symbol not in held_symbols:
                 try:
-                    clear_split_correction(symbol)
+                    self._write(clear_split_correction, symbol)
                 except Exception as exc:
                     _log.warning(
                         "Could not clear stale split state for %s (non-fatal): %s", symbol, exc
@@ -377,7 +422,7 @@ class PaperTrader:
         for symbol in applied_symbols:
             if symbol in persisted:
                 try:
-                    clear_split_correction(symbol)
+                    self._write(clear_split_correction, symbol)
                 except Exception as exc:
                     _log.warning(
                         "Could not clear confirmed-applied split state for %s (non-fatal): %s",
@@ -390,7 +435,7 @@ class PaperTrader:
         for symbol, factor in new_corrections.items():
             ex_date = min(ex for ex, _ in corp_splits[symbol])
             try:
-                save_split_correction(symbol, str(ex_date), factor)
+                self._write(save_split_correction, symbol, str(ex_date), factor)
             except Exception as exc:
                 _log.warning("Could not persist split state for %s (non-fatal): %s", symbol, exc)
 
@@ -457,8 +502,13 @@ class PaperTrader:
 
         for acc in accruals:
             try:
-                log_dividend_accrual(
-                    acc["symbol"], acc["ex_date"], acc["rate"], acc["qty"], acc["amount"]
+                self._write(
+                    log_dividend_accrual,
+                    acc["symbol"],
+                    acc["ex_date"],
+                    acc["rate"],
+                    acc["qty"],
+                    acc["amount"],
                 )
             except Exception as exc:
                 _log.warning(
@@ -490,9 +540,21 @@ class PaperTrader:
         result["skipped"] = skipped
         return result
 
+    @staticmethod
+    def _order_failed(
+        errors: list[str], untradable_hit: set[str], label: str, symbol: str, exc: Exception
+    ) -> None:
+        """Record a rejected order: an inactive/untradable asset is skipped and alerted once
+        per run (OD17); any other failure is a real error."""
+        if is_untradable_error(exc):
+            untradable_hit.add(symbol)
+            _log.warning("%s %s skipped, broker will not trade the asset: %s", label, symbol, exc)
+            return
+        errors.append(f"{label} {symbol}: {exc}")
+
     def run(self) -> dict:
         try:
-            init_paper_schema()
+            self._write(init_paper_schema)
         except Exception as exc:
             _log.warning("DB schema init failed (non-fatal): %s", exc)
 
@@ -506,8 +568,11 @@ class PaperTrader:
         # Fail open (assume the market is open) on a get_clock() error, same
         # non-fatal-degrade convention used elsewhere in this file.
         market_open = True
+        next_close: str | None = None
         try:
-            market_open = self._broker.get_clock().get("is_open", True)
+            clock = self._broker.get_clock()
+            market_open = clock.get("is_open", True)
+            next_close = clock.get("next_close")
         except Exception as exc:
             _log.warning("get_clock() failed (non-fatal, assuming market open): %s", exc)
         if not market_open:
@@ -516,16 +581,47 @@ class PaperTrader:
             return {"buys": [], "sells": [], "errors": []}
 
         try:
-            blend = generate_core_signals()
+            blend = generate_core_signals(persist_tape=not self._read_only)
+        except SignalGateError as exc:
+            # Fail closed: a failed engine self-check or sanity gate means no orders at all.
+            self._notifier.send(f"<b>🛑 Signal gate — no orders placed:</b>\n{exc}")
+            raise
         except Exception as exc:
             self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
             raise
 
-        # Side job: keep SPY and the macro ETFs' tape current for the lab.
-        # Wrapped inside the function; a failure here logs and moves on.
-        refreshed = refresh_benchmark_tape()
-        if not refreshed:
-            _log.warning("benchmark tape refresh returned no symbols")
+        for universe, sleeve in blend["sleeves"].items():
+            _log.info(
+                "signals %s: engine=%s bars=%s buys=%d sells=%d as_of=%s",
+                universe,
+                sleeve.get("engine"),
+                sleeve.get("bars"),
+                len(sleeve["buys"]),
+                len(sleeve["sells"]),
+                sleeve["as_of"],
+            )
+
+        # Late-run gate: a DAY order sent after the close queues to the next open, the
+        # overnight-gap slippage the 12:45 schedule exists to avoid. A dry run only warns, so
+        # the owner can rehearse the path at any hour.
+        late = late_run_reason(_now_pt(), next_close)
+        if late is not None:
+            if not self._dry_run:
+                self._notifier.send(f"<b>⏰ Late run — no orders placed:</b> {late}")
+                return {"buys": [], "sells": [], "errors": [], "gate": "late_run"}
+            _log.warning("dry run past the late-run cutoff (a live run would stop): %s", late)
+            self._notifier.send(f"<b>⏰ DRY RUN late-run notice:</b> {late}")
+
+        # Side job: keep SPY and the macro ETFs' tape current for the lab (an `ohlcv`
+        # write, so a read-only run skips it). Wrapped inside the function; a failure here
+        # logs and moves on.
+        if self._read_only:
+            self.skipped_writes.append("refresh_benchmark_tape")
+            _log.info("read-only: skipped write refresh_benchmark_tape")
+        else:
+            refreshed = refresh_benchmark_tape()
+            if not refreshed:
+                _log.warning("benchmark tape refresh returned no symbols")
 
         if blend["fallback_used"]:
             self._notifier.send(
@@ -537,13 +633,11 @@ class PaperTrader:
         all_buys: list[tuple[str, str]] = []  # (symbol, sleeve)
         all_sells: list[str] = []
         last_exit: dict[str, str] = {}
-        gate_infos: dict[str, dict] = {}
         for universe, sleeve_signals in blend["sleeves"].items():
             for sym in sleeve_signals["buys"]:
                 all_buys.append((sym, universe))
             all_sells.extend(sleeve_signals["sells"])
             last_exit.update(sleeve_signals.get("last_exit", {}))
-            gate_infos[universe] = sleeve_signals.get("gate", {})
 
         signals = {
             "buys": [sym for sym, _u in all_buys],
@@ -568,21 +662,6 @@ class PaperTrader:
             )
             return {"buys": [], "sells": [], "errors": []}
 
-        for universe, gate in gate_infos.items():
-            if gate.get("gate_enabled") and gate.get("scores"):
-                scores = gate["scores"]
-                kept = gate.get("kept_buys", 0)
-                raw = gate.get("raw_buys", 0)
-                score_strs = [
-                    f"{s}({v:.2f})" for s, v in sorted(scores.items(), key=lambda x: -x[1])
-                ]
-                self._notifier.send(
-                    f"<b>🤖 ML Gate ({universe}):</b> kept {kept}/{raw} signals\n"
-                    + ", ".join(score_strs)
-                )
-            elif gate.get("gate_enabled") is False:
-                _log.info("ML gate disabled for %s (no model file)", universe)
-
         account = self._broker.get_account()
         positions = self._broker.get_positions()
         portfolio_value = account["portfolio_value"]
@@ -604,12 +683,16 @@ class PaperTrader:
 
         # Holdings the broker won't trade (merger/delisting, e.g. AVB -> EQR)
         # can't be sold, so they must not take a slot or draw a rejected sell
-        # every run. Fails soft: on a lookup error nothing is excluded.
-        try:
-            frozen = self._broker.get_untradable(sorted(strategy_positions))
-        except Exception as exc:
-            _log.warning("untradable lookup failed, treating all as tradable: %s", exc)
-            frozen = set()
+        # every run (OD17). The set is the owner's UNTRADABLE_SYMBOLS plus the broker's
+        # tradable=false status for held names AND buy candidates (a dead ticker can still
+        # produce a buy signal from a stale tape). Fails soft: on a lookup error only the
+        # configured set is excluded.
+        untradable_seen = resolve_untradable(
+            self._broker,
+            set(strategy_positions) | {sym for sym, _u in all_buys},
+            configured_untradable(),
+        )
+        frozen = untradable_seen & set(strategy_positions)
         if frozen:
             _log.warning("Untradable holdings excluded from strategy: %s", sorted(frozen))
             self._notifier.send(
@@ -618,6 +701,18 @@ class PaperTrader:
                 "slots and sells — resolve manually)"
             )
             strategy_positions = {s: p for s, p in strategy_positions.items() if s not in frozen}
+        buy_symbols = {sym for sym, _u in all_buys}
+        blocked_buys = sorted((untradable_seen & buy_symbols) - frozen)
+        if blocked_buys:
+            _log.warning("Untradable buy candidates skipped: %s", blocked_buys)
+            self._notifier.send(
+                f"<b>⚠️ Untradable buy candidates skipped:</b> {', '.join(blocked_buys)} "
+                "(asset not tradable at the broker)"
+            )
+        # Also drops a held-but-frozen name's own buy signal: it is no longer in
+        # `strategy_positions`, so the buy loop's "already held" check would not catch it.
+        all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
+        untradable_hit: set[str] = set()
 
         # Determine unapplied-split corrections for currently-held symbols.
         # Primary evidence is paper_snapshots/paper_trades history (see
@@ -675,7 +770,7 @@ class PaperTrader:
         self._risk.update_peak(portfolio_value)
         try:
             if self._risk.peak_value is not None:
-                save_peak_value(self._risk.peak_value)
+                self._write(save_peak_value, self._risk.peak_value)
         except Exception as exc:
             _log.warning("Could not persist peak value (non-fatal): %s", exc)
 
@@ -749,7 +844,7 @@ class PaperTrader:
                         f"breached {threshold:.1%} floor — selling qty {qty}."
                     )
                 except Exception as exc:
-                    errors.append(f"CATASTROPHE STOP {symbol}: {exc}")
+                    self._order_failed(errors, untradable_hit, "CATASTROPHE STOP", symbol, exc)
             if stopped_symbols:
                 strategy_positions = {
                     sym: pos
@@ -832,7 +927,7 @@ class PaperTrader:
                                 )
                             )
                         except Exception as exc:
-                            errors.append(f"SWEEP SELL {sweep_sym}: {exc}")
+                            self._order_failed(errors, untradable_hit, "SWEEP SELL", sweep_sym, exc)
 
         # Sells first — free up position slots. `regular_sell_count` (not
         # `executed_sells`) is what feeds the slots_available math below: a
@@ -865,7 +960,7 @@ class PaperTrader:
                     (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
                 )
             except Exception as exc:
-                errors.append(f"SELL {symbol}: {exc}")
+                self._order_failed(errors, untradable_hit, "SELL", symbol, exc)
 
         # Wait for every sell submitted so far (catastrophe stop, sweep funding,
         # strategy exits) to fill before buying: Alpaca credits proceeds only on
@@ -927,7 +1022,7 @@ class PaperTrader:
                     sleeve_open_count[universe] += 1
                     pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
                 except Exception as exc:
-                    errors.append(f"BUY {symbol}: {exc}")
+                    self._order_failed(errors, untradable_hit, "BUY", symbol, exc)
 
         # Poll the remaining (buy) orders until they fill (or timeout)
         filled_orders.update(
@@ -969,7 +1064,7 @@ class PaperTrader:
                         filled_orders.update(self._poll_orders([sweep_buy_order]))
                         pending_orders.append(sweep_buy_order)
                     except Exception as exc:
-                        errors.append(f"SWEEP BUY {sweep_sym}: {exc}")
+                        self._order_failed(errors, untradable_hit, "SWEEP BUY", sweep_sym, exc)
 
         # Alert on every submitted order, but only book the trade ledger at a
         # real executed value — never the intended notional. Orders still
@@ -1023,6 +1118,12 @@ class PaperTrader:
                     status,
                 )
 
+        if untradable_hit:
+            self._notifier.send(
+                "<b>⚠️ Untradable (order skipped):</b> "
+                f"{', '.join(sorted(untradable_hit))} — the broker says the asset is not "
+                "active/tradable; excluded, not an error — resolve manually"
+            )
         if errors:
             self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
 
@@ -1086,7 +1187,8 @@ class PaperTrader:
             # Same run_date reasoning as log_trade / log_pending_order above:
             # stamp the actual ET session date of this run, not the lagged
             # signals["as_of"] date.
-            log_snapshot(
+            self._write(
+                log_snapshot,
                 today_et.isoformat(),
                 corrected_value,
                 new_account["cash"],
@@ -1095,17 +1197,34 @@ class PaperTrader:
         except Exception as exc:
             _log.warning("DB snapshot failed (non-fatal): %s", exc)
 
-        return {"buys": executed_buys, "sells": executed_sells, "errors": errors}
+        return {
+            "buys": executed_buys,
+            "sells": executed_sells,
+            "errors": errors,
+            "untradable": sorted(untradable_seen | untradable_hit),
+            "skipped_writes": list(self.skipped_writes),
+        }
 
 
-def run_paper_trading(dry_run: bool = True) -> dict:
+def run_paper_trading(
+    dry_run: bool = True, read_only: bool | None = None, notify: bool = False
+) -> dict:
     """Convenience entry point: wire up broker + notifier and run.
 
     Before submitting real orders (dry_run=False), checks the account isn't
     margin-enabled, since the blend's target-vol overlay assumes
     max_leverage=1.0 (unlevered). Dry-run never submits real orders, so it
     is allowed regardless of account type -- gating it too would defeat its
-    purpose as a safe burn-in/smoke-test mode."""
+    purpose as a safe burn-in/smoke-test mode.
+
+    A dry run is read-only by default: it writes no ledger, snapshot, peak, split, dividend or
+    tape row and sends nothing to Telegram unless ``notify`` (``ggt paper --notify``), which
+    forwards only the free-form lines with a ``[DRY RUN]`` prefix. ``read_only=False`` restores
+    the pre-rebuild dry run that persisted state (``--dry-run-writes``).
+    """
+    effective_read_only = dry_run if read_only is None else read_only
+    if effective_read_only and not dry_run:
+        raise ValueError("--dry-run-writes/read-only only applies to a dry run, not --live")
     broker = AlpacaBroker()
     account = broker.get_account()
     if not dry_run and account["multiplier"] > 1.0:
@@ -1114,5 +1233,7 @@ def run_paper_trading(dry_run: bool = True) -> dict:
             "the blend overlay assumes an unlevered (1.0x) account."
         )
     notifier = TelegramNotifier()
-    trader = PaperTrader(broker, notifier, dry_run=dry_run)
+    if effective_read_only:
+        notifier = DryRunNotifier(notifier, forward=notify)
+    trader = PaperTrader(broker, notifier, dry_run=dry_run, read_only=effective_read_only)
     return trader.run()

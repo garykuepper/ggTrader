@@ -10,7 +10,8 @@ force-exclude = true
 
 [lint]
 # Enable Pyflakes (F) and Pycodestyle (E, W) codes by default.
-select = ["E", "F", "W", "I"]
+# TID251 is the import boundary: only src/ggTrader/engine/ may import vectorbt (spec 5.2).
+select = ["E", "F", "W", "I", "TID251"]
 ignore = []
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
@@ -27,6 +28,20 @@ exclude = [
     "legacy_archive",
     "__pycache__",
 ]
+
+[lint.flake8-tidy-imports.banned-api]
+"vectorbt".msg = "Import vectorbt only inside src/ggTrader/engine/ (use ggTrader.engine presets)."
+"vectorbt_rust".msg = "Import vectorbt_rust only inside src/ggTrader/engine/ (selfcheck)."
+
+[lint.per-file-ignores]
+# The adapter itself and the tests that hold it to raw vectorbt.
+"src/ggTrader/engine/**" = ["TID251"]
+"tests/engine/**" = ["TID251"]
+# The one documented exception: scripts/legacy_reference_runs.py runs under the legacy 0.28.5
+# interpreter against the tree extracted from git tag legacy-engine-vbt0285 and imports vectorbt
+# by design. tests/engine/test_boundary.py fails if this entry has no violation left, and if it
+# disagrees with ``LEGACY_ONLY``.
+"scripts/legacy_reference_runs.py" = ["TID251"]  # legacy-interpreter-only reference runner
 
 [format]
 quote-style = "double"

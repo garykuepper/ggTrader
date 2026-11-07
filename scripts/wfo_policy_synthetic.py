@@ -5,7 +5,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from ggTrader.lab.wfo import WfoPolicy
+from ggTrader.lab.wfo.breaker import WfoPolicy
 from ggTrader.lab.wfo_policy_synthetic import run_grid
 
 ROOT = Path(__file__).resolve().parents[1]

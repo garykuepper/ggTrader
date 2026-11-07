@@ -6,49 +6,46 @@ build-backend = "setuptools.build_meta"
 name = "ggTrader"
 version = "0.1.0"
 description = "A sleek algorithmic trading bot"
-requires-python = ">=3.11"
+requires-python = "==3.12.*"
+# Intent lives here, the resolved truth lives in uv.lock (install with
+# `uv sync --frozen`). Engine stack bounds mirror vectorbt 1.2.0's own floors.
 dependencies = [
+    # Engine stack: `vectorbt[rust]==X` pulls the matching vectorbt-rust==X. The pair is
+    # atomic; bump it by editing this one line and re-locking. vectorbt-rust is also listed
+    # explicitly so a lock that drops the extra fails loudly.
+    "vectorbt[rust]==1.2.0",
+    "vectorbt-rust==1.2.0",
+    "numpy>=2.4.6,<2.6",
+    "pandas>=3.0.3,<3.2",
+    "numba>=0.66,<0.69",
+    "plotly>=7,<8",
+    "alpaca-py",
+    "beautifulsoup4",  # lab/event_timing_sources.py
     "ccxt",
     "defusedxml",
-    "fsspec",
     "joblib",
+    "lightgbm",
     "matplotlib",
-    "mplfinance",
-    "numba",
-    "numpy",
-    "optuna",
-    "pandas",
     "pandas-market-calendars",
-    "pandas-ta",
-    # Capped: plotly 7 removed `scattermapbox`, which vectorbt 0.28 references at
-    # import time -- the unpinned 2026-09-23 image crashed the live run.
-    "plotly>=6.6,<7",
     "psycopg2-binary",
+    # Kept: pandas 3's default `str` dtype is Arrow-backed only when pyarrow is installed.
     "pyarrow",
+    "pydantic>=2.0",
     "pypdf",
     "python-dotenv",
     "pytrends",
     "requests",
     "scikit-learn",
-    "seaborn",
+    "scipy",  # lab/gates.py, lab/momentum_screen.py, lab/event_study.py
     "sqlalchemy",
     # Newey-West HAC t statistic for the intraday r8 study's A1 gate.
     "statsmodels",
-    "ta",
-    "tabulate",
     "tqdm",
-    # Capped at the validated minor: the same rebuild pulled vectorbt 1.0.0.
-    "vectorbt>=0.28.5,<0.29",
-    # Reads Shiller's legacy .xls dividend workbook (century leverage study).
-    "xlrd>=2.0.1",
-    "xlsxwriter",
-    "yfinance",
-    "alpaca-py",
-    "pydantic>=2.0",
     "typer>=0.12",
     "typing-extensions",
-    "hmmlearn",
-    "lightgbm",
+    # Reads Shiller's legacy .xls dividend workbook (century leverage study).
+    "xlrd>=2.0.1",
+    "yfinance",
 ]
 
 [project.optional-dependencies]
@@ -70,10 +67,13 @@ include = ["ggTrader*"]
 [tool.pytest.ini_options]
 addopts = "-m 'not integration'"
 pythonpath = ["."]
+# A bare `pytest` must not collect research/: it holds study scripts named test_*.py that are
+# not part of the suite (P8 R13), and the vbt-upgrade-watch and CI jobs run a bare pytest.
+testpaths = ["tests"]
 markers = [
     "integration: tests that hit live external services (network, DB); run with -m integration",
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = false

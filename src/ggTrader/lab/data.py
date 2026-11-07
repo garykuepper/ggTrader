@@ -20,7 +20,7 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "PORTFOLIO_SHARE": 1.0,
     "FEES": 0.0,
     "SLIPPAGE": 0.0005,
-    "FREQ": "1d",
+    "FREQ": "1D",
     # 3% per entry: the 2026-06-24 lever diagnostic (scripts/lever_diagnostic.py)
     # showed the 5-voter book sits ~61% in cash at the old 0.02 default. Raising
     # to 0.03 deploys that idle cash (no leverage) and beats SPY outright in the
@@ -41,7 +41,7 @@ CRYPTO_BASE_CONFIG: dict[str, Any] = {
     "PORTFOLIO_SHARE": 1.0,
     "FEES": 0.0040,  # 0.40% baseline taker fee (Kraken Pro <$10k tier)
     "SLIPPAGE": 0.0015,  # 0.15% baseline slippage / bid-ask spread penalty
-    "FREQ": "1d",
+    "FREQ": "1D",
     "SIGNAL_POSITION_SIZE": 0.03,
     "USE_CASH_SHARING": True,  # Default to cash sharing for portfolio-level routing
     "TRAIN_METRIC": "composite",

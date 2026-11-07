@@ -30,6 +30,8 @@ from typing import NamedTuple
 import pandas as pd
 from scipy import stats
 
+from ggTrader.utils.returns import padded_pct_change
+
 
 def in_position_mask(entries: pd.DataFrame, exits: pd.DataFrame) -> pd.DataFrame:
     """Mask close-to-close returns earned after entry through exit, inclusive.
@@ -45,8 +47,9 @@ def split_event_returns(returns: pd.DataFrame, mask: pd.DataFrame) -> tuple[pd.S
     """Flatten a (time x symbol) returns frame into (event, non-event)
     long-format series using a matching boolean mask."""
     mask = mask.reindex_like(returns).fillna(False)
-    event_returns = returns.where(mask).stack()
-    nonevent_returns = returns.where(~mask).stack()
+    # pandas 3 stack() keeps NaN rows (pandas 2 dropped them); dropna() restores the old meaning.
+    event_returns = returns.where(mask).stack().dropna()
+    nonevent_returns = returns.where(~mask).stack().dropna()
     return event_returns, nonevent_returns
 
 
@@ -119,7 +122,7 @@ def run_event_study_from_signals(
     """Convenience wrapper: derive daily returns and the in-position mask
     directly from a strategy's own entries/exits (the same SignalTargets
     used by the actual WFO simulation), then run the event-study test."""
-    returns = close.pct_change()
+    returns = padded_pct_change(close)
     mask = in_position_mask(entries, exits)
     event_returns, nonevent_returns = split_event_returns(returns, mask)
     return event_study_test(event_returns, nonevent_returns, alpha=alpha)

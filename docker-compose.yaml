@@ -1,6 +1,12 @@
 services:
   ggtrader_live:
-    image: ghcr.io/garykuepper/ggtrader:latest
+    # The trader runs an immutable image: set GGTRADER_TAG in .env (the compose project
+    # file) to the short-sha or `sha-<full sha>` tag docker-build.yml publishes, so an
+    # unrelated push or `docker compose pull` can never change what cron runs (spec 8.3).
+    # `latest` is only the bootstrap default for a checkout that has not recorded a tag yet;
+    # the ggtrader-deploy skill refuses to call a deploy done while the tag is `latest`.
+    # The previous tag stays local until the new one has run cleanly (rollback = reselect it).
+    image: ghcr.io/garykuepper/ggtrader:${GGTRADER_TAG:-latest}
     build: .
     container_name: ggtrader_live
     restart: unless-stopped

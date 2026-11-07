@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 
-from ggTrader.lab.wfo import (
+from ggTrader.lab.wfo.breaker import (
     WfoPolicy,
     WfoState,
     check_circuit_breaker,
@@ -107,7 +107,7 @@ def test_nan_exclude_halts_where_legacy_does_not():
 def test_run_grid_pools_halt_length_over_episodes_not_runs(monkeypatch) -> None:
     """Mean halt length is halted folds / episodes pooled across runs, not a mean of run means."""
     import ggTrader.lab.wfo_policy_synthetic as synthetic
-    from ggTrader.lab.wfo import WfoPolicy
+    from ggTrader.lab.wfo.breaker import WfoPolicy
 
     zero = {
         "anchor_share": 0.0,

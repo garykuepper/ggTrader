@@ -15,11 +15,11 @@ import yfinance as yf
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
 from ggTrader.lab.data import eligible_at, equity_universe_between, load_ohlcv
 from ggTrader.lab.fred_data import load_fred_series
-from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.persist import _sanitize
 from ggTrader.lab.replica import ReplicaConfig, SignalPanel, build_signal_panel, run_replica
 from ggTrader.lab.significance import ExcessStats, excess_stats, passes_pretax_bar, years_for_t
 from ggTrader.lab.strategy import LabConfig
+from ggTrader.lab.wfo.report import curve_summary
 
 ROOT = Path(__file__).resolve().parents[1]
 WINDOWS = {"primary": ("2021-01-31", "2026-04-30"), "holdout": ("2010-01-31", "2020-12-31")}
@@ -278,10 +278,10 @@ def run_window(
         tainted = tainted_trades(replay.trades, state["seam_scan"], full.close.index)
         arm_result = dict(
             config=asdict(config),
-            stats=curve_stats(replay.equity),
-            spy_stats=curve_stats(spy_curve),
+            stats=curve_summary(replay.equity),
+            spy_stats=curve_summary(spy_curve),
             excess_vs_spy=asdict(over_spy),
-            exposure_matched_stats=curve_stats(matched),
+            exposure_matched_stats=curve_summary(matched),
             excess_vs_exposure_matched=asdict(excess_stats(replay.equity, matched)),
             mean_exposure=replay.exposure.mean().to_dict(),
             trade_count=len(replay.trades),

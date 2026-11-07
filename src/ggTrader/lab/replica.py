@@ -9,8 +9,6 @@ import numpy as np
 import pandas as pd
 
 from ggTrader.lab.data import rebalance_dates
-from ggTrader.lab.strategies.ensemble import EnsembleSignal, extract_close
-from ggTrader.lab.strategy import LabConfig
 from ggTrader.paper.cash_sweep import (
     DEFAULT_BUY_TRIGGER_PCT,
     DEFAULT_MIN_CLIP_USD,
@@ -24,6 +22,8 @@ from ggTrader.paper.catastrophe_stop import (
     DEFAULT_CATASTROPHE_STOP_PCT,
     find_catastrophe_stops,
 )
+from ggTrader.paper.live_bars import bars_from_legacy_frame
+from ggTrader.paper.live_signals import MIN_HISTORY_BARS, live_ensemble_frames
 from ggTrader.paper.risk import RiskConfig, RiskGuard
 
 REASON_SIGNAL = "signal"
@@ -66,6 +66,25 @@ class SignalPanel(NamedTuple):
     spy_close: pd.Series
 
 
+def _entry_eligibility(
+    plans: dict[pd.Timestamp, list[str]], symbols: list[str], index: pd.DatetimeIndex
+) -> pd.DataFrame:
+    """Per bar and symbol: was the symbol in the latest monthly plan at or before the bar?
+
+    A symbol trades only from the first decision date that selected it, carried forward to the
+    next decision date; before the first decision date nothing is eligible.
+    """
+    if not plans or not symbols:
+        return pd.DataFrame(False, index=index, columns=symbols)
+    dates = sorted(plans)
+    table = pd.DataFrame({d: {s: True for s in plans[d]} for d in dates}, index=symbols).T.reindex(
+        columns=symbols
+    )
+    table = table.where(table.notna(), False).astype(bool).sort_index()
+    full = table.reindex(index, method="ffill")
+    return full.where(full.notna(), False).astype(bool)
+
+
 def build_signal_panel(
     ohlcv: pd.DataFrame,
     eval_start: pd.Timestamp,
@@ -73,23 +92,39 @@ def build_signal_panel(
     eligible_fn: Callable[[pd.Timestamp, pd.DataFrame], list[str]],
     sweep_symbol: str = "SPY",
 ) -> SignalPanel:
-    """Build default ensemble signals with monthly point-in-time entry eligibility."""
+    """Build default ensemble signals with monthly point-in-time entry eligibility.
+
+    The signals come from the same engine build the live trader uses
+    (``paper.live_signals.live_ensemble_frames``, the deployed defaults); a symbol needs
+    ``MIN_HISTORY_BARS`` valid closes and a place in the month's ``eligible_fn`` list to be
+    selected on a decision date, and its entries are masked to the selected spans.
+    """
     symbols = sorted(set(ohlcv.columns.get_level_values(0)) - {sweep_symbol})
     if not symbols or sweep_symbol not in ohlcv.columns.get_level_values(0):
         raise ValueError("Signal panel requires stock data and the sweep symbol")
     stocks = ohlcv[symbols]
-    strategy = EnsembleSignal(LabConfig(min_history_bars=60))
-    plans = {
-        d: strategy.select(d, stocks, eligible_fn(d, stocks.loc[:d]))
-        for d in rebalance_dates(stocks.index, eval_start, eval_end)
-    }
+    closes = stocks.xs("close", axis=1, level=1)
+    history = closes.notna().cumsum()
+    plans: dict[pd.Timestamp, list[str]] = {}
+    for d in rebalance_dates(stocks.index, eval_start, eval_end):
+        have = history.loc[d]
+        plans[d] = [
+            s
+            for s in eligible_fn(d, stocks.loc[:d])
+            if s in have.index and have[s] >= MIN_HISTORY_BARS
+        ]
     if not any(plans.values()):
         raise ValueError("No stocks are eligible in the signal-panel evaluation window")
-    targets = strategy.to_targets(plans, stocks)
+    chosen = sorted({s for plan in plans.values() for s in plan})
+    bars = bars_from_legacy_frame(stocks[chosen])
+    entries, exits = live_ensemble_frames(bars)
+    entries = entries.set_axis(stocks.index, axis=0)
+    exits = exits.set_axis(stocks.index, axis=0)
+    entries = entries & _entry_eligibility(plans, chosen, stocks.index)
     # Retain never-eligible names as all-False columns for an auditable membership mask.
-    entries = targets.entries.reindex(columns=symbols, fill_value=False)
-    exits = targets.exits.reindex(columns=symbols, fill_value=False)
-    close = extract_close(stocks, symbols).reindex(index=entries.index, columns=entries.columns)
+    entries = entries.reindex(columns=symbols, fill_value=False)
+    exits = exits.reindex(columns=symbols, fill_value=False)
+    close = closes.reindex(index=entries.index, columns=entries.columns)
     return SignalPanel(close, entries, exits, ohlcv[sweep_symbol]["close"].reindex(close.index))
 
 

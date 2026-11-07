@@ -1,0 +1,278 @@
+{
+ "data": {
+  "settings": {
+   "array_wrapper_freq": "None",
+   "engine": "'auto'",
+   "portfolio": {
+    "call_seq": "'default'",
+    "cash_sharing": "False",
+    "fees": "0.0",
+    "freq": "None",
+    "init_cash": "100.0",
+    "slippage": "0.0"
+   },
+   "returns": {
+    "defaults": {
+     "cutoff": "0.05",
+     "ddof": "1",
+     "levy_alpha": "2.0",
+     "minp": "None",
+     "required_return": "0.0",
+     "risk_free": "0.0",
+     "start_value": "0.0",
+     "window": "10"
+    },
+    "plots": "{}",
+    "year_freq": "'365 days'"
+   }
+  },
+  "signatures": {
+   "ATR.run": {
+    "close": "<required>",
+    "ewm": "True",
+    "hide_default": "True",
+    "hide_params": "None",
+    "high": "<required>",
+    "low": "<required>",
+    "short_name": "'atr'",
+    "window": "14"
+   },
+   "BBANDS.run": {
+    "alpha": "2",
+    "close": "<required>",
+    "ewm": "False",
+    "hide_default": "True",
+    "hide_params": "None",
+    "short_name": "'bb'",
+    "window": "20"
+   },
+   "GenericAccessor.crossed_above": {
+    "broadcast_kwargs": "None",
+    "engine": "None",
+    "other": "<required>",
+    "wait": "0",
+    "wrap_kwargs": "None"
+   },
+   "GenericAccessor.crossed_below": {
+    "broadcast_kwargs": "None",
+    "engine": "None",
+    "other": "<required>",
+    "wait": "0",
+    "wrap_kwargs": "None"
+   },
+   "GenericAccessor.fshift": {
+    "engine": "None",
+    "fill_value": "nan",
+    "n": "1",
+    "wrap_kwargs": "None"
+   },
+   "GenericAccessor.pct_change": {
+    "engine": "None",
+    "n": "1",
+    "wrap_kwargs": "None"
+   },
+   "GenericAccessor.range_split": {},
+   "MA.run": {
+    "close": "<required>",
+    "ewm": "False",
+    "hide_default": "True",
+    "hide_params": "None",
+    "short_name": "'ma'",
+    "window": "<required>"
+   },
+   "MACD.run": {
+    "close": "<required>",
+    "fast_window": "12",
+    "hide_default": "True",
+    "hide_params": "None",
+    "macd_ewm": "False",
+    "short_name": "'macd'",
+    "signal_ewm": "False",
+    "signal_window": "9",
+    "slow_window": "26"
+   },
+   "MSTD.run": {
+    "close": "<required>",
+    "ewm": "False",
+    "hide_default": "True",
+    "hide_params": "None",
+    "short_name": "'mstd'",
+    "window": "<required>"
+   },
+   "Portfolio.from_orders": {
+    "allow_partial": "None",
+    "attach_call_seq": "None",
+    "broadcast_kwargs": "None",
+    "call_seq": "None",
+    "cash_sharing": "None",
+    "close": "<required>",
+    "direction": "None",
+    "engine": "None",
+    "fees": "None",
+    "ffill_val_price": "None",
+    "fixed_fees": "None",
+    "freq": "None",
+    "group_by": "None",
+    "init_cash": "None",
+    "init_temp_records": "None",
+    "lock_cash": "None",
+    "log": "None",
+    "max_logs": "None",
+    "max_orders": "None",
+    "max_size": "None",
+    "min_size": "None",
+    "price": "None",
+    "raise_reject": "None",
+    "reject_prob": "None",
+    "seed": "None",
+    "size": "None",
+    "size_granularity": "None",
+    "size_type": "None",
+    "slippage": "None",
+    "update_value": "None",
+    "val_price": "None",
+    "wrapper_kwargs": "None"
+   },
+   "Portfolio.from_signals": {
+    "accumulate": "None",
+    "adjust_sl_args": "()",
+    "adjust_sl_func_nb": "CPUDispatcher(<function no_adjust_sl_func_nb>)",
+    "adjust_tp_args": "()",
+    "adjust_tp_func_nb": "CPUDispatcher(<function no_adjust_tp_func_nb>)",
+    "allow_partial": "None",
+    "attach_call_seq": "None",
+    "broadcast_kwargs": "None",
+    "broadcast_named_args": "None",
+    "call_seq": "None",
+    "cash_sharing": "None",
+    "close": "<required>",
+    "direction": "None",
+    "engine": "None",
+    "entries": "None",
+    "exits": "None",
+    "fees": "None",
+    "ffill_val_price": "None",
+    "fixed_fees": "None",
+    "freq": "None",
+    "group_by": "None",
+    "high": "None",
+    "init_cash": "None",
+    "init_temp_records": "None",
+    "lock_cash": "None",
+    "log": "None",
+    "low": "None",
+    "max_logs": "None",
+    "max_orders": "None",
+    "max_size": "None",
+    "min_size": "None",
+    "open": "None",
+    "price": "None",
+    "raise_reject": "None",
+    "reject_prob": "None",
+    "seed": "None",
+    "short_entries": "None",
+    "short_exits": "None",
+    "signal_args": "()",
+    "signal_func_nb": "CPUDispatcher(<function no_signal_func_nb>)",
+    "size": "None",
+    "size_granularity": "None",
+    "size_type": "None",
+    "sl_stop": "None",
+    "sl_trail": "None",
+    "slippage": "None",
+    "stop_entry_price": "None",
+    "stop_exit_price": "None",
+    "template_mapping": "None",
+    "tp_stop": "None",
+    "update_value": "None",
+    "upon_dir_conflict": "None",
+    "upon_long_conflict": "None",
+    "upon_opposite_entry": "None",
+    "upon_short_conflict": "None",
+    "upon_stop_exit": "None",
+    "upon_stop_update": "None",
+    "use_stops": "None",
+    "val_price": "None",
+    "wrapper_kwargs": "None"
+   },
+   "RSI.run": {
+    "close": "<required>",
+    "ewm": "False",
+    "hide_default": "True",
+    "hide_params": "None",
+    "short_name": "'rsi'",
+    "window": "14"
+   },
+   "ReturnsAccessor.annualized": {
+    "engine": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.annualized_volatility": {
+    "ddof": "None",
+    "engine": "None",
+    "levy_alpha": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.calmar_ratio": {
+    "engine": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.deflated_sharpe_ratio": {
+    "bias": "True",
+    "ddof": "None",
+    "nb_trials": "None",
+    "risk_free": "None",
+    "var_sharpe": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.max_drawdown": {
+    "engine": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.sharpe_ratio": {
+    "ddof": "None",
+    "engine": "None",
+    "risk_free": "None",
+    "wrap_kwargs": "None"
+   },
+   "ReturnsAccessor.sortino_ratio": {
+    "engine": "None",
+    "required_return": "None",
+    "wrap_kwargs": "None"
+   }
+  },
+  "vectorbt_version": "1.2.0"
+ },
+ "provenance": {
+  "baseline_epoch": "E1",
+  "contract_version": 1,
+  "created_utc": "2026-11-06T20:25:48Z",
+  "definitions": {
+   "atr": "sma ewm=False",
+   "bb_ddof": 1,
+   "cagr": "bar-annualised 252",
+   "dsr": "var_sharpe=252/(T-1) bias=False",
+   "macd": "ema macd_ewm=signal_ewm=True",
+   "rsi": "wilder window=2n-1 ewm",
+   "sortino": "vectorbt downside deviation",
+   "year_freq": "252 days"
+  },
+  "engine_effective": "rust",
+  "engine_requested": "rust",
+  "git_dirty": true,
+  "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "llvmlite": "0.50.0",
+  "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+  "numba": "0.68.1",
+  "numpy": "2.5.4",
+  "pandas": "3.1.1",
+  "python": "3.12.3",
+  "reason": "P2 engine goldens: initial seeded panels (vectorbt 1.2.0, E1)",
+  "rust_calls": 1,
+  "schema": 1,
+  "scipy": "1.18.1",
+  "tape_sha256": null,
+  "vectorbt": "1.2.0",
+  "vectorbt_rust": "1.2.0"
+ }
+}

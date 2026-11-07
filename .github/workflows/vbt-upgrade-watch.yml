@@ -1,0 +1,233 @@
+name: vbt-upgrade-watch
+
+# Daily watch for a new vectorbt + vectorbt-rust release (spec 6.5, docs: .claude/skills/vbt-upgrade).
+# It never merges anything: it tries the newest release (older than the cooldown) in a throwaway
+# job, runs the engine contract/golden suites on both engines plus the full suite, and opens a
+# DRAFT pull request (or an issue when the lock cannot resolve) carrying a diff report.
+# Adopting or rejecting the release is a decision, made through the vbt-upgrade skill.
+#
+# Notes
+# - Repository setting needed: Settings > Actions > General > "Allow GitHub Actions to create
+#   and approve pull requests".
+# - A PR opened with GITHUB_TOKEN does not trigger other workflows, so this workflow runs the
+#   suites itself before opening the PR.
+# - Dependabot ignores the engine stack (.github/dependabot.yml); this workflow owns it, so the
+#   vectorbt / vectorbt-rust pair is never split.
+#
+# Trust boundaries (review MAJOR-3, 2026-11-06)
+# - `try` installs and runs a release that is at least `cooldown_days` old but not reviewed, so it
+#   holds a READ-ONLY token, no secrets, no persisted git credentials and no dependency cache.
+# - Only `report` can write (branch, draft PR, issue). It never installs or imports the new
+#   release: it treats the artifacts as data, copies exactly pyproject.toml and uv.lock, and
+#   refuses the copy unless the pyproject diff touches only vectorbt lines.
+# - Every action is pinned to a full commit SHA; the comment names the release tag it was taken
+#   from. VERIFIED 2026-11-06 with an unauthenticated GET of
+#   https://api.github.com/repos/<owner>/<repo>/commits/<tag>:
+#     actions/checkout@v6.1.0           d23441a48e516b6c34aea4fa41551a30e30af803
+#     actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0.3.0       ece7cb06caefa5fff74198d8649806c4678c61a1
+#     astral-sh/setup-uv@v7.6.0         37802adc94f370d6bfd71619e3f0bf239e1f3b78
+#     actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0.0.0    330a01c490aca151604b8cf639adc76d48f6c5d4
+#     actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0.0.0  634f93cb2916e3fdff6788551b99b062d0335ce0
+#   The release-notes lookup uses the tag form v<X.Y.Z>; polakowo/vectorbt tags v1.2.0 (verified).
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Force this vectorbt version (skips the cooldown)"
+        required: false
+        default: ""
+      cooldown_days:
+        description: "Minimum release age in days"
+        required: false
+        default: "3"
+
+# Nothing by default; each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: vbt-upgrade
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.pick.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Newest release older than the cooldown, with a matching vectorbt-rust
+        id: pick
+        env:
+          FORCE: ${{ inputs.version }}
+          COOLDOWN: ${{ inputs.cooldown_days || '3' }}
+        run: python scripts/vbt_latest.py --cooldown "$COOLDOWN" --force "$FORCE" >> "$GITHUB_OUTPUT"
+
+  try:
+    needs: detect
+    if: needs.detect.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [rust, numba]
+    env:
+      GGT_VBT_ENGINE: ${{ matrix.engine }}
+      VER: ${{ needs.detect.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: "0.11.25"
+          enable-cache: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Bump the vectorbt pair and re-lock
+        id: lock
+        run: |
+          sed -i -E \
+            -e "s/\"vectorbt\[rust\]==[0-9.]+\"/\"vectorbt[rust]==${VER}\"/" \
+            -e "s/\"vectorbt-rust==[0-9.]+\"/\"vectorbt-rust==${VER}\"/" \
+            pyproject.toml
+          grep -n "vectorbt" pyproject.toml
+          set +e
+          uv lock 2>&1 | tee lock.log
+          echo "status=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Install the new lock
+        if: steps.lock.outputs.status == '0'
+        run: |
+          uv sync --frozen --extra test --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Suites (never fail the job; the report decides)
+        if: steps.lock.outputs.status == '0'
+        continue-on-error: true
+        run: |
+          python -m ggTrader.engine.selfcheck > selfcheck.log 2>&1 || echo "SELFCHECK_RED" >> status
+          pytest tests/engine -q -p no:cacheprovider > engine.log 2>&1 || echo "ENGINE_RED" >> status
+          pytest tests -q -p no:cacheprovider > full.log 2>&1 || echo "FULL_RED" >> status
+          touch status
+
+      - name: Write the report
+        if: always()
+        run: |
+          {
+            echo "## vectorbt ${VER} upgrade report (default engine: ${GGT_VBT_ENGINE})"
+            echo
+            echo "- lock: $([ '${{ steps.lock.outputs.status }}' = '0' ] && echo resolved || echo 'FAILED to resolve')"
+            echo "- suite status: $(tr '\n' ' ' < status 2>/dev/null || true)"
+            echo
+            echo "### Dependency delta"
+            # uv's own delta; `git diff -U0 uv.lock` hides the package names (P8 R3).
+            grep -E '^(Added|Removed|Updated) ' lock.log 2>/dev/null || echo "none"
+            echo
+            echo "### Changed vectorbt defaults (tests/engine/test_defaults.py)"
+            sed -n '/vectorbt defaults changed/,/^$/p' engine.log 2>/dev/null | head -60 || true
+            echo
+            echo "### Engine suite (tail)"
+            echo '```'; tail -n 40 engine.log 2>/dev/null || echo "not run"; echo '```'
+            echo "### Dispatch probe"
+            echo '```'; cat selfcheck.log 2>/dev/null || echo "not run"; echo '```'
+            echo "### Full suite (tail)"
+            echo '```'; tail -n 15 full.log 2>/dev/null || echo "not run"; echo '```'
+            echo "### Lock log (tail)"
+            echo '```'; tail -n 30 lock.log 2>/dev/null; echo '```'
+          } > "report-${GGT_VBT_ENGINE}.md"
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: always()
+        with:
+          name: report-${{ matrix.engine }}
+          path: |
+            report-${{ matrix.engine }}.md
+            pyproject.toml
+            uv.lock
+            status
+
+  report:
+    needs: [detect, try]
+    if: always() && needs.detect.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      VER: ${{ needs.detect.outputs.version }}
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      # Keeps the token: this job pushes the draft-PR branch. It runs no code from the artifacts.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: true
+
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          path: artifacts
+
+      - name: Draft PR if the lock resolved, issue otherwise (no auto-merge, ever)
+        run: |
+          BRANCH="vbt-upgrade/${VER}"
+          gh label create vbt-upgrade --force --description "vectorbt upgrade watch" >/dev/null
+          {
+            echo "Automated by .github/workflows/vbt-upgrade-watch.yml. Not merged automatically."
+            echo "Decide with the vbt-upgrade skill: ACCEPT, RE-BASELINE or REJECT."
+            echo "REJECT also closes this PR and deletes its branch (gh pr close --delete-branch);"
+            echo "the skill, step 6, has the exact commands."
+            echo
+            echo "### Release notes (v${VER})"
+            gh api "repos/polakowo/vectorbt/releases/tags/v${VER}" --jq .body || echo "(release notes unavailable)"
+            echo
+            cat artifacts/report-rust/report-rust.md artifacts/report-numba/report-numba.md
+          } > body.md
+          if [ -f artifacts/report-rust/uv.lock ] && grep -q "^- lock: resolved" artifacts/report-rust/report-rust.md; then
+            if [ "$(gh pr list --head "$BRANCH" --state all --json number --jq length)" != "0" ]; then
+              echo "A pull request for ${BRANCH} already exists; nothing to do."
+              exit 0
+            fi
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git checkout -b "$BRANCH"
+            # The artifact is data from a job that ran an unreviewed release: accept only a
+            # pyproject change that touches vectorbt lines, then take exactly two files.
+            if diff -U0 pyproject.toml artifacts/report-rust/pyproject.toml \
+                | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vq 'vectorbt'; then
+              echo "pyproject.toml in the artifact changes more than the vectorbt pins; refusing."
+              exit 1
+            fi
+            cp artifacts/report-rust/pyproject.toml pyproject.toml
+            cp artifacts/report-rust/uv.lock uv.lock
+            git add pyproject.toml uv.lock
+            git commit -m "chore: try vectorbt ${VER} (upgrade watch, not merged)"
+            git push origin "$BRANCH"
+            gh pr create --draft --head "$BRANCH" --base "$BASE_BRANCH" \
+              --title "vectorbt ${VER}: upgrade report" --body-file body.md --label vbt-upgrade
+          else
+            if [ "$(gh issue list --label vbt-upgrade --state all --search "vectorbt ${VER} in:title" --json number --jq length)" != "0" ]; then
+              echo "An issue for ${VER} already exists; nothing to do."
+              exit 0
+            fi
+            gh issue create --title "vectorbt ${VER}: lock failed to resolve" --body-file body.md --label vbt-upgrade
+          fi

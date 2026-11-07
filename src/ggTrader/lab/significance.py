@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from ggTrader.lab.metrics import curve_stats
+from ggTrader.lab.wfo.report import curve_summary
 
 T_BAR = 3.0
 NW_LAGS = 5
@@ -60,7 +60,7 @@ def excess_stats(
         raise ValueError("Excess statistics require at least three aligned positive finite NAVs")
     if periods_per_year <= 0 or curves.index.has_duplicates:
         raise ValueError("Excess statistics require positive annualization and unique dates")
-    returns = curves.pct_change().dropna()
+    returns = curves.pct_change(fill_method=None).dropna()
     excess = returns.strategy - returns.benchmark
     mean = float(excess.mean())
     se = newey_west_se(excess.to_numpy(), lags)
@@ -73,8 +73,8 @@ def excess_stats(
         ann_excess_pct=annual_excess,
         tracking_error_pct=tracking_error,
         information_ratio=annual_excess / tracking_error if tracking_error > 0 else 0.0,
-        cagr_diff_pp=curve_stats(curves.strategy)["cagr_pct"]
-        - curve_stats(curves.benchmark)["cagr_pct"],
+        cagr_diff_pp=curve_summary(curves.strategy)["cagr_pct"]
+        - curve_summary(curves.benchmark)["cagr_pct"],
     )
 
 

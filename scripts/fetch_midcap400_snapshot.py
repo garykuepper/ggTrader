@@ -7,6 +7,7 @@ spec for the bias-calibration that bounds the resulting bias.
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -19,7 +20,12 @@ URL = "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies"
 OUT = Path("data/universe/midcap400_tickers_snapshot_2026-06-24.txt")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.parse_args(argv)
     # Wikipedia blocks bare urllib; send a browser-like User-Agent.
     import urllib.request  # noqa: PLC0415
 

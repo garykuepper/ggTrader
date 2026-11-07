@@ -18,16 +18,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          # Same uv that wrote uv.lock.
+          version: "0.11.25"
+          enable-cache: true
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           # Must match requires-python in pyproject.toml.
           python-version: '3.12'
-          cache: pip
 
       - name: Install
-        # dev carries ruff; test carries pytest.
-        run: pip install -e ".[test,dev]"
+        # Install exactly what uv.lock says, so CI tests what ships. dev carries ruff;
+        # test carries pytest. --frozen fails instead of re-resolving a stale lock.
+        run: |
+          uv sync --frozen --extra test --extra dev
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Engine check
+        # The simulator must dispatch to the Rust engine, not silently fall back to numba.
+        run: |
+          uv lock --check
+          uv pip check
+          python scripts/check_vbt_engine.py --engine rust
 
       - name: Lint
         # ruff.toml is the source of truth for rules and line length. The same
@@ -41,4 +57,4 @@ jobs:
         # Integration tests are deselected by the `-m 'not integration'` default
         # in pyproject.toml -- they need a live TimescaleDB and network access,
         # neither of which exists on the runner.
-        run: pytest -q
+        run: pytest tests -q

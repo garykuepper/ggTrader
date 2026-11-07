@@ -1,15 +1,25 @@
-"""Generate today's ensemble signals from a given equity universe."""
+"""Generate today's ensemble signals from a given equity universe on the vectorbt engine."""
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
+from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.engine import selfcheck as engine_selfcheck
 from ggTrader.lab.data import fetch_stock_ohlcv
-from ggTrader.lab.strategies.ensemble import EnsembleSignal
-from ggTrader.lab.strategy import LabConfig
+from ggTrader.paper.gates import (
+    SanityConfig,
+    SignalGateError,
+    vet_bars,
+    vet_signal_counts,
+)
+from ggTrader.paper.live_bars import bars_from_legacy_frame
+from ggTrader.paper.live_signals import MIN_HISTORY_BARS, live_ensemble_frames
 from ggTrader.paper.overlay import (
     SLEEVE_UNIVERSES,
     compute_sleeve_curve,
@@ -19,6 +29,11 @@ from ggTrader.paper.overlay import (
 from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 
 _log = logging.getLogger(__name__)
+
+_ET = ZoneInfo("America/New_York")
+
+#: Production bounds of the input/output sanity gates (see ``paper/gates.py``).
+SANITY = SanityConfig()
 
 #: Symbols no sleeve trades but the lab benchmarks against or builds
 #: sleeves from. Nothing else on the box fetches them daily, so the
@@ -57,79 +72,141 @@ def refresh_benchmark_tape(lookback_days: int = 30) -> list[str]:
     return sorted(df.columns.get_level_values(0).unique().tolist())
 
 
-def generate_signals(universe: str = "sp500", lookback_days: int = 365) -> dict:
+def require_rust_engine() -> dict[str, Any]:
+    """Prove the Rust engine is the one that runs, before any data is fetched.
+
+    The trader has no fallback engine (spec 5.5, 8.3): numba would cost 20-60 s of JIT inside
+    a 15-minute window, so any engine problem means no orders.
+
+    Returns:
+        The ``engine.selfcheck`` result (versions, engine, Rust call count).
+
+    Raises:
+        SignalGateError: the self-check failed or the configured engine is not ``rust``.
+    """
+    try:
+        result = engine_selfcheck.selfcheck()
+    except Exception as exc:  # noqa: BLE001 - any engine problem must stop the run
+        raise SignalGateError("engine_selfcheck", f"{type(exc).__name__}: {exc}") from exc
+    if result.get("engine") != "rust":
+        raise SignalGateError(
+            "engine_not_rust",
+            f"the trader requires the rust engine, the self-check ran {result.get('engine')!r}",
+        )
+    return result
+
+
+def _fetch_live_frame(
+    symbols: list[str], start: pd.Timestamp, end: pd.Timestamp, persist_tape: bool
+) -> pd.DataFrame:
+    """The live loader's ``(symbol, field)`` frame; ``persist_tape=False`` never writes a row.
+
+    The default is the same DB-first loader chain the trader has always used (it upserts the
+    bars it fetches into ``ohlcv``). The non-persisting path, used by the read-only dry run,
+    asks yfinance directly and keeps the result in memory only.
+    """
+    if persist_tape:
+        return fetch_stock_ohlcv(symbols, start=str(start.date()), end=str(end.date()))
+    from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
+
+    return YFinanceDataLoader().fetch_ohlcv(symbols, "1d", start_date=start, end_date=end)
+
+
+def generate_signals(
+    universe: str = "sp500",
+    lookback_days: int = 365,
+    *,
+    sanity: SanityConfig | None = None,
+    now: datetime | None = None,
+    persist_tape: bool = True,
+) -> dict:
     """Fetch recent data for a PIT universe and return today's ensemble signals.
 
-    ``lookback_days=365`` (~252 bars) lets EMA-50/MACD/RSI seeds wash out, so
-    signals match the backtest's long-history indicators (0 mismatches over
-    125 sessions vs 4.0% of entries / 3.4% of exits at 120 days;
-    research/paper-system/indicator-warmup/2026-09-28-live-indicator-warmup.md).
+    The signals come from the validated ``Ensemble.build()`` with the one-combination grid of the
+    live defaults (spec OD14: five voters, ``min_agree=2``, ``min_agree_exit=2``, divergence
+    window 20, volume multiple 2.0), read off the last bar. P0's live golden (120 sessions of
+    buys, sells and ``last_exit``) is its acceptance test (``tests/paper/test_live_golden.py``).
 
-    Returns dict with keys: buys (list[str]), sells (list[str]),
-    as_of (str date), universe_size (int).
+    ``lookback_days=365`` (~252 bars) lets the indicator seeds wash out, so the signals match the
+    backtest's long-history indicators (research/paper-system/indicator-warmup/
+    2026-09-28-live-indicator-warmup.md).
+
+    Fails closed: the engine self-check runs first, then the input and output sanity gates
+    (:mod:`ggTrader.paper.gates`); any failure raises :class:`SignalGateError`, which the trader
+    turns into "no orders" plus a notifier message. There is no legacy fallback.
+
+    Args:
+        universe: universe name (``sp500`` for the deployed core).
+        lookback_days: calendar-day length of the bar window.
+        sanity: gate bounds (default: production bounds).
+        now: the run time (default: the wall clock); injectable for tests.
+        persist_tape: ``False`` keeps every fetched bar in memory only (read-only dry run).
+
+    Returns:
+        Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars.
     """
-    today = pd.Timestamp.now(tz="UTC").normalize()
+    cfg = sanity or SANITY
+    now = now or datetime.now(timezone.utc)
+    engine_info = require_rust_engine()
+
+    today = pd.Timestamp(now).tz_convert("UTC").normalize()
+    today_et = pd.Timestamp(now).tz_convert(_ET).date()
     start = today - pd.Timedelta(days=lookback_days)
 
     members = universe_members_asof(universe, today)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
-    ohlcv = fetch_stock_ohlcv(symbols, start=str(start.date()), end=str(today.date()))
-    sym_cols = list(ohlcv.columns.get_level_values(0).unique())
-    close = pd.concat({s: ohlcv[s]["close"] for s in sym_cols}, axis=1)
+    ohlcv = _fetch_live_frame(symbols, start, today, persist_tape)
+    bars = bars_from_legacy_frame(ohlcv, symbols)
+    verdict = vet_bars(bars, today_et, cfg)
+    bars = verdict.bars
+    if verdict.trimmed_partial_bar:
+        _log.warning(
+            "final bar %s is not complete yet (coverage below the floor); signals computed on %s",
+            verdict.dropped_bar,
+            bars.close.index[-1].date(),
+        )
+        ohlcv = ohlcv.iloc[:-1]
 
-    if close.empty:
-        return {"buys": [], "sells": [], "as_of": str(today.date()), "universe_size": 0}
+    last_bar = bars.close.index[-1]
+    counts = bars.close.notna().sum()
+    eligible = sorted(counts[counts >= MIN_HISTORY_BARS].index.tolist())
+    if not eligible:
+        raise SignalGateError(
+            "no_eligible_symbols", f"no symbol has {MIN_HISTORY_BARS} valid closes"
+        )
 
-    last_bar = close.index[-1]
-    cfg = LabConfig(min_history_bars=60)
-    ensemble = EnsembleSignal(cfg)
-    plan = ensemble.select(last_bar, ohlcv, sym_cols)
-    if not plan:
-        return {
-            "buys": [],
-            "sells": [],
-            "as_of": str(last_bar.date()),
-            "universe_size": len(sym_cols),
-        }
-    targets = ensemble.to_targets({last_bar: plan}, ohlcv)
+    all_entries, all_exits = live_ensemble_frames(bars)
+    entries, exits = all_entries[eligible], all_exits[eligible]
 
-    last_entries = targets.entries.loc[last_bar]
-    last_exits = targets.exits.loc[last_bar]
-
+    last_entries = entries.loc[last_bar]
+    last_exits = exits.loc[last_bar]
     buys = sorted(last_entries[last_entries].index.tolist())
     sells = sorted(last_exits[last_exits].index.tolist())
+    vet_signal_counts(len(buys), len(sells), cfg)
+
     # Exits are crossover events, and `sells` sees only the last (intraday)
     # bar, so a cross completing after the run or on a skipped day is lost.
     # The trader compares these dates with entry dates to catch those up.
-    exits = targets.exits
     latest = exits.iloc[::-1].idxmax()[exits.any()]
     last_exit = {sym: str(ts.date()) for sym, ts in latest.items()}
-
-    # ML feature gate — filter low-confidence buy signals
-    gate_info: dict = {}
-    from ggTrader.paper.feature_gate import FeatureGate
-
-    gate = FeatureGate()
-    if gate.enabled and buys:
-        raw_count = len(buys)
-        buys, scores = gate.filter_buys(buys, ohlcv)
-        gate_info = {
-            "gate_enabled": True,
-            "raw_buys": raw_count,
-            "kept_buys": len(buys),
-            "scores": scores,
-        }
-    else:
-        gate_info = {"gate_enabled": gate.enabled}
 
     return {
         "buys": buys,
         "sells": sells,
         "as_of": str(last_bar.date()),
-        "universe_size": len(sym_cols),
-        "gate": gate_info,
+        "universe_size": len(bars.symbols),
         "last_exit": last_exit,
+        "engine": {k: engine_info.get(k) for k in ("engine", "vectorbt", "vectorbt_rust")},
+        "bars": {
+            "n_bars": len(bars.close),
+            "requested": len(bars.requested),
+            "missing_symbols": len(bars.missing_symbols),
+            "last_bar_coverage": round(verdict.last_bar_coverage, 4),
+            "trimmed_partial_bar": verdict.trimmed_partial_bar,
+            "dropped_bar": verdict.dropped_bar,
+            "eligible": len(eligible),
+        },
     }
 
 
@@ -172,7 +249,7 @@ def generate_blended_signals() -> dict:
     }
 
 
-def generate_core_signals() -> dict:
+def generate_core_signals(persist_tape: bool = True) -> dict:
     """Generate today's signals for the standalone SP500 core strategy,
     wrapped in the same shape `generate_blended_signals()` returns so
     `trader.py`'s sleeve-iteration/buy-sizing logic needs no changes.
@@ -185,8 +262,11 @@ def generate_core_signals() -> dict:
     `generate_blended_signals` (not deleted) since the blend's WFO/research
     infrastructure (`ggt lab --blend`) is still valid tooling for any future
     diversification-sleeve candidate that actually clears the bar.
+
+    Args:
+        persist_tape: ``False`` (read-only dry run) keeps every fetched bar in memory only.
     """
-    core_signals = generate_signals(universe="sp500")
+    core_signals = generate_signals(universe="sp500", persist_tape=persist_tape)
     return {
         "sleeves": {"sp500": core_signals},
         "weights": {"sp500": 1.0},

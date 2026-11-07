@@ -22,6 +22,19 @@ def _stub_today_et():
 
 
 @pytest.fixture(autouse=True)
+def _stub_now_pt():
+    """Pin the wall clock to 12:46 PT so the late-run gate (cutoff 12:55 PT) never depends on
+    when the suite runs. Tests of the gate itself patch `_now_pt` again."""
+    from ggTrader.paper.gates import PT
+
+    with patch(
+        "ggTrader.paper.trader._now_pt",
+        return_value=datetime(2026, 6, 19, 12, 46, tzinfo=PT),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def _stub_write_path_db():
     """Keep the schema/snapshot/trade write path off the real DB.
 
@@ -125,7 +138,6 @@ def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500", last_exit=None):
                 "sells": sells,
                 "as_of": as_of,
                 "universe_size": 100,
-                "gate": {},
                 "last_exit": last_exit or {},
             }
         },
@@ -385,7 +397,6 @@ class TestBuyEntries:
                     "sells": [],
                     "as_of": "2026-06-19",
                     "universe_size": 100,
-                    "gate": {},
                 }
             },
             "weights": {"sp500": 1.0},
@@ -2080,3 +2091,412 @@ class TestCatastropheStopEnabled:
         result = trader.run()
         broker.submit_sell.assert_not_called()
         assert result["sells"] == []
+
+
+# ---------------------------------------------------------------------------------------------
+# P7: fail-closed gates, untradable symbols (OD17), the read-only dry run
+# ---------------------------------------------------------------------------------------------
+
+
+class _ApiError(Exception):
+    """Stand-in for alpaca-py's APIError (status_code plus the JSON body in the text)."""
+
+    def __init__(self, status_code: int, body: str) -> None:
+        super().__init__(body)
+        self.status_code = status_code
+
+
+_AVB_422 = _ApiError(422, '{"code":42210000,"message":"asset AVB is not active"}')
+
+
+@patch("ggTrader.paper.trader.generate_core_signals")
+class TestFailClosed:
+    """Spec 8.3 / S7 section 4: any engine, data or gate problem means no orders and an alert."""
+
+    def _positions(self):
+        return dict(_AAPL_POS)
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "engine_selfcheck",
+            "engine_not_rust",
+            "empty_frame",
+            "duplicate_days",
+            "weekend_bars",
+            "small_universe",
+            "short_history",
+            "last_bar_coverage",
+            "no_eligible_symbols",
+            "absurd_signal_count",
+        ],
+    )
+    def test_every_gate_failure_places_no_order_and_alerts(self, mock_signals, code):
+        from ggTrader.paper.gates import SignalGateError
+
+        mock_signals.side_effect = SignalGateError(code, "boom")
+        trader, broker, notifier = _make_trader(positions=self._positions())
+        with pytest.raises(SignalGateError, match=code):
+            trader.run()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        alert = " ".join(str(c) for c in notifier.send.call_args_list)
+        assert "no orders" in alert and code in alert
+
+    def test_unexpected_signal_exception_also_fails_closed(self, mock_signals):
+        mock_signals.side_effect = RuntimeError("numba JIT blew up")
+        trader, broker, notifier = _make_trader(positions=self._positions())
+        with pytest.raises(RuntimeError):
+            trader.run()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        assert any("signal generation error" in str(c) for c in notifier.send.call_args_list)
+
+    def test_late_run_places_no_orders(self, mock_signals):
+        from ggTrader.paper.gates import PT
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=["AAPL"], as_of=_TEST_TODAY)
+        trader, broker, notifier = _make_trader(positions=self._positions())
+        with patch(
+            "ggTrader.paper.trader._now_pt",
+            return_value=datetime(2026, 6, 19, 12, 56, tzinfo=PT),
+        ):
+            result = trader.run()
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        assert result["gate"] == "late_run"
+        assert any("Late run" in str(c) for c in notifier.send.call_args_list)
+
+    def test_on_time_run_trades(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=["AAPL"], as_of=_TEST_TODAY)
+        trader, broker, _ = _make_trader(positions=self._positions())
+        trader.run()
+        broker.submit_sell.assert_called_once()
+        broker.submit_buy.assert_called_once()
+
+    def test_late_dry_run_only_warns(self, mock_signals):
+        from ggTrader.paper.gates import PT
+        from ggTrader.paper.trader import PaperTrader
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
+        _t, broker, notifier = _make_trader()
+        trader = PaperTrader(broker, notifier)  # dry run
+        with patch(
+            "ggTrader.paper.trader._now_pt",
+            return_value=datetime(2026, 6, 19, 15, 0, tzinfo=PT),
+        ):
+            result = trader.run()
+        assert result["buys"] == ["MSFT"]
+        assert any("late-run notice" in str(c) for c in notifier.send.call_args_list)
+
+    def test_half_day_close_from_the_broker_clock_moves_the_cutoff(self, mock_signals):
+        from ggTrader.paper.gates import PT
+
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
+        trader, broker, _ = _make_trader()
+        broker.get_clock.return_value = {
+            "is_open": True,
+            "next_close": "2026-06-19 10:00:00-07:00",
+        }
+        with patch(
+            "ggTrader.paper.trader._now_pt",
+            return_value=datetime(2026, 6, 19, 9, 58, tzinfo=PT),
+        ):
+            result = trader.run()
+        assert result["gate"] == "late_run"
+        broker.submit_buy.assert_not_called()
+
+    def test_signal_engine_info_is_logged(self, mock_signals, caplog):
+        blend = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        blend["sleeves"]["sp500"]["engine"] = {"engine": "rust", "vectorbt": "1.2.0"}
+        mock_signals.return_value = blend
+        trader, _b, _n = _make_trader()
+        with caplog.at_level("INFO", logger="ggTrader.paper.trader"):
+            trader.run()
+        assert any("engine={'engine': 'rust'" in r.getMessage() for r in caplog.records)
+
+
+@patch("ggTrader.paper.trader.generate_core_signals")
+class TestUntradableAvb:
+    """OD17: the stuck AVB holding (4.05 shares, inactive ticker) never draws an order and a
+    broker "asset is not active" 422 is a skip-and-alert, not a crash or an error."""
+
+    _AVB = {"AVB": {"qty": 4.05, "market_value": 745.0, "avg_entry": 184.0, "unrealized_pl": 0.0}}
+
+    def test_422_on_a_sell_is_skipped_and_alerted_not_an_error(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=["AVB", "AAPL"])
+        trader, broker, notifier = _make_trader(positions={**self._AVB, **_AAPL_POS})
+        broker.get_untradable.return_value = set()  # status check missed it
+        broker.submit_sell.side_effect = lambda sym, qty: (
+            (_ for _ in ()).throw(_AVB_422) if sym == "AVB" else "sell-order-1"
+        )
+        result = trader.run()
+        assert result["errors"] == []
+        assert "AVB" in result["untradable"]
+        assert "AAPL" in result["sells"] and "AVB" not in result["sells"]
+        broker.submit_buy.assert_called_once_with("MSFT", 3300.0)
+        assert any("Untradable (order skipped)" in str(c) for c in notifier.send.call_args_list)
+
+    def test_422_on_a_buy_is_skipped_and_the_slot_is_not_consumed(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["EQR", "MSFT"], sells=[])
+        trader, broker, _ = _make_trader()
+        broker.submit_buy.side_effect = lambda sym, n: (
+            (_ for _ in ()).throw(_AVB_422) if sym == "EQR" else "buy-order-1"
+        )
+        with patch.dict(os.environ, {"MAX_POSITIONS": "1"}):
+            from ggTrader.paper.risk import config_from_env
+
+            trader._risk.cfg = config_from_env()
+            result = trader.run()
+        assert result["buys"] == ["MSFT"]  # the one slot went to the tradable name
+        assert result["errors"] == []
+
+    def test_other_422_is_still_a_real_error(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader()
+        broker.submit_buy.side_effect = _ApiError(422, '{"message":"qty must be > 0"}')
+        result = trader.run()
+        assert result["errors"] and "qty must be > 0" in result["errors"][0]
+
+    def test_untradable_buy_candidate_is_filtered_before_any_order(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["AVB", "MSFT"], sells=[])
+        trader, broker, notifier = _make_trader()
+        broker.get_untradable.return_value = {"AVB"}
+        result = trader.run()
+        assert result["buys"] == ["MSFT"]
+        assert [c.args[0] for c in broker.submit_buy.call_args_list] == ["MSFT"]
+        assert any("buy candidates skipped" in str(c) for c in notifier.send.call_args_list)
+
+    def test_configured_set_works_even_if_the_status_lookup_is_down(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["AVB", "MSFT"], sells=["AVB"])
+        trader, broker, _ = _make_trader(positions=dict(self._AVB))
+        broker.get_untradable.side_effect = RuntimeError("api down")
+        with patch.dict(os.environ, {"UNTRADABLE_SYMBOLS": "AVB"}):
+            result = trader.run()
+        broker.submit_sell.assert_not_called()
+        assert [c.args[0] for c in broker.submit_buy.call_args_list] == ["MSFT"]
+        assert "AVB" in result["untradable"]
+
+    def test_avb_does_not_take_a_slot(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
+        trader, broker, _ = _make_trader(positions=dict(self._AVB))
+        broker.get_untradable.return_value = {"AVB"}
+        with patch.dict(os.environ, {"MAX_POSITIONS": "1"}):
+            from ggTrader.paper.risk import config_from_env
+
+            trader._risk.cfg = config_from_env()
+            trader.run()
+        broker.submit_buy.assert_called_once()
+
+
+_PERSIST_NAMES = (
+    "init_paper_schema",
+    "log_trade",
+    "log_snapshot",
+    "save_peak_value",
+    "log_pending_order",
+    "clear_pending_order",
+    "mark_pending_order_stale",
+    "save_split_correction",
+    "clear_split_correction",
+    "log_dividend_accrual",
+    "refresh_benchmark_tape",
+)
+
+
+def _patch_persist():
+    """Patch every write the trader can make; returns {name: mock} and the context stack."""
+    from contextlib import ExitStack
+
+    stack = ExitStack()
+    mocks = {
+        name: stack.enter_context(patch(f"ggTrader.paper.trader.{name}")) for name in _PERSIST_NAMES
+    }
+    return stack, mocks
+
+
+@patch("ggTrader.paper.trader.generate_core_signals")
+class TestReadOnlyDryRun:
+    """Spec 8.4 item 2 / risk 14: a dry run differs from a live run only in order submission,
+    and a read-only dry run writes nothing."""
+
+    def _dry_trader(self, **broker_kw):
+        from ggTrader.paper.trader import PaperTrader
+
+        _t, broker, notifier = _make_trader(**broker_kw)
+        return PaperTrader(broker, notifier), broker, notifier
+
+    def test_dry_run_is_read_only_by_default(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=["AAPL"], as_of=_TEST_TODAY)
+        trader, broker, _ = self._dry_trader(positions=dict(_AAPL_POS))
+        stack, mocks = _patch_persist()
+        with stack:
+            result = trader.run()
+        for name, mock in mocks.items():
+            assert not mock.called, f"read-only dry run called {name}"
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        assert result["buys"] == ["MSFT"] and result["sells"] == ["AAPL"]
+        assert {"init_paper_schema", "log_snapshot", "refresh_benchmark_tape"} <= set(
+            result["skipped_writes"]
+        )
+        assert "save_peak_value" in result["skipped_writes"]
+
+    def test_signals_are_loaded_without_persisting_the_tape(self, mock_signals):
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        trader, _b, _n = self._dry_trader()
+        trader.run()
+        mock_signals.assert_called_once_with(persist_tape=False)
+
+    def test_legacy_dry_run_with_writes_still_persists(self, mock_signals):
+        from ggTrader.paper.trader import PaperTrader
+
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        _t, broker, notifier = _make_trader()
+        trader = PaperTrader(broker, notifier, dry_run=True, read_only=False)
+        stack, mocks = _patch_persist()
+        with stack:
+            trader.run()
+        assert mocks["init_paper_schema"].called and mocks["log_snapshot"].called
+        assert mocks["refresh_benchmark_tape"].called
+        mock_signals.assert_called_once_with(persist_tape=True)
+
+    def test_live_default_is_unchanged(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
+        trader, broker, _ = _make_trader()
+        assert trader._read_only is False
+        stack, mocks = _patch_persist()
+        with stack:
+            result = trader.run()
+        assert mocks["init_paper_schema"].called
+        assert mocks["log_snapshot"].called
+        assert mocks["save_peak_value"].called
+        assert mocks["refresh_benchmark_tape"].called
+        assert result["skipped_writes"] == []
+        mock_signals.assert_called_once_with(persist_tape=True)
+        broker.submit_buy.assert_called_once()
+
+    def test_a_live_run_cannot_be_read_only(self, mock_signals):
+        from ggTrader.paper.trader import PaperTrader
+
+        with pytest.raises(ValueError, match="read_only requires dry_run"):
+            PaperTrader(MagicMock(), MagicMock(), dry_run=False, read_only=True)
+
+    def test_pending_orders_are_neither_polled_nor_booked(self, mock_signals):
+        mock_signals.return_value = _blend(buys=["MSFT", "GOOG"], sells=[], as_of=_TEST_TODAY)
+        trader, broker, _ = self._dry_trader()
+        pending = [
+            {
+                "order_id": "o1",
+                "symbol": "MSFT",
+                "side": "BUY",
+                "run_date": date(2026, 6, 18),
+                "created_at": datetime(2026, 6, 18, tzinfo=timezone.utc),
+            }
+        ]
+        stack, mocks = _patch_persist()
+        with stack, patch("ggTrader.paper.trader.get_pending_orders", return_value=pending):
+            result = trader.run()
+        broker.get_order.assert_not_called()
+        assert not mocks["log_trade"].called and not mocks["clear_pending_order"].called
+        assert result["buys"] == ["GOOG"]  # MSFT still has an order working
+
+    def test_write_helper_skips_and_records(self, mock_signals):
+        trader, _b, _n = self._dry_trader()
+        fn = MagicMock(__name__="log_dividend_accrual")
+        assert trader._write(fn, "AAPL", 1) is None
+        fn.assert_not_called()
+        assert trader.skipped_writes == ["log_dividend_accrual"]
+
+    def test_dry_and_live_take_the_same_path_up_to_order_submission(self, mock_signals):
+        """Risk 14: identical inputs give identical intended orders in both modes."""
+        blend = _blend(buys=["MSFT", "GOOG"], sells=["AAPL"], last_exit={"AAPL": _TEST_TODAY})
+        mock_signals.return_value = blend
+        dry, dry_broker, _ = self._dry_trader(positions=dict(_AAPL_POS))
+        live, live_broker, _ = _make_trader(positions=dict(_AAPL_POS))
+        dry_result, live_result = dry.run(), live.run()
+        assert dry_result["buys"] == live_result["buys"] == ["MSFT", "GOOG"]
+        assert dry_result["sells"] == live_result["sells"] == ["AAPL"]
+        assert dry_broker.submit_buy.call_count == dry_broker.submit_sell.call_count == 0
+        assert live_broker.submit_buy.call_count == 2 and live_broker.submit_sell.call_count == 1
+
+
+class TestDryRunNotifier:
+    def test_nothing_is_forwarded_by_default(self):
+        from ggTrader.paper.notifier import DryRunNotifier
+
+        inner = MagicMock()
+        n = DryRunNotifier(inner)
+        assert n.send("hello") is False
+        assert n.trade_alert("BUY", "AAPL", 100.0, "o1", qty=1.0) is False
+        assert n.daily_summary(100000.0, 12.0, {}, total_pnl=1.0) is False
+        inner.send.assert_not_called()
+        inner.trade_alert.assert_not_called()
+        inner.daily_summary.assert_not_called()
+
+    def test_forward_prefixes_free_text_only(self):
+        from ggTrader.paper.notifier import DryRunNotifier
+
+        inner = MagicMock()
+        inner.send.return_value = True
+        n = DryRunNotifier(inner, forward=True)
+        assert n.send("<b>x</b>") is True
+        inner.send.assert_called_once_with("[DRY RUN] <b>x</b>")
+        n.trade_alert("BUY", "AAPL", 100.0, "o1")
+        n.daily_summary(1.0, 1.0, {})
+        inner.trade_alert.assert_not_called()
+        inner.daily_summary.assert_not_called()
+
+
+class TestRunPaperTradingReadOnly:
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_dry_run_wires_a_read_only_trader_and_a_dry_notifier(
+        self, mock_trader_cls, mock_broker_cls, mock_notifier_cls
+    ):
+        from ggTrader.paper.notifier import DryRunNotifier
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker_cls.return_value.get_account.return_value = {"multiplier": 1.0}
+        mock_trader_cls.return_value.run.return_value = {"buys": [], "sells": [], "errors": []}
+        run_paper_trading(dry_run=True)
+        kwargs = mock_trader_cls.call_args.kwargs
+        assert kwargs["dry_run"] is True and kwargs["read_only"] is True
+        assert isinstance(mock_trader_cls.call_args.args[1], DryRunNotifier)
+
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_dry_run_writes_flag_restores_the_old_dry_run(
+        self, mock_trader_cls, mock_broker_cls, mock_notifier_cls
+    ):
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker_cls.return_value.get_account.return_value = {"multiplier": 1.0}
+        mock_trader_cls.return_value.run.return_value = {"buys": [], "sells": [], "errors": []}
+        run_paper_trading(dry_run=True, read_only=False)
+        assert mock_trader_cls.call_args.kwargs["read_only"] is False
+        assert mock_trader_cls.call_args.args[1] is mock_notifier_cls.return_value
+
+    @patch("ggTrader.paper.trader.TelegramNotifier")
+    @patch("ggTrader.paper.trader.AlpacaBroker")
+    @patch("ggTrader.paper.trader.PaperTrader")
+    def test_live_stays_unwrapped_and_writable(
+        self, mock_trader_cls, mock_broker_cls, mock_notifier_cls
+    ):
+        from ggTrader.paper.trader import run_paper_trading
+
+        mock_broker_cls.return_value.get_account.return_value = {"multiplier": 1.0}
+        mock_trader_cls.return_value.run.return_value = {"buys": [], "sells": [], "errors": []}
+        run_paper_trading(dry_run=False)
+        assert mock_trader_cls.call_args.kwargs["read_only"] is False
+        assert mock_trader_cls.call_args.args[1] is mock_notifier_cls.return_value
+
+    def test_live_with_read_only_is_refused_before_any_broker_call(self):
+        from ggTrader.paper.trader import run_paper_trading
+
+        with patch("ggTrader.paper.trader.AlpacaBroker") as broker_cls:
+            with pytest.raises(ValueError):
+                run_paper_trading(dry_run=False, read_only=True)
+        broker_cls.assert_not_called()

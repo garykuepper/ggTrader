@@ -13,14 +13,28 @@ Run the steps in order, then render the summary block.
 > `scripts/paper_trade.sh`). **Crypto is parked by choice** — a stale crypto
 > balance or an idle Kraken/Binance snapshot is expected, not a fault, so do
 > not report it as one.
+>
+> **Status 2026-11-06: the trader is stopped by the owner** (cron lines commented
+> out; ~114 SPY shares and a stuck AVB holding remain). No fresh run is expected
+> until the owner re-enables cron (spec OD18): report "stopped by the owner" and
+> the last run's date instead of an alarm, and never re-enable it or edit the
+> crontab. After re-enabling, the first live run gets this check in full.
 
 ## 1. Container and image freshness
 
 ```bash
 docker ps --filter name=ggtrader --format '{{.Names}}\t{{.Status}}\t{{.Image}}'
-docker image inspect ghcr.io/garykuepper/ggtrader:latest --format '{{.Created}}'
+grep '^GGTRADER_TAG=' /home/flynn/ggTrader/.env    # the tag cron runs; not `latest`
+docker image inspect ghcr.io/garykuepper/ggtrader:<GGTRADER_TAG> --format '{{.Created}}'
 git -C /home/flynn/ggTrader log -1 --format='%h %ci %s'
+docker compose run --rm ggtrader_live python -m ggTrader.engine.selfcheck --engine rust
 ```
+
+The trader runs an **immutable tag** from `GGTRADER_TAG` (see `ggtrader-deploy`). Flag
+`GGTRADER_TAG` unset or `latest` as a finding, and a running tag that differs from the
+last deploy record. The self-check line prints the vectorbt / vectorbt-rust versions and
+`"engine": "rust"`; print the version pair in the report. Anything else means the
+trader would place no orders.
 
 The container is **not** bind-mounted to `src/` — it runs the code baked into
 the image. **If the image predates the newest commit that touched
@@ -39,6 +53,18 @@ tail -40 ~/logs/paper_trade_$(date +%Y%m%d).log 2>/dev/null || echo "no run toda
 Scan for `ERROR`, `CRITICAL`, `Traceback`, halt/gate messages, and whether
 the run reported placing orders or was a dry run. A run that logs nothing
 after "Starting paper trading run..." died mid-way.
+
+Since the vectorbt rebuild also look for, and report verbatim:
+- `signals sp500: engine={'engine': 'rust', ...} bars={...} buys=N sells=M` (one
+  line per run; `trimmed_partial_bar: True` means today's thin final bar was dropped
+  and signals used the previous session; `last_bar_coverage` below 0.95 is a finding).
+- `Signal gate` / `no orders placed` (a gate refused the run: engine self-check, empty
+  or duplicated bars, small universe, short history, thin final bar, absurd buy/sell
+  count) and `Late run` (signals ready after 12:55 PT). Each is a fail-closed stop,
+  not noise; the Telegram message names the gate code.
+- `Untradable` lines: the stuck AVB holding is expected there; any other symbol is new.
+- `read-only: skipped write` lines mean the run was a read-only dry run, not a live run.
+- Wall time over 120 s (log start and complete lines) or a 137 exit.
 
 ## 3. Portfolio value and trend — query postgres MCP
 
@@ -141,6 +167,8 @@ Render this structure, filling in real values:
 🪞 Shadow 80/20 since 09-29: <ret>% (DD <dd>%) · live <ret>% · SPY <ret>%
 
 🗓️ Tape: <"clean, Mon-Fri only" or "🚨 N weekend bars — stale image?">  · newest bar <date>
+
+⚙️ Engine: vectorbt <v> + rust <v> · tag <GGTRADER_TAG> · gates <ok / which gate fired>
 
 ⚠️ Issues: <"none" or 1-line summary of errors, halts, or stale-image warning>
 ```

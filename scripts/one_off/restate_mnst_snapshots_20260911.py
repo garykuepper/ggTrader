@@ -29,6 +29,7 @@ re-run, but it is still a direct UPDATE against the live paper_snapshots
 table -- do not wire it into any cron, CLI, or import path.
 """
 
+import argparse
 import json
 from datetime import date
 
@@ -44,7 +45,12 @@ FACTOR = 2.0  # MNST 2-for-1, ex 2026-08-11
 START, END = date(2026, 8, 11), date.today()
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.parse_args(argv)
     engine = get_engine()
     with engine.connect() as conn:
         rows = conn.execute(

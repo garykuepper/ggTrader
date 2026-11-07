@@ -70,23 +70,70 @@ class TestComputeSleeveCurve:
         assert len(curve) > 0
         assert curve.index.max() <= asof
 
-    @patch("ggTrader.paper.overlay.universe_members_asof")
-    @patch("ggTrader.paper.overlay.fetch_stock_ohlcv")
-    def test_uses_same_ensemble_construction_as_signal_runner(self, mock_fetch, mock_members):
-        """Invariant 1: overlay must build EnsembleSignal identically to
-        signal_runner.py -- no separate params, or the vol estimate silently
+    def test_uses_same_ensemble_construction_as_signal_runner(self):
+        """Invariant 1: overlay and signal_runner build the live ensemble through the one shared
+        `live_signals.live_ensemble_frames` -- no separate params, or the vol estimate silently
         describes a different strategy than the one actually live-trading."""
         import inspect
 
-        from ggTrader.paper import overlay, signal_runner
+        from ggTrader.paper import live_signals, overlay, signal_runner
 
-        overlay_src = inspect.getsource(overlay.compute_sleeve_curve)
-        runner_src = inspect.getsource(signal_runner.generate_signals)
+        assert "live_ensemble_frames(" in inspect.getsource(overlay.compute_sleeve_curve)
+        assert "live_ensemble_frames(" in inspect.getsource(signal_runner.generate_signals)
+        shared = inspect.getsource(live_signals.live_ensemble_frames)
+        assert "Ensemble().build(bars, Ensemble.live_grid())" in shared
+        # The deployed defaults of OD14 (divergence window 20, volume multiple 2.0).
+        from ggTrader.lab.strategies.ensemble import Ensemble
 
-        assert "EnsembleSignal(cfg)" in overlay_src
-        assert "EnsembleSignal(cfg)" in runner_src
-        assert "LabConfig(min_history_bars=60)" in overlay_src
-        assert "LabConfig(min_history_bars=60)" in runner_src
+        assert Ensemble.live["divergence_window"] == 20
+        assert Ensemble.live["vol_mult"] == 2.0
+        assert Ensemble.live["min_agree"] == 2 and Ensemble.live["min_agree_exit"] == 2
+
+    def test_overlay_no_longer_imports_the_legacy_simulator(self):
+        """The overlay must not import lab.simulate (the 2026-09-23 crash class; lab/simulate.py
+        is deleted after the engine rebuild)."""
+        import ast
+        import inspect
+
+        from ggTrader.paper import overlay
+
+        tree = ast.parse(inspect.getsource(overlay))
+        imported = {
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module
+        } | {a.name for node in ast.walk(tree) if isinstance(node, ast.Import) for a in node.names}
+        assert "ggTrader.lab.simulate" not in imported
+        assert "ggTrader.lab.strategies.ensemble" not in imported
+
+    @patch("ggTrader.paper.overlay.universe_members_asof")
+    @patch("ggTrader.paper.overlay.fetch_stock_ohlcv")
+    def test_curve_equals_the_frozen_legacy_simulator_curve(self, mock_fetch, mock_members):
+        """Equity parity (P7): the rerouted curve equals the legacy `EnsembleSignal` +
+        `lab.simulate.simulate_signals` curve value for value. The legacy curve was computed on
+        these mock bars before those modules were deleted (P5c) and is frozen in
+        ``golden/legacy_overlay_curve.npz``. History is long (700 bars) so the window sits past
+        the indicator burn-in where legacy and vectorbt forms differ."""
+        from pathlib import Path
+
+        from ggTrader.paper.overlay import compute_sleeve_curve
+
+        symbols = [f"S{i:02d}" for i in range(14)]
+        mock_members.return_value = symbols
+        ohlcv = _mock_ohlcv(symbols, n_days=700, end="2026-07-10")
+        mock_fetch.side_effect = lambda syms, start, end: ohlcv
+
+        asof = pd.Timestamp("2026-07-10", tz="UTC")
+        new = compute_sleeve_curve("sp500", asof, window_days=90)
+
+        frozen = np.load(Path(__file__).parent / "golden" / "legacy_overlay_curve.npz")
+        legacy_index = pd.DatetimeIndex(pd.to_datetime(frozen["index"], unit="us", utc=True))
+        legacy = frozen["values"]
+
+        assert len(new) == len(legacy) > 60
+        assert (new.index == legacy_index).all()
+        np.testing.assert_allclose(new.to_numpy(), legacy, rtol=1e-12, atol=1e-9)
+        assert not np.allclose(legacy, legacy[0]), "the curve must actually trade"
 
     @patch("ggTrader.paper.overlay.universe_members_asof")
     @patch("ggTrader.paper.overlay.fetch_stock_ohlcv")
