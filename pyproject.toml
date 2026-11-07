@@ -21,7 +21,6 @@ dependencies = [
     "plotly>=7,<8",
     "alpaca-py",
     "beautifulsoup4",  # lab/event_timing_sources.py
-    "ccxt",
     "defusedxml",
     "joblib",
     "lightgbm",
