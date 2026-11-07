@@ -1,0 +1,66 @@
+{
+ "slice": "S1",
+ "commit_tested": "ee3f52dc content (amended: see git log)",
+ "full_suite": {
+  "passed": 2337,
+  "integration_deselected": 12,
+  "failed": 0,
+  "seconds": 620.31
+ },
+ "fast_core": {
+  "passed": 1316,
+  "deselected": 1033,
+  "failed": 0,
+  "seconds": [
+   93.08,
+   97.52
+  ],
+  "fresh_clone_run": {
+   "passed": 1305,
+   "failed": 4,
+   "skipped": 7,
+   "seconds": 92.64,
+   "note": "the clone has no .venv and no tape: 7 tape skips, 2 ruff-exclude tests need ROOT/.venv/bin/ruff, 2 run_capped tests need the venv; none touches this slice"
+  }
+ },
+ "lint": {
+  "worktree": "ruff check . passed; ruff format --check . 287 files already formatted",
+  "fresh_git_clone_local": "ruff check . passed; 287 files already formatted (commit 50b67e4b before the amend, same tree except the tests/conftest.py removal)"
+ },
+ "core17_via_driver": {
+  "command": "scripts/p5_wfo_validation.py --runs core17_ensemble_sp500 (main(), scratch out dir)",
+  "ggTrader_file": "/home/flynn/ggTrader-vbt12/src/ggTrader/__init__.py",
+  "gates": "1/17",
+  "oos_metrics": {
+   "total_return_pct": 15.638582195995498,
+   "cagr_pct": 3.5012012062414,
+   "sharpe": 0.39050398505373224,
+   "sortino": 0.6229901482160547,
+   "ann_vol_pct": 10.0974324804803,
+   "max_drawdown_pct": -9.583973821977409
+  },
+  "differing_fields_vs_guarded": [],
+  "excluded": [
+   "provenance",
+   "wall_seconds",
+   "diagnostics.timings_s",
+   "diagnostics.peak_rss_mb",
+   "tape.path"
+  ]
+ },
+ "dsr0_via_driver": {
+  "gates": "17/17",
+  "oos_metrics": {
+   "total_return_pct": 15.19216627452109,
+   "cagr_pct": 3.406428791646543,
+   "sharpe": 0.6373813330260034,
+   "sortino": 1.0910558188915858,
+   "ann_vol_pct": 5.48858355388091,
+   "max_drawdown_pct": -5.278102080265268
+  },
+  "differing_fields_vs_guarded": []
+ },
+ "live_golden": "tests/paper/test_live_golden.py passed inside the FULL run (120 sessions equal)",
+ "git_status_porcelain_research_data_results": "only the new S1 ledger and p11-evidence S1 files before this commit; nothing unexpected",
+ "stop_rule": "not triggered"
+}
