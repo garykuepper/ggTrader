@@ -91,6 +91,14 @@ CREATE TABLE IF NOT EXISTS lab_sweep_combos (
 """
 
 
+#: Additive, idempotent migrations (spec 5.8): a nullable provenance block per run/sweep.
+#: NULL means a legacy-engine result; old rows are never touched.
+PROVENANCE_MIGRATIONS = (
+    "ALTER TABLE lab_runs ADD COLUMN IF NOT EXISTS provenance JSONB",
+    "ALTER TABLE lab_sweeps ADD COLUMN IF NOT EXISTS provenance JSONB",
+)
+
+
 def get_engine():
     global _ENGINE
     if _ENGINE is None:
@@ -102,6 +110,8 @@ def init_schema() -> None:
     eng = get_engine()
     with eng.begin() as conn:
         conn.execute(text(_SCHEMA))
+        for migration in PROVENANCE_MIGRATIONS:
+            conn.execute(text(migration))
         for tbl in ("lab_returns", "lab_equity"):
             try:
                 conn.execute(
@@ -115,25 +125,41 @@ def init_schema() -> None:
 
 
 def start_run(
-    strategy: str, market: str, freq: str, eval_start: str, eval_end: str, params: Dict[str, Any]
+    strategy: str,
+    market: str,
+    freq: str,
+    eval_start: str,
+    eval_end: str,
+    params: Dict[str, Any],
+    provenance: Optional[Dict[str, Any]] = None,
 ) -> str:
+    """Insert a run row; ``provenance`` (engine stack block) is stored when given.
+
+    Without it the original INSERT runs, so a database that has not run the migration
+    keeps working.
+    """
     run_id = f"{strategy}_{uuid.uuid4().hex[:8]}"
+    columns, values = "", ""
+    binds: Dict[str, Any] = {
+        "r": run_id,
+        "s": strategy,
+        "m": market,
+        "f": freq,
+        "es": eval_start,
+        "ee": eval_end,
+        "p": json.dumps(params),
+    }
+    if provenance is not None:
+        columns, values = ", provenance", ", :pv"
+        binds["pv"] = json.dumps(_sanitize(provenance))
     with get_engine().begin() as conn:
         conn.execute(
             text(
                 "INSERT INTO lab_runs"
-                " (run_id, strategy, market, freq, eval_start, eval_end, params) "
-                "VALUES (:r, :s, :m, :f, :es, :ee, :p)"
+                f" (run_id, strategy, market, freq, eval_start, eval_end, params{columns}) "
+                f"VALUES (:r, :s, :m, :f, :es, :ee, :p{values})"
             ),
-            {
-                "r": run_id,
-                "s": strategy,
-                "m": market,
-                "f": freq,
-                "es": eval_start,
-                "ee": eval_end,
-                "p": json.dumps(params),
-            },
+            binds,
         )
     return run_id
 
@@ -275,22 +301,34 @@ def write_summary(
         )
 
 
-def start_sweep(strategy: str, market: str, param_grid: Dict[str, Any], n_combos: int) -> str:
+def start_sweep(
+    strategy: str,
+    market: str,
+    param_grid: Dict[str, Any],
+    n_combos: int,
+    provenance: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Insert a sweep row; ``provenance`` is stored when given (see ``start_run``)."""
     sweep_id = f"sweep_{strategy}_{uuid.uuid4().hex[:8]}"
+    columns, values = "", ""
+    binds: Dict[str, Any] = {
+        "s": sweep_id,
+        "st": strategy,
+        "m": market,
+        "pg": json.dumps(param_grid),
+        "n": n_combos,
+    }
+    if provenance is not None:
+        columns, values = ", provenance", ", :pv"
+        binds["pv"] = json.dumps(_sanitize(provenance))
     with get_engine().begin() as conn:
         conn.execute(
             text(
                 "INSERT INTO lab_sweeps"
-                " (sweep_id, strategy, market, param_grid, n_combos)"
-                " VALUES (:s, :st, :m, :pg, :n)"
+                f" (sweep_id, strategy, market, param_grid, n_combos{columns})"
+                f" VALUES (:s, :st, :m, :pg, :n{values})"
             ),
-            {
-                "s": sweep_id,
-                "st": strategy,
-                "m": market,
-                "pg": json.dumps(param_grid),
-                "n": n_combos,
-            },
+            binds,
         )
     return sweep_id
 

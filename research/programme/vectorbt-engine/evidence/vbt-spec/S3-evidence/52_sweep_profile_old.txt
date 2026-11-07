@@ -1,0 +1,1 @@
+{"vectorbt": "0.28.5", "pandas": "2.3.3", "engine": "na", "cols": 100, "rows": 860, "wall_cpu_per_rep": [[9.87, 8.25], [7.43, 6.91]]}

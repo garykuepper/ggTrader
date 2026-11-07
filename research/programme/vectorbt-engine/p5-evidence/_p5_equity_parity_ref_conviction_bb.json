@@ -1,0 +1,810 @@
+{
+  "run": "ref_conviction_bb",
+  "ends": {
+    "2022-01-31": {
+      "bars": 736,
+      "last_bar": "2022-01-31",
+      "combos": 36,
+      "bit_identical_combos": 0,
+      "max_abs_diff_all_combos": 5.226951603217458,
+      "trade_counts_equal_combos": 33,
+      "differences": {
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.6110554708739073,
+          "new_trades": 6514,
+          "legacy_trades": 6515
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.927854121733617,
+          "new_trades": 6514,
+          "legacy_trades": 6515
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.2539788101548766,
+          "new_trades": 6514,
+          "legacy_trades": 6515
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 3.7278040377368598,
+          "new_trades": 3607,
+          "legacy_trades": 3607
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 4.357530354916889,
+          "new_trades": 3607,
+          "legacy_trades": 3607
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 5.226951603217458,
+          "new_trades": 3607,
+          "legacy_trades": 3607
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 453,
+          "legacy_trades": 453
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 453,
+          "legacy_trades": 453
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 7.275957614183426e-12,
+          "new_trades": 453,
+          "legacy_trades": 453
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 4856,
+          "legacy_trades": 4856
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4856,
+          "legacy_trades": 4856
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 4856,
+          "legacy_trades": 4856
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.9103830456733704e-11,
+          "new_trades": 3246,
+          "legacy_trades": 3246
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 3246,
+          "legacy_trades": 3246
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.637978807091713e-11,
+          "new_trades": 3246,
+          "legacy_trades": 3246
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1278,
+          "legacy_trades": 1278
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.0913936421275139e-11,
+          "new_trades": 1278,
+          "legacy_trades": 1278
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1278,
+          "legacy_trades": 1278
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.3646862246096134e-11,
+          "new_trades": 3916,
+          "legacy_trades": 3916
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 3916,
+          "legacy_trades": 3916
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.3646862246096134e-11,
+          "new_trades": 3916,
+          "legacy_trades": 3916
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 2755,
+          "legacy_trades": 2755
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 3.2741809263825417e-11,
+          "new_trades": 2755,
+          "legacy_trades": 2755
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.2741809263825417e-11,
+          "new_trades": 2755,
+          "legacy_trades": 2755
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 7.275957614183426e-12,
+          "new_trades": 1330,
+          "legacy_trades": 1330
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1330,
+          "legacy_trades": 1330
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1330,
+          "legacy_trades": 1330
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 2810,
+          "legacy_trades": 2810
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 2810,
+          "legacy_trades": 2810
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 2810,
+          "legacy_trades": 2810
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 2021,
+          "legacy_trades": 2021
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 2021,
+          "legacy_trades": 2021
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 2021,
+          "legacy_trades": 2021
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1142,
+          "legacy_trades": 1142
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 1142,
+          "legacy_trades": 1142
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1142,
+          "legacy_trades": 1142
+        }
+      },
+      "seconds": 36.1
+    },
+    "2022-04-30": {
+      "bars": 798,
+      "last_bar": "2022-04-29",
+      "combos": 36,
+      "bit_identical_combos": 0,
+      "max_abs_diff_all_combos": 5.226951603217458,
+      "trade_counts_equal_combos": 33,
+      "differences": {
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.6110554708739073,
+          "new_trades": 7933,
+          "legacy_trades": 7934
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.927854121733617,
+          "new_trades": 7933,
+          "legacy_trades": 7934
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.2539788101548766,
+          "new_trades": 7933,
+          "legacy_trades": 7934
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 3.7278040377368598,
+          "new_trades": 4318,
+          "legacy_trades": 4318
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 4.357530354916889,
+          "new_trades": 4318,
+          "legacy_trades": 4318
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 5.226951603217458,
+          "new_trades": 4318,
+          "legacy_trades": 4318
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 524,
+          "legacy_trades": 524
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 524,
+          "legacy_trades": 524
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 7.275957614183426e-12,
+          "new_trades": 524,
+          "legacy_trades": 524
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 5993,
+          "legacy_trades": 5993
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 5993,
+          "legacy_trades": 5993
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 5993,
+          "legacy_trades": 5993
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 4.001776687800884e-11,
+          "new_trades": 4009,
+          "legacy_trades": 4009
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4009,
+          "legacy_trades": 4009
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.637978807091713e-11,
+          "new_trades": 4009,
+          "legacy_trades": 4009
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1553,
+          "legacy_trades": 1553
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.0913936421275139e-11,
+          "new_trades": 1553,
+          "legacy_trades": 1553
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1553,
+          "legacy_trades": 1553
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.3646862246096134e-11,
+          "new_trades": 4837,
+          "legacy_trades": 4837
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 3.2741809263825417e-11,
+          "new_trades": 4837,
+          "legacy_trades": 4837
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.9103830456733704e-11,
+          "new_trades": 4837,
+          "legacy_trades": 4837
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 3414,
+          "legacy_trades": 3414
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 4.001776687800884e-11,
+          "new_trades": 3414,
+          "legacy_trades": 3414
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.637978807091713e-11,
+          "new_trades": 3414,
+          "legacy_trades": 3414
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1641,
+          "legacy_trades": 1641
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.0913936421275139e-11,
+          "new_trades": 1641,
+          "legacy_trades": 1641
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1641,
+          "legacy_trades": 1641
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 3453,
+          "legacy_trades": 3453
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 3453,
+          "legacy_trades": 3453
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 3453,
+          "legacy_trades": 3453
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.3646862246096134e-11,
+          "new_trades": 2502,
+          "legacy_trades": 2502
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 2502,
+          "legacy_trades": 2502
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 2502,
+          "legacy_trades": 2502
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1402,
+          "legacy_trades": 1402
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 1402,
+          "legacy_trades": 1402
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1402,
+          "legacy_trades": 1402
+        }
+      },
+      "seconds": 37.0
+    },
+    "2022-07-30": {
+      "bars": 860,
+      "last_bar": "2022-07-29",
+      "combos": 36,
+      "bit_identical_combos": 0,
+      "max_abs_diff_all_combos": 5.226951603217458,
+      "trade_counts_equal_combos": 33,
+      "differences": {
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.6110554708739073,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.927854121733617,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.2539788101548766,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 3.7278040377368598,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 4.357530354916889,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 5.226951603217458,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 7.275957614183426e-12,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 4.001776687800884e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.8198777474462986e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.0913936421275139e-11,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.7284841053187847e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 3.2741809263825417e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.8198777474462986e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 5.093170329928398e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 4.729372449219227e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.6370904631912708e-11,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.6370904631912708e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        }
+      },
+      "seconds": 37.6
+    },
+    "2022-07-31": {
+      "bars": 860,
+      "last_bar": "2022-07-29",
+      "combos": 36,
+      "bit_identical_combos": 0,
+      "max_abs_diff_all_combos": 5.226951603217458,
+      "trade_counts_equal_combos": 33,
+      "differences": {
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.6110554708739073,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.927854121733617,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.2539788101548766,
+          "new_trades": 9127,
+          "legacy_trades": 9128
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 3.7278040377368598,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 4.357530354916889,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 5.226951603217458,
+          "new_trades": 5052,
+          "legacy_trades": 5052
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period10_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 7.275957614183426e-12,
+          "new_trades": 618,
+          "legacy_trades": 618
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 6957,
+          "legacy_trades": 6957
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 4.001776687800884e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.8198777474462986e-11,
+          "new_trades": 4689,
+          "legacy_trades": 4689
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.0913936421275139e-11,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period15_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 1821,
+          "legacy_trades": 1821
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.7284841053187847e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 3.2741809263825417e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 3.8198777474462986e-11,
+          "new_trades": 5607,
+          "legacy_trades": 5607
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 5.093170329928398e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 4.729372449219227e-11,
+          "new_trades": 3995,
+          "legacy_trades": 3995
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 9.094947017729282e-12,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period20_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.6370904631912708e-11,
+          "new_trades": 1955,
+          "legacy_trades": 1955
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.2732925824820995e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.1827872842550278e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std1.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.8189894035458565e-11,
+          "new_trades": 4048,
+          "legacy_trades": 4048
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.03_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.546585164964199e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.0_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 2981,
+          "legacy_trades": 2981
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.03_min_size0.01": {
+          "max_abs_diff": 1.4551915228366852e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.05_min_size0.01": {
+          "max_abs_diff": 2.000888343900442e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        },
+        "conviction_bb__bb_period30_bb_std2.5_max_size0.08_min_size0.01": {
+          "max_abs_diff": 1.6370904631912708e-11,
+          "new_trades": 1705,
+          "legacy_trades": 1705
+        }
+      },
+      "seconds": 39.4
+    }
+  },
+  "summary": {
+    "ends": 4,
+    "all_combos_bit_identical": false,
+    "all_trade_counts_equal": false,
+    "max_abs_diff": 5.226951603217458
+  },
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "legacy curve_stats: mean / std(negative returns) * sqrt(252)",
+      "cagr": "legacy curve_stats: calendar days / 365.25"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T23:32:29Z"
+  }
+}

@@ -1,0 +1,20 @@
+# v110_default
+FAILED tests/engine/test_defaults.py::test_vectorbt_defaults_have_not_changed
+FAILED tests/engine/test_lock_consistency.py::test_installed_version_equals_the_lock[vectorbt]
+FAILED tests/engine/test_lock_consistency.py::test_installed_version_equals_the_lock[vectorbt-rust]
+FAILED tests/engine/test_lock_consistency.py::test_installed_version_equals_the_lock[plotly]
+FAILED tests/engine/test_selfcheck.py::test_major_minor_pair_check_rejects_a_mismatch
+FAILED tests/engine/test_selfcheck.py::test_patch_difference_is_allowed - ggT...
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[48-0]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[48-1]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[48-2]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[48-3]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[80-0]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[80-1]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[80-2]
+FAILED tests/engine/test_stats.py::test_configured_dsr_reproduces_the_legacy_statistic[80-3]
+FAILED tests/engine/test_stats.py::test_dsr_var_sharpe_is_252_over_t_minus_1_not_1_over_t_minus_1
+FAILED tests/engine/test_stats.py::test_dsr_uses_unbiased_moments_like_pandas
+FAILED tests/engine/test_stats.py::test_dsr_frame_returns_one_value_per_column
+17 failed, 314 passed, 20 warnings in 157.64s (0:02:37)
+exit=1

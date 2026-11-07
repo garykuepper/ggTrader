@@ -9,7 +9,7 @@ Welcome to ggTrader! This is a research platform (or "lab") designed to help you
 
 It simulates how a trading strategy would have performed in the past using **Walk-Forward Optimization**—a realistic testing method where strategy parameters are tuned on past data and evaluated on subsequent "unseen" data on a rolling basis.
 
-The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for both research and live paper trading. Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and `ggt ingest` (crypto data ingestion) is parked (see below).
+The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for both research and live paper trading. Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and crypto data ingestion (`ggt ingest`) was removed.
 
 ---
 
@@ -50,9 +50,10 @@ research kept for reproducibility. See
 ## Quick Start
 
 ### 1. Installation
-Install the project dependencies in your Python environment:
+Install the locked dependency set (Python 3.12, [uv](https://docs.astral.sh/uv/)):
 ```bash
-pip install -e .
+uv sync --frozen --extra test --extra dev
+source .venv/bin/activate
 ```
 
 ### 2. Verify
@@ -62,16 +63,19 @@ ggt --help
 ```
 
 ### 3. Run a Simulation
-Simulate a strategy over the S&P 500 universe (from 2021 to present on the top 50 stocks):
+Walk-forward a strategy over the S&P 500 universe on the vectorbt engine (frozen tape; pin both dates for any number you will quote):
 ```bash
-ggt lab --strategy wfo_tournament
+ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
 ```
 
 ### 4. Diagnostic Run
 Run a small, fast test run on just 10 stocks:
 ```bash
-ggt lab --strategy xs_momentum --top-n 10 --eval-start 2024-01-01
+ggt lab --strategy ensemble --wfo --eval-end 2022-07-31 --max-stocks 40
 ```
+
+Ten strategies are ported (see [CLI Reference §1](docs/cli_reference.md)); the other 28 are closed research that
+runs at git tag `legacy-engine-vbt0285` (`scripts/legacy_env.sh`).
 
 ---
 
@@ -82,26 +86,25 @@ src/ggTrader/
 ├── lab/              # The Research Engine (running simulations)
 │   ├── cli.py        # Command-line entry point for simulation commands
 │   ├── data.py       # Handles downloading/loading price data
-│   ├── harness.py    # The simulation controller (handles rolling folds)
-│   ├── metrics.py    # Calculates return, Sharpe ratio, and drawdowns
-│   ├── persist.py    # Saves test results to the database
-│   ├── simulate.py   # Runs the vectorbt backtesting math
-│   ├── strategy.py   # Strategy interfaces and blueprints
-│   └── strategies/   # Code for individual trading strategies
-├── paper/            # Live Paper Trading (runs on cron against Alpaca)
+│   ├── wfo/          # The walk-forward (rolling folds, gates, anchor, breaker) on the engine
+│   ├── persist.py    # Saves blend results to the database
+│   ├── universe.py   # Point-in-time S&P 500 membership mask
+│   ├── strategy.py   # LabConfig (shared research settings)
+│   └── strategies/   # The ported strategies and the vote glue
+├── engine/           # The only code that imports vectorbt (presets, simulation, statistics)
+├── paper/            # Live Paper Trading (Alpaca; stopped by the owner since 2026-11-06, dry-run first, cron only on the owner's say-so)
 │   ├── trader.py     # Orchestrates one trading cycle
 │   ├── alpaca_broker.py  # Broker API wrapper (paper account)
 │   ├── signal_runner.py  # Generates today's ensemble signals
 │   ├── overlay.py    # Multi-sleeve blending and vol targeting
 │   ├── risk.py       # Position caps, drawdown halt, margin pre-flight
 │   ├── persist.py    # Writes paper_trades / paper_snapshots
-│   └── ...           # notifier, feature_gate, split_check, dividend_check
+│   └── ...           # notifier, split_check, dividend_check
 ├── data/             # Data Loaders (Yahoo Finance, database loaders)
 ├── utils/            # Shared utilities (database connections, config)
-└── cli/              # Main CLI entry subcommands (ggt lab | paper | db | ingest*)
+└── cli/              # Main CLI entry subcommands (ggt lab | paper | db)
 ```
 
-\* `ggt ingest` is parked and refuses to run (exits non-zero) — see [CLI Reference §3](docs/cli_reference.md).
 
 | Additional Files | Description |
 |---|---|

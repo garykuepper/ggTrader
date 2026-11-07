@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 import requests
@@ -9,6 +10,7 @@ import requests
 from ggTrader.utils.config import _load_env
 
 _API_URL = "https://api.telegram.org/bot{token}/sendMessage"
+_log = logging.getLogger(__name__)
 
 
 class TelegramNotifier:
@@ -153,3 +155,43 @@ class TelegramNotifier:
             for err in errors:
                 lines.append(f"  {err}")
         return self.send("\n".join(lines))
+
+
+class DryRunNotifier:
+    """Wraps a notifier for the read-only dry run: nothing reaches Telegram unless asked.
+
+    The summary and per-order alerts are never forwarded (they would read as real activity); the
+    free-form ``send`` lines (gate alerts, "DRY RUN buy: ...") are logged and, with
+    ``forward=True`` (``ggt paper --notify``), also sent with a ``[DRY RUN]`` prefix.
+    """
+
+    PREFIX = "[DRY RUN] "
+
+    def __init__(self, inner: object, forward: bool = False) -> None:
+        self._inner = inner
+        self._forward = forward
+
+    def send(self, message: str) -> bool:
+        """Log the message; forward it with the dry-run prefix only when asked to."""
+        _log.info("dry-run notification: %s", message)
+        if not self._forward:
+            return False
+        return bool(self._inner.send(self.PREFIX + message))  # type: ignore[attr-defined]
+
+    def trade_alert(
+        self, side: str, symbol: str, amount: float, order_id: str, **_: object
+    ) -> bool:
+        """Log an order alert; never forwarded (a dry run submits no order)."""
+        _log.info(
+            "dry-run order alert suppressed: %s %s $%.2f (%s)", side, symbol, amount, order_id
+        )
+        return False
+
+    def daily_summary(
+        self, portfolio_value: float, daily_pnl: float, *_: object, **__: object
+    ) -> bool:
+        """Log the summary headline; never forwarded."""
+        _log.info(
+            "dry-run summary suppressed: value=%.2f daily_pnl=%.2f", portfolio_value, daily_pnl
+        )
+        return False

@@ -168,6 +168,7 @@ The separate A23 owner allocation and exit terms remain unchanged. See its
    lack of validated incremental return under this model. Follow brief §5:
    SPY sweep alone, or the separate shadow only if it passes its own forward
    rule. This is a recommendation; no live change is authorized by this report.
+   [Superseded: owner instructions 2026-10-20 forbid retirement recommendations; documentation defect corrected 2026-11-06.]
 2. **Use the A23 bounds as pre-entry information.** Its allocation decision,
    annual review date and band rules are separate from stock-sleeve evidence.
    Distribution character is a sensitivity assumption, not an individualized

@@ -1,0 +1,10 @@
+public path `ggt.py lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30` vs guarded core17 evidence
+n_folds True 17
+gates True 1/17
+anchor_folds True 17
+winners True 
+oos_bars True 
+oos_first True 
+oos_last True 
+fold_table equal: True | table text equal: True
+['OOS Aggregate: Sharpe 0.39 | CAGR 3.5% | MaxDD -9.6%', 'SPY baseline:  Sharpe 0.78 | CAGR 13.0% | MaxDD -22.1%']

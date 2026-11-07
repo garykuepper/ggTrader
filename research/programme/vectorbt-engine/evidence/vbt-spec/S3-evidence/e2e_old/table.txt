@@ -1,0 +1,20 @@
+WFO: ensemble | 48 combos x 2 folds | rolling 12mo/3mo
+
+Fold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE
+────────────────────────────────────────────────────────────────────────────────────────────────
+1     2021-01 → 2022-01      2022-01 → 2022-04      bb_period20_bb_std2.5...    1.89   n/a  FAIL   nan [A]
+2     2021-04 → 2022-04      2022-04 → 2022-07      bb_period20_bb_std2.5...    1.73   n/a  FAIL   nan [A]
+
+OOS Aggregate: Sharpe nan | CAGR 0.0% | MaxDD 0.0%
+SPY baseline:  Sharpe -0.52 | CAGR -15.2% | MaxDD -20.6%
+Aggregate WFE: nan (target >= 0.50)
+
+── Recommended Live Params ───────────────────────────────────────────────────────────────────────
+Train window: 2021-07 → 2022-07
+Winner:       ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14
+Train Sharpe: 0.67 | CAGR 1.6% | MaxDD -1.7%
+Stability:    selected in 1/2 folds
+
+── Anchor Set (Defensive Fallback) ───────────────────────────────────────────────────────────────
+Combo:    ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree4_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14
+MaxDD:    0.0% | CAGR 0.0% | Sharpe nan

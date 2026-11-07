@@ -1,0 +1,15 @@
+RESOLVES  quantstats |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  empyrical-reloaded |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  pyfolio-reloaded |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  ffn |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  riskfolio-lib |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  skfolio |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  PyPortfolioOpt |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  cvxpy |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  purgedcv |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  jsharpe |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  deflated-sharpe |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+RESOLVES  arch |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 
+FAILS     pypbo |   × No solution found when resolving dependencies:   ╰─▶ Because pypbo was not found in the package registry and you require 
+FAILS     mlfinpy |   × No solution found when resolving dependencies:   ╰─▶ Because all versions of mlfinpy depend on pandas>=2.2.3,<3.0.0 and 
+RESOLVES  timeseriescv |  + numba==0.68.1  + numpy==2.5.4  + pandas==3.1.1 

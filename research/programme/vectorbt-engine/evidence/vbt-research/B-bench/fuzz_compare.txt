@@ -1,0 +1,5 @@
+baseline 0.28.5: ok cases 102 error idx [0, 16, 18, 22, 24, 32, 34, 42, 44, 50, 56, 72, 84, 96, 104, 106, 110, 112]
+venv100_numba: same error set=True; value arrays identical=102, allclose(1e-9)-only=0, mismatched=[]; trade-count equal 102, order-count equal 102
+venv100_rust: same error set=True; value arrays identical=102, allclose(1e-9)-only=0, mismatched=[]; trade-count equal 102, order-count equal 102
+venv120_numba: same error set=True; value arrays identical=102, allclose(1e-9)-only=0, mismatched=[]; trade-count equal 102, order-count equal 102
+venv120_rust: same error set=True; value arrays identical=102, allclose(1e-9)-only=0, mismatched=[]; trade-count equal 102, order-count equal 102

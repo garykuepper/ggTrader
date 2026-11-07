@@ -1,0 +1,8 @@
+ggTrader file: 1996-01-02 2026-06-02 2712 | upstream: 1996-01-02 2026-08-18 2720
+common dates 2711
+dates with differing sets: 1
+[(Timestamp('2023-10-18 00:00:00'), 3, 3)] [(Timestamp('2023-10-18 00:00:00'), 3, 3)]
+upstream-only dates (after ggTrader end): [datetime.date(2023, 12, 18), datetime.date(2024, 4, 1), datetime.date(2024, 4, 2), datetime.date(2026, 6, 22), datetime.date(2026, 6, 24)] n= 9
+2021-01-29 n_ggt 505 n_up 505
+2023-06-30 n_ggt 503 n_up 503
+2025-12-31 n_ggt 503 n_up 503

@@ -87,7 +87,7 @@ anything in §1/§5 whose claim could have moved.
      as an idle-cash sweep, leverage);
    - whether that matches what the validating arc measured (parameters,
      position count, exposure). Read the sizing code on both paths
-     (`lab/simulate.py` vs `paper/risk.py`) rather than trusting prose: the
+     (`engine/portfolio.py` and `STOCK_BASE_CONFIG` vs `paper/risk.py`) rather than trusting prose: the
      snapshot once called both "flat 3.3%" when the backtest used 3% of
      remaining cash;
    - any mismatch, which goes in §5.
@@ -107,7 +107,9 @@ keeps your own context for the synthesis.
 
 Header: set `Last full regeneration` (full mode) or add `Last incremental
 update` (incremental mode), honestly. The intro paragraph says in 2–4
-sentences what this run changed.
+sentences what this run changed. Keep the one-line "Engine note (2026-11-06)"
+banner under the title (rows dated before 2026-11-06 are legacy-engine
+numbers); the roster rows themselves are never edited for it.
 
 Fixed sections, every claim cited (report path or commit hash):
 

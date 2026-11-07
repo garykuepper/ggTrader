@@ -1,0 +1,1 @@
+OK   skfolio rolling HRP weights -> vbt from_orders targetpercent: total_return=0.365 orders=200

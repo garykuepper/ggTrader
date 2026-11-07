@@ -1,0 +1,16 @@
+SMA20 pandas vs vbt.MA                     max|diff|=1.319e-11  first-valid bar g/v=19/19  only-one-NaN cells=0
+BB lower ddof=1 vs vbt default (ddof=0)    max|diff|=1.092e+00  first-valid bar g/v=19/19  only-one-NaN cells=0
+BB lower ddof=1 vs vbt ddof=1              max|diff|=1.205e-09  first-valid bar g/v=19/19  only-one-NaN cells=0
+RSI14 Wilder vs vbt.RSI(14) default        max|diff|=3.609e+01  first-valid bar g/v=14/14  only-one-NaN cells=0
+RSI14 Wilder vs vbt.RSI(27, ewm=True)      max|diff|=0.000e+00  first-valid bar g/v=14/27  only-one-NaN cells=104
+  same, after bar 200                      max|diff|=0.000e+00  first-valid bar g/v=0/0  only-one-NaN cells=0
+MACD hist vs vbt (both ewm)                max|diff|=1.207e-01  first-valid bar g/v=0/33  only-one-NaN cells=264
+  same, after bar 200                      max|diff|=8.882e-16  first-valid bar g/v=0/0  only-one-NaN cells=0
+ATR14 SMA-of-TR vs vbt.ATR(ewm=False)      max|diff|=2.114e-13  first-valid bar g/v=14/13  only-one-NaN cells=8
+ATR14 SMA-of-TR vs vbt.ATR default (ewm)   max|diff|=1.688e+00  first-valid bar g/v=14/13  only-one-NaN cells=8
+Sharpe   ggT 0.6933408132  vbt252 0.6933408132  vbt default 0.8344357978
+Sortino  ggT 1.1727430151  vbt252 1.0118780431
+MaxDD    ggT -40.8906121179  vbt -40.8906121179
+CAGR     ggT 15.505926  vbt252 annualized 14.942820
+flat Sharpe ggT nan  vbt inf
+RSI entry cells ggT 141  vbt-recon 140  differing cells 1  differing after bar 100 0

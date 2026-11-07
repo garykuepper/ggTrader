@@ -1,0 +1,4 @@
+OK   null: best=29 per-period SR=0.0583 SR0=0.0679  DSR manual=0.3807 purgedcv=0.3811 | jsharpe PSR(SR,SR0)=0.3808 | deflated-sharpe(mnemox)=(np.float64(21.963722), 0.0) [takes ANNUALISED SR: sqrt(252) scaling inside? unverified semantics]
+OK   PBO(null) via purgedcv CSCV: 0.5912698412698413
+OK   planted: best=5 per-period SR=0.1295 SR0=0.0809  DSR manual=0.9361 purgedcv=0.9363 | jsharpe PSR(SR,SR0)=0.9369 | deflated-sharpe(mnemox)=(np.float64(35.288864), 0.0) [takes ANNUALISED SR: sqrt(252) scaling inside? unverified semantics]
+OK   PBO(planted) via purgedcv CSCV: 0.15476190476190477

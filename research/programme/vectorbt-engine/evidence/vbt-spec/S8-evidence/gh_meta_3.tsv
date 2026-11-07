@@ -1,0 +1,19 @@
+mlflow/mlflow	28697	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=2187	rel=v3.18.0 2026-11-04	The open source AI engineering platform for agents, LLMs, and ML model
+optuna/optuna	15010	lastcommit=2026-11-04	MIT	archived=False	issues=27	rel=v5.0.0 2026-09-07	A hyperparameter optimization framework
+iterative/dvc	15963	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=229	rel=3.67.1 2026-03-31	🦉 Data Versioning and ML Experiments
+aimhubio/aim	6293	lastcommit=2025-12-31	Apache-2.0	archived=False	issues=483	rel=v3.29.1 2025-05-08	Aim 💫 — An easy-to-use & supercharged open-source experiment tracker.
+duckdb/duckdb	42846	lastcommit=2026-11-05	MIT	archived=False	issues=1137	rel=v2.0.0 2026-10-21	DuckDB is a high-performance analytical database system
+apache/arrow	17275	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=2290	rel=apache-arrow-26.0.1 2026-11-03	Apache Arrow is the universal columnar format and multi-language toolb
+robertmartin8/PyPortfolioOpt	6149	lastcommit=2026-07-07	MIT	archived=False	issues=118	rel=v1.6.0 2026-02-26	Financial portfolio optimization in python, including classical effici
+cvxpy/cvxpy	6388	lastcommit=2026-11-04	Apache-2.0	archived=False	issues=170	rel=v1.9.3 2026-09-19	A Python-embedded modeling language for convex optimization problems.
+kernc/backtesting.py	9199	lastcommit=2026-08-05	AGPL-3.0	archived=False	issues=102	rel=norelease	🔎 📈 🐍 💰  Backtest trading strategies in Python.
+pmorissette/bt	3015	lastcommit=2026-11-05	MIT	archived=False	issues=13	rel=v1.4.1 2026-10-10	bt - flexible backtesting for Python
+stefan-jansen/zipline-reloaded	2002	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=2	rel=3.2.1 2026-10-25	Zipline, a Pythonic Algorithmic Trading Library
+nautechsystems/nautilus_trader	31287	lastcommit=2026-11-06	LGPL-3.0	archived=False	issues=154	rel=v1.231.0 2026-08-02	Production-grade Rust-native trading engine with deterministic event-d
+mementum/backtrader	23670	lastcommit=2023-04-19	GPL-3.0	archived=False	issues=64	rel=norelease	Python Backtesting library for trading strategies
+vnpy/vnpy	46252	lastcommit=2026-10-06	MIT	archived=False	issues=14	rel=4.5.0 2026-10-06	基于Python的开源量化交易平台开发框架
+marketcalls/vectorbt-backtesting-skills	220	lastcommit=2026-07-12	None	archived=False	issues=3	rel=norelease	Agentic coding skills for backtesting trading strategies using VectorB
+wshobson/maverick-mcp	719	lastcommit=2026-10-30	MIT	archived=False	issues=5	rel=v1.2.1 2026-10-17	Stock market MCP server for Yahoo Finance data, technical analysis, po
+quantopian/zipline	20208	lastcommit=2020-10-14	Apache-2.0	archived=False	issues=368	rel=1.4.1 2020-10-05	Zipline, a Pythonic Algorithmic Trading Library
+optuna/optuna-integration	77	lastcommit=2026-11-04	MIT	archived=False	issues=8	rel=v5.0.0 2026-09-07	Extended functionalities for Optuna in combination with third-party li
+wandb/wandb	11312	lastcommit=2026-11-05	MIT	archived=False	issues=1036	rel=v0.31.0 2026-10-16	The AI developer platform. Use Weights & Biases to train and fine-tune

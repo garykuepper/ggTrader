@@ -1,0 +1,4 @@
+# masterrs_numba
+FAILED tests/engine/test_defaults.py::test_flat_curve_sharpe_is_still_inf_upstream
+1 failed, 330 passed, 20 warnings in 115.94s (0:01:55)
+exit=1

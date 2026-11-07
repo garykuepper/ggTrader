@@ -1,0 +1,12 @@
+versions 1.2.0 3.1.1 2.5.4 0.68.1 import_s=2.73
+rust_available True
+RSI ewm w=27                   32.79s  compiled_dispatchers=79
+BBANDS w20 ddof1               17.76s  compiled_dispatchers=101
+MA ewm 20                       0.32s  compiled_dispatchers=102
+MACD ewm                       18.51s  compiled_dispatchers=110
+from_signals tiny              56.99s  compiled_dispatchers=163
+pf.value()                     39.06s  compiled_dispatchers=188
+pf.trades.count()              13.59s  compiled_dispatchers=192
+signals accessor fshift/AND     0.01s  compiled_dispatchers=192
+returns sharpe                  2.65s  compiled_dispatchers=205
+total 190.08

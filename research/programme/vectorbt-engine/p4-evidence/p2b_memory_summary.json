@@ -1,0 +1,50 @@
+{
+ "identical_to_single_call": true,
+ "runs": {
+  "p2b_memory_2gib.json": {
+   "budget_gib": 2.0,
+   "released_chunks": true,
+   "n_chunks": 3,
+   "rss_mb_before_run": 1400,
+   "peak_rss_mb": 3381,
+   "peak_over_baseline_mb": 1982,
+   "run_seconds": 15.7
+  },
+  "p2b_memory_2gib_no_release.json": {
+   "budget_gib": 2.0,
+   "released_chunks": false,
+   "n_chunks": 3,
+   "rss_mb_before_run": 1391,
+   "peak_rss_mb": 5241,
+   "peak_over_baseline_mb": 3850,
+   "run_seconds": 15.2
+  },
+  "p2b_memory_5gib.json": {
+   "budget_gib": 5.0,
+   "released_chunks": true,
+   "n_chunks": 2,
+   "rss_mb_before_run": 1390,
+   "peak_rss_mb": 5781,
+   "peak_over_baseline_mb": 4391,
+   "run_seconds": 18.0
+  },
+  "p2b_memory_5gib_no_release.json": {
+   "budget_gib": 5.0,
+   "released_chunks": false,
+   "n_chunks": 2,
+   "rss_mb_before_run": 1392,
+   "peak_rss_mb": 5783,
+   "peak_over_baseline_mb": 4391,
+   "run_seconds": 17.3
+  },
+  "p2b_memory_unchunked.json": {
+   "budget_gib": 64.0,
+   "released_chunks": true,
+   "n_chunks": 1,
+   "rss_mb_before_run": 1395,
+   "peak_rss_mb": 6139,
+   "peak_over_baseline_mb": 4744,
+   "run_seconds": 17.7
+  }
+ }
+}

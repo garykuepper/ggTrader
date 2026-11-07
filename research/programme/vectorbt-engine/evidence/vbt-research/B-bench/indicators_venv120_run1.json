@@ -1,0 +1,186 @@
+{
+ "vbt": "1.2.0",
+ "numpy": "2.5.4",
+ "pandas": "3.1.1",
+ "cases": {
+  "rolling_mean w=20 (500 sym)": {
+   "numba_s": 0.004226017990731634,
+   "numba_rust_calls": 0,
+   "rust_s": 0.014140119994408451,
+   "rust_rust_calls": 6,
+   "pandas_s": 0.029885425989050418,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 6.139089236967266e-11,
+   "maxabs_numba_vs_pandas": 6.139089236967266e-11,
+   "maxabs_rust_vs_pandas": 4.547473508864641e-12,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "rolling_std w=20 ddof=1 (500 sym)": {
+   "numba_s": 0.014646518990048207,
+   "numba_rust_calls": 0,
+   "rust_s": 0.020067603996722028,
+   "rust_rust_calls": 6,
+   "pandas_s": 0.037890246996539645,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "ewm_mean span=20 adjust=False via accessor (pandas-3 shortcut, accessors.py:454)": {
+   "numba_s": 0.015424811004777439,
+   "numba_rust_calls": 0,
+   "rust_s": 0.015439919996424578,
+   "rust_rust_calls": 0,
+   "pandas_s": 0.015275829005986452,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "ewm_mean span=20 adjust=False via generic.dispatch (500 sym)": {
+   "numba_s": 0.006408104993170127,
+   "numba_rust_calls": 0,
+   "rust_s": 0.009439586996450089,
+   "rust_rust_calls": 6,
+   "pandas_s": 0.015083186997799203,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "ewm_mean span=20 adjust=True (500 sym)": {
+   "numba_s": 0.007682501993258484,
+   "numba_rust_calls": 0,
+   "rust_s": 0.011612922011408955,
+   "rust_rust_calls": 6,
+   "pandas_s": 0.015675432994612493,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "MA.run w=20 (500 sym)": {
+   "numba_s": 0.011695205001160502,
+   "numba_rust_calls": 0,
+   "rust_s": 0.01507772300101351,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.029028702003415674,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 6.139089236967266e-11,
+   "maxabs_numba_vs_pandas": 6.139089236967266e-11,
+   "maxabs_rust_vs_pandas": 4.547473508864641e-12,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "MA.run ewm=True w=20 (500 sym)": {
+   "numba_s": 0.01282979799725581,
+   "numba_rust_calls": 0,
+   "rust_s": 0.01782760200148914,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.014843212004052475,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": false
+  },
+  "MSTD.run w=20 (500 sym)": {
+   "numba_s": 0.018981337998411618,
+   "numba_rust_calls": 0,
+   "rust_s": 0.023389613998006098,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.03895121000823565,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "RSI.run w=14 simple-MA (500 sym)": {
+   "numba_s": 0.051636482996400446,
+   "numba_rust_calls": 0,
+   "rust_s": 0.030085491001955234,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.08626060800452251,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 7.240430477395421e-12,
+   "maxabs_numba_vs_pandas": 7.240430477395421e-12,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "BBANDS.run w=20 a=2 upper (500 sym)": {
+   "numba_s": 0.028930423999554478,
+   "numba_rust_calls": 0,
+   "rust_s": 0.036735687986947596,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.07165871899633203,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 6.139089236967266e-11,
+   "maxabs_numba_vs_pandas": 6.139089236967266e-11,
+   "maxabs_rust_vs_pandas": 4.547473508864641e-12,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "MACD.run 12/26/9 default macd_ewm=False (500 sym)": {
+   "numba_s": 0.02162669699464459,
+   "numba_rust_calls": 0,
+   "rust_s": 0.03032830099982675,
+   "rust_rust_calls": 12,
+   "maxabs_rust_vs_numba": 4.3428372009657323e-11
+  },
+  "MACD.run 12/26/9 macd_ewm=True signal_ewm=True (500 sym)": {
+   "numba_s": 0.03277786201215349,
+   "numba_rust_calls": 0,
+   "rust_s": 0.03922005699132569,
+   "rust_rust_calls": 12,
+   "pandas_s": 0.03248548900592141,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 0.0,
+   "maxabs_numba_vs_pandas": 0.0,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": false
+  },
+  "MA.run 48 windows x100 sym": {
+   "numba_s": 0.06858887599082664,
+   "numba_rust_calls": 0,
+   "rust_s": 0.0984644390118774,
+   "rust_rust_calls": 294,
+   "pandas_s": 0.293132967010024,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 8.640199666842818e-11,
+   "maxabs_numba_vs_pandas": 8.685674401931465e-11,
+   "maxabs_rust_vs_pandas": 7.275957614183426e-12,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "RSI.run 48 windows x100 sym": {
+   "numba_s": 0.2191330770001514,
+   "numba_rust_calls": 0,
+   "rust_s": 0.21619183699658606,
+   "rust_rust_calls": 294,
+   "pandas_s": 0.9009718800080009,
+   "pandas_rust_calls": 0,
+   "maxabs_rust_vs_numba": 1.297451035497943e-11,
+   "maxabs_numba_vs_pandas": 1.297451035497943e-11,
+   "maxabs_rust_vs_pandas": 0.0,
+   "nan_mask_equal_numba_vs_pandas": true
+  },
+  "BBANDS.run 48 windows x100 sym": {
+   "numba_s": 0.33265355600451585,
+   "numba_rust_calls": 0,
+   "rust_s": 0.4606923160026781,
+   "rust_rust_calls": 294,
+   "maxabs_rust_vs_numba": 8.640199666842818e-11
+  }
+ },
+ "shape": [
+  1900,
+  500
+ ],
+ "sweep_shape": [
+  1900,
+  100
+ ],
+ "n_combo": 48
+}

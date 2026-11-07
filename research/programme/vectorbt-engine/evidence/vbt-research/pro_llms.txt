@@ -1,0 +1,105 @@
+# VectorBT PRO
+
+- Getting started
+  - [Getting started](/getting-started): Learn what VectorBT PRO is and how to get access
+  - [Migrating from vectorbt](/getting-started/vectorbt-pro-vs-vectorbt): See what PRO adds to open-source vectorbt, what changes, and how to migrate your code
+- Features
+  - [Features](/features): Explore backtesting, indicators, optimization, and analysis across instruments, parameters, and time
+  - Data
+    - [Data](/features/data): Connect, store, update, transform, and combine local and remote market data
+    - [Market data sources](/features/data/market-data-sources): Pull stock, crypto, futures, and FX data from many providers with one interface
+    - [TradingView data](/features/data/tradingview-data): Pull TradingView bars for stocks, futures, crypto, and FX, and search its symbols
+    - [Binance data](/features/data/binance-data): Download Binance spot and futures klines with trade counts and taker volume
+    - [Data storage and databases](/features/data/data-storage-and-databases): Save and query market data in files, DuckDB, SQL databases, and ArcticDB
+    - [Data pipelines](/features/data/financial-data-pipelines): Align, update, transform, and analyze multi-symbol market data in one object
+    - [Multi-timeframe analysis](/features/data/multi-timeframe-analysis): Resample and realign data across timeframes by when each value became available
+    - [Synthetic data](/features/data/synthetic-data): Generate reproducible random walks, GBM paths, and synthetic OHLC bars
+  - Indicators and signals
+    - [Indicators and signals](/features/indicators): Compute indicators, build your own, stream updates, and turn them into signals
+    - [Technical indicators](/features/indicators/technical-indicators): Run TA-Lib, pandas-ta, ta, SMC, WorldQuant Alphas, and native indicators at scale
+    - [Custom indicators](/features/indicators/indicator-development): Turn Python, pandas, or Numba calculations into reusable indicators with parameter grids
+    - [Streaming indicators](/features/indicators/streaming-indicators): Update indicators bar by bar with stateful accumulators that match batch results
+    - [Trading signals](/features/indicators/trading-signals): Generate, combine, clean, and analyze entry and exit signals before backtesting
+    - [Machine learning labels](/features/indicators/machine-learning-labels): Create triple-barrier, trend, and pivot labels, and backtest model predictions
+  - Backtesting
+    - [Backtesting](/features/backtesting): Model orders, signals, leverage, stops, limits, cash flows, and simulation callbacks
+    - [Backtesting engine](/features/backtesting/backtesting-engine): Simulate orders, signals, and callbacks across many assets and parameters at once
+    - [Signal backtesting](/features/backtesting/signal-backtesting): Turn entry and exit signals into long, short, reversing, and pyramided positions
+    - [Event-driven backtesting](/features/backtesting/event-driven-backtesting): Write compiled callbacks for cooldowns, position limits, and custom simulators
+    - [Live simulation](/features/backtesting/live-simulation): Continue backtests on new bars, chain runs, and feed an external trading system
+    - [Intraday and tick backtesting](/features/backtesting/intraday-and-tick-backtesting): Backtest minute bars, ticks, and sessions, and resolve stops on finer data
+    - [Realistic backtests](/features/backtesting/backtest-realism): Avoid look-ahead bias, impossible fills, and survivorship bias in your backtests
+    - [Orders and execution](/features/backtesting/orders-and-execution): Simulate limit and stop-entry orders, fill prices, timing, rejections, and real fills
+    - [Stop loss and take profit](/features/backtesting/stop-loss-and-take-profit): Backtest stop losses, trailing stops, take profits, time stops, and exit ladders
+    - [Position sizing](/features/backtesting/position-sizing): Size trades in units, cash, percent of equity, target weights, or risk per trade
+    - [Fees, slippage, and leverage](/features/backtesting/fees-slippage-and-leverage): Model commissions, slippage, leverage, futures multipliers, and negative prices
+    - [Portfolio accounting](/features/backtesting/portfolio-accounting): Track shared cash, deposits, dividends, positions, records, and exposure per bar
+  - Analysis
+    - [Analysis](/features/analytics): Measure returns and risk, dissect trades, chart results, and study market events
+    - [Performance and risk metrics](/features/analytics/performance-metrics): Compute returns, Sharpe, Sortino, benchmark, and rolling metrics on any backtest
+    - [Drawdown analysis](/features/analytics/drawdown-analysis): Measure the depth, duration, and recovery of every drawdown as records
+    - [Trade analytics](/features/analytics/trade-analytics): Analyze trades and positions with MAE, MFE, edge ratio, profit factor, and plots
+    - [Interactive charts](/features/analytics/interactive-charts): Plot backtests, candlesticks, indicators, signals, and parameter heatmaps with Plotly
+    - [Patterns and event studies](/features/analytics/patterns-and-event-studies): Search price history for similar patterns and study what happened after events
+    - [Records and mapped arrays](/features/analytics/records-and-mapped-arrays): Store sparse events and intervals as records, then filter, reduce, and regroup them
+  - Optimization and validation
+    - [Optimization and validation](/features/optimization): Search parameters, validate out of sample, test robustness, and allocate across assets
+    - [Parameter optimization](/features/optimization/strategy-optimization): Sweep millions of parameter combinations with grids, conditions, and random search
+    - [Walk-forward and cross-validation](/features/optimization/time-series-cross-validation): Test optimized parameters out of sample with rolling, expanding, and purged splits
+    - [Robustness and overfitting](/features/optimization/robustness-and-overfitting): Check whether a backtest is luck with baselines, permutation tests, and deflated Sharpe
+    - [Portfolio optimization](/features/optimization/portfolio-optimization): Allocate with your own functions or optimizer libraries and backtest rebalancing
+  - Strategies
+    - [Strategies](/features/strategies): Follow worked strategies that combine data, signals, simulation, and validation end to end
+    - [Pairs trading](/features/strategies/pairs-trading): Screen cointegrated pairs, trade spread z-scores with shared cash, and validate them
+    - [Cross-sectional strategies](/features/strategies/cross-sectional-strategies): Rank a universe each period, rotate into the leaders, and test factors by quintile
+    - [Multi-strategy portfolios](/features/strategies/multi-strategy-portfolios): Stack strategies as one portfolio, weight them, and compare recurring investing plans
+  - Performance
+    - [Performance](/features/performance): Scale computation with chunking, caching, JIT compilation, and parallel execution
+    - [Compute backends](/features/performance/compute-backends): Run kernels with Numba, parallel Numba, Rust, or NumPy and choose the backend per call
+    - [Rust engine](/features/performance/native-rust): Run simulations on the native Rust engine and write strategy callbacks in Rust
+    - [Parallel execution and caching](/features/performance/parallel-execution-and-caching): Chunk work across threads, processes, or Ray, cache results, and keep memory bounded
+    - [Benchmarks](/features/performance/benchmarks): Compare simulators on the same orders and measure each backend on your own machine
+  - Research toolkit
+    - [Research toolkit](/features/tooling): Use labeled arrays, pandas extensions, persistence, automation, and developer tools
+    - [Multidimensional research](/features/tooling/multidimensional-research): Run assets, parameters, and strategies as labeled columns, then index and stack them
+    - [Time-series operations](/features/tooling/time-series-operations): Run compiled rolling windows, reductions, and date logic on labeled pandas data
+    - [Configuration and persistence](/features/tooling/configuration-and-persistence): Save any research object with compression, reload it fast, and keep settings in files
+    - [Workflow automation](/features/tooling/workflow-automation): Schedule data updates, send Telegram alerts, run tasks in parallel, and track progress
+    - [Developer tools](/features/tooling/developer-tools): Search the API, read source, draw reference graphs, and extend classes with factories
+  - AI
+    - [AI](/features/ai): Get help with Python backtests, search VBT knowledge, and connect your coding assistant
+    - [AI research assistant](/features/ai/ai-research-assistant): Chat with an assistant grounded in VBT documentation and examples, with tools and reasoning
+    - [Knowledge search](/features/ai/knowledge-search): Search documentation, API, examples, and community answers with keyword and embedding ranking
+    - [MCP server](/features/ai/mcp-server): Let your coding assistant search VBT documentation, look up the API, and run code over MCP
+- Tutorials
+  - [Tutorials](/tutorials): Follow practical guides from first strategy to advanced research workflows
+  - [Basic RSI strategy](/tutorials/basic-rsi): Backtest a complete RSI strategy from signals to performance
+  - [SuperFast SuperTrend](/tutorials/superfast-supertrend): Build a streaming, multithreaded SuperTrend indicator and backtest it
+  - [Signal development](/tutorials/signal-development): Develop, clean, rank, and validate trading signals
+  - [Stop signals](/tutorials/stop-signals): Test stop-loss, trailing-stop, and take-profit configurations
+  - [MTF analysis](/tutorials/mtf-analysis): Align, aggregate, and analyze data across multiple timeframes
+  - [Portfolio optimization](/tutorials/portfolio-optimization): Design, integrate, and dynamically rebalance optimized portfolios
+  - [Pairs trading](/tutorials/pairs-trading): Build and optimize a pairs-trading strategy across hundreds of assets
+  - [Patterns and projections](/tutorials/patterns-and-projections): Detect chart patterns and project their effect on future prices
+  - [Cross-validation](/tutorials/cross-validation): Design robust cross-validation workflows for trading strategies
+  - [From Python to Rust](/tutorials/from-python-to-rust): Take one strategy from vectorized Python to live, stateful Rust
+  - [More tutorials](/tutorials/more-tutorials): Explore community tutorials, videos, and research
+- Documentation
+  - [Documentation](/documentation): Navigate VBT concepts, building blocks, and advanced systems
+  - [Fundamentals](/documentation/fundamentals): Understand VBT's vectorized architecture and its core concepts
+  - [Building blocks](/documentation/building-blocks): Understand the core abstractions that support advanced workflows
+  - [Data](/documentation/data): Retrieve, organize, update, and manage market data
+  - [Indicators](/documentation/indicators): Build parameterized and analyzable indicator pipelines
+  - [Portfolio](/documentation/portfolio): Simulate trading activity and analyze portfolio performance
+  - [Rust](/documentation/rust): Use the optional Rust backend and its native kernels
+  - [Benchmarks](/documentation/benchmarks): Measure backend performance and choose the right execution path
+  - [Internals](/documentation/internals): Understand how the repository is organized and how new code is written
+- [Cookbook](/cookbook): Find concise recipes for common VectorBT PRO workflows
+- [Python API](/api): Look up every public class, function, and argument in vectorbtpro
+- [Rust API](/rust-api): Browse API documentation for the vectorbtpro-rust crate
+
+## Machine-readable exports
+
+- [Homepage](/index.md): Public homepage in Markdown
+- [Public documentation](/llms-docs.txt): All public documentation in one Markdown file
+- [Authentication](/auth.md): Authentication capabilities and limitations

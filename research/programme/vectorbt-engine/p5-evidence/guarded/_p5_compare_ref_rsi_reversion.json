@@ -1,0 +1,260 @@
+{
+  "run": "ref_rsi_reversion",
+  "reference": "ref_rsi_reversion",
+  "n_folds": {
+    "new": 2,
+    "reference": 2
+  },
+  "grid_size": {
+    "new": 27,
+    "reference": 27
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.4551020373345188,
+          "ref": 0.45510203733452503,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.932644942942914,
+          "ref": 1.932644942942928,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.00020075358562543516,
+          "ref": 0.0002007535856356253,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.00010387504769486516,
+          "ref": 0.00010387504770013706,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7612422911893738,
+          "ref": 0.7612422911893741,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 2,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.75,
+          "ref": 0.8,
+          "equal_within_ulp_floor": false
+        },
+        "dsr_value": {
+          "new": 0.25500310399946835,
+          "ref": 0.24777797084014264,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.402570398473067,
+          "ref": 1.379497987155445,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": 0.6813078427585004,
+          "ref": 0.6813078427584697,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.48575661050612373,
+          "ref": 0.49388099808926966,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.7768986147749776,
+          "ref": 0.7676883286830146,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    }
+  ],
+  "folds_identical": 1,
+  "winners_identical": 1,
+  "gates_identical": 2,
+  "anchor_identical": 2,
+  "halt_state_identical": 2,
+  "first_differences": [
+    {
+      "fold": 2,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.75,
+          "ref": 0.8,
+          "equal_within_ulp_floor": false
+        },
+        "dsr_value": {
+          "new": 0.25500310399946835,
+          "ref": 0.24777797084014264,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.402570398473067,
+          "ref": 1.379497987155445,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": 0.6813078427585004,
+          "ref": 0.6813078427584697,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.48575661050612373,
+          "ref": 0.49388099808926966,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.7768986147749776,
+          "ref": 0.7676883286830146,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    }
+  ],
+  "oos_equity": {
+    "same_index": true,
+    "bars": 125,
+    "max_abs_diff": 0.0,
+    "max_rel_diff": 0.0,
+    "max_abs_diff_date": "2022-01-31 00:00:00+00:00",
+    "identical_within_ulp_floor": true
+  },
+  "aggregate": {
+    "oos_sharpe": {
+      "new": 0.3340616717632957,
+      "ref": 0.3340616717632957,
+      "equal_within_ulp_floor": true
+    },
+    "spy_sharpe": {
+      "new": -0.5150733529934634,
+      "ref": -0.5150733529934675,
+      "equal_within_ulp_floor": true
+    },
+    "oos_cagr_pct": {
+      "new": 4.404360857461231,
+      "ref": 4.422618474210771,
+      "equal_within_ulp_floor": false
+    },
+    "spy_cagr_pct": {
+      "new": -15.115072262675366,
+      "ref": -15.17148703500364,
+      "equal_within_ulp_floor": false
+    },
+    "oos_mdd": {
+      "new": -7.143746929832384,
+      "ref": -7.143746929832351,
+      "equal_within_ulp_floor": true
+    },
+    "spy_mdd": {
+      "new": -20.561146708583077,
+      "ref": -20.561146708583156,
+      "equal_within_ulp_floor": true
+    }
+  },
+  "live_params_combo_equal": false,
+  "gates": {
+    "new": "0/2",
+    "reference": "0/2"
+  },
+  "anchor_folds": {
+    "new": 2,
+    "reference": 2
+  },
+  "skipped_folds_equal": true,
+  "wall_seconds": {
+    "new": 6.5,
+    "reference": 184.6
+  },
+  "peak_rss_mb": {
+    "new": 3738,
+    "reference": null
+  },
+  "simulations": {
+    "new": 1,
+    "legacy_equivalent": 7
+  },
+  "od12_ndh_flips_folds": [],
+  "verdict": "DIFFERENCES - classify (see first_differences / oos_equity)",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "equity rebased at the first bar, returns from the second bar (curve_stats window)",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "sortino_guard": "NaN below 20 losing days (degeneracy guard)",
+      "zero_trade_guard": "NaN Sharpe and Sortino when no entry falls inside a selection window",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-07T00:49:07Z"
+  }
+}

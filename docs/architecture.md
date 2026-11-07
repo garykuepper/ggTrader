@@ -22,7 +22,7 @@ Before diving into the code, here are the core concepts used throughout ggTrader
 
 | Component | What it does in plain English |
 |---|---|
-| **Core Libraries** | **Python 3.10+** (language) · **vectorbt** (fast calculations) · **TimescaleDB** (database) · **yfinance** (free Yahoo Finance data). |
+| **Core Libraries** | **Python 3.12** (language) · **vectorbt 1.2.0 + vectorbt-rust** on pandas 3 / numpy 2.5 (fast calculations; exact versions in `uv.lock`) · **TimescaleDB** (database) · **yfinance** (free Yahoo Finance data). |
 | **Data Sources** | Fetches live stock data from Yahoo Finance, uses Tiingo as a backup, loads crypto data from the database, and uses historical CSVs to track S&P 500 constituents over time. |
 | **Lab Output** | Saves test records to `lab_runs` (overall results) and `lab_periods` (month-by-month results) in the database. |
 | **Paper Trading** | Virtual trading on Alpaca. Includes a machine learning guard (ML feature gate) to filter bad trades, risk checks (guardrails), and Telegram notifications. |
@@ -37,42 +37,66 @@ Here is where the source code lives inside `src/ggTrader/`:
 
 ```
 src/ggTrader/
+├── engine/                       # The ONLY package that imports vectorbt (adapter, see "Engine adapter")
+│   ├── config.py                # Engine settings: rust/numba, 252-day year, daily freq, epoch/contract
+│   ├── selfcheck.py             # Dispatch probe: proves the configured engine really runs
+│   ├── indicators.py            # Presets with every flag explicit: wilder_rsi, bbands, ema, sma, macd, atr
+│   ├── signals.py               # cross_above/cross_below (float coercion), time_stop
+│   ├── portfolio.py             # run_signals / run_weights -> SimResult, column chunking
+│   ├── stats.py                 # Window Sharpe/vol/drawdown, finite guard, per-window trades, DSR
+│   ├── windows.py               # Calendar folds -> bar positions, range_split wrapper
+│   ├── provenance.py            # provenance() stamp and compare() across epochs
+│   └── _compat.py               # Version shims (empty at the start of epoch E1)
+│
 ├── lab/                          # The Research & Simulation Engine
 │   ├── cli.py                   # Command-line entry point for running simulations (ggt lab)
 │   ├── data.py                  # Loads stock lists and historical prices (yfinance, TimescaleDB)
-│   ├── harness.py               # Manages the walk-forward simulation loop and time periods
-│   ├── metrics.py               # Calculates return, Sharpe ratio, and drawdowns
-│   ├── persist.py               # Saves simulation results to database tables
-│   ├── simulate.py              # Feeds data into vectorbt to run the portfolio math
-│   ├── strategy.py              # Templates and rules for writing a custom strategy
-│   ├── sweep.py                 # Generates grids of parameters to test (parameter sweeps)
-│   ├── wfo.py                   # Handles rolling optimization, testing, and safety limits
-│   ├── gates.py                 # Quality checks to filter out weak or noisy strategies
-│   ├── train_gate.py            # Trains the machine learning model to filter trade signals
-│   └── strategies/              # Individual Strategy Files
-│       ├── momentum.py          # Weight strategies (e.g., buying top gainers)
-│       ├── signals.py           # Signal strategies (e.g., buying moving average crosses)
-│       ├── ensemble.py          # Voting strategies that combine multiple indicators
-│       ├── conviction.py        # Position-sizing based on indicators
-│       └── indicators.py        # Math for technical indicators (RSI, Bollinger Bands, EMA)
+│   ├── persist.py               # Saves blend results to database tables
+│   ├── strategy.py              # LabConfig (shared research settings)
+│   ├── universe.py              # Vectorised point-in-time universe mask and optional exit policies
+│   ├── blend.py                 # Walk-forward several sleeves and blend their out-of-sample curves
+│   ├── wfo/                     # The walk-forward on the vectorbt engine (`ggt lab --wfo|--blend`), see section 3a
+│   │   ├── folds.py             # generate_folds + calendar windows -> bar positions
+│   │   ├── select.py            # composite score, winner pick, durable live-parameter pick
+│   │   ├── gates.py             # NDH lattice glue (lab.gates.ndh_check) and the DSR gate
+│   │   ├── anchor.py            # defensive anchor fit only on data to each fold's train_end
+│   │   ├── breaker.py           # circuit breaker, 2-of-3 shadow re-entry, WFE, WfoPolicy
+│   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows)
+│   │   ├── run.py / report.py   # run_wfo, WfoResult, table, curve_summary, JSON payload
+│   │   └── inputs.py / cli_support.py  # Bars input, PIT masks, `ggt lab` glue
+│   ├── gates.py                 # NDH plateau check (the DSR gate is engine.stats.dsr)
+│   └── strategies/              # Strategies on the engine contract; any module dropped in here is found
+│       ├── vote.py              # N-of-M vote over precomputed voter arrays (engine contract)
+│       ├── contract.py          # ParamGrid (+ validity rules), SignalOut, tiling, weight stacking
+│       ├── voters.py            # bb / rsi / ema / macd / vbb voter arrays from engine presets
+│       ├── ensemble.py          # Ensemble (48-combo WFO grid + live-defaults control config)
+│       ├── voter_strategies.py  # ema_cross, bb_reversion, rsi_reversion, macd_divergence, volume_bb_reversion
+│       ├── conviction_bb.py, xs_momentum.py, cross_asset_sleeve.py, retail_attention.py
+│       ├── leak.py              # truncation / perturbation lookahead checks
+│       └── registry.py          # REGISTRY built by discover() (scans the package) and the 28 legacy-only names
 │
 ├── paper/                       # The Live Paper-Trading Deployment
 │   ├── alpaca_broker.py         # Adapter to talk to Alpaca (our paper trading broker)
-│   ├── signal_runner.py         # Generates the daily buy/sell votes from indicators
+│   ├── signal_runner.py         # Engine self-check, live bars, v2 ensemble signals, sanity gates (fail closed)
+│   ├── live_bars.py             # Live loader frame -> engine Bars (the partial 12:45 bar)
+│   ├── live_signals.py          # The one place the live ensemble frames are built (runner + overlay)
+│   ├── gates.py                 # Input/output sanity gates and the 12:55 PT late-run cutoff
+│   ├── untradable.py            # UNTRADABLE_SYMBOLS, broker status and the "asset is not active" 422
+│   ├── overlay.py               # Blend sleeve curves through engine.run_signals
 │   ├── trader.py                # Coordinates signals, risk checks, and submits orders
-│   ├── feature_gate.py          # The machine learning model that blocks risky trades
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
 │   └── persist.py               # Saves daily paper trading logs and portfolio balances
 │
 ├── data/                        # Data Downloader & Database Loader
+│   ├── bars.py                  # Read-only research bars (per-field frames) from the snapshot or DB
+│   ├── snapshot.py              # Reads and hash-verifies the frozen Parquet tape (MANIFEST.json)
 │   ├── core/
 │   │   ├── base_loader.py       # Basic instructions for downloading data
 │   │   ├── stock_constants.py   # Yahoo Finance parameters and S&P 500 constants
 │   │   └── constants.py         # Crypto mappings and quote currencies
 │   ├── historical/
-│   │   ├── timescaledb_loader.py # Fetches historical prices from your local database
-│   │   └── postgres_ingestor.py  # Inserts newly downloaded data into the database
+│   │   └── timescaledb_loader.py # Fetches historical prices from your local database
 │   └── live/
 │       └── yfinance_loader.py    # Downloads live stock data and saves it to a cache
 │
@@ -83,9 +107,54 @@ src/ggTrader/
 │
 └── cli/                         # Command-Line Subcommands
     ├── main.py                  # Root CLI setup (the main 'ggt' command)
-    ├── cmd_ingest.py            # The 'ggt ingest' command to download data
     └── cmd_db.py                # The 'ggt db' command to manage the database
 ```
+
+---
+
+## Research data layer and point-in-time universe (vectorbt engine rebuild, P3)
+
+Research reads daily bars only through `ggTrader.data.bars.load_bars()`. It is read-only and
+never touches the network: the default source is the frozen Parquet tape in `data/snapshots/`,
+which `ggTrader.data.snapshot` verifies against `MANIFEST.json` (sha256, row count, date range)
+and refuses to use on any mismatch; the `db` source opens a server-enforced read-only session
+(`default_transaction_read_only=on`) and runs one SELECT. It returns per-field frames
+(`close`, `open`, `high`, `low`, `volume`: dates x symbols, UTC-midnight index), the requested
+symbols that have no bars (`missing_symbols`) and each symbol's last valid bar. Duplicate rows,
+non-midnight stamps and weekend stamps raise `BarsValidationError`; this assertion replaces the
+silent `collapse_daily_duplicates` heuristic (which `lab.data.load_ohlcv` still applies for the replica tools `scripts/production_replica_audit.py` and `scripts/replica_parity_check.py`).
+`Bars.legacy_frame()` gives the old `(symbol, field)` MultiIndex frame (used by the replica panel and the ML-gate trainer). `vbt.Data` is deliberately not used (it is a dict of frames in the open-source build).
+
+`ggTrader.lab.universe` builds the point-in-time universe once per run instead of once per bar:
+`pit_mask(close, ...)` equals `lab.data.eligible_at` on every date (member on that date,
+enough non-NaN closes, alphabetical `max_stocks` cap) in about 0.05 s and 1.2 MB for the full
+window. `membership_mask` is the index-membership part alone. Two optional exit policies are off
+by default because they change numbers: `removal_exits` (exit when a symbol leaves the index)
+and `terminal_exits` (exit at a dead ticker's last valid bar; optimistic, see its docstring).
+The mask builder warns when the constituent file's last snapshot is more than 45 days old.
+
+---
+
+## Strategy contract on the engine (vectorbt engine rebuild, P4)
+
+Ten strategies were ported to the new contract in `ggTrader.lab.strategies`; `REGISTRY` (built by `registry.discover()`, see `docs/adding_a_strategy.md`) is the
+only registry. The legacy `select()/to_targets()` classes, `STRATEGY_REGISTRY` and the legacy
+plumbing (`lab/simulate.py`, `sweep.py`, `harness.py`, `wfo.py`, `metrics.py`) were deleted in P5c.
+A signal strategy declares a `ParamGrid` (values plus validity rules as data, e.g.
+`ema_fast < ema_slow`; `grid.combos()` equals the legacy `build_grid`, frozen in a test golden) and a
+`build(bars, grid) -> SignalOut` that composes only engine presets and crossovers and returns
+entry/exit frames with columns `(swept grid levels..., symbol)`. It never calls `Portfolio` and
+never applies the PIT mask: the caller tiles the mask onto the grid columns and the engine ANDs it
+into the entries before the time stop. `lab/strategies/vote.py` is the one piece of voting glue
+(vectorbt has no vote primitive): each voter is computed once per distinct parameter tuple, a
+combination only sums the right boolean arrays and thresholds them (`min_agree`,
+`min_agree_exit`, RSI exiting on its own). A weight strategy's `build(bars, grid, rebal,
+eligible)` returns target weights on the first bar after each decision date (NaN = hold).
+`Ensemble.grid` is the 48-combination WFO grid (`divergence_window=10`, `vol_mult=1.5`);
+`Ensemble.live` holds the deployed defaults (20 and 2.0) that are *not* in that grid, and
+`Ensemble.live_grid()` is the one-combination control grid (spec OD14). The 28 other registry
+names (`LEGACY_ONLY_STRATEGIES`, for example `mtf_reversion`) are closed NO-GO or untested research;
+their code is not in the main tree and they run at tag `legacy-engine-vbt0285` (`scripts/legacy_env.sh`).
 
 ---
 
@@ -155,56 +224,30 @@ Signal-based strategies also support parameter sweeps and walk-forward parameter
 
 ## Core Workflows and Data Flows
 
-### 1. Lab Simulation Run (`ggt lab`)
+### 1. Lab Walk-Forward Run (`ggt lab --wfo`)
 
 ```
-User runs command: ggt lab --strategy ensemble
+User runs command: ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
     ↓
-1. load_ohlcv()                 -> Downloads/loads price history from database or cache.
+1. registry check               -> The strategy must be one of the ten ported ones; the 28 legacy-only names exit with a pointer to the legacy tag.
     ↓
-2. equity_universe_between()    -> Filters which stocks were active in the index on each date (prevents survivorship bias).
+2. load_bars()                  -> Frozen tape, read-only. equity_universe_between() + lab.universe.pit_mask() -> daily point-in-time membership (no survivorship bias).
     ↓
-3. build_strategy()             -> Instantiates the requested strategy from the registry.
+3. generate_folds()             -> Divides history into rolling folds (12 months training / 3 months testing).
     ↓
-4. walkforward()                -> Starts the simulation harness.
+4. wfo.run_wfo()                -> One grouped Rust simulation per configuration, then per fold (see 3a).
     ↓
-5. For each Month (Fold):
-   - Train Window: Identifies prior historical months (In-Sample).
-   - Test Window: Evaluates the strategy on the current month (Out-of-Sample).
-   - Runs vectorbt.Portfolio simulation on the test month.
-   - Calculates Sharpe ratio, return, drawdowns, and trade counts.
-    ↓
-6. Saves results to `lab_runs` and `lab_periods` database tables.
-    ↓
-7. Prints a summary table to the terminal.
+5. Prints the fold table and OOS summary and writes the JSON record with its provenance block.
+   (A `--blend` run additionally blends the sleeves and writes a `blend:` row to `lab_runs`.)
 ```
 
-### 2. Parameter Sweep (`ggt lab --sweep`)
+### 2. Walk-Forward Optimization (what each fold does)
 
 ```
-User runs command: ggt lab --strategy rsi_reversion --sweep
-    ↓
-1. strategy.sweep_params()      -> Retrieves the default grid of parameters (e.g. RSI thresholds = 20, 25, 30).
-    ↓
-2. build_grid()                 -> Creates every combination of parameters (Cartesian product).
-    ↓
-3. For each combination:
-   - Sets up the strategy with those parameters.
-   - Runs the walk-forward simulation.
-   - Gathers out-of-sample metrics (returns, Sharpe ratio).
-    ↓
-4. Prints a summary table ranking all combinations from best to worst.
-```
-
-### 3. Walk-Forward Optimization (`ggt lab --wfo`)
-
-```
-User runs command: ggt lab --strategy ensemble --wfo
-    ↓
 1. generate_folds()             -> Divides history into rolling folds (e.g., 12 months training / 3 months testing).
     ↓
 2. For each Fold:
-   - Runs a parameter sweep on the 12-month training window.
+   - Scores every parameter combination of the strategy's grid on the 12-month training window.
    - Finds the parameter set that performed best.
    - Uses those parameters to trade during the 3-month test window.
    - Calculates Walk-Forward Efficiency (WFE) = Test Return / Train Return.
@@ -215,84 +258,144 @@ User runs command: ggt lab --strategy ensemble --wfo
 4. Prints the final test results, WFE, and recommended stable parameters.
 ```
 
-### 4. Paper Trading Cycle (`ggt paper`)
+### 3a. How the engine produces the numbers (`ggt lab --wfo`)
+
+The folds, selection, gates, anchor, circuit breaker and table described above, and how the numbers
+are produced (`lab/wfo/`).
 
 ```
-System runs daily cron job: ggt paper
-    ↓
-1. signal_runner.generate_signals() -> Generates buy/sell flags on today's latest market prices.
-    ↓
-2. feature_gate.filter()            -> The LightGBM Machine Learning model acts as a security guard,
-                                       dropping any signals with <50% calculated chance of success.
-    ↓
-3. risk.check_guardrails()          -> Safety checks: ensures max 30 positions, max 5% size per stock,
-                                       and blocks trading if daily loss (>3%) or drawdown (>15%) limits are hit.
-    ↓
-4. trader.execute()                 -> Connects to Alpaca and submits buy/sell orders.
-    ↓
-5. persist.save()                   -> Saves order details and daily portfolio values to the database.
-    ↓
-6. notifier.send()                  -> Sends a Telegram message listing the executed trades.
+1. load_bars()                  -> frozen tape, read-only. lab.universe.pit_mask() -> daily eligibility.
+2. strategy.build(bars, grid)   -> entries/exits for EVERY grid combination (indicators run once per distinct parameter).
+3. engine.run_signals()         -> ONE grouped Rust simulation over the whole history (one cash pool per
+                                   combination, mask tiled onto the parameter columns, chunked under a memory budget).
+4. For each fold the window statistics are SLICES of that one simulation (engine.stats.window_stats):
+   anchor = first bar .. train_end, train = the 12-month window, test = the deployed combination's 3-month window.
+   Causality makes this identical to simulating each window on data truncated at its end (tested bit for bit).
+   Weight strategies cannot be sliced (each window starts flat with fresh cash): they run as stacked windows,
+   one engine.run_weights call per window kind; only the anchor, which always starts at the first bar, is sliced.
+5. Gates, anchor, breaker and OOS stitching are the unchanged ggTrader policy code.
 ```
+
+The deleted legacy path ran three grouped simulations per fold plus one for the live pick (52 for 17
+folds); the engine path runs one (two memory chunks on the full SP500 ensemble grid).
+
+### 4. Paper Trading Cycle (`ggt paper`)
+
+> The trader is **stopped by the owner** (2026-11-06) and its cron lines are commented out.
+> **Cron stays disabled until the owner re-enables it** (spec OD18); the signal path below was
+> rebuilt in P7 and has not run live.
+
+```
+ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh, 12:45 PT)
+    ↓
+1. signal_runner.require_rust_engine() -> engine.selfcheck before any data: Rust dispatched,
+                                          vectorbt/vectorbt-rust paired; otherwise no orders.
+    ↓
+2. loader chain (lab.data.fetch_stock_ohlcv, the 12:45 partial bar) -> paper.live_bars.Bars
+                                       -> paper.gates.vet_bars (empty / duplicates / weekend /
+                                          universe / history / last-bar coverage; a not-yet-complete
+                                          bar dated today is dropped, anything else thin is a bad tape)
+    ↓
+3. paper.live_signals.live_ensemble_frames -> the v2 Ensemble.build() with the live defaults
+                                       (shared with overlay.compute_sleeve_curve, which simulates
+                                        through engine.run_signals); buys / sells / last_exit off the
+                                        last bar; paper.gates.vet_signal_counts
+    ↓
+4. trader: late-run gate (after 12:55 PT no orders), freshness gate, untradable resolution
+                                       (UNTRADABLE_SYMBOLS + broker status + 422 "not active"),
+                                       risk guardrails, MAX_POSITIONS cap (alphabetical)
+    ↓
+5. trader.execute()                 -> Alpaca orders (--live only; a dry run is read-only)
+    ↓
+6. persist.save()                   -> ledger, snapshot, peak (--live only)
+    ↓
+7. notifier.send()                  -> Telegram (a read-only dry run logs instead)
+```
+
+`paper/` reaches vectorbt only through `ggTrader.engine` (`tests/paper/test_paper_boundary.py`).
 
 ---
 
-## Vectorbt Portfolio Simulation
+## Engine adapter (`ggTrader.engine`, vectorbt engine rebuild, P2)
 
-The module [simulate.py](file:///home/flynn/ggTrader/src/ggTrader/lab/simulate.py) handles the backtesting math. Instead of iterating day-by-day (which is slow), it batches everything.
+`src/ggTrader/engine/` is the only code that imports `vectorbt` or `vectorbt_rust` (spec
+`docs/superpowers/specs/2026-11-06-vectorbt-engine-design.md` sections 5.1-5.9). An upgrade is one pin
+change, a test run and a decision (`.claude/skills/vbt-upgrade/SKILL.md`).
 
-### 1. Weight-Based Simulation (`simulate_weights()`)
-Feeds target weights into vectorbt. Uses `cash_sharing=True` so all assets draw from the same money pool, and `group_by=strategy_index` to run multiple simulations in a single calculation.
+**Boundary.** Ruff `TID251` bans the imports everywhere except `engine/` and `tests/engine/`
+(`ruff.toml`), and `tests/engine/test_boundary.py` walks `src/`, `scripts/`, `tests/` and `ggt.py` with the
+AST: imports at any depth, dynamic import strings, the global `.vbt` accessor (allowed only in `engine/` and
+`lab/strategies/`), raw indicator constructors, `Portfolio` entry points and the private `vectorbt._engine`
+(only `selfcheck.py`). The allow-list (`LEGACY_ONLY`, mirrored in `ruff.toml`) is down to the one documented exception,
+`scripts/legacy_reference_runs.py`, which runs under the legacy 0.28.5 interpreter against the tree
+extracted from tag `legacy-engine-vbt0285`; the test fails if that entry goes stale or the two lists differ.
 
-```python
-pf = vbt.Portfolio.from_orders(
-    close=close,
-    size=size,                       # Target weights (0.0 to 1.0)
-    size_type="targetpercent",
-    cash_sharing=True,               # Shared capital pool
-    group_by=strategy_index,         # Grouped for speed
-)
-```
+**Configuration (`config.py`).** `GGT_VBT_ENGINE` is `rust` (default) or `numba`; `auto` is rejected because it
+silently falls back to numba. Importing the package sets `vbt.settings["engine"]`, `returns.year_freq = "252
+days"` (vectorbt's default is 365, +20% Sharpe) and the daily `freq`, and turns the vectorbt/vectorbt-rust
+version-mismatch warning into an error. `selfcheck.py` (`python -m ggTrader.engine.selfcheck`) wraps the Rust
+simulator, runs a two-column trailing-stop `from_signals` and fails unless the Rust call count matches the
+configured engine.
 
-### 2. Signal-Based Simulation (`simulate_signals()`)
-Feeds entry/exit flags into vectorbt. It purchases a fixed percentage size (default 2% of portfolio cash) per signal.
+**Presets (`indicators.py`).** vectorbt's defaults are a different strategy, so each preset writes every flag:
+`wilder_rsi(n)` = `RSI(window=2n-1, ewm=True)`, `bbands` = `ddof=1`, `macd` = `macd_ewm=signal_ewm=True`,
+`atr` = `ewm=False`, `ema` = `MA(ewm=True)`. On the frozen tape they equal the legacy pandas indicators to
+0.0 (RSI, EMA, MACD line), 1e-12 (Bollinger) and 2e-14 (ATR) after each symbol's burn-in
+(`research/programme/vectorbt-engine/p2-evidence/`). `signals.py` coerces thresholds and booleans to float64
+because the Rust engine rejects ints and bools.
 
-```python
-pf = vbt.Portfolio.from_signals(
-    close=close,
-    entries=entries,
-    exits=exits,
-    size=SIGNAL_POSITION_SIZE,       # Fraction per entry (e.g. 0.02)
-    size_type="percent",
-    cash_sharing=True,               # Shared capital pool
-    group_by=strategy_index,         # Grouped for speed
-)
-```
+**Simulation and statistics.** `portfolio.run_signals` and `run_weights` make one grouped, cash-shared
+`from_signals` / `from_orders` call per memory chunk (columns split under a 5 GiB estimate, groups never
+split; each finished chunk is copied out and released, so the budget bounds the peak) and return a frozen
+`SimResult` (value, returns, trade records). Equity curves were bit-identical to the deleted `lab/simulate.py` (its outputs are frozen in `tests/engine/golden/legacy_simulate.npz`); the legacy
+`vol_target`/`vol_lookback`/`vol_cap` keys raise instead of being ignored. `stats.py` takes window statistics
+from returns via vectorbt's accessor at 252 bars and ddof=1, scores a window on the legacy convention
+(`window_stats(returns, a, b)` equals `curve_stats(equity.iloc[a:b])`: returns from the second bar, drawdown
+from the base bar), turns flat-curve and no-downside `inf` into NaN, counts trades by entry bar inside a
+window (OD12) and provides the deflated Sharpe ratio configured to reproduce `gates.dsr_check`
+(`var_sharpe = 252/(T-1)`, `bias=False`). Sortino and CAGR are vectorbt's own (owner decision 2026-11-06:
+where a ggTrader definition differs, vectorbt's wins); the one-off diagnostic that attributed the change is
+recorded in `research/programme/vectorbt-engine/P5-completion.md`. The 252-day year and the flat-curve guard
+are a calendar parameter and a safety guard, not definition overrides.
+
+**Provenance.** `provenance.provenance()` stamps vectorbt, vectorbt-rust, pandas, numpy, numba, the engine
+requested and the engine that actually ran, `uv.lock` sha256, git sha, `contract_version` and
+`baseline_epoch`. `provenance.compare()` classifies two blocks and refuses to compare across baseline epochs
+(E1 = the first baseline on vectorbt's definitions, E2 after a later definition change), a different tape sha, or different
+per-statistic `definitions`. `utils/results.write_result_json` stamps every
+result file; `lab/persist.py` gains a nullable `provenance JSONB` on `lab_runs` and `lab_sweeps`
+(`ADD COLUMN IF NOT EXISTS`, NULL means a legacy-engine result).
+
+**Licence.** vectorbt and vectorbt-rust are Apache 2.0 with the Commons Clause: private research and a personal
+paper trader are unaffected; ggTrader must not be offered as a paid service without re-reading the licence
+(spec OD4, owner to record the exception).
+
+**Tests (`tests/engine/`).** L0 boundary, lock consistency, upgrade tooling; L1 contract tests against
+independent numpy references (rtol 1e-9) and the legacy formulas; L1b a defaults tripwire (a clean interpreter
+dumps vectorbt's defaults, compared with `golden/vbt_defaults.json`); L2 seeded golden panels on both
+engines; L3 dispatch probe, numba-vs-Rust parity and a `-W error` lane. Goldens are rewritten only with
+`--update-golden --golden-reason "<why>"` and the reason must appear in `docs/changelog.md`.
 
 ---
 
 ## Walk-Forward Fold Logic Details
 
-The walk-forward driver in [harness.py](file:///home/flynn/ggTrader/src/ggTrader/lab/harness.py) splits historical data systematically:
+The walk-forward ([wfo/](../src/ggTrader/lab/wfo/)) splits historical data systematically:
 
-1. **Universe Eligibility**: Filters out new stocks that do not have enough price history (e.g., needs 500+ trading days).
-2. **Monthly Folds**: Runs simulations month-by-month.
-3. **Warmup Period**: Automatically loads data from days prior to the start date (e.g., 252 days prior) so indicators (like moving averages) have enough history to calculate values on day one.
-4. **Aggregation**: Calculates the mean and standard deviation of returns and Sharpe ratios across all test periods to gauge consistency.
+1. **Universe Eligibility**: the point-in-time mask (`lab/universe.py`) keeps a stock out of the entries until it is an index member with enough price history.
+2. **Rolling Folds**: 12 months of training and 3 months of testing, sliding by 3 months (`generate_folds`).
+3. **Warmup Period**: data is loaded from days before the first fold so indicators (like moving averages) have enough history to calculate values on day one.
+4. **Aggregation**: the out-of-sample windows are stitched into one curve and summarised against SPY on the same days.
 
 ---
 
-## Technical Indicator Functions
+## Technical Indicators
 
-The file [indicators.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategies/indicators.py) contains the math behind the trading signals:
-
-- `bb_signals(close, period, std)`: Bollinger Band entry/exit flags.
-- `bb_strength(close, period, std)`: Distance below the band (measures how cheap the stock is).
-- `ema_signals(close, fast, slow)`: EMA Crossover entry/exit flags.
-- `rsi_signals(close, period, oversold, exit)`: RSI entry/exit flags.
-- `macd_signals(close, fast, slow, signal, window)`: MACD Divergence flags.
-- `volume_bb_signals(...)`: Volume-confirmed Bollinger Band reversion.
-- `mtf_signals(...)`: Multi-timeframe flags (weekly RSI + daily BB).
+There are no hand-written indicator functions any more. Strategies compose the presets in
+[engine/indicators.py](../src/ggTrader/engine/indicators.py) (`wilder_rsi`, `bbands`, `ema`, `sma`, `macd`,
+`atr`) and the crossovers in [engine/signals.py](../src/ggTrader/engine/signals.py), which call vectorbt with
+every behaviour flag written out. The voter arrays are built in `lab/strategies/voters.py`. The old pandas
+formulas live on only as test oracles (`tests/oracles/legacy_voters.py`).
 
 ---
 

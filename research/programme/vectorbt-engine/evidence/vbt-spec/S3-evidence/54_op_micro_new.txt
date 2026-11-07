@@ -1,0 +1,14 @@
+pandas 3.1.1
+diff                            0.060 ms
+clip                            1.089 ms
+neg                             0.041 ms
+ewm.mean                        2.148 ms
+replace(0,nan)                  0.067 ms
+div                             0.154 ms
+scalar arith                    0.759 ms
+shift                           0.069 ms
+cmp scalar                      0.064 ms
+and                             0.378 ms
+fillna(False).astype(bool)      0.041 ms
+rolling.mean                    4.432 ms
+rolling.std                     5.731 ms

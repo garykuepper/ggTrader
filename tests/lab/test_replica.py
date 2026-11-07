@@ -223,3 +223,15 @@ def test_parity_checker_explains_catchup_and_rejects_exit_before_buy():
     assert result["orders"][1]["explanation"] == "catch-up exit"
     assert result["strategy_orders"] == 3
     assert result["stop_flags"] == ["unexplained_orders"]
+
+
+def test_entry_eligibility_starts_at_first_selection_and_carries_forward():
+    from ggTrader.lab.replica import _entry_eligibility
+
+    index = pd.bdate_range("2024-01-01", periods=8, tz="UTC")
+    plans = {index[2]: ["AAA"], index[5]: ["AAA", "BBB"]}
+    mask = _entry_eligibility(plans, ["AAA", "BBB", "CCC"], index)
+    assert mask["AAA"].tolist() == [False, False, True, True, True, True, True, True]
+    assert mask["BBB"].tolist() == [False, False, False, False, False, True, True, True]
+    assert not mask["CCC"].any()
+    assert not _entry_eligibility({}, ["AAA"], index).any().any()

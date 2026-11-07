@@ -1,0 +1,5 @@
+{'vectorbt': '1.2.0', 'vectorbt_rust': '1.2.0', 'engine': 'rust', 'rust_calls': 1}
+{'vectorbt': '1.2.0', 'vectorbt_rust': '1.2.0', 'engine': 'numba', 'rust_calls': 0}
+BBANDS ddof kwarg ok; lower diff 0.1961192253863686
+fshift ok True signals.fshift True
+sharpe 365 vs 252: -0.41779647305798956 -0.34715114946853337

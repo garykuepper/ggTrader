@@ -14,12 +14,9 @@ import pandas as pd
 
 from ggTrader.lab import persist
 from ggTrader.lab.allocation import combine_sleeves
-from ggTrader.lab.data import STOCK_BASE_CONFIG, eligible_at, equity_universe_between, load_ohlcv
-from ggTrader.lab.metrics import curve_stats
-from ggTrader.lab.strategies import STRATEGY_REGISTRY
+from ggTrader.lab.data import STOCK_BASE_CONFIG
 from ggTrader.lab.strategy import LabConfig
-from ggTrader.lab.sweep import build_grid
-from ggTrader.lab.wfo import WfoResult, run_wfo
+from ggTrader.lab.wfo.report import curve_summary
 
 
 def blend_curves(
@@ -27,7 +24,7 @@ def blend_curves(
     *,
     target_vol: float = 0.068,
     window: int = 60,
-    max_leverage: float = 2.0,
+    max_leverage: float = 1.0,
 ) -> tuple[pd.Series, pd.DataFrame, pd.DataFrame]:
     """Align sleeve OOS equity curves on common dates, blend to a target vol.
 
@@ -36,7 +33,7 @@ def blend_curves(
     """
     common = reduce(lambda a, b: a.intersection(b), (c.index for c in curves.values()))
     returns_df = pd.DataFrame(
-        {label: curves[label].reindex(common).pct_change() for label in curves}
+        {label: curves[label].reindex(common).pct_change(fill_method=None) for label in curves}
     ).dropna()
     blended, diag = combine_sleeves(
         returns_df, target_vol=target_vol, window=window, max_leverage=max_leverage
@@ -61,6 +58,62 @@ def _row(label: str, s: dict[str, Any]) -> str:
     )
 
 
+def _engine_curves(
+    sleeves: list[tuple[str, str]],
+    cfg: LabConfig,
+    eval_start: str,
+    eval_end: str,
+    market: str,
+    base_config: dict,
+    snapshot: str | None,
+) -> tuple[dict[str, pd.Series], pd.Series, dict[str, Any]]:
+    """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
+    from ggTrader.engine.provenance import provenance as build_provenance
+    from ggTrader.lab.strategies import registry
+    from ggTrader.lab.wfo import WfoResult, run_wfo
+    from ggTrader.lab.wfo.cli_support import load_run_bars, sleeve_inputs
+
+    es = pd.Timestamp(eval_start, tz="UTC")
+    ee = pd.Timestamp(eval_end, tz="UTC")
+    bars = load_run_bars(sorted({u for _, u in sleeves}), cfg, es, ee, snapshot)
+    spy_close = bars.close["SPY"].dropna()
+    curves: dict[str, pd.Series] = {}
+    sources: dict[str, Any] = {}
+    for strategy, universe in sleeves:
+        label = f"{strategy}@{universe}"
+        if label in curves:
+            raise SystemExit(f"duplicate sleeve {label!r}; each strategy@universe must be unique")
+        try:
+            cls = type(registry.get(strategy))
+        except ValueError as exc:
+            raise SystemExit(f"blend sleeve {label!r}: {exc}") from exc
+        sources[label] = registry.source_sha256(cls)
+        sleeve, mask = sleeve_inputs(bars, universe, cfg, es, ee)
+        if not sleeve.symbols:
+            raise SystemExit(
+                f"blend sleeve {label!r}: no symbols available for universe {universe!r}"
+            )
+        result = run_wfo(
+            strategy,
+            cls,
+            cfg,
+            sleeve,
+            spy_close,
+            eval_start=eval_start,
+            eval_end=eval_end,
+            market=market,
+            base_config=base_config,
+            grid=cls.grid,
+            mask=mask,
+        )
+        if not isinstance(result, WfoResult):
+            raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
+        curves[label] = result.oos_equity
+    tape = (bars.provenance or {}).get("snapshot") or {}
+    stamp = build_provenance(tape_sha256=tape.get("sha256"), extra={"strategy_sources": sources})
+    return curves, spy_close, stamp
+
+
 def run_blend(
     sleeves: list[tuple[str, str]],
     cfg: LabConfig,
@@ -71,62 +124,24 @@ def run_blend(
     base_config: dict,
     target_vol: float = 0.068,
     window: int = 60,
-    max_leverage: float = 2.0,
+    max_leverage: float = 1.0,
+    snapshot: str | None = None,
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
     curves (inverse-vol -> target-vol), persist as a lab run, return BlendResult.
 
-    NOTE: max_leverage's default (2.0) is the *research/idealized* value, not
-    the deployable one -- the live production overlay
-    (src/ggTrader/paper/overlay.py) runs at max_leverage=1.0. Callers that
-    intend to compare against or reproduce the live/validated blend headline
-    MUST pass max_leverage=1.0 explicitly; do not rely on this default. This
-    exact mismatch silently produced an invalid run on 2026-08-18 (see
-    scripts/position_sizing_wfo.py and docs/roadmap.md:115 for the prior
-    2026-07-13 occurrence). The default itself is left at 2.0 on purpose --
-    other (research-mode) callers depend on the unconstrained comparison.
+    Each sleeve runs through the vectorbt-engine walk-forward (``lab.wfo``) on the frozen tape
+    (``snapshot`` overrides the file); the ``lab_runs`` row carries the engine provenance block.
+    Only strategies ported to the engine contract can be sleeves.
+
+    NOTE: max_leverage defaults to 1.0, the deployed value
+    (src/ggTrader/paper/overlay.py). Until 2026-11 the default was 2.0 (the idealised research
+    value); a run quoted from that default overstated the deployed blend (the trap was hit on
+    2026-07-13 and 2026-08-18). Pass 2.0 explicitly for the unconstrained comparison.
     """
-    es = pd.Timestamp(eval_start, tz="UTC")
-    ee = pd.Timestamp(eval_end, tz="UTC")
-    warmup_days = int(max(cfg.lookback, cfg.min_history_bars) * 1.6) + 60
-    data_start = str((es - pd.Timedelta(days=warmup_days)).date())
-
-    universes = sorted({u for _, u in sleeves})
-    members = {u: equity_universe_between(es, ee, universe=u) for u in universes}
-    all_symbols = sorted({s for ms in members.values() for s in ms} | {"SPY"})
-    ohlcv = load_ohlcv(all_symbols, data_start, eval_end, use_negative_cache=True)
-    available = set(ohlcv.columns.get_level_values(0))
-    spy_close = ohlcv["SPY"]["close"].dropna()
-
-    curves: dict[str, pd.Series] = {}
-    for strategy, universe in sleeves:
-        label = f"{strategy}@{universe}"
-        syms = [x for x in members[universe] if x in available]
-        if not syms:
-            raise SystemExit(
-                f"blend sleeve {label!r}: no symbols available for universe {universe!r}"
-            )
-        if label in curves:
-            raise SystemExit(f"duplicate sleeve {label!r}; each strategy@universe must be unique")
-        cls = STRATEGY_REGISTRY[strategy]
-        result = run_wfo(
-            strategy,
-            cls,
-            cfg,
-            ohlcv[syms],
-            spy_close,
-            eval_start=eval_start,
-            eval_end=eval_end,
-            market=market,
-            base_config=base_config,
-            grid=build_grid(cls),
-            universe_fn=lambda asof, past, universe=universe: eligible_at(
-                asof, past, cfg, universe=universe
-            )[0],
-        )
-        if not isinstance(result, WfoResult):
-            raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
-        curves[label] = result.oos_equity
+    curves, spy_close, stamp = _engine_curves(
+        sleeves, cfg, eval_start, eval_end, market, base_config, snapshot
+    )
 
     blend_eq, returns_df, diag = blend_curves(
         curves, target_vol=target_vol, window=window, max_leverage=max_leverage
@@ -135,7 +150,7 @@ def run_blend(
     start_cash = float(STOCK_BASE_CONFIG["START_CASH"])
     spy_common = spy_close.reindex(common).ffill()
     spy_bench = start_cash * (spy_common / spy_common.dropna().iloc[0])
-    spy_stats = curve_stats(spy_common)
+    spy_stats = curve_summary(spy_common)
 
     # Build the report table.
     rows = [
@@ -143,8 +158,8 @@ def run_blend(
         "| :--- | :---: | :---: | :---: | :---: | :---: |",
     ]
     for label in curves:
-        rows.append(_row(label, curve_stats(curves[label].reindex(common))))
-    rows.append(_row("Inverse-vol + target-vol blend", curve_stats(blend_eq)))
+        rows.append(_row(label, curve_summary(curves[label].reindex(common))))
+    rows.append(_row("Inverse-vol + target-vol blend", curve_summary(blend_eq)))
     rows.append(_row("SPY", spy_stats))
     table = "\n".join(rows)
 
@@ -162,20 +177,22 @@ def run_blend(
             "target_vol": target_vol,
             "window": window,
             "max_leverage": max_leverage,
+            "engine": "vbt",
         },
+        provenance=stamp,
     )
     for label in labels:
         sleeve_eq = curves[label].reindex(common)
         persist.write_returns_equity(
-            run_id, label, sleeve_eq.pct_change().dropna(), sleeve_eq, spy_bench
+            run_id, label, sleeve_eq.pct_change(fill_method=None).dropna(), sleeve_eq, spy_bench
         )
     persist.write_returns_equity(
-        run_id, "blend", blend_eq.pct_change().dropna(), blend_eq, spy_bench
+        run_id, "blend", blend_eq.pct_change(fill_method=None).dropna(), blend_eq, spy_bench
     )
     persist.write_summary(
         run_id,
         "blend",
-        curve_stats(blend_eq),
+        curve_summary(blend_eq),
         spy_stats,
         {
             "avg_leverage": float(diag["scale"].mean()),

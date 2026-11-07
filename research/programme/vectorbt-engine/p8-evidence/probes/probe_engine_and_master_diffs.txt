@@ -1,0 +1,18 @@
+--- control_rust vs control_numba: 3 differ of 42
+  atr_unsigned_ints                ERR ValueError: Rust engine requires float64 arrays and `uint32` cannot be safely cast. Use engi | n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19
+  diff_int8_overflow               ERR ValueError: Rust engine requires float64 arrays and `int8` cannot be safely cast. Use engine | n=3 nan=1 sum=56 last=56
+  ulcer_index_exists               ERR ValueError: Rust engine is not implemented for `ulcer_index`. Use engine='numba'. | 0.209126691554
+--- control_rust vs master_rust: 0 differ of 42
+--- control_numba vs master_numba: 4 differ of 42
+  atr_unsigned_ints                n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 | n=400 nan=0 sum=25396 last=61
+  diff_int8_overflow               n=3 nan=1 sum=56 last=56 | n=3 nan=1 sum=-200 last=-200
+  sharpe_flat_zero_returns         inf | nan
+  sortino_flat_zero_returns        inf | nan
+--- control_rust vs masterrs_rust: 2 differ of 42
+  sharpe_flat_zero_returns         inf | nan
+  sortino_flat_zero_returns        inf | nan
+--- control_numba vs masterrs_numba: 4 differ of 42
+  atr_unsigned_ints                n=400 nan=0 sum=4.187410905e+21 last=1.844674407e+19 | n=400 nan=0 sum=25396 last=61
+  diff_int8_overflow               n=3 nan=1 sum=56 last=56 | n=3 nan=1 sum=-200 last=-200
+  sharpe_flat_zero_returns         inf | nan
+  sortino_flat_zero_returns        inf | nan

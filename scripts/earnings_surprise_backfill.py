@@ -10,6 +10,7 @@ upserts, so re-running only refreshes data, never duplicates.
 
 from __future__ import annotations
 
+import argparse
 import time
 
 import pandas as pd
@@ -20,7 +21,12 @@ from ggTrader.lab.earnings_surprise_data import cache_symbol_surprises
 LOOKBACK_LIMIT = 100  # yfinance quarters per symbol -- covers back to ~2002 for most
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.parse_args(argv)
     eval_start = pd.Timestamp("2015-01-01", tz="UTC")
     eval_end = pd.Timestamp.now(tz="UTC")
 

@@ -1,0 +1,166 @@
+{
+  "run": "ref_cross_asset_sleeve",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "wfo",
+    "strategy": "cross_asset_sleeve",
+    "universe": "cross_asset",
+    "eval_start": "2021-01-31",
+    "eval_end": "2022-07-31",
+    "note": "one pinned 2-fold window (smallest multi-fold honest window)"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:05:06-0800",
+  "config": {
+    "base_config": {
+      "START_CASH": 10000.0,
+      "PORTFOLIO_SHARE": 1.0,
+      "FEES": 0.0,
+      "SLIPPAGE": 0.0005,
+      "FREQ": "1d",
+      "SIGNAL_POSITION_SIZE": 0.03,
+      "USE_CASH_SHARING": false,
+      "TRAIN_METRIC": "composite",
+      "MIN_CLOSED_TRADES_TRAIN": 0,
+      "MIN_TRADES_PER_TRAIN_FOLD": 8,
+      "MAX_TRAIN_DRAWDOWN_PCT": 75,
+      "BENCHMARK_SYMBOL": "SPY"
+    },
+    "lab_config": {
+      "top_n": 50,
+      "lookback": 252,
+      "skip": 21,
+      "min_history_bars": 400,
+      "max_stocks": null,
+      "max_sector_count": null
+    },
+    "grid_size": 3,
+    "grid": [
+      {
+        "lookback": 126
+      },
+      {
+        "lookback": 189
+      },
+      {
+        "lookback": 252
+      }
+    ],
+    "universe_requested": 5,
+    "universe_loaded": 5,
+    "data_start": "2019-03-03",
+    "max_leverage": 1.0,
+    "wfo_policy": "WfoPolicy() defaults"
+  },
+  "ok": true,
+  "oos": {
+    "total_return_pct": -6.7657169698096205,
+    "cagr_pct": -13.319980736576586,
+    "sharpe": -0.5928948678135563,
+    "sortino": -0.8696611762589176,
+    "ann_vol_pct": 20.48448423266875,
+    "max_drawdown_pct": -16.849224226332083
+  },
+  "spy_oos_index": {
+    "total_return_pct": -7.747078536196361,
+    "cagr_pct": -15.17148703500364,
+    "sharpe": -0.5150733529934675,
+    "sortino": -0.7785287659816804,
+    "ann_vol_pct": 25.51378057804194,
+    "max_drawdown_pct": -20.561146708583156
+  },
+  "n_folds": 2,
+  "gates_passed": 0,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "cross_asset_sleeve__lookback126",
+    "cross_asset_sleeve__lookback189"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31 00:00:00+00:00",
+      "train_end": "2022-01-31 00:00:00+00:00",
+      "test_start": "2022-01-31 00:00:00+00:00",
+      "test_end": "2022-04-30 00:00:00+00:00",
+      "winner_combo": "cross_asset_sleeve__lookback126",
+      "winner_params": {
+        "lookback": 126
+      },
+      "train_score": 0.6302866943978831,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.743638537617966,
+      "wfe": -0.7972575136179214,
+      "is_sharpe": 1.519243351707083,
+      "oos_sharpe": -1.2112281771625462,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30 00:00:00+00:00",
+      "train_end": "2022-04-30 00:00:00+00:00",
+      "test_start": "2022-04-30 00:00:00+00:00",
+      "test_end": "2022-07-30 00:00:00+00:00",
+      "winner_combo": "cross_asset_sleeve__lookback189",
+      "winner_params": {
+        "lookback": 189
+      },
+      "train_score": 0.8,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.27400870699724655,
+      "wfe": null,
+      "is_sharpe": 0.2504451028254146,
+      "oos_sharpe": -0.10400771266213012,
+      "halted": true,
+      "halted_entering": false,
+      "used_anchor": true
+    }
+  ],
+  "live_params": {
+    "combo": "cross_asset_sleeve__lookback126",
+    "params": {
+      "lookback": 126
+    },
+    "train_metrics": {
+      "sharpe": -0.08906144503156165,
+      "cagr_pct": -2.816568861406177,
+      "max_drawdown_pct": -17.25715727964775
+    },
+    "stability": 1,
+    "train_start": "2021-07-31 00:00:00+00:00",
+    "train_end": "2022-07-31 00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: cross_asset_sleeve | 3 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      lookback126                 1.52 -1.21  FAIL -0.80 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      lookback189                 0.25 -0.10  FAIL   n/a [H] [A]\n\nOOS Aggregate: Sharpe -0.59 | CAGR -13.3% | MaxDD -16.8%\nSPY baseline:  Sharpe -0.52 | CAGR -15.2% | MaxDD -20.6%\nAggregate WFE: -0.80 (target >= 0.50)\n!! REGIME HALT ACTIVE -- trading on anchor params\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       cross_asset_sleeve__lookback126\nTrain Sharpe: -0.09 | CAGR -2.8% | MaxDD -17.3%\nStability:    selected in 1/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    cross_asset_sleeve__lookback189\nMaxDD:    -26.8% | CAGR 14.6% | Sharpe 0.87",
+  "oos_first": "2022-01-31 00:00:00+00:00",
+  "oos_last": "2022-07-29 00:00:00+00:00",
+  "oos_bars": 125,
+  "load_seconds": 0.6,
+  "wall_seconds": 17.3
+}

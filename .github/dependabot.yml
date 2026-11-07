@@ -1,0 +1,38 @@
+# Dependabot handles everything EXCEPT the engine stack. The vectorbt / vectorbt-rust pair
+# (and the libraries whose bounds it sets) is owned by .github/workflows/vbt-upgrade-watch.yml
+# and the vbt-upgrade skill, so the pair is never bumped one half at a time.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Engine stack: keep in step with ENGINE_STACK in tests/engine/test_lock_consistency.py
+      - dependency-name: "vectorbt"
+      - dependency-name: "vectorbt-rust"
+      - dependency-name: "pandas"
+      - dependency-name: "numpy"
+      - dependency-name: "numba"
+      - dependency-name: "llvmlite"
+      - dependency-name: "plotly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    ignore:
+      # requires-python is ==3.12.*; a 3.13/3.14 base image would break the lock. Digest and
+      # patch refreshes of python:3.12-slim still come through.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

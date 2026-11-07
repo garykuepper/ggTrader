@@ -32,9 +32,37 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Both sha forms are immutable: the 7-character short sha (what GGTRADER_TAG
+          # usually holds) and the full 40-character sha. `latest` moves, so the trader never
+          # trusts it (spec 8.3). A branch build via workflow_dispatch gets only the sha tags.
           tags: |
             type=sha,prefix=
+            type=sha,prefix=sha-,format=long
             type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build once into the local image store and smoke-test it BEFORE anything is pushed:
+      # the Rust engine must dispatch, the trader must import, the CLI must load. The
+      # Dockerfile runs the same checks at build time; running the finished image proves the
+      # artifact that would be pushed.
+      - name: Build (local, for the smoke test)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ggtrader-smoke:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the image
+        run: |
+          docker run --rm ggtrader-smoke:ci python -m ggTrader.engine.selfcheck --engine rust
+          docker run --rm ggtrader-smoke:ci python scripts/check_vbt_engine.py --engine rust
+          docker run --rm ggtrader-smoke:ci python -c "import ggTrader.paper.trader"
+          docker run --rm ggtrader-smoke:ci python -u ggt.py paper --help
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -43,3 +71,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha

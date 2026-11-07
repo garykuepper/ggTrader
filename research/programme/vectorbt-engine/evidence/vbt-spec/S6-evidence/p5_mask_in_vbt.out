@@ -1,0 +1,20 @@
+tape (1933, 646)
+raw entries 31127 exits 68325
+mask build 0.547 s; eligible cells 925688
+A unmasked (legacy lookahead)      sim   0.3s trades=17991  entry-signals-on-nonmember= 5388  held-bars-nonmember= 52393  sum(final value)=6,533,304
+B entries&mask (current semantics) sim   0.3s trades=14579  entry-signals-on-nonmember=    0  held-bars-nonmember=  8596  sum(final value)=6,497,292
+C entries&mask + exit-on-removal   sim   0.2s trades=14579  entry-signals-on-nonmember=    0  held-bars-nonmember=  5938  sum(final value)=6,497,461
+removal events in tape: 143 | symbols that ever left: 143
+symbols with data ending >10d before tape end: 72 | e.g. {'ABMD': '2023-01-03', 'AGN': '2020-05-08', 'ALXN': '2021-07-28', 'ANSS': '2026-05-29', 'ARNC': '2023-08-17', 'ATVI': '2023-10-13'}
+B: positions still 'open' in symbols whose data already ended: 8 ['DRE', 'EQR', 'ETFC', 'FLIR', 'KSU', 'NBL', 'PSKY', 'RTN']
+D + terminal exit at last valid bar sim   0.2s trades=14574  entry-signals-on-nonmember=    0  held-bars-nonmember=  1525  sum(final value)=6,497,454
+D: stranded after terminal exit: 2
+DRE: last valid 2022-10-03  value on that bar 10021.84  value at tape end 10021.84  (NaN? False)
+maxrss MB 926.46484375
+D residual held-nonmember bars by symbol (top 8): {'NBL': 1525}
+D stranded: ['EQR', 'NBL'] {'EQR': '2026-08-21', 'NBL': '2020-10-06'}
+tape end coverage: last bar 2026-11-05 has 1/646 closes; previous 2026-11-04 has 573/646
+interior NaN cells (between first and last valid bar): 1515
+E D + drop same-bar entry at terminal sim   0.3s trades=14574  entry-signals-on-nonmember=    0  held-bars-nonmember=     0  sum(final value)=6,497,467
+E: stranded after terminal exit (and entry suppressed): []
+E: held-bars-nonmember residual: 0

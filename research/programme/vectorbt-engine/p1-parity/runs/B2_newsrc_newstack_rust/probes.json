@@ -1,0 +1,1285 @@
+{
+ "gap_report": {
+  "2021_22": {
+   "symbols": 507,
+   "symbols_with_nonleading_gaps": 5,
+   "cells_where_pad_differs_from_no_fill": 453
+  },
+  "2025_26": {
+   "symbols": 533,
+   "symbols_with_nonleading_gaps": 20,
+   "cells_where_pad_differs_from_no_fill": 2937
+  }
+ },
+ "event_study": {
+  "n_event": 16740,
+  "n_nonevent": 112092,
+  "mean_event_return": 0.00036412102051439874,
+  "mean_nonevent_return": 0.0007892506933552132,
+  "mean_diff": -0.0004251296728408145,
+  "t_stat": -2.0232035509710626,
+  "p_value": 0.0430646415740505,
+  "significant": true
+ },
+ "selections": {
+  "idio_vol": {
+   "2022-07-29 00:00:00+00:00": [
+    {
+     "symbol": "PBCT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "XLNX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DISCK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BRO",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMGN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GPC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EQR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FLT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PAYX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "REG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ETN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ITW",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PNC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "APD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MDT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CAH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CPRT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "NWSA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ROP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BXP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BDX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EMN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HOLX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PRGO",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ABT",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2022-05-04 00:00:00+00:00": [
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "XLNX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PBCT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "D",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "K",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AIZ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "APD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PNC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTSH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PAYX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MSI",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JBHT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CNP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ECL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ITW",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HWM",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BMY",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MDT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FOXA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "KEYS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ETN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EMN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GPC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FLT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EIX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HIG",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2022-01-24 00:00:00+00:00": [
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EQR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AVB",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AIZ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "D",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CNP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "K",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HIG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CMCSA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMGN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MCK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BAX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ITW",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "RTX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LNT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PAYX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTSH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PEG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EIX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "NOC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HPQ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMCR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HAS",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2021-10-13 00:00:00+00:00": [
+    {
+     "symbol": "MDT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "RTX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AIZ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ALL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTSH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMCR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ROP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "SYK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PGR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ETN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PFE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MSI",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AAPL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BAX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CAH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GPC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ITW",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FLT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CVS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PNC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BMY",
+     "weight": 0.03333333333333333
+    }
+   ]
+  },
+  "max_effect": {
+   "2022-07-29 00:00:00+00:00": [
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DISCK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PBCT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "XLNX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMGN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "K",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LLY",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MRK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MNST",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BDX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CAH",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BMY",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PRGO",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "IRM",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BAX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "TAP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LUMN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMCR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AIZ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HIG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "GPC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BXP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "D",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CVS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MAS",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2022-05-04 00:00:00+00:00": [
+    {
+     "symbol": "PBCT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "XLNX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "K",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "SPGI",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "NDAQ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LHX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EQR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PRGO",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "D",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AIZ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ARE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "NEM",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMGN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FOXA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PEG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LUMN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "TFC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PWR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PNC",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PKG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "TAP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BMY",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "RTX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BRO",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CNP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MDT",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2022-01-24 00:00:00+00:00": [
+    {
+     "symbol": "KSU",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CNP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EIX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "K",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LNT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BAX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CHTR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EQR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AWK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "D",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ARE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "SPGI",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DIS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AVB",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMCR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ECL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "APD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ABT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ITW",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PEG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "NRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PAYX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MAS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CTAS",
+     "weight": 0.03333333333333333
+    }
+   ],
+   "2021-10-13 00:00:00+00:00": [
+    {
+     "symbol": "JNJ",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DVA",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BDX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "DGX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MNST",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ALL",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PGR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ABT",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMGN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "FE",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMZN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BMY",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EVRG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "IRM",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CERN",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "RMD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MTD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "CHTR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "SNPS",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AMCR",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "BIIB",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "PEG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "LEG",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "AWK",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "A",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "HOLX",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ROP",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "MSI",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "EXPD",
+     "weight": 0.03333333333333333
+    },
+    {
+     "symbol": "ARE",
+     "weight": 0.03333333333333333
+    }
+   ]
+  }
+ },
+ "feature_gate": {
+  "CERN@2022-07-29": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 65.90822980573795,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 0.3770364372469636,
+   "atr_ratio": 1.0,
+   "day_of_week": 4.0
+  },
+  "CERN@2022-05-04": {
+   "vol_5d": 0.03223846571428424,
+   "vol_20d": 0.03040659852076591,
+   "vol_ratio": 1.0602457125306952,
+   "rsi_14": 69.97639094789497,
+   "bb_pctb": 1.1335625110610035,
+   "ret_5d": 0.006076759061833803,
+   "ret_20d": 0.01320592656216446,
+   "volume_ratio": 1.8040559796381161,
+   "atr_ratio": 1.162503499036733,
+   "day_of_week": 2.0
+  },
+  "DISCK@2022-07-29": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 43.19225163383006,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 0.238226186052273,
+   "atr_ratio": 1.0,
+   "day_of_week": 4.0
+  },
+  "DISCK@2022-05-04": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.25941343157413893,
+   "vol_ratio": 0.0,
+   "rsi_14": 43.19225163383006,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": null,
+   "atr_ratio": null,
+   "day_of_week": 2.0
+  },
+  "KSU@2022-07-29": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 44.04984424114644,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 4.0
+  },
+  "KSU@2022-05-04": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 44.04984424114644,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 2.0
+  },
+  "PBCT@2022-07-29": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 38.776618730435864,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 4.0
+  },
+  "PBCT@2022-05-04": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 38.776618730435864,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 2.0
+  },
+  "XLNX@2022-07-29": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 46.62131111134084,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 4.0
+  },
+  "XLNX@2022-05-04": {
+   "vol_5d": 0.0,
+   "vol_20d": 0.0,
+   "vol_ratio": 1.0,
+   "rsi_14": 46.62131111134084,
+   "bb_pctb": 0.5,
+   "ret_5d": null,
+   "ret_20d": null,
+   "volume_ratio": 1.0,
+   "atr_ratio": 1.0,
+   "day_of_week": 2.0
+  },
+  "A@2022-07-29": {
+   "vol_5d": 0.2145246214749985,
+   "vol_20d": 0.3614159141466247,
+   "vol_ratio": 0.5935671703376263,
+   "rsi_14": 67.84102102719822,
+   "bb_pctb": 1.0949590021473001,
+   "ret_5d": 0.0724564941200796,
+   "ret_20d": 0.13107285389781897,
+   "volume_ratio": 1.6249408502162406,
+   "atr_ratio": 0.9271673554952639,
+   "day_of_week": 4.0
+  },
+  "A@2022-05-04": {
+   "vol_5d": 0.31639897316932725,
+   "vol_20d": 0.3797618991243033,
+   "vol_ratio": 0.8331509135037368,
+   "rsi_14": 50.0413649357848,
+   "bb_pctb": 0.5437630104472365,
+   "ret_5d": 0.07324938319143226,
+   "ret_20d": -0.052228905021866945,
+   "volume_ratio": 1.0537248041182807,
+   "atr_ratio": 1.0851736879803249,
+   "day_of_week": 2.0
+  },
+  "AAPL@2022-07-29": {
+   "vol_5d": 0.3368871851106342,
+   "vol_20d": 0.2468679083161524,
+   "vol_ratio": 1.364645519980662,
+   "rsi_14": 70.16629356904862,
+   "bb_pctb": 1.0437753070565743,
+   "ret_5d": 0.05464351432988357,
+   "ret_20d": 0.1886338780878163,
+   "volume_ratio": 1.4067460912509724,
+   "atr_ratio": 1.06593061876336,
+   "day_of_week": 4.0
+  },
+  "AAPL@2022-05-04": {
+   "vol_5d": 0.5270502463605026,
+   "vol_20d": 0.36269028330774483,
+   "vol_ratio": 1.4531689174404967,
+   "rsi_14": 51.78132533736076,
+   "bb_pctb": 0.5719643488782482,
+   "ret_5d": 0.06035633829538578,
+   "ret_20d": -0.05163945361735511,
+   "volume_ratio": 1.216739486821901,
+   "atr_ratio": 1.3248892385110198,
+   "day_of_week": 2.0
+  },
+  "ABT@2022-07-29": {
+   "vol_5d": 0.1458763637046033,
+   "vol_20d": 0.22840834757278822,
+   "vol_ratio": 0.6386647653414507,
+   "rsi_14": 49.88019195980218,
+   "bb_pctb": 0.5369163682188882,
+   "ret_5d": -0.0032964326809113986,
+   "ret_20d": 0.006201402927288768,
+   "volume_ratio": 1.0531067064985684,
+   "atr_ratio": 0.866486822855787,
+   "day_of_week": 4.0
+  },
+  "ABT@2022-05-04": {
+   "vol_5d": 0.39405014657173154,
+   "vol_20d": 0.3214790646831863,
+   "vol_ratio": 1.2257412374894867,
+   "rsi_14": 45.26020898759714,
+   "bb_pctb": 0.2926466760509039,
+   "ret_5d": -0.008738982073943191,
+   "ret_20d": -0.027777484755772797,
+   "volume_ratio": 1.0417253124990868,
+   "atr_ratio": 1.104100710596471,
+   "day_of_week": 2.0
+  },
+  "ADI@2022-07-29": {
+   "vol_5d": 0.29578494189011717,
+   "vol_20d": 0.28822962380882583,
+   "vol_ratio": 1.026212843709301,
+   "rsi_14": 70.4878055492183,
+   "bb_pctb": 0.9180709680723441,
+   "ret_5d": 0.05322498268395237,
+   "ret_20d": 0.17708268290130125,
+   "volume_ratio": 1.4744991274647372,
+   "atr_ratio": 0.9724694380548825,
+   "day_of_week": 4.0
+  },
+  "ADI@2022-05-04": {
+   "vol_5d": 0.5759484849112029,
+   "vol_20d": 0.3918366542884117,
+   "vol_ratio": 1.4698688308196801,
+   "rsi_14": 56.58530831698121,
+   "bb_pctb": 0.9959039739749107,
+   "ret_5d": 0.08601405054643774,
+   "ret_20d": 0.029941498006431422,
+   "volume_ratio": 1.1305542883538906,
+   "atr_ratio": 1.333212812224741,
+   "day_of_week": 2.0
+  }
+ },
+ "overlay": {
+  "weights": {
+   "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": 0.5278726405699001,
+   "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": 0.4721273594300998
+  },
+  "scale": 0.6121786725134012,
+  "curves": [
+   "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+   "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14"
+  ]
+ },
+ "curve_stats": {
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 22.051277845191763,
+   "cagr_pct": 6.030321308715081,
+   "sharpe": 1.163440534342639,
+   "sortino": 1.2342034170694396,
+   "ann_vol_pct": 5.138307914334463,
+   "max_drawdown_pct": -4.636091986136714
+  },
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 22.232735073953403,
+   "cagr_pct": 6.076618354031349,
+   "sharpe": 1.0717281228619986,
+   "sortino": 1.1450976918863576,
+   "ann_vol_pct": 5.644006283564727,
+   "max_drawdown_pct": -4.8056892491254
+  },
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 25.701169858204388,
+   "cagr_pct": 6.9523706839815125,
+   "sharpe": 1.07543878871041,
+   "sortino": 1.158585926892553,
+   "ann_vol_pct": 6.432095002713344,
+   "max_drawdown_pct": -4.945094516864557
+  },
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 25.89602638863182,
+   "cagr_pct": 7.001061561476574,
+   "sharpe": 1.0349597555313164,
+   "sortino": 1.110993300690611,
+   "ann_vol_pct": 6.747569061265311,
+   "max_drawdown_pct": -5.030383572114383
+  },
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 6.89344325736414,
+   "cagr_pct": 1.9781529612264315,
+   "sharpe": 0.9510902354004952,
+   "sortino": 0.8192549806020166,
+   "ann_vol_pct": 2.0789339937569413,
+   "max_drawdown_pct": -2.272993526867262
+  },
+  "ensemble__bb_period20_bb_std2.0_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree3_min_agree_exit1_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14": {
+   "total_return_pct": 6.693460361514858,
+   "cagr_pct": 1.9220539622901267,
+   "sharpe": 0.7580345367436924,
+   "sortino": 0.705548105883759,
+   "ann_vol_pct": 2.5503033958468873,
+   "max_drawdown_pct": -2.8816329114644823
+  }
+ }
+}

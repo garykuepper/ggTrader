@@ -1,0 +1,4 @@
+venv100_numba {'w_ret': 'identical', 'w_eq': 'identical', 's_sl_trail_ret': 'identical', 's_sl_trail_eq': 'identical', 's_plain_ret': 'identical', 's_plain_eq': 'identical', 's_tp+sl_ret': 'identical', 's_tp+sl_eq': 'identical'}
+venv100_rust {'w_ret': 'identical', 'w_eq': 'identical', 's_sl_trail_ret': 'identical', 's_sl_trail_eq': 'identical', 's_plain_ret': 'identical', 's_plain_eq': 'identical', 's_tp+sl_ret': 'identical', 's_tp+sl_eq': 'identical'}
+venv120_numba {'w_ret': 'identical', 'w_eq': 'identical', 's_sl_trail_ret': 'identical', 's_sl_trail_eq': 'identical', 's_plain_ret': 'identical', 's_plain_eq': 'identical', 's_tp+sl_ret': 'identical', 's_tp+sl_eq': 'identical'}
+venv120_rust {'w_ret': 'identical', 'w_eq': 'identical', 's_sl_trail_ret': 'identical', 's_sl_trail_eq': 'identical', 's_plain_ret': 'identical', 's_plain_eq': 'identical', 's_tp+sl_ret': 'identical', 's_tp+sl_eq': 'identical'}

@@ -1,0 +1,38 @@
+{
+  "run": "golden_live_signals",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "live_golden",
+    "universe": "sp500",
+    "sessions": 120,
+    "lookback_days": 365
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:46:10-0800",
+  "ok": true,
+  "sessions": 120,
+  "first": "2026-05-12",
+  "last": "2026-10-30",
+  "total_buys": 1028,
+  "total_sells": 5519,
+  "sessions_with_last_bar_mismatch": 0,
+  "short_history_symbol_sessions": 100,
+  "file": "research/programme/vectorbt-engine/legacy-references/live_golden_legacy.json",
+  "file_sha256": "6fea09e02c7185431af6fe1703c9f3676fd226e6a1a3671442ebd58fd2fa63c1",
+  "wall_seconds": 135.1
+}

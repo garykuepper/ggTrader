@@ -4,7 +4,7 @@ from typing import Any, Dict, Mapping, Sequence
 
 import numpy as np
 
-from ggTrader.lab.wfo import (
+from ggTrader.lab.wfo.breaker import (
     WfoPolicy,
     WfoState,
     check_circuit_breaker,

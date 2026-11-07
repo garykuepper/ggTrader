@@ -50,6 +50,9 @@ data/*.json
 data/live/
 !data/top_50_ccxt_volume.json
 
+# Frozen OHLCV tape snapshots: parquet is rebuilt from MANIFEST.json, only the manifest is tracked
+data/snapshots/*.parquet
+
 # Per-venue availability snapshots (Layer 1 registry) — keep tracked
 !data/universe/
 !data/universe/*_listings.json
@@ -72,3 +75,6 @@ backups/
 
 # Skill-eval scratch workspaces (untracked output of .claude/skills evals)
 .claude/skills/*-workspace/
+
+# cProfile dumps from ad-hoc profiling (regenerable; never evidence)
+*.prof

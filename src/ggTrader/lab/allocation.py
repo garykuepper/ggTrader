@@ -52,7 +52,7 @@ def combine_sleeves(
     sleeve_returns: pd.DataFrame,
     target_vol: float = 0.068,
     window: int = 60,
-    max_leverage: float = 2.0,
+    max_leverage: float = 1.0,
     rebalance: str = "ME",
 ) -> tuple[pd.Series, pd.DataFrame]:
     """Blend sleeve return streams with rolling inverse-vol weights scaled to
@@ -62,6 +62,9 @@ def combine_sleeves(
     date inform the weights/scale that are then applied to forward days.
     Warmup (insufficient history before the first rebalance) uses equal weights
     at scale 1.0.
+
+    ``max_leverage`` defaults to the deployed 1.0 (it was 2.0, which overstated the live
+    account, until the engine rebuild; P5 review MINOR-6).
     """
     df = sleeve_returns.sort_index()
     sleeves = list(df.columns)

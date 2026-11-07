@@ -1,0 +1,62 @@
+ranaroussi/quantstats	7801	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=33	rel=v0.0.86 2026-09-27	Portfolio analytics for quants, written in Python
+stefan-jansen/empyrical-reloaded	132	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=0	rel=0.7.2 2026-11-05	Common financial risk and performance metrics. Used by zipline and pyf
+stefan-jansen/pyfolio-reloaded	622	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=0	rel=0.10.2 2026-11-02	Portfolio and risk analytics in Python
+pmorissette/ffn	2695	lastcommit=2026-11-04	MIT	archived=False	issues=7	rel=v1.4.1 2026-10-10	ffn - a financial function library for Python
+dcajasn/Riskfolio-Lib	4590	lastcommit=2026-11-04	BSD-3-Clause	archived=False	issues=11	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	Portfolio Optimization in Python
+skfolio/skfolio	2595	lastcommit=2026-10-29	BSD-3-Clause	archived=False	issues=37	rel=v1.12.5 2026-10-29	Python library for portfolio optimization, factor model construction, 
+quantopian/empyrical	1518	lastcommit=2020-10-14	Apache-2.0	archived=False	issues=37	rel=0.5.5 2020-10-13	Common financial risk and performance metrics. Used by zipline and pyf
+quantopian/pyfolio	6438	lastcommit=2020-07-15	Apache-2.0	archived=False	issues=166	rel=0.9.2 2019-04-15	Portfolio and risk analytics in Python
+polakowo/vectorbt	9700	lastcommit=2026-11-03	NOASSERTION	archived=False	issues=135	rel=v1.2.0 2026-10-19	The research engine that gives you an unfair advantage. Run thousands 
+sam31415/timeseriescv	290	lastcommit=2022-02-15	MIT	archived=False	issues=4	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	Scikit-learn style cross-validation classes for time series data
+hudson-and-thames/mlfinlab	4968	lastcommit=2021-12-01	NOASSERTION	archived=False	issues=49	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	MlFinLab helps portfolio managers and traders who want to leverage the
+baobach/mlfinpy	92	lastcommit=2026-10-11	MIT	archived=False	issues=4	rel=0.1.2 2024-10-09	Mlfin.py is an advance Machine Learning toolbox for financial applicat
+scikit-learn/scikit-learn	68022	lastcommit=2026-11-05	BSD-3-Clause	archived=False	issues=2154	rel=1.9.1 2026-09-11	scikit-learn: machine learning in Python
+TA-Lib/ta-lib-python	12372	lastcommit=2026-11-05	BSD-2-Clause	archived=False	issues=87	rel=v0.8.3 2026-10-28	Python wrapper for TA-Lib (http://ta-lib.org/).
+TA-Lib/ta-lib	1723	lastcommit=2026-11-05	BSD-3-Clause	archived=False	issues=14	rel=v0.8.3 2026-10-25	Technical analysis library: indicators and candlestick patterns, batch
+xgboosted/pandas-ta-classic	481	lastcommit=2026-10-31	MIT	archived=False	issues=2	rel=0.9.0 2026-10-28	Technical Analysis Indicators - Pandas TA Classic is an easy to use Py
+twopirllc/pandas-ta	NOTFOUND
+bukosabino/ta	5250	lastcommit=2026-03-18	MIT	archived=False	issues=160	rel=norelease	Technical Analysis Library using Pandas and Numpy
+peerchemist/finta	2266	lastcommit=2022-07-24	LGPL-3.0	archived=True	issues=24	rel=1.3 2021-04-03	Common financial technical indicators implemented in Pandas.
+tulipcharts/tulipy	377	lastcommit=2019-04-11	LGPL-3.0	archived=False	issues=10	rel=norelease	[NOT ACTIVELY MAINTAINED] Tulipy - Financial Technical Analysis Indica
+tulipcharts/tulipindicators	943	lastcommit=2024-01-08	LGPL-3.0	archived=False	issues=35	rel=v0.9.1 2022-01-18	Technical Analysis Indicator Function Library in C
+lballabio/dummy	NOTFOUND
+esvhd/pypbo	145	lastcommit=2026-07-06	AGPL-3.0	archived=False	issues=5	rel=norelease	Probability of Backtest Overfitting in Python
+bashtage/arch	1667	lastcommit=2026-11-06	NOASSERTION	archived=False	issues=36	rel=v8.0.0 2025-10-21	ARCH models in Python
+fja05680/sp500	961	lastcommit=2026-09-07	MIT	archived=False	issues=2	rel=norelease	Current and Historical Lists of S&P 500 components since 1996
+datasets/s-and-p-500-companies	675	lastcommit=2026-11-05	None	archived=False	issues=3	rel=norelease	List of companies in the S&P 500 together with associated financials
+dgunning/edgartools	2838	lastcommit=2026-11-05	MIT	archived=False	issues=104	rel=v5.62.1 2026-10-23	Read and analyze SEC EDGAR filings in Python. 10-K, 8-K, XBRL financia
+jadchaar/sec-edgar-downloader	720	lastcommit=2026-02-02	MIT	archived=False	issues=32	rel=5.1.0 2026-02-02	📈 Download filings from the SEC EDGAR database using Python
+mortada/fredapi	1666	lastcommit=2026-01-28	Apache-2.0	archived=False	issues=36	rel=v0.5.2 2024-05-05	Python API for FRED (Federal Reserve Economic Data) and ALFRED (Archiv
+ranaroussi/yfinance	25837	lastcommit=2026-11-03	Apache-2.0	archived=False	issues=110	rel=1.8.0 2026-11-03	Download market data from Yahoo! Finance's API
+alpacahq/alpaca-py	1583	lastcommit=2026-11-05	Apache-2.0	archived=False	issues=60	rel=v0.45.0 2026-11-05	The Official Python SDK for Alpaca API
+OpenBB-finance/OpenBB	75127	lastcommit=2026-11-02	NOASSERTION	archived=False	issues=106	rel=ODP 2026-09-30	Open Data Platform for analysts, quants and AI agents.
+mlflow/mlflow	28697	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=2187	rel=v3.18.0 2026-11-04	The open source AI engineering platform for agents, LLMs, and ML model
+optuna/optuna	15010	lastcommit=2026-11-04	MIT	archived=False	issues=27	rel=v5.0.0 2026-09-07	A hyperparameter optimization framework
+iterative/dvc	15963	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=229	rel=3.67.1 2026-03-31	🦉 Data Versioning and ML Experiments
+aimhubio/aim	6293	lastcommit=2025-12-31	Apache-2.0	archived=False	issues=483	rel=v3.29.1 2025-05-08	Aim 💫 — An easy-to-use & supercharged open-source experiment tracker.
+duckdb/duckdb	42846	lastcommit=2026-11-05	MIT	archived=False	issues=1137	rel=v2.0.0 2026-10-21	DuckDB is a high-performance analytical database system
+apache/arrow	17275	lastcommit=2026-11-06	Apache-2.0	archived=False	issues=2290	rel=apache-arrow-26.0.1 2026-11-03	Apache Arrow is the universal columnar format and multi-language toolb
+robertmartin8/PyPortfolioOpt	6149	lastcommit=2026-07-07	MIT	archived=False	issues=118	rel=v1.6.0 2026-02-26	Financial portfolio optimization in python, including classical effici
+cvxpy/cvxpy	6388	lastcommit=2026-11-04	Apache-2.0	archived=False	issues=170	rel=v1.9.3 2026-09-19	A Python-embedded modeling language for convex optimization problems.
+kernc/backtesting.py	9199	lastcommit=2026-08-05	AGPL-3.0	archived=False	issues=102	rel=norelease	🔎 📈 🐍 💰  Backtest trading strategies in Python.
+pmorissette/bt	3015	lastcommit=2026-11-05	MIT	archived=False	issues=13	rel=v1.4.1 2026-10-10	bt - flexible backtesting for Python
+stefan-jansen/zipline-reloaded	2002	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=2	rel=3.2.1 2026-10-25	Zipline, a Pythonic Algorithmic Trading Library
+nautechsystems/nautilus_trader	31287	lastcommit=2026-11-06	LGPL-3.0	archived=False	issues=154	rel=v1.231.0 2026-08-02	Production-grade Rust-native trading engine with deterministic event-d
+mementum/backtrader	23670	lastcommit=2023-04-19	GPL-3.0	archived=False	issues=64	rel=norelease	Python Backtesting library for trading strategies
+vnpy/vnpy	46252	lastcommit=2026-10-06	MIT	archived=False	issues=14	rel=4.5.0 2026-10-06	基于Python的开源量化交易平台开发框架
+marketcalls/vectorbt-backtesting-skills	220	lastcommit=2026-07-12	None	archived=False	issues=3	rel=norelease	Agentic coding skills for backtesting trading strategies using VectorB
+wshobson/maverick-mcp	719	lastcommit=2026-10-30	MIT	archived=False	issues=5	rel=v1.2.1 2026-10-17	Stock market MCP server for Yahoo Finance data, technical analysis, po
+quantopian/zipline	20208	lastcommit=2020-10-14	Apache-2.0	archived=False	issues=368	rel=1.4.1 2020-10-05	Zipline, a Pythonic Algorithmic Trading Library
+optuna/optuna-integration	77	lastcommit=2026-11-04	MIT	archived=False	issues=8	rel=v5.0.0 2026-09-07	Extended functionalities for Optuna in combination with third-party li
+wandb/wandb	11312	lastcommit=2026-11-05	MIT	archived=False	issues=1036	rel=v0.31.0 2026-10-16	The AI developer platform. Use Weights & Biases to train and fine-tune
+eslazarev/purged-cross-validation	58	lastcommit=2026-10-25	MIT	archived=False	issues=3	rel=v0.1.11 2026-10-16	scikit-learn-compatible time-series cross-validation: purging, embargo
+mnemox-ai/deflated-sharpe	9	lastcommit=2026-03-21	Apache-2.0	archived=False	issues=0	rel=v0.1.0 2026-03-21	Deflated Sharpe Ratio — stop deploying overfitted strategies. Bailey &
+tschm/jsharpe	25	lastcommit=2026-11-03	MIT	archived=False	issues=0	rel=v0.6.3 2026-07-09	Statistical inference for Sharpe ratios: probabilistic Sharpe ratio, m
+Dreamsorcerer/vectorbt	0	lastcommit=2026-03-26	NOASSERTION	archived=False	issues=0	rel=norelease	The backtesting engine that gives you an unfair advantage. Test thousa
+yfiua/index-constituents	67	lastcommit=2026-11-01	Apache-2.0	archived=False	issues=2	rel=norelease	Get the current and historical constituents of popular stock indices.
+hanshof/sp500_constituents	31	lastcommit=2025-08-24	MIT	archived=False	issues=0	rel=norelease	List of S&P 500 historical constituents from 1996/01/02 to present. CS
+riazarbi/equity-index-constituents	NOTFOUND
+Aliipou/backtest-audit	8	lastcommit=2026-05-17	None	archived=False	issues=0	rel=norelease	Statistical overfitting audit for algorithmic trading backtests. Defla
+tschm/jquantstats	50	lastcommit=2026-11-03	MIT	archived=False	issues=1	rel=v0.13.1 2026-10-23	Time series and portfolio analytics for quantitative finance. 
+mlfinlab/mlfinlab	NOTFOUND
+hudson-and-thames/portfoliolab	192	lastcommit=2021-12-02	NOASSERTION	archived=False	issues=3	rel=norelease	PortfolioLab is a python library that enables traders to take advantag

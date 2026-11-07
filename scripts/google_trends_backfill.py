@@ -10,6 +10,7 @@ with zero delay) suggested more headroom than expected.
 
 from __future__ import annotations
 
+import argparse
 import time
 
 import pandas as pd
@@ -21,7 +22,12 @@ REQUEST_DELAY_SECONDS = 2.0
 EARLIEST_DATE = "2015-01-01"
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.parse_args(argv)
     ensure_schema()
     eval_start = pd.Timestamp(EARLIEST_DATE, tz="UTC")
     eval_end = pd.Timestamp.now(tz="UTC")

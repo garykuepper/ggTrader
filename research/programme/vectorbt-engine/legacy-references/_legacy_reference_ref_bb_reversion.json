@@ -1,0 +1,224 @@
+{
+  "run": "ref_bb_reversion",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "wfo",
+    "strategy": "bb_reversion",
+    "universe": "sp500",
+    "eval_start": "2021-01-31",
+    "eval_end": "2022-07-31",
+    "note": "one pinned 2-fold window (smallest multi-fold honest window)"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:05:52-0800",
+  "config": {
+    "base_config": {
+      "START_CASH": 10000.0,
+      "PORTFOLIO_SHARE": 1.0,
+      "FEES": 0.0,
+      "SLIPPAGE": 0.0005,
+      "FREQ": "1d",
+      "SIGNAL_POSITION_SIZE": 0.03,
+      "USE_CASH_SHARING": false,
+      "TRAIN_METRIC": "composite",
+      "MIN_CLOSED_TRADES_TRAIN": 0,
+      "MIN_TRADES_PER_TRAIN_FOLD": 8,
+      "MAX_TRAIN_DRAWDOWN_PCT": 75,
+      "BENCHMARK_SYMBOL": "SPY"
+    },
+    "lab_config": {
+      "top_n": 50,
+      "lookback": 252,
+      "skip": 21,
+      "min_history_bars": 400,
+      "max_stocks": null,
+      "max_sector_count": null
+    },
+    "grid_size": 16,
+    "grid": [
+      {
+        "bb_period": 10,
+        "bb_std": 1.5
+      },
+      {
+        "bb_period": 10,
+        "bb_std": 2.0
+      },
+      {
+        "bb_period": 10,
+        "bb_std": 2.5
+      },
+      {
+        "bb_period": 10,
+        "bb_std": 3.0
+      },
+      {
+        "bb_period": 15,
+        "bb_std": 1.5
+      },
+      {
+        "bb_period": 15,
+        "bb_std": 2.0
+      },
+      {
+        "bb_period": 15,
+        "bb_std": 2.5
+      },
+      {
+        "bb_period": 15,
+        "bb_std": 3.0
+      },
+      {
+        "bb_period": 20,
+        "bb_std": 1.5
+      },
+      {
+        "bb_period": 20,
+        "bb_std": 2.0
+      },
+      {
+        "bb_period": 20,
+        "bb_std": 2.5
+      },
+      {
+        "bb_period": 20,
+        "bb_std": 3.0
+      },
+      {
+        "bb_period": 30,
+        "bb_std": 1.5
+      },
+      {
+        "bb_period": 30,
+        "bb_std": 2.0
+      },
+      {
+        "bb_period": 30,
+        "bb_std": 2.5
+      },
+      {
+        "bb_period": 30,
+        "bb_std": 3.0
+      }
+    ],
+    "universe_requested": 537,
+    "universe_loaded": 519,
+    "data_start": "2019-03-03",
+    "max_leverage": 1.0,
+    "wfo_policy": "WfoPolicy() defaults"
+  },
+  "ok": true,
+  "oos": {
+    "total_return_pct": 5.720306431333255,
+    "cagr_pct": 12.019933303751928,
+    "sharpe": 1.017505330689668,
+    "sortino": 1.3652499992865528,
+    "ann_vol_pct": 11.790342767277998,
+    "max_drawdown_pct": -4.885174109812384
+  },
+  "spy_oos_index": {
+    "total_return_pct": -7.747078536196361,
+    "cagr_pct": -15.17148703500364,
+    "sharpe": -0.5150733529934675,
+    "sortino": -0.7785287659816804,
+    "ann_vol_pct": 25.51378057804194,
+    "max_drawdown_pct": -20.561146708583156
+  },
+  "n_folds": 2,
+  "gates_passed": 0,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "bb_reversion__bb_period20_bb_std3.0",
+    "bb_reversion__bb_period20_bb_std3.0"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31 00:00:00+00:00",
+      "train_end": "2022-01-31 00:00:00+00:00",
+      "test_start": "2022-01-31 00:00:00+00:00",
+      "test_end": "2022-04-30 00:00:00+00:00",
+      "winner_combo": "bb_reversion__bb_period20_bb_std3.0",
+      "winner_params": {
+        "bb_period": 20,
+        "bb_std": 3.0
+      },
+      "train_score": 0.7531376754200214,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.40883658925761135,
+      "wfe": 0.8428897365291259,
+      "is_sharpe": 1.581992248343115,
+      "oos_sharpe": 1.3334450293970477,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30 00:00:00+00:00",
+      "train_end": "2022-04-30 00:00:00+00:00",
+      "test_start": "2022-04-30 00:00:00+00:00",
+      "test_end": "2022-07-30 00:00:00+00:00",
+      "winner_combo": "bb_reversion__bb_period20_bb_std3.0",
+      "winner_params": {
+        "bb_period": 20,
+        "bb_std": 3.0
+      },
+      "train_score": 0.7420775889996499,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.3058125470484893,
+      "wfe": 0.6268128383789805,
+      "is_sharpe": 1.3116465776181698,
+      "oos_sharpe": 0.8221569142669208,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    }
+  ],
+  "live_params": {
+    "combo": "bb_reversion__bb_period20_bb_std3.0",
+    "params": {
+      "bb_period": 20,
+      "bb_std": 3.0
+    },
+    "train_metrics": {
+      "sharpe": 0.9151890968480226,
+      "cagr_pct": 8.842851976930067,
+      "max_drawdown_pct": -4.8851741098123735
+    },
+    "stability": 2,
+    "train_start": "2021-07-31 00:00:00+00:00",
+    "train_end": "2022-07-31 00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: bb_reversion | 16 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      bb_period20_bb_std3.0       1.58  1.33  FAIL  0.84 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      bb_period20_bb_std3.0       1.31  0.82  FAIL  0.63 [A]\n\nOOS Aggregate: Sharpe 1.02 | CAGR 12.0% | MaxDD -4.9%\nSPY baseline:  Sharpe -0.52 | CAGR -15.2% | MaxDD -20.6%\nAggregate WFE: 0.73 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       bb_reversion__bb_period20_bb_std3.0\nTrain Sharpe: 0.92 | CAGR 8.8% | MaxDD -4.9%\nStability:    selected in 2/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    bb_reversion__bb_period20_bb_std3.0\nMaxDD:    -3.3% | CAGR 6.3% | Sharpe 1.31",
+  "oos_first": "2022-01-31 00:00:00+00:00",
+  "oos_last": "2022-07-29 00:00:00+00:00",
+  "oos_bars": 125,
+  "load_seconds": 0.6,
+  "wall_seconds": 184.9
+}

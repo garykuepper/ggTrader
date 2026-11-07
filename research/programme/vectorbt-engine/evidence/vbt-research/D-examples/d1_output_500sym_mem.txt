@@ -1,0 +1,11 @@
+data: (1695, 500), 2020-01-01 .. 2026-06-30
+ggTrader generate_folds -> 17 folds; first Fold(train_start=Timestamp('2021-01-31 00:00:00+0000', tz='UTC'), train_end=Timestamp('2022-01-31 00:00:00+0000', tz='UTC'), test_start=Timestamp('2022-01-31 00:00:00+0000', tz='UTC'), test_end=Timestamp('2022-04-30 00:00:00+0000', tz='UTC')), last Fold(train_start=Timestamp('2025-01-30 00:00:00+0000', tz='UTC'), train_end=Timestamp('2026-01-30 00:00:00+0000', tz='UTC'), test_start=Timestamp('2026-01-30 00:00:00+0000', tz='UTC'), test_end=Timestamp('2026-04-30 00:00:00+0000', tz='UTC'))
+vbt rolling_split(n=17): train (252, 8500) test (63, 8500)
+  start dates: [datetime.date(2020, 1, 1), datetime.date(2020, 4, 30), datetime.date(2020, 8, 28), datetime.date(2020, 12, 29)] ... stride in bars (linspace, NOT fixed): [86, 86, 87, 86, 86, 87, 86, 86, 86, 86, 87, 86, 86, 87, 86, 86]
+  returned index is reset: [0, 1, 2] (DatetimeIndex lost; dates in tr[1])
+vbt range_split(calendar): (389, 8500) (ragged windows are NaN-padded at the tail)
+  window lengths: [385, 386, 386, 386, 385, 385] ...
+Ens.run: entries (389, 408000); column levels ['ens_min_agree', 'ens_min_agree_exit', 'ens_bb_alpha', 'ens_rsi_oversold', 'ens_ema_fast', 'split_idx', None]; 23.3s, peak RSS 1209 MB
+  levels: ['ens_min_agree', 'ens_min_agree_exit', 'ens_bb_alpha', 'ens_rsi_oversold', 'ens_ema_fast', 'split_idx', None]
+Portfolio.from_signals: (389, 408000) cols -> 816 groups; 17.3s, peak RSS 3642 MB
+MEM_ONLY symbols=500 cols=408000 peak_rss_mb=3642

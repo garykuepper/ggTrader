@@ -1,0 +1,7 @@
+{
+ "arm": "ggt",
+ "tag": "A_ggt_pd2",
+ "pandas": "2.3.3",
+ "full_tape_s": 0.19,
+ "vectorbt": "0.28.5"
+}

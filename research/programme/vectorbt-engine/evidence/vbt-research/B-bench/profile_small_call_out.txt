@@ -1,0 +1,15 @@
+1.0.0 numba
+         5074981 function calls (4732141 primitive calls) in 3.398 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    38700    0.495    0.000    0.495    0.000 {method '__dir__' of 'object' objects}
+       60    0.222    0.004    0.239    0.004 vectorbt/portfolio/dispatch.py:537(simulate_from_orders)
+1.2.0 numba
+         5447101 function calls (5058361 primitive calls) in 4.312 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       60    0.569    0.009    0.587    0.010 vectorbt/portfolio/dispatch.py:537(simulate_from_orders)
+    38700    0.509    0.000    0.509    0.000 {method '__dir__' of 'object' objects}
+1.2.0 rust
+         5476141 function calls (5087401 primitive calls) in 3.952 seconds
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    38700    0.490    0.000    0.490    0.000 {method '__dir__' of 'object' objects}
+       60    0.273    0.005    0.273    0.005 {built-in method portfolio.simulate_from_orders_rs}

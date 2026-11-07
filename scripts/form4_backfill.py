@@ -8,6 +8,7 @@ under that via a shared token-bucket limiter across a small thread pool).
 
 from __future__ import annotations
 
+import argparse
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -56,7 +57,12 @@ def _cached_accessions(symbol: str) -> set[str]:
     return {r[0] for r in rows}
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.parse_args(argv)
     ensure_schema()
     limiter = RateLimiter(MAX_REQUESTS_PER_SEC)
 

@@ -1,0 +1,15 @@
+{
+  "run": "core17_ensemble_sp500",
+  "attempt": 1,
+  "ok": false,
+  "kind": "manual note (the process was killed, so the runner wrote no JSON)",
+  "outcome": "killed by the kernel OOM killer inside the 6 GB cgroup (systemd-run MemoryMax=6G, MemorySwapMax=0)",
+  "progress": "fold 7/17 header printed; killed during that fold's sweep",
+  "started": "2026-11-06T10:58:44-0800",
+  "killed": "2026-11-06T11:12:35-0800",
+  "wall_seconds_until_kill": 831,
+  "evidence": "journalctl --user: run-r12976d1782404dc580a0f6aa58040022.scope: A process of this unit has been killed by the OOM killer; log kept in the P0 scratchpad as core17_attempt1_oom6g.log (saved beside this note)",
+  "cause_note": "legacy walk-forward keeps vectorbt portfolio objects alive between steps; without garbage collection and malloc_trim between steps resident memory passed 6 GB by fold 7",
+  "fix": "attempt 2 added numerically inert gc.collect + malloc_trim after each anchor/sweep step (runner install_memory_hygiene); steady RSS ~0.7 GB, peak 4.97 GB, completed 17/17 in the same 6 GB cap",
+  "result_attempt_2": "_legacy_reference_core17_ensemble_sp500.json"
+}

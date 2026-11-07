@@ -1,0 +1,252 @@
+{
+  "section": "weights",
+  "rebalance_dates": 63,
+  "bars": 1929,
+  "xs_momentum": {
+    "combos": [
+      {
+        "params": {
+          "top_n": 10,
+          "lookback": 126,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 170,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 20,
+          "lookback": 126,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 294,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 50,
+          "lookback": 126,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 470,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 10,
+          "lookback": 126,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 187,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 20,
+          "lookback": 126,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 311,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 50,
+          "lookback": 126,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 502,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 10,
+          "lookback": 252,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 123,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 20,
+          "lookback": 252,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 219,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 50,
+          "lookback": 252,
+          "skip": 0
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 400,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 10,
+          "lookback": 252,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 129,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 20,
+          "lookback": 252,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 224,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      },
+      {
+        "params": {
+          "top_n": 50,
+          "lookback": 252,
+          "skip": 21
+        },
+        "targets_equal": true,
+        "max_abs_diff": 0.0,
+        "legacy_columns": 412,
+        "extra_columns_in_union_are_all_zero_or_nan": true
+      }
+    ],
+    "all_targets_equal": true,
+    "equity_bit_identical": true,
+    "max_abs_equity_diff": 0.0,
+    "trade_counts_equal": true,
+    "seconds_new_build": 1.99,
+    "seconds_legacy_select_and_targets": 123.0,
+    "weight_columns": 6300
+  },
+  "cross_asset_sleeve": {
+    "trend_grid": {
+      "combos": [
+        {
+          "params": {
+            "lookback": 126
+          },
+          "targets_equal": true
+        },
+        {
+          "params": {
+            "lookback": 189
+          },
+          "targets_equal": true
+        },
+        {
+          "params": {
+            "lookback": 252
+          },
+          "targets_equal": true
+        }
+      ],
+      "all_targets_equal": true,
+      "equity_bit_identical": true,
+      "max_abs_equity_diff": 0.0
+    },
+    "static": {
+      "combos": [
+        {
+          "params": {
+            "trend": false
+          },
+          "targets_equal": true
+        }
+      ],
+      "all_targets_equal": true,
+      "equity_bit_identical": true,
+      "max_abs_equity_diff": 0.0
+    }
+  },
+  "retail_attention_note": "google_trends_interest has 0 rows, so the real book is flat cash. The port is tested on synthetic interest data (tests/lab/strategies_v2/test_weights.py: targets equal the legacy for all 6 combinations; empty data gives no columns). No real-data run exists.",
+  "tape": {
+    "source": "snapshot",
+    "snapshot": {
+      "path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+      "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+      "content_sha256": null,
+      "rows": 1110874,
+      "symbols": 605,
+      "date_min": "2019-03-01",
+      "date_max": "2026-10-30",
+      "deep_checked": false
+    },
+    "start": "2019-03-01 00:00:00",
+    "end": "2026-10-30 00:00:00",
+    "symbols_loaded": 605,
+    "missing_symbols": [
+      "ABC",
+      "ANTM",
+      "BLL",
+      "COG",
+      "FBHS",
+      "FRC",
+      "GPS",
+      "HFC",
+      "MMC",
+      "PKI",
+      "RE",
+      "WLTW"
+    ]
+  },
+  "seconds": 139.1,
+  "peak_rss_mb": 1996,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sortino": "vectorbt downside deviation",
+      "cagr": "bar-annualised 252",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days"
+    },
+    "tape_sha256": null,
+    "created_utc": "2026-11-06T21:48:35Z"
+  }
+}

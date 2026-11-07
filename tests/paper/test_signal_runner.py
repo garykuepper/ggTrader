@@ -8,10 +8,32 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from ggTrader.paper.gates import SanityConfig, SignalGateError
 
-def _mock_ohlcv(symbols: list[str], n_days: int = 120) -> pd.DataFrame:
+#: The synthetic panels below have 1-20 symbols and 120 bars: only the structural gates apply.
+PERMISSIVE = SanityConfig.permissive()
+
+
+@pytest.fixture(autouse=True)
+def _permissive_default_sanity():
+    """Small synthetic panels: swap the production bounds for the structural-only ones."""
+    with patch("ggTrader.paper.signal_runner.SANITY", PERMISSIVE):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _stub_engine_selfcheck():
+    """The real self-check runs a Rust probe (~0.5 s); `TestEngineSelfcheck` exercises it."""
+    with patch(
+        "ggTrader.paper.signal_runner.engine_selfcheck.selfcheck",
+        return_value={"engine": "rust", "vectorbt": "1.2.0", "vectorbt_rust": "1.2.0"},
+    ):
+        yield
+
+
+def _mock_ohlcv(symbols: list[str], n_days: int = 120, end: str = "2026-06-19") -> pd.DataFrame:
     """Create a fake MultiIndex OHLCV DataFrame."""
-    dates = pd.bdate_range(end="2026-06-19", periods=n_days, tz="UTC")
+    dates = pd.bdate_range(end=end, periods=n_days, tz="UTC")
     np.random.seed(42)
     frames = {}
     for sym in symbols:
@@ -41,7 +63,7 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(lookback_days=120)
+        result = generate_signals(lookback_days=120, sanity=PERMISSIVE)
 
         assert "buys" in result
         assert "sells" in result
@@ -60,7 +82,7 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(lookback_days=120)
+        result = generate_signals(lookback_days=120, sanity=PERMISSIVE)
 
         buys = set(result["buys"])
         sells = set(result["sells"])
@@ -75,7 +97,7 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(lookback_days=120)
+        result = generate_signals(lookback_days=120, sanity=PERMISSIVE)
 
         last_exit = result["last_exit"]
         # A random walk over 120 bars crosses RSI 50 for most names, almost
@@ -86,7 +108,7 @@ class TestGenerateSignals:
 
     @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
-    def test_empty_data_returns_no_signals(self, mock_fetch, mock_members):
+    def test_empty_data_fails_closed(self, mock_fetch, mock_members):
         mock_members.return_value = ["AAPL"]
         empty = pd.DataFrame(
             columns=pd.MultiIndex.from_tuples(
@@ -104,11 +126,10 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(lookback_days=120)
-
-        assert result["buys"] == []
-        assert result["sells"] == []
-        assert result["universe_size"] == 0
+        # Fail closed: an empty frame used to return "no signals" silently (and the trader's
+        # freshness gate then passed); it is now a gate failure that stops the run and alerts.
+        with pytest.raises(SignalGateError, match="empty_frame"):
+            generate_signals(lookback_days=120, sanity=PERMISSIVE)
 
     @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
@@ -120,7 +141,7 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(lookback_days=120)
+        result = generate_signals(lookback_days=120, sanity=PERMISSIVE)
 
         expected_date = str(ohlcv.index[-1].date())
         assert result["as_of"] == expected_date
@@ -134,7 +155,7 @@ class TestGenerateSignals:
 
         from ggTrader.paper.signal_runner import generate_signals
 
-        result = generate_signals(universe="midcap400", lookback_days=120)
+        result = generate_signals(universe="midcap400", lookback_days=120, sanity=PERMISSIVE)
 
         mock_members.assert_called_once()
         assert mock_members.call_args[0][0] == "midcap400"
@@ -257,14 +278,13 @@ class TestGenerateCoreSignals:
             "sells": ["TSLA"],
             "as_of": "2026-09-10",
             "universe_size": 503,
-            "gate": {"gate_enabled": False},
         }
 
         from ggTrader.paper.signal_runner import generate_core_signals
 
         result = generate_core_signals()
 
-        mock_generate.assert_called_once_with(universe="sp500")
+        mock_generate.assert_called_once_with(universe="sp500", persist_tape=True)
         assert result["sleeves"] == {"sp500": mock_generate.return_value}
         assert result["weights"] == {"sp500": 1.0}
         assert result["scale"] == 1.0
@@ -282,7 +302,6 @@ class TestGenerateCoreSignals:
             "sells": [],
             "as_of": "2026-09-16",
             "universe_size": 503,
-            "gate": {"gate_enabled": False},
         }
         core = generate_core_signals()
         from ggTrader.paper.risk import RiskConfig, RiskGuard
@@ -355,3 +374,201 @@ def test_default_lookback_covers_indicator_warmup():
     from ggTrader.paper.signal_runner import generate_signals
 
     assert inspect.signature(generate_signals).parameters["lookback_days"].default >= 365
+
+
+# ---------------------------------------------------------------------------------------------
+# P7: the signal path on the vectorbt engine, fail closed
+# ---------------------------------------------------------------------------------------------
+
+from ggTrader.engine import selfcheck as _engine_selfcheck  # noqa: E402
+
+_REAL_SELFCHECK = _engine_selfcheck.selfcheck  # captured before the autouse stub replaces it
+_NOW = pd.Timestamp("2026-06-22 19:45", tz="UTC").to_pydatetime()  # Monday 12:45 PT
+
+
+def _universe_patches(symbols, ohlcv):
+    return (
+        patch("ggTrader.paper.signal_runner.universe_members_asof", return_value=symbols),
+        patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv", return_value=ohlcv),
+    )
+
+
+class TestEngineSelfcheck:
+    def test_the_real_selfcheck_passes_and_reports_rust(self):
+        """The trader's start-up probe on this box: Rust dispatched, versions paired."""
+        from ggTrader.paper import signal_runner
+
+        with patch.object(_engine_selfcheck, "selfcheck", _REAL_SELFCHECK):
+            result = signal_runner.require_rust_engine()
+        assert result["engine"] == "rust" and result["rust_calls"] >= 1
+        assert result["vectorbt"].split(".")[:2] == result["vectorbt_rust"].split(".")[:2]
+
+    def test_selfcheck_failure_stops_the_run_before_any_data_is_fetched(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        members, fetch = _universe_patches(["AAPL"], _mock_ohlcv(["AAPL"]))
+        with (
+            members,
+            fetch as mock_fetch,
+            patch(
+                "ggTrader.paper.signal_runner.engine_selfcheck.selfcheck",
+                side_effect=RuntimeError("version mismatch"),
+            ),
+        ):
+            with pytest.raises(SignalGateError, match="engine_selfcheck.*version mismatch"):
+                generate_signals(lookback_days=120)
+        mock_fetch.assert_not_called()
+
+    def test_a_non_rust_engine_is_refused_even_if_the_probe_passes(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        with patch(
+            "ggTrader.paper.signal_runner.engine_selfcheck.selfcheck",
+            return_value={"engine": "numba"},
+        ):
+            with pytest.raises(SignalGateError, match="engine_not_rust"):
+                generate_signals(lookback_days=120)
+
+
+class TestSignalPathOnTheEngine:
+    def test_the_live_defaults_grid_is_what_runs(self):
+        """OD14: one combination, divergence window 20, volume multiple 2.0, min_agree 2."""
+        from ggTrader.lab.strategies.ensemble import Ensemble
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = ["AAPL", "MSFT"]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols))
+        real_build, grids = Ensemble.build, []
+
+        def spy(self, bars, grid=None):
+            grids.append(grid)
+            return real_build(self, bars, grid)
+
+        with members, fetch, patch.object(Ensemble, "build", spy):
+            generate_signals(lookback_days=120, sanity=PERMISSIVE)
+        (grid,) = grids
+        (combo,) = grid.combos()
+        assert combo["divergence_window"] == 20 and combo["vol_mult"] == 2.0
+        assert combo["min_agree"] == 2 and combo["min_agree_exit"] == 2
+
+    def test_an_engine_exception_propagates_there_is_no_legacy_fallback(self):
+        from ggTrader.paper import signal_runner
+
+        assert not hasattr(signal_runner, "EnsembleSignal")
+        symbols = ["AAPL", "MSFT"]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols))
+        with (
+            members,
+            fetch,
+            patch.object(signal_runner, "live_ensemble_frames", side_effect=ValueError("rust")),
+        ):
+            with pytest.raises(ValueError, match="rust"):
+                signal_runner.generate_signals(lookback_days=120, sanity=PERMISSIVE)
+
+    def test_production_bounds_reject_a_small_universe(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = [f"S{i}" for i in range(20)]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols, n_days=300))
+        with members, fetch:
+            with pytest.raises(SignalGateError, match="small_universe"):
+                generate_signals(lookback_days=365, sanity=SanityConfig())
+
+    def test_no_symbol_with_enough_history_fails_closed(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = ["AAPL", "MSFT"]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols, n_days=40))
+        with members, fetch:
+            with pytest.raises(SignalGateError, match="no_eligible_symbols"):
+                generate_signals(lookback_days=120, sanity=PERMISSIVE)
+
+    def test_absurd_signal_counts_fail_closed(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = [f"S{i}" for i in range(20)]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols))
+        tiny = SanityConfig(
+            min_bars=1,
+            min_universe=1,
+            min_loaded_share=0.0,
+            min_last_bar_coverage=0.0,
+            max_buys=0,
+            max_sells=0,
+        )
+        with members, fetch:
+            with pytest.raises(SignalGateError, match="absurd_signal_count"):
+                generate_signals(lookback_days=120, sanity=tiny)
+
+    def test_a_thin_bar_dated_today_is_dropped_and_signals_use_the_previous_session(self):
+        """The 1-of-646 case: today's bar is not complete yet, yesterday's is."""
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = [f"S{i:02d}" for i in range(40)]
+        ohlcv = _mock_ohlcv(symbols, n_days=120, end="2026-06-22")  # last bar = `_NOW`'s ET date
+        ohlcv.iloc[-1, :] = np.nan
+        ohlcv.loc[ohlcv.index[-1], ("S00", slice(None))] = 100.0
+        members, fetch = _universe_patches(symbols, ohlcv)
+        strict_cov = SanityConfig(
+            min_bars=50, min_universe=20, min_loaded_share=0.9, min_last_bar_coverage=0.95
+        )
+        with members, fetch:
+            result = generate_signals(lookback_days=120, sanity=strict_cov, now=_NOW)
+        assert result["bars"]["trimmed_partial_bar"] is True
+        assert result["bars"]["dropped_bar"] == "2026-06-22"
+        assert result["as_of"] == "2026-06-19"  # the Friday before that Monday
+
+    def test_a_thin_bar_of_an_older_day_is_a_bad_tape(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = [f"S{i:02d}" for i in range(40)]
+        ohlcv = _mock_ohlcv(symbols, n_days=120)  # last bar 2026-06-19, before `_NOW`
+        ohlcv.iloc[-1, :] = np.nan
+        members, fetch = _universe_patches(symbols, ohlcv)
+        strict_cov = SanityConfig(
+            min_bars=50, min_universe=20, min_loaded_share=0.9, min_last_bar_coverage=0.95
+        )
+        with members, fetch:
+            with pytest.raises(SignalGateError, match="last_bar_coverage"):
+                generate_signals(lookback_days=120, sanity=strict_cov, now=_NOW)
+
+    def test_result_carries_the_engine_and_bar_facts_for_the_run_log(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = ["AAPL", "MSFT", "GOOG"]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols))
+        with members, fetch:
+            result = generate_signals(lookback_days=120, sanity=PERMISSIVE)
+        assert result["engine"]["engine"] == "rust"
+        assert result["bars"]["n_bars"] == 120 and result["bars"]["eligible"] == 3
+        assert result["bars"]["trimmed_partial_bar"] is False
+
+
+class TestTapeIsNotWrittenWhenAskedNot:
+    def test_persist_tape_false_never_touches_the_caching_loader(self):
+        """The read-only dry run: bars come straight from yfinance and stay in memory."""
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = ["AAPL", "MSFT"]
+        ohlcv = _mock_ohlcv(symbols)
+        with (
+            patch("ggTrader.paper.signal_runner.universe_members_asof", return_value=symbols),
+            patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv") as cached_path,
+            patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader") as cached_cls,
+            patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader") as plain_cls,
+        ):
+            plain_cls.return_value.fetch_ohlcv.return_value = ohlcv
+            result = generate_signals(lookback_days=120, sanity=PERMISSIVE, persist_tape=False)
+        cached_path.assert_not_called()
+        cached_cls.assert_not_called()
+        plain_cls.return_value.fetch_ohlcv.assert_called_once()
+        assert result["universe_size"] == 2
+
+    def test_persist_tape_true_is_the_existing_loader_chain(self):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        symbols = ["AAPL", "MSFT"]
+        members, fetch = _universe_patches(symbols, _mock_ohlcv(symbols))
+        with members, fetch as cached_path:
+            generate_signals(lookback_days=120, sanity=PERMISSIVE)
+        cached_path.assert_called_once()

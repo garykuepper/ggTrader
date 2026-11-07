@@ -4,6 +4,22 @@ import pytest
 matplotlib.use("Agg")
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Golden regeneration for tests/engine: explicit, reasoned and changelogged."""
+    group = parser.getgroup("engine goldens")
+    group.addoption(
+        "--update-golden",
+        action="store_true",
+        default=False,
+        help="rewrite tests/engine/golden/*.json (needs --golden-reason)",
+    )
+    group.addoption(
+        "--golden-reason",
+        default="",
+        help="why the goldens change; must also appear in docs/changelog.md",
+    )
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _no_dotenv():
     """Never load the developer's real `.env` during tests.

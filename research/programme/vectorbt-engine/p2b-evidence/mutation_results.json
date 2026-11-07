@@ -1,0 +1,181 @@
+{
+ "zero_trade_guard_series": {
+  "survived": false,
+  "n_failing_tests": 2,
+  "failing_test_files": [
+   "test_stats.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_stats.py::test_zero_trade_guard_on_the_scalar_path_and_with_a_missing_count",
+   "tests/engine/test_stats.py::test_zero_trades_window_is_nan"
+  ]
+ },
+ "zero_trade_guard_scalar": {
+  "survived": false,
+  "n_failing_tests": 2,
+  "failing_test_files": [
+   "test_stats.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_stats.py::test_zero_trade_guard_accepts_a_plain_integer_count_for_a_series",
+   "tests/engine/test_stats.py::test_zero_trade_guard_on_the_scalar_path_and_with_a_missing_count"
+  ]
+ },
+ "trade_count_window_end_inclusive": {
+  "survived": false,
+  "n_failing_tests": 3,
+  "failing_test_files": [
+   "test_stats.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_stats.py::test_trade_count_window_is_half_open_on_a_real_simulation",
+   "tests/engine/test_stats.py::test_trade_counts_equal_a_brute_force_count_for_random_windows",
+   "tests/engine/test_stats.py::test_trade_counts_use_the_entry_index_inside_the_window"
+  ]
+ },
+ "mask_after_time_stop": {
+  "survived": false,
+  "n_failing_tests": 4,
+  "failing_test_files": [
+   "test_golden.py",
+   "test_portfolio.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_golden.py::test_simulation_goldens_hold_on_both_engines[numba-signals_masked_time_stop]",
+   "tests/engine/test_golden.py::test_simulation_goldens_hold_on_both_engines[rust-signals_masked_time_stop]",
+   "tests/engine/test_portfolio.py::test_mask_then_time_stop_equals_prefiltered_entries_and_differs_from_the_other_order",
+   "tests/engine/test_portfolio.py::test_pit_mask_is_applied_before_the_time_stop"
+  ]
+ },
+ "contract_diff_comparable": {
+  "survived": false,
+  "n_failing_tests": 10,
+  "failing_test_files": [
+   "test_provenance.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[contract]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[definitions]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[engine]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[pandas_major]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[patch]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[same]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[tape]",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[vbt]",
+   "tests/engine/test_provenance.py::test_contract_diff_is_not_comparable",
+   "tests/engine/test_provenance.py::test_different_statistic_definitions_are_not_comparable"
+  ]
+ },
+ "no_version_mismatch_error": {
+  "survived": false,
+  "n_failing_tests": 3,
+  "failing_test_files": [
+   "test_config.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_config.py::test_importing_the_engine_installs_the_mismatch_filter",
+   "tests/engine/test_config.py::test_mismatch_warning_becomes_an_error",
+   "tests/engine/test_config.py::test_mismatch_warning_is_fatal_on_the_simulator_path_too"
+  ]
+ },
+ "selfcheck_reports_configured_engine": {
+  "survived": false,
+  "n_failing_tests": 3,
+  "failing_test_files": [
+   "test_selfcheck.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_selfcheck.py::test_probe_fails_when_the_kernel_runs_on_another_engine",
+   "tests/engine/test_selfcheck.py::test_probe_reports_the_engine_that_ran_not_the_one_configured[numba-rust]",
+   "tests/engine/test_selfcheck.py::test_probe_reports_the_engine_that_ran_not_the_one_configured[rust-numba]"
+  ]
+ },
+ "window_includes_first_return": {
+  "survived": false,
+  "n_failing_tests": 31,
+  "failing_test_files": [
+   "test_golden.py",
+   "test_legacy_defs.py",
+   "test_stats.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_golden.py::test_mini_wfo_golden_holds_on_both_engines[numba]",
+   "tests/engine/test_golden.py::test_mini_wfo_golden_holds_on_both_engines[rust]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_degenerate_windows_are_nan_not_errors",
+   "tests/engine/test_legacy_defs.py::test_window_stats_equal_curve_stats_on_many_real_price_paths",
+   "tests/engine/test_legacy_defs.py::test_window_stats_equal_curve_stats_on_real_tape_equity",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-0]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-1]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-2]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-3]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-0]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-1]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-2]"
+  ]
+ },
+ "drawdown_without_base_bar": {
+  "survived": false,
+  "n_failing_tests": 2,
+  "failing_test_files": [
+   "test_legacy_defs.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_legacy_defs.py::test_max_drawdown_counts_the_first_bar_as_a_peak_like_curve_stats",
+   "tests/engine/test_legacy_defs.py::test_window_stats_equal_curve_stats_on_many_real_price_paths"
+  ]
+ },
+ "legacy_sortino_is_vbt": {
+  "survived": false,
+  "n_failing_tests": 22,
+  "failing_test_files": [
+   "test_legacy_defs.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_legacy_defs.py::test_window_stats_definitions_change_only_sortino_and_cagr",
+   "tests/engine/test_legacy_defs.py::test_window_stats_equal_curve_stats_on_real_tape_equity",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-0]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-1]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-2]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-100-3]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-0]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-1]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-2]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[0-500-3]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[200-326-0]",
+   "tests/engine/test_legacy_defs.py::test_window_stats_legacy_matches_curve_stats_on_every_statistic[200-326-1]"
+  ]
+ },
+ "tape_ignored_in_compare": {
+  "survived": false,
+  "n_failing_tests": 2,
+  "failing_test_files": [
+   "test_provenance.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_provenance.py::test_a_different_tape_is_not_comparable",
+   "tests/engine/test_provenance.py::test_comparability_matrix_second_independent_check[tape]"
+  ]
+ },
+ "chunk_kept_alive": {
+  "survived": false,
+  "n_failing_tests": 1,
+  "failing_test_files": [
+   "test_portfolio.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_portfolio.py::test_each_chunk_is_released_before_the_next_one_runs"
+  ]
+ },
+ "vol_keys_ignored": {
+  "survived": false,
+  "n_failing_tests": 3,
+  "failing_test_files": [
+   "test_portfolio.py"
+  ],
+  "failing_tests": [
+   "tests/engine/test_portfolio.py::test_legacy_vol_targeting_keys_raise_instead_of_being_ignored[vol_cap]",
+   "tests/engine/test_portfolio.py::test_legacy_vol_targeting_keys_raise_instead_of_being_ignored[vol_lookback]",
+   "tests/engine/test_portfolio.py::test_legacy_vol_targeting_keys_raise_instead_of_being_ignored[vol_target]"
+  ]
+ }
+}

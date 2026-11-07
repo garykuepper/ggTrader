@@ -1,0 +1,8 @@
+universe 662 0.39
+  flat = pd.read_sql(query, conn, params=params, parse_dates=["timestamp"])
+40 symbols -> shape (1933, 195) idx UTC 2019-03-01 00:00:00+00:00 2026-11-05 00:00:00+00:00 secs 10.9
+  flat = pd.read_sql(query, conn, params=params, parse_dates=["timestamp"])
+100 symbols -> shape (1933, 485) idx UTC 2019-03-01 00:00:00+00:00 2026-11-05 00:00:00+00:00 secs 19.3
+  flat = pd.read_sql(query, conn, params=params, parse_dates=["timestamp"])
+662 symbols -> shape (1933, 3230) idx UTC 2019-03-01 00:00:00+00:00 2026-11-05 00:00:00+00:00 secs 51.6
+maxrss MB 1078.0703125

@@ -18,6 +18,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv"
+#: Closed-study drivers that need the legacy engine were archived here in P5c (they run only at
+#: git tag legacy-engine-vbt0285); their default paths are still checked.
+ARCHIVE = ROOT / "research/programme/vectorbt-engine/legacy-scripts"
 
 #: Scripts re-pointed from docs/research/ to the per-study research/ folders (2026-11-05).
 CHANGED_SCRIPTS = (
@@ -91,9 +94,15 @@ def _in_manifest_folder(path: str, folders: set[str]) -> bool:
     return parent == "research" or parent in folders
 
 
+def _script_path(script: str) -> Path:
+    """The driver in scripts/, or its archived copy once it moved to the legacy archive."""
+    live = ROOT / script
+    return live if live.exists() else ARCHIVE / Path(script).name
+
+
 @pytest.mark.parametrize("script", CHANGED_SCRIPTS)
 def test_default_paths_point_into_research_tree(script: str) -> None:
-    text = (ROOT / script).read_text()
+    text = _script_path(script).read_text()
     assert not OLD_LOCATION_RE.search(text), f"{script} still names docs/research"
 
     paths = _research_paths(text)

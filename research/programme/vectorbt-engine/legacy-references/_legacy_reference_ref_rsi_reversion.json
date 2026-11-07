@@ -1,0 +1,298 @@
+{
+  "run": "ref_rsi_reversion",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "wfo",
+    "strategy": "rsi_reversion",
+    "universe": "sp500",
+    "eval_start": "2021-01-31",
+    "eval_end": "2022-07-31",
+    "note": "one pinned 2-fold window (smallest multi-fold honest window)"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:08:59-0800",
+  "config": {
+    "base_config": {
+      "START_CASH": 10000.0,
+      "PORTFOLIO_SHARE": 1.0,
+      "FEES": 0.0,
+      "SLIPPAGE": 0.0005,
+      "FREQ": "1d",
+      "SIGNAL_POSITION_SIZE": 0.03,
+      "USE_CASH_SHARING": false,
+      "TRAIN_METRIC": "composite",
+      "MIN_CLOSED_TRADES_TRAIN": 0,
+      "MIN_TRADES_PER_TRAIN_FOLD": 8,
+      "MAX_TRAIN_DRAWDOWN_PCT": 75,
+      "BENCHMARK_SYMBOL": "SPY"
+    },
+    "lab_config": {
+      "top_n": 50,
+      "lookback": 252,
+      "skip": 21,
+      "min_history_bars": 400,
+      "max_stocks": null,
+      "max_sector_count": null
+    },
+    "grid_size": 27,
+    "grid": [
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 20,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 20,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 20,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 25,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 25,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 25,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 30,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 30,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 50,
+        "rsi_oversold": 30,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 20,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 20,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 20,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 25,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 25,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 25,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 30,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 30,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 55,
+        "rsi_oversold": 30,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 20,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 20,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 20,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 25,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 25,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 25,
+        "rsi_period": 21
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 30,
+        "rsi_period": 7
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 30,
+        "rsi_period": 14
+      },
+      {
+        "rsi_exit": 60,
+        "rsi_oversold": 30,
+        "rsi_period": 21
+      }
+    ],
+    "universe_requested": 537,
+    "universe_loaded": 519,
+    "data_start": "2019-03-03",
+    "max_leverage": 1.0,
+    "wfo_policy": "WfoPolicy() defaults"
+  },
+  "ok": true,
+  "oos": {
+    "total_return_pct": 2.143505597819151,
+    "cagr_pct": 4.422618474210771,
+    "sharpe": 0.3340616717632957,
+    "sortino": 0.5777897012785222,
+    "ann_vol_pct": 17.378477921572056,
+    "max_drawdown_pct": -7.143746929832351
+  },
+  "spy_oos_index": {
+    "total_return_pct": -7.747078536196361,
+    "cagr_pct": -15.17148703500364,
+    "sharpe": -0.5150733529934675,
+    "sortino": -0.7785287659816804,
+    "ann_vol_pct": 25.51378057804194,
+    "max_drawdown_pct": -20.561146708583156
+  },
+  "n_folds": 2,
+  "gates_passed": 0,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "rsi_reversion__rsi_exit60_rsi_oversold20_rsi_period14",
+    "rsi_reversion__rsi_exit55_rsi_oversold20_rsi_period14"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31 00:00:00+00:00",
+      "train_end": "2022-01-31 00:00:00+00:00",
+      "test_start": "2022-01-31 00:00:00+00:00",
+      "test_end": "2022-04-30 00:00:00+00:00",
+      "winner_combo": "rsi_reversion__rsi_exit60_rsi_oversold20_rsi_period14",
+      "winner_params": {
+        "rsi_exit": 60,
+        "rsi_oversold": 20,
+        "rsi_period": 14
+      },
+      "train_score": 0.7612422911893741,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.45510203733452503,
+      "wfe": 0.00010387504770013706,
+      "is_sharpe": 1.932644942942928,
+      "oos_sharpe": 0.0002007535856356253,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30 00:00:00+00:00",
+      "train_end": "2022-04-30 00:00:00+00:00",
+      "test_start": "2022-04-30 00:00:00+00:00",
+      "test_end": "2022-07-30 00:00:00+00:00",
+      "winner_combo": "rsi_reversion__rsi_exit55_rsi_oversold20_rsi_period14",
+      "winner_params": {
+        "rsi_exit": 55,
+        "rsi_oversold": 20,
+        "rsi_period": 14
+      },
+      "train_score": 0.7676883286830146,
+      "oos_score": 0.0,
+      "ndh_passed": false,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 0.8,
+      "dsr_value": 0.24777797084014264,
+      "wfe": 0.49388099808926966,
+      "is_sharpe": 1.379497987155445,
+      "oos_sharpe": 0.6813078427584697,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    }
+  ],
+  "live_params": {
+    "combo": "rsi_reversion__rsi_exit55_rsi_oversold20_rsi_period14",
+    "params": {
+      "rsi_exit": 55,
+      "rsi_oversold": 20,
+      "rsi_period": 14
+    },
+    "train_metrics": {
+      "sharpe": 1.139415657456927,
+      "cagr_pct": 9.769799490122466,
+      "max_drawdown_pct": -6.533963867266113
+    },
+    "stability": 1,
+    "train_start": "2021-07-31 00:00:00+00:00",
+    "train_end": "2022-07-31 00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: rsi_reversion | 27 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      rsi_exit60_rsi_overso...    1.93  0.00  FAIL  0.00 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      rsi_exit55_rsi_overso...    1.38  0.68  FAIL  0.49 [A]\n\nOOS Aggregate: Sharpe 0.33 | CAGR 4.4% | MaxDD -7.1%\nSPY baseline:  Sharpe -0.52 | CAGR -15.2% | MaxDD -20.6%\nAggregate WFE: 0.25 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       rsi_reversion__rsi_exit55_rsi_oversold20_rsi_period14\nTrain Sharpe: 1.14 | CAGR 9.8% | MaxDD -6.5%\nStability:    selected in 1/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    rsi_reversion__rsi_exit50_rsi_oversold25_rsi_period14\nMaxDD:    -6.0% | CAGR 6.1% | Sharpe 0.96",
+  "oos_first": "2022-01-31 00:00:00+00:00",
+  "oos_last": "2022-07-29 00:00:00+00:00",
+  "oos_bars": 125,
+  "load_seconds": 0.5,
+  "wall_seconds": 184.6
+}

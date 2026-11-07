@@ -53,36 +53,36 @@ In this project, you are a **senior quant trading analyst**: skeptical of unvali
 
 **As of 2026-08-21:** ggTrader is a **research-first** algorithmic trading platform with a small live execution path. The legacy crypto execution engines and strategy orchestration code were removed on 2026-06-16, leaving the **lab** — a vectorbt-based research bench for walk-forward optimization — as the bulk of the codebase.
 
-A **paper-trading path was added back on 2026-06-20** and has been trading a live Alpaca paper account since. It lives in `src/ggTrader/paper/` (`trader.py`, `alpaca_broker.py`, `signal_runner.py`, `overlay.py`, `risk.py`, `persist.py`, `notifier.py`, `feature_gate.py`, `split_check.py`, `dividend_check.py`) and runs on cron via `scripts/paper_trade.sh` at 12:45 PT, Mon–Fri. Treat it as production: it places real orders against the broker and writes `paper_trades` / `paper_snapshots`.
+A **paper-trading path was added back on 2026-06-20** and has been trading a live Alpaca paper account since. It lives in `src/ggTrader/paper/` (`trader.py`, `alpaca_broker.py`, `signal_runner.py`, `overlay.py`, `risk.py`, `persist.py`, `notifier.py`, `split_check.py`, `dividend_check.py`) and was run on cron via `scripts/paper_trade.sh` at 12:45 PT, Mon–Fri. **The owner stopped it on 2026-11-06 (the cron lines are commented out)** to switch the engine to vectorbt 1.2.0 with the Rust simulator. It has been rebuilt on that engine and runs in dry-run first; cron returns only on the owner's explicit say-so. Treat it as production code regardless: with `--live` it places real orders against the broker and writes `paper_trades` / `paper_snapshots`.
 
-* **Single CLI entry point**: `ggt.py` with four commands:
-  * `ggt lab --strategy <name>` — run walk-forward optimization on a strategy over a historical universe (equities or crypto)
+* **Single CLI entry point**: `ggt.py` with these commands (`ggt ingest` is gone):
+  * `ggt lab --strategy <name> --wfo` — run walk-forward optimization on a ported strategy over a historical universe (equities; one of `--wfo` or `--blend` is required). The vectorbt engine is the only path: `--engine`, `--sweep`, `--max-sector-count` and the plain no-mode run were removed in the 2026-11-06 engine rebuild (P5c)
   * `ggt lab --blend "<strategy>@<universe>,..."` — blend multiple `strategy@universe` sleeves through the gated WFO with the inverse-vol/target-vol overlay (`--target-vol`/`--blend-window`/`--max-leverage`), persisted as a `blend:` lab run. (Infra for orthogonal sleeves; equity-only diversification is a closed NO-GO.)
-  * `ggt ingest` — **non-functional stub, do not use.** `cli/cmd_ingest.py:26-31` hardcodes a two-symbol crypto list with the actual `sync_symbol_ohlcv` call commented out, then prints "Ingestion complete." It reports success having written nothing. Equity data is loaded on demand through `CachedYFinanceLoader` instead (see Data Layer below); crypto ingestion is parked along with the rest of the crypto arc.
+  * `ggt ingest` — **removed** (P10): it never wrote anything. Research reads the frozen tape or the database read-only through `load_bars`; the live path caches equities on demand through `CachedYFinanceLoader`. Crypto ingestion is parked along with the rest of the crypto arc.
   * `ggt db <subcommand>` — database administration (diagnostics, cleanup, compression, export)
-  * `ggt paper [--live]` — run the ensemble paper-trading strategy against Alpaca. Without `--live` it is a dry run that logs intended orders; `--live` places them. This is the deployed production command.
+  * `ggt paper [--live]` — run the ensemble paper-trading strategy against Alpaca. Without `--live` it is a dry run that logs intended orders; `--live` places them. This is the production command; it is stopped since 2026-11-06 (see above), so use the dry run until the owner re-enables cron.
 * **Lab Architecture**: 
   * **Data Layer**: `src/ggTrader/data/` loads OHLCV from TimescaleDB (crypto) or yfinance (equities). SP500 constituents are sourced from a static registry.
-  * **Strategy Layer**: `src/ggTrader/lab/strategies/` implements momentum and signal-based strategies. Each strategy is a callable that produces entry/exit signals over historical data.
-  * **Simulation Layer**: `src/ggTrader/lab/simulate.py` uses `vectorbt.Portfolio` for fast vectorized backtesting.
-  * **Walk-Forward Harness**: `src/ggTrader/lab/harness.py` runs overlapping monthly folds, computes metrics, and persists results to TimescaleDB.
-  * **Metrics & Reporting**: `src/ggTrader/lab/metrics.py` computes Sharpe, Calmar, max drawdown, and win rate.
-* **State Storage**: Lab run results are persisted to TimescaleDB by `src/ggTrader/lab/persist.py`, which creates **seven** tables: `lab_runs` (run metadata), `lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, and `lab_sweep_combos`. There is **no** `lab_periods` table — earlier revisions of this file named one repeatedly and it has never existed.
+  * **Strategy Layer**: `src/ggTrader/lab/strategies/` holds the ten ported strategies on the engine contract (`ParamGrid`, `build(bars, grid)`); `lab/strategies/vote.py` is the N-of-M vote glue.
+  * **Engine**: `src/ggTrader/engine/` is the only package that imports vectorbt (indicator presets, one grouped Rust simulation, statistics at 252 bars).
+  * **Walk-Forward**: `src/ggTrader/lab/wfo/` runs the rolling folds, gates, anchor and circuit breaker over slices of one simulation; `lab/universe.py` builds the point-in-time membership mask.
+  * **Metrics & Reporting**: window statistics come from `engine/stats.py`; `wfo/report.py` prints the fold table and `curve_summary`.
+* **State Storage**: `ggt lab --wfo` saves a JSON record only (with a provenance block); `--blend` persists a `blend:` run. The blend persistence is done to TimescaleDB by `src/ggTrader/lab/persist.py`, which creates **seven** tables: `lab_runs` (run metadata), `lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, and `lab_sweep_combos`. There is **no** `lab_periods` table — earlier revisions of this file named one repeatedly and it has never existed.
 
 ---
 
 ## 2. Rules & Deployment Nuances
 
 * **Docker Research Environment**: 
-  * The `ggtrader_live` container is the **production paper-trading** container — it is what cron runs at 12:45 PT. It has the whole package copied in (not bind-mounted), so **code changes do not reach it until the image is rebuilt and pulled**: push to `main`, let `.github/workflows/docker-build.yml` publish `ghcr.io/garykuepper/ggtrader:latest` (~2.5 min), then `docker compose pull && docker compose up -d`. Forgetting this ships stale code to live; it has bitten twice.
+  * The `ggtrader_live` container is the **production paper-trading** container — it is what cron ran at 12:45 PT until the owner stopped the trader on 2026-11-06 (cron lines commented out; nothing runs it now, and cron returns only on the owner's explicit say-so). It has the whole package copied in (not bind-mounted), so **code changes do not reach it until the image is rebuilt and pulled**: push to `main`, let `.github/workflows/docker-build.yml` publish `ghcr.io/garykuepper/ggtrader:latest` (~2.5 min), then `docker compose pull && docker compose up -d`. Forgetting this ships stale code to live; it has bitten twice.
   * For local development and research on the host, install with `pip install -e .` into a virtual environment and run natively — research does **not** need Docker.
   * **Research command** (if you do want the container): `docker compose run --rm ggtrader_live python ggt.py lab --strategy <name>`
   * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
 * **Lab Run Workflow**:
-  1. **Strategy Selection**: Choose a strategy from `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py` — **38 entries** as of 2026-10-19, so read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy. Most of the rest are closed NO-GO research; check `research/RESEARCH_SNAPSHOT.md` before spending a run on one.
+  1. **Strategy Selection**: Choose a strategy from `REGISTRY` in `src/ggTrader/lab/strategies/registry.py` — the ten ported strategies and any module you add (discovered by scanning the package); the other 28 historical names (`LEGACY_ONLY_STRATEGIES`) are closed NO-GO or untested research whose code lives only at git tag `legacy-engine-vbt0285` (`scripts/legacy_env.sh`). Read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy; check `research/RESEARCH_SNAPSHOT.md` before spending a run on a closed one.
   2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
-  3. **Walk-Forward Execution**: Overlapping monthly folds run in-memory using vectorbt. Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
-  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. The harness itself writes nothing to disk — but research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/anchor_fix_reproduction_wfo.py` → `research/audits/rebaseline/_anchor_fix_reproduction_results.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
+  3. **Walk-Forward Execution**: Overlapping monthly folds are scored from slices of one grouped vectorbt simulation (Rust engine). Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
+  4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. `ggt lab --wfo` writes only its JSON record (with a provenance block); `--blend` writes a `blend:` row. Research **drivers** under `scripts/` do record their results as JSON (e.g. `scripts/p5_wfo_validation.py` → `research/programme/vectorbt-engine/p5-evidence/_p5_<run>.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
 * **Strategy Parameters**:
   * Use `--top-n` to control universe size (`lab/cli.py:70`, default 50 for **both** markets — it is not market-conditional).
   * Use `--lookback` to set momentum calculation window (default 252 days).
@@ -95,23 +95,23 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
 ## 3. Development Guidelines & Strategy Addition
 
 * **Adding a New Strategy**:
-  * Implement the `Strategy` protocol in `src/ggTrader/lab/strategies/` (see `momentum.py` or `signals.py` as examples).
-  * The `Strategy` protocol requires `name`, `target_kind` ("weights" or "signals"), `select(asof, data, eligible) -> Plan`, and `to_targets(plans, data) -> DataFrame | SignalTargets`.
-  * Weight strategies return a `pd.DataFrame` (time x symbol, float weights). Signal strategies return `SignalTargets(entries, exits)` with boolean frames.
-  * Register the strategy in the single-source `STRATEGY_REGISTRY` dict in `src/ggTrader/lab/strategies/__init__.py` (one line: `"<name>": <Class>`). Signal-vs-weight membership and the CLI name lists derive automatically from each class's `target_kind` (see `strategies/registry.py`); the old `signals.py`/`momentum.py` name tuples are now lazy shims over this one dict.
-  * New strategies are immediately available via `ggt lab --strategy <new_name>` (and as a `--blend` sleeve).
+  * Implement the engine contract in `src/ggTrader/lab/strategies/` (see `ensemble.py` for a signal strategy and `xs_momentum.py` for a weight strategy; the contract is in `contract.py`).
+  * A strategy declares `name`, `kind` ("signals" or "weights"), a `ParamGrid` and `build(bars, grid)`; it composes `ggTrader.engine` presets only and never imports vectorbt (the boundary test and ruff enforce it).
+  * Signal strategies return a `SignalOut` (entry/exit frames with one column block per grid combination); weight strategies return a target-weight frame.
+  * Put the file in `src/ggTrader/lab/strategies/`: the registry (`REGISTRY`) is built by scanning the package, so there is no decorator, import line or test list to edit. A malformed module raises `StrategyModuleError` naming the file. The lookahead test runs over every registered strategy. Worked example and the full contract: `docs/adding_a_strategy.md`.
+  * New strategies are immediately available via `ggt lab --strategy <new_name> --wfo` (and as a `--blend` sleeve).
 * **Data Access**:
-  * Equities OHLCV: use `load_ohlcv()` from `src/ggTrader/lab/data.py`, which pulls from yfinance and caches locally.
+  * Equities OHLCV for research: `load_bars()` from `src/ggTrader/data/bars.py` (frozen Parquet tape or a read-only database session; no network, no writes). The live trader and the replica tools use the DB-first `fetch_stock_ohlcv()` / `load_ohlcv()` of `src/ggTrader/lab/data.py`.
   * Crypto OHLCV: TimescaleDB loader in `src/ggTrader/data/historical/timescaledb_loader.py` fetches keyed by venue and interval.
   * SP500 constituents: sourced from `data/universe/sp500_constituents_history.csv.gz` (updated infrequently; refresh via `download_sp500_history()` in `data/core/index_constituents.py`).
 * **Backtesting with vectorbt**:
-  * Lab uses `vectorbt.Portfolio` for fast in-memory simulation. Passed a 2D signal array (dates × symbols) and OHLCV data.
+  * The lab simulates through `ggTrader.engine.portfolio` (`run_signals` / `run_weights`), which wraps `vectorbt.Portfolio` in one grouped call. Passed 2D signal arrays (dates × symbols × combinations) and OHLCV data.
   * Weights are set daily (or per-rebalance) — the portfolio auto-rebalances on entry/exit signals.
   * No per-symbol state — vectorbt is stateless. Any state needed across bars (e.g., time-in-trade) must be computed before simulation as a separate signal.
   * Always use cash sharing and group_by for multi-symbol portfolios (prevents independent cash pools).
 * **Performance Analysis**:
-  * Lab computes Sharpe, Calmar, max drawdown, win rate, and monthly returns via `metrics.py`.
-  * Monthly folds allow out-of-sample validation — the walk-forward harness handles fold generation and metrics aggregation.
+  * The lab computes Sharpe, Sortino, CAGR and max drawdown through `engine/stats.py` (vectorbt's definitions, 252-day year).
+  * Monthly folds allow out-of-sample validation — `wfo` handles fold generation and metrics aggregation.
 
 * **Running the test suite**:
   * Always run tests via `scripts/run_tests.sh` (takes any pytest args), never a bare `pytest`. It wraps the run in a transient cgroup with `MemoryMax=8G` and swap disabled.
@@ -194,7 +194,7 @@ These are the most actively maintained docs in the repo and the ones to read
 ### Research process rules — these are hard-won, do not skip
 
 * **Pin `--eval-start` and `--eval-end` on any run whose number you will cite.** `--eval-end` defaults to "now" and therefore drifts, which is why the window behind the once-headline 1.12/1.14 Sharpe figures is unrecoverable. Two runs quoting different windows are not comparable, and SPY's own Sharpe moving between runs is the tell.
-* **Watch `--max-leverage`.** It defaults to **2.0**, but production runs at **1.0**. Quoting a blend number computed at the default overstates the deployed config. `lab/blend.py:84-87` carries an inline warning; this trap has been hit twice.
+* **Watch `--max-leverage`.** It now defaults to **1.0**, the production value (it defaulted to **2.0** until the vectorbt-engine rebuild, OD13). A blend number from an older run, or from `--max-leverage 2.0`, overstates the deployed config. `lab/blend.py:84-87` carries an inline warning; this trap has been hit twice.
 * **Record raw results to JSON** next to the report, as the `scripts/*_wfo.py` drivers do, so a cited figure always has an artifact behind it.
 * **Report NO-GO plainly.** Most candidates fail. A clearly-written NO-GO with honest OOS numbers is a successful outcome, not a failed one.
 * **Standardized Lab Reporting**: Lab runs produce timestamped, immutable TimescaleDB entries (`lab_runs` plus the per-fold/sweep tables listed in §1). Optional: generate markdown summary with:

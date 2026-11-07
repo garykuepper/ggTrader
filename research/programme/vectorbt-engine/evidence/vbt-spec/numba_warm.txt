@@ -1,0 +1,13 @@
+versions 1.2.0 3.1.1 2.5.4 0.68.1 import_s=12.26
+rust_available True
+RSI ewm w=27                    2.59s  compiled_dispatchers=2
+BBANDS w20 ddof1                0.04s  compiled_dispatchers=4
+MA ewm 20                       0.02s  compiled_dispatchers=6
+MACD ewm                        0.17s  compiled_dispatchers=8
+from_signals tiny              28.36s  compiled_dispatchers=39
+pf.value()                      0.12s  compiled_dispatchers=49
+pf.trades.count()               0.02s  compiled_dispatchers=50
+signals accessor fshift/AND     0.01s  compiled_dispatchers=50
+returns sharpe                  0.03s  compiled_dispatchers=52
+['asset_flow_nb', 'asset_value_grouped_nb', 'asset_value_nb', 'assets_nb', 'bb_apply_nb', 'bb_cache_nb', 'cash_flow_grouped_nb', 'cash_flow_nb', 'cash_grouped_nb', 'check_group_init_cash_nb', 'check_group_lens_nb', 'col_map_nb', 'flex_select_auto_nb', 'full', 'generate_stop_signal_nb', 'get_exit_trades_nb', 'get_group_lens_nb', 'get_stop_price_nb', 'impl', 'init_cash_grouped_nb', 'init_records_nb', 'insert_argsort_nb', 'is_grouped_nb', 'ma_apply_nb', 'ma_cache_nb', 'macd_apply_nb', 'macd_cache_nb', 'order_nb', 'process_order_nb', 'resolve_dir_conflict_nb', 'resolve_opposite_entry_nb', 'resolve_signal_conflict_nb', 'resolve_stop_price_and_slippage_nb', 'returns_nb', 'rsi_apply_nb', 'rsi_cache_nb', 'sharpe_ratio_nb', 'should_update_stop_nb', 'signals_to_size_nb', 'simulate_from_signals_nb', 'value_nb']
+total 45.13

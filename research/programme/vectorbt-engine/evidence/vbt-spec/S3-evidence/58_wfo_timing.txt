@@ -1,0 +1,21 @@
+load=2.54 old
+ "load_s": 5.315675973892212,
+ "wfo_s": 52.19020700454712,
+ "peak_rss_mb": 1098.8046875,
+ "oos_equity_last": 10000.0
+load=1.91 new_patched
+ "load_s": 5.031834363937378,
+ "wfo_s": 32.260221004486084,
+ "peak_rss_mb": 1218.33984375,
+ "oos_equity_last": 10000.0
+load=1.52 old2
+ "load_s": 5.062201261520386,
+ "wfo_s": 51.59078001976013,
+ "peak_rss_mb": 1099.68359375,
+ "oos_equity_last": 10000.0
+load=1.79 new_patched2
+ "load_s": 5.021881341934204,
+ "wfo_s": 32.29792404174805,
+ "peak_rss_mb": 1218.69921875,
+ "oos_equity_last": 10000.0
+DONE

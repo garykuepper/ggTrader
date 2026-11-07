@@ -1,0 +1,47 @@
+=== run_wfo (2 folds, 60 symbols) ===
+pandas             old=2.3.3                    new=3.1.1
+n_symbols          old=60                       new=60
+rows               old=860                      new=860
+folds              old=2                        new=2
+grid               old=48                       new=48
+load_s             old=9.455201864242554        new=18.372645616531372
+wfo_s              old=53.867852210998535       new=87.8790500164032
+peak_rss_mb        old=994.7890625              new=791.73046875
+oos_equity_len     old=125                      new=125
+oos_equity_last    old=10000.0                  new=10000.0
+fold_results identical: False
+live_params identical: True
+oos_equity index equal: True | max abs diff: 0.0
+fold 1 key dsr_value: old=0.2616441817035998 new=0.26164418170359977
+=== sweep: signal path ===
+combos old/new: 48 48 same set: True
+max abs metric diff by column:
+total_return_pct    0.0
+cagr_pct            0.0
+sharpe              0.0
+sortino             0.0
+ann_vol_pct         0.0
+max_drawdown_pct    0.0
+n_trades            0.0
+equity index equal: True | curves compared: 48
+max abs equity diff: 0.0 | bit-identical: True
+max rel equity diff: 0.0
+PIT mask identical: True (860, 100) (860, 100)
+=== sweep: weight path ===
+combos old/new: 6 6 same set: True
+max abs metric diff by column:
+n_trades            0.0
+total_return_pct    0.0
+cagr_pct            0.0
+sharpe              0.0
+sortino             0.0
+ann_vol_pct         0.0
+max_drawdown_pct    0.0
+equity index equal: True | curves compared: 6
+max abs equity diff: 0.0 | bit-identical: True
+max rel equity diff: 0.0
+pit_mask_s       old=34.25234651565552 new=25.946921825408936
+sweep_signal_s   old=14.071593046188354 new=6.002824306488037
+sweep_weight_s   old=16.09110975265503 new=4.9537413120269775
+signal_combos    old=48 new=48
+weight_combos    old=6 new=6

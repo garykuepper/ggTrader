@@ -1,0 +1,1134 @@
+{
+  "run": "core17_ensemble_sp500_dsr0",
+  "reference": "core17_ensemble_sp500_dsr0",
+  "n_folds": {
+    "new": 17,
+    "reference": 17
+  },
+  "grid_size": {
+    "new": 48,
+    "reference": 48
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.48237764299722435,
+          "ref": 0.48237764299722474,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 2.2260488538735688,
+          "ref": 2.2260488538735697,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.095136495164147,
+          "ref": 1.0951364951641422,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.4919642681060164,
+          "ref": 0.4919642681060141,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7869574555389457,
+          "ref": 0.7815652080241967,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 2,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.19222010447946636,
+          "ref": 0.1922201044794697,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.4672733022730398,
+          "ref": 1.4672733022730517,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.0966353773751252,
+          "ref": 1.0966353773750812,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.7473968044509925,
+          "ref": 0.7473968044509565,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7677974647525,
+          "ref": 0.7677974647524991,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 3,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.12268577726871105,
+          "ref": 0.12268577726870705,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.1652585101544495,
+          "ref": 1.1652585101544302,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": -0.42998248251090615,
+          "ref": -0.42998248251094334,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": -0.36900179553626605,
+          "ref": -0.3690017955363041,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7780946974788878,
+          "ref": 0.778094697478888,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 4,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.10916828959427394,
+          "ref": 0.10916828959427732,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.093219226675907,
+          "ref": 1.093219226675925,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 3.3419810988261927,
+          "ref": 3.341981098826491,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 3.057009076750301,
+          "ref": 3.0570090767505236,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7780946974788894,
+          "ref": 0.7780946974788885,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 5,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.1469594868685713,
+          "ref": 0.1469594868685724,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.2811211328779333,
+          "ref": 1.2811211328779377,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.6527829336176662,
+          "ref": 0.6527829336178073,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.5095403680924715,
+          "ref": 0.5095403680925799,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7789925051893495,
+          "ref": 0.7789925051893496,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 6,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.1350711962864038,
+          "ref": 0.13507119628641912,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.265956937053324,
+          "ref": 1.2659569370533932,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.7745275893684838,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 7,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.11774157707118144,
+          "ref": 0.11774157707120436,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.115960392509539,
+          "ref": 1.115960392509655,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7999999999999994,
+          "ref": 0.7745287173514559,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 8,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": false,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.6666666666666666,
+          "ref": 1.0,
+          "equal_within_ulp_floor": false
+        },
+        "dsr_value": {
+          "new": 0.23279411196917765,
+          "ref": 0.25898282034153364,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.6391062756670303,
+          "ref": 1.6608149689471636,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": 4.929491905213705,
+          "ref": null,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": 3.0074266558510128,
+          "ref": null,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.79572679506706,
+          "ref": 0.7980298111896188,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 9,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.10592520850007825,
+          "ref": 0.095253526565794,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.0822935179115751,
+          "ref": 0.957238268654113,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": -0.7353183686983809,
+          "ref": 1.676282925571533,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": -0.6794075327340705,
+          "ref": 1.7511658073683205,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.79581219335219,
+          "ref": 0.6845307927831193,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 10,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.3160385358698876,
+          "ref": 0.31603853586989067,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.8405428066672298,
+          "ref": 1.8405428066672378,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 5.00149450777407,
+          "ref": 5.001494507774087,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 2.7174018934286814,
+          "ref": 2.7174018934286788,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7464082289352434,
+          "ref": 0.7464082289352434,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 11,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.46143165294414545,
+          "ref": 0.46143165294412286,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 2.1835323398313005,
+          "ref": 2.18353233983125,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.15034870093337363,
+          "ref": 0.15034870093341274,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.06885572436494783,
+          "ref": 0.06885572436496734,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7464082289352428,
+          "ref": 0.7464082289352433,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 12,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.806003682201047,
+          "ref": 0.8060036822010446,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 3.0106712044530606,
+          "ref": 3.0106712044530535,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.2602101148372389,
+          "ref": 0.26021011483719314,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.08642927014160966,
+          "ref": 0.08642927014159467,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7468189573344768,
+          "ref": 0.7468189573344763,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 13,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.34061801943757464,
+          "ref": 0.3406180194375751,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.8614846769954585,
+          "ref": 1.8614846769954598,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.7147412755519259,
+          "ref": 0.7147412755519219,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.3839630185436491,
+          "ref": 0.3839630185436467,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7662525436600085,
+          "ref": 0.765434109095341,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 14,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.12123427238124418,
+          "ref": 0.12123427238125817,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.0989741818092162,
+          "ref": 1.0989741818092855,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 0.7025545161702941,
+          "ref": 0.7025545161706536,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.6392820939739408,
+          "ref": 0.6392820939742276,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.6981044559176413,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 15,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.06175841149102333,
+          "ref": 0.06175841149102333,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.1089962151906183,
+          "ref": 1.108996215190618,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 2.3072981966765,
+          "ref": 2.3072981966765655,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 2.080528468061465,
+          "ref": 2.080528468061525,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.6748781705640753,
+          "ref": 0.6748781705640744,
+          "equal_within_ulp_floor": true
+        }
+      },
+      "identical": true
+    },
+    {
+      "fold": 16,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.10044652431724849,
+          "ref": 0.06321352260726498,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.0409756692620051,
+          "ref": 1.1216418597632654,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": 3.449695580754697,
+          "ref": 0.6937082189489225,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": 3.313906061993113,
+          "ref": 0.6184756862545565,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.6763884242045664,
+          "ref": 0.6748781705640745,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 17,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.006324676296064218,
+          "ref": 0.16069505300446524,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 0.9673763181899084,
+          "ref": 1.5563426558731477,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": -0.45953916407946355,
+          "ref": -0.8317911550625332,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": -0.4750366072009322,
+          "ref": -0.5344524561629247,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.6417774151262234,
+          "ref": 0.7460078668046373,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    }
+  ],
+  "folds_identical": 8,
+  "winners_identical": 13,
+  "gates_identical": 16,
+  "anchor_identical": 16,
+  "halt_state_identical": 17,
+  "first_differences": [
+    {
+      "fold": 1,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.48237764299722435,
+          "ref": 0.48237764299722474,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 2.2260488538735688,
+          "ref": 2.2260488538735697,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": 1.095136495164147,
+          "ref": 1.0951364951641422,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": 0.4919642681060164,
+          "ref": 0.4919642681060141,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7869574555389457,
+          "ref": 0.7815652080241967,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 6,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.1350711962864038,
+          "ref": 0.13507119628641912,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.265956937053324,
+          "ref": 1.2659569370533932,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.8,
+          "ref": 0.7745275893684838,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 7,
+      "windows_equal": true,
+      "winner_equal": true,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.11774157707118144,
+          "ref": 0.11774157707120436,
+          "equal_within_ulp_floor": true
+        },
+        "is_sharpe": {
+          "new": 1.115960392509539,
+          "ref": 1.115960392509655,
+          "equal_within_ulp_floor": true
+        },
+        "oos_sharpe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "wfe": {
+          "new": null,
+          "ref": null,
+          "equal_within_ulp_floor": true
+        },
+        "train_score": {
+          "new": 0.7999999999999994,
+          "ref": 0.7745287173514559,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 8,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": false,
+        "dsr_passed": true,
+        "gates_passed": false,
+        "used_anchor": false,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 0.6666666666666666,
+          "ref": 1.0,
+          "equal_within_ulp_floor": false
+        },
+        "dsr_value": {
+          "new": 0.23279411196917765,
+          "ref": 0.25898282034153364,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.6391062756670303,
+          "ref": 1.6608149689471636,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": 4.929491905213705,
+          "ref": null,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": 3.0074266558510128,
+          "ref": null,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.79572679506706,
+          "ref": 0.7980298111896188,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    },
+    {
+      "fold": 9,
+      "windows_equal": true,
+      "winner_equal": false,
+      "flags_equal": {
+        "ndh_passed": true,
+        "dsr_passed": true,
+        "gates_passed": true,
+        "used_anchor": true,
+        "halted": true,
+        "halted_entering": true
+      },
+      "numerics": {
+        "ndh_density": {
+          "new": 1.0,
+          "ref": 1.0,
+          "equal_within_ulp_floor": true
+        },
+        "dsr_value": {
+          "new": 0.10592520850007825,
+          "ref": 0.095253526565794,
+          "equal_within_ulp_floor": false
+        },
+        "is_sharpe": {
+          "new": 1.0822935179115751,
+          "ref": 0.957238268654113,
+          "equal_within_ulp_floor": false
+        },
+        "oos_sharpe": {
+          "new": -0.7353183686983809,
+          "ref": 1.676282925571533,
+          "equal_within_ulp_floor": false
+        },
+        "wfe": {
+          "new": -0.6794075327340705,
+          "ref": 1.7511658073683205,
+          "equal_within_ulp_floor": false
+        },
+        "train_score": {
+          "new": 0.79581219335219,
+          "ref": 0.6845307927831193,
+          "equal_within_ulp_floor": false
+        }
+      },
+      "identical": false
+    }
+  ],
+  "oos_equity": {
+    "same_index": true,
+    "bars": 1065,
+    "max_abs_diff": 884.9774154078768,
+    "max_rel_diff": 0.08547511814614361,
+    "max_abs_diff_date": "2024-02-05 00:00:00+00:00",
+    "identical_within_ulp_floor": false
+  },
+  "aggregate": {
+    "oos_sharpe": {
+      "new": 0.8861970405430518,
+      "ref": 0.6223684144547865,
+      "equal_within_ulp_floor": false
+    },
+    "spy_sharpe": {
+      "new": 0.779216885606789,
+      "ref": 0.7792168856067855,
+      "equal_within_ulp_floor": true
+    },
+    "oos_cagr_pct": {
+      "new": 4.9053551528969175,
+      "ref": 3.3058711355122394,
+      "equal_within_ulp_floor": false
+    },
+    "spy_cagr_pct": {
+      "new": 13.019685441934946,
+      "ref": 12.958679736211497,
+      "equal_within_ulp_floor": false
+    },
+    "oos_mdd": {
+      "new": -5.278102080265301,
+      "ref": -5.278102080265256,
+      "equal_within_ulp_floor": true
+    },
+    "spy_mdd": {
+      "new": -22.0948355324869,
+      "ref": -22.09483553248699,
+      "equal_within_ulp_floor": true
+    }
+  },
+  "live_params_combo_equal": true,
+  "gates": {
+    "new": "16/17",
+    "reference": "17/17"
+  },
+  "anchor_folds": {
+    "new": 1,
+    "reference": 0
+  },
+  "skipped_folds_equal": true,
+  "wall_seconds": {
+    "new": 21.2,
+    "reference": 1362.6
+  },
+  "peak_rss_mb": {
+    "new": 3769,
+    "reference": 4968
+  },
+  "simulations": {
+    "new": 1,
+    "legacy_equivalent": 52
+  },
+  "od12_ndh_flips_folds": [],
+  "verdict": "DIFFERENCES - classify (see first_differences / oos_equity)",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "equity rebased at the first bar, returns from the second bar (curve_stats window)",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "sortino_guard": "NaN below 20 losing days (degeneracy guard)",
+      "zero_trade_guard": "NaN Sharpe and Sortino when no entry falls inside a selection window",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-07T00:50:13Z"
+  }
+}

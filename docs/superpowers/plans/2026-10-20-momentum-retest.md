@@ -552,4 +552,4 @@ git commit -m "research(momentum): Phase 2 after-tax replay vs SPY/MTUM"
 - If Phase 2 returns `SURVIVES_PHASE2`, the next plans are:
   - the paid-data vendor choice and Phase 3 replay, which needs owner approval of the purchase;
   - the Phase 4 live paper path, built after the freeze lift through `ggtrader-deploy`.
-- If it returns `NO-GO`, momentum is closed, and the freeze lift retires the stock picks for the SPY sweep alone.
+- If it returns `NO-GO`, momentum is closed, and the freeze lift retires the stock picks for the SPY sweep alone. [Superseded: owner instructions 2026-10-20 forbid retirement recommendations; documentation defect corrected 2026-11-06.]

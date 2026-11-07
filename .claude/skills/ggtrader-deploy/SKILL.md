@@ -16,11 +16,21 @@ Cron runs `scripts/paper_trade.sh` at **12:45 PT, Mon–Fri**, which does
 `docker compose run --rm ggtrader_live python -u ggt.py paper --live`. It
 re-reads `.env` on every run through the compose `env_file`.
 
+> **Status 2026-11-06: the trader is stopped.** The owner commented out the
+> 12:45 and 06:00 cron lines to move the signal path onto vectorbt 1.2.0 + Rust.
+> **Cron stays disabled until the owner re-enables it** (spec OD18): no date,
+> green check or finished phase re-enables it, and an agent never edits the
+> crontab or runs `ggt paper --live`. While it is off, a deploy means "the
+> image and tag are ready", and the first re-enabled run is checked with
+> `daily-trader-check`. The image runs vectorbt + vectorbt-rust on **Rust only**:
+> there is no numba or legacy fallback, so an engine problem means no orders.
+
 ## 0. Classify the change — it decides which steps apply
 
 | Change | Image rebuild? | Steps |
 |---|---|---|
-| Code the trader imports (`src/ggTrader/paper/`, `lab/strategies/`, `data/`, `lab/` helpers), deps, Dockerfile | yes | 1–7 |
+| Code the trader imports (`src/ggTrader/paper/`, `lab/strategies/`, `engine/`, `data/`, `lab/` helpers), deps (`uv.lock`), Dockerfile | yes | 1–7 |
+| `GGTRADER_TAG` or `UNTRADABLE_SYMBOLS` in `.env` only | **no** rebuild; the tag change pulls an existing image | 1 (tests if code reads a new var), 4, 5, 6, 7 |
 | `.env` only | **no** — picked up by the next cron run | 1 (tests if code reads a new var), 5b, 6, 7 |
 | docs / research / scripts the trader never imports | no | commit + push only; the push still builds an image, which is harmless |
 
@@ -40,12 +50,15 @@ If unsure whether the trader imports something, check from `ggt.py paper`
    ```bash
    .venv/bin/python .claude/skills/ggtrader-deploy/scripts/verify_live_path.py
    ```
-   It runs today's signal generation and the trader's pure helpers against
+   It runs today's signal generation (engine self-check, sanity gates, the
+   v2 ensemble with the live defaults) and the trader's pure helpers against
    real data with a mocked notifier, and places nothing. Extend it inline for
-   the specific change (e.g. call the new helper and print its output). Do
-   **not** use `ggt paper` without `--live` as the check: its dry run still
-   sends real Telegram messages and writes split-correction and peak-value
-   state to the production DB.
+   the specific change (e.g. call the new helper and print its output).
+   Since P7 a plain `ggt paper` (no `--live`) is a **read-only dry run**: no
+   ledger, snapshot, peak, split, dividend or tape write, no Telegram unless
+   `--notify`. Only `ggt paper --dry-run-writes` keeps the old behaviour that
+   wrote state and sent messages; never use that flag as a check. Running even
+   the read-only dry run on the owner's behalf is the owner's call (spec 8.4).
 4. **Predict the next run.** From step 3, write down what the 12:45 run
    should do (e.g. "sells AEE/HAS/HON/MNST/PNR/VZ, no strategy buys"). If a
    change forces trades, the user should see that list and agree before
@@ -74,24 +87,37 @@ changed on the box** — fix and push again.
 
 ## 4. Pull and restart
 
-Record the current image first so a rollback is one command:
+The trader runs an **immutable tag**, never `:latest` (spec 8.3). `docker-compose.yaml`
+reads the tag from `GGTRADER_TAG` in the project `.env`; `docker-build.yml` publishes
+the short sha, `sha-<full sha>` and `latest`. Record the current tag and image first so
+a rollback is one edit:
 ```bash
-docker image inspect ghcr.io/garykuepper/ggtrader:latest --format '{{.Id}} {{.Created}}'
+grep '^GGTRADER_TAG=' .env        # only the one line; do not print the rest of .env
+docker image inspect ghcr.io/garykuepper/ggtrader:<current_tag> --format '{{.Id}} {{.Created}}'
+# set GGTRADER_TAG=<new short sha> in .env, then:
 docker compose pull ggtrader_live && docker compose up -d ggtrader_live
-docker image inspect ghcr.io/garykuepper/ggtrader:latest --format '{{.Created}}'
+docker image inspect ghcr.io/garykuepper/ggtrader:<new_tag> --format '{{.Created}}'
 ```
-The new `Created` must be after your commit time.
+The new `Created` must be after your commit time. **A deploy is not done while
+`GGTRADER_TAG` is unset or `latest`.** Keep the previous tag's image locally until the new
+one has run cleanly (`docker image prune` and `compose pull` orphan an untagged old image).
 
 ## 5. Verify inside the container
 
 a. **Code:** import the changed module and assert the new symbol exists,
    inside the image — not on the host:
    ```bash
+   docker compose run --rm ggtrader_live python -m ggTrader.engine.selfcheck --engine rust
    docker compose run --rm ggtrader_live python -c "
-   import vectorbt  # the 09-23 failure mode
+   import ggTrader.paper.trader  # imports the engine: the 09-23 failure mode
    from ggTrader.paper.trader import PaperTrader
    print('ok', hasattr(PaperTrader, '<new_method>'))"
    ```
+   The self-check prints the vectorbt and vectorbt-rust versions and
+   `"engine": "rust"` with a positive `rust_calls`; anything else (numba, a
+   version mismatch) means the trader would place no orders. Do not "fix" that
+   by setting `GGT_VBT_ENGINE=numba`: numba is a research escape hatch, 20-60 s
+   of JIT per fresh container, never a trader fallback.
 b. **Config:** if the change reads an env var, print the value the trader
    will see through the same code path (e.g.
    `from ggTrader.paper.risk import config_from_env; print(config_from_env())`).
@@ -112,17 +138,16 @@ following run.
 
 ## Rollback
 
-Fastest, no rebuild — re-tag the image recorded in step 4 and restart:
+Fastest, no rebuild — select the previous immutable tag recorded in step 4:
 ```bash
-docker tag <previous_image_id> ghcr.io/garykuepper/ggtrader:latest
+# set GGTRADER_TAG=<previous tag> in .env, then
 docker compose up -d ggtrader_live
 ```
-If the old image was pruned locally, the build also pushes a per-commit tag,
-so `docker pull ghcr.io/garykuepper/ggtrader:<short_sha>` of the last good
-commit works too.
+If the old image was pruned locally, every build also pushes `<short_sha>` and
+`sha-<full sha>` tags, so `docker pull ghcr.io/garykuepper/ggtrader:<short_sha>` of
+the last good commit works too. Never re-tag `:latest` as the rollback.
 Then fix forward properly: `git revert <sha>`, push, and run this skill again
-so `:latest` on GHCR matches the box again (otherwise the next pull silently
-re-deploys the bad image). For an `.env` change, restore the old line — the
+so the tag in `.env` names a good build again. For an `.env` change, restore the old line — the
 next cron run picks it up.
 
 ## Manual broker actions

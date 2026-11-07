@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ggTrader.lab.metrics import curve_stats
 from ggTrader.lab.significance import (
     CAGR_BAR_PP,
     NW_LAGS,
@@ -17,6 +16,7 @@ from ggTrader.lab.significance import (
     passes_pretax_bar,
     years_for_t,
 )
+from ggTrader.lab.wfo.report import curve_summary
 
 
 def test_newey_west_lag0_is_plain_se():
@@ -65,7 +65,7 @@ def test_alignment_precedes_returns_and_uses_shared_cagr_helper():
     assert stats.n_obs == 3
     assert stats.ann_excess_pct == pytest.approx(excess.mean() * 252 * 100)
     assert stats.cagr_diff_pp == pytest.approx(
-        curve_stats(strat.loc[dates])["cagr_pct"] - curve_stats(bench.loc[dates])["cagr_pct"]
+        curve_summary(strat.loc[dates])["cagr_pct"] - curve_summary(bench.loc[dates])["cagr_pct"]
     )
 
 

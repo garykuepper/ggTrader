@@ -1,0 +1,195 @@
+{
+  "n_folds": 2,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "cross_asset_sleeve__lookback126",
+    "cross_asset_sleeve__lookback189"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31T00:00:00+00:00",
+      "train_end": "2022-01-31T00:00:00+00:00",
+      "test_start": "2022-01-31T00:00:00+00:00",
+      "test_end": "2022-04-30T00:00:00+00:00",
+      "winner_combo": "cross_asset_sleeve__lookback126",
+      "winner_params": {
+        "lookback": 126
+      },
+      "train_score": 0.6302866943978277,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.7436385376179655,
+      "wfe": -0.7972575136179213,
+      "is_sharpe": 1.5192433517070816,
+      "oos_sharpe": -1.211228177162545,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "winner_trades_in_window": 25,
+      "winner_trades_whole_simulation": 25,
+      "od12_ndh_flip": false
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30T00:00:00+00:00",
+      "train_end": "2022-04-30T00:00:00+00:00",
+      "test_start": "2022-04-30T00:00:00+00:00",
+      "test_end": "2022-07-30T00:00:00+00:00",
+      "winner_combo": "cross_asset_sleeve__lookback189",
+      "winner_params": {
+        "lookback": 189
+      },
+      "train_score": 0.8,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.2740087069972463,
+      "wfe": null,
+      "is_sharpe": 0.25044510282541377,
+      "oos_sharpe": -0.10400771266213012,
+      "halted": true,
+      "halted_entering": false,
+      "used_anchor": true,
+      "winner_trades_in_window": 26,
+      "winner_trades_whole_simulation": 26,
+      "od12_ndh_flip": false
+    }
+  ],
+  "live_params": {
+    "combo": "cross_asset_sleeve__lookback126",
+    "params": {
+      "lookback": 126
+    },
+    "train_metrics": {
+      "sharpe": -0.0890614450315643,
+      "cagr_pct": -2.8062147762001333,
+      "max_drawdown_pct": -17.25715727964777
+    },
+    "stability": 1,
+    "train_start": "2021-07-31T00:00:00+00:00",
+    "train_end": "2022-07-31T00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: cross_asset_sleeve | 3 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      lookback126                 1.52 -1.21  FAIL -0.80 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      lookback189                 0.25 -0.10  FAIL   n/a [H] [A]\n\nOOS Aggregate: Sharpe -0.59 | CAGR -13.3% | MaxDD -16.8%\nSPY baseline:  Sharpe -0.52 | CAGR -15.1% | MaxDD -20.6%\nAggregate WFE: -0.80 (target >= 0.50)\n!! REGIME HALT ACTIVE -- trading on anchor params\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       cross_asset_sleeve__lookback126\nTrain Sharpe: -0.09 | CAGR -2.8% | MaxDD -17.3%\nStability:    selected in 1/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    cross_asset_sleeve__lookback189\nMaxDD:    -26.8% | CAGR 14.6% | Sharpe 0.87",
+  "oos_bars": 125,
+  "oos_first": "2022-01-31T00:00:00+00:00",
+  "oos_last": "2022-07-29T00:00:00+00:00",
+  "diagnostics": {
+    "engine": "rust",
+    "definitions": "vbt",
+    "strategy_kind": "weights",
+    "n_combos": 3,
+    "n_symbols": 5,
+    "n_bars": 860,
+    "n_folds": 2,
+    "n_simulations": 4,
+    "n_chunks": 4,
+    "legacy_equivalent_simulations": 7,
+    "od12_ndh_flips_folds": [],
+    "timings_s": {
+      "build_s": 0.124,
+      "simulate_s": 0.676,
+      "folds_s": 0.391,
+      "total_s": 1.192
+    },
+    "peak_rss_mb": 641,
+    "max_bytes": 3221225472,
+    "oos_metrics": {
+      "total_return_pct": -6.765716969809699,
+      "cagr_pct": -13.26990146492082,
+      "sharpe": -0.5928948678135563,
+      "sortino": -0.7925343722490298,
+      "ann_vol_pct": 20.48448423266875,
+      "max_drawdown_pct": -16.849224226332083
+    },
+    "spy_metrics": {
+      "total_return_pct": -7.747078536196417,
+      "cagr_pct": -15.115072262675366,
+      "sharpe": -0.5150733529934634,
+      "sortino": -0.6900684107517806,
+      "ann_vol_pct": 25.51378057804196,
+      "max_drawdown_pct": -20.561146708583077
+    },
+    "pit_masked": true
+  },
+  "run": "ref_cross_asset_sleeve",
+  "stem": "ref_cross_asset_sleeve",
+  "engine": "vectorbt-1.2.0",
+  "spec": {
+    "strategy": "cross_asset_sleeve",
+    "end": "2022-07-31",
+    "universe": "cross_asset"
+  },
+  "run_wfo_kwargs": {},
+  "definitions": "vbt",
+  "grid_size": 3,
+  "symbols_loaded": 5,
+  "data_start": "2019-03-03",
+  "last_bar": "2022-07-29",
+  "bars_summary": {
+    "source": "snapshot",
+    "n_symbols": 5,
+    "n_bars": 860,
+    "first_bar": "2019-03-04",
+    "last_bar": "2022-07-29",
+    "requested": 5,
+    "missing_symbols": [],
+    "early_ending_min_bars": 5,
+    "early_ending": {},
+    "last_bar_coverage": 1.0
+  },
+  "tape": {
+    "path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": null,
+    "rows": 1110874,
+    "symbols": 605,
+    "date_min": "2019-03-01",
+    "date_max": "2026-10-30",
+    "deep_checked": false
+  },
+  "ok": true,
+  "wall_seconds": 1.5,
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "legacy: equity rebased at the first bar, returns from the second bar",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-06T23:21:13Z"
+  }
+}

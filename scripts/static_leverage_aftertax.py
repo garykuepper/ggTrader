@@ -205,7 +205,7 @@ def run(
             if any(abs(cur[s] - tg[s]) > band for s in tg):
                 pending = tg
     nav = pd.Series(nav, index=idx)
-    r = nav.pct_change().dropna()
+    r = nav.ffill().pct_change(fill_method=None).dropna()
     yrs = len(idx) / 252
     pre_cagr = (nav.iloc[-1] / initial) ** (1 / yrs) - 1
     terminal = book.liquidate(close.loc[idx[-1]], idx[-1])

@@ -1,0 +1,40 @@
+=== venv0285 default
+vbt 0.28.5 pandas 2.3.3 numpy 2.2.6 engine setting n/a (0.28.5)
+weights diag {'stratA': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 210}, 'stratB': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 213}, 'stratC': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 214}, 'empty': {'n_strategies': 1, 'n_symbols': 0, 'n_tra
+signals sl_trail {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 173}}
+signals plain {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 151}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 144}}
+signals tp+sl {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 170}}
+final equity weights {'stratA': 111786.9117, 'stratB': 106407.1254, 'stratC': 127900.1264, 'empty': 100000.0}
+final equity sig_trail {'sigA': 106866.0502, 'sigB': 102374.9086}
+=== venv100 numba
+vbt 1.0.0 pandas 2.3.3 numpy 2.2.6 engine setting numba
+weights diag {'stratA': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 210}, 'stratB': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 213}, 'stratC': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 214}, 'empty': {'n_strategies': 1, 'n_symbols': 0, 'n_tra
+signals sl_trail {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 173}}
+signals plain {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 151}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 144}}
+signals tp+sl {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 170}}
+final equity weights {'stratA': 111786.9117, 'stratB': 106407.1254, 'stratC': 127900.1264, 'empty': 100000.0}
+final equity sig_trail {'sigA': 106866.0502, 'sigB': 102374.9086}
+=== venv100 rust
+vbt 1.0.0 pandas 2.3.3 numpy 2.2.6 engine setting rust
+weights diag {'stratA': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 210}, 'stratB': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 213}, 'stratC': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 214}, 'empty': {'n_strategies': 1, 'n_symbols': 0, 'n_tra
+signals sl_trail {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 173}}
+signals plain {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 151}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 144}}
+signals tp+sl {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 170}}
+final equity weights {'stratA': 111786.9117, 'stratB': 106407.1254, 'stratC': 127900.1264, 'empty': 100000.0}
+final equity sig_trail {'sigA': 106866.0502, 'sigB': 102374.9086}
+=== venv120 numba
+vbt 1.2.0 pandas 3.1.1 numpy 2.5.4 engine setting numba
+weights diag {'stratA': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 210}, 'stratB': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 213}, 'stratC': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 214}, 'empty': {'n_strategies': 1, 'n_symbols': 0, 'n_tra
+signals sl_trail {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 173}}
+signals plain {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 151}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 144}}
+signals tp+sl {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 170}}
+final equity weights {'stratA': 111786.9117, 'stratB': 106407.1254, 'stratC': 127900.1264, 'empty': 100000.0}
+final equity sig_trail {'sigA': 106866.0502, 'sigB': 102374.9086}
+=== venv120 rust
+vbt 1.2.0 pandas 3.1.1 numpy 2.5.4 engine setting rust
+weights diag {'stratA': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 210}, 'stratB': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 213}, 'stratC': {'n_strategies': 1, 'n_symbols': 20, 'n_trades': 214}, 'empty': {'n_strategies': 1, 'n_symbols': 0, 'n_tra
+signals sl_trail {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 173}}
+signals plain {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 151}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 144}}
+signals tp+sl {'sigA': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 180}, 'sigB': {'n_strategies': 1, 'n_symbols': 30, 'n_trades': 170}}
+final equity weights {'stratA': 111786.9117, 'stratB': 106407.1254, 'stratC': 127900.1264, 'empty': 100000.0}
+final equity sig_trail {'sigA': 106866.0502, 'sigB': 102374.9086}

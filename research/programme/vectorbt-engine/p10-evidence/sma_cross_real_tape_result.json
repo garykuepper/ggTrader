@@ -1,0 +1,279 @@
+{
+  "n_folds": 3,
+  "gates": "0/3",
+  "anchor_folds": 3,
+  "winners": [
+    "sma_cross__fast10_slow50",
+    "sma_cross__fast10_slow50",
+    "sma_cross__fast20_slow50"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2023-01-31T00:00:00+00:00",
+      "train_end": "2024-01-31T00:00:00+00:00",
+      "test_start": "2024-01-31T00:00:00+00:00",
+      "test_end": "2024-04-30T00:00:00+00:00",
+      "winner_combo": "sma_cross__fast10_slow50",
+      "winner_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "train_score": 0.8,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.49919877648015265,
+      "wfe": 0.29502266746653355,
+      "is_sharpe": 1.0542989921759152,
+      "oos_sharpe": 0.31104210097901647,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "anchor_reason": "gates_failed",
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "halt_cleared": false,
+      "winner_trades_in_window": 111,
+      "winner_trades_whole_simulation": 162,
+      "od12_ndh_flip": false
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2023-04-30T00:00:00+00:00",
+      "train_end": "2024-04-30T00:00:00+00:00",
+      "test_start": "2024-04-30T00:00:00+00:00",
+      "test_end": "2024-07-30T00:00:00+00:00",
+      "winner_combo": "sma_cross__fast10_slow50",
+      "winner_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "train_score": 0.8,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.5759678992823192,
+      "wfe": 0.7883670205077893,
+      "is_sharpe": 1.2488601418464444,
+      "oos_sharpe": 0.9845601490584165,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "anchor_reason": "gates_failed",
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "halt_cleared": false,
+      "winner_trades_in_window": 110,
+      "winner_trades_whole_simulation": 183,
+      "od12_ndh_flip": false
+    },
+    {
+      "fold_num": 3,
+      "train_start": "2023-07-30T00:00:00+00:00",
+      "train_end": "2024-07-30T00:00:00+00:00",
+      "test_start": "2024-07-30T00:00:00+00:00",
+      "test_end": "2024-10-30T00:00:00+00:00",
+      "winner_combo": "sma_cross__fast20_slow50",
+      "winner_params": {
+        "fast": 20,
+        "slow": 50
+      },
+      "train_score": 0.7335376326450042,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.4796228694827397,
+      "wfe": 1.1629764214524512,
+      "is_sharpe": 1.0046971304881749,
+      "oos_sharpe": 1.168439073458684,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "anchor_reason": "gates_failed",
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "halt_cleared": false,
+      "winner_trades_in_window": 86,
+      "winner_trades_whole_simulation": 189,
+      "od12_ndh_flip": false
+    }
+  ],
+  "anchor_history": [
+    {
+      "fold": 1,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "reason": "gates_failed"
+    },
+    {
+      "fold": 2,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "reason": "gates_failed"
+    },
+    {
+      "fold": 3,
+      "anchor_combo": "sma_cross__fast10_slow50",
+      "anchor_params": {
+        "fast": 10,
+        "slow": 50
+      },
+      "deployed_combo": "sma_cross__fast10_slow50",
+      "reason": "gates_failed"
+    }
+  ],
+  "live_params": {
+    "combo": "sma_cross__fast20_slow50",
+    "params": {
+      "fast": 20,
+      "slow": 50
+    },
+    "train_metrics": {
+      "sharpe": 1.6899522944440246,
+      "cagr_pct": 9.811778590748176,
+      "max_drawdown_pct": -3.3956122896138585
+    },
+    "stability": 1,
+    "train_start": "2023-10-31T00:00:00+00:00",
+    "train_end": "2024-10-31T00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: sma_cross | 4 combos x 3 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2023-01 \u2192 2024-01      2024-01 \u2192 2024-04      fast10_slow50               1.05  0.31  FAIL  0.30 [A]\n2     2023-04 \u2192 2024-04      2024-04 \u2192 2024-07      fast10_slow50               1.25  0.98  FAIL  0.79 [A]\n3     2023-07 \u2192 2024-07      2024-07 \u2192 2024-10      fast20_slow50               1.00  1.17  FAIL  1.16 [A]\n\nOOS Aggregate: Sharpe 0.80 | CAGR 4.2% | MaxDD -3.2%\nSPY baseline:  Sharpe 2.14 | CAGR 29.3% | MaxDD -8.4%\nAggregate WFE: 0.75 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2023-10 \u2192 2024-10\nWinner:       sma_cross__fast20_slow50\nTrain Sharpe: 1.69 | CAGR 9.8% | MaxDD -3.4%\nStability:    selected in 1/3 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    sma_cross__fast10_slow50\nMaxDD:    -3.9% | CAGR 2.9% | Sharpe 0.64\n\n\u2500\u2500 Anchor Per Fold (fit on data up to each train_end) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n  fold 1   [gates_failed] (same set every fold)\n  fold 2   [gates_failed] (same set every fold)\n  fold 3   [gates_failed] (same set every fold)",
+  "oos_bars": 190,
+  "oos_first": "2024-01-31T00:00:00+00:00",
+  "oos_last": "2024-10-30T00:00:00+00:00",
+  "diagnostics": {
+    "engine": "rust",
+    "definitions": "vbt",
+    "strategy_kind": "signals",
+    "n_combos": 4,
+    "n_symbols": 39,
+    "n_bars": 924,
+    "n_folds": 3,
+    "n_simulations": 1,
+    "n_chunks": 1,
+    "legacy_equivalent_simulations": 10,
+    "od12_ndh_flips_folds": [],
+    "timings_s": {
+      "build_s": 0.067,
+      "simulate_s": 0.335,
+      "folds_s": 0.517,
+      "total_s": 0.922
+    },
+    "peak_rss_mb": 657,
+    "max_bytes": 5368709120,
+    "oos_metrics": {
+      "total_return_pct": 3.1562834738993795,
+      "cagr_pct": 4.230362754388084,
+      "sharpe": 0.7996957918675281,
+      "sortino": 1.1233885065162488,
+      "ann_vol_pct": 5.36036014856247,
+      "max_drawdown_pct": -3.160866422951536
+    },
+    "spy_metrics": {
+      "total_return_pct": 21.247376488322132,
+      "cagr_pct": 29.289463607401522,
+      "sharpe": 2.1353651786322607,
+      "sortino": 3.161303065600692,
+      "ann_vol_pct": 12.394442089772067,
+      "max_drawdown_pct": -8.405624467197747
+    },
+    "pit_masked": true,
+    "guards": {
+      "min_losing_days": 20,
+      "zero_trade_rule": "selection windows (anchor, train, live)"
+    }
+  },
+  "bars_summary": {
+    "source": "snapshot",
+    "n_symbols": 40,
+    "n_bars": 924,
+    "first_bar": "2021-03-02",
+    "last_bar": "2024-10-30",
+    "requested": 41,
+    "missing_symbols": [
+      "ABC"
+    ],
+    "early_ending_min_bars": 5,
+    "early_ending": {},
+    "last_bar_coverage": 1.0
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": null,
+    "rows": 1110874,
+    "symbols": 605,
+    "date_min": "2019-03-01",
+    "date_max": "2026-10-30",
+    "deep_checked": false
+  },
+  "strategy": "sma_cross",
+  "universe": "sp500",
+  "eval_start": "2023-01-31",
+  "eval_end": "2024-10-31",
+  "provenance": {
+    "schema": 1,
+    "python": "3.12.3",
+    "pandas": "3.1.1",
+    "numpy": "2.5.4",
+    "numba": "0.68.1",
+    "llvmlite": "0.50.0",
+    "scipy": "1.18.1",
+    "vectorbt": "1.2.0",
+    "vectorbt_rust": "1.2.0",
+    "engine_requested": "rust",
+    "engine_effective": "rust",
+    "rust_calls": 1,
+    "lock_sha256": "443d2b707669f00a9dace1ef6ac0e54f34d4ff831a47f7f85e0bba32efcef562",
+    "git_sha": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+    "git_dirty": true,
+    "contract_version": 1,
+    "baseline_epoch": "E1",
+    "definitions": {
+      "rsi": "wilder window=2n-1 ewm",
+      "macd": "ema macd_ewm=signal_ewm=True",
+      "bb_ddof": 1,
+      "atr": "sma ewm=False",
+      "sharpe": "vectorbt sharpe_ratio ddof=1 year_freq=252 days",
+      "volatility": "vectorbt annualized_volatility ddof=1 year_freq=252 days",
+      "max_drawdown": "vectorbt max_drawdown of the compounded window path",
+      "window": "equity rebased at the first bar, returns from the second bar (curve_stats window)",
+      "dsr": "var_sharpe=252/(T-1) bias=False",
+      "year_freq": "252 days",
+      "sortino": "vectorbt downside deviation (textbook)",
+      "sortino_guard": "NaN below 20 losing days (degeneracy guard)",
+      "zero_trade_guard": "NaN Sharpe and Sortino when no entry falls inside a selection window",
+      "cagr": "vectorbt annualized: prod(1+r)**(252/N)-1"
+    },
+    "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "created_utc": "2026-11-07T03:10:59Z"
+  }
+}

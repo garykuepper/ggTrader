@@ -1,0 +1,13 @@
+ranaroussi/quantstats	7801	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=33	rel=v0.0.86 2026-09-27	Portfolio analytics for quants, written in Python
+stefan-jansen/empyrical-reloaded	132	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=0	rel=0.7.2 2026-11-05	Common financial risk and performance metrics. Used by zipline and pyf
+stefan-jansen/pyfolio-reloaded	622	lastcommit=2026-11-02	Apache-2.0	archived=False	issues=0	rel=0.10.2 2026-11-02	Portfolio and risk analytics in Python
+pmorissette/ffn	2695	lastcommit=2026-11-04	MIT	archived=False	issues=7	rel=v1.4.1 2026-10-10	ffn - a financial function library for Python
+dcajasn/Riskfolio-Lib	4590	lastcommit=2026-11-04	BSD-3-Clause	archived=False	issues=11	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	Portfolio Optimization in Python
+skfolio/skfolio	2595	lastcommit=2026-10-29	BSD-3-Clause	archived=False	issues=37	rel=v1.12.5 2026-10-29	Python library for portfolio optimization, factor model construction, 
+quantopian/empyrical	1518	lastcommit=2020-10-14	Apache-2.0	archived=False	issues=37	rel=0.5.5 2020-10-13	Common financial risk and performance metrics. Used by zipline and pyf
+quantopian/pyfolio	6438	lastcommit=2020-07-15	Apache-2.0	archived=False	issues=166	rel=0.9.2 2019-04-15	Portfolio and risk analytics in Python
+polakowo/vectorbt	9700	lastcommit=2026-11-03	NOASSERTION	archived=False	issues=135	rel=v1.2.0 2026-10-19	The research engine that gives you an unfair advantage. Run thousands 
+sam31415/timeseriescv	290	lastcommit=2022-02-15	MIT	archived=False	issues=4	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	Scikit-learn style cross-validation classes for time series data
+hudson-and-thames/mlfinlab	4968	lastcommit=2021-12-01	NOASSERTION	archived=False	issues=49	rel={"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-the-latest-release","status":"404"}norelease	MlFinLab helps portfolio managers and traders who want to leverage the
+baobach/mlfinpy	92	lastcommit=2026-10-11	MIT	archived=False	issues=4	rel=0.1.2 2024-10-09	Mlfin.py is an advance Machine Learning toolbox for financial applicat
+scikit-learn/scikit-learn	68022	lastcommit=2026-11-05	BSD-3-Clause	archived=False	issues=2154	rel=1.9.1 2026-09-11	scikit-learn: machine learning in Python

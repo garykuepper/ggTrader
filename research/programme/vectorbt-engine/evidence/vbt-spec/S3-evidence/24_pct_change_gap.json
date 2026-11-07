@@ -1,0 +1,20 @@
+{
+ "2021-2022": {
+  "pandas": "3.1.1",
+  "symbols": 520,
+  "rows": 396,
+  "nan_cells": 3079,
+  "cells_where_pad_vs_none_differ": 2434,
+  "symbols_affected": 13,
+  "max_abs_diff_ignoring_nan": 0.0
+ },
+ "2025-2026": {
+  "pandas": "3.1.1",
+  "symbols": 533,
+  "rows": 458,
+  "nan_cells": 3690,
+  "cells_where_pad_vs_none_differ": 2920,
+  "symbols_affected": 20,
+  "max_abs_diff_ignoring_nan": 0.0
+ }
+}

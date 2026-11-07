@@ -1,0 +1,156 @@
+{
+  "description": "Frozen read-only daily OHLCV snapshots. Parquet files are git-ignored; this manifest is tracked. Rebuild with the command recorded per entry.",
+  "snapshots": [
+    {
+      "bytes": 33174819,
+      "collapse_daily_duplicates_rows_dropped": 0,
+      "columns": [
+        "timestamp",
+        "symbol",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+      "created": "2026-11-06T10:54:22-0800",
+      "creation_command": "python scripts/make_tape_snapshot.py --tag 20261106",
+      "date_max": "2026-10-30",
+      "date_min": "2019-03-01",
+      "db_session_timezone": "America/Los_Angeles",
+      "extras": [
+        "SPY",
+        "TLT",
+        "GLD",
+        "PDBC",
+        "BIL"
+      ],
+      "interval": "1d",
+      "numpy": "2.2.6",
+      "pandas": "2.3.3",
+      "path": "data/snapshots/ohlcv_20261106.parquet",
+      "python": "3.12.3",
+      "requested_symbols": 617,
+      "rows": 1110874,
+      "sanity": {
+        "duplicate_symbol_timestamp_rows": 0,
+        "identical_close_symbols": {
+          "ANSS": 76,
+          "DISCA": 26,
+          "DISCK": 25,
+          "HBI": 76,
+          "SIVB": 73
+        },
+        "jump_symbols": {
+          "PARA": {
+            "first": "2021-02-12",
+            "n": 1
+          },
+          "SBNY": {
+            "first": "2024-08-15",
+            "n": 1
+          },
+          "SIVB": {
+            "first": "2023-03-28",
+            "n": 5
+          }
+        },
+        "non_midnight_rows": 0,
+        "null_close_rows": 0,
+        "weekend_rows": 0
+      },
+      "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+      "symbols": 605,
+      "symbols_not_in_db": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "MMC",
+        "PKI",
+        "RE",
+        "WLTW"
+      ],
+      "timestamp_convention": "naive UTC midnight (DB column as stored); loader localises to UTC",
+      "trading_days": 1929,
+      "universe": "sp500",
+      "universe_span": [
+        "2021-01-31",
+        "2026-04-30"
+      ],
+      "venue": "yfinance",
+      "verify_against_db": {
+        "identical": true,
+        "rows": 112585,
+        "symbols_checked": [
+          "AAL",
+          "AAPL",
+          "ABBV",
+          "ACN",
+          "ADM",
+          "AEP",
+          "AIG",
+          "AKAM",
+          "AOS",
+          "APP",
+          "ATVI",
+          "BKNG",
+          "CDNS",
+          "CERN",
+          "D",
+          "DD",
+          "DELL",
+          "DOV",
+          "DTE",
+          "FITB",
+          "FLT",
+          "FMC",
+          "FTV",
+          "GLW",
+          "HSY",
+          "IBM",
+          "ICE",
+          "JNJ",
+          "KEY",
+          "KIM",
+          "KKR",
+          "KMB",
+          "LOW",
+          "MA",
+          "MCO",
+          "MHK",
+          "MNST",
+          "MTCH",
+          "MU",
+          "NLOK",
+          "NOV",
+          "O",
+          "OMC",
+          "PANW",
+          "PLTR",
+          "PSKY",
+          "PWR",
+          "REG",
+          "RF",
+          "SEE",
+          "SLG",
+          "SNA",
+          "STE",
+          "SYK",
+          "TRMB",
+          "UAL",
+          "WAT",
+          "WMB",
+          "WTW",
+          "XRX"
+        ]
+      },
+      "wall_seconds": 21.9
+    }
+  ]
+}

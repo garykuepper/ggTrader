@@ -1,0 +1,39 @@
+{
+ "note": "/usr/bin/time -v of the final 17-fold runs on the shared box (load 3-4 on 4 cores), systemd-run scope MemoryMax=6G MemorySwapMax=0, engine chunk budget 3 GiB",
+ "legacy_reference": {
+  "wall_seconds": 1421.4,
+  "peak_rss_mb": 4971,
+  "simulations": 52,
+  "source": "legacy-references/_legacy_reference_core17_ensemble_sp500.json"
+ },
+ "runs": {
+  "core17_ensemble_sp500": {
+   "process_elapsed": "0:22.21",
+   "process_peak_rss_mb": 3649,
+   "driver_wall_seconds": 18.2,
+   "engine_timings_s": {
+    "build_s": 0.932,
+    "simulate_s": 13.66,
+    "folds_s": 2.639,
+    "total_s": 17.26
+   },
+   "simulations": 1,
+   "chunks": 2,
+   "legacy_equivalent_simulations": 52
+  },
+  "core17_ensemble_sp500_dsr0": {
+   "process_elapsed": "0:22.02",
+   "process_peak_rss_mb": 3650,
+   "driver_wall_seconds": 18.2,
+   "engine_timings_s": {
+    "build_s": 0.937,
+    "simulate_s": 13.548,
+    "folds_s": 2.734,
+    "total_s": 17.25
+   },
+   "simulations": 1,
+   "chunks": 2,
+   "legacy_equivalent_simulations": 52
+  }
+ }
+}

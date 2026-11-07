@@ -1,0 +1,263 @@
+{
+  "run": "ref_macd_divergence",
+  "engine": "legacy",
+  "legacy_tag": "legacy-engine-vbt0285",
+  "legacy_commit": "c08d4ebb68dc24cdf12e9333c146f0f73c980684",
+  "spec": {
+    "kind": "wfo",
+    "strategy": "macd_divergence",
+    "universe": "sp500",
+    "eval_start": "2021-01-31",
+    "eval_end": "2022-07-31",
+    "note": "one pinned 2-fold window (smallest multi-fold honest window)"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "pandas": "2.3.3",
+    "numpy": "2.2.6",
+    "vectorbt": "0.28.5",
+    "numba": "0.61.2"
+  },
+  "tape": {
+    "path": "data/snapshots/ohlcv_20261106.parquet",
+    "sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+    "content_sha256": "a1dc6b58181ec9a23521e6edd167c3e46c28c61d20e9ed2db713ae7c6c3fd70c",
+    "rows": 1110874,
+    "symbols": 605
+  },
+  "started": "2026-11-06T11:14:56-0800",
+  "config": {
+    "base_config": {
+      "START_CASH": 10000.0,
+      "PORTFOLIO_SHARE": 1.0,
+      "FEES": 0.0,
+      "SLIPPAGE": 0.0005,
+      "FREQ": "1d",
+      "SIGNAL_POSITION_SIZE": 0.03,
+      "USE_CASH_SHARING": false,
+      "TRAIN_METRIC": "composite",
+      "MIN_CLOSED_TRADES_TRAIN": 0,
+      "MIN_TRADES_PER_TRAIN_FOLD": 8,
+      "MAX_TRAIN_DRAWDOWN_PCT": 75,
+      "BENCHMARK_SYMBOL": "SPY"
+    },
+    "lab_config": {
+      "top_n": 50,
+      "lookback": 252,
+      "skip": 21,
+      "min_history_bars": 400,
+      "max_stocks": null,
+      "max_sector_count": null
+    },
+    "grid_size": 8,
+    "grid": [
+      {
+        "divergence_window": 10,
+        "macd_fast": 8,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      {
+        "divergence_window": 10,
+        "macd_fast": 8,
+        "macd_signal": 9,
+        "macd_slow": 26
+      },
+      {
+        "divergence_window": 10,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      {
+        "divergence_window": 10,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 26
+      },
+      {
+        "divergence_window": 20,
+        "macd_fast": 8,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      {
+        "divergence_window": 20,
+        "macd_fast": 8,
+        "macd_signal": 9,
+        "macd_slow": 26
+      },
+      {
+        "divergence_window": 20,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      {
+        "divergence_window": 20,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 26
+      }
+    ],
+    "universe_requested": 537,
+    "universe_loaded": 519,
+    "data_start": "2019-03-03",
+    "max_leverage": 1.0,
+    "wfo_policy": "WfoPolicy() defaults",
+    "memory_hygiene": "gc.collect + malloc_trim after anchor and sweep steps (inert)"
+  },
+  "ok": true,
+  "oos": {
+    "total_return_pct": -4.174745575991324,
+    "cagr_pct": -8.333668845779574,
+    "sharpe": -0.29215617743547984,
+    "sortino": -0.4499988225253035,
+    "ann_vol_pct": 21.671102650204617,
+    "max_drawdown_pct": -13.896073387426789
+  },
+  "spy_oos_index": {
+    "total_return_pct": -7.747078536196361,
+    "cagr_pct": -15.17148703500364,
+    "sharpe": -0.5150733529934675,
+    "sortino": -0.7785287659816804,
+    "ann_vol_pct": 25.51378057804194,
+    "max_drawdown_pct": -20.561146708583156
+  },
+  "n_folds": 2,
+  "gates_passed": 0,
+  "gates": "0/2",
+  "anchor_folds": 2,
+  "winners": [
+    "macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21",
+    "macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21"
+  ],
+  "fold_table": [
+    {
+      "fold_num": 1,
+      "train_start": "2021-01-31 00:00:00+00:00",
+      "train_end": "2022-01-31 00:00:00+00:00",
+      "test_start": "2022-01-31 00:00:00+00:00",
+      "test_end": "2022-04-30 00:00:00+00:00",
+      "winner_combo": "macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21",
+      "winner_params": {
+        "divergence_window": 20,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      "train_score": 0.7339548341229851,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.6331695026584363,
+      "wfe": -0.5185978388425093,
+      "is_sharpe": 1.8044164024703733,
+      "oos_sharpe": -0.9357664466931112,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    },
+    {
+      "fold_num": 2,
+      "train_start": "2021-04-30 00:00:00+00:00",
+      "train_end": "2022-04-30 00:00:00+00:00",
+      "test_start": "2022-04-30 00:00:00+00:00",
+      "test_end": "2022-07-30 00:00:00+00:00",
+      "winner_combo": "macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21",
+      "winner_params": {
+        "divergence_window": 20,
+        "macd_fast": 12,
+        "macd_signal": 9,
+        "macd_slow": 21
+      },
+      "train_score": 0.6647087442432837,
+      "oos_score": 0.0,
+      "ndh_passed": true,
+      "dsr_passed": false,
+      "gates_passed": false,
+      "ndh_density": 1.0,
+      "dsr_value": 0.12482675175413577,
+      "wfe": null,
+      "is_sharpe": 0.30711150138741794,
+      "oos_sharpe": 0.22766678887078637,
+      "halted": false,
+      "halted_entering": false,
+      "used_anchor": true
+    }
+  ],
+  "live_params": {
+    "combo": "macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21",
+    "params": {
+      "divergence_window": 20,
+      "macd_fast": 12,
+      "macd_signal": 9,
+      "macd_slow": 21
+    },
+    "train_metrics": {
+      "sharpe": -0.004673375887751804,
+      "cagr_pct": -1.870609947468993,
+      "max_drawdown_pct": -17.78863436045308
+    },
+    "stability": 2,
+    "train_start": "2021-07-31 00:00:00+00:00",
+    "train_end": "2022-07-31 00:00:00+00:00"
+  },
+  "skipped_folds": [],
+  "table": "WFO: macd_divergence | 8 combos x 2 folds | rolling 12mo/3mo\n\nFold  Train Window        Test Window         Winner                     IS_SROOS_SR  Gate   WFE\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1     2021-01 \u2192 2022-01      2022-01 \u2192 2022-04      divergence_window20_m...    1.80 -0.94  FAIL -0.52 [A]\n2     2021-04 \u2192 2022-04      2022-04 \u2192 2022-07      divergence_window20_m...    0.31  0.23  FAIL   n/a [A]\n\nOOS Aggregate: Sharpe -0.29 | CAGR -8.3% | MaxDD -13.9%\nSPY baseline:  Sharpe -0.52 | CAGR -15.2% | MaxDD -20.6%\nAggregate WFE: -0.52 (target >= 0.50)\n\n\u2500\u2500 Recommended Live Params \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nTrain window: 2021-07 \u2192 2022-07\nWinner:       macd_divergence__divergence_window20_macd_fast12_macd_signal9_macd_slow21\nTrain Sharpe: -0.00 | CAGR -1.9% | MaxDD -17.8%\nStability:    selected in 2/2 folds\n\n\u2500\u2500 Anchor Set (Defensive Fallback) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nCombo:    macd_divergence__divergence_window10_macd_fast12_macd_signal9_macd_slow26\nMaxDD:    -8.7% | CAGR 8.5% | Sharpe 0.84",
+  "oos_first": "2022-01-31 00:00:00+00:00",
+  "oos_last": "2022-07-29 00:00:00+00:00",
+  "oos_bars": 125,
+  "load_seconds": 0.5,
+  "wall_seconds": 172.0,
+  "peak_rss_mb": 969,
+  "rss_trace": [
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 654,
+      "peak_mb": 957
+    },
+    {
+      "after": "compute_anchor_set",
+      "rss_mb": 654,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 654,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 661,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 661,
+      "peak_mb": 957
+    },
+    {
+      "after": "compute_anchor_set",
+      "rss_mb": 661,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 661,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 661,
+      "peak_mb": 957
+    },
+    {
+      "after": "_sweep_fold_dispatch",
+      "rss_mb": 661,
+      "peak_mb": 969
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+ "reason": "P5b: selection windows blank Sharpe/Sortino with no entry in the window and Sortino below 20 losing days (review MAJOR-1); anchors exclude never-traded combinations; ties within 1e-9 go to the first combination (replaces the P5 initial golden: 'initial golden of the 3-fold mini WFO on the seeded synthetic panel (engine walk-forward, vbt definitions)')",
+ "data": {
+  "full_grid": {
+   "winners": [
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14"
+   ],
+   "gates": [
+    false,
+    false,
+    false
+   ],
+   "used_anchor": [
+    true,
+    true,
+    true
+   ],
+   "halted": [
+    false,
+    false,
+    false
+   ],
+   "dsr_value": [
+    0.20771391311118853,
+    0.12421732058561463,
+    0.15036764587512874
+   ],
+   "is_sharpe": [
+    1.4445807381472036,
+    1.0844386255001157,
+    1.2175227086926326
+   ],
+   "oos_sharpe": [
+    null,
+    null,
+    null
+   ],
+   "live_combo": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+   "oos_equity": [
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0,
+    10000.0
+   ],
+   "oos_bars": 196
+  },
+  "active_16": {
+   "winners": [
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14"
+   ],
+   "gates": [
+    false,
+    false,
+    false
+   ],
+   "used_anchor": [
+    true,
+    true,
+    true
+   ],
+   "halted": [
+    false,
+    false,
+    false
+   ],
+   "dsr_value": [
+    0.36618276128424504,
+    0.24322751686479066,
+    0.28441370396904575
+   ],
+   "is_sharpe": [
+    1.4445807381472036,
+    1.0844386255001157,
+    1.2175227086926326
+   ],
+   "oos_sharpe": [
+    1.2834405999993672,
+    null,
+    0.976145329163332
+   ],
+   "live_combo": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+   "oos_equity": [
+    10000.0,
+    10000.0,
+    10000.0,
+    9984.487663973028,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10014.527481125204,
+    10013.299678705838,
+    10025.812963196811,
+    10025.812963196811,
+    10025.812963196811
+   ],
+   "oos_bars": 196
+  },
+  "active_16_open_gates": {
+   "winners": [
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit1_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold25_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+    "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14"
+   ],
+   "gates": [
+    true,
+    true,
+    true
+   ],
+   "used_anchor": [
+    false,
+    false,
+    false
+   ],
+   "halted": [
+    false,
+    false,
+    false
+   ],
+   "dsr_value": [
+    0.36618276128424504,
+    0.24322751686479066,
+    0.28441370396904575
+   ],
+   "is_sharpe": [
+    1.4445807381472036,
+    1.0844386255001157,
+    1.2175227086926326
+   ],
+   "oos_sharpe": [
+    1.2834405999993672,
+    0.22336062862844214,
+    0.5171452612775683
+   ],
+   "live_combo": "ensemble__bb_period20_bb_std2.5_divergence_window10_ema_fast10_ema_slow50_macd_fast12_macd_signal9_macd_slow26_min_agree2_min_agree_exit2_rsi_oversold30_rsi_period14_vol_mult1.5_vol_period20_weekly_rsi_exit50_weekly_rsi_oversold30_weekly_rsi_period14",
+   "oos_equity": [
+    10000.0,
+    10000.0,
+    10000.0,
+    9984.487663973028,
+    10017.818799729986,
+    10017.818799729986,
+    10017.818799729986,
+    10012.914584439326,
+    10019.556742700177,
+    10019.556742700177,
+    10019.556742700177,
+    10019.556742700177,
+    10019.556742700177,
+    10019.556742700177,
+    10019.556742700177,
+    10016.264853100434,
+    9990.959800739844,
+    10022.961520333856,
+    10022.961520333856,
+    10022.961520333856
+   ],
+   "oos_bars": 196
+  }
+ }
+}
