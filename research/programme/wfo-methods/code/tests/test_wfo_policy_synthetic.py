@@ -4,6 +4,7 @@ import json
 
 import numpy as np
 import pytest
+from wfo_policy_synthetic import run_grid, simulate_run
 
 from ggTrader.lab.wfo.breaker import (
     WfoPolicy,
@@ -12,7 +13,6 @@ from ggTrader.lab.wfo.breaker import (
     check_shadow_reentry,
     compute_wfe,
 )
-from ggTrader.lab.wfo_policy_synthetic import run_grid, simulate_run
 
 pytestmark = pytest.mark.study
 
@@ -41,7 +41,7 @@ def test_zero_p_gate_means_anchor_share_one():
 
 
 def test_policy_legacy_matches_direct_breaker_calls(monkeypatch):
-    import ggTrader.lab.wfo_policy_synthetic as synthetic
+    import wfo_policy_synthetic as synthetic
 
     seen = []
     original = synthetic.compute_wfe
@@ -109,7 +109,8 @@ def test_nan_exclude_halts_where_legacy_does_not():
 
 def test_run_grid_pools_halt_length_over_episodes_not_runs(monkeypatch) -> None:
     """Mean halt length is halted folds / episodes pooled across runs, not a mean of run means."""
-    import ggTrader.lab.wfo_policy_synthetic as synthetic
+    import wfo_policy_synthetic as synthetic
+
     from ggTrader.lab.wfo.breaker import WfoPolicy
 
     zero = {
@@ -141,7 +142,7 @@ def test_run_grid_pools_halt_length_over_episodes_not_runs(monkeypatch) -> None:
 
 def test_fraction_halts_active_at_end_is_per_episode() -> None:
     """Two halt episodes per run on average and half the runs ending halted give 0.25."""
-    import ggTrader.lab.wfo_policy_synthetic as synthetic
+    import wfo_policy_synthetic as synthetic
 
     cell = {"n_halt_episodes": 2.0, "never_reentered": 0.5, "halted_fold_share": 0.0}
     out = synthetic.finalize_cell(cell, n_folds=17)

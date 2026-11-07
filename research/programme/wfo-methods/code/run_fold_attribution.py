@@ -9,15 +9,14 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT / "src") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "src"))
+from ggTrader.utils.study import bootstrap
 
-from ggTrader.lab.wfo_attribution import regime_from_ancestry, summarize_run  # noqa: E402
+PROJECT_ROOT = bootstrap(__file__)
+
+from wfo_attribution import regime_from_ancestry, summarize_run
 
 #: Repo-relative location of each source artifact, keyed by the file name used in RUN_SOURCES
 #: and in the output's ``file`` field. Each study keeps its results in its own folder.

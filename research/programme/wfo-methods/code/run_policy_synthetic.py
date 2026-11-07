@@ -6,9 +6,12 @@ from dataclasses import asdict
 from pathlib import Path
 
 from ggTrader.lab.wfo.breaker import WfoPolicy
-from ggTrader.lab.wfo_policy_synthetic import run_grid
+from ggTrader.utils.study import bootstrap
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = bootstrap(__file__)
+
+from wfo_policy_synthetic import run_grid
+
 MUS = (0.0, 0.5, 1.0, 1.5)
 P_GATES = (0.3, 0.7, 1.0)
 POLICIES = {
