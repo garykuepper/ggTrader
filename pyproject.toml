@@ -54,8 +54,8 @@ test = ["pytest"]
 # ruff is PINNED exactly: `ruff format` output changes between minor
 # versions, so an unpinned CI would fail the format check against code a
 # developer just formatted locally. Bump deliberately, reformatting in the
-# same commit.
-dev = ["ruff==0.15.12", "mypy>=1.8"]
+# same commit. (0.16 began formatting fenced code in Markdown; ruff.toml excludes *.md.)
+dev = ["ruff==0.17.4", "mypy>=1.8"]
 
 [project.scripts]
 ggt = "ggTrader.cli.main:main"

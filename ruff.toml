@@ -54,3 +54,7 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+# ruff 0.16 began formatting fenced code blocks inside Markdown files. The docs and the byte-frozen
+# research reports (hashed in the reorg ledger) must not be rewritten by a formatter, so only
+# Python is formatted.
+exclude = ["*.md"]
