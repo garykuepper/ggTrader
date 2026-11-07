@@ -367,6 +367,9 @@ Owner decisions, in plain words (recommended default in bold):
 - **D5** After loading the November refresh, re-run the reference results and accept new reference numbers and a new live-signal reference? **Yes, as its own step, with your sign-off.**
 - **D6** Commit a refreshed list to git only when a result depends on it? **Yes.**
 - **D7** Do not merge the `refresh/sp500-membership` overwrite. Use its download as vintage 2. **Yes.**
+- **D8** The upstream list stopped at 2026-08-18, so "our copy equals upstream" cannot see real lag. Should the live gate also bound how far the list's last date trails today? **Yes: warn at 90 days, refuse at 180.**
+
+**Answered 2026-11-07.** The owner asked the lead to answer D1 to D8. The recommended defaults above are adopted, with two changes: D3 is revised per Appendix B5 (create the read and load roles now, enforce them later) and D8 is the Appendix A answer. D5 still needs the owner's sign-off at that step, not now. Any answer can be reversed before the build starts.
 
 Not verified: the PostgreSQL and TimescaleDB versions (identity columns need PG 10+; nothing newer is used); how the `ggtraderdb` directory is actually backed up; the upstream commit of vintage 1, and whether fja05680 ever rewrites its git history; the true retrieval time of v1; the refresh agent's v2 oracle and golden figures (read from its notes, not re-run); Hermes cron and systemd timer details on Encom; whether the live container can reach GitHub; whether `TelegramNotifier` works from outside the trader process; how often upstream renames tickers.
 
