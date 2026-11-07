@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from ggTrader.utils.study import load_driver, repo_root
+from ggTrader.utils.study import load_driver, repo_root, study_dir
 
 pytestmark = pytest.mark.study
 
-CODE_DIR = Path(__file__).resolve().parents[1]
+CODE_DIR = study_dir(__file__) / "code"
 
 
 def test_fold_attribution_sources_exist() -> None:
