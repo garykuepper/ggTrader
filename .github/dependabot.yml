@@ -21,9 +21,6 @@ updates:
       - dependency-name: "numba"
       - dependency-name: "llvmlite"
       - dependency-name: "plotly"
-      # Pinned exactly in pyproject.toml on purpose: `ruff format` output changes between
-      # versions (0.16 started formatting Markdown code blocks). Bump by hand, with the reformat.
-      - dependency-name: "ruff"
 
   - package-ecosystem: "github-actions"
     directory: "/"
