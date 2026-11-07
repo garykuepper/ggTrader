@@ -2,10 +2,13 @@
 line-length = 100
 target-version = "py311"
 
-# research/ holds byte-frozen evidence (sha256 recorded in the reorg ledger). The
-# Claude ruff hook and .githooks/pre-commit pass explicit file paths, which ruff
-# lints regardless of excludes unless force-exclude is on.
-extend-exclude = ["research"]
+# research/ holds byte-frozen evidence (sha256 recorded in the reorg ledger) next to the study
+# code that is linted (research/<category>/<study>/code and research/<category>/_lib). Only the
+# frozen Python is excluded: the vectorbt-engine programme folder and the artifacts-* folders.
+# Ruff's "*" also crosses "/", so tests/scripts/test_research_layout.py forbids an artifacts-
+# segment below any code/ or _lib/ folder. The Claude ruff hook and .githooks/pre-commit pass
+# explicit file paths, which ruff lints regardless of excludes unless force-exclude is on.
+extend-exclude = ["research/programme/vectorbt-engine", "research/*/artifacts-*"]
 force-exclude = true
 
 [lint]
@@ -43,8 +46,7 @@ exclude = [
 # disagrees with ``LEGACY_ONLY``.
 "scripts/legacy_reference_runs.py" = ["TID251"]  # legacy-interpreter-only reference runner
 # Study code (research/<category>/<study>/code/) calls its bootstrap before the ggTrader imports so
-# it runs from any checkout, which is what E402 flags. research/ is still excluded above until the
-# study-code lint scan lands (S3); this entry is ready for it.
+# it runs from any checkout, which is what E402 (import not at top of file) flags.
 "research/**/code/*.py" = ["E402"]
 
 [format]

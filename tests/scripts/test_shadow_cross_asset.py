@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-pytestmark = pytest.mark.study
+pytestmark = pytest.mark.tooling
 
 spec = importlib.util.spec_from_file_location("shadow", "scripts/shadow_cross_asset.py")
 mod = importlib.util.module_from_spec(spec)

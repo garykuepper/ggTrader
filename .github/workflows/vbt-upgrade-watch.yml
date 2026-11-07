@@ -127,6 +127,7 @@ jobs:
           python -m ggTrader.engine.selfcheck > selfcheck.log 2>&1 || echo "SELFCHECK_RED" >> status
           pytest tests/engine -q -p no:cacheprovider > engine.log 2>&1 || echo "ENGINE_RED" >> status
           pytest tests -q -p no:cacheprovider > full.log 2>&1 || echo "FULL_RED" >> status
+          GGT_TEST_NO_CGROUP=1 scripts/run_tests.sh --studies -q -p no:cacheprovider > studies.log 2>&1 || echo "STUDIES_RED" >> status
           touch status
 
       - name: Write the report
@@ -151,6 +152,8 @@ jobs:
             echo '```'; cat selfcheck.log 2>/dev/null || echo "not run"; echo '```'
             echo "### Full suite (tail)"
             echo '```'; tail -n 15 full.log 2>/dev/null || echo "not run"; echo '```'
+            echo "### Study suite (tail)"
+            echo '```'; tail -n 15 studies.log 2>/dev/null || echo "not run"; echo '```'
             echo "### Lock log (tail)"
             echo '```'; tail -n 30 lock.log 2>/dev/null; echo '```'
           } > "report-${GGT_VBT_ENGINE}.md"
