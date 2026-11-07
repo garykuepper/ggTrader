@@ -4,19 +4,18 @@ import io
 import zipfile
 from pathlib import Path
 
+import factor_screen
 import numpy as np
 import pandas as pd
 import pytest
-
-from ggTrader.lab import factor_screen
-from ggTrader.lab.factor_screen import FULL, screen, value_momentum_combo
-from ggTrader.lab.french_data import (
+from factor_screen import FULL, screen, value_momentum_combo
+from french_data import (
     FACTOR_SCHEMAS,
     VALUE_FILE,
     download_and_freeze,
     load_size_factor_vw,
 )
-from ggTrader.lab.momentum_screen import cagr_diff_pp, holm, net_excess, nw_t
+from momentum_screen import cagr_diff_pp, holm, net_excess, nw_t
 
 pytestmark = pytest.mark.study
 

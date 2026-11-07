@@ -4,14 +4,13 @@ import io
 import zipfile
 from pathlib import Path
 
+import net_issuance_screen
 import numpy as np
 import pandas as pd
 import pytest
-
-from ggTrader.lab import net_issuance_screen
-from ggTrader.lab.french_data import download_and_freeze
-from ggTrader.lab.momentum_screen import cagr_diff_pp, net_excess, nw_t, one_sided_p
-from ggTrader.lab.net_issuance_screen import (
+from french_data import download_and_freeze
+from momentum_screen import cagr_diff_pp, net_excess, nw_t, one_sided_p
+from net_issuance_screen import (
     BIG_COLUMNS,
     FULL,
     POST,

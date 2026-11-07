@@ -1,8 +1,7 @@
 """Evaluate the four pre-registered long-only French factor hypotheses."""
 
 import pandas as pd
-
-from ggTrader.lab.momentum_screen import (
+from momentum_screen import (
     HOLM_ALPHA,
     POST,
     POST_BAR_PP,

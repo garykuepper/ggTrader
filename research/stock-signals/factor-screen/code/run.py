@@ -4,8 +4,12 @@ import argparse
 import json
 from pathlib import Path
 
-from ggTrader.lab.factor_screen import screen
-from ggTrader.lab.french_data import (
+from ggTrader.utils.study import bootstrap
+
+ROOT = bootstrap(__file__)
+
+from factor_screen import screen
+from french_data import (
     INVESTMENT_FILE,
     PROFITABILITY_FILE,
     VALUE_FILE,
@@ -14,11 +18,9 @@ from ggTrader.lab.french_data import (
     load_size_momentum_vw,
     verify_manifest,
 )
-from ggTrader.utils.paths import find_project_root
 
-PROJECT_ROOT = find_project_root()
 BRIEF = "research/stock-signals/factor-screen/2026-10-20-factor-screen.md"
-DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/factor-screen/_factor_screen_results.json"
+DEFAULT_OUT = ROOT / "research/stock-signals/factor-screen/_factor_screen_results.json"
 
 
 def main() -> None:

@@ -11,9 +11,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from ggTrader.utils.paths import find_project_root
+from ggTrader.utils.study import repo_root
 
-PROJECT_ROOT = find_project_root()
+PROJECT_ROOT = repo_root(__file__)
 FRENCH_BASE_URL = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/"
 SIZE_MOM_FILE = "6_Portfolios_ME_Prior_12_2_CSV.zip"
 FACTORS_FILE = "F-F_Research_Data_Factors_CSV.zip"

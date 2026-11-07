@@ -4,18 +4,20 @@ import argparse
 import json
 from pathlib import Path
 
-from ggTrader.lab.french_data import FACTORS_FILE, load_market_total_return, verify_manifest
-from ggTrader.lab.net_issuance_screen import (
+from ggTrader.utils.study import bootstrap
+
+ROOT = bootstrap(__file__)
+
+from french_data import FACTORS_FILE, load_market_total_return, verify_manifest
+from net_issuance_screen import (
     SIZE_NI_FILE,
     UNI_NI_FILE,
     load_net_issuance_vw,
     screen,
 )
-from ggTrader.utils.paths import find_project_root
 
-PROJECT_ROOT = find_project_root()
 BRIEF = "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen.md"
-DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/net-issuance/_net_issuance_screen_results.json"
+DEFAULT_OUT = ROOT / "research/stock-signals/net-issuance/_net_issuance_screen_results.json"
 
 
 def main() -> None:

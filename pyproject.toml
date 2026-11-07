@@ -35,7 +35,7 @@ dependencies = [
     "pytrends",
     "requests",
     "scikit-learn",
-    "scipy",  # lab/gates.py, lab/momentum_screen.py
+    "scipy",  # lab/gates.py, research/stock-signals/_lib/momentum_screen.py
     "sqlalchemy",
     # Newey-West HAC t statistic for the intraday r8 study's A1 gate.
     "statsmodels",

@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import pandas as pd
-
-from ggTrader.lab.french_data import FRENCH_DIR, _read_frozen_csv, parse_french_monthly
-from ggTrader.lab.momentum_screen import (
+from french_data import FRENCH_DIR, _read_frozen_csv, parse_french_monthly
+from momentum_screen import (
     _window,
     cagr_diff_pp,
     capm,

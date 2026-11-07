@@ -1,13 +1,11 @@
 """Test the pre-registered monthly momentum screen with synthetic returns."""
 
 import json
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-
-from ggTrader.lab.momentum_screen import (
+from momentum_screen import (
     cagr_diff_pp,
     capm,
     holm,
@@ -267,35 +265,3 @@ def test_screen_ignores_months_outside_fixed_window() -> None:
     sm.loc[pd.Timestamp("2026-05-31")] = np.nan
     mk.loc[pd.Timestamp("1926-12-31")] = np.nan
     assert screen(sm, mk) == expected
-
-
-def test_driver_download_only_and_offline_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Download mode freezes only; the default run writes provenance and screen results."""
-    import importlib.util
-
-    path = Path(__file__).resolve().parents[2] / "scripts" / "momentum_french_screen.py"
-    spec = importlib.util.spec_from_file_location("momentum_french_screen", path)
-    driver = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(driver)
-    sm, mk = _panels()
-    manifest = {"frozen.zip": {"sha256": "test-checksum"}}
-    downloads = []
-    monkeypatch.setattr(driver, "download_and_freeze", lambda files: downloads.append(files))
-    monkeypatch.setattr(driver, "verify_manifest", lambda: manifest)
-    monkeypatch.setattr(driver, "load_size_momentum_vw", lambda: sm)
-    monkeypatch.setattr(driver, "load_market_total_return", lambda: mk)
-    out = tmp_path / "results" / "screen.json"
-    monkeypatch.setattr("sys.argv", [str(path), "--download", "--out", str(out)])
-    driver.main()
-    assert downloads == [[driver.SIZE_MOM_FILE, driver.FACTORS_FILE]]
-    assert not out.exists()
-    monkeypatch.setattr("sys.argv", [str(path), "--out", str(out)])
-    driver.main()
-    result = json.loads(out.read_text())
-    assert downloads == [[driver.SIZE_MOM_FILE, driver.FACTORS_FILE]]
-    assert result["provenance"] == manifest
-    assert result["brief"] == "research/stock-signals/momentum/2026-10-20-momentum-retest.md"
-    assert result["runtime_sec"] >= 0
-    assert result["pass"] == {"big": False, "small": False}

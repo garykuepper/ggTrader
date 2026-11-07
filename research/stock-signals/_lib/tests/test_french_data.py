@@ -9,8 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
-from ggTrader.lab.french_data import (
+from french_data import (
     FACTORS_FILE,
     FRENCH_BASE_URL,
     SIZE_MOM_FILE,

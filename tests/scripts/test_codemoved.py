@@ -282,7 +282,7 @@ def test_reference_sweep_finds_each_spelling_and_honours_history_read() -> None:
         "src/ggTrader/lab/widget.py",
         "src/ggTrader/utils/gadget.py",
         "scripts/tool.py",
-        "scripts/one_off/once.py",
+        "scripts/subdir/once.py",
     ]
     text = "\n".join(
         [
@@ -296,7 +296,7 @@ def test_reference_sweep_finds_each_spelling_and_honours_history_read() -> None:
             "from ggTrader.utils import gadget",  # 8
             "from scripts import tool",  # 9
             "run('scripts/tool.py')",  # 10
-            "run('scripts/one_off/once.py')",  # 11
+            "run('scripts/subdir/once.py')",  # 11
             "import ggTrader.lab.widget  # history-read",  # 12
             "from ggTrader.lab import widget_two, other",  # 13  (different module)
             "import ggTrader.lab.widgets",  # 14 (different module)

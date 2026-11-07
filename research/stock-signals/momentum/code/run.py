@@ -5,7 +5,11 @@ import json
 import time
 from pathlib import Path
 
-from ggTrader.lab.french_data import (
+from ggTrader.utils.study import bootstrap
+
+ROOT = bootstrap(__file__)
+
+from french_data import (
     FACTORS_FILE,
     SIZE_MOM_FILE,
     download_and_freeze,
@@ -13,12 +17,10 @@ from ggTrader.lab.french_data import (
     load_size_momentum_vw,
     verify_manifest,
 )
-from ggTrader.lab.momentum_screen import screen
-from ggTrader.utils.paths import find_project_root
+from momentum_screen import screen
 
-PROJECT_ROOT = find_project_root()
 BRIEF = "research/stock-signals/momentum/2026-10-20-momentum-retest.md"
-DEFAULT_OUT = PROJECT_ROOT / "research/stock-signals/momentum/_momentum_french_screen_results.json"
+DEFAULT_OUT = ROOT / "research/stock-signals/momentum/_momentum_french_screen_results.json"
 
 
 def main() -> None:

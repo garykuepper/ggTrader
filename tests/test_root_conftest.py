@@ -9,6 +9,7 @@ tests/, and prove that `scripts/run_tests.sh --studies` builds a command pytest 
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -102,10 +103,10 @@ def _scratch_repo(root: Path, study_dirs: tuple[str, ...] = (), minimum: int | N
     (root / "tests").mkdir()
     shutil.copy(RUN_TESTS, root / "scripts" / "run_tests.sh")
     tiers_text = (ROOT / "tests" / "tiers.py").read_text()
-    if minimum is not None:
-        tiers_text = tiers_text.replace(
-            "STUDIES_MIN_COLLECTED = 0", f"STUDIES_MIN_COLLECTED = {minimum}"
-        )
+    # The scratch repo never inherits the real floor (it grows with every study move).
+    tiers_text = re.sub(
+        r"STUDIES_MIN_COLLECTED = \d+", f"STUDIES_MIN_COLLECTED = {minimum or 0}", tiers_text
+    )
     (root / "tests" / "tiers.py").write_text(tiers_text)
     for folder in study_dirs:
         (root / folder).mkdir(parents=True)
