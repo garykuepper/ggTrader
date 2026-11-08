@@ -50,6 +50,7 @@ from ggTrader.data.universe_algebra import (
     refusal_reasons,
 )
 from ggTrader.utils.config import get_db_connection_string
+from ggTrader.utils.io import atomic_write_text
 from ggTrader.utils.paths import REPO_ROOT
 
 #: The only index this slice loads (the tables are shaped for more; spec B10).
@@ -126,6 +127,10 @@ class LoadReport:
     def to_json(self) -> str:
         """Stable JSON text of the report (dates as ISO strings)."""
         return json.dumps(asdict(self), indent=2, sort_keys=True, default=str)
+
+    def save(self, path: Path) -> None:
+        """Write the JSON report atomically."""
+        atomic_write_text(path, self.to_json())
 
 
 @dataclass

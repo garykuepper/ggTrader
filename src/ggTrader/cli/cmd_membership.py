@@ -20,7 +20,6 @@ from ggTrader.data.universe_db import (
     load_vintage,
     verify_vintage,
 )
-from ggTrader.utils.io import atomic_write_text
 from ggTrader.utils.paths import REPO_ROOT
 
 #: The committed vintage-1 file (immutable fixture; spec section 4).
@@ -150,7 +149,7 @@ def run_load_sp500(args: argparse.Namespace) -> int:
         conn.close()
     print_load_report(report)
     if args.report_json is not None:
-        atomic_write_text(args.report_json, report.to_json())
+        report.save(args.report_json)
         print(f"  report saved to {args.report_json}")
     return 0
 
