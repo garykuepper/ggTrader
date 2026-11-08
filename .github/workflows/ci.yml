@@ -116,7 +116,7 @@ jobs:
         # 22 code hashes recorded in frozen research reports must keep resolving: at their path
         # (MATCH), at the new path research/CODEMOVED.csv names (MOVED-MATCH), or in history
         # (HISTORY-MATCH). Each slice that moves pinned code updates these counts in this line.
-        run: python scripts/verify_pins.py --expect MATCH=15,MOVED-MATCH=0,HISTORY-MATCH=7,FAIL=0
+        run: python scripts/verify_pins.py --expect MATCH=1,MOVED-MATCH=4,HISTORY-MATCH=17,FAIL=0
 
       - name: Test (study tier)
         # run_tests.sh builds the explicit path list; GGT_TEST_NO_CGROUP skips the developer
