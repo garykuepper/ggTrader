@@ -21,7 +21,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import pandas as pd
 import pandas_market_calendars as mcal
 import psycopg2
-from ggTrader.lab.event_timing_sources import (
+from event_timing_sources import (
     ReferencedSources,
     SecEdgarClient,
     atomic_bytes,
@@ -38,9 +38,10 @@ from ggTrader.lab.event_timing_sources import (
 )
 
 from ggTrader.data.core.index_constituents import all_members_between, load_sp500_history
+from ggTrader.utils.study import repo_root
 
 LOG = logging.getLogger(__name__)
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = repo_root(__file__)
 MEMBERSHIP_FILE = ROOT / "data/universe/sp500_constituents_history.csv.gz"
 RUSSELL_SNAPSHOT_FILE = ROOT / "data/universe/russell2000_tickers_snapshot_2026-06-09.txt"
 CACHE_DIR = ROOT / "data/external/event_timing_audit"
@@ -2166,7 +2167,7 @@ class EventTimingAuditRunner:
 
     def prepare_insider(self, *, representation: str | None = None) -> tuple[list[dict], dict]:
         """Normalize raw lots, retain unassignable anomalies and reconcile stored losses."""
-        from ggTrader.lab.event_timing_reconstruction import reconcile_lots
+        from event_timing_reconstruction import reconcile_lots
 
         lots, filing_checks = [], []
         amendments = []
@@ -2687,7 +2688,7 @@ class EventTimingAuditRunner:
         representation: str | None = None,
     ) -> dict:
         """Evaluate annual raw-source requirements from complete units and event records."""
-        from ggTrader.lab.event_timing_reconstruction import (
+        from event_timing_reconstruction import (
             evaluate_prefix_invariance,
             filing_lags,
             load_boundaries,

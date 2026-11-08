@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from ggTrader.lab.event_timing_audit import (
+from event_timing_audit import (
     AnnualA6Coverage,
     AuditClock,
     QuarantineReason,
@@ -374,7 +374,7 @@ def test_missing_filing_date_is_quarantined():
 
 
 def test_membership_in_force_counts_unchanged_months(tmp_path):
-    from ggTrader.lab.event_timing_audit import build_universe_denominators
+    from event_timing_audit import build_universe_denominators
 
     membership = tmp_path / "members.csv"
     membership.write_text('date,tickers\n2000-01-01,"A,B"\n2025-03-15,"B,C"\n')
@@ -386,7 +386,7 @@ def test_membership_in_force_counts_unchanged_months(tmp_path):
 
 
 def test_bad_checkpoint_fails_closed(tmp_path):
-    from ggTrader.lab.event_timing_audit import SecEdgarClient
+    from event_timing_audit import SecEdgarClient
 
     (tmp_path / "checkpoint.json").write_text("broken")
     with pytest.raises(ValueError, match="checkpoint"):
@@ -394,7 +394,7 @@ def test_bad_checkpoint_fails_closed(tmp_path):
 
 
 def test_no_detector_evidence_does_not_mean_clean(tmp_path):
-    from ggTrader.lab.event_timing_audit import load_existing_artifact_flags
+    from event_timing_audit import load_existing_artifact_flags
 
     assert load_existing_artifact_flags(tmp_path / "absent") is None
 
@@ -403,7 +403,7 @@ def test_no_detector_evidence_does_not_mean_clean(tmp_path):
 def raw_cache(tmp_path):
     import json
 
-    from ggTrader.lab.event_timing_sources import CheckpointState, SecEdgarClient, asdict, digest
+    from event_timing_sources import CheckpointState, SecEdgarClient, asdict, digest
 
     cache = tmp_path / "cache"
     cache.mkdir()
@@ -446,7 +446,7 @@ def reviewed_fixture(record, kind, add, fields):
     """Attach field-specific review receipts to explicit synthetic source facts."""
     import json
 
-    from ggTrader.lab.event_timing_audit import semantic_linkage
+    from event_timing_audit import semantic_linkage
 
     def facts(value):
         if isinstance(value, dict):
@@ -510,7 +510,7 @@ def reviewed_route(record, add):
 
 
 def test_within_minute_uses_latest_same_field_and_acceptance_is_separate():
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     event = event_clock(
         {
@@ -529,7 +529,7 @@ def test_within_minute_uses_latest_same_field_and_acceptance_is_separate():
 
 
 def test_conflicting_acceptance_quarantines_and_never_assigns_execution():
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     event = event_clock(
         {
@@ -559,7 +559,7 @@ def test_corrupt_manifest_and_missing_accounting_fail_closed(raw_cache):
     cache, _, add = raw_cache
     add("evidence")
     (cache / "checkpoint.json").unlink()
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     with pytest.raises(ValueError, match="checkpoint"):
         SecEdgarClient(cache)
@@ -573,12 +573,14 @@ def test_retry_budget_is_persisted_before_each_attempt(raw_cache, monkeypatch):
     import json
     import urllib.error
 
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     cache, _, _ = raw_cache
     monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
     client = SecEdgarClient(cache, offline=False)
-    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+    import event_timing_sources as sources
+
+    monkeypatch.setattr(sources.time, "sleep", lambda _: None)
     calls = []
 
     def fail(*args, **kwargs):
@@ -596,12 +598,14 @@ def test_retry_budget_is_persisted_before_each_attempt(raw_cache, monkeypatch):
 def test_first_403_stops_sec_and_yahoo(raw_cache, monkeypatch):
     import urllib.error
 
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     cache, _, _ = raw_cache
     monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
     client = SecEdgarClient(cache, offline=False)
-    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+    import event_timing_sources as sources
+
+    monkeypatch.setattr(sources.time, "sleep", lambda _: None)
 
     def forbidden(*args, **kwargs):
         raise urllib.error.HTTPError("https://www.sec.gov/a", 403, "fixture", {}, None)
@@ -617,7 +621,7 @@ def test_first_403_stops_sec_and_yahoo(raw_cache, monkeypatch):
 def test_runtime_budget_accumulates(raw_cache, monkeypatch):
     import json
 
-    from ggTrader.lab.event_timing_sources import MAX_RUNTIME, SecEdgarClient
+    from event_timing_sources import MAX_RUNTIME, SecEdgarClient
 
     cache, _, _ = raw_cache
     state = json.loads((cache / "checkpoint.json").read_text())
@@ -631,7 +635,7 @@ def test_runtime_budget_accumulates(raw_cache, monkeypatch):
 
 
 def test_empty_inventory_rules_and_identity_gap():
-    from ggTrader.lab.event_timing_audit import resolve_unit, unit_inventory
+    from event_timing_audit import resolve_unit, unit_inventory
 
     unit = {
         "symbol": "A",
@@ -682,7 +686,7 @@ def test_empty_inventory_rules_and_identity_gap():
 def test_tape_count_uses_only_equity_venue(venues, expected_count, expected_predicate):
     import sqlite3
 
-    from ggTrader.lab.event_timing_audit import check_tape_integrity_batch
+    from event_timing_audit import check_tape_integrity_batch
 
     with sqlite3.connect(":memory:") as connection:
         connection.execute("CREATE TABLE ohlcv (symbol, timestamp, interval, venue)")
@@ -715,7 +719,7 @@ def test_tape_count_uses_only_equity_venue(venues, expected_count, expected_pred
 
 
 def test_unknown_detector_cannot_pass_unique_bar():
-    from ggTrader.lab.event_timing_audit import check_tape_integrity_batch
+    from event_timing_audit import check_tape_integrity_batch
 
     class CountDb:
         def execute_select(self, sql, params):
@@ -753,8 +757,8 @@ def ownership_xml():
 
 
 def test_all_owners_plan_encodings_and_legitimate_lots(ownership_xml):
-    from ggTrader.lab.event_timing_reconstruction import reconcile_lots
-    from ggTrader.lab.event_timing_sources import parse_form4
+    from event_timing_reconstruction import reconcile_lots
+    from event_timing_sources import parse_form4
 
     filing = {"accession": "0000000001-23-000001", "filing_date": "2023-05-03", "form": "4/A"}
     parsed = parse_form4(ownership_xml, filing)
@@ -808,7 +812,9 @@ def filing_transport(raw_cache, monkeypatch):
     _, client, add = raw_cache
     client.offline = False
     client.user_agent = "fixture fixture@example.invalid"
-    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.sleep", lambda _: None)
+    import event_timing_sources as sources
+
+    monkeypatch.setattr(sources.time, "sleep", lambda _: None)
     responses = {}
     calls = []
 
@@ -832,7 +838,7 @@ def filing_transport(raw_cache, monkeypatch):
 def test_collect_filing_full_submission_only_once(
     filing_submission, filing_transport, monkeypatch, form
 ):
-    from ggTrader.lab import event_timing_sources as sources
+    import event_timing_sources as sources
 
     filing, header, document = filing_submission
     client, _, responses, calls = filing_transport
@@ -872,7 +878,7 @@ def test_collect_filing_full_submission_only_once(
 def test_collect_filing_full_submission_fallback(
     filing_submission, filing_transport, ownership_xml, content
 ):
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, document = filing_submission
     client, _, responses, calls = filing_transport
@@ -894,7 +900,7 @@ def test_collect_filing_full_submission_fallback(
 def test_collect_filing_cached_primary_preserves_results_and_refs(
     filing_submission, filing_transport, ownership_xml
 ):
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls, parse_form4
+    from event_timing_sources import collect_filing, filing_urls, parse_form4
 
     filing, header, document = filing_submission
     client, add, responses, calls = filing_transport
@@ -939,7 +945,7 @@ def test_collect_filing_cached_primary_preserves_results_and_refs(
     ],
 )
 def test_collect_filing_embedded_invalid_fails_closed(filing_submission, filing_transport, defect):
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, document = filing_submission
     client, _, responses, calls = filing_transport
@@ -986,7 +992,7 @@ def test_collect_filing_embedded_invalid_fails_closed(filing_submission, filing_
 def test_collect_filing_rejects_xml_after_text_close(
     filing_submission, filing_transport, ownership_xml
 ):
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, document = filing_submission
     client, _, responses, calls = filing_transport
@@ -1013,7 +1019,7 @@ def test_collect_filing_transport_stop_has_no_followup(
 ):
     import urllib.error
 
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, _ = filing_submission
     client, _, responses, calls = filing_transport
@@ -1037,7 +1043,7 @@ def test_collect_filing_transport_failures_are_counted(
 ):
     import urllib.error
 
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, _ = filing_submission
     client, _, responses, calls = filing_transport
@@ -1057,7 +1063,7 @@ def test_collect_filing_transport_failures_are_counted(
 
 @pytest.mark.parametrize("budget", [0, 1])
 def test_collect_filing_fallback_cannot_exceed_budget(filing_submission, filing_transport, budget):
-    from ggTrader.lab.event_timing_sources import collect_filing, filing_urls
+    from event_timing_sources import collect_filing, filing_urls
 
     filing, header, _ = filing_submission
     client, _, responses, calls = filing_transport
@@ -1076,8 +1082,8 @@ def test_collect_filing_fallback_cannot_exceed_budget(filing_submission, filing_
 def test_collect_filing_full_only_raw_revalidation_and_date_corroboration(
     amendment_runner, filing_submission, defect
 ):
-    from ggTrader.lab.event_timing_audit import filing_date_corroboration, validate_evidence_record
-    from ggTrader.lab.event_timing_sources import ReferencedSources, collect_filing
+    from event_timing_audit import filing_date_corroboration, validate_evidence_record
+    from event_timing_sources import ReferencedSources, collect_filing
 
     runner = amendment_runner
     filing = runner.evidence["filings"][0]
@@ -1134,7 +1140,7 @@ def cluster_lots():
 
 
 def test_reconstruction_uses_14_days_plan_exclusion_and_public_time(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     clock = AuditClock()
     events, issues = replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-31 16:00"))
@@ -1146,7 +1152,7 @@ def test_reconstruction_uses_14_days_plan_exclusion_and_public_time(cluster_lots
 
 
 def test_prefix_months_use_exchange_closes_include_april_and_unknown_inputs(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+    from event_timing_reconstruction import evaluate_prefix_invariance
 
     result = evaluate_prefix_invariance(cluster_lots, [], AuditClock(), {"2023-05": True})
     assert len(result["decisions"]) == 136
@@ -1157,7 +1163,7 @@ def test_prefix_months_use_exchange_closes_include_april_and_unknown_inputs(clus
 
 
 def test_unlinked_amendment_is_unknown_and_later_link_cannot_rewrite_past(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     clock = AuditClock()
     before = replay_clusters(cluster_lots, [], clock.normalize_to_ny("2023-05-31 16:00"))[0]
@@ -1192,7 +1198,7 @@ def test_unlinked_amendment_is_unknown_and_later_link_cannot_rewrite_past(cluste
 def test_zero_evidence_runner_never_measures_pass_and_keeps_smoke_output_partial(
     tmp_path, monkeypatch
 ):
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     membership = tmp_path / "members.csv"
     membership.write_text("date,tickers\n2000-01-01,A\n")
@@ -1218,7 +1224,7 @@ def test_zero_evidence_runner_never_measures_pass_and_keeps_smoke_output_partial
 
 
 def test_absent_plan_and_joint_owners_are_inventoried_without_new_filters(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     cluster_lots[0]["plan_state"] = "ABSENT"
     cluster_lots[0]["owners"] = ["0", "4"]
@@ -1229,7 +1235,7 @@ def test_absent_plan_and_joint_owners_are_inventoried_without_new_filters(cluste
 
 
 def test_date_only_cluster_does_not_impute_observed_availability_or_double_buffer(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     for lot in cluster_lots:
         lot["availability"] = None
@@ -1245,14 +1251,14 @@ def test_date_only_cluster_does_not_impute_observed_availability_or_double_buffe
 
 
 def test_quarantined_inputs_cannot_form_clusters(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     cluster_lots[0]["quarantine"] = QuarantineReason.TX_DATE_POST_FILING
     assert replay_clusters(cluster_lots, [], AuditClock().normalize_to_ny("2023-05-31"))[0] == []
 
 
 def test_unknown_population_has_no_fabricated_event_denominator():
-    from ggTrader.lab.event_timing_audit import annual_accounting
+    from event_timing_audit import annual_accounting
 
     unit = {
         "year": 2023,
@@ -1270,7 +1276,7 @@ def test_unknown_population_has_no_fabricated_event_denominator():
 
 
 def test_censoring_depends_only_on_window_end_and_not_missing_bars():
-    from ggTrader.lab.event_timing_audit import holding_diagnostics
+    from event_timing_audit import holding_diagnostics
 
     early = holding_diagnostics(
         {"tradeable_date": "2023-05-04"}, "insider_cluster", AuditClock(), set()
@@ -1285,14 +1291,17 @@ def test_censoring_depends_only_on_window_end_and_not_missing_bars():
 
 def test_db_rejects_writes_before_connecting_and_omits_dsn(monkeypatch):
     import psycopg2
-    from ggTrader.lab.event_timing_audit import ReadOnlyDb
+    from event_timing_audit import ReadOnlyDb
 
     secret = "must-never-appear"
     monkeypatch.setenv(
         "POSTGRES_CONNECTION_STRING", f"host=localhost password={secret} dbname=fixture"
     )
+    import event_timing_audit as audit
+
     monkeypatch.setattr(
-        "ggTrader.lab.event_timing_audit.psycopg2.connect",
+        audit.psycopg2,
+        "connect",
         lambda *a, **k: (_ for _ in ()).throw(psycopg2.OperationalError(secret)),
     )
     db = ReadOnlyDb()
@@ -1311,7 +1320,7 @@ def test_db_rejects_writes_before_connecting_and_omits_dsn(monkeypatch):
 
 
 def test_yahoo_collection_uses_installed_calendar_schema_and_keeps_no_pit_claim(raw_cache):
-    from ggTrader.lab.event_timing_sources import collect_yahoo
+    from event_timing_sources import collect_yahoo
 
     _, client, add = raw_cache
     html = """<table><thead><tr><th>Symbol</th><th>Company</th><th>Earnings Date</th>
@@ -1328,7 +1337,7 @@ def test_yahoo_collection_uses_installed_calendar_schema_and_keeps_no_pit_claim(
 def test_sec_pagination_keeps_amendments_and_partial_inventory_is_not_complete(raw_cache):
     import json
 
-    from ggTrader.lab.event_timing_sources import enumerate_sec
+    from event_timing_sources import enumerate_sec
 
     _, client, add = raw_cache
     block = {
@@ -1363,7 +1372,7 @@ def test_sec_pagination_keeps_amendments_and_partial_inventory_is_not_complete(r
 
 
 def test_status_requires_full_matrix_and_vendor_fields_cannot_repair_coverage(raw_cache):
-    from ggTrader.lab.event_timing_audit import resolve_signal_status
+    from event_timing_audit import resolve_signal_status
 
     _, client, add = raw_cache
     ref = add("Fixture documentation")
@@ -1415,7 +1424,7 @@ def test_status_requires_full_matrix_and_vendor_fields_cannot_repair_coverage(ra
 
 
 def test_r8_exact_timestamp_exclusion_does_not_exclude_date_only_representation(raw_cache):
-    from ggTrader.lab.event_timing_audit import assess_source_routes
+    from event_timing_audit import assess_source_routes
 
     _, client, add = raw_cache
     ref = add("date-only fields")
@@ -1441,8 +1450,8 @@ def test_r8_exact_timestamp_exclusion_does_not_exclude_date_only_representation(
 def reconstructed_runner(raw_cache, tmp_path, ownership_xml):
     import json
 
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
-    from ggTrader.lab.event_timing_sources import enumerate_sec, filing_urls, parse_form4
+    from event_timing_audit import EventTimingAuditRunner
+    from event_timing_sources import enumerate_sec, filing_urls, parse_form4
 
     cache, client, add = raw_cache
     base = add("Synthetic historical facts")
@@ -1647,7 +1656,7 @@ def test_fixture_runner_measures_clusters_not_sampled_filings_and_raw_collision_
 
 
 def test_runner_resume_reuses_checked_evidence_and_rejects_changed_membership(reconstructed_runner):
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     first = reconstructed_runner.run()
     evidence_file = reconstructed_runner.output_file.parent / "evidence.json"
@@ -1784,19 +1793,21 @@ def test_raw_cache_rejects_symlink(raw_cache, tmp_path):
 
 
 def test_interrupted_raw_write_preserves_uncommitted_bytes(tmp_path, monkeypatch):
-    from ggTrader.lab.event_timing_sources import atomic_bytes
+    from event_timing_sources import atomic_bytes
 
     def fail(*args):
         raise OSError("fixture interruption")
 
-    monkeypatch.setattr("ggTrader.lab.event_timing_sources.os.replace", fail)
+    import event_timing_sources as sources
+
+    monkeypatch.setattr(sources.os, "replace", fail)
     with pytest.raises(OSError):
         atomic_bytes(tmp_path / "evidence.raw", b"raw-response", preserve_on_failure=True)
     assert any(p.read_bytes() == b"raw-response" for p in tmp_path.iterdir())
 
 
 def test_cached_http_failure_is_not_successful_evidence(raw_cache):
-    from ggTrader.lab.event_timing_audit import evidence_supported
+    from event_timing_audit import evidence_supported
 
     _, client, _ = raw_cache
     client.store_response("https://www.sec.gov/Archives/failure", "sec", b"forbidden", 403)
@@ -1806,14 +1817,17 @@ def test_cached_http_failure_is_not_successful_evidence(raw_cache):
 
 
 def test_sec_rate_spacing_and_successful_raw_response_cache(raw_cache, monkeypatch):
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     cache, _, _ = raw_cache
     monkeypatch.setenv("SEC_CONTACT_EMAIL", "fixture@example.invalid")
     now = [100.0]
-    monkeypatch.setattr("ggTrader.lab.event_timing_sources.time.monotonic", lambda: now[0])
+    import event_timing_sources as sources
+
+    monkeypatch.setattr(sources.time, "monotonic", lambda: now[0])
     monkeypatch.setattr(
-        "ggTrader.lab.event_timing_sources.time.sleep",
+        sources.time,
+        "sleep",
         lambda delay: now.__setitem__(0, now[0] + delay),
     )
     client = SecEdgarClient(cache, offline=False)
@@ -1842,7 +1856,7 @@ def test_sec_rate_spacing_and_successful_raw_response_cache(raw_cache, monkeypat
 
 
 def test_corrected_execution_prices_do_not_require_pit_versions(raw_cache):
-    from ggTrader.lab.event_timing_audit import assess_source_routes
+    from event_timing_audit import assess_source_routes
 
     _, client, add = raw_cache
     ref = add("fixture public product documentation")
@@ -1871,7 +1885,7 @@ def test_corrected_execution_prices_do_not_require_pit_versions(raw_cache):
 
 
 def test_lag_and_real_monthly_load_boundary_counts_exclude_quarantine(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import filing_lags, load_boundaries
+    from event_timing_reconstruction import filing_lags, load_boundaries
 
     clock = AuditClock()
     cluster_lots[0]["quarantine"] = QuarantineReason.TX_DATE_POST_FILING
@@ -1889,7 +1903,7 @@ def test_lag_and_real_monthly_load_boundary_counts_exclude_quarantine(cluster_lo
 def test_identity_discovery_never_certifies_historical_ticker_map(raw_cache):
     import json
 
-    from ggTrader.lab.event_timing_sources import collect_identity_candidates
+    from event_timing_sources import collect_identity_candidates
 
     _, client, add = raw_cache
     add(
@@ -1905,7 +1919,7 @@ def test_identity_discovery_never_certifies_historical_ticker_map(raw_cache):
 def test_release_collection_keeps_publisher_metadata_unconfirmed(raw_cache):
     import json
 
-    from ggTrader.lab.event_timing_sources import collect_release_candidates, filing_urls
+    from event_timing_sources import collect_release_candidates, filing_urls
 
     _, client, add = raw_cache
     filing = {
@@ -1933,7 +1947,7 @@ def test_release_collection_keeps_publisher_metadata_unconfirmed(raw_cache):
 
 
 def test_prefix_checker_detects_a_retrospective_rewrite(cluster_lots, monkeypatch):
-    import ggTrader.lab.event_timing_reconstruction as reconstruction
+    import event_timing_reconstruction as reconstruction
 
     later = dict(
         cluster_lots[0],
@@ -1957,7 +1971,7 @@ def test_prefix_checker_detects_a_retrospective_rewrite(cluster_lots, monkeypatc
 
 
 def test_dst_gap_is_quarantined_instead_of_imputed():
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     event = event_clock(
         {"filing_date": "2023-03-12", "acceptance": "2023-03-12 02:30:00"},
@@ -2019,7 +2033,7 @@ def test_later_unlinked_amendment_does_not_unverify_an_earlier_year(
 
 
 def test_reconstruction_does_not_mix_reused_ticker_issuers(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     for lot, cik in zip(cluster_lots, ("1", "2", "1")):
         lot["issuer_cik"] = cik
@@ -2028,7 +2042,7 @@ def test_reconstruction_does_not_mix_reused_ticker_issuers(cluster_lots):
 
 
 def test_unfrozen_event_year_boundary_remains_explicit(reconstructed_runner):
-    from ggTrader.lab.event_timing_audit import build_universe_denominators, event_clock
+    from event_timing_audit import build_universe_denominators, event_clock
 
     runner = reconstructed_runner
     runner.db = None
@@ -2046,7 +2060,7 @@ def test_unfrozen_event_year_boundary_remains_explicit(reconstructed_runner):
 
 
 def test_zero_lot_amendment_cancels_only_from_its_own_public_time(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import cluster_snapshot
+    from event_timing_reconstruction import cluster_snapshot
 
     clock = AuditClock()
     action = {
@@ -2066,7 +2080,7 @@ def test_zero_lot_amendment_cancels_only_from_its_own_public_time(cluster_lots):
 
 
 def test_malformed_empty_ownership_document_is_not_a_verified_empty_inventory():
-    from ggTrader.lab.event_timing_sources import parse_form4
+    from event_timing_sources import parse_form4
 
     parsed = parse_form4(
         "<ownershipDocument/>", {"accession": "f", "filing_date": "2023-05-01", "form": "4"}
@@ -2075,7 +2089,7 @@ def test_malformed_empty_ownership_document_is_not_a_verified_empty_inventory():
 
 
 def test_legacy_orphan_cache_cannot_reset_lost_request_accounting(tmp_path):
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     (tmp_path / "sec_legacy_response.txt").write_text("unvalidated legacy response")
     with pytest.raises(ValueError, match="checkpoint"):
@@ -2128,7 +2142,7 @@ def test_known_missingness_cause_is_not_counted_as_unexplained(reconstructed_run
 def test_round2_unrelated_bytes_cannot_authorize_identity(reconstructed_runner):
     import json
 
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     runner = reconstructed_runner
     source = runner.output_file.parent / "evidence.json"
@@ -2145,7 +2159,7 @@ def test_round2_unrelated_bytes_cannot_authorize_identity(reconstructed_runner):
 
 
 def test_round2_receipt_without_dissemination_uses_supported_fallback():
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     event = event_clock(
         {
@@ -2188,7 +2202,7 @@ def test_round2_missing_prior_year_xml_blocks_later_population(reconstructed_run
 
 
 def test_round2_reduced_checkpoint_with_valid_manifest_is_rejected(raw_cache):
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     cache, _, add = raw_cache
     add("preserved")
@@ -2208,7 +2222,7 @@ def test_round2_reduced_checkpoint_with_valid_manifest_is_rejected(raw_cache):
 def test_round2_redirects_are_not_automatic(target):
     import urllib.request
 
-    from ggTrader.lab.event_timing_sources import SafeRedirect
+    from event_timing_sources import SafeRedirect
 
     request = urllib.request.Request("https://www.sec.gov/start")
     assert SafeRedirect().redirect_request(request, None, 302, "redirect", {}, target) is None
@@ -2217,7 +2231,7 @@ def test_round2_redirects_are_not_automatic(target):
 def test_round2_resume_binds_detector(reconstructed_runner):
     import json
 
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     runner = reconstructed_runner
     runner.run()
@@ -2238,7 +2252,7 @@ def test_round2_resume_binds_detector(reconstructed_runner):
 def test_round2_resume_keeps_stored_snapshot(reconstructed_runner, monkeypatch):
     import json
 
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     runner = reconstructed_runner
     first = runner.run()
@@ -2258,7 +2272,7 @@ def test_round2_resume_keeps_stored_snapshot(reconstructed_runner, monkeypatch):
 
 
 def test_round2_proven_no_cluster_prefix_passes(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+    from event_timing_reconstruction import evaluate_prefix_invariance
 
     result = evaluate_prefix_invariance(cluster_lots[:2], [], AuditClock(), {"2023-05": True})
     row = next(r for r in result["decisions"] if r["month"] == "2023-05")
@@ -2267,8 +2281,8 @@ def test_round2_proven_no_cluster_prefix_passes(cluster_lots):
 
 
 def test_round2_coowner_missing_lot_is_counted(ownership_xml):
-    from ggTrader.lab.event_timing_reconstruction import reconcile_lots
-    from ggTrader.lab.event_timing_sources import parse_form4
+    from event_timing_reconstruction import reconcile_lots
+    from event_timing_sources import parse_form4
 
     filing = {"accession": "f", "form": "4", "filing_date": "2023-05-03"}
     lots = parse_form4(ownership_xml, filing)["lots"]
@@ -2307,7 +2321,7 @@ def test_round2_selected_pead_exact_key_reconciles_missing_and_changed(reconstru
         {"symbol": "A", "earnings_date": "2023-05-04", "surprise_pct": 100},
         {"symbol": "A", "earnings_date": "2023-08-03", "surprise_pct": 50},
     ]
-    from ggTrader.lab.event_timing_audit import build_universe_denominators
+    from event_timing_audit import build_universe_denominators
 
     runner.evidence["pead_fetches"] = [
         {
@@ -2330,7 +2344,7 @@ def test_round2_selected_pead_exact_key_reconciles_missing_and_changed(reconstru
 def test_round2_boundary_uncertainty_blocks_both_annual_populations(
     reconstructed_runner, monkeypatch
 ):
-    from ggTrader.lab.event_timing_audit import build_universe_denominators, event_clock
+    from event_timing_audit import build_universe_denominators, event_clock
 
     runner = reconstructed_runner
     runner.db = None
@@ -2372,7 +2386,7 @@ def test_round2_boundary_uncertainty_blocks_both_annual_populations(
 
 
 def test_round2_completed_bounded_audit_can_publish_unresolved(reconstructed_runner, monkeypatch):
-    import ggTrader.lab.event_timing_audit as audit
+    import event_timing_audit as audit
 
     runner = reconstructed_runner
     monkeypatch.setattr(audit, "ROOT", runner.output_file.parent)
@@ -2387,7 +2401,7 @@ def test_round2_completed_bounded_audit_can_publish_unresolved(reconstructed_run
 
 
 def test_round2_decisive_exclusion_does_not_require_positive_dimensions(raw_cache):
-    from ggTrader.lab.event_timing_audit import assess_source_routes
+    from event_timing_audit import assess_source_routes
 
     _, client, add = raw_cache
     text = "No individual licensing for any permitted representation."
@@ -2414,7 +2428,7 @@ def test_round2_decisive_exclusion_does_not_require_positive_dimensions(raw_cach
     "defect", ["unrelated_extract", "wrong_period", "wrong_value", "bad_offset"]
 )
 def test_round2_review_receipt_cannot_promote_unrelated_facts(raw_cache, defect):
-    from ggTrader.lab.event_timing_audit import semantic_fields_supported
+    from event_timing_audit import semantic_fields_supported
 
     _, client, add = raw_cache
     record = {
@@ -2450,7 +2464,7 @@ def test_round2_inventory_is_rederived_not_asserted(reconstructed_runner, defect
     import copy
     import json
 
-    from ggTrader.lab.event_timing_audit import validate_evidence_record
+    from event_timing_audit import validate_evidence_record
 
     runner = reconstructed_runner
     inventory = copy.deepcopy(runner.evidence["inventories"][0])
@@ -2475,7 +2489,7 @@ def test_round2_inventory_is_rederived_not_asserted(reconstructed_runner, defect
 def test_round2_malformed_raw_owner_is_reported_by_full_orchestration(reconstructed_runner):
     import json
 
-    from ggTrader.lab.event_timing_audit import EventTimingAuditRunner
+    from event_timing_audit import EventTimingAuditRunner
 
     runner = reconstructed_runner
     source = runner.output_file.parent / "evidence.json"
@@ -2524,7 +2538,7 @@ def test_round2_expired_runner_emits_partial_without_cpu_or_db_work(
 
 
 def test_round2_cpu_replay_resumes_completed_disclosures(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import replay_clusters
+    from event_timing_reconstruction import replay_clusters
 
     clock = AuditClock()
     progress = {}
@@ -2554,7 +2568,7 @@ def test_round2_cpu_replay_resumes_completed_disclosures(cluster_lots):
 def test_round2_manifest_requires_matching_reservation(raw_cache):
     import json
 
-    from ggTrader.lab.event_timing_sources import SecEdgarClient
+    from event_timing_sources import SecEdgarClient
 
     cache, client, add = raw_cache
     add("synthetic observed response")
@@ -2568,7 +2582,7 @@ def test_round2_manifest_requires_matching_reservation(raw_cache):
 
 
 def test_round2_receipt_agreement_alone_cannot_pass_mandatory_timestamp():
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     event = event_clock(
         {
@@ -2586,7 +2600,7 @@ def test_round2_receipt_agreement_alone_cannot_pass_mandatory_timestamp():
 
 
 def test_round2_prepared_pead_resumes_without_recomputing_clocks(reconstructed_runner, monkeypatch):
-    import ggTrader.lab.event_timing_audit as audit
+    import event_timing_audit as audit
 
     runner = reconstructed_runner
     runner.stored["pead"] = [{"symbol": "A", "earnings_date": "2023-05-04"}]
@@ -2602,8 +2616,8 @@ def test_round2_prepared_pead_resumes_without_recomputing_clocks(reconstructed_r
 def test_residual_historical_page_count_matches_all_parsed_rows(raw_cache, declared):
     import json
 
-    from ggTrader.lab.event_timing_audit import validate_evidence_record
-    from ggTrader.lab.event_timing_sources import enumerate_sec
+    from event_timing_audit import validate_evidence_record
+    from event_timing_sources import enumerate_sec
 
     _, client, add = raw_cache
     historical = {
@@ -2649,8 +2663,8 @@ def test_residual_historical_page_count_matches_all_parsed_rows(raw_cache, decla
 
 @pytest.mark.parametrize("header_case", ["missing", "wrong_accession", "matching", "checked_date"])
 def test_residual_bound_timestamp_needs_independent_matching_receipts(raw_cache, header_case):
-    from ggTrader.lab.event_timing_audit import event_clock
-    from ggTrader.lab.event_timing_sources import parse_filing_header
+    from event_timing_audit import event_clock
+    from event_timing_sources import parse_filing_header
 
     _, client, add = raw_cache
     accession = "0000000001-23-000001"
@@ -2693,7 +2707,7 @@ def test_residual_resume_rejects_changed_revision_or_membership_code(
 ):
     from types import SimpleNamespace
 
-    import ggTrader.lab.event_timing_audit as audit
+    import event_timing_audit as audit
 
     runner = reconstructed_runner
     runner.checkpoint("frozen_registration", force=True)
@@ -2730,7 +2744,7 @@ def test_residual_completed_event_observation_survives_interruption_on_next_even
 ):
     import json
 
-    from ggTrader.lab.event_timing_audit import (
+    from event_timing_audit import (
         EventTimingAuditRunner,
         build_universe_denominators,
         event_clock,
@@ -2815,7 +2829,7 @@ def test_amendment_original_fixture_regression(reconstructed_runner):
 @pytest.fixture
 def amendment_runner(reconstructed_runner):
     """Same census, with explicit raw header issuer identity for the new representation."""
-    from ggTrader.lab.event_timing_audit import validate_evidence_record
+    from event_timing_audit import validate_evidence_record
 
     runner = reconstructed_runner
     for filing in runner.evidence["filings"]:
@@ -2833,7 +2847,7 @@ def amendment_runner(reconstructed_runner):
 
 
 def amendment_clock(runner, filing):
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     return event_clock(
         filing,
@@ -2868,7 +2882,7 @@ def test_amendment_receipts_retained_without_public_time_or_source_overwrite(
 ):
     import copy
 
-    from ggTrader.lab.event_timing_audit import event_clock
+    from event_timing_audit import event_clock
 
     runner = amendment_runner
     filing = copy.deepcopy(runner.evidence["filings"][0])
@@ -3062,7 +3076,7 @@ def test_amendment_missing_pair_keeps_population_unknown(amendment_runner):
 
 
 def test_amendment_prefix_includes_only_at_declared_close(cluster_lots):
-    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+    from event_timing_reconstruction import evaluate_prefix_invariance
 
     for lot in cluster_lots:
         lot.update(
@@ -3090,7 +3104,7 @@ def test_amendment_resume_rejects_changed_policy(
 ):
     import json
 
-    import ggTrader.lab.event_timing_audit as audit
+    import event_timing_audit as audit
 
     runner = reconstructed_runner
     runner.checkpoint("registered", force=True)
@@ -3144,7 +3158,7 @@ def test_amendment_zero_lot_missing_clock_is_not_complete_population(amendment_r
     ],
 )
 def test_amendment_prefix_exact_month_end_close(cluster_lots, eligible, may_events):
-    from ggTrader.lab.event_timing_reconstruction import evaluate_prefix_invariance
+    from event_timing_reconstruction import evaluate_prefix_invariance
 
     for lot in cluster_lots:
         lot.update(availability=None, decision_eligibility_time=eligible, tradeable_close=eligible)

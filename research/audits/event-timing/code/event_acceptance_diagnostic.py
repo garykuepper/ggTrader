@@ -10,10 +10,12 @@ import re
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from ggTrader.lab.event_timing_sources import filing_rows, parse_filing_header
+from event_timing_sources import filing_rows, parse_filing_header
+
+from ggTrader.utils.study import repo_root
 
 NEW_YORK = ZoneInfo("America/New_York")
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = repo_root(__file__)
 DEFAULT_CACHE = ROOT / "data/external/event_timing_audit/insider-predecessor-bnz1mn22"
 
 

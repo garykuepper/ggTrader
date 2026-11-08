@@ -14,7 +14,7 @@ import argparse
 import time
 
 import pandas as pd
-from ggTrader.lab.earnings_surprise_data import cache_symbol_surprises
+from earnings_surprise_data import cache_symbol_surprises
 
 from ggTrader.lab.data import equity_universe_between
 

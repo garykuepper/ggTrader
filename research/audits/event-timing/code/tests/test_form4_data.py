@@ -6,7 +6,7 @@ import json
 
 import pandas as pd
 import pytest
-from ggTrader.lab.form4_data import (
+from form4_data import (
     list_form4_filings,
     load_ticker_cik_map,
     parse_form4_transactions,
@@ -206,7 +206,7 @@ class TestParseForm4Transactions:
 
 @pytest.mark.integration
 def test_cache_filing_and_load_roundtrip():
-    from ggTrader.lab.form4_data import cache_filing, ensure_schema, load_form4_transactions
+    from form4_data import cache_filing, ensure_schema, load_form4_transactions
     from sqlalchemy import text
 
     from ggTrader.lab.persist import get_engine

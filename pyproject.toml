@@ -20,7 +20,7 @@ dependencies = [
     "numba>=0.66,<0.69",
     "plotly>=7,<8",
     "alpaca-py",
-    "beautifulsoup4",  # lab/event_timing_sources.py
+    "beautifulsoup4",  # research/audits/event-timing/code/event_timing_sources.py
     "defusedxml",
     "joblib",
     "lightgbm",

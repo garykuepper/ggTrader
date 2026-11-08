@@ -14,7 +14,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
-from ggTrader.lab.form4_data import (
+from form4_data import (
     cache_filing,
     ensure_schema,
     list_form4_filings,
@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> None:
 
     def rate_limited_fetch(url: str) -> str:
         limiter.wait()
-        from ggTrader.lab.form4_data import _default_http_fetch
+        from form4_data import _default_http_fetch
 
         return _default_http_fetch(url)
 
