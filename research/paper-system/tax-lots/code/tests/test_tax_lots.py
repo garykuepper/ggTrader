@@ -7,8 +7,7 @@ from dataclasses import FrozenInstanceError, replace
 
 import pandas as pd
 import pytest
-
-from ggTrader.lab.tax_lots import (
+from tax_lots import (
     InsufficientCash,
     LedgerEvent,
     Realization,
