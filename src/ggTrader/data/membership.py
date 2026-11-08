@@ -638,6 +638,8 @@ class DbMembershipSource(_SnapshotSource):
             raise MembershipIntegrityError(
                 f"load {load['load_id']} of {index_name!r} is inconsistent: " + "; ".join(problems)
             )
+        #: True when a load id was named; the live gate (``membership_gate``) skips pinned reads.
+        self.pinned = vintage != "latest"
         super().__init__(
             snapshots,
             MembershipVintage(
