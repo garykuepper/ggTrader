@@ -12,8 +12,9 @@ import re
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+HERE = Path(__file__).resolve().parent  # root-ok: stdlib-only family
+sys.path[:0] = [str(HERE), str(HERE.parents[1] / "_lib")]  # root-ok: venv has no repo package
+PROJECT_ROOT = HERE.parents[3]  # root-ok: stdlib-only family
 
 DEFAULT_COLLECTION = PROJECT_ROOT / "data/external/intraday_momentum_r8"
 STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
@@ -47,14 +48,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
-    from ggTrader.lab import intraday_momentum as core
+    import intraday_momentum as core
 
     try:
         if args.command == "plan":
             print(json.dumps(core.build_manifest(), indent=2, sort_keys=True))
             return 0
         if args.command == "collect":
-            from ggTrader.lab.intraday_momentum_data import run_collection
+            from intraday_momentum_data import run_collection
 
             result = run_collection(args.output_dir)
             print(json.dumps(result, sort_keys=True))

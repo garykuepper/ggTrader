@@ -5,10 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import intraday_probe as probe
 import pytest
 import requests
-
-from ggTrader.lab import intraday_probe as probe
 
 pytestmark = pytest.mark.study
 
@@ -424,26 +423,6 @@ def test_total_request_deadline_includes_body_read(monkeypatch: pytest.MonkeyPat
     assert all(
         call[1]["timeout"] == 20 and call[1]["allow_redirects"] is False for call in session.calls
     )
-
-
-def test_help_has_no_credentials_network_or_artifacts(tmp_path: Path) -> None:
-    import os
-    import subprocess
-    import sys
-
-    root = Path(__file__).resolve().parents[2]
-    env = {key: value for key, value in os.environ.items() if not key.startswith("APCA_")}
-    result = subprocess.run(
-        [sys.executable, str(root / "scripts/intraday_coverage_probe.py"), "--help"],
-        cwd=tmp_path,
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    assert result.returncode == 0
-    assert "--output" in result.stdout
-    assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize("kind", ["bars", "auctions"])

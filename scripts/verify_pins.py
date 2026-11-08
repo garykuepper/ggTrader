@@ -36,23 +36,23 @@ OBSERVER_DIR = "research/intraday/spy-momentum-prospective-observer"
 FEASIBILITY_DIR = "research/intraday/spy-momentum-feasibility"
 #: The recorder's CODE_FILES as of release 280d4a0 (old paths: they are read from git history).
 OBSERVER_FILES = (
-    "src/ggTrader/lab/intraday_observer.py",
-    "scripts/intraday_observe.py",
-    "scripts/intraday_observer_job.py",
-    "src/ggTrader/lab/intraday_probe.py",
+    "src/ggTrader/lab/intraday_observer.py",  # history-read
+    "scripts/intraday_observe.py",  # history-read
+    "scripts/intraday_observer_job.py",  # history-read
+    "src/ggTrader/lab/intraday_probe.py",  # history-read
 )
 #: The rehearsal ran before the job wrapper existed, so its map has three files.
 REHEARSAL_FILES = (
-    "src/ggTrader/lab/intraday_observer.py",
-    "scripts/intraday_observe.py",
-    "src/ggTrader/lab/intraday_probe.py",
+    "src/ggTrader/lab/intraday_observer.py",  # history-read
+    "scripts/intraday_observe.py",  # history-read
+    "src/ggTrader/lab/intraday_probe.py",  # history-read
 )
 #: intraday_momentum.CODE_FILES as of commit 6e89281c.
 FEASIBILITY_FILES = (
-    "src/ggTrader/lab/intraday_momentum.py",
-    "src/ggTrader/lab/intraday_momentum_data.py",
-    "src/ggTrader/lab/intraday_probe.py",
-    "scripts/intraday_momentum_research.py",
+    "src/ggTrader/lab/intraday_momentum.py",  # history-read
+    "src/ggTrader/lab/intraday_momentum_data.py",  # history-read
+    "src/ggTrader/lab/intraday_probe.py",  # history-read
+    "scripts/intraday_momentum_research.py",  # history-read
 )
 
 

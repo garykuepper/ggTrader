@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import socket
 from pathlib import Path
 
+import intraday_momentum as core
+import intraday_momentum_data as data
 import pytest
 import requests
-from ggTrader.lab.intraday_probe import utc_bounds
+from intraday_probe import utc_bounds
 
-from ggTrader.lab import intraday_momentum as core
-from ggTrader.lab import intraday_momentum_data as data
+from ggTrader.utils.study import load_driver, study_dir
 
 pytestmark = pytest.mark.study
 
-SCRIPT = Path(__file__).resolve().parents[2] / "scripts/intraday_momentum_research.py"
+SCRIPT = study_dir(__file__) / "code/run.py"
 SECRET = "SECRET-456-do-not-log"
 
 
@@ -464,10 +464,7 @@ def test_credentials_come_only_from_inherited_environment(
 
 
 def load_script() -> object:
-    spec = importlib.util.spec_from_file_location("intraday_momentum_research", SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return load_driver(SCRIPT)
 
 
 @pytest.fixture

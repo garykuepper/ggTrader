@@ -13,9 +13,10 @@ import zipfile
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+import intraday_observer as obs
 import pytest
 
-from ggTrader.lab import intraday_observer as obs
+from ggTrader.utils.study import repo_root, study_dir
 
 pytestmark = pytest.mark.study
 
@@ -247,7 +248,9 @@ def test_review_unmapped_capital_gains_cannot_be_complete(tmp_path):
     )
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = repo_root(__file__)
+CODE = study_dir(__file__) / "code"
+LIB = ROOT / "research/intraday/_lib"
 ACTIVATION = "2026-10-28"  # Wed; third full session after it is Mon 2026-11-02 (DST ended 11-01)
 
 
@@ -284,9 +287,10 @@ def init_args(tmp_path: Path, **overrides) -> dict:
 
 def test_import_is_inert(tmp_path):
     code = (
-        f"import sys; sys.path.insert(0, {str(ROOT / 'src')!r});"
-        "import ggTrader.lab.intraday_observer;"
-        "assert 'pandas_market_calendars' not in sys.modules"
+        f"import sys; sys.path[:0] = [{str(CODE)!r}, {str(LIB)!r}];"  # root-ok: child process
+        "import intraday_observer;"
+        "assert 'pandas_market_calendars' not in sys.modules;"
+        "assert 'ggTrader' not in sys.modules"
     )
     done = subprocess.run(
         [sys.executable, "-I", "-c", code], cwd=tmp_path, capture_output=True, text=True
@@ -1868,7 +1872,7 @@ def test_rehearsal_runs_three_synthetic_sessions_offline(
 def run_script(*argv, cwd):
     env = {"PATH": os.environ["PATH"], "HOME": str(cwd)}  # no credentials, no proxies
     return subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "intraday_observe.py"), *argv],
+        [sys.executable, str(CODE / "intraday_observe.py"), *argv],
         cwd=cwd,
         env=env,
         capture_output=True,
@@ -1890,7 +1894,7 @@ def test_script_help_and_plan_run_without_credentials_or_writes(tmp_path):
 
 
 def test_module_can_only_issue_a_bars_get():
-    source = (ROOT / "src/ggTrader/lab/intraday_observer.py").read_text()
+    source = (CODE / "intraday_observer.py").read_text()
     for forbidden in ("/v2/orders", ".post(", ".delete(", ".put(", ".patch(", "paper-api"):
         assert forbidden not in source
     assert obs.BARS_URL == "https://data.alpaca.markets/v2/stocks/bars"
@@ -2297,7 +2301,7 @@ def test_job_script_help_and_refusals_run_without_credentials_or_writes(tmp_path
     def run_job_script(*argv):
         env = {"PATH": os.environ["PATH"], "HOME": str(tmp_path)}  # no credentials, no proxies
         return subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "intraday_observer_job.py"), *argv],
+            [sys.executable, str(CODE / "intraday_observer_job.py"), *argv],
             cwd=tmp_path,
             env=env,
             capture_output=True,
@@ -2314,7 +2318,10 @@ def test_job_script_help_and_refusals_run_without_credentials_or_writes(tmp_path
 
 
 def test_job_wrapper_is_part_of_the_code_binding():
-    assert "scripts/intraday_observer_job.py" in obs.code_binding()["files"]
+    assert (
+        "research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py"
+        in obs.code_binding()["files"]
+    )
 
 
 def test_recover_after_the_endpoint_captures_the_final_archive_directly(tmp_path):

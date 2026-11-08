@@ -42,7 +42,7 @@ import pandas_market_calendars as mcal
 import requests
 import statsmodels
 import statsmodels.api as sm
-from ggTrader.lab.intraday_probe import (
+from intraday_probe import (
     NEW_YORK,
     SchemaError,
     atomic_checkpoint,
@@ -52,7 +52,7 @@ from ggTrader.lab.intraday_probe import (
     valid_date,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # root-ok: stdlib-only family
 STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
 PROTOCOL_PATH = STUDY_DIR / "2026-10-25-intraday-feasibility-r8.md"
 # SHA256 of the whole approved r8 file; any edit must be a deliberate, re-approved code change.
@@ -62,10 +62,10 @@ PROTOCOL_SHA256 = "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45
 VENDOR_REVIEW_PATH = STUDY_DIR / "_intraday_r8_vendor_adjustment_review_2026-10-25.json"
 VENDOR_REVIEW_SCHEMA = "intraday_r8_vendor_adjustment_review"
 CODE_FILES = (
-    "src/ggTrader/lab/intraday_momentum.py",
-    "src/ggTrader/lab/intraday_momentum_data.py",
-    "src/ggTrader/lab/intraday_probe.py",
-    "scripts/intraday_momentum_research.py",
+    "research/intraday/spy-momentum-feasibility/code/intraday_momentum.py",
+    "research/intraday/spy-momentum-feasibility/code/intraday_momentum_data.py",
+    "research/intraday/_lib/intraday_probe.py",
+    "research/intraday/spy-momentum-feasibility/code/run.py",
 )
 
 ANCHOR = "2016-01-04"  # signal input only, never scored

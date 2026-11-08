@@ -33,7 +33,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 CODEMOVED = ROOT / "research/CODEMOVED.csv"
-LAB = ROOT / "src/ggTrader/lab"
+INTRADAY_OBSERVER = ROOT / "research/intraday/spy-momentum-prospective-observer/code"
 EVENT_TIMING = ROOT / "research/audits/event-timing/code"
 
 #: Thin wrappers whose parser lives in the library, keyed by repo-relative path:
@@ -45,8 +45,14 @@ DELEGATES = {
         EVENT_TIMING / "event_acceptance_diagnostic.py",
         "main",
     ),
-    "scripts/intraday_observe.py": (LAB / "intraday_observer.py", "main"),
-    "scripts/intraday_observer_job.py": (LAB / "intraday_observer.py", "job_main"),
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py": (
+        INTRADAY_OBSERVER / "intraday_observer.py",
+        "main",
+    ),
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py": (
+        INTRADAY_OBSERVER / "intraday_observer.py",
+        "job_main",
+    ),
 }
 
 #: Calls a module top level may make: constants, paths, regexes, loggers, sys.path set-up.

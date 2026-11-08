@@ -299,3 +299,23 @@ systemctl --user list-timers --all 'ggtrader-intraday-observer-*'
 
 The same command stops collection early. Preserve the state, release, runtime,
 credential file and rendered units; no deletion or favorable restart is implied.
+
+## Releases cut after the study-isolation move (S8)
+
+Everything above describes release `280d4a0`, which is the layout the running recorder uses. Its
+units, runtime and credentials are unchanged and nothing here edits them. The study-isolation
+slice S8 later moved the observer code in this repository: `git log --follow --
+research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py` names the
+commit. A release cut from a checkout at or after that commit has a different layout:
+
+- The wrappers are `research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py`
+  and `.../intraday_observe.py`; the observer module sits beside them and the probe library is
+  `research/intraday/_lib/intraday_probe.py`. There is no `scripts/` or `src/` copy.
+- The wrappers put their own folder and `research/intraday/_lib` on `sys.path` using only the
+  standard library, so the release runtime needs no installed repository package.
+- The `ExecStart` line of each `*.service` template still names `scripts/intraday_observer_job.py`,
+  so it must be edited to the new wrapper path before such a release is installed. The templates in
+  `deploy/` are left as they are because they describe `280d4a0` and the tests read them.
+- The code binding (`CODE_FILES`) now lists the new paths, so a new release has a new code hash.
+  Treat it as a new release, not a continuation: this needs the owner's activation approval, like
+  any release. Never roll an active inception.

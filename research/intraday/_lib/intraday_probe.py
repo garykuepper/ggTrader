@@ -31,7 +31,7 @@ TIMESTAMP = re.compile(
 )
 VENUE = re.compile(r"[A-Z0-9]{1,4}\Z")
 MINUTE_NS = 60_000_000_000
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]  # root-ok: stdlib-only family
 STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
 DEFAULT_OUTPUT = STUDY_DIR / "_intraday_probe.json"
 DOCUMENTS = {

@@ -28,7 +28,7 @@ from typing import Any
 from xml.etree import ElementTree
 
 import requests
-from ggTrader.lab.intraday_probe import (
+from intraday_probe import (
     ENDPOINTS,
     MINUTE_NS,
     NEW_YORK,
@@ -42,12 +42,12 @@ from ggTrader.lab.intraday_probe import (
     valid_date,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[4]  # root-ok: stdlib-only family
 CODE_FILES = (
-    "src/ggTrader/lab/intraday_observer.py",
-    "scripts/intraday_observe.py",
-    "scripts/intraday_observer_job.py",
-    "src/ggTrader/lab/intraday_probe.py",
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observer.py",
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py",
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py",
+    "research/intraday/_lib/intraday_probe.py",
 )
 SCHEMA = "intraday_observer"
 VERSION = 1

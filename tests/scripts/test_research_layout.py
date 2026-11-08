@@ -367,3 +367,38 @@ def test_ruff_toml_declares_the_exclusions_and_the_e402_ignore() -> None:
         "research/*/artifacts-*",
     }
     assert config["lint"]["per-file-ignores"]["research/**/code/*.py"] == ["E402"]
+
+
+def _study_marked(source: str) -> bool:
+    """True when the source names the study marker as an attribute of ``pytest.mark``."""
+    return any(
+        isinstance(node, ast.Attribute)
+        and node.attr == "study"
+        and isinstance(node.value, ast.Attribute)
+        and node.value.attr == "mark"
+        for node in ast.walk(ast.parse(source))
+    )
+
+
+def test_no_file_under_tests_carries_the_study_marker() -> None:
+    """Study tests live next to their study; the FAST tree must hold none (S8)."""
+    tracked = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "--", "tests"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    marked = [
+        path
+        for path in tracked
+        if path.endswith(".py") and _study_marked((ROOT / path).read_text())
+    ]
+    assert marked == []
+
+
+def test_the_study_marker_finder_sees_a_module_mark_and_a_decorator() -> None:
+    mark = "pytest.mark." + "study"  # spelled in pieces so the folder-wide grep stays clean
+    assert _study_marked(f"import pytest\npytestmark = {mark}\n")
+    assert _study_marked(f"import pytest\n@{mark}\ndef test_x():\n    pass\n")
+    assert not _study_marked("import pytest\npytestmark = pytest.mark.slow\nstudy = 1\n")

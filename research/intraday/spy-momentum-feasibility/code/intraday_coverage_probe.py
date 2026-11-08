@@ -6,8 +6,9 @@ import argparse
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+HERE = Path(__file__).resolve().parent  # root-ok: stdlib-only family
+sys.path[:0] = [str(HERE), str(HERE.parents[1] / "_lib")]  # root-ok: venv has no repo package
+PROJECT_ROOT = HERE.parents[3]  # root-ok: stdlib-only family
 
 
 def main() -> int:
@@ -20,7 +21,7 @@ def main() -> int:
         help="New JSON artifact path; existing results are never overwritten",
     )
     args = parser.parse_args()
-    from ggTrader.lab.intraday_probe import run_probe
+    from intraday_probe import run_probe
 
     try:
         result = run_probe(args.output)
