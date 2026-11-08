@@ -413,3 +413,40 @@ Reviewed against the postgres-best-practices guide, with read-only checks of the
 | B12 | No Timescale features, no hypertables, no tuning: the tables are tiny, default autovacuum is fine, and `pg_stat_statements` is not installed (do not add it for this). | Performance diagnostics: do not tune what is not slow. |
 
 Owner decisions: none new. D3 is revised as B5 says (roles created now, enforced later); D8 (upstream lag) is unchanged.
+
+## Appendix C: Revisions accepted by the owner (2026-11-08)
+
+Context: the upstream feed (fja05680/sp500) stopped on 2026-08-18 and its repository is dead. A research report on free alternatives and an independent Opus review (see `research/` notes if archived, and the scratch evidence under the session folder) concluded that the system no longer has an upstream to copy; from now on the list is written from evidence. The owner accepted three changes. Where this appendix contradicts an earlier section, **this appendix wins**.
+
+**C1. The weekly job proposes; a human loads.** (Replaces D2, the `--auto` text in sections 0 and 5, and the auto-load path of section 2.)
+- The job fetches and archives the raw bytes of every source it uses (Wikipedia ledger via the MediaWiki API, the Wikipedia current-constituents page, chinobing/historical_sp500_constituents CSVs, the SPDR SPY holdings xlsx, and any S&P DJI press release it can find), checks our latest vintage against the SPY holdings, and records the outcome in `universe.checks`.
+- A match writes an `unchanged`/`matched` check and extends the freshness clock. Any difference writes a **proposed events file** and sends it to Telegram; it never loads.
+- A human confirms the effective dates against the S&P DJI press release and runs `ggt db load-sp500 --from-events FILE --commit`.
+- The job refuses and alerts when: our list differs from SPY for the holdings' as-of date; a ledger row is dated in the future or on its announcement date; a removal has no matching addition and the count would leave 480 to 520; a source is missing or has not updated in 14 days; a source's page structure changed; or the SPY fetch fails.
+- Auto-load may be reconsidered later, only when all sources agree and the effective date comes from the press release.
+
+**C2. The live golden stays pinned to the original file.** (Replaces the re-baseline of the golden in D5 and migration step M5.)
+- `scripts/p7_live_golden.py` keeps reading `fixture:sp500_v1_2026-06-02` permanently: it checks the rebuilt trader against what the legacy trader actually did, and that trader read the vintage-1 file. It is never re-baselined.
+- A separate regression test on the current list may be added. The core17 and dsr0 reference numbers are re-baselined once, on vintage 3, with the owner's sign-off (C5).
+
+**C3. The gate counts from an independent match.** (Replaces the `verified_at` meaning in section 3.4, D1 and D8.)
+- `verified_at` for a vintage is the time of the last successful match between its latest set and the SPDR SPY holdings file for the holdings' own as-of date. A check against an upstream feed does not extend it.
+- `known_through` is the latest date through which the list is attested: each successful SPY match sets it to that holdings as-of date (and never to a date earlier than the vintage's own coverage end).
+- Gate: refuse when the age of the last SPY match exceeds the limit (45 days now; 10 once the weekly job runs), and warn from 90 days and refuse from 180 days of `asof - known_through`. A quiet spell without index changes therefore raises no alarm; a dead pipeline does.
+
+**C4. Vintages and the gap-fill.**
+- Vintage 2: the fja05680 download of 2026-11-07 (coverage to 2026-08-18), loaded verbatim with `--force` (10 historical rewrites are expected, by design).
+- Vintage 3: `source='curated'`, `parent_load_id=2`, no upstream commit. The raw bytes are the full generated `date,tickers` CSV; an events file (date, action, ticker, announcement date, press-release URL, sha256 of the saved HTML) and the saved press-release HTML are stored in `load_blobs`. Renames stay "remove plus add" (as in all earlier data); company continuity goes in a new table `universe.symbol_changes(load_id, old_symbol, new_symbol, effective_date, evidence)`.
+- The gap events (all effective dates confirmed against S&P DJI press releases by an independent review): 2026-09-21 +BE +ILMN +P -TTD -BLDR -TAP; 2026-10-01 +VYLR; 2026-10-06 +TWLO +SKYD -CTVA -WBD -PSKY (PSKY to SKYD is the Paramount Skydance rename, effective 2026-10-06); 2026-11-04 +OKTA -KVUE. The index has 504 names from 2026-10-01 to 2026-10-05 (Vylor joins one business week before Corteva leaves): vintage 3 therefore needs dated snapshots on each of the four dates, and no code may assume 503.
+- Proof: core17 and dsr0 must come out bit-identical on vintages 2 and 3 (their evaluation ends 2026-04-30), and the vintage-3 set must equal the SPY holdings set.
+
+**C5. Slices from here (replacing the old S4 remainder to S6).**
+- M4: gate as first built (done).
+- M4b: redefine the gate per C3 (SPY holdings fetch with a standard-library xlsx reader, `ggt db membership check-holdings`, `known_through`).
+- M5a: load vintage 2 verbatim; add `export` and `reinstate`.
+- M5b: curated vintage 3, `symbol_changes`, the four-date snapshots, the SPY match, the oracle proof (bit-identical to vintage 2); also check for stale price bars under reused tickers (for example `P`).
+- M5c: STOP for the owner's sign-off: show the vintage 1 to 3 interval diff and the reference-number change (core17 Sharpe 0.3905 to about 0.3958, expected from the refresh agent's runs); then re-baseline core17 and dsr0 on vintage 3 and promote the fixture. The live golden stays on vintage 1 (C2).
+- M6: the weekly fetch, archive, cross-check, alert and propose job (C1), with its timer disabled until three manual dry runs match expectations, the Telegram path is tested through `DryRunNotifier`, a restore drill of the new tables is done and the owner enables it.
+- Then: independent final review, merge and push (owner's yes).
+
+**C6. Open checks (not yet verified).** Any S&P release between 2026-08-18 and 2026-11-08 beyond the four reviewed (an add-then-remove inside the gap would be missed); whether KVUE's removal slipped past 2026-11-04 (SPY and the maintained snapshot say it happened by 2026-11-05); whether S&P announced Vylor before 2026-10-01; the exact effective dates of the 2026 renames SATS to ECHO and BK to BNY (fja05680 and the maintained repo differ by one day); whether the `ohlcv` table holds old bars under the reused ticker `P`.
