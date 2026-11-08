@@ -20,7 +20,7 @@ TIER_MARKEXPR: dict[str, str] = {
 #: Fewest tests the study half of ``--full`` / ``--studies`` must collect (the root conftest's
 #: ``--min-collected``). Every slice that moves study tests raises it to the count it measured, so
 #: a path typo or a collection failure cannot turn the study half into a silent zero.
-STUDIES_MIN_COLLECTED = 96
+STUDIES_MIN_COLLECTED = 145
 
 #: Where study tests live: next to the study code, or in a category's shared ``_lib``. These are
 #: passed to pytest explicitly (never the bare ``research`` folder: it holds frozen test_*.py
