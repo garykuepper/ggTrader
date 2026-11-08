@@ -20,8 +20,16 @@ work is sound — the point is that the agreement is checked.
   pasted a summary, the summary itself — they can disagree.
 - The brief it ran from (`research/<category>/<study>/<date>-<slug>-brief.md`, older briefs kept their plain names), whose **pre-registered
   design and pass bar** are the standard.
-- The raw results JSON (`research/<category>/<study>/_<slug>_results.json`) and the driver
-  (`scripts/<slug>_wfo.py`).
+- The raw results JSON (`research/<category>/<study>/_<slug>_results.json`) and the driver:
+  `code/run.py` in the study folder (older studies may name other scripts in `code/`; very
+  old ones used `scripts/`, and `research/CODEMOVED.csv` maps an old script path to its new
+  home). Its modules and tests sit beside it in `code/` and `code/tests/`.
+- A closed study's `PIN.json` (written by `scripts/study.py close`): the commit, lock hash,
+  data hashes and exact command the numbers came from. Run
+  `.venv/bin/python scripts/study.py check STUDY_FOLDER`, which fails if a pinned file has
+  changed since it was pinned, and read the study's `study.toml` card (verdict and status). A study without a
+  `PIN.json` has no pinned run: say so, and treat its numbers as not re-runnable from a
+  recorded commit.
 - The code diff: `git status -s` and `git diff --stat` (work may be
   uncommitted), plus the new strategy file.
 

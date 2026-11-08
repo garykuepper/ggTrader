@@ -103,12 +103,19 @@ src/ggTrader/
 ├── utils/                       # Common Helpers
 │   ├── config.py                # Global settings and defaults
 │   ├── paths.py                 # Locates files relative to the project root directory
-│   └── db_engine.py             # Manages connections to the database
+│   ├── db_engine.py             # Manages connections to the database
+│   ├── io.py / results.py       # Atomic file writes; result JSON stamped with provenance
+│   ├── manifest.py / binding.py # Hash records for frozen inputs; bind a result to its git commit and lock hash
+│   ├── significance.py          # Newey-West excess-return statistics (shared by studies)
+│   ├── fred_data.py             # FRED series loader (shared by studies)
+│   └── study.py                 # Study plumbing: find the repo root, put a study's code on sys.path
 │
 └── cli/                         # Command-Line Subcommands
     ├── main.py                  # Root CLI setup (the main 'ggt' command)
     └── cmd_db.py                # The 'ggt db' command to manage the database
 ```
+
+**Where study code lives.** `src/` holds the engine, the walk-forward lab, the data layer and the live paper path, and nothing that belongs to one study. A study's own modules, drivers and tests live inside its folder under `research/`, in a `code/` subfolder (tests in `code/tests/`), with helpers that several studies of one category share in that category's `_lib/` folder. Since the study-isolation refactor (2026-11-07) `lab/` no longer holds study modules: the stock-signal screens, the WFO attribution and synthetic-policy tools, the tax-lot library, the century-leverage study, the production-replica tools, the event-timing audit and the intraday family all moved out (every moved file is listed in `research/CODEMOVED.csv`). The shared statistics helpers (`utils/significance.py`, `utils/fred_data.py`) stayed in `src/` under `utils/`. Nothing in `src/` imports a study; a study imports `ggTrader` and calls `ggTrader.utils.study.bootstrap(__file__)` to put its own `code/` folder and its category's `_lib/` on the path. `scripts/study.py` creates and checks a study (see the [CLI Reference](cli_reference.md)).
 
 ---
 
@@ -122,7 +129,7 @@ and refuses to use on any mismatch; the `db` source opens a server-enforced read
 (`close`, `open`, `high`, `low`, `volume`: dates x symbols, UTC-midnight index), the requested
 symbols that have no bars (`missing_symbols`) and each symbol's last valid bar. Duplicate rows,
 non-midnight stamps and weekend stamps raise `BarsValidationError`; this assertion replaces the
-silent `collapse_daily_duplicates` heuristic (which `lab.data.load_ohlcv` still applies for the replica tools `scripts/production_replica_audit.py` and `scripts/replica_parity_check.py`).
+silent `collapse_daily_duplicates` heuristic (which `lab.data.load_ohlcv` still applies for the replica tools in `research/audits/production-replica/code/`).
 `Bars.legacy_frame()` gives the old `(symbol, field)` MultiIndex frame (used by the replica panel and the ML-gate trainer). `vbt.Data` is deliberately not used (it is a dict of frames in the open-source build).
 
 `ggTrader.lab.universe` builds the point-in-time universe once per run instead of once per bar:
@@ -405,7 +412,7 @@ formulas live on only as test oracles (`tests/oracles/legacy_voters.py`).
 
 ### Event-timing audit evidence path
 
-`lab/event_timing_audit.py` owns PIT denominator accounting, clocks, requirement
+`event_timing_audit.py` (in `research/audits/event-timing/code/`) owns PIT denominator accounting, clocks, requirement
 matrices and reporting; `event_timing_sources.py` owns bounded immutable raw
 collection, and `event_timing_reconstruction.py` owns public-time Form 4 replay.
 The approved 2026-10-22 amendment adds a separate `insider_filing_date_only`
@@ -417,7 +424,7 @@ Original insider output and PEAD retain their existing behavior. Timing PASS
 means declared convention compliance; dissemination remains UNVERIFIED. Progress
 and result metadata bind the amendment identity/hash alongside code/protocol
 bindings; legacy or changed-policy registrations cannot resume.
-The standalone script delegates to one CLI. This path uses explicit read-only
+The standalone driver (`code/run.py` in the same folder) delegates to one CLI. This path uses explicit read-only
 SELECTs for metadata/bar existence, never schema loaders or execution code.
 Offline evidence and fixture tests precede collection/code review. Details and
 remaining input requirements are in the
@@ -425,8 +432,8 @@ remaining input requirements are in the
 
 ## Intraday metadata preflight
 
-`lab/intraday_probe.py` is an isolated research utility, invoked through
-`scripts/intraday_coverage_probe.py`. It checks a frozen SPY calendar/sample
+`intraday_probe.py` (in `research/intraday/_lib/`) is an isolated research utility, invoked through
+`intraday_coverage_probe.py` in `research/intraday/spy-momentum-feasibility/code/`. It checks a frozen SPY calendar/sample
 manifest against Alpaca SIP and IEX bars and SIP auction metadata. It uses only
 read-only HTTP requests and atomic JSON checkpoints, with no database,
 strategy registry, simulation or paper-trader integration. Prices are discarded
@@ -435,10 +442,10 @@ for request bounds and the limits of its sampled-coverage conclusion.
 
 ## Intraday r8 research pipeline
 
-`lab/intraday_momentum.py` owns the frozen protocol identity, dataset validation,
-pure research calculations and write-once evidence. `lab/intraday_momentum_data.py`
+`intraday_momentum.py` (in `research/intraday/spy-momentum-feasibility/code/`) owns the frozen protocol identity, dataset validation,
+pure research calculations and write-once evidence. `intraday_momentum_data.py`
 collects complete, hashed, immutable request chunks and atomically checkpoints
-progress for resumption. `scripts/intraday_momentum_research.py` exposes standalone
+progress for resumption. `run.py` in the same folder exposes standalone
 `plan`, `collect`, `validate` and `score` commands. It has no strategy-registry,
 vectorbt, database or production-paper integration.
 
@@ -452,9 +459,9 @@ and [CLI reference](cli_reference.md) for the current authorization boundary.
 
 ## Prospective intraday observer
 
-`lab/intraday_observer.py` owns an isolated file-based observer, hypothetical
+`intraday_observer.py` (in `research/intraday/spy-momentum-prospective-observer/code/`) owns an isolated file-based observer, hypothetical
 accounting, calendar slots and append-only source/decision evidence.
-`scripts/intraday_observe.py` exposes manual commands; it is not a `ggt paper`
+`intraday_observe.py` in the same folder exposes manual commands; it is not a `ggt paper`
 subcommand. Safe helpers are reused from `intraday_probe.py`; the historical r8
 scorer and production broker path are not imported or modified.
 
@@ -465,10 +472,10 @@ or real data collection is enabled by installation/import. Timely stages require
 cannot become completed decisions. Activation requires a manifest-bound readiness
 artifact. Real-source sample access and the documented fifteen-minute restriction
 have been checked; future availability and actual intraday publication latency
-are not guaranteed. The calendar-aware `scripts/intraday_observer_job.py` wrapper
+are not guaranteed. The calendar-aware `intraday_observer_job.py` wrapper (same folder)
 dispatches the same core stages; standalone user timers are defined in
 `deploy/intraday_observer/` and were separately installed on October 27, 2026. The deployed runtime is a
-separate read-only snapshot; only fetching units receive a private persistent
+separate read-only snapshot cut at commit `280d4a0`, which still has the pre-move `scripts/` layout; only fetching units receive a private persistent
 credential file under the owner-approved activation. Corrupt evidence yields unresolved diagnostics
 without statistics, and cannot be waived by resume.
 See the [protocol](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md)
