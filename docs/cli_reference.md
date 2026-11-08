@@ -373,19 +373,27 @@ ggt paper --live               # places real paper orders (the only way to; refu
 # no fallback to a file.
 ```
 
-**Membership gate (slice M4).** Before any bar is fetched, a wall-clock run on the latest `db`
-vintage must pass `ggTrader.data.membership_gate`: the last upstream check (`verified_at`) must be
-no more than **45 days** old (override: environment variable `GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`,
-a positive whole number; a bad value stops the run), and the list's last change date may trail the
-day by under **90 days** (warn from 90) and under **180 days** (refuse from 180). A refusal raises
-`SignalGateError` with code `membership_stale`, `membership_lag`, `membership_unavailable` (database
-unreadable, table empty or the vintage fails its integrity check) or `membership_gate_config`, sends
-the usual "Signal gate - no orders placed" message, and stops the run before any order is possible.
-Each message names its fix (`ggt db membership check-upstream`, or `ggt db load-sp500` for a lag). A
-warning is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows
-the `DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
-pinned `db:<id>` or to a caller-injected `now` (replays and tests). With vintage 1 loaded the gate
-refuses today.
+**Membership gate (slice M4, redefined in M4b per spec Appendix C3).** Before any bar is fetched, a
+wall-clock run on the latest `db` vintage must pass `ggTrader.data.membership_gate`. The gate counts
+from an *independent* match: the last `matched` row that `ggt db membership check-holdings` wrote
+(the list equals the SPDR SPY holdings for the holdings' own as-of date). Two clocks decide.
+**Freshness:** the last match may be no more than **45 days** old (override: environment variable
+`GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`, a positive whole number; a bad value stops the run; it drops
+to 10 once the weekly job exists). A list that was never matched is refused outright. **Lag:** the
+day may trail `known_through` (the newest matched holdings as-of date, never earlier than the
+vintage's last change date) by under **90 days** (warn from 90) and under **180 days** (refuse
+from 180). A quiet spell without index changes therefore raises no alarm while the matches keep
+coming; a dead pipeline does. A `check-upstream` result extends neither clock. A refusal raises
+`SignalGateError` with code `membership_stale` (including "never matched"), `membership_lag`,
+`membership_unavailable` (database unreadable, table empty or the vintage fails its integrity
+check) or `membership_gate_config`, sends the usual "Signal gate - no orders placed" message, and
+stops the run before any order is possible. Each message names its fix
+(`ggt db membership check-holdings`, and `ggt db load-sp500` if it reports a mismatch). A warning
+is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows the
+`DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
+pinned `db:<id>` or to a caller-injected `now` (replays and tests). A match belongs to one vintage:
+loading a newer vintage starts again from "never matched". With vintage 1 loaded and no match
+recorded the gate refuses today.
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
 
@@ -424,7 +432,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check; `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages. |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages. |
 
 ### Examples:
 ```bash
@@ -471,6 +479,35 @@ ggt db membership verify --load-id 1 --against-fixture sp500_v1_2026-06-02
 `verify` takes `--against-file PATH` (default: the committed vintage-1 file) or
 `--against-fixture NAME`, not both.
 
+**SPY holdings match (slice M4b, spec Appendix C).**
+
+```bash
+# Download the public SPDR SPY holdings workbook, compare its tickers with the latest vintage's
+# members on the holdings' own as-of date, record one check row (and the raw bytes)
+ggt db membership check-holdings     # exit 0 matched, 2 mismatch (reported, nothing loaded), 1 failure
+```
+
+The workbook (`https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx`,
+fetched with a browser-style User-Agent, redirects followed) is read with the Python standard
+library only (`ggTrader.utils.xlsx_min`; no spreadsheet dependency). The header row is the first
+row with a `Ticker` cell, the date is the "As of DD-Mon-YYYY" text above it. Cash, placeholder and
+other non-equity lines (a `-` or `USD` ticker, a ticker that is not letters/digits plus an optional
+share class, a `Cash`/`Other` sector) are dropped and listed in `detail.excluded_lines`. Both
+sides go through `normalize_yf_ticker` (`BRK.B` and `BRK-B` are the same ticker). A duplicate ticker,
+or a count outside 480..520, means the structure is not what we expect and is `fetch_failed`.
+
+`check-holdings` appends exactly one row to `universe.checks` per run and archives the raw bytes
+(gzip, with their sha256) in `universe.check_blobs` whenever bytes arrived. It never touches
+`loads`, `membership` or `snapshot_dates`. Outcomes: `matched` (equal sets; `matched_load_id` is
+the vintage; **the only outcome that advances the live gate**), `mismatch` (`detail.only_in_list`
+and `detail.only_in_holdings` are sorted ticker lists; nothing is loaded) and `fetch_failed`
+(unreachable, HTTP error, truncated, HTML or a wrong structure instead of a workbook, an as-of date
+after today or before the vintage's first snapshot; `detail.reason` says which). `detail` also holds
+the as-of date and text, counts, the source URL, the response headers and the raw sha256. If the
+holdings are dated before the vintage's last change but inside its coverage, they are compared with
+the snapshot in force on their own date (a match then sets no `known_through` beyond the
+vintage's coverage end). `status` shows the last matched check, `known through` and the age.
+
 **Upstream check, status and diff (slice M4).**
 
 ```bash
@@ -486,8 +523,9 @@ ggt db membership diff --from 1 --to 2 [--json diff.json]
 
 `check-upstream` appends exactly one row to `universe.checks` and never touches `loads` or
 `membership`; a differing upstream is reported and is **never loaded automatically** (loading is
-`ggt db load-sp500`). Outcomes: `unchanged` (the raw bytes, or failing that the parsed content,
-equal the latest vintage; only this outcome resets the verification age the gate reads), `refused`
+`ggt db load-sp500`). Since M4b the check is informational: the upstream feed is dead and the
+gate no longer counts it. Outcomes: `unchanged` (the raw bytes, or failing that the parsed content,
+equal the latest vintage; it no longer resets any clock), `refused`
 (upstream differs; `detail.result = "differs"` carries the upstream coverage end, the dates only on
 each side and the historical / tail / rename split) and `fetch_failed` (unreachable, HTTP error,
 a content type that is not text, a body shorter than its `Content-Length` or not ending in a
@@ -511,7 +549,7 @@ A source offers `history()` (the shape of `load_sp500_history()`), `members_asof
 `all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
 name plus content checksum, for result JSON). `check_membership_age(vintage, asof, ...)` compares
 a vintage's age with warn and refuse thresholds you pass; the live gate (`membership_gate`,
-slice M4) has its own inclusive lag thresholds and is the only caller that enforces them.
+slices M4 and M4b) has its own inclusive lag thresholds and is the only caller that enforces them.
 
 **Every reader now takes the source (slice M3).** `universe_members_asof`, `universe_all_between`,
 `sp500_members_asof`, `all_members_between`, `eligible_at`, `equity_universe_between`,
