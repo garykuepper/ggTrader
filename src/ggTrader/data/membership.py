@@ -20,12 +20,14 @@ is never read instead. Errors never carry a connection URL, host or password.
 The pure lookups mirror ``ggTrader.data.core.index_constituents`` (``sp500_members_asof``,
 ``all_members_between`` and the ``load_sp500_history`` table) result for result; the equivalence
 tests in ``tests/data/test_membership_equivalence.py`` prove it for vintage 1. Nothing here writes
-to the database and nothing reads a source implicitly: callers still use the old file functions
-until slice M3 migrates them.
+to the database. Library callers take ``membership=`` explicitly; only when they pass ``None`` do
+they reach :func:`selected_source`, which honours ``GGT_MEMBERSHIP`` and otherwise raises
+:class:`MembershipSourceNotSelected` (slice M3, spec 3.2). Nothing ever guesses a source.
 """
 
 from __future__ import annotations
 
+import argparse
 import gzip
 import json
 import os
@@ -57,6 +59,9 @@ from ggTrader.utils.paths import REPO_ROOT
 
 #: Environment variable that selects the source when no spec string is passed.
 ENV_VAR = "GGT_MEMBERSHIP"
+#: The frozen vintage-1 fixture: the default of the oracle drivers, which must reproduce the
+#: reference numbers recorded against it.
+ORACLE_SPEC = "fixture:sp500_v1_2026-06-02"
 #: Optional reader login (spec Appendix B5); defaults to the project's own connection.
 READER_URL_ENV = "GGT_MEMBERSHIP_DB_URL"
 #: Where the fixtures registry lives, relative to the repository root.
@@ -288,6 +293,10 @@ def _utc_day(value: Any) -> date:
     return stamp.date()
 
 
+#: Per-process cache of history frames by content hash (spec 3.2). Frames are shared, read-only.
+_HISTORY_CACHE: dict[str, pd.DataFrame] = {}
+
+
 class _SnapshotSource:
     """Shared lookups over one vintage held in memory (the history is small: ~2,700 rows)."""
 
@@ -320,14 +329,23 @@ class _SnapshotSource:
         return list(self._dates)
 
     def history(self) -> pd.DataFrame:
-        """The ``load_sp500_history()`` table, built once per source (shared; do not mutate)."""
+        """The ``load_sp500_history()`` table, built once per process per content (do not mutate).
+
+        Frames are cached by ``content_sha256`` (spec 3.2): equal content, equal frame, whichever
+        source (fixture or database) produced it.
+        """
         if self._frame is None:
-            # Same construction as load_sp500_history so dtype and resolution match exactly.
-            dates = pd.Series([d.isoformat() for d in self._dates])
-            index = pd.DatetimeIndex(pd.to_datetime(dates), tz="UTC", name="date")
-            self._frame = pd.DataFrame(
-                {"tickers": [list(self._snapshots[d]) for d in self._dates]}, index=index
-            )
+            key = self._vintage.content_sha256
+            frame = _HISTORY_CACHE.get(key)
+            if frame is None:
+                # Same construction as load_sp500_history so dtype and resolution match exactly.
+                dates = pd.Series([d.isoformat() for d in self._dates])
+                index = pd.DatetimeIndex(pd.to_datetime(dates), tz="UTC", name="date")
+                frame = pd.DataFrame(
+                    {"tickers": [list(self._snapshots[d]) for d in self._dates]}, index=index
+                )
+                _HISTORY_CACHE[key] = frame
+            self._frame = frame
         return self._frame
 
     def snapshot_asof(self, asof: Any) -> tuple[date, list[str]]:
@@ -674,3 +692,80 @@ def membership_source(
     if kind == "fixture":
         return FixtureMembershipSource(str(which), root=root)
     return DbMembershipSource("latest" if which is None else int(which), store=store)
+
+
+# --------------------------------------------------------------------------- implicit selection
+
+#: Sources already built in this process, by (spec, root); see :func:`selected_source`.
+_SELECTED: dict[tuple[str, str], MembershipSource] = {}
+
+
+def selected_source(spec: str | None = None) -> MembershipSource:
+    """The source named by ``spec`` or ``GGT_MEMBERSHIP``, built once per process.
+
+    This is what a library function reaches when its caller passed ``membership=None``: the
+    selection is still explicit (a spec string or the environment variable) and there is still no
+    default, so :class:`MembershipSourceNotSelected` is raised when neither is set. Caching keeps
+    a per-bar caller (``eligible_at``) from re-reading and re-hashing the file on every call, and
+    pins ``db`` (latest) to one load id for the life of the process, as spec 3.1 requires.
+    """
+    chosen = spec or os.environ.get(ENV_VAR) or None
+    if chosen is None:
+        return membership_source(None)  # raises MembershipSourceNotSelected with the help text
+    key = (chosen, str(REPO_ROOT))
+    source = _SELECTED.get(key)
+    if source is None:
+        source = _SELECTED[key] = membership_source(chosen)
+    return source
+
+
+def resolve_source(membership: MembershipSource | None) -> MembershipSource:
+    """``membership`` itself, or :func:`selected_source` when the caller passed ``None``."""
+    return membership if membership is not None else selected_source()
+
+
+def clear_source_cache() -> None:
+    """Forget every cached source and history frame (tests, long-lived processes)."""
+    _SELECTED.clear()
+    _HISTORY_CACHE.clear()
+
+
+# --------------------------------------------------------------------------- command lines
+
+
+def add_membership_argument(parser: argparse.ArgumentParser, *, default: str | None = None) -> None:
+    """Add ``--membership SPEC`` and ``--expect-membership-sha`` to a driver's parser.
+
+    ``default=None`` makes the source come from ``GGT_MEMBERSHIP`` or fail (``ggt lab``);
+    the oracle drivers pass :data:`ORACLE_SPEC` so they reproduce their recorded numbers.
+    """
+    shown = f" (default: {default})" if default else " (default: $GGT_MEMBERSHIP, else an error)"
+    parser.add_argument(
+        "--membership",
+        default=default,
+        metavar="SPEC",
+        help="S&P 500 membership source: 'db' (latest vintage), 'db:<load_id>' or "
+        f"'fixture:<name>'{shown}. Cited results should pin a vintage.",
+    )
+    parser.add_argument(
+        "--expect-membership-sha",
+        default=None,
+        metavar="SHA256",
+        help="refuse to run unless the chosen vintage's content sha256 equals this (spec 3.6).",
+    )
+
+
+def source_from_args(args: argparse.Namespace) -> MembershipSource:
+    """The source chosen by ``--membership`` (else ``GGT_MEMBERSHIP``), after the pin check.
+
+    Raises :class:`MembershipSourceNotSelected` when nothing is chosen and
+    :class:`MembershipIntegrityError` when ``--expect-membership-sha`` does not match.
+    """
+    source = selected_source(args.membership)
+    expected = getattr(args, "expect_membership_sha", None)
+    if expected and source.vintage().content_sha256 != expected:
+        raise MembershipIntegrityError(
+            f"membership content sha256 {source.vintage().content_sha256} is not the expected "
+            f"{expected} ({_describe(source.vintage())})"
+        )
+    return source

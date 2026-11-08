@@ -2,9 +2,17 @@
 
 Source: fja05680/sp500 "S&P 500 Historical Components & Changes (Updated)"
 — one snapshot row per membership-change date (1996 -> present), with tickers
-mapped to *current* symbology so they resolve against yfinance. The committed
-copy lives at ``data/universe/sp500_constituents_history.csv.gz``; refresh it
-with ``download_sp500_history()`` (manual, occasional).
+mapped to *current* symbology so they resolve against yfinance. Since the
+membership-database work (spec docs/superpowers/specs/2026-11-07-membership-database-design.md)
+the list is read through a :class:`~ggTrader.data.membership.MembershipSource`
+(the database, or a frozen fixture file), chosen by name and never guessed:
+every lookup here takes ``membership=`` (or an already-loaded ``history`` table)
+and, when given neither, uses the source named by ``GGT_MEMBERSHIP`` or raises
+``MembershipSourceNotSelected``. Nothing in ``src/`` writes a membership file;
+``ggt db load-sp500`` is the only writer.
+
+``load_sp500_history(csv_path)`` with a path stays a pure file reader, for
+frozen studies that name their file (the event-timing audit).
 
 Honest limitation: point-in-time membership removes selection-survivorship
 (picking from today's index), but yfinance lacks price data for many delisted
@@ -15,50 +23,35 @@ period with ``coverage_stats()`` rather than ignoring it.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 import pandas as pd
 
+if TYPE_CHECKING:  # data.membership imports this module's siblings; import it lazily at runtime
+    from ggTrader.data.membership import MembershipSource
+
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
+#: The frozen vintage-1 file (fixture ``sp500_v1_2026-06-02``); its bytes are pinned by studies.
 SP500_HISTORY_CSV = PROJECT_ROOT / "data" / "universe" / "sp500_constituents_history.csv.gz"
-SP500_HISTORY_URL = (
-    "https://raw.githubusercontent.com/fja05680/sp500/master/"
-    "S%26P%20500%20Historical%20Components%20%26%20Changes%20(Updated).csv"
-)
-
-_history_cache: Optional[pd.DataFrame] = None
 
 
-def download_sp500_history(dest: Path = SP500_HISTORY_CSV, url: str = SP500_HISTORY_URL) -> Path:
-    """Refresh the committed constituent-history file from GitHub (gzipped)."""
-    import gzip
-    import urllib.request
+def load_sp500_history(csv_path: Optional[Path] = None) -> pd.DataFrame:
+    """The snapshot table: DatetimeIndex (UTC) -> sorted list of tickers.
 
-    with urllib.request.urlopen(url, timeout=60) as resp:
-        raw = resp.read()
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(dest, "wb") as f:
-        f.write(raw)
-    global _history_cache
-    _history_cache = None
-    return dest
+    With ``csv_path`` this reads that file (pure file reader, no source selection). Without it
+    the table comes from the source selected by ``GGT_MEMBERSHIP``
+    (:func:`~ggTrader.data.membership.selected_source`); there is no implicit file default.
+    """
+    if csv_path is None:
+        from ggTrader.data.membership import selected_source
 
-
-def load_sp500_history(csv_path: Path = SP500_HISTORY_CSV) -> pd.DataFrame:
-    """Load the snapshot table: DatetimeIndex (UTC) -> sorted list of tickers."""
-    global _history_cache
-    if _history_cache is not None and csv_path == SP500_HISTORY_CSV:
-        return _history_cache
-
+        return selected_source().history()
     if not csv_path.exists():
-        raise FileNotFoundError(
-            f"S&P 500 constituent history not found at {csv_path}. "
-            "Run download_sp500_history() once to fetch it."
-        )
+        raise FileNotFoundError(f"S&P 500 constituent history not found at {csv_path}.")
     raw = pd.read_csv(csv_path)
     if list(raw.columns) != ["date", "tickers"]:
         raise ValueError(f"Unexpected constituent CSV columns: {list(raw.columns)}")
-    out = pd.DataFrame(
+    return pd.DataFrame(
         {
             "tickers": [
                 sorted(t.strip() for t in row.split(",") if t.strip()) for row in raw["tickers"]
@@ -67,14 +60,25 @@ def load_sp500_history(csv_path: Path = SP500_HISTORY_CSV) -> pd.DataFrame:
         index=pd.DatetimeIndex(pd.to_datetime(raw["date"]), tz="UTC", name="date"),
     ).sort_index()
 
-    if csv_path == SP500_HISTORY_CSV:
-        _history_cache = out
-    return out
+
+def _history(
+    history: Optional[pd.DataFrame], membership: Optional["MembershipSource"]
+) -> pd.DataFrame:
+    """The table to look up in: an explicit ``history``, else the source's (or selected) one."""
+    if history is not None:
+        return history
+    from ggTrader.data.membership import resolve_source
+
+    return resolve_source(membership).history()
 
 
-def sp500_members_asof(asof: pd.Timestamp, history: Optional[pd.DataFrame] = None) -> List[str]:
+def sp500_members_asof(
+    asof: pd.Timestamp,
+    history: Optional[pd.DataFrame] = None,
+    membership: Optional["MembershipSource"] = None,
+) -> List[str]:
     """Members at ``asof``: the latest snapshot row dated on or before it."""
-    hist = history if history is not None else load_sp500_history()
+    hist = _history(history, membership)
     ts = pd.Timestamp(asof)
     ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
     eligible = hist.index[hist.index <= ts]
@@ -86,14 +90,17 @@ def sp500_members_asof(asof: pd.Timestamp, history: Optional[pd.DataFrame] = Non
 
 
 def all_members_between(
-    start: pd.Timestamp, end: pd.Timestamp, history: Optional[pd.DataFrame] = None
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    history: Optional[pd.DataFrame] = None,
+    membership: Optional["MembershipSource"] = None,
 ) -> List[str]:
     """Union of members over [start, end] — the data-download universe.
 
     Includes the snapshot in force at ``start`` (the latest row <= start), plus
     every change snapshot inside the window.
     """
-    hist = history if history is not None else load_sp500_history()
+    hist = _history(history, membership)
 
     def _utc(ts: pd.Timestamp) -> pd.Timestamp:
         ts = pd.Timestamp(ts)
@@ -193,16 +200,24 @@ def snapshot_members(universe: str) -> List[str]:
 
 
 def universe_members_asof(
-    universe: str, asof: pd.Timestamp, history: Optional[pd.DataFrame] = None
+    universe: str,
+    asof: pd.Timestamp,
+    history: Optional[pd.DataFrame] = None,
+    membership: Optional["MembershipSource"] = None,
 ) -> List[str]:
     """Unified universe lookup: PIT for sp500, static snapshot for others."""
     if universe == "sp500":
-        return sp500_members_asof(asof, history)
+        return sp500_members_asof(asof, history, membership)
     return snapshot_members(universe)
 
 
-def universe_all_between(universe: str, start: pd.Timestamp, end: pd.Timestamp) -> List[str]:
+def universe_all_between(
+    universe: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    membership: Optional["MembershipSource"] = None,
+) -> List[str]:
     """All members across [start, end]: PIT union for sp500, snapshot for others."""
     if universe == "sp500":
-        return all_members_between(start, end)
+        return all_members_between(start, end, membership=membership)
     return sorted({normalize_yf_ticker(t) for t in snapshot_members(universe)})

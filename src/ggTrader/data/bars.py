@@ -44,6 +44,7 @@ import pandas as pd
 
 from ggTrader.data import snapshot
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_all_between
+from ggTrader.data.membership import MembershipSource
 
 BAR_FIELDS = ("close", "open", "high", "low", "volume")
 #: Field order of the legacy ``(symbol, field)`` frame (alphabetical, as ``sort_index`` gave).
@@ -258,6 +259,7 @@ def load_bars(
     source: str = "snapshot",
     snapshot_path: Optional[Any] = None,
     deep_verify: bool = False,
+    membership: Optional[MembershipSource] = None,
 ) -> Bars:
     """Load daily bars for research, read-only.
 
@@ -272,6 +274,8 @@ def load_bars(
         source: ``snapshot`` (default, hash-verified Parquet) or ``db`` (read-only session).
         snapshot_path: snapshot file; default is :func:`snapshot.default_snapshot_path`.
         deep_verify: also recompute the snapshot content hash.
+        membership: the S&P 500 list source; required with ``universe='sp500'`` (the point-in-time
+            union is taken from it), ignored for symbol lists and static universes.
 
     Raises:
         BarsValidationError: duplicate, non-midnight or weekend stamps.
@@ -287,8 +291,10 @@ def load_bars(
     if universe is not None:
         if universe_span is None:
             raise ValueError("universe_span=(start, end) is required with universe")
+        if universe == "sp500" and membership is None:
+            raise ValueError("membership=<MembershipSource> is required with universe='sp500'")
         span_start, span_end = _utc(universe_span[0]), _utc(universe_span[1])
-        members = universe_all_between(universe, span_start, span_end)
+        members = universe_all_between(universe, span_start, span_end, membership=membership)
         requested = _normalise_symbols([*members, *extra_symbols])
     else:
         requested = _normalise_symbols([*(symbols or ()), *extra_symbols])

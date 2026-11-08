@@ -44,6 +44,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 V1 = "sp500_v1_2026-06-02"
+#: The old reader: the frozen file parsed straight from its path (no source selection).
+OLD_TABLE = load_sp500_history(SP500_HISTORY_CSV)
 FIRST = date(1996, 1, 2)
 LAST_SNAPSHOT = date(2026, 6, 2)
 CALENDAR_END = date(2026, 7, 2)
@@ -69,7 +71,7 @@ def _backend(kind: str) -> MembershipSource:
 
 @pytest.fixture(scope="module")
 def old_history() -> pd.DataFrame:
-    return load_sp500_history()
+    return OLD_TABLE
 
 
 def _outcome(call: Callable[[], Any]) -> tuple[str, Any]:
@@ -88,7 +90,7 @@ def calendar_days() -> list[date]:
 @pytest.fixture(scope="module")
 def old_calendar(calendar_days: list[date]) -> dict[date, list[str]]:
     """The old reader's answer for every calendar day, computed once for both backends."""
-    return {d: sp500_members_asof(pd.Timestamp(d)) for d in calendar_days}
+    return {d: sp500_members_asof(pd.Timestamp(d), OLD_TABLE) for d in calendar_days}
 
 
 def _localize(stamp: pd.Timestamp, zone: str) -> pd.Timestamp:
@@ -138,10 +140,10 @@ def test_every_snapshot_date_matches_the_old_reader(
 ) -> None:
     checked = 0
     for stamp in old_history.index:
-        old = sp500_members_asof(stamp)
+        old = sp500_members_asof(stamp, OLD_TABLE)
         assert source.members_asof(stamp.date()) == old
         assert source.members_asof(stamp) == old
-        assert universe_members_asof("sp500", stamp) == old
+        assert universe_members_asof("sp500", stamp, OLD_TABLE) == old
         day, tickers = source.snapshot_asof(stamp.date())
         assert (day, tickers) == (stamp.date(), old)
         checked += 1
@@ -170,7 +172,7 @@ def test_the_date_edges_match_including_the_errors(source: MembershipSource) -> 
     ]
     for day in edges:
         assert _outcome(lambda: source.members_asof(day)) == _outcome(
-            lambda: sp500_members_asof(pd.Timestamp(day))
+            lambda: sp500_members_asof(pd.Timestamp(day), OLD_TABLE)
         ), day
     assert _outcome(lambda: source.members_asof(FIRST - timedelta(days=1)))[0] == "error"
 
@@ -178,11 +180,11 @@ def test_the_date_edges_match_including_the_errors(source: MembershipSource) -> 
 def test_random_timestamps_in_any_zone_match_the_old_reader(source: MembershipSource) -> None:
     stamps = _random_stamps()
     assert len(stamps) >= 1000
-    kinds = {_outcome(lambda: sp500_members_asof(s))[0] for s in stamps}
+    kinds = {_outcome(lambda: sp500_members_asof(s, OLD_TABLE))[0] for s in stamps}
     assert kinds == {"ok", "error"}  # the sample reaches both before the first snapshot and past it
     for stamp in stamps:
         assert _outcome(lambda: source.members_asof(stamp)) == _outcome(
-            lambda: sp500_members_asof(stamp)
+            lambda: sp500_members_asof(stamp, OLD_TABLE)
         ), stamp
 
 
@@ -216,10 +218,15 @@ def old_windows() -> list[tuple[date, date, tuple[str, Any], tuple[str, Any] | N
     ``universe_all_between`` (a thin wrapper over the same function) is asked for every fifth.
     """
     out = []
+    fixture = FixtureMembershipSource(V1)
     for n, (start, end) in enumerate(_windows()):
         ts, te = pd.Timestamp(start), pd.Timestamp(end)
-        wrapped = _outcome(lambda: universe_all_between("sp500", ts, te)) if n % 5 == 0 else None
-        out.append((start, end, _outcome(lambda: all_members_between(ts, te)), wrapped))
+        wrapped = (
+            _outcome(lambda: universe_all_between("sp500", ts, te, membership=fixture))
+            if n % 5 == 0
+            else None
+        )
+        out.append((start, end, _outcome(lambda: all_members_between(ts, te, OLD_TABLE)), wrapped))
     return out
 
 

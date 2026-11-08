@@ -616,3 +616,69 @@ def test_verify_with_an_unknown_fixture_fails_before_touching_the_database(
     monkeypatch.setattr(cmd_membership, "connect", forbidden)
     assert cmd_membership.run_membership(_verify_args("--against-fixture", "nope")) == 1
     assert "nope" in capsys.readouterr().err
+
+
+# ---- implicit selection and the process caches (slice M3) -------------------------------------
+
+
+def test_selected_source_needs_a_spec_or_the_variable(monkeypatch: pytest.MonkeyPatch) -> None:
+    membership.clear_source_cache()
+    with pytest.raises(MembershipSourceNotSelected, match="GGT_MEMBERSHIP"):
+        membership.selected_source()
+    with pytest.raises(MembershipSourceNotSelected):
+        membership.resolve_source(None)
+    monkeypatch.setenv("GGT_MEMBERSHIP", f"fixture:{V1}")
+    assert membership.selected_source().vintage().fixture == V1
+
+
+def test_selected_source_is_built_once_per_process(monkeypatch: pytest.MonkeyPatch) -> None:
+    membership.clear_source_cache()
+    monkeypatch.setenv("GGT_MEMBERSHIP", f"fixture:{V1}")
+    first = membership.selected_source()
+    assert membership.selected_source() is first
+    assert membership.selected_source(f"fixture:{V1}") is first  # a spec string names the same one
+    assert membership.resolve_source(first) is first  # an explicit source is never replaced
+    membership.clear_source_cache()
+    assert membership.selected_source() is not first
+
+
+def test_selected_source_never_falls_back_to_a_fixture_when_db_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    membership.clear_source_cache()
+    monkeypatch.setenv("GGT_MEMBERSHIP", "db")
+    monkeypatch.setenv("GGT_MEMBERSHIP_DB_URL", "postgresql://u:pw@127.0.0.1:1/none")
+    with pytest.raises(MembershipUnavailable) as err:
+        membership.selected_source()
+    assert "pw" not in str(err.value)
+
+
+def test_equal_content_shares_one_history_frame_across_sources() -> None:
+    membership.clear_source_cache()
+    store = FakeMembershipStore()
+    store.add(synthetic_history())
+    database = DbMembershipSource("latest", store=store)
+    other = DbMembershipSource("latest", store=store)
+    assert database.history() is other.history()  # keyed by content_sha256
+    assert database.history() is database.history()
+
+
+def test_the_command_line_helper_selects_pins_and_refuses(monkeypatch: pytest.MonkeyPatch) -> None:
+    membership.clear_source_cache()
+    parser = argparse.ArgumentParser()
+    membership.add_membership_argument(parser)
+    with pytest.raises(MembershipSourceNotSelected):
+        membership.source_from_args(parser.parse_args([]))
+    args = parser.parse_args(
+        ["--membership", f"fixture:{V1}", "--expect-membership-sha", V1_CONTENT_SHA]
+    )
+    assert membership.source_from_args(args).vintage().content_sha256 == V1_CONTENT_SHA
+    wrong = parser.parse_args(
+        ["--membership", f"fixture:{V1}", "--expect-membership-sha", "0" * 64]
+    )
+    with pytest.raises(MembershipIntegrityError, match="expected"):
+        membership.source_from_args(wrong)
+    oracle = argparse.ArgumentParser()
+    membership.add_membership_argument(oracle, default=membership.ORACLE_SPEC)
+    assert membership.source_from_args(oracle.parse_args([])).vintage().fixture == V1
+    assert membership.ORACLE_SPEC == f"fixture:{V1}"

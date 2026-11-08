@@ -230,7 +230,9 @@ def _synthetic_world(seed: int, n_days: int = 90, n_sym: int = 30):
 def test_synthetic_parity_with_eligible_at(seed, kw, monkeypatch) -> None:
     close, hist = _synthetic_world(seed)
     monkeypatch.setattr(
-        lab_data, "universe_members_asof", lambda universe, asof: ic.sp500_members_asof(asof, hist)
+        lab_data,
+        "universe_members_asof",
+        lambda universe, asof, membership=None: ic.sp500_members_asof(asof, hist),
     )
     ohlcv = pd.concat({s: close[[s]].rename(columns={s: "close"}) for s in close.columns}, axis=1)
     mask = uni.pit_mask(close, hist, on_stale="ignore", **kw)
@@ -261,6 +263,53 @@ def test_age_check_warns_raises_or_ignores() -> None:
     assert quiet["stale"] and not fresh["stale"]
     with pytest.raises(ValueError, match="on_stale"):
         uni.check_constituent_age("2024-02-01", hist, on_stale="loud")
+
+
+def _source():
+    from ggTrader.data.membership import FixtureMembershipSource
+
+    return FixtureMembershipSource("sp500_v1_2026-06-02")
+
+
+def test_age_check_with_a_source_counts_days_since_verification_not_since_change() -> None:
+    """Spec 3.4: stale means our copy was last proved current too long ago (v1: 2026-06-09)."""
+    source = _source()
+    fresh = uni.check_constituent_age("2026-06-20", membership=source, on_stale="raise")
+    assert (fresh["age_days"], fresh["age_since_verified_days"]) == (18, 11)  # change 06-02
+    assert fresh["last_snapshot"] == "2026-06-02" and not fresh["stale"]
+    assert fresh["membership_sha256"] == source.vintage().content_sha256
+    with pytest.raises(uni.StaleConstituentsError, match="last verification"):
+        uni.check_constituent_age("2026-08-01", membership=source, on_stale="raise")
+    # a replay before the list was verified is never stale, however old the last change
+    replay = uni.check_constituent_age("2025-01-01", membership=source, on_stale="raise")
+    assert not replay["stale"] and replay["age_since_verified_days"] < 0
+
+
+def test_age_check_without_a_table_or_source_needs_the_environment(monkeypatch) -> None:
+    from ggTrader.data import membership
+    from ggTrader.data.membership import MembershipSourceNotSelected
+
+    membership.clear_source_cache()
+    monkeypatch.delenv("GGT_MEMBERSHIP")
+    with pytest.raises(MembershipSourceNotSelected):
+        uni.check_constituent_age("2026-06-20")
+    with pytest.raises(MembershipSourceNotSelected):
+        uni.membership_mask(pd.bdate_range("2024-01-01", periods=2, tz="UTC"), ["AAA"])
+    with pytest.raises(MembershipSourceNotSelected):
+        uni.pit_mask(_bars(3, ["AAA"]), min_history_bars=1)
+
+
+def test_a_source_and_its_table_give_the_same_masks() -> None:
+    source = _source()
+    idx = pd.bdate_range("2023-10-02", periods=60, tz="UTC")
+    symbols = ["AAPL", "BRK-B", "UBER", "TSLA", "GONE"]
+    assert uni.membership_mask(idx, symbols, membership=source).equals(
+        uni.membership_mask(idx, symbols, source.history())
+    )
+    close = pd.DataFrame(1.0, index=idx, columns=symbols)
+    assert uni.pit_mask(close, membership=source, min_history_bars=5, on_stale="ignore").equals(
+        uni.pit_mask(close, source.history(), min_history_bars=5, on_stale="ignore")
+    )
 
 
 def test_pit_mask_warns_when_constituents_are_stale() -> None:
@@ -414,6 +463,7 @@ def test_coverage_by_year() -> None:
 
 def _real_close() -> pd.DataFrame:
     from ggTrader.data.bars import load_bars
+    from ggTrader.data.membership import FixtureMembershipSource
 
     return load_bars(
         universe="sp500",
@@ -421,6 +471,7 @@ def _real_close() -> pd.DataFrame:
         start="2019-03-01",
         end="2026-10-30",
         extra_symbols=["SPY", "TLT", "GLD", "PDBC", "BIL"],
+        membership=FixtureMembershipSource("sp500_v1_2026-06-02"),
     ).close
 
 
@@ -487,7 +538,7 @@ def test_real_tape_parity_with_eligible_at_on_70_plus_dates_x_4_configs() -> Non
 def test_real_tape_mask_build_time_and_memory() -> None:
     """S6 measured 0.05 s and 1.2 MB; allow generous headroom, record exact numbers in evidence."""
     close = _real_close()
-    hist = ic.load_sp500_history()
+    hist = ic.load_sp500_history(ic.SP500_HISTORY_CSV)
     tracemalloc.start()
     t0 = time.perf_counter()
     mask = uni.pit_mask(close, hist, min_history_bars=60, on_stale="ignore")

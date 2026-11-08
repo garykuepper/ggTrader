@@ -15,6 +15,7 @@ import pytest
 from ggTrader.data import bars as bars_mod
 from ggTrader.data import snapshot as snap
 from ggTrader.data.bars import BarsValidationError, load_bars, to_legacy_frame
+from ggTrader.data.membership import FixtureMembershipSource
 
 REAL_PARQUET = Path(snap.DEFAULT_SNAPSHOT_DIR) / "ohlcv_20261106.parquet"
 needs_real = pytest.mark.skipif(
@@ -22,6 +23,9 @@ needs_real = pytest.mark.skipif(
     reason="frozen tape data/snapshots/ohlcv_20261106.parquet is absent (git-ignored; rebuild "
     "with scripts/make_tape_snapshot.py)",
 )
+
+#: The S&P 500 list for universe requests (the frozen vintage-1 fixture).
+SOURCE = FixtureMembershipSource("sp500_v1_2026-06-02")
 
 DAYS = pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05", "2024-01-08"])
 
@@ -156,6 +160,8 @@ def test_universe_and_span_validation(patched_snapshot) -> None:
         load_bars(["AAA"], universe="sp500")
     with pytest.raises(ValueError, match="universe_span"):
         load_bars(universe="sp500")
+    with pytest.raises(ValueError, match="membership"):  # sp500 needs an explicit source
+        load_bars(universe="sp500", universe_span=("2024-01-02", "2024-01-08"))
     with pytest.raises(ValueError, match="source"):
         load_bars(["AAA"], source="yfinance")
 
@@ -164,8 +170,9 @@ def test_universe_selection_uses_pit_union(patched_snapshot, monkeypatch) -> Non
     patched_snapshot(_long())
     seen = {}
 
-    def fake_union(universe, start, end):
+    def fake_union(universe, start, end, membership=None):
         seen["args"] = (universe, start, end)
+        seen["membership"] = membership
         return ["AAA", "ZZZ"]
 
     monkeypatch.setattr(bars_mod, "universe_all_between", fake_union)
@@ -175,8 +182,10 @@ def test_universe_selection_uses_pit_union(patched_snapshot, monkeypatch) -> Non
         extra_symbols=["CCC"],
         start="2024-01-01",
         end="2024-01-31",
+        membership=SOURCE,
     )
     assert seen["args"][0] == "sp500"
+    assert seen["membership"] is SOURCE  # the chosen source is passed down, not re-selected
     assert b.requested == ("AAA", "CCC", "ZZZ")
     assert b.missing_symbols == ("ZZZ",)
 
@@ -201,12 +210,18 @@ def test_universe_span_accepts_aware_naive_and_string_bounds(
     patched_snapshot(_long())
     seen = {}
 
-    def fake_union(universe, start, end):
+    def fake_union(universe, start, end, membership=None):
         seen["span"] = (start, end)
         return ["AAA"]
 
     monkeypatch.setattr(bars_mod, "universe_all_between", fake_union)
-    load_bars(universe="sp500", universe_span=span, start="2024-01-01", end="2024-01-31")
+    load_bars(
+        universe="sp500",
+        universe_span=span,
+        start="2024-01-01",
+        end="2024-01-31",
+        membership=SOURCE,
+    )
     start, end = seen["span"]
     assert (start, end) == (
         pd.Timestamp("2024-01-02", tz="UTC"),
@@ -446,6 +461,7 @@ def test_real_tape_universe_load_and_missing_symbols() -> None:
         start="2019-03-01",
         end="2026-10-30",
         extra_symbols=["SPY", "TLT", "GLD", "PDBC", "BIL"],
+        membership=SOURCE,
     )
     # Manifest: 617 requested, 12 not in the database; the extras are all present.
     assert len(b.requested) == 617

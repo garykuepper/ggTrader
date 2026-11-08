@@ -122,6 +122,7 @@ def real_bars(n_symbols: int = 40, seed: int = 7, end: str = SMOKE_END):
     Returns ``(bars_without_spy, spy_close)``; the window is the 2-fold smoke window.
     """
     from ggTrader.data.bars import legacy_exclusive_end, load_bars
+    from ggTrader.data.membership import FixtureMembershipSource
     from ggTrader.lab.wfo.inputs import subset_bars
 
     cfg = LabConfig()
@@ -132,6 +133,7 @@ def real_bars(n_symbols: int = 40, seed: int = 7, end: str = SMOKE_END):
         extra_symbols=["SPY"],
         start=str(start.date()),
         end=legacy_exclusive_end(end),
+        membership=FixtureMembershipSource("sp500_v1_2026-06-02"),
     )
     pool = [s for s in bars.symbols if s != "SPY" and bars.close[s].notna().sum() > 700]
     rng = np.random.default_rng(seed)
