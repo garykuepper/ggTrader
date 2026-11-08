@@ -140,16 +140,18 @@ def test_ddl_is_idempotent_and_stays_inside_the_universe_schema(db_url: str) -> 
                 "check_blobs",
                 "checks",
                 "load_blobs",
+                "load_evidence",
                 "loads",
                 "membership",
                 "snapshot_dates",
+                "symbol_changes",
             ]
             cur.execute(
                 "SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid "
                 "JOIN pg_namespace n ON n.oid = c.relnamespace "
                 "WHERE n.nspname = 'universe' AND NOT t.tgisinternal"
             )
-            assert cur.fetchone()[0] == 12  # (update/delete + truncate) x 6 tables
+            assert cur.fetchone()[0] == 16  # (update/delete + truncate) x 8 tables
             cur.execute(
                 "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
                 "WHERE conname = 'membership_no_live_overlap'"
@@ -337,7 +339,16 @@ def _expect_refused(conn, sql: str, params: tuple = ()) -> None:
 def test_triggers_refuse_update_delete_and_truncate(conn) -> None:
     load_vintage(conn, _request(_v1_bytes()))
     load_vintage(conn, _request(_v2_bytes(), retrieved_at=V2_AT, force=True, force_reason="t"))
-    for table in ("loads", "load_blobs", "snapshot_dates", "membership", "checks", "check_blobs"):
+    for table in (
+        "loads",
+        "load_blobs",
+        "snapshot_dates",
+        "membership",
+        "checks",
+        "check_blobs",
+        "symbol_changes",
+        "load_evidence",
+    ):
         _expect_refused(conn, f"TRUNCATE universe.{table} CASCADE")
     _expect_refused(conn, "DELETE FROM universe.loads WHERE load_id = 1")
     _expect_refused(conn, "UPDATE universe.loads SET note = 'edited' WHERE load_id = 1")

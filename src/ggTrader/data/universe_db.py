@@ -63,8 +63,12 @@ SCHEMA_SQL = REPO_ROOT / "sql" / "universe_schema.sql"
 LOADER_URL_ENV = "GGT_MEMBERSHIP_LOADER_URL"
 #: Statement timeout (ms) for the read-only sessions used by verify and dry runs.
 READ_STATEMENT_TIMEOUT_MS = 120_000
+#: The sources of a vintage loaded from a ``date,tickers`` file (``ggt db load-sp500 --from-file``).
+FILE_SOURCES = ("fja05680/sp500", "fixture-import")
+#: The source of a vintage generated from an events file (``--from-events``, spec Appendix C4).
+CURATED_SOURCE = "curated"
 #: The sources the ``loads.source`` CHECK accepts for a loader-written vintage.
-LOAD_SOURCES = ("fja05680/sp500", "fixture-import")
+LOAD_SOURCES = (*FILE_SOURCES, CURATED_SOURCE)
 #: The ``loads.source`` of a vintage written by :func:`reinstate_vintage` (never by a file load).
 REINSTATE_SOURCE = "reinstate"
 
@@ -75,6 +79,26 @@ class LoadRefused(RuntimeError):
     def __init__(self, reasons: list[str]) -> None:
         super().__init__("; ".join(reasons))
         self.reasons = reasons
+
+
+@dataclass(frozen=True)
+class EvidenceFile:
+    """One file stored with a curated vintage: the events file or a saved evidence page."""
+
+    name: str
+    kind: Literal["events_file", "evidence"]
+    raw: bytes
+    source_url: str | None = None
+
+
+@dataclass(frozen=True)
+class SymbolChange:
+    """Company continuity across a ticker change (membership itself stays remove plus add)."""
+
+    old_symbol: str
+    new_symbol: str
+    effective_date: date
+    evidence: str
 
 
 @dataclass(frozen=True)
@@ -96,6 +120,9 @@ class LoadRequest:
     commit: bool = False
     loader_git_sha: str = "unknown"
     index_name: str = INDEX_NAME
+    #: Curated vintages only: the events file and saved pages, and the ticker changes they state.
+    evidence: tuple[EvidenceFile, ...] = ()
+    symbol_changes: tuple[SymbolChange, ...] = ()
 
 
 @dataclass
@@ -127,6 +154,8 @@ class LoadReport:
     renames: list[tuple[str, str]] = field(default_factory=list)
     refusal_reasons: list[str] = field(default_factory=list)
     forced: bool = False
+    n_evidence: int = 0
+    n_symbol_changes: int = 0
 
     def to_json(self) -> str:
         """Stable JSON text of the report (dates as ISO strings)."""
@@ -301,6 +330,13 @@ def _prepare(req: LoadRequest) -> tuple[History, list[Interval], dict[str, str],
         raise LoadRefused([f"raw sha256 {raw_hash} != --expect-sha256 {req.expect_sha256}"])
     if req.force and not req.force_reason:
         raise LoadRefused(["--force needs --reason"])
+    if req.source == CURATED_SOURCE:
+        if not any(item.kind == "events_file" for item in req.evidence):
+            raise LoadRefused(["a curated vintage must carry its events file as evidence"])
+        if req.upstream_commit is not None:
+            raise LoadRefused(["a curated vintage has no upstream commit"])
+    elif req.evidence or req.symbol_changes:
+        raise LoadRefused(["evidence and symbol changes belong to curated vintages only"])
     history = parse_history_csv(req.raw)
     yf = _yf_map(history)
     intervals = collapse(history)
@@ -358,6 +394,8 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
                 )
             latest = latest_load(cur, req.index_name)
             _check_parent_pin(req.parent, latest)
+            if req.source == CURATED_SOURCE and latest is None:
+                raise LoadRefused(["a curated vintage needs a parent vintage to build on"])
             to_supersede: list[int] = []
             to_insert = intervals
             if latest is not None:
@@ -375,6 +413,7 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
                 to_supersede, to_insert = plan_supersession(parent.rows, intervals)
                 _fill_parent_diff(report, parent, history, intervals)
             report.rows_added, report.rows_superseded = len(to_insert), len(to_supersede)
+            report.n_evidence, report.n_symbol_changes = len(req.evidence), len(req.symbol_changes)
             report.forced = bool(report.refusal_reasons) and req.force
             if report.refusal_reasons and not req.force:
                 raise LoadRefused(report.refusal_reasons)
@@ -382,6 +421,7 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
                 return report
             load_id = _write_vintage(cur, req, report, history, yf, to_supersede, to_insert)
             _verify_readback(cur, load_id, req.index_name, history, content_hash)
+            _verify_evidence_readback(cur, load_id, req)
             _insert_check(cur, req, raw_hash, "loaded", load_id, report)
             conn.commit()
             report.load_id, report.committed = load_id, True
@@ -567,6 +607,35 @@ def _write_vintage(
             ],
             template="(%s, %s, %s, %s::date, %s::date, %s)",
         )
+    if req.evidence:
+        execute_values(
+            cur,
+            "INSERT INTO universe.load_evidence (load_id, name, kind, source_url, sha256, "
+            "size_bytes, content_gz) VALUES %s",
+            [
+                (
+                    load_id,
+                    item.name,
+                    item.kind,
+                    item.source_url,
+                    raw_sha256(item.raw),
+                    len(item.raw),
+                    psycopg2.Binary(gzip.compress(item.raw, mtime=0)),
+                )
+                for item in req.evidence
+            ],
+        )
+    if req.symbol_changes:
+        execute_values(
+            cur,
+            "INSERT INTO universe.symbol_changes (load_id, old_symbol, new_symbol, "
+            "effective_date, evidence) VALUES %s",
+            [
+                (load_id, c.old_symbol, c.new_symbol, as_date(c.effective_date), c.evidence)
+                for c in req.symbol_changes
+            ],
+            template="(%s, %s, %s, %s::date, %s)",
+        )
     return load_id
 
 
@@ -580,6 +649,49 @@ def _verify_readback(
         raise LoadRefused(["read-back of the new vintage differs from the input; rolled back"])
     if len(back.rows) != back.load["n_intervals"]:
         raise LoadRefused(["visible interval count differs from n_intervals; rolled back"])
+
+
+def _verify_evidence_readback(cur: PgCursor, load_id: int, req: LoadRequest) -> None:
+    """Read the stored evidence and ticker changes back; any difference aborts the load."""
+    if not req.evidence and not req.symbol_changes:
+        return
+    stored = read_evidence(cur, load_id)
+    expected = {item.name: raw_sha256(item.raw) for item in req.evidence}
+    if {name: row["sha256"] for name, row in stored.items()} != expected or any(
+        raw_sha256(gzip.decompress(row["content_gz"])) != row["sha256"] for row in stored.values()
+    ):
+        raise LoadRefused(["read-back of the stored evidence differs from the input; rolled back"])
+    if len(read_symbol_changes(cur, load_id)) != len(req.symbol_changes):
+        raise LoadRefused(["read-back of symbol_changes differs from the input; rolled back"])
+
+
+def read_evidence(cur: PgCursor, load_id: int) -> dict[str, dict[str, Any]]:
+    """The evidence rows of a vintage by file name (``content_gz`` as bytes)."""
+    cur.execute(
+        "SELECT name, kind, source_url, sha256, size_bytes, content_gz "
+        "FROM universe.load_evidence WHERE load_id = %s ORDER BY name",
+        (load_id,),
+    )
+    out: dict[str, dict[str, Any]] = {}
+    for name, kind, url, sha, size, blob in cur.fetchall():
+        out[name] = {
+            "kind": kind,
+            "source_url": url,
+            "sha256": sha,
+            "size_bytes": size,
+            "content_gz": bytes(blob),
+        }
+    return out
+
+
+def read_symbol_changes(cur: PgCursor, load_id: int) -> list[SymbolChange]:
+    """The ticker changes a vintage states, ordered by date."""
+    cur.execute(
+        "SELECT old_symbol, new_symbol, effective_date, evidence FROM universe.symbol_changes "
+        "WHERE load_id = %s ORDER BY effective_date, old_symbol, new_symbol",
+        (load_id,),
+    )
+    return [SymbolChange(*row) for row in cur.fetchall()]
 
 
 def _insert_check(
@@ -741,7 +853,7 @@ def verify_vintage(
     reference's, that the intervals reconstruct every snapshot (set-equal per date), that
     membership on every calendar day equals the project's own ``sp500_members_asof`` on the
     reference, and that the SQL function ``universe.snapshot`` agrees with the Python
-    reconstruction.
+    reconstruction. A curated vintage's stored evidence is hash-checked too.
     """
     report = VerifyReport(load_id=load_id)
     conn.rollback()
@@ -785,10 +897,32 @@ def verify_vintage(
                     own = Path(folder) / "archived.csv.gz"
                     own.write_bytes(gzip.compress(raw, mtime=0))
                     _verify_into(report, cur, vintage, raw, file_history, own)
+            _verify_stored_evidence(report, cur, vintage)
     finally:
         conn.rollback()
         conn.readonly = previous_readonly
     return report
+
+
+def _verify_stored_evidence(report: VerifyReport, cur: PgCursor, vintage: VintageData) -> None:
+    """Hash-check the evidence files and count the ticker changes of a curated vintage."""
+    load_id = vintage.load["load_id"]
+    evidence = read_evidence(cur, load_id)
+    changes = read_symbol_changes(cur, load_id)
+    if not evidence and not changes:
+        return
+    bad = [
+        name
+        for name, row in evidence.items()
+        if raw_sha256(gzip.decompress(row["content_gz"])) != row["sha256"]
+        or len(gzip.decompress(row["content_gz"])) != row["size_bytes"]
+    ]
+    report.add(
+        "stored evidence",
+        not bad and any(row["kind"] == "events_file" for row in evidence.values()),
+        f"{len(evidence)} files (events file included), {len(changes)} symbol changes"
+        + (f"; hash mismatch in {bad}" if bad else ""),
+    )
 
 
 def _verify_into(

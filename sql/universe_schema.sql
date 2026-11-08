@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS universe.loads (
     load_id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     index_name         TEXT        NOT NULL CHECK (index_name ~ '^[a-z0-9_]+$'),
     source             TEXT        NOT NULL
-                       CHECK (source IN ('fja05680/sp500', 'fixture-import', 'reinstate')),
+                       CHECK (source IN ('fja05680/sp500', 'fixture-import', 'reinstate', 'curated')),
     source_url         TEXT        NOT NULL,
     upstream_commit    TEXT        CHECK (upstream_commit ~ '^[0-9a-f]{40}$'),  -- NULL = unknown
     upstream_etag      TEXT,
@@ -49,6 +49,21 @@ CREATE TABLE IF NOT EXISTS universe.loads (
     loaded_by          TEXT        NOT NULL DEFAULT current_user,
     CHECK (NOT forced OR force_reason IS NOT NULL)
 );
+
+-- Widen the source list on a table created by an earlier version of this file (M5b adds
+-- 'curated'). Skipped when the constraint already allows it. No row is rewritten.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'universe.loads'::regclass AND conname = 'loads_source_check'
+          AND pg_get_constraintdef(oid) LIKE '%curated%'
+    ) THEN
+        ALTER TABLE universe.loads DROP CONSTRAINT IF EXISTS loads_source_check;
+        ALTER TABLE universe.loads ADD CONSTRAINT loads_source_check CHECK (
+            source IN ('fja05680/sp500', 'fixture-import', 'reinstate', 'curated'));
+    END IF;
+END $$;
 
 -- The uncompressed bytes' gzip, kept apart so listing loads never reads a blob (B4).
 CREATE TABLE IF NOT EXISTS universe.load_blobs (
@@ -123,6 +138,33 @@ CREATE TABLE IF NOT EXISTS universe.check_blobs (
 );
 ALTER TABLE universe.check_blobs ALTER COLUMN raw_gzip SET STORAGE EXTERNAL;
 
+-- Company continuity across a ticker change (M5b). Membership itself stays "remove plus add"
+-- as in every earlier vintage; this table says that two symbols are one company, from when,
+-- and on what evidence. Written together with the curated vintage that states it.
+CREATE TABLE IF NOT EXISTS universe.symbol_changes (
+    load_id        BIGINT NOT NULL REFERENCES universe.loads (load_id),
+    old_symbol     TEXT   NOT NULL CHECK (old_symbol <> '' AND old_symbol = btrim(old_symbol)),
+    new_symbol     TEXT   NOT NULL CHECK (new_symbol <> '' AND new_symbol = btrim(new_symbol)),
+    effective_date DATE   NOT NULL,
+    evidence       TEXT   NOT NULL,
+    PRIMARY KEY (load_id, old_symbol, new_symbol, effective_date),
+    CHECK (old_symbol <> new_symbol)
+);
+
+-- The events file and the saved press-release pages behind a curated vintage, gzipped, so the
+-- evidence is reproducible from the database alone (M5b; spec C4 calls this part of load_blobs).
+CREATE TABLE IF NOT EXISTS universe.load_evidence (
+    load_id    BIGINT NOT NULL REFERENCES universe.loads (load_id),
+    name       TEXT   NOT NULL CHECK (name <> ''),
+    kind       TEXT   NOT NULL CHECK (kind IN ('events_file', 'evidence')),
+    source_url TEXT,
+    sha256     TEXT   NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),  -- of the uncompressed bytes
+    size_bytes INT    NOT NULL CHECK (size_bytes >= 0),
+    content_gz BYTEA  NOT NULL,
+    PRIMARY KEY (load_id, name)
+);
+ALTER TABLE universe.load_evidence ALTER COLUMN content_gz SET STORAGE EXTERNAL;
+
 -- Append-only guards (B6: every function pins its search_path).
 CREATE OR REPLACE FUNCTION universe.membership_guard() RETURNS trigger
 LANGUAGE plpgsql SET search_path = universe, pg_catalog AS $$
@@ -159,7 +201,8 @@ DO $$
 DECLARE
     t text;
 BEGIN
-    FOREACH t IN ARRAY ARRAY['loads', 'load_blobs', 'snapshot_dates', 'checks', 'check_blobs'] LOOP
+    FOREACH t IN ARRAY ARRAY['loads', 'load_blobs', 'snapshot_dates', 'checks', 'check_blobs',
+                          'symbol_changes', 'load_evidence'] LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON universe.%I', t || '_frozen_t', t);
         EXECUTE format(
             'CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON universe.%I '
@@ -201,11 +244,13 @@ END $$;
 
 GRANT USAGE ON SCHEMA universe TO universe_reader, universe_loader;
 GRANT SELECT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
-    universe.membership, universe.checks, universe.check_blobs TO universe_reader, universe_loader;
+    universe.membership, universe.checks, universe.check_blobs, universe.symbol_changes,
+    universe.load_evidence TO universe_reader, universe_loader;
 ALTER DEFAULT PRIVILEGES IN SCHEMA universe GRANT SELECT ON TABLES TO universe_reader;
 
 GRANT INSERT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
-    universe.membership, universe.checks, universe.check_blobs TO universe_loader;
+    universe.membership, universe.checks, universe.check_blobs, universe.symbol_changes,
+    universe.load_evidence TO universe_loader;
 -- The only UPDATE the loader may ever do, as a column privilege.
 GRANT UPDATE (superseded_by_load_id) ON universe.membership TO universe_loader;
 GRANT USAGE ON SEQUENCE universe.loads_load_id_seq, universe.membership_interval_id_seq,
