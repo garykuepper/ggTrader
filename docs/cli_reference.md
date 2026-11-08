@@ -368,10 +368,24 @@ ggt paper --notify             # same, forwarding the DRY RUN lines to Telegram 
 ggt paper --dry-run-writes     # the pre-rebuild dry run: also writes ledger/snapshot/peak/tape state
 ggt paper --live               # places real paper orders (the only way to; refuses the two flags above)
 
-# The S&P 500 list is named at the entry point: ggt paper reads the frozen fixture
-# sp500_v1_2026-06-02 (the same bytes as always). Moving to the database comes with the
-# freshness gate (slice M4); until then there is no flag to change it.
+# The S&P 500 list is named at the entry point: since slice M4 ggt paper reads the latest
+# database vintage ("db") behind the membership gate below. There is no flag to change it and
+# no fallback to a file.
 ```
+
+**Membership gate (slice M4).** Before any bar is fetched, a wall-clock run on the latest `db`
+vintage must pass `ggTrader.data.membership_gate`: the last upstream check (`verified_at`) must be
+no more than **45 days** old (override: environment variable `GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`,
+a positive whole number; a bad value stops the run), and the list's last change date may trail the
+day by under **90 days** (warn from 90) and under **180 days** (refuse from 180). A refusal raises
+`SignalGateError` with code `membership_stale`, `membership_lag`, `membership_unavailable` (database
+unreadable, table empty or the vintage fails its integrity check) or `membership_gate_config`, sends
+the usual "Signal gate - no orders placed" message, and stops the run before any order is possible.
+Each message names its fix (`ggt db membership check-upstream`, or `ggt db load-sp500` for a lag). A
+warning is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows
+the `DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
+pinned `db:<id>` or to a caller-injected `now` (replays and tests). With vintage 1 loaded the gate
+refuses today.
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
 
@@ -410,7 +424,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date. |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check; `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages. |
 
 ### Examples:
 ```bash
@@ -457,6 +471,29 @@ ggt db membership verify --load-id 1 --against-fixture sp500_v1_2026-06-02
 `verify` takes `--against-file PATH` (default: the committed vintage-1 file) or
 `--against-fixture NAME`, not both.
 
+**Upstream check, status and diff (slice M4).**
+
+```bash
+# Fetch fja05680/sp500 at its newest commit, compare with the latest vintage, record one check row
+ggt db membership check-upstream     # exit 0 equal, 2 differs (reported, not loaded), 1 failure
+
+# Latest vintage, coverage, last verification, recent checks, and the live gate's verdict
+ggt db membership status [--asof 2026-11-29]
+
+# Two stored vintages: dates only on one side, changed dates, historical / tail / rename split
+ggt db membership diff --from 1 --to 2 [--json diff.json]
+```
+
+`check-upstream` appends exactly one row to `universe.checks` and never touches `loads` or
+`membership`; a differing upstream is reported and is **never loaded automatically** (loading is
+`ggt db load-sp500`). Outcomes: `unchanged` (the raw bytes, or failing that the parsed content,
+equal the latest vintage; only this outcome resets the verification age the gate reads), `refused`
+(upstream differs; `detail.result = "differs"` carries the upstream coverage end, the dates only on
+each side and the historical / tail / rename split) and `fetch_failed` (unreachable, HTTP error,
+a content type that is not text, a body shorter than its `Content-Length` or not ending in a
+newline, or a file that fails the loader's validation). The file is read at the exact commit the
+GitHub commits API names, so bytes and commit always match. `status` and `diff` are read-only.
+
 **Reading membership from code (`ggTrader.data.membership`, slice M2).** Pick a source by name;
 there is no default and no fallback:
 
@@ -473,7 +510,8 @@ raises `MembershipSourceNotSelected`. If `db` cannot be read it raises `Membersh
 A source offers `history()` (the shape of `load_sp500_history()`), `members_asof`,
 `all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
 name plus content checksum, for result JSON). `check_membership_age(vintage, asof, ...)` compares
-a vintage's age with warn and refuse thresholds you pass; nothing calls it yet.
+a vintage's age with warn and refuse thresholds you pass; the live gate (`membership_gate`,
+slice M4) has its own inclusive lag thresholds and is the only caller that enforces them.
 
 **Every reader now takes the source (slice M3).** `universe_members_asof`, `universe_all_between`,
 `sp500_members_asof`, `all_members_between`, `eligible_at`, `equity_universe_between`,
