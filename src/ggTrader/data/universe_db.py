@@ -15,6 +15,7 @@ import gzip
 import json
 import os
 import subprocess
+import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -727,22 +728,22 @@ def reinstate_vintage(
 
 
 def verify_vintage(
-    conn: PgConnection, load_id: int, csv_path: Path, index_name: str = INDEX_NAME
+    conn: PgConnection,
+    load_id: int,
+    csv_path: Path | None = None,
+    index_name: str = INDEX_NAME,
 ) -> VerifyReport:
     """Compare a stored vintage with a constituent file, snapshot date by snapshot date.
 
-    Read-only. Checks the stored bytes and both hashes, that the stored snapshot dates equal the
-    file's, that the intervals reconstruct every snapshot (set-equal per date), that membership
-    on every calendar day equals the project's own ``sp500_members_asof`` on the file, and that
-    the SQL function ``universe.snapshot`` agrees with the Python reconstruction.
+    Read-only. With ``csv_path`` the reference is that file; without it the reference is the
+    vintage's OWN archived bytes in ``load_blobs`` (so any vintage can be verified with no
+    options). Checks the stored bytes and both hashes, that the stored snapshot dates equal the
+    reference's, that the intervals reconstruct every snapshot (set-equal per date), that
+    membership on every calendar day equals the project's own ``sp500_members_asof`` on the
+    reference, and that the SQL function ``universe.snapshot`` agrees with the Python
+    reconstruction.
     """
     report = VerifyReport(load_id=load_id)
-    raw = (
-        csv_path.read_bytes()
-        if csv_path.suffix != ".gz"
-        else gzip.decompress(csv_path.read_bytes())
-    )
-    file_history = parse_history_csv(raw)
     conn.rollback()
     previous_readonly = conn.readonly
     conn.readonly = True
@@ -750,13 +751,40 @@ def verify_vintage(
         with conn.cursor() as cur:
             vintage = read_vintage(cur, load_id, index_name)
             load = vintage.load
+            if csv_path is not None:
+                raw = (
+                    csv_path.read_bytes()
+                    if csv_path.suffix != ".gz"
+                    else gzip.decompress(csv_path.read_bytes())
+                )
+                reference = f"file {csv_path.name}"
+            else:
+                cur.execute(
+                    "SELECT raw_gzip FROM universe.load_blobs WHERE load_id = %s", (load_id,)
+                )
+                blob = cur.fetchone()
+                if blob is None:
+                    report.add("loads row", True, f"index={load['index_name']}")
+                    report.add("archived bytes", False, f"load {load_id} has no load_blobs row")
+                    return report
+                raw = gzip.decompress(bytes(blob[0]))
+                reference = "its own archived bytes (load_blobs)"
             report.add(
                 "loads row",
                 True,
                 f"index={load['index_name']} source={load['source']} "
-                f"coverage={load['coverage_start']}..{load['coverage_end']}",
+                f"coverage={load['coverage_start']}..{load['coverage_end']}; "
+                f"compared with {reference}",
             )
-            _verify_into(report, cur, vintage, raw, file_history, csv_path)
+            file_history = parse_history_csv(raw)
+            if csv_path is not None:
+                _verify_into(report, cur, vintage, raw, file_history, csv_path)
+            else:
+                with tempfile.TemporaryDirectory() as folder:
+                    # The project's own file reader is the independent oracle: give it a file.
+                    own = Path(folder) / "archived.csv.gz"
+                    own.write_bytes(gzip.compress(raw, mtime=0))
+                    _verify_into(report, cur, vintage, raw, file_history, own)
     finally:
         conn.rollback()
         conn.readonly = previous_readonly

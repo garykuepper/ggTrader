@@ -482,6 +482,40 @@ def test_verify_reports_a_mismatch_against_a_different_file(conn, tmp_path) -> N
     assert "raw bytes hash" in failed and "snapshot dates" in failed
 
 
+def test_verify_without_a_file_checks_each_load_against_its_own_archived_bytes(conn) -> None:
+    load_vintage(conn, _request(_v1_bytes()))
+    load_vintage(
+        conn,
+        _request(
+            _v2_bytes(),
+            source="fja05680/sp500",
+            retrieved_at=V2_AT,
+            force=True,
+            force_reason="test",
+        ),
+    )
+    for load_id in (1, 2):
+        outcome = verify_vintage(conn, load_id)
+        assert outcome.ok, [(c.name, c.detail) for c in outcome.checks if not c.ok]
+        assert "its own archived bytes" in outcome.checks[0].detail
+    # The old behaviour compared load 2 with the vintage-1 file and reported a false FAILED:
+    # an explicit reference file is still honoured, and still disagrees for the wrong file.
+    assert verify_vintage(conn, 1, SP500_HISTORY_CSV).ok
+    assert not verify_vintage(conn, 2, SP500_HISTORY_CSV).ok
+
+
+def test_verify_without_a_file_fails_when_the_archived_bytes_are_missing(conn) -> None:
+    load_vintage(conn, _request(_v1_bytes()))
+    conn.rollback()
+    assert verify_vintage(conn, 1).ok
+    with conn.cursor() as cur:
+        cur.execute("ALTER TABLE universe.load_blobs DISABLE TRIGGER USER")
+        cur.execute("DELETE FROM universe.load_blobs WHERE load_id = 1")
+    conn.commit()  # verify_vintage starts with a rollback
+    outcome = verify_vintage(conn, 1)
+    assert not outcome.ok and outcome.checks[-1].name == "archived bytes"
+
+
 # ---- upstream check (slice M4) -----------------------------------------------------------
 
 

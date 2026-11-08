@@ -39,10 +39,7 @@ from ggTrader.data.universe_db import (
     save_report_json,
     verify_vintage,
 )
-from ggTrader.utils.paths import REPO_ROOT
 
-#: The committed vintage-1 file (immutable fixture; spec section 4).
-DEFAULT_HISTORY_FILE = REPO_ROOT / "data" / "universe" / "sp500_constituents_history.csv.gz"
 #: ``ggt db load-sp500`` exit codes.
 EXIT_REFUSED = 2
 #: ``ggt db membership check-upstream``: 0 upstream equals the latest vintage, 2 it differs
@@ -179,8 +176,8 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
     against.add_argument(
         "--against-file",
         type=Path,
-        default=DEFAULT_HISTORY_FILE,
-        help="Constituent file to compare with (default: the committed vintage-1 file)",
+        default=None,
+        help="Constituent file to compare with (default: the vintage's own archived bytes)",
     )
     against.add_argument(
         "--against-fixture",

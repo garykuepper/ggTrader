@@ -596,9 +596,10 @@ def _verify_args(*extra: str) -> argparse.Namespace:
     return parser.parse_args(["db", "membership", "verify", "--load-id", "1", *extra])
 
 
-def test_verify_defaults_to_the_vintage_one_file_and_accepts_a_fixture_name() -> None:
+def test_verify_defaults_to_the_loads_own_bytes_and_accepts_a_file_or_fixture_name() -> None:
     assert _verify_args().against_fixture is None
-    assert _verify_args().against_file == V1_FILE
+    assert _verify_args().against_file is None  # no option = the vintage's own archived bytes
+    assert _verify_args("--against-file", "x.csv").against_file == Path("x.csv")
     assert _verify_args("--against-fixture", V1).against_fixture == V1
 
 
