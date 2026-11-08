@@ -103,14 +103,30 @@ def test_every_manifest_entry_exists_and_matches_its_hashes() -> None:
         assert source.vintage().content_sha256 == entry.content_sha256
 
 
+def _manifest_events() -> dict[str, dict[str, str]]:
+    return json.loads((MANIFEST_DIR / "MANIFEST.json").read_text(encoding="utf-8"))["events"]
+
+
 def test_no_unlisted_file_sits_in_the_manifest_folder() -> None:
     listed = {(REPO_ROOT / e.path).resolve() for e in load_manifest().values()}
+    listed |= {(REPO_ROOT / e["path"]).resolve() for e in _manifest_events().values()}
     stray = [
-        p.name
-        for p in MANIFEST_DIR.iterdir()
-        if p.name != "MANIFEST.json" and p.resolve() not in listed
+        str(p.relative_to(MANIFEST_DIR))
+        for p in MANIFEST_DIR.rglob("*")
+        if p.is_file() and p.name != "MANIFEST.json" and p.resolve() not in listed
     ]
     assert stray == []
+
+
+def test_every_listed_events_file_matches_its_hash_and_parses() -> None:
+    from ggTrader.data.membership_events import parse_events_csv
+
+    for name, entry in _manifest_events().items():
+        raw = (REPO_ROOT / entry["path"]).read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == entry["sha256"], name
+        events = parse_events_csv(raw)  # every event carries a url, a date and an announcement
+        assert all(e.evidence_url.startswith("https://") and e.evidence_sha256 for e in events)
+        assert len(entry["expected_content_sha256"]) == 64
 
 
 def test_manifest_file_is_valid_json_with_sorted_keys() -> None:

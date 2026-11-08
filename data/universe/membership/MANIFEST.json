@@ -1,5 +1,14 @@
 {
-  "description": "Frozen S&P 500 membership fixtures: one name = one vintage, immutable, never edited. A new vintage gets a new name and a new file. Used by tests, GitHub CI and evidence replays through ggTrader.data.membership.FixtureMembershipSource (spec docs/superpowers/specs/2026-11-07-membership-database-design.md, section 4). `path` is relative to the repository root; `gz_sha256` is the sha256 of the file as committed, `raw_sha256` of its uncompressed bytes, `content_sha256` the canonical content hash (spec 1.4). `db_load_id_on_encom` is the load id of the same vintage in the production database on Encom (informational: load ids differ between databases, the content hash is the identity).",
+  "description": "Frozen S&P 500 membership fixtures: one name = one vintage, immutable, never edited. A new vintage gets a new name and a new file. Used by tests, GitHub CI and evidence replays through ggTrader.data.membership.FixtureMembershipSource (spec docs/superpowers/specs/2026-11-07-membership-database-design.md, section 4). `path` is relative to the repository root; `gz_sha256` is the sha256 of the file as committed, `raw_sha256` of its uncompressed bytes, `content_sha256` the canonical content hash (spec 1.4). `db_load_id_on_encom` is the load id of the same vintage in the production database on Encom (informational: load ids differ between databases, the content hash is the identity). `events` lists the immutable events files behind curated vintages (same rule: one name, one file, never edited).",
+  "events": {
+    "2026-11-08-sp500-gap-events": {
+      "applied_to": "vintage 2 (fja05680 download of 2026-11-07, coverage to 2026-08-18)",
+      "expected_content_sha256": "902f618b0fc18e38a0f9bf11f966fc7a439abc5a2b1e9e1d679be39961d6fb39",
+      "note": "Immutable evidence for curated vintage 3: S&P DJI press-release events 2026-09-21 to 2026-11-04 (spec Appendix C4). Never edited after the load; the saved press-release pages are stored gzipped in universe.load_evidence, not in git.",
+      "path": "data/universe/membership/events/2026-11-08-sp500-gap-events.csv",
+      "sha256": "4b4554242d81969476b6c477e907e30d3ed333600e2cc3bdef0599541ca25e8c"
+    }
+  },
   "fixtures": {
     "sp500_v1_2026-06-02": {
       "content_sha256": "256e022dc1580a82aaef38d303a772611469bc6a705374704a79333eefcef71c",
