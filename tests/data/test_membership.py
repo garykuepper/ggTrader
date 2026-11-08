@@ -6,6 +6,7 @@ that builds a real ``PgMembershipStore`` points it at a closed local port.
 
 from __future__ import annotations
 
+import argparse
 import functools
 import gzip
 import hashlib
@@ -20,6 +21,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from ggTrader.cli import cmd_membership
+from ggTrader.cli.cmd_db import register_db_parser
 from ggTrader.data import membership
 from ggTrader.data.membership import (
     DbMembershipSource,
@@ -582,3 +585,34 @@ def test_a_recorded_unchanged_check_moves_verified_at_forward() -> None:
     result = check_membership_age(vintage, D("2026-11-08"), verified_refuse_days=45)
     assert result.age_since_verified_days == (D("2026-11-08") - later.date()).days == 12
     assert result.verdict == "ok"
+
+
+# ---- CLI: verify --against-fixture -------------------------------------------------------------
+
+
+def _verify_args(*extra: str) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="ggt")
+    register_db_parser(parser.add_subparsers(dest="command"))
+    return parser.parse_args(["db", "membership", "verify", "--load-id", "1", *extra])
+
+
+def test_verify_defaults_to_the_vintage_one_file_and_accepts_a_fixture_name() -> None:
+    assert _verify_args().against_fixture is None
+    assert _verify_args().against_file == V1_FILE
+    assert _verify_args("--against-fixture", V1).against_fixture == V1
+
+
+def test_verify_takes_a_file_or_a_fixture_not_both() -> None:
+    with pytest.raises(SystemExit):
+        _verify_args("--against-file", "x.csv", "--against-fixture", V1)
+
+
+def test_verify_with_an_unknown_fixture_fails_before_touching_the_database(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the database was opened")
+
+    monkeypatch.setattr(cmd_membership, "connect", forbidden)
+    assert cmd_membership.run_membership(_verify_args("--against-fixture", "nope")) == 1
+    assert "nope" in capsys.readouterr().err

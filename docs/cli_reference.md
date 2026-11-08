@@ -396,7 +396,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file on every snapshot date. |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date. |
 
 ### Examples:
 ```bash
@@ -416,7 +416,9 @@ ggt db export > backup.sql
 ### Versioned S&P 500 membership (`universe` schema)
 
 Spec: `docs/superpowers/specs/2026-11-07-membership-database-design.md`. Slice M1 built the
-schema, the loader and `verify`; nothing reads the tables yet, so no backtest or trade changes.
+schema, the loader and `verify`; slice M2 added the read door (`ggTrader.data.membership`, below)
+and the fixtures manifest. No backtest, oracle or trade reads the new door yet (slice M3
+migrates the readers), so no reference number moves.
 
 ```bash
 # M0: create / refresh the schema (sql/universe_schema.sql; idempotent)
@@ -433,7 +435,36 @@ ggt db load-sp500 --from-file data/universe/sp500_constituents_history.csv.gz \
 
 # Compare vintage 1 with the file on all 2,712 snapshot dates and every calendar day (read-only)
 ggt db membership verify --load-id 1
+
+# The same, against a registered fixture (its three hashes are checked before the comparison)
+ggt db membership verify --load-id 1 --against-fixture sp500_v1_2026-06-02
 ```
+
+`verify` takes `--against-file PATH` (default: the committed vintage-1 file) or
+`--against-fixture NAME`, not both.
+
+**Reading membership from code (`ggTrader.data.membership`, slice M2).** Pick a source by name;
+there is no default and no fallback:
+
+| Spec string | Reads |
+|---|---|
+| `db` | The latest vintage in the database, resolved to one load id when the source is built. |
+| `db:<load_id>` | That exact vintage (what a cited result should pin). |
+| `fixture:<name>` | A frozen file listed in `data/universe/membership/MANIFEST.json`, hash-checked. |
+
+`membership_source(spec)` takes the string, else the environment variable `GGT_MEMBERSHIP`, else
+raises `MembershipSourceNotSelected`. If `db` cannot be read it raises `MembershipUnavailable`
+(connection details redacted); it never reads a fixture instead. The reader login is
+`GGT_MEMBERSHIP_DB_URL` when set, else the project's usual connection, over a read-only session.
+A source offers `history()` (the shape of `load_sp500_history()`), `members_asof`,
+`all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
+name plus content checksum, for result JSON). `check_membership_age(vintage, asof, ...)` compares
+a vintage's age with warn and refuse thresholds you pass; nothing calls it yet. The old
+`index_constituents` functions are unchanged and still read the file until slice M3.
+
+The only registered fixture is `sp500_v1_2026-06-02`, the existing file
+`data/universe/sp500_constituents_history.csv.gz`, which stays where it is and is never edited
+(file sha256 `b30739a3...`, content sha256 `256e022d...`; it is vintage 1, load 1 on Encom).
 
 | `load-sp500` flag | Meaning |
 |---|---|

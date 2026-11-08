@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from ggTrader.data.membership import FixtureMembershipSource, MembershipError
 from ggTrader.data.universe_algebra import HistoryValidationError
 from ggTrader.data.universe_db import (
     LOAD_SOURCES,
@@ -77,11 +78,19 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         "verify", help="Compare a stored vintage with a file, on every snapshot date"
     )
     verify.add_argument("--load-id", type=int, required=True)
-    verify.add_argument(
+    against = verify.add_mutually_exclusive_group()
+    against.add_argument(
         "--against-file",
         type=Path,
         default=DEFAULT_HISTORY_FILE,
         help="Constituent file to compare with (default: the committed vintage-1 file)",
+    )
+    against.add_argument(
+        "--against-fixture",
+        default=None,
+        metavar="NAME",
+        help="Compare with a fixture from data/universe/membership/MANIFEST.json "
+        "(its hashes are checked first), e.g. sp500_v1_2026-06-02",
     )
 
 
@@ -164,9 +173,16 @@ def run_membership(args: argparse.Namespace) -> int:
             conn.close()
         print("schema universe is up to date")
         return 0
+    path = args.against_file
+    if args.against_fixture is not None:
+        try:
+            path = FixtureMembershipSource(args.against_fixture).path
+        except MembershipError as exc:
+            print(f"fixture {args.against_fixture!r} cannot be used: {exc}", file=sys.stderr)
+            return 1
     conn = connect(read_only=True)
     try:
-        report = verify_vintage(conn, args.load_id, args.against_file)
+        report = verify_vintage(conn, args.load_id, path)
     finally:
         conn.close()
     for check in report.checks:
