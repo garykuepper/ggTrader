@@ -7,12 +7,14 @@ written as JSON with a provenance block (``utils.results.write_result_json``).
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 
 from ggTrader.data.bars import Bars, legacy_exclusive_end, load_bars
+from ggTrader.data.membership import MembershipSource, resolve_source
 from ggTrader.lab.data import equity_universe_between
 from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.wfo import inputs
@@ -30,6 +32,8 @@ def load_run_bars(
     eval_end: pd.Timestamp,
     snapshot: str | None = None,
     source: str = "snapshot",
+    *,
+    membership: MembershipSource | None = None,
 ) -> Bars:
     """Bars for the union of ``universes`` plus SPY, over the warm-up and evaluation window.
 
@@ -40,7 +44,9 @@ def load_run_bars(
     data_start = eval_start - pd.Timedelta(days=warmup_days)
     members: set[str] = {"SPY"}
     for universe in universes:
-        names = equity_universe_between(eval_start, eval_end, universe=universe)
+        names = equity_universe_between(
+            eval_start, eval_end, universe=universe, membership=membership
+        )
         if cfg.max_stocks and len(names) > cfg.max_stocks:
             names = names[: cfg.max_stocks]
         members.update(names)
@@ -54,16 +60,26 @@ def load_run_bars(
 
 
 def sleeve_inputs(
-    bars: Bars, universe: str, cfg: LabConfig, eval_start: pd.Timestamp, eval_end: pd.Timestamp
+    bars: Bars,
+    universe: str,
+    cfg: LabConfig,
+    eval_start: pd.Timestamp,
+    eval_end: pd.Timestamp,
+    *,
+    membership: MembershipSource | None = None,
 ) -> tuple[Bars, pd.DataFrame]:
     """The sleeve's bars (SPY removed) and its daily eligibility mask."""
-    names = equity_universe_between(eval_start, eval_end, universe=universe)
+    names = equity_universe_between(eval_start, eval_end, universe=universe, membership=membership)
     if cfg.max_stocks and len(names) > cfg.max_stocks:
         names = names[: cfg.max_stocks]
     symbols = [s for s in names if s in set(bars.symbols)]
     sleeve = inputs.subset_bars(bars, symbols)
     mask = inputs.universe_mask(
-        sleeve.close, universe, min_history_bars=cfg.min_history_bars, max_stocks=cfg.max_stocks
+        sleeve.close,
+        universe,
+        min_history_bars=cfg.min_history_bars,
+        max_stocks=cfg.max_stocks,
+        membership=membership,
     )
     return sleeve, mask
 
@@ -80,8 +96,13 @@ def run_vbt_wfo(
     overrides: Dict[str, list] | None = None,
     snapshot: str | None = None,
     result_json: str | None = None,
+    membership: MembershipSource | None = None,
 ) -> WfoResult | str:
-    """``ggt lab --wfo --engine vbt``: load, mask, run, print and write the provenance JSON."""
+    """``ggt lab --wfo``: load, mask, run, print and write the provenance JSON.
+
+    ``membership`` is the S&P 500 list source (``None``: the one selected by ``GGT_MEMBERSHIP``,
+    else an error); its vintage is recorded in the result's provenance block.
+    """
     from ggTrader.lab.strategies import registry
 
     try:
@@ -89,9 +110,10 @@ def run_vbt_wfo(
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
     cls = type(instance)
-    bars = load_run_bars([universe], cfg, eval_start, eval_end, snapshot)
+    membership = resolve_source(membership)
+    bars = load_run_bars([universe], cfg, eval_start, eval_end, snapshot, membership=membership)
     spy_close = bars.close["SPY"].dropna()
-    sleeve, mask = sleeve_inputs(bars, universe, cfg, eval_start, eval_end)
+    sleeve, mask = sleeve_inputs(bars, universe, cfg, eval_start, eval_end, membership=membership)
     grid = cls.grid.override(overrides) if overrides else cls.grid
     print(f"  [universe] {universe}: {len(sleeve.symbols)} symbols (engine vbt)", flush=True)
     result = run_wfo(
@@ -122,12 +144,27 @@ def run_vbt_wfo(
         universe=universe,
         eval_start=str(eval_start.date()),
         eval_end=str(eval_end.date()),
+        membership=membership,
     )
     return result
 
 
-def write_wfo_json(result: WfoResult, bars: Bars, path: str, **fields: Any) -> Path:
-    """Write the run record with a provenance block that names the tape and the definitions."""
+def _asof(fields: dict[str, Any]) -> date | None:
+    """The run's evaluation end as a date (for the membership age), if it was given."""
+    end = fields.get("eval_end")
+    return date.fromisoformat(str(end)) if end else None
+
+
+def write_wfo_json(
+    result: WfoResult,
+    bars: Bars,
+    path: str,
+    *,
+    membership: MembershipSource | None = None,
+    **fields: Any,
+) -> Path:
+    """Write the run record with a provenance block that names the tape, the definitions and
+    (when given) the membership vintage; the payload itself is unchanged by it."""
     from ggTrader.engine.provenance import provenance
     from ggTrader.lab.strategies import registry
     from ggTrader.utils.results import write_result_json
@@ -137,7 +174,9 @@ def write_wfo_json(result: WfoResult, bars: Bars, path: str, **fields: Any) -> P
     # The strategy's own source is part of what produced the number; hash it so an edited
     # or out-of-tree strategy is identified by its result.
     block = provenance(
-        tape_sha256=tape.get("sha256"), extra=registry.source_sha256(cls) if cls else None
+        tape_sha256=tape.get("sha256"),
+        extra=registry.source_sha256(cls) if cls else None,
+        membership=None if membership is None else membership.provenance(_asof(fields)),
     )
     payload = result_payload(result, bars_summary=bars.summary(), tape=tape or None, **fields)
     out = write_result_json(path, payload, provenance=block)

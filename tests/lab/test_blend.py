@@ -71,7 +71,7 @@ def _patch_inputs(monkeypatch, idx, spy, symbols=("AAA",), seen=None):
     )
     monkeypatch.setattr(cli_support, "load_run_bars", lambda *a, **k: bars)
 
-    def _sleeve_inputs(b, universe, cfg, es, ee):
+    def _sleeve_inputs(b, universe, cfg, es, ee, **kwargs):
         if seen is not None:
             seen.append(universe)
         return types.SimpleNamespace(symbols=list(symbols), universe=universe), f"mask-{universe}"
@@ -201,6 +201,55 @@ def test_run_wfo_json_provenance_names_the_strategy_source(tmp_path, monkeypatch
     bars = type("B", (), {"provenance": {}, "summary": lambda self: {}})()
     out = cli_support.write_wfo_json(None, bars, str(tmp_path / "r.json"), strategy="ensemble")
     block = json.loads(out.read_text())["provenance"]
+    assert "membership_sha256" not in block  # no source given: nothing is claimed
     expected = registry.source_sha256(registry.REGISTRY["ensemble"])
     assert block["strategy_sha256"] == expected["strategy_sha256"]
     assert "ensemble.py" in block["strategy_files"]
+
+
+def test_run_blend_stamps_the_membership_vintage_in_the_provenance(monkeypatch):
+    """The lab_runs provenance names the S&P 500 list the sleeves were built from."""
+    idx = _idx(400)
+    rng = np.random.default_rng(5)
+    eq = _equity_from_returns(pd.Series(rng.normal(0.0004, 0.011, 400), index=idx))
+    spy = _equity_from_returns(pd.Series(rng.normal(0.0003, 0.01, 400), index=idx))
+    _patch_inputs(monkeypatch, idx, spy)
+    monkeypatch.setattr(
+        wfo_pkg,
+        "run_wfo",
+        lambda *a, **k: WfoResult(oos_equity=eq, fold_results=[], live_params={}, table="t"),
+    )
+    _patch_persist(monkeypatch)
+    stamps = {}
+    monkeypatch.setattr(
+        blend_mod.persist, "start_run", lambda *a, **k: stamps.update(k) or "run123"
+    )
+    _run([("ensemble", "sp500")])
+    block = stamps["provenance"]
+    assert block["membership"]["kind"] == "fixture"
+    assert block["membership"]["fixture"] == "sp500_v1_2026-06-02"
+    assert len(block["membership_sha256"]) == 64
+    assert block["membership"]["age_since_verified_days"] is not None
+
+
+def test_wfo_json_records_the_membership_vintage_in_provenance_only(monkeypatch, tmp_path):
+    import json
+
+    from ggTrader.data.membership import FixtureMembershipSource
+
+    monkeypatch.setattr(cli_support, "result_payload", lambda *a, **k: {"strategy": k["strategy"]})
+    bars = type("B", (), {"provenance": {}, "summary": lambda self: {}})()
+    source = FixtureMembershipSource("sp500_v1_2026-06-02")
+    out = cli_support.write_wfo_json(
+        None,
+        bars,
+        str(tmp_path / "r.json"),
+        strategy="ensemble",
+        eval_end="2026-04-30",
+        membership=source,
+    )
+    saved = json.loads(out.read_text())
+    assert saved["strategy"] == "ensemble" and set(saved) == {"strategy", "provenance"}
+    assert saved["provenance"]["membership_sha256"] == source.vintage().content_sha256
+    assert saved["provenance"]["membership"]["fixture"] == "sp500_v1_2026-06-02"
+    assert saved["provenance"]["membership"]["age_since_verified_days"] == -40
