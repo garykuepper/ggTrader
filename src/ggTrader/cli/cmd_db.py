@@ -2,12 +2,18 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
 from sqlalchemy import text
 
+from ggTrader.cli.cmd_membership import (
+    register_membership_parsers,
+    run_load_sp500,
+    run_membership,
+)
 from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.db_engine import create_db_engine_or_exit
 
@@ -36,6 +42,9 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     exp.add_argument("--jobs", "-j", type=int, default=4, help="Parallel jobs")
     exp.add_argument("--remote", "-r", type=str, help="Remote host for rsync")
 
+    # Subcommands: ggt db load-sp500, ggt db membership (versioned S&P 500 membership)
+    register_membership_parsers(db_subs)
+
 
 def run_db(args: argparse.Namespace):
     """Executes database administration commands."""
@@ -52,6 +61,16 @@ def run_db(args: argparse.Namespace):
             _db_check_compression()
     elif args.db_command == "export":
         _db_export(args)
+    elif args.db_command == "load-sp500":
+        _exit_unless_zero(run_load_sp500(args))
+    elif args.db_command == "membership":
+        _exit_unless_zero(run_membership(args))
+
+
+def _exit_unless_zero(code: int) -> None:
+    """Turn a command's exit code into the process exit status."""
+    if code:
+        sys.exit(code)
 
 
 def _db_diag():

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-08 (membership database M1: schema, interval algebra, loader, verify)
+
+- **S&P 500 membership now has a home in the database as versioned intervals (slice M1 of `docs/superpowers/specs/2026-11-07-membership-database-design.md`; migration steps M0 and M1 applied; no reader yet, so no backtest, oracle or trade moved).** Built on branch `feature/membership-db`.
+  - **Schema `universe`** (`sql/universe_schema.sql`, idempotent): `loads`, `load_blobs`, `snapshot_dates`, `membership` (half-open intervals with lineage), `checks`; append-only triggers (UPDATE, DELETE and TRUNCATE refused, only `superseded_by_load_id` may be set once); an exclusion constraint against overlapping live intervals (`btree_gist`, installed into `universe`, not `public`); `universe.snapshot()`; NOLOGIN roles `universe_reader` and `universe_loader` with the column privilege from spec Appendix B5.
+  - **Code.** `src/ggTrader/data/universe_algebra.py` (pure: parse and validate, collapse, reconstruct, diff, canonical content hash, rewrite classification, refusal rules, supersession plan), `src/ggTrader/data/universe_db.py` (DDL, loader, verify) and `src/ggTrader/cli/cmd_membership.py`.
+  - **CLI.** `ggt db load-sp500` (dry run unless `--commit`, `--force --reason` for suspicious diffs), `ggt db membership apply-ddl` and `ggt db membership verify --load-id N`. Existing `ggt db` subcommands are unchanged. See `docs/cli_reference.md`.
+  - **Tests.** DB-free unit tests in the fast core (`tests/data/test_universe_algebra.py`); `tests/data/test_universe_db_integration.py` is marked `integration` and `db`, skips itself unless `GGT_TEST_DB_URL` is set, and uses a throwaway database dropped afterwards. New marker `db` (in `tests/tiers.py` `FAST_EXCLUDED` and `pyproject.toml`).
+  - **Not built yet** (later slices): the upstream fetch (`--from-upstream`), `membership status|diff|export|reinstate`, `MembershipSource`, fixtures manifest, the weekly job.
+
 ## 2026-11-07 (S5-S8 study moves and S6 docs: study code now lives with its study)
 
 - **The study-isolation refactor moved all study-specific code out of `src/ggTrader`, `scripts/` and `tests/` into the studies under `research/`; S6 brings the current docs and project skills in line (documentation only; no engine, WFO, paper or data change).** Plan: `docs/superpowers/plans/2026-11-07-study-isolation/` (`PLAN_V2.md`, `CORRECTIONS.md`, `slices.json`).

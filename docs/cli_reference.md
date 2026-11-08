@@ -395,6 +395,8 @@ ggt db <subcommand>
 | `truncate` | Wipes out database tables completely (asks for confirmation first). |
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
+| `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file on every snapshot date. |
 
 ### Examples:
 ```bash
@@ -410,6 +412,44 @@ ggt db compression --enable
 # Back up the database to a backup.sql file
 ggt db export > backup.sql
 ```
+
+### Versioned S&P 500 membership (`universe` schema)
+
+Spec: `docs/superpowers/specs/2026-11-07-membership-database-design.md`. Slice M1 built the
+schema, the loader and `verify`; nothing reads the tables yet, so no backtest or trade changes.
+
+```bash
+# M0: create / refresh the schema (sql/universe_schema.sql; idempotent)
+ggt db membership apply-ddl
+
+# M1: dry run (default) prints the diff against the latest vintage and writes nothing
+ggt db load-sp500 --from-file data/universe/sp500_constituents_history.csv.gz \
+    --source fixture-import --retrieved-at 2026-06-09T00:00:00Z --parent none
+
+# ... then write it (one transaction under an advisory lock)
+ggt db load-sp500 --from-file data/universe/sp500_constituents_history.csv.gz \
+    --source fixture-import --retrieved-at 2026-06-09T00:00:00Z --parent none --commit \
+    --note "committed f8c7efe0; true retrieval time unknown"
+
+# Compare vintage 1 with the file on all 2,712 snapshot dates and every calendar day (read-only)
+ggt db membership verify --load-id 1
+```
+
+| `load-sp500` flag | Meaning |
+|---|---|
+| `--from-file PATH` | Required. CSV or CSV.GZ (`date,tickers`); the upstream fetch (`--from-upstream`) is not built yet. |
+| `--retrieved-at ISO` | Required. When the bytes were fetched; needs a zone (`...Z`). |
+| `--source` | `fixture-import` (default) or `fja05680/sp500`. `--source-url`, `--upstream-commit`, `--upstream-etag`, `--note` are stored with the load. |
+| `--expect-sha256` | sha256 of the uncompressed bytes; the load is refused if it differs. |
+| `--parent N` / `none` | Pin the latest vintage seen in the dry run; refused if another load got in first. |
+| `--commit` | Write. Without it the run is a dry run. |
+| `--force --reason TEXT` | Needed when the diff against the parent is suspicious (coverage shrinks, more than 5 historical rewrites, 25 tail changes or 3 renames). |
+| `--report-json PATH` | Save the diff report. |
+
+Exit status: 0 success, 2 refused (validation, pin, hash or suspicious diff), 1 `verify` found a
+difference. The connection is the project's usual one; `GGT_MEMBERSHIP_LOADER_URL` overrides it
+for the loader only. Tests that need a real server are marked `integration` and `db`, run only on
+request (`GGT_TEST_DB_URL`), and use a throwaway database.
 
 ---
 
