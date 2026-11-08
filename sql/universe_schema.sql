@@ -85,18 +85,43 @@ CREATE TABLE IF NOT EXISTS universe.membership (
     ) WHERE (superseded_by_load_id IS NULL)
 );
 
--- Upstream checks that found no change: they reset the age clock without storing a vintage.
+-- One row per check run. 'matched' / 'mismatch' come from the SPDR SPY holdings comparison
+-- (Appendix C, C3: a 'matched' row is the only thing that advances the live gate);
+-- 'unchanged' / 'refused' are the informational upstream checks and 'loaded' is a load's own row.
 CREATE TABLE IF NOT EXISTS universe.checks (
     check_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     index_name      TEXT        NOT NULL,
     checked_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     raw_sha256      TEXT,
     upstream_commit TEXT,
-    outcome         TEXT        NOT NULL
-                    CHECK (outcome IN ('unchanged', 'loaded', 'refused', 'fetch_failed')),
+    outcome         TEXT        NOT NULL,
     matched_load_id BIGINT      REFERENCES universe.loads (load_id),
     detail          JSONB
 );
+
+-- Widen the outcome list on a table created by an earlier version of this file (M4b). Skipped
+-- when the constraint already allows 'mismatch'. No row is rewritten: ADD CONSTRAINT only scans
+-- the (tiny) table to validate it.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'universe.checks'::regclass AND conname = 'checks_outcome_check'
+          AND pg_get_constraintdef(oid) LIKE '%mismatch%'
+    ) THEN
+        ALTER TABLE universe.checks DROP CONSTRAINT IF EXISTS checks_outcome_check;
+        ALTER TABLE universe.checks ADD CONSTRAINT checks_outcome_check CHECK (
+            outcome IN ('unchanged', 'loaded', 'refused', 'fetch_failed', 'matched', 'mismatch'));
+    END IF;
+END $$;
+
+-- The raw bytes behind a holdings check (the SPY workbook), gzipped, kept apart like load_blobs.
+CREATE TABLE IF NOT EXISTS universe.check_blobs (
+    check_id   BIGINT PRIMARY KEY REFERENCES universe.checks (check_id),
+    raw_sha256 TEXT  NOT NULL CHECK (raw_sha256 ~ '^[0-9a-f]{64}$'),  -- of the uncompressed bytes
+    raw_gzip   BYTEA NOT NULL
+);
+ALTER TABLE universe.check_blobs ALTER COLUMN raw_gzip SET STORAGE EXTERNAL;
 
 -- Append-only guards (B6: every function pins its search_path).
 CREATE OR REPLACE FUNCTION universe.membership_guard() RETURNS trigger
@@ -134,7 +159,7 @@ DO $$
 DECLARE
     t text;
 BEGIN
-    FOREACH t IN ARRAY ARRAY['loads', 'load_blobs', 'snapshot_dates', 'checks'] LOOP
+    FOREACH t IN ARRAY ARRAY['loads', 'load_blobs', 'snapshot_dates', 'checks', 'check_blobs'] LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON universe.%I', t || '_frozen_t', t);
         EXECUTE format(
             'CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON universe.%I '
@@ -176,11 +201,11 @@ END $$;
 
 GRANT USAGE ON SCHEMA universe TO universe_reader, universe_loader;
 GRANT SELECT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
-    universe.membership, universe.checks TO universe_reader, universe_loader;
+    universe.membership, universe.checks, universe.check_blobs TO universe_reader, universe_loader;
 ALTER DEFAULT PRIVILEGES IN SCHEMA universe GRANT SELECT ON TABLES TO universe_reader;
 
 GRANT INSERT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
-    universe.membership, universe.checks TO universe_loader;
+    universe.membership, universe.checks, universe.check_blobs TO universe_loader;
 -- The only UPDATE the loader may ever do, as a column privilege.
 GRANT UPDATE (superseded_by_load_id) ON universe.membership TO universe_loader;
 GRANT USAGE ON SEQUENCE universe.loads_load_id_seq, universe.membership_interval_id_seq,

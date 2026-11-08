@@ -15,6 +15,7 @@ from ggTrader.data.membership import (
     redact,
 )
 from ggTrader.data.membership_gate import decide_gate, max_verify_age_days
+from ggTrader.data.membership_holdings import HoldingsRun, PgHoldingsStore, check_holdings
 from ggTrader.data.membership_upstream import (
     CheckRun,
     PgCheckStore,
@@ -45,6 +46,9 @@ EXIT_REFUSED = 2
 #: ``ggt db membership check-upstream``: 0 upstream equals the latest vintage, 2 it differs
 #: (reported, not loaded), 1 the download or the database failed.
 EXIT_UPSTREAM_DIFFERS = 2
+#: ``ggt db membership check-holdings``: 0 the list equals the SPDR SPY holdings, 2 it differs
+#: (reported, nothing changed), 1 no usable download or the database failed.
+EXIT_HOLDINGS_MISMATCH = 2
 
 
 def _parse_instant(text: str) -> datetime:
@@ -103,6 +107,17 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
             "Fetch fja05680/sp500 at its newest commit, compare it with the latest vintage and "
             "append one row to universe.checks (unchanged, refused = differs, or fetch_failed). "
             "Never loads or changes a vintage. Exit 0 equal, 2 differs, 1 failure."
+        ),
+    )
+    subs.add_parser(
+        "check-holdings",
+        help="Match the latest vintage against the SPDR SPY holdings file; record the check",
+        description=(
+            "Download the public SPDR SPY daily holdings workbook, compare its tickers with the "
+            "latest vintage's members on the holdings' own as-of date and append one row to "
+            "universe.checks (matched, mismatch or fetch_failed) with the raw bytes in "
+            "universe.check_blobs. A match is what keeps the live gate open. Never loads or "
+            "changes a vintage. Exit 0 matched, 2 mismatch, 1 failure."
         ),
     )
     status = subs.add_parser(
@@ -217,6 +232,8 @@ def run_membership(args: argparse.Namespace) -> int:
         return 0
     if args.membership_command == "check-upstream":
         return run_check_upstream(args)
+    if args.membership_command == "check-holdings":
+        return run_check_holdings(args)
     if args.membership_command == "status":
         return run_status(args)
     if args.membership_command == "diff":
@@ -298,6 +315,53 @@ def run_check_upstream(args: argparse.Namespace) -> int:
     return run.result.exit_code
 
 
+def _print_holdings(run: HoldingsRun) -> None:
+    result = run.result
+    detail = result.detail
+    print(f"holdings check: {result.result.upper()} (recorded outcome: {result.outcome})")
+    if result.outcome == "fetch_failed":
+        print(f"  reason             {detail.get('reason')}: {detail.get('error')}")
+        if result.raw is not None:
+            print(f"  raw bytes archived {detail.get('raw_bytes')} (sha256 {result.raw_sha256})")
+    else:
+        print(f"  holdings as of     {detail.get('holdings_as_of')}")
+        print(
+            f"  holdings tickers   {detail.get('n_holdings')} (excluded {detail.get('n_excluded')})"
+        )
+        print(f"  raw sha256         {result.raw_sha256} ({detail.get('raw_bytes')} bytes)")
+        if "compared_load_id" in detail:
+            print(
+                f"  compared with      load {detail['compared_load_id']}, snapshot "
+                f"{detail.get('compared_snapshot_date')} ({detail.get('n_list')} tickers; "
+                f"coverage ends {detail['vintage_coverage_end']})"
+            )
+    if result.result == "mismatch":
+        print(f"  only in our list      {detail.get('only_in_list')}")
+        print(f"  only in the holdings  {detail.get('only_in_holdings')}")
+        print("  nothing was loaded or changed; the live gate was NOT advanced")
+    if result.result == "matched":
+        print(f"  the list is attested through {detail.get('known_through')}")
+    if run.check_id is not None:
+        print(f"  recorded as universe.checks row {run.check_id}")
+    if run.record_error:
+        print(f"  NOT RECORDED: {run.record_error}", file=sys.stderr)
+
+
+def run_check_holdings(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership check-holdings``; returns the process exit code."""
+    store = PgHoldingsStore()
+    try:
+        run = check_holdings(store)
+    except Exception as exc:  # noqa: BLE001 - the latest vintage could not be read
+        first = (str(exc).strip().splitlines() or [""])[0]
+        print(f"cannot compare: {type(exc).__name__}: {redact(first, None)}", file=sys.stderr)
+        return 1
+    _print_holdings(run)
+    if run.record_error:
+        return 1
+    return run.result.exit_code
+
+
 def run_status(args: argparse.Namespace) -> int:
     """Run ``ggt db membership status``: the latest vintage and the live gate's verdict."""
     asof = args.asof or _today_utc()
@@ -313,7 +377,12 @@ def run_status(args: argparse.Namespace) -> int:
     print(f"  raw sha256         {v.raw_sha256}")
     print(f"  coverage           {v.coverage_start} .. {v.coverage_end}")
     print(f"  retrieved at       {v.retrieved_at.isoformat()}")
-    print(f"  last verified at   {v.verified_at.isoformat()}")
+    if v.matched_at is None:
+        print("  last matched check none: never matched against the SPDR SPY holdings")
+        print("  known through      none (run `ggt db membership check-holdings`)")
+    else:
+        print(f"  last matched check {v.matched_at.isoformat()}")
+        print(f"  known through      {v.known_through}")
     try:
         checks = recent_checks(v.index_name, 3)
     except Exception as exc:  # noqa: BLE001 - informational only
@@ -331,12 +400,16 @@ def run_status(args: argparse.Namespace) -> int:
         return 1
     decision = decide_gate(v, asof, max_verify_age=limit)
     print(f"as of {asof}:")
+    if decision.age_since_match_days is None:
+        print(f"  match age          no matched check (limit {limit}, refuse above)")
+    else:
+        print(
+            f"  match age          {decision.age_since_match_days} days (limit {limit}, "
+            f"refuse above)"
+        )
+    base = "known through" if decision.known_through is not None else "last change (never matched)"
     print(
-        f"  verification age   {decision.age_since_verified_days} days (limit {limit}, "
-        f"refuse above)"
-    )
-    print(
-        f"  lag to last change {decision.lag_days} days (warn from {decision.lag_warn_days}, "
+        f"  lag to {base}  {decision.lag_days} days (warn from {decision.lag_warn_days}, "
         f"refuse from {decision.lag_refuse_days})"
     )
     print(f"  live gate would    {decision.level.upper()}")

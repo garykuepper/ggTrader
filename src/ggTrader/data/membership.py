@@ -125,7 +125,15 @@ class MembershipVintage:
     coverage_start: date
     coverage_end: date
     retrieved_at: datetime
+    #: Legacy instant kept for research age reports: the load's ``retrieved_at``, or the last
+    #: matched holdings check if later. The live gate does **not** read it (see ``matched_at``).
     verified_at: datetime
+    #: When this list was last proved equal to the SPDR SPY holdings (the newest ``matched`` check
+    #: for this load), else ``None``: never matched. The live gate's freshness clock (C3).
+    matched_at: datetime | None = None
+    #: The latest date through which the list is attested: the newest holdings as-of date of a
+    #: ``matched`` check, never earlier than ``coverage_end``; ``None`` when never matched.
+    known_through: date | None = None
 
     def provenance(self, asof: date | None = None) -> dict[str, Any]:
         """The provenance fields of spec 3.5: ``membership_sha256`` and the ``membership`` block.
@@ -153,6 +161,16 @@ class MembershipVintage:
 def age_since_verified(vintage: MembershipVintage, asof: date) -> int:
     """Days from ``verified_at`` (UTC date) to ``asof``; negative if verified after ``asof``."""
     return (as_date(asof) - _utc(vintage.verified_at).date()).days
+
+
+def age_since_matched(vintage: MembershipVintage, asof: date) -> int | None:
+    """Days from the last holdings match (UTC date) to ``asof``; ``None`` if never matched.
+
+    Negative when the match is dated after ``asof`` (a replay), which is never stale.
+    """
+    if vintage.matched_at is None:
+        return None
+    return (as_date(asof) - _utc(vintage.matched_at).date()).days
 
 
 # --------------------------------------------------------------------------- age check (3.4)
@@ -507,13 +525,18 @@ class FixtureMembershipSource(_SnapshotSource):
 class StoredVintage:
     """One vintage as the store returns it: the ``loads`` row, snapshot dates, visible intervals.
 
-    ``verified_at`` is Q4's ``GREATEST(retrieved_at, last 'unchanged' check)`` for this load.
+    ``verified_at`` is ``GREATEST(retrieved_at, last 'matched' holdings check)`` for this load
+    (an upstream ``unchanged`` check no longer counts: Appendix C3). ``matched_at`` and
+    ``matched_as_of`` are the newest matched check's instant and the latest holdings as-of date
+    among this load's matched checks; both ``None`` when the load was never matched.
     """
 
     load: Mapping[str, Any]
     dates: Mapping[date, int]
     intervals: Sequence[Interval]
     verified_at: datetime
+    matched_at: datetime | None = None
+    matched_as_of: date | None = None
 
 
 class MembershipStore(Protocol):
@@ -528,7 +551,12 @@ _VERIFIED_SQL = (
     "SELECT GREATEST(l.retrieved_at, COALESCE(max(c.checked_at), l.retrieved_at)) "
     "FROM universe.loads l LEFT JOIN universe.checks c "
     "ON c.index_name = l.index_name AND c.matched_load_id = l.load_id "
-    "AND c.outcome = 'unchanged' WHERE l.load_id = %s GROUP BY l.load_id, l.retrieved_at"
+    "AND c.outcome = 'matched' WHERE l.load_id = %s GROUP BY l.load_id, l.retrieved_at"
+)
+#: Newest matched holdings check of one load and the latest as-of date any of them attested.
+_MATCHED_SQL = (
+    "SELECT max(checked_at), max((detail->>'holdings_as_of')::date) FROM universe.checks "
+    "WHERE index_name = %s AND matched_load_id = %s AND outcome = 'matched'"
 )
 
 
@@ -581,6 +609,8 @@ class PgMembershipStore:
                     data = read_vintage(cur, load_id, index_name)
                     cur.execute(_VERIFIED_SQL, (load_id,))
                     verified = cur.fetchone()[0]
+                    cur.execute(_MATCHED_SQL, (index_name, load_id))
+                    matched_at, matched_as_of = cur.fetchone()
             finally:
                 conn.close()
         except LookupError as exc:
@@ -591,7 +621,9 @@ class PgMembershipStore:
                 "cannot read membership from the database "
                 f"({type(exc).__name__}: {redact(first_line, url)})"
             ) from None
-        return StoredVintage(data.load, data.dates, data.intervals, verified)
+        return StoredVintage(
+            data.load, data.dates, data.intervals, verified, matched_at, matched_as_of
+        )
 
 
 class DbMembershipSource(_SnapshotSource):
@@ -653,6 +685,10 @@ class DbMembershipSource(_SnapshotSource):
                 coverage_end=days[-1],
                 retrieved_at=_utc(load["retrieved_at"]),
                 verified_at=_utc(stored.verified_at),
+                matched_at=None if stored.matched_at is None else _utc(stored.matched_at),
+                known_through=(
+                    None if stored.matched_as_of is None else max(days[-1], stored.matched_as_of)
+                ),
             ),
         )
 

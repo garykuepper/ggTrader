@@ -150,14 +150,16 @@ def test_latest_follows_new_loads_but_a_pinned_vintage_does_not(
     assert latest.members_asof(date(2026, 6, 2)) == pinned.members_asof(date(2026, 6, 2))
 
 
-def test_an_unchanged_check_moves_verified_at_but_not_retrieved_at(
+def test_an_unchanged_check_moves_neither_verified_at_nor_the_match_clock(
     conn: psycopg2.extensions.connection, db_url: str
 ) -> None:
+    """Appendix C3: only a ``matched`` holdings check counts; the loader's no-op row does not."""
     _load(conn, _v1_raw(), V1_AT, parent="none")
     _load(conn, _v1_raw(), V1_AT)  # same bytes: no new vintage, an 'unchanged' check row
     vintage = membership_source("db", store=PgMembershipStore(db_url)).vintage()
     assert vintage.load_id == 1 and vintage.retrieved_at == V1_AT
-    assert datetime.now(timezone.utc) - vintage.verified_at < timedelta(hours=1)
+    assert vintage.verified_at == V1_AT
+    assert vintage.matched_at is None and vintage.known_through is None
 
 
 def test_an_empty_database_and_an_unknown_load_are_unavailable(db_url: str) -> None:

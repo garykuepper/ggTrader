@@ -588,20 +588,30 @@ class TestTapeIsNotWrittenWhenAskedNot:
 class _DbSource:
     """A stand-in latest-``db`` source: only the vintage matters to the gate."""
 
-    def __init__(self, *, verified_days_ago: int, lag_days: int, pinned: bool = False) -> None:
+    def __init__(
+        self, *, verified_days_ago: int | None, lag_days: int, pinned: bool = False
+    ) -> None:
+        """``verified_days_ago`` is the age of the last holdings match (None = never matched)."""
         from datetime import datetime, timedelta, timezone
 
         from ggTrader.data.membership import MembershipVintage
 
         today = datetime.now(timezone.utc).date()
-        verified = datetime.combine(
-            today - timedelta(days=verified_days_ago), datetime.min.time(), timezone.utc
+        matched = (
+            None
+            if verified_days_ago is None
+            else datetime.combine(
+                today - timedelta(days=verified_days_ago), datetime.min.time(), timezone.utc
+            )
         )
+        attested = today - timedelta(days=lag_days)
         self.pinned = pinned
         self._vintage = MembershipVintage(
             "sp500", "db", 1, None, "0" * 64, "1" * 64,
-            today - timedelta(days=lag_days + 3000), today - timedelta(days=lag_days),
-            verified, verified,
+            today - timedelta(days=lag_days + 3000), attested,
+            matched or datetime(2026, 6, 9, tzinfo=timezone.utc),
+            matched or datetime(2026, 6, 9, tzinfo=timezone.utc),
+            matched, None if matched is None else attested,
         )  # fmt: skip
 
     def vintage(self):
@@ -631,8 +641,16 @@ class TestLiveMembershipGate:
 
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     def test_the_refusal_names_the_fix(self, mock_fetch):
-        with pytest.raises(SignalGateError, match="ggt db membership check-upstream"):
+        with pytest.raises(SignalGateError, match="ggt db membership check-holdings"):
             self._run(_DbSource(verified_days_ago=60, lag_days=0))
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_list_never_matched_against_spy_refuses_and_names_the_fix(self, mock_fetch):
+        with pytest.raises(SignalGateError, match="check-holdings") as caught:
+            self._run(_DbSource(verified_days_ago=None, lag_days=10))
+        assert caught.value.code == "membership_stale"
+        assert "never been matched" in str(caught.value)
+        mock_fetch.assert_not_called()
 
     @patch("ggTrader.paper.signal_runner.universe_members_asof")
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
@@ -662,7 +680,7 @@ class TestLiveMembershipGate:
         with caplog.at_level("WARNING"):
             result = self._run(_DbSource(verified_days_ago=1, lag_days=100))
         assert result["membership_gate"]["level"] == "warn"
-        assert "last change date" in result["membership_gate"]["message"]
+        assert "attested only through" in result["membership_gate"]["message"]
         assert "membership list warning" in caplog.text
 
     @pytest.mark.parametrize("pinned", [False, True])

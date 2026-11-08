@@ -29,9 +29,15 @@ class FakeMembershipStore:
         *,
         retrieved_at: datetime = BASE_TIME,
         verified_at: datetime | None = None,
+        matched_at: datetime | None = None,
+        matched_as_of: date | None = None,
         index_name: str = "sp500",
     ) -> int:
-        """Store ``history`` as the next vintage and return its load id."""
+        """Store ``history`` as the next vintage and return its load id.
+
+        ``matched_at`` / ``matched_as_of`` stand for the newest ``matched`` holdings check of this
+        load (both ``None`` = never matched).
+        """
         load_id = max(self.vintages, default=0) + 1
         intervals = collapse(history)
         stats = history_stats(history)
@@ -45,7 +51,14 @@ class FakeMembershipStore:
             **stats,
         }
         dates = {day: len(tickers) for day, tickers in history.items()}
-        self.vintages[load_id] = StoredVintage(load, dates, intervals, verified_at or retrieved_at)
+        self.vintages[load_id] = StoredVintage(
+            load,
+            dates,
+            intervals,
+            verified_at or matched_at or retrieved_at,
+            matched_at,
+            matched_as_of,
+        )
         return load_id
 
     def read(self, load_id: int | None, index_name: str) -> StoredVintage:

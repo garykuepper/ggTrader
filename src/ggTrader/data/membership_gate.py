@@ -1,16 +1,21 @@
-"""The live gate on the S&P 500 list: pass, warn or refuse, from how stale the list is.
+"""The live gate on the S&P 500 list: pass, warn or refuse, from an independent match.
 
-Spec docs/superpowers/specs/2026-11-07-membership-database-design.md, section 3.4 with decisions
-D1 and D8, and Appendix A item 1. Two clocks decide, both counted in calendar days at ``asof``:
+Spec docs/superpowers/specs/2026-11-07-membership-database-design.md, section 3.4 as revised by
+Appendix C3 (the upstream feed is dead, so the list is attested against the SPDR SPY holdings
+file, ``ggt db membership check-holdings``). Two clocks decide, both counted in calendar days at
+``asof``:
 
-* **Verification age**, ``asof - verified_at``: how long ago our copy was last proved equal to
-  upstream (``universe.checks`` row ``unchanged``, or the load itself). More than
-  :data:`MAX_VERIFY_AGE_DAYS` (45 until the weekly job exists; the environment variable
-  ``GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`` overrides it) refuses.
-* **Lag**, ``asof - coverage_end``: how far the list's last change date trails the day. Equal to
-  or beyond :data:`LAG_WARN_DAYS` (90) warns; equal to or beyond :data:`LAG_REFUSE_DAYS` (180)
-  refuses. Equality counts because D8 says "warn at 90 days, refuse at 180".  A verification
-  can never cure a lag, because the check only sees what upstream already knows.
+* **Freshness**, ``asof - last matched check``: how long ago our list was last proved equal to
+  the SPY holdings (``universe.checks`` row ``matched``). More than :data:`MAX_VERIFY_AGE_DAYS`
+  (45 until the weekly job exists, 10 after; the environment variable
+  ``GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`` overrides it) refuses. A list that was never matched
+  refuses outright. A ``check-upstream`` result does not extend this clock.
+* **Lag**, ``asof - known_through``: how far the date through which the list is attested trails
+  the day. ``known_through`` is the holdings as-of date of the newest match, never earlier than
+  the vintage's own last change date. Equal to or beyond :data:`LAG_WARN_DAYS` (90) warns; equal
+  to or beyond :data:`LAG_REFUSE_DAYS` (180) refuses (inclusive, as built in M4). A quiet spell
+  without index changes raises no alarm while the matches keep coming; a dead pipeline does.
+  A never-matched list is measured from its last change date.
 
 The gate applies to a real run only: a wall-clock ``now`` reading the *latest* ``db`` vintage
 (:func:`gate_applies`). It is skipped for fixtures, for a pinned ``db:<id>`` and when a caller
@@ -30,17 +35,17 @@ from ggTrader.data.membership import (
     MembershipError,
     MembershipSource,
     MembershipVintage,
-    age_since_verified,
+    age_since_matched,
 )
 from ggTrader.data.universe_algebra import as_date
 
-#: Longest tolerated age of the last upstream check, in days (spec D1: 45 until the weekly job).
+#: Longest tolerated age of the last holdings match, in days (D1: 45 until the weekly job).
 MAX_VERIFY_AGE_DAYS = 45
 #: Environment variable that overrides :data:`MAX_VERIFY_AGE_DAYS` (a positive whole number).
 VERIFY_AGE_ENV = "GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS"
-#: The list's last change date this many days before the run warns (D8).
+#: The date the list is attested through is this many days before the run: warn (C3).
 LAG_WARN_DAYS = 90
-#: ... and this many days before the run refuses (D8).
+#: ... and refuse (C3).
 LAG_REFUSE_DAYS = 180
 
 #: ``SignalGateError`` codes (spec 3.4 names the first two; the lag code is the D8 counterpart).
@@ -51,10 +56,10 @@ CODE_CONFIG = "membership_gate_config"
 
 Level = Literal["pass", "warn", "refuse"]
 
-CHECK_FIX = "run `ggt db membership check-upstream`"
-LOAD_FIX = (
-    "load the newer list: `ggt db load-sp500` (a dry run shows the diff; `check-upstream` says "
-    "whether upstream has one). A check alone cannot cure a lag"
+CHECK_FIX = "run `ggt db membership check-holdings`"
+LAG_FIX = (
+    "run `ggt db membership check-holdings` (a match advances the date the list is attested "
+    "through); if it reports a mismatch, load the missing changes with `ggt db load-sp500`"
 )
 
 
@@ -82,12 +87,17 @@ def max_verify_age_days(environ: Mapping[str, str] | None = None) -> int:
 
 @dataclass(frozen=True)
 class GateDecision:
-    """What the gate decided at one day, with the numbers behind it."""
+    """What the gate decided at one day, with the numbers behind it.
+
+    ``age_since_match_days`` is ``None`` when the list was never matched; ``known_through`` is
+    ``None`` then too, and ``lag_days`` is measured from the last change date instead.
+    """
 
     level: Level
     code: str | None
     asof: date
-    age_since_verified_days: int
+    age_since_match_days: int | None
+    known_through: date | None
     lag_days: int
     max_verify_age_days: int
     lag_warn_days: int
@@ -103,6 +113,9 @@ class GateDecision:
         """Plain-data form for the signals dict and the run record."""
         out = asdict(self)
         out["asof"] = self.asof.isoformat()
+        out["known_through"] = (
+            None if self.known_through is None else self.known_through.isoformat()
+        )
         out["reasons"] = list(self.reasons)
         out["message"] = self.message
         out["applied"] = True
@@ -119,43 +132,54 @@ def decide_gate(
 ) -> GateDecision:
     """Pass, warn or refuse ``vintage`` at calendar day ``asof``; no clock, no database.
 
-    ``max_verify_age=None`` reads :func:`max_verify_age_days`. A vintage verified after ``asof``
-    has a negative age and never trips the age check. The code is the first refusal found
-    (stale before lag); ``reasons`` lists all that fired.
+    ``max_verify_age=None`` reads :func:`max_verify_age_days`. A match dated after ``asof`` has a
+    negative age and never trips the freshness check. The code is the first refusal found (stale
+    before lag); ``reasons`` lists all that fired.
     """
     day = as_date(asof)
     limit = max_verify_age_days() if max_verify_age is None else max_verify_age
-    verified_age = age_since_verified(vintage, day)
-    lag = (day - vintage.coverage_end).days
+    match_age = age_since_matched(vintage, day)
+    attested = vintage.known_through
+    lag = (day - (attested if attested is not None else vintage.coverage_end)).days
     refuse: list[tuple[str, str]] = []
     warn: list[str] = []
-    if verified_age > limit:
+    if match_age is None:
         refuse.append(
             (
                 CODE_STALE,
-                f"the S&P 500 list was last verified against upstream {verified_age} days before "
-                f"{day} (limit {limit}); {CHECK_FIX}",
+                "the S&P 500 list has never been matched against the SPDR SPY holdings "
+                f"(last change date {vintage.coverage_end}); {CHECK_FIX}",
             )
         )
-    if lag >= lag_refuse:
+    elif match_age > limit:
         refuse.append(
             (
-                CODE_LAG,
-                f"the list's last change date is {vintage.coverage_end}, {lag} days before "
-                f"{day} (refuse from {lag_refuse}); {LOAD_FIX}",
+                CODE_STALE,
+                f"the S&P 500 list was last matched against the SPDR SPY holdings {match_age} "
+                f"days before {day} (limit {limit}); {CHECK_FIX}",
             )
+        )
+    since = (
+        f"the list is attested only through {attested}"
+        if attested is not None
+        else f"the list's last change date is {vintage.coverage_end} and it was never matched"
+    )
+    if lag >= lag_refuse:
+        refuse.append(
+            (CODE_LAG, f"{since}, {lag} days before {day} (refuse from {lag_refuse}); {LAG_FIX}")
         )
     elif lag >= lag_warn:
         warn.append(
-            f"the list's last change date is {vintage.coverage_end}, {lag} days before "
-            f"{day} (warn from {lag_warn}, refuse from {lag_refuse}); {LOAD_FIX}"
+            f"{since}, {lag} days before {day} (warn from {lag_warn}, refuse from "
+            f"{lag_refuse}); {LAG_FIX}"
         )
     level: Level = "refuse" if refuse else "warn" if warn else "pass"
     return GateDecision(
         level=level,
         code=refuse[0][0] if refuse else None,
         asof=day,
-        age_since_verified_days=verified_age,
+        age_since_match_days=match_age,
+        known_through=attested,
         lag_days=lag,
         max_verify_age_days=limit,
         lag_warn_days=lag_warn,

@@ -2544,7 +2544,8 @@ _FIXTURE = "fixture:sp500_v1_2026-06-02"
 
 class TestLiveMembershipGate:
     """Slice M4: the live trader reads the database list and stops, with no orders, if that list
-    is unreadable, empty, unverified for too long or too far behind (spec 3.4, decisions D1, D8)."""
+    is unreadable, empty, unmatched against the SPDR SPY holdings for too long or attested too far
+    back (spec 3.4 as revised by Appendix C3)."""
 
     @pytest.fixture(autouse=True)
     def _fresh_source_cache(self):
@@ -2556,7 +2557,11 @@ class TestLiveMembershipGate:
 
     @staticmethod
     def _store(monkeypatch, *, verified_days_ago=1, history_end=None):
-        """Serve a fake database vintage through the real ``PgMembershipStore.read`` seam."""
+        """Serve a fake database vintage through the real ``PgMembershipStore.read`` seam.
+
+        ``verified_days_ago`` is the age of the last holdings match (``None``: never matched);
+        the match attests the list through its own day or the history's end, whichever is first.
+        """
         from datetime import timedelta
 
         from ggTrader.data import membership
@@ -2568,7 +2573,13 @@ class TestLiveMembershipGate:
         if history_end is not None:  # shift the history so it ends where the test wants
             offset = history_end - max(history)
             history = {day + offset: members for day, members in history.items()}
-        store.add(history, retrieved_at=now - timedelta(days=verified_days_ago))
+        matched_at = None if verified_days_ago is None else now - timedelta(days=verified_days_ago)
+        store.add(
+            history,
+            retrieved_at=now - timedelta(days=400),
+            matched_at=matched_at,
+            matched_as_of=None if matched_at is None else min(matched_at.date(), max(history)),
+        )
         monkeypatch.setattr(
             membership.PgMembershipStore,
             "read",
@@ -2603,7 +2614,21 @@ class TestLiveMembershipGate:
         assert caught.value.code == "membership_stale"
         self._assert_no_order_path_was_reached(broker, mock_fetch)
         message = notifier.send.call_args.args[0]
-        assert "Signal gate" in message and "ggt db membership check-upstream" in message
+        assert "Signal gate" in message and "ggt db membership check-holdings" in message
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    @patch("ggTrader.paper.signal_runner.engine_selfcheck.selfcheck")
+    def test_a_list_never_matched_against_spy_stops_the_run_with_no_orders(
+        self, mock_selfcheck, mock_fetch, monkeypatch
+    ):
+        mock_selfcheck.return_value = {"engine": "rust"}
+        self._store(monkeypatch, verified_days_ago=None, history_end=datetime.now().date())
+        trader, broker, notifier = self._live_trader()
+        with pytest.raises(SignalGateError) as caught:
+            trader.run()
+        assert caught.value.code == "membership_stale"
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+        assert "never been matched" in notifier.send.call_args.args[0]
 
     @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
     @patch("ggTrader.paper.signal_runner.engine_selfcheck.selfcheck")

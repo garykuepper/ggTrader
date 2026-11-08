@@ -27,22 +27,46 @@ def _patch_source(monkeypatch, store, checks=()):
     monkeypatch.setattr(cmd_membership, "recent_checks", lambda *a, **k: list(checks))
 
 
-def test_status_reports_the_vintage_and_the_gate_at_several_days(monkeypatch, capsys):
+def test_status_says_there_is_no_matched_check_and_the_gate_refuses(monkeypatch, capsys):
     history = synthetic_history()
     store = FakeMembershipStore()
     store.add(history, retrieved_at=BASE)
     _patch_source(monkeypatch, store)
     coverage_end = max(history)
-    fresh_day = BASE.date() + timedelta(days=5)
-    cmd_membership.run_status(_status_args(fresh_day))
+    assert cmd_membership.run_status(_status_args(BASE.date() + timedelta(days=5))) == 0
     out = capsys.readouterr().out
     assert "latest load 1" in out and f"{coverage_end}" in out
-    assert "verification age   5 days" in out
+    assert "last matched check none: never matched against the SPDR SPY holdings" in out
+    assert "known through      none" in out and "check-holdings" in out
+    assert "match age          no matched check (limit 45, refuse above)" in out
+    assert "lag to last change (never matched)" in out
+    assert "live gate would    REFUSE" in out
 
-    stale = BASE.date() + timedelta(days=46)
+
+def test_status_shows_the_match_its_age_and_known_through(monkeypatch, capsys):
+    history = synthetic_history()
+    coverage_end = max(history)
+    matched_day = coverage_end + timedelta(days=30)
+    store = FakeMembershipStore()
+    store.add(
+        history,
+        retrieved_at=BASE,
+        matched_at=datetime.combine(matched_day, datetime.min.time(), timezone.utc),
+        matched_as_of=matched_day - timedelta(days=2),
+    )
+    _patch_source(monkeypatch, store)
+    fresh = matched_day + timedelta(days=5)
+    assert cmd_membership.run_status(_status_args(fresh)) == 0
+    out = capsys.readouterr().out
+    assert f"known through      {matched_day - timedelta(days=2)}" in out
+    assert "match age          5 days (limit 45, refuse above)" in out
+    assert "lag to known through  7 days" in out
+    assert "live gate would    PASS" in out
+
+    stale = matched_day + timedelta(days=46)
     assert cmd_membership.run_status(_status_args(stale)) == 0
     out = capsys.readouterr().out
-    assert "live gate would    REFUSE" in out and "check-upstream" in out
+    assert "live gate would    REFUSE" in out and "check-holdings" in out
 
 
 def test_status_says_so_when_the_database_cannot_be_read(monkeypatch, capsys):

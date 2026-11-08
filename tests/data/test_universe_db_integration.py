@@ -137,6 +137,7 @@ def test_ddl_is_idempotent_and_stays_inside_the_universe_schema(db_url: str) -> 
                 "WHERE n.nspname = 'universe' AND c.relkind = 'r' ORDER BY 1"
             )
             assert [r[0] for r in cur.fetchall()] == [
+                "check_blobs",
                 "checks",
                 "load_blobs",
                 "loads",
@@ -148,7 +149,7 @@ def test_ddl_is_idempotent_and_stays_inside_the_universe_schema(db_url: str) -> 
                 "JOIN pg_namespace n ON n.oid = c.relnamespace "
                 "WHERE n.nspname = 'universe' AND NOT t.tgisinternal"
             )
-            assert cur.fetchone()[0] == 10  # (update/delete + truncate) x 5 tables
+            assert cur.fetchone()[0] == 12  # (update/delete + truncate) x 6 tables
             cur.execute(
                 "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
                 "WHERE conname = 'membership_no_live_overlap'"
@@ -336,7 +337,7 @@ def _expect_refused(conn, sql: str, params: tuple = ()) -> None:
 def test_triggers_refuse_update_delete_and_truncate(conn) -> None:
     load_vintage(conn, _request(_v1_bytes()))
     load_vintage(conn, _request(_v2_bytes(), retrieved_at=V2_AT, force=True, force_reason="t"))
-    for table in ("loads", "load_blobs", "snapshot_dates", "membership", "checks"):
+    for table in ("loads", "load_blobs", "snapshot_dates", "membership", "checks", "check_blobs"):
         _expect_refused(conn, f"TRUNCATE universe.{table} CASCADE")
     _expect_refused(conn, "DELETE FROM universe.loads WHERE load_id = 1")
     _expect_refused(conn, "UPDATE universe.loads SET note = 'edited' WHERE load_id = 1")
@@ -492,7 +493,7 @@ def _fetched(raw: bytes):
     )
 
 
-def test_a_check_appends_one_row_resets_the_age_only_when_equal_and_changes_nothing_else(
+def test_an_upstream_check_appends_one_row_and_extends_nothing_and_changes_nothing_else(
     conn, db_url
 ):
     from ggTrader.data.membership import PgMembershipStore
@@ -510,7 +511,9 @@ def test_a_check_appends_one_row_resets_the_age_only_when_equal_and_changes_noth
 
     equal = check_upstream(store, fetch=lambda: _fetched(raw))
     assert equal.result.outcome == "unchanged" and equal.check_id == 3
-    assert PgMembershipStore(db_url).read(None, "sp500").verified_at > verified0  # reset
+    # Appendix C3: an upstream check no longer extends anything; only a holdings match does.
+    stored = PgMembershipStore(db_url).read(None, "sp500")
+    assert stored.verified_at == verified0 and stored.matched_at is None
 
     assert _count(conn, "checks") == 3  # the load's own row plus the two checks
     assert {t: _count(conn, t) for t in before} == before  # loads and membership untouched
