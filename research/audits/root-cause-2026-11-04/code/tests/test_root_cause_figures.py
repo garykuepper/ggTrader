@@ -7,9 +7,9 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from scripts.root_cause_figures import FIGURES, OPTIONS, REPO_ROOT, Point, main, render
 
 from scripts import root_cause_figures as rcf
-from scripts.root_cause_figures import FIGURES, OPTIONS, REPO_ROOT, Point, main, render
 
 pytestmark = pytest.mark.study
 
