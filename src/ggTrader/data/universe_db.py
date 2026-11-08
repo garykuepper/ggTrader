@@ -41,6 +41,7 @@ from ggTrader.data.universe_algebra import (
     collapse,
     content_sha256,
     diff_histories,
+    diff_intervals,
     history_members_asof,
     history_stats,
     parse_history_csv,
@@ -424,6 +425,51 @@ def _fill_parent_diff(
         new_coverage=(report.coverage_start, report.coverage_end),
         classification=classification,
     )
+
+
+def diff_vintages(a: VintageData, b: VintageData) -> dict[str, Any]:
+    """Compare two stored vintages (Q3a/Q3b plus per-date sets), judging ``b`` as the newer one.
+
+    Pure. Changed symbols are split into historical rewrites, tail changes and renames the way
+    a load would, relative to ``a``'s coverage end; ``would_need_force`` lists the loader rules
+    that ``b`` would trip as a successor of ``a``.
+    """
+    history_a, history_b = a.history(), b.history()
+    diff = diff_histories(history_a, history_b)
+    coverage_end = a.load["coverage_end"]
+    classification = classify_changes(a.intervals, b.intervals, coverage_end)
+    only_a, only_b = diff_intervals(a.intervals, b.intervals)
+    return {
+        "from_load_id": a.load["load_id"],
+        "to_load_id": b.load["load_id"],
+        "same_content": a.load["content_sha256"] == b.load["content_sha256"],
+        "coverage_from": [a.load["coverage_start"], a.load["coverage_end"]],
+        "coverage_to": [b.load["coverage_start"], b.load["coverage_end"]],
+        "dates_only_in_from": diff.only_in_a,
+        "dates_only_in_to": diff.only_in_b,
+        "dates_changed": {
+            day.isoformat(): {
+                "removed": sorted(set(old) - set(new)),
+                "added": sorted(set(new) - set(old)),
+            }
+            for day, (old, new) in diff.changed.items()
+        },
+        "intervals_only_in_from": len(only_a),
+        "intervals_only_in_to": len(only_b),
+        "historical_rewrites": list(classification.historical),
+        "tail_changes": list(classification.tail),
+        "renames": [list(pair) for pair in classification.renames],
+        "would_need_force": refusal_reasons(
+            parent_coverage=(a.load["coverage_start"], coverage_end),
+            new_coverage=(b.load["coverage_start"], b.load["coverage_end"]),
+            classification=classification,
+        ),
+    }
+
+
+def save_report_json(report: dict[str, Any], path: Path) -> None:
+    """Write a diff report as stable JSON (dates as ISO strings), atomically."""
+    atomic_write_text(path, json.dumps(report, indent=2, sort_keys=True, default=str))
 
 
 def _write_vintage(

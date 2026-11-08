@@ -479,3 +479,44 @@ def test_verify_reports_a_mismatch_against_a_different_file(conn, tmp_path) -> N
     assert not outcome.ok
     failed = {c.name for c in outcome.checks if not c.ok}
     assert "raw bytes hash" in failed and "snapshot dates" in failed
+
+
+# ---- upstream check (slice M4) -----------------------------------------------------------
+
+
+def _fetched(raw: bytes):
+    from ggTrader.data.membership_upstream import UpstreamFile
+
+    return UpstreamFile(
+        raw, "https://example.invalid/x", "a" * 40, '"e"', datetime.now(timezone.utc)
+    )
+
+
+def test_a_check_appends_one_row_resets_the_age_only_when_equal_and_changes_nothing_else(
+    conn, db_url
+):
+    from ggTrader.data.membership import PgMembershipStore
+    from ggTrader.data.membership_upstream import PgCheckStore, check_upstream
+
+    raw = _v1_bytes()
+    load_vintage(conn, _request(raw, parent="none"))
+    before = {t: _count(conn, t) for t in ("loads", "membership", "snapshot_dates")}
+    store = PgCheckStore(db_url)
+    verified0 = PgMembershipStore(db_url).read(None, "sp500").verified_at
+
+    differs = check_upstream(store, fetch=lambda: _fetched(_v2_bytes()))
+    assert differs.result.outcome == "refused" and differs.check_id == 2
+    assert PgMembershipStore(db_url).read(None, "sp500").verified_at == verified0  # not reset
+
+    equal = check_upstream(store, fetch=lambda: _fetched(raw))
+    assert equal.result.outcome == "unchanged" and equal.check_id == 3
+    assert PgMembershipStore(db_url).read(None, "sp500").verified_at > verified0  # reset
+
+    assert _count(conn, "checks") == 3  # the load's own row plus the two checks
+    assert {t: _count(conn, t) for t in before} == before  # loads and membership untouched
+    with conn.cursor() as cur:
+        cur.execute("SELECT outcome, detail->>'result' FROM universe.checks ORDER BY check_id")
+        assert cur.fetchall() == [("loaded", None), ("refused", "differs"), ("unchanged", "equal")]
+        with pytest.raises(errors.RaiseException):
+            cur.execute("UPDATE universe.checks SET outcome = 'unchanged' WHERE check_id = 3")
+    conn.rollback()

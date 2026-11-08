@@ -5,10 +5,22 @@ from __future__ import annotations
 import argparse
 import gzip
 import sys
-from datetime import datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
-from ggTrader.data.membership import FixtureMembershipSource, MembershipError
+from ggTrader.data.membership import (
+    DbMembershipSource,
+    FixtureMembershipSource,
+    MembershipError,
+    redact,
+)
+from ggTrader.data.membership_gate import decide_gate, max_verify_age_days
+from ggTrader.data.membership_upstream import (
+    CheckRun,
+    PgCheckStore,
+    check_upstream,
+    recent_checks,
+)
 from ggTrader.data.universe_algebra import HistoryValidationError
 from ggTrader.data.universe_db import (
     LOAD_SOURCES,
@@ -17,8 +29,11 @@ from ggTrader.data.universe_db import (
     LoadRequest,
     apply_ddl,
     connect,
+    diff_vintages,
     git_sha,
     load_vintage,
+    read_vintage,
+    save_report_json,
     verify_vintage,
 )
 from ggTrader.utils.paths import REPO_ROOT
@@ -27,6 +42,9 @@ from ggTrader.utils.paths import REPO_ROOT
 DEFAULT_HISTORY_FILE = REPO_ROOT / "data" / "universe" / "sp500_constituents_history.csv.gz"
 #: ``ggt db load-sp500`` exit codes.
 EXIT_REFUSED = 2
+#: ``ggt db membership check-upstream``: 0 upstream equals the latest vintage, 2 it differs
+#: (reported, not loaded), 1 the download or the database failed.
+EXIT_UPSTREAM_DIFFERS = 2
 
 
 def _parse_instant(text: str) -> datetime:
@@ -78,6 +96,30 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         "verify", help="Compare a stored vintage with a file, on every snapshot date"
     )
     verify.add_argument("--load-id", type=int, required=True)
+    subs.add_parser(
+        "check-upstream",
+        help="Fetch the public upstream list, compare it with the latest vintage, record the check",
+        description=(
+            "Fetch fja05680/sp500 at its newest commit, compare it with the latest vintage and "
+            "append one row to universe.checks (unchanged, refused = differs, or fetch_failed). "
+            "Never loads or changes a vintage. Exit 0 equal, 2 differs, 1 failure."
+        ),
+    )
+    status = subs.add_parser(
+        "status",
+        help="Latest vintage, its coverage, verification age and what the live gate would do",
+    )
+    status.add_argument(
+        "--asof",
+        type=date.fromisoformat,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="Judge the live gate at this day instead of today (UTC)",
+    )
+    diff = subs.add_parser("diff", help="Compare two stored vintages (read-only)")
+    diff.add_argument("--from", dest="from_id", type=int, required=True, help="Older load id")
+    diff.add_argument("--to", dest="to_id", type=int, required=True, help="Newer load id")
+    diff.add_argument("--json", type=Path, default=None, help="Also save the full diff here")
     against = verify.add_mutually_exclusive_group()
     against.add_argument(
         "--against-file",
@@ -173,6 +215,12 @@ def run_membership(args: argparse.Namespace) -> int:
             conn.close()
         print("schema universe is up to date")
         return 0
+    if args.membership_command == "check-upstream":
+        return run_check_upstream(args)
+    if args.membership_command == "status":
+        return run_status(args)
+    if args.membership_command == "diff":
+        return run_diff(args)
     path = args.against_file
     if args.against_fixture is not None:
         try:
@@ -189,3 +237,146 @@ def run_membership(args: argparse.Namespace) -> int:
         print(f"  [{'ok' if check.ok else 'FAIL'}] {check.name}: {check.detail}")
     print(f"verify load {report.load_id}: {'OK' if report.ok else 'FAILED'}")
     return 0 if report.ok else 1
+
+
+def _today_utc() -> date:
+    return datetime.now(timezone.utc).date()
+
+
+def _print_check(run: CheckRun) -> None:
+    result = run.result
+    detail = result.detail
+    print(f"upstream check: {result.result.upper()} (recorded outcome: {result.outcome})")
+    if result.outcome == "fetch_failed":
+        print(f"  reason             {detail.get('reason')}: {detail.get('error')}")
+    else:
+        print(f"  upstream commit    {result.upstream_commit}")
+        print(f"  upstream bytes     {detail.get('upstream_bytes')}")
+        print(f"  upstream raw sha   {result.raw_sha256}")
+        print(
+            f"  upstream coverage  {detail.get('upstream_coverage_start')} .. "
+            f"{detail.get('upstream_coverage_end')} "
+            f"({detail.get('upstream_n_snapshot_dates')} dates)"
+        )
+        if "compared_load_id" in detail:
+            print(
+                f"  compared with      load {detail['compared_load_id']} "
+                f"(coverage ends {detail['latest_coverage_end']})"
+            )
+    if result.result == "differs":
+        print(
+            f"  dates only upstream/latest  {len(detail.get('dates_only_in_upstream', []))} / "
+            f"{len(detail.get('dates_only_in_latest', []))}; "
+            f"changed {len(detail.get('dates_changed', []))}"
+        )
+        print(
+            f"  historical rewrites {len(detail.get('historical_rewrites', []))}; "
+            f"tail changes {len(detail.get('tail_changes', []))}; "
+            f"renames {len(detail.get('renames', []))}"
+        )
+        for reason in detail.get("would_need_force", []):
+            print(f"  a load would need --force: {reason}")
+        print("  nothing was loaded or changed; the verification age was NOT reset")
+    if run.check_id is not None:
+        print(f"  recorded as universe.checks row {run.check_id}")
+    if run.record_error:
+        print(f"  NOT RECORDED: {run.record_error}", file=sys.stderr)
+
+
+def run_check_upstream(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership check-upstream``; returns the process exit code."""
+    store = PgCheckStore()
+    try:
+        run = check_upstream(store)
+    except Exception as exc:  # noqa: BLE001 - the latest vintage could not be read
+        first = (str(exc).strip().splitlines() or [""])[0]
+        print(f"cannot compare: {type(exc).__name__}: {redact(first, None)}", file=sys.stderr)
+        return 1
+    _print_check(run)
+    if run.record_error:
+        return 1
+    return run.result.exit_code
+
+
+def run_status(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership status``: the latest vintage and the live gate's verdict."""
+    asof = args.asof or _today_utc()
+    try:
+        source = DbMembershipSource("latest")
+    except MembershipError as exc:
+        print(f"membership unavailable: {exc}", file=sys.stderr)
+        print("the live gate would REFUSE (membership_unavailable)")
+        return 1
+    v = source.vintage()
+    print(f"index {v.index_name}, latest load {v.load_id}")
+    print(f"  content sha256     {v.content_sha256}")
+    print(f"  raw sha256         {v.raw_sha256}")
+    print(f"  coverage           {v.coverage_start} .. {v.coverage_end}")
+    print(f"  retrieved at       {v.retrieved_at.isoformat()}")
+    print(f"  last verified at   {v.verified_at.isoformat()}")
+    try:
+        checks = recent_checks(v.index_name, 3)
+    except Exception as exc:  # noqa: BLE001 - informational only
+        checks = []
+        print(f"  (checks unreadable: {type(exc).__name__})")
+    for row in checks:
+        print(
+            f"  check {row['check_id']:>3}  {row['checked_at'].isoformat()}  "
+            f"{row['outcome']:<12} {(row['detail'] or {}).get('result', '')}"
+        )
+    try:
+        limit = max_verify_age_days()
+    except MembershipError as exc:
+        print(f"gate configuration error: {exc}", file=sys.stderr)
+        return 1
+    decision = decide_gate(v, asof, max_verify_age=limit)
+    print(f"as of {asof}:")
+    print(
+        f"  verification age   {decision.age_since_verified_days} days (limit {limit}, "
+        f"refuse above)"
+    )
+    print(
+        f"  lag to last change {decision.lag_days} days (warn from {decision.lag_warn_days}, "
+        f"refuse from {decision.lag_refuse_days})"
+    )
+    print(f"  live gate would    {decision.level.upper()}")
+    for reason in decision.reasons:
+        print(f"    - {reason}")
+    return 0
+
+
+def run_diff(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership diff --from A --to B``; read-only."""
+    conn = connect(read_only=True)
+    try:
+        with conn.cursor() as cur:
+            try:
+                older = read_vintage(cur, args.from_id)
+                newer = read_vintage(cur, args.to_id)
+            except LookupError as exc:
+                print(f"{exc}", file=sys.stderr)
+                return 1
+    finally:
+        conn.close()
+    report = diff_vintages(older, newer)
+    print(f"load {report['from_load_id']} -> {report['to_load_id']}: ", end="")
+    print("same content" if report["same_content"] else "content differs")
+    print(f"  coverage      {report['coverage_from']} -> {report['coverage_to']}")
+    print(
+        f"  dates only in from/to {len(report['dates_only_in_from'])} / "
+        f"{len(report['dates_only_in_to'])}; changed dates {len(report['dates_changed'])}"
+    )
+    print(
+        f"  intervals only in from/to {report['intervals_only_in_from']} / "
+        f"{report['intervals_only_in_to']}"
+    )
+    print(
+        f"  historical rewrites {len(report['historical_rewrites'])}; "
+        f"tail changes {len(report['tail_changes'])}; renames {len(report['renames'])}"
+    )
+    for reason in report["would_need_force"]:
+        print(f"  as a successor it would need --force: {reason}")
+    if args.json is not None:
+        save_report_json(report, args.json)
+        print(f"  full diff saved to {args.json}")
+    return 0
