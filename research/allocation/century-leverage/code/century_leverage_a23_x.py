@@ -13,10 +13,10 @@ from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+from ggTrader.utils.fred_data import parse_fred_csv
+from ggTrader.utils.study import bootstrap
 
-from ggTrader.utils.fred_data import parse_fred_csv  # noqa: E402
+ROOT = bootstrap(__file__)
 
 INPUTS = ROOT / "data" / "external" / "a23_inputs"
 GATE = ROOT / "research/allocation/century-leverage/_century_leverage_a23_gate.json"

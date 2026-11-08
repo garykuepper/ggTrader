@@ -1,13 +1,10 @@
 """Checks for the frozen century leverage inputs and mechanics."""
 
-from pathlib import Path
-
+import a23_backtest as a23
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
-
-from ggTrader.lab.century_leverage import (
+from century_leverage import (
     band_trigger,
     build_legs,
     load_shiller_yield,
@@ -15,15 +12,19 @@ from ggTrader.lab.century_leverage import (
     recommendation_rule,
     simulate,
 )
+from pandas.testing import assert_frame_equal
+
 from ggTrader.utils.fred_data import parse_fred_csv
-from scripts import static_leverage_aftertax as a23
+from ggTrader.utils.study import repo_root
 
 pytestmark = pytest.mark.study
+
+ROOT = repo_root(__file__)
 
 
 def test_a23_frozen_loader_matches_live_columns_and_values(monkeypatch) -> None:
     """Frozen A23 files must follow the same code path as an identical live fetch."""
-    source = Path("data/external/a23_inputs")
+    source = ROOT / "data/external/a23_inputs"
 
     class Ticker:
         def __init__(self, symbol: str) -> None:
@@ -141,6 +142,6 @@ def test_event_simulator_matches_a23_lot_engine_on_daily_path() -> None:
 
 def test_frozen_shiller_ends_with_required_dividend_month() -> None:
     """The r2 endpoint has a real dividend input and no filled later month."""
-    yields = load_shiller_yield(Path("data/external/shiller"))
+    yields = load_shiller_yield(ROOT / "data/external/shiller")
     assert yields.index[-1] == pd.Timestamp("2026-06-01")
     assert len(yields) == 1200

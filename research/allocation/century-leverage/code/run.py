@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from concurrent.futures import ProcessPoolExecutor
 from hashlib import sha256
 from multiprocessing import get_context
@@ -12,11 +11,11 @@ from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "src"))
+from ggTrader.utils.study import bootstrap
 
-from ggTrader.lab.century_leverage import (  # noqa: E402
+ROOT = bootstrap(__file__)
+
+from century_leverage import (
     BRACKETS,
     END,
     FRENCH_FILE,

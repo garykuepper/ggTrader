@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "src"))
+from ggTrader.utils.study import bootstrap
 
-from ggTrader.lab.century_leverage import FRENCH_FILE, checked_file, load_french_daily  # noqa: E402
+ROOT = bootstrap(__file__)
+
+from century_leverage import FRENCH_FILE, checked_file, load_french_daily
 
 INPUTS = ROOT / "data" / "external" / "a23_inputs"
 FRENCH = ROOT / "data" / "external" / "french"

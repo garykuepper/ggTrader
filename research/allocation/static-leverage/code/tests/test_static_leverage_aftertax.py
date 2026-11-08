@@ -8,11 +8,13 @@ import sys
 import pandas as pd
 import pytest
 
+from ggTrader.utils.study import study_dir
+
 pytestmark = pytest.mark.study
 
 
 def test_distribution_taxed_as_short_term_goes_to_st_bucket():
-    from scripts.static_leverage_aftertax import Book
+    from ggTrader.lab.a23_rebalance import Book
 
     b = Book(st_rate=0.24, lt_rate=0.15, wash=False)
     b.cash = 1000.0
@@ -24,7 +26,7 @@ def test_distribution_taxed_as_short_term_goes_to_st_bucket():
 
 
 def test_distribution_default_taxed_as_lt():
-    from scripts.static_leverage_aftertax import Book
+    from ggTrader.lab.a23_rebalance import Book
 
     b = Book(st_rate=0.24, lt_rate=0.15, wash=False)
     b.cash = 1000.0
@@ -35,7 +37,7 @@ def test_distribution_default_taxed_as_lt():
 
 
 def test_distribution_invalid_tax_label_raises():
-    from scripts.static_leverage_aftertax import Book
+    from ggTrader.lab.a23_rebalance import Book
 
     b = Book(st_rate=0.24, lt_rate=0.15, wash=False)
     b.cash = 1000.0
@@ -45,7 +47,7 @@ def test_distribution_invalid_tax_label_raises():
 
 
 def test_run_dist_tax_routing_and_backward_compatibility():
-    from scripts.static_leverage_aftertax import run
+    from a23_backtest import run
 
     dates = pd.date_range("2024-01-02", "2024-03-28", freq="B")
     close = pd.DataFrame(
@@ -98,7 +100,7 @@ def test_run_dist_tax_routing_and_backward_compatibility():
 
 
 def test_run_invalid_dist_tax_label_raises():
-    from scripts.static_leverage_aftertax import run
+    from a23_backtest import run
 
     dates = pd.date_range("2024-01-02", "2024-01-10", freq="B")
     close = pd.DataFrame({"SPY": 100.0, "SSO": 50.0, "BIL": 100.0}, index=dates)
@@ -121,7 +123,7 @@ def test_run_invalid_dist_tax_label_raises():
 
 def test_cli_flags_registered():
     res = subprocess.run(
-        [sys.executable, "scripts/static_leverage_aftertax.py", "--help"],
+        [sys.executable, str(study_dir(__file__) / "code" / "run.py"), "--help"],
         capture_output=True,
         text=True,
         check=True,
