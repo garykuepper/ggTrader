@@ -13,6 +13,7 @@ from __future__ import annotations
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.membership import MembershipSource
 from ggTrader.engine import portfolio as engine_portfolio
 from ggTrader.lab.data import STOCK_BASE_CONFIG, fetch_stock_ohlcv
 from ggTrader.paper.live_bars import bars_from_legacy_frame
@@ -25,7 +26,12 @@ from ggTrader.paper.live_signals import (
 SLEEVE_UNIVERSES: tuple[str, ...] = ("sp500", "midcap400", "nasdaq100")
 
 
-def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 90) -> pd.Series:
+def compute_sleeve_curve(
+    universe: str,
+    asof: pd.Timestamp,
+    window_days: int = 90,
+    membership: MembershipSource | None = None,
+) -> pd.Series:
     """Trailing equity curve for one sleeve, purely from OHLCV + signals.
 
     Uses the identical live ensemble frames (`live_signals.live_ensemble_frames`,
@@ -48,7 +54,7 @@ def compute_sleeve_curve(universe: str, asof: pd.Timestamp, window_days: int = 9
     warmup_days = 90
     start = asof - pd.Timedelta(days=window_days + trim_margin_days + warmup_days)
 
-    members = universe_members_asof(universe, asof)
+    members = universe_members_asof(universe, asof, membership=membership)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = fetch_stock_ohlcv(symbols, start=str(start.date()), end=str(asof.date()))

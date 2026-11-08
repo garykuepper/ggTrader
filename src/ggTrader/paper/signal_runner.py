@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.membership import MembershipSource
 from ggTrader.engine import selfcheck as engine_selfcheck
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.paper.gates import (
@@ -119,6 +120,7 @@ def generate_signals(
     sanity: SanityConfig | None = None,
     now: datetime | None = None,
     persist_tape: bool = True,
+    membership: MembershipSource | None = None,
 ) -> dict:
     """Fetch recent data for a PIT universe and return today's ensemble signals.
 
@@ -141,6 +143,8 @@ def generate_signals(
         sanity: gate bounds (default: production bounds).
         now: the run time (default: the wall clock); injectable for tests.
         persist_tape: ``False`` keeps every fetched bar in memory only (read-only dry run).
+        membership: the S&P 500 list source; the trader passes its explicit choice. ``None`` means
+            the source named by ``GGT_MEMBERSHIP`` (an error if unset), never a file default.
 
     Returns:
         Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars.
@@ -153,7 +157,7 @@ def generate_signals(
     today_et = pd.Timestamp(now).tz_convert(_ET).date()
     start = today - pd.Timedelta(days=lookback_days)
 
-    members = universe_members_asof(universe, today)
+    members = universe_members_asof(universe, today, membership=membership)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = _fetch_live_frame(symbols, start, today, persist_tape)
@@ -210,13 +214,16 @@ def generate_signals(
     }
 
 
-def generate_blended_signals() -> dict:
+def generate_blended_signals(membership: MembershipSource | None = None) -> dict:
     """Generate today's signals for all three sleeves, recomputing the
     inverse-vol/target-vol overlay monthly. On any failure to recompute
     (e.g. an OHLCV fetch error on a rebalance date), falls back to the last
     stored weights/scale rather than raising."""
     today = pd.Timestamp.now(tz="UTC").normalize()
-    sleeves = {universe: generate_signals(universe=universe) for universe in SLEEVE_UNIVERSES}
+    sleeves = {
+        universe: generate_signals(universe=universe, membership=membership)
+        for universe in SLEEVE_UNIVERSES
+    }
 
     state = get_rebalance_state()
     rebalanced_today = False
@@ -224,7 +231,9 @@ def generate_blended_signals() -> dict:
 
     if should_rebalance(state["rebalance_date"] if state else None, today):
         try:
-            curves = {u: compute_sleeve_curve(u, today) for u in SLEEVE_UNIVERSES}
+            curves = {
+                u: compute_sleeve_curve(u, today, membership=membership) for u in SLEEVE_UNIVERSES
+            }
             weights, scale = compute_weights_and_scale(curves)
         except Exception:
             if state is None:
@@ -249,7 +258,9 @@ def generate_blended_signals() -> dict:
     }
 
 
-def generate_core_signals(persist_tape: bool = True) -> dict:
+def generate_core_signals(
+    persist_tape: bool = True, membership: MembershipSource | None = None
+) -> dict:
     """Generate today's signals for the standalone SP500 core strategy,
     wrapped in the same shape `generate_blended_signals()` returns so
     `trader.py`'s sleeve-iteration/buy-sizing logic needs no changes.
@@ -265,8 +276,11 @@ def generate_core_signals(persist_tape: bool = True) -> dict:
 
     Args:
         persist_tape: ``False`` (read-only dry run) keeps every fetched bar in memory only.
+        membership: the S&P 500 list source, as in :func:`generate_signals`.
     """
-    core_signals = generate_signals(universe="sp500", persist_tape=persist_tape)
+    core_signals = generate_signals(
+        universe="sp500", persist_tape=persist_tape, membership=membership
+    )
     return {
         "sleeves": {"sp500": core_signals},
         "weights": {"sp500": 1.0},

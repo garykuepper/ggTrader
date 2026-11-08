@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+#: What `ggt paper` must pass: the live S&P 500 list is named at the entry point (slice M3).
+LIVE = "fixture:sp500_v1_2026-06-02"
+
 
 class TestPaperCLI:
     def test_paper_command_registered(self):
@@ -46,22 +49,27 @@ class TestPaperCliFlags:
     def test_default_is_a_read_only_dry_run(self):
         result, run = self._invoke([])
         assert result.exit_code == 0
-        run.assert_called_once_with(dry_run=True, read_only=True, notify=False)
+        run.assert_called_once_with(dry_run=True, read_only=True, notify=False, membership=LIVE)
         assert "Untradable (skipped): ['AVB']" in result.output
 
     def test_dry_run_writes_restores_the_old_dry_run(self):
         result, run = self._invoke(["--dry-run-writes"])
         assert result.exit_code == 0
-        run.assert_called_once_with(dry_run=True, read_only=False, notify=False)
+        run.assert_called_once_with(dry_run=True, read_only=False, notify=False, membership=LIVE)
 
     def test_notify_is_forwarded(self):
         _, run = self._invoke(["--notify"])
-        run.assert_called_once_with(dry_run=True, read_only=True, notify=True)
+        run.assert_called_once_with(dry_run=True, read_only=True, notify=True, membership=LIVE)
 
     def test_live_leaves_read_only_unset(self):
         result, run = self._invoke(["--live"])
         assert result.exit_code == 0
-        run.assert_called_once_with(dry_run=False, read_only=None, notify=False)
+        run.assert_called_once_with(dry_run=False, read_only=None, notify=False, membership=LIVE)
+
+    def test_the_live_membership_is_the_frozen_vintage_one_fixture(self):
+        from ggTrader.paper.trader import LIVE_MEMBERSHIP_SPEC
+
+        assert LIVE_MEMBERSHIP_SPEC == LIVE
 
     def test_live_with_dry_run_flags_is_refused(self):
         for flag in ("--dry-run-writes", "--notify"):

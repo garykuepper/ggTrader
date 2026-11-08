@@ -2352,7 +2352,34 @@ class TestReadOnlyDryRun:
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
         trader, _b, _n = self._dry_trader()
         trader.run()
-        mock_signals.assert_called_once_with(persist_tape=False)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is False
+
+    def test_the_trader_hands_its_chosen_membership_source_to_the_signals(self, mock_signals):
+        from ggTrader.paper.trader import PaperTrader
+
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        _t, broker, notifier = _make_trader()
+        trader = PaperTrader(
+            broker, notifier, dry_run=True, membership="fixture:sp500_v1_2026-06-02"
+        )
+        trader.run()
+        source = mock_signals.call_args.kwargs["membership"]
+        assert source.vintage().fixture == "sp500_v1_2026-06-02"  # the frozen file, by name
+
+    def test_a_trader_with_no_membership_choice_fails_loudly_and_trades_nothing(
+        self, mock_signals, monkeypatch
+    ):
+        from ggTrader.data import membership
+        from ggTrader.data.membership import MembershipSourceNotSelected
+
+        membership.clear_source_cache()
+        monkeypatch.delenv("GGT_MEMBERSHIP")
+        trader, broker, notifier = self._dry_trader()
+        with pytest.raises(MembershipSourceNotSelected):
+            trader.run()
+        mock_signals.assert_not_called()  # no signals, hence no orders, and no guessed source
+        assert "signal generation error" in notifier.send.call_args.args[0]
 
     def test_legacy_dry_run_with_writes_still_persists(self, mock_signals):
         from ggTrader.paper.trader import PaperTrader
@@ -2365,7 +2392,8 @@ class TestReadOnlyDryRun:
             trader.run()
         assert mocks["init_paper_schema"].called and mocks["log_snapshot"].called
         assert mocks["refresh_benchmark_tape"].called
-        mock_signals.assert_called_once_with(persist_tape=True)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is True
 
     def test_live_default_is_unchanged(self, mock_signals):
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
@@ -2379,7 +2407,8 @@ class TestReadOnlyDryRun:
         assert mocks["save_peak_value"].called
         assert mocks["refresh_benchmark_tape"].called
         assert result["skipped_writes"] == []
-        mock_signals.assert_called_once_with(persist_tape=True)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is True
         broker.submit_buy.assert_called_once()
 
     def test_a_live_run_cannot_be_read_only(self, mock_signals):

@@ -7,6 +7,7 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from ggTrader.data.membership import selected_source
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
@@ -64,6 +65,11 @@ _STALE_PENDING_DAYS = 5
 _ET = ZoneInfo("America/New_York")
 _PT = ZoneInfo("America/Los_Angeles")
 
+#: The S&P 500 list `ggt paper` reads: the frozen vintage-1 file, chosen by name (slice M3). It is
+#: the same bytes the trader has always read. Moving to the database, with a freshness gate, is
+#: slice M4; until then nothing else selects a source for the live path.
+LIVE_MEMBERSHIP_SPEC = "fixture:sp500_v1_2026-06-02"
+
 # Signals are built from the most recent *completed* daily bar, so on a healthy
 # run `as_of` is the prior trading session, not today -- requiring today's date
 # would block every single run. This cap exists only to catch a genuinely stale
@@ -108,6 +114,7 @@ class PaperTrader:
         risk_cfg: RiskConfig | None = None,
         dry_run: bool = True,
         read_only: bool | None = None,
+        membership: str | None = None,
     ) -> None:
         """Wire the trader.
 
@@ -120,12 +127,16 @@ class PaperTrader:
                 no tape refresh and no reconcile booking. Defaults to ``dry_run``, so a dry run
                 is read-only unless the caller opts out (``ggt paper --dry-run-writes``).
                 Only a dry run may be read-only.
+            membership: membership spec for the S&P 500 list (``fixture:<name>``, ``db``,
+                ``db:<id>``); ``None`` defers to ``GGT_MEMBERSHIP`` and fails if that is unset.
+                ``run_paper_trading`` always passes one.
         """
         self._broker = broker
         self._notifier = notifier
         self._risk = RiskGuard(risk_cfg or config_from_env())
         self._dry_run = dry_run
         self._read_only = dry_run if read_only is None else read_only
+        self._membership = membership
         if self._read_only and not dry_run:
             raise ValueError("read_only requires dry_run: a live run must book its trades")
         #: Names of the persistence calls a read-only run skipped (for the run record).
@@ -581,7 +592,9 @@ class PaperTrader:
             return {"buys": [], "sells": [], "errors": []}
 
         try:
-            blend = generate_core_signals(persist_tape=not self._read_only)
+            blend = generate_core_signals(
+                persist_tape=not self._read_only, membership=selected_source(self._membership)
+            )
         except SignalGateError as exc:
             # Fail closed: a failed engine self-check or sanity gate means no orders at all.
             self._notifier.send(f"<b>🛑 Signal gate — no orders placed:</b>\n{exc}")
@@ -1207,7 +1220,11 @@ class PaperTrader:
 
 
 def run_paper_trading(
-    dry_run: bool = True, read_only: bool | None = None, notify: bool = False
+    dry_run: bool = True,
+    read_only: bool | None = None,
+    notify: bool = False,
+    *,
+    membership: str | None = None,
 ) -> dict:
     """Convenience entry point: wire up broker + notifier and run.
 
@@ -1221,6 +1238,9 @@ def run_paper_trading(
     tape row and sends nothing to Telegram unless ``notify`` (``ggt paper --notify``), which
     forwards only the free-form lines with a ``[DRY RUN]`` prefix. ``read_only=False`` restores
     the pre-rebuild dry run that persisted state (``--dry-run-writes``).
+
+    ``membership`` is the spec of the S&P 500 list (the CLI passes ``LIVE_MEMBERSHIP_SPEC``);
+    ``None`` defers to ``GGT_MEMBERSHIP`` and fails if that is unset, never to a file.
     """
     effective_read_only = dry_run if read_only is None else read_only
     if effective_read_only and not dry_run:
@@ -1235,5 +1255,7 @@ def run_paper_trading(
     notifier = TelegramNotifier()
     if effective_read_only:
         notifier = DryRunNotifier(notifier, forward=notify)
-    trader = PaperTrader(broker, notifier, dry_run=dry_run, read_only=effective_read_only)
+    trader = PaperTrader(
+        broker, notifier, dry_run=dry_run, read_only=effective_read_only, membership=membership
+    )
     return trader.run()

@@ -284,12 +284,23 @@ class TestGenerateCoreSignals:
 
         result = generate_core_signals()
 
-        mock_generate.assert_called_once_with(universe="sp500", persist_tape=True)
+        mock_generate.assert_called_once_with(universe="sp500", persist_tape=True, membership=None)
         assert result["sleeves"] == {"sp500": mock_generate.return_value}
         assert result["weights"] == {"sp500": 1.0}
         assert result["scale"] == 1.0
         assert result["rebalanced_today"] is False
         assert result["fallback_used"] is False
+
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_the_chosen_membership_source_is_passed_down(self, mock_generate):
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        source = object()
+        mock_generate.return_value = {"buys": [], "sells": [], "as_of": "2026-09-16"}
+        generate_core_signals(persist_tape=False, membership=source)
+        mock_generate.assert_called_once_with(
+            universe="sp500", persist_tape=False, membership=source
+        )
 
     @patch("ggTrader.paper.signal_runner.generate_signals")
     def test_core_weights_restore_full_slot_size(self, mock_generate):
