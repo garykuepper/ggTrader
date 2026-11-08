@@ -111,7 +111,7 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
 * **Data Access**:
   * Equities OHLCV for research: `load_bars()` from `src/ggTrader/data/bars.py` (frozen Parquet tape or a read-only database session; no network, no writes). The live trader and the replica tools use the DB-first `fetch_stock_ohlcv()` / `load_ohlcv()` of `src/ggTrader/lab/data.py`.
   * Crypto OHLCV: TimescaleDB loader in `src/ggTrader/data/historical/timescaledb_loader.py` fetches keyed by venue and interval.
-  * SP500 constituents: sourced from `data/universe/sp500_constituents_history.csv.gz` (updated infrequently; refresh via `download_sp500_history()` in `data/core/index_constituents.py`).
+  * SP500 constituents: sourced from `data/universe/sp500_constituents_history.csv.gz` (the frozen vintage-1 fixture `sp500_v1_2026-06-02`; the list is read through `ggTrader.data.membership` — `db`, `db:<load_id>` or `fixture:<name>`, chosen with `--membership` or `GGT_MEMBERSHIP`, never defaulted — and refreshed as a new vintage with `ggt db load-sp500`).
 * **Backtesting with vectorbt**:
   * The lab simulates through `ggTrader.engine.portfolio` (`run_signals` / `run_weights`), which wraps `vectorbt.Portfolio` in one grouped call. Passed 2D signal arrays (dates × symbols × combinations) and OHLCV data.
   * Weights are set daily (or per-rebalance) — the portfolio auto-rebalances on entry/exit signals.

@@ -257,8 +257,10 @@ lists are `REGISTRY` and `LEGACY_ONLY_STRATEGIES` in `src/ggTrader/lab/strategie
 | `--skip` | 21 | Most recent days skipped in the momentum measure (weight strategies). |
 | `--max-stocks` | None | Cap the total number of stocks loaded (useful for super-fast test runs). |
 | `--sweep-param` | none | Override one axis of the strategy's parameter grid, for example `--sweep-param rsi_oversold=20,25,30,35` (repeat the flag for several axes). |
+| `--membership SPEC` | none (see below) | Where the S&P 500 membership list is read from: `db` (latest vintage), `db:<load_id>` or `fixture:<name>`, for example `fixture:sp500_v1_2026-06-02` (the frozen vintage 1 that every committed reference number was made on). **There is deliberately no default**: without the flag the `GGT_MEMBERSHIP` environment variable is used, and if that is also unset the run stops at once with `MembershipSourceNotSelected`, before loading any data. The flag is needed for any universe, not only `sp500`. |
+| `--expect-membership-sha SHA256` | none | Refuse to run unless the chosen vintage's content sha256 equals this (pins a reproduction to the exact list). |
 | `--snapshot PATH` | newest in `data/snapshots/MANIFEST.json` | The Parquet tape to read. |
-| `--result-json PATH` | `results/lab/wfo_<strategy>_<universe>_<start>_<end>_vbt.json` | `--wfo`: where to write the run record. Every record carries a provenance block (vectorbt and Rust versions, the engine that actually ran, tape sha256, statistic definitions, baseline epoch). With `--blend` the same block is stored on the `lab_runs` row. |
+| `--result-json PATH` | `results/lab/wfo_<strategy>_<universe>_<start>_<end>_vbt.json` | `--wfo`: where to write the run record. Every record carries a provenance block (vectorbt and Rust versions, the engine that actually ran, tape sha256, statistic definitions, baseline epoch, and the membership list used: `membership_sha256` plus a `membership` block with the load id or fixture name, coverage and ages). With `--blend` the same block is stored on the `lab_runs` row. |
 
 ### Simulation Modes (Choose One)
 
@@ -280,8 +282,16 @@ When running a `--blend`, you can customize the portfolio combination overlay us
 ### Lab Examples
 
 ```bash
-# Walk-forward the voting (ensemble) strategy on the pinned 17-fold window (frozen tape)
-ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
+# Walk-forward the voting (ensemble) strategy on the pinned 17-fold window (frozen tape),
+# on the frozen vintage-1 S&P 500 list (the list the reference numbers were made on)
+ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30 \
+    --membership fixture:sp500_v1_2026-06-02
+
+# The same list read from the database (load 1 is the same bytes; the result must be identical)
+ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30 --membership db:1
+
+# Or choose once for the shell
+export GGT_MEMBERSHIP=fixture:sp500_v1_2026-06-02
 
 # The same on Nasdaq-100 stocks instead of the S&P 500
 ggt lab --strategy ensemble --wfo --universe nasdaq100 --eval-start 2021-01-31 --eval-end 2026-04-30
@@ -357,6 +367,10 @@ ggt paper                      # read-only dry run: logs intended orders, writes
 ggt paper --notify             # same, forwarding the DRY RUN lines to Telegram with a [DRY RUN] prefix
 ggt paper --dry-run-writes     # the pre-rebuild dry run: also writes ledger/snapshot/peak/tape state
 ggt paper --live               # places real paper orders (the only way to; refuses the two flags above)
+
+# The S&P 500 list is named at the entry point: ggt paper reads the frozen fixture
+# sp500_v1_2026-06-02 (the same bytes as always). Moving to the database comes with the
+# freshness gate (slice M4); until then there is no flag to change it.
 ```
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
@@ -459,8 +473,33 @@ raises `MembershipSourceNotSelected`. If `db` cannot be read it raises `Membersh
 A source offers `history()` (the shape of `load_sp500_history()`), `members_asof`,
 `all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
 name plus content checksum, for result JSON). `check_membership_age(vintage, asof, ...)` compares
-a vintage's age with warn and refuse thresholds you pass; nothing calls it yet. The old
-`index_constituents` functions are unchanged and still read the file until slice M3.
+a vintage's age with warn and refuse thresholds you pass; nothing calls it yet.
+
+**Every reader now takes the source (slice M3).** `universe_members_asof`, `universe_all_between`,
+`sp500_members_asof`, `all_members_between`, `eligible_at`, `equity_universe_between`,
+`pit_mask`, `membership_mask`, `check_constituent_age`, `universe_mask`, `load_bars(universe=
+'sp500', membership=...)` (required there), `generate_signals` and `compute_sleeve_curve` have a
+`membership=` argument. Passing `None` means "the source named by `GGT_MEMBERSHIP`", and raises
+`MembershipSourceNotSelected` if that is unset; no function falls back to a file.
+`load_sp500_history()` with no argument selects a source the same way, and `load_sp500_history(path)`
+stays a plain file reader for frozen studies that name their file. `download_sp500_history()` is
+gone: nothing in `src/` writes a membership file. The process caches the source once per spec and
+the history frame once per content hash. The root `conftest.py` sets
+`GGT_MEMBERSHIP=fixture:sp500_v1_2026-06-02` for every test, so no test needs the database.
+
+**Drivers (`--membership SPEC`, `--expect-membership-sha SHA256`).** The oracle drivers
+`scripts/p5_wfo_validation.py`, `p7_live_golden.py`, `p3_pit_parity.py` and
+`make_tape_snapshot.py` default to `fixture:sp500_v1_2026-06-02`; `equity_backfill.py` (needed for
+`--universe sp500`) and `google_trends_backfill.py` have no default, as `ggt lab`.
+`legacy_reference_runs.py` runs the legacy code, which reads its own copy of the frozen file, so it
+accepts only `fixture:<name>` and checks that the file the legacy code reads has that fixture's
+hash. Each driver records the vintage in its JSON: in the `provenance` block as
+`membership_sha256` and `membership` (`kind`, `load_id` or `fixture`, `raw_sha256`, coverage,
+`retrieved_at`, `verified_at`, `age_since_verified_days`), never in the payload, so the guarded
+comparison with the committed evidence is unaffected (`p3_pit_parity.py` and
+`make_tape_snapshot.py` write plain JSON and add the two keys at the top level). `provenance.compare`
+treats a difference in `membership_sha256` as `MEMBERSHIP_DIFF` (not comparable); a record without
+it is "unknown", no flag.
 
 The only registered fixture is `sp500_v1_2026-06-02`, the existing file
 `data/universe/sp500_constituents_history.csv.gz`, which stays where it is and is never edited
