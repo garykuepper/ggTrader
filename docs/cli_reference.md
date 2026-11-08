@@ -15,9 +15,26 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ---
 
+## Study and test tooling (not `ggt` subcommands)
+
+Study code lives with its study, in the study's own `code/` folder (shared helpers in the category's `_lib/` folder), not in `src/`. These scripts keep that tree honest; each has `--help`.
+
+```bash
+.venv/bin/python scripts/study.py new CATEGORY SLUG --kind screen --placement 9   # scaffold a study
+.venv/bin/python scripts/study.py check STUDY_FOLDER                              # naming, card, drivers, imports
+.venv/bin/python scripts/study.py repro STUDY_FOLDER                              # re-run a pinned study in a scratch clone
+.venv/bin/python scripts/study.py close STUDY_FOLDER --verdict NO-GO              # write PIN.json, print the index row
+.venv/bin/python scripts/verify_pins.py --summary   # every code hash pinned in the evidence still resolves
+scripts/run_tests.sh            # fast core (default)
+scripts/run_tests.sh --full     # everything but `integration`: the merge, deploy and vectorbt-upgrade gate
+scripts/run_tests.sh --studies  # the study tier: tests inside each study's `code/tests/` and each category's `_lib/tests/`
+```
+
+`research/CODEMOVED.csv` lists every file that left `src/`, `scripts/` or `tests/` for a study (old path, new path, hashes before and after).
+
 ## Prospective intraday practice journal
 
-`intraday_observe.py` is a standalone research recorder and hypothetical journal.
+`intraday_observe.py` (in `research/intraday/spy-momentum-prospective-observer/code/`) is a standalone research recorder and hypothetical journal.
 It does not submit orders or use the production paper account. The standalone observer and its four user timers were activated on October 27, 2026.
 First observation is October 30; see the [activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md). Independent review findings were
 corrected and regression-tested; the final full capped suite passes.
@@ -25,9 +42,9 @@ corrected and regression-tested; the final full capped suite passes.
 Safe offline commands:
 
 ```bash
-.venv/bin/python scripts/intraday_observe.py --help
-.venv/bin/python scripts/intraday_observe.py plan
-.venv/bin/python scripts/intraday_observe.py rehearse --work-dir /tmp/ggtrader-observer-demo
+.venv/bin/python research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py --help
+.venv/bin/python research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py plan
+.venv/bin/python research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py rehearse --work-dir /tmp/ggtrader-observer-demo
 ```
 
 The [operator runbook](../deploy/intraday_observer/OPERATOR_RUNBOOK.md) describes
@@ -53,10 +70,11 @@ synthetic rehearsal. Its assertions require operator-checked source evidence;
 the offline build does not perform or certify that real-source preflight. Do
 not invoke `activate` as part of trying the offline demo. Four separate user timers are installed for the activated study.
 Unit templates and the operator runbook live under `deploy/intraday_observer/`.
+The installed timers run the frozen release cut at commit `280d4a0`, which still keeps `intraday_observe.py` and `intraday_observer_job.py` in the `scripts` folder (the layout before the move); the linked runbook describes that release and is unchanged. The commands in this section use the study's own copy of the code.
 The calendar-aware timer entry point is:
 
 ```bash
-.venv/bin/python scripts/intraday_observer_job.py --help
+.venv/bin/python research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py --help
 ```
 
 It accepts `--stage recover|inputs|decide|archive` and `--state-dir PATH`;
@@ -72,8 +90,8 @@ See the [prospective protocol](../research/intraday/spy-momentum-prospective-obs
 ## Intraday Stage 0A coverage probe
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/intraday_coverage_probe.py --help
-PYTHONPATH=src .venv/bin/python scripts/intraday_coverage_probe.py
+.venv/bin/python research/intraday/spy-momentum-feasibility/code/intraday_coverage_probe.py --help
+.venv/bin/python research/intraday/spy-momentum-feasibility/code/intraday_coverage_probe.py
 ```
 
 The standalone research script uses inherited `APCA_API_KEY_ID` and
@@ -91,8 +109,8 @@ Stage 0B and strategy backtesting require their separate authorization.
 ## Intraday r8 research pipeline
 
 ```bash
-.venv/bin/python scripts/intraday_momentum_research.py --help
-.venv/bin/python scripts/intraday_momentum_research.py plan
+.venv/bin/python research/intraday/spy-momentum-feasibility/code/run.py --help
+.venv/bin/python research/intraday/spy-momentum-feasibility/code/run.py plan
 ```
 
 The standalone script implements the [approved r8 proxy protocol](../research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md).
@@ -410,7 +428,7 @@ ggt db export > backup.sql
 
 ## Event-timing audit research utility
 
-`.venv/bin/python scripts/event_timing_audit.py --help` describes the standalone
+`.venv/bin/python research/audits/event-timing/code/run.py --help` describes the standalone
 read-only evidence audit. It defaults to offline operation; `--smoke` caps each
 stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
 `--detector-flags` ingest checksummed evidence. `--resume` preserves budgets and

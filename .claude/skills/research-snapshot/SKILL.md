@@ -70,15 +70,23 @@ anything in §1/§5 whose claim could have moved.
 
 1. `docs/next_steps.md` and `docs/roadmap.md`: the stated state. Note
    explicitly if either lags what you find below.
-2. Every report `.md` under `research/<category>/<study>/` (skip the root files
-   `README.md`, `RESEARCH_INDEX.md`, `RESEARCH_SNAPSHOT.md`,
-   `TEMPLATE-research-report.md`, `WEB_RESEARCH_CANDIDATES.md`, `prompts/`, and
-   briefs: `*-brief.md`, plus older briefs that kept plain names, listed as
-   `brief` rows in `docs/superpowers/plans/2026-11-05-research-reorg-manifest.csv`). Each is an
-   authoritative, verdicted arc; summarize with its real numbers.
-3. `STRATEGY_REGISTRY` in `src/ggTrader/lab/strategies/__init__.py`. Classify
-   every entry GO / NO-GO / ambiguous with a citation. If a verdict traces
-   only to deleted/pre-rewrite code, call it a *soft* rejection.
+2. Every report `.md` under `research/<category>/<study>/` whose name matches
+   `20*-*.md` (the dated reports; glob each study folder for that pattern). Skip: the root files `README.md`,
+   `RESEARCH_INDEX.md`, `RESEARCH_SNAPSHOT.md`, `TEMPLATE-research-report.md`,
+   `TEMPLATE-brief.md`, `WEB_RESEARCH_CANDIDATES.md` and `prompts/`; every file
+   under a study's `code/` folder and a category's `_lib/` folder (study code
+   and its tests, not reports); a study's own `README.md` and `study.toml`;
+   and briefs: `*-brief.md`, plus older briefs that kept plain names (the
+   "Brief or registration" column of `research/RESEARCH_INDEX.md` names the brief
+   of each study). Each report is an authoritative, verdicted arc; summarize with its
+   real numbers. A study's `study.toml` card (where one exists) gives its
+   `verdict` and `status` as a cross-check, not as a replacement for reading the report.
+3. The strategy registry: `ggTrader.lab.strategies.registry.discover()` fills
+   `REGISTRY` by scanning `src/ggTrader/lab/strategies/`, and
+   `LEGACY_ONLY_STRATEGIES` in the same file lists the names whose code lives
+   only at git tag `legacy-engine-vbt0285`. Read the registry file rather than
+   a copied list. Classify every entry GO / NO-GO / ambiguous with a citation.
+   If a verdict traces only to deleted/pre-rewrite code, call it a *soft* rejection.
 4. `git log --oneline --all -i --grep="NO-GO\|NOGO\|reject\|validated"`, to
    catch anything closed only in a commit message.
 5. **The deployed construction, not just the strategy.** Numbers only, not

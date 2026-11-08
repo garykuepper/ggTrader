@@ -41,10 +41,12 @@ If unsure whether the trader imports something, check from `ggt.py paper`
 
 1. **Timing.** Don't deploy between ~12:30 and ~13:15 PT on a weekday: a
    restart or half-pulled image mid-run is worse than waiting. Check the clock.
-2. **Tests:** `scripts/run_tests.sh --full -q`. The deploy gate is the FULL run: the
-   default fast core leaves out the live golden, the real-tape oracles and
-   `tests/lab/test_replica.py` (it exercises paper internals). Never bare pytest: it has an 8 GB
-   memory cap for a reason, see CLAUDE.md. A `137` exit is a hang, not a big
+2. **Tests:** run **both** `scripts/run_tests.sh --full -q` and
+   `scripts/run_tests.sh --studies -q`. The deploy gate is the FULL run plus the studies run:
+   the default fast core leaves out the live golden and the real-tape oracles, and the
+   production-replica tests (`research/audits/production-replica/code/tests/`, which exercise
+   `paper` internals) now live in the studies tier, not in `tests/`. Never bare pytest: it has an
+   8 GB memory cap for a reason, see CLAUDE.md. A `137` exit is a hang, not a big
    suite. Also run `ruff check` and `ruff format --check` on changed files.
 3. **Real-data check, no orders, no Telegram.** Green tests can encode the
    same wrong assumption as the code. Exercise the changed path against the

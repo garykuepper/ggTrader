@@ -5,8 +5,9 @@ description: Run ggTrader's LLM strategy-research loop end to end — run the we
 
 # ggTrader research-prompt loop
 
-New strategy ideas reach this repo through a two-stage pipeline
-(`docs/next_steps.md` "Where new strategy ideas come from"):
+New strategy ideas reach this repo through a three-stage pipeline (this skill
+is its record; `docs/next_steps.md` holds only the current worklist, and
+`research/README.md` says where each study lives):
 
 1. **Discovery** — an external web-research LLM (Gemini / Claude web UI) runs
    `research/prompts/web-strategy-research-prompt.md`. It has no repo
@@ -199,12 +200,27 @@ collectibles). Record the result in the batch header.
 `RESEARCH_SNAPSHOT.md` §6. If it's already `queued`/`testing`/`resolved`,
 say so before doing anything — it may already have a report.
 
-**2. Write the filled brief** to `research/<category>/<study>/YYYY-MM-DD-<slug>-brief.md`:
-a copy of `local-implementation-prompt-TEMPLATE.md` with the "Candidate
-Strategy" block replaced. Copy a backlog entry **verbatim** (citations,
-ratings, verification notes) so the implementer has the full trail; for an
-internal §6 idea, carry over its reasoning and success bar. Leave the
-template itself untouched — `research-snapshot` expects its placeholder.
+**2. Scaffold the study, then write the filled brief.** Pick the category with
+the placement table in `research/README.md` (the first matching row wins) and
+run, from the repo root:
+
+```bash
+.venv/bin/python scripts/study.py new CATEGORY SLUG --kind KIND --placement ROW
+```
+
+`KIND` is one of `screen`, `wfo`, `event`, `audit`, `prospective`; `ROW` is the
+placement-table row that chose the category. It creates the study folder (a
+README, a `study.toml` card, a brief from `research/TEMPLATE-brief.md`, a
+`code/run.py` driver, one module and `code/tests/`) and prints the next step.
+Fill the brief's "Candidate" content from the backlog entry **verbatim**
+(citations, ratings, verification notes) so the implementer has the full trail;
+for an internal §6 idea, carry over its reasoning and success bar. Put the
+candidate block of `local-implementation-prompt-TEMPLATE.md` (its "Candidate
+Strategy" placeholder replaced) in the study folder as the prompt that starts
+the build, and leave the template itself untouched: `research-snapshot` expects
+its placeholder. The brief's section 0 (eval dates, leverage, benchmark, costs,
+family size) is machine-checked; run `scripts/study.py check` on the folder before
+handing it over. The brief file is named `YYYY-MM-DD-SLUG-brief.md`.
 
 **3. Pre-fill what the implementer would otherwise rediscover**, as bullets
 under "Known feasibility notes":

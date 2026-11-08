@@ -38,7 +38,9 @@ the production checkout. Run everything with `GGT_PYTHON=<venv>/bin/python` and
 `scripts/run_tests.sh` (8 GB cgroup, no swap). Exit 137 means a hang or runaway, not a reason to
 raise the cap. Budget about 20 minutes of machine time (the FULL suite, `scripts/run_tests.sh --full`, is
 10 to 12 minutes of it). The upgrade gate is the FULL run: the default `scripts/run_tests.sh` is the fast
-core and leaves out the numba engine, the tripwire tests and the real-tape oracles.
+core and leaves out the numba engine, the tripwire tests and the real-tape oracles. `--full` also runs the
+study half (the tests inside each study's `code/tests` folder and each category's `_lib/tests` folder, some of
+which exercise engine and paper code); `scripts/run_tests.sh --studies -q` runs that tier on its own, and it must pass too.
 
 ## 1. Read the release notes for every version between the lock and the target
 
@@ -137,6 +139,7 @@ replaced, as `pandas-ta` was. A downgrade drops the packages the newer release a
 scripts/run_tests.sh tests/engine -q                               # L0-L3, both engines inside
 GGT_VBT_ENGINE=numba scripts/run_tests.sh tests/engine -q          # numba as the default engine
 scripts/run_tests.sh --full                                        # whole suite (the gate)
+scripts/run_tests.sh --studies -q                                  # the study tier alone (also run by --full)
 .venv/bin/python -W error::DeprecationWarning -W error::FutureWarning -c "import ggTrader.engine"
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```

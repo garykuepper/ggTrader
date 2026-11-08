@@ -1,6 +1,6 @@
 # Research
 
-Everything ggTrader has learned from research lives here: one folder per study, with its report, its registered plan (the "brief"), and its raw result files side by side. The code and the live paper trader are elsewhere; this folder is the evidence.
+Everything ggTrader has learned from research lives here: one folder per study, with its report, its registered plan (the "brief"), and its raw result files side by side. The engine and the live paper trader are elsewhere (in `src/`); this folder is the evidence, and each study's own code sits next to it.
 
 To find a study by question, date, status or nickname (A23 = the 70/30 SPY/SSO allocation; PEAD = post-earnings-announcement drift), start with [RESEARCH_INDEX.md](RESEARCH_INDEX.md). For the roster of everything tried and its verdict, see [RESEARCH_SNAPSHOT.md](RESEARCH_SNAPSHOT.md). The backlog of untried ideas is [WEB_RESEARCH_CANDIDATES.md](WEB_RESEARCH_CANDIDATES.md), and the report format is [TEMPLATE-research-report.md](TEMPLATE-research-report.md).
 
@@ -24,6 +24,8 @@ Each folder holds one subfolder per study, except `prompts/`, which holds the tw
 | [prompts/](prompts/) | Which reusable prompts commission new research? |
 
 `intraday/` holds four folders: [spy-momentum-feasibility/](intraday/spy-momentum-feasibility/) (the feasibility study, the r8 protocol and its data check), [spy-momentum-prospective-observer/](intraday/spy-momentum-prospective-observer/) (the forward practice journal), and two supporting packages, [artifacts-2026-10-25-intraday-gap/](intraday/artifacts-2026-10-25-intraday-gap/) and [artifacts-2026-10-26-intraday-readiness/](intraday/artifacts-2026-10-26-intraday-readiness/). Their questions and status are in [RESEARCH_INDEX.md](RESEARCH_INDEX.md).
+
+A study's code lives in its own folder, not in `src/`: `code/` holds the driver (`run.py`) and the study's modules, `code/tests/` holds its tests, and a category's `_lib/` folder (for example `intraday/_lib/`) holds helpers that several studies of that category share. Create a study with `scripts/study.py new` and check it with `scripts/study.py check`. [CODEMOVED.csv](CODEMOVED.csv) sits next to [MOVED.csv](MOVED.csv) and records every file that moved out of `src/`, `scripts/` or `tests/` into a study, with its hash before and after. Reports written earlier cite the old code paths; look them up there.
 
 ## Where a new document goes
 

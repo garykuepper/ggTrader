@@ -20,7 +20,7 @@ dependencies = [
     "numba>=0.66,<0.69",
     "plotly>=7,<8",
     "alpaca-py",
-    "beautifulsoup4",  # lab/event_timing_sources.py
+    "beautifulsoup4",  # research/audits/event-timing/code/event_timing_sources.py
     "defusedxml",
     "joblib",
     "lightgbm",
@@ -35,7 +35,7 @@ dependencies = [
     "pytrends",
     "requests",
     "scikit-learn",
-    "scipy",  # lab/gates.py, lab/momentum_screen.py
+    "scipy",  # lab/gates.py, research/stock-signals/_lib/momentum_screen.py
     "sqlalchemy",
     # Newey-West HAC t statistic for the intraday r8 study's A1 gate.
     "statsmodels",

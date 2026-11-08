@@ -103,7 +103,7 @@ src/ggTrader/
 │   ├── persist.py    # Writes paper_trades / paper_snapshots
 │   └── ...           # notifier, split_check, dividend_check
 ├── data/             # Data Loaders (Yahoo Finance, database loaders)
-├── utils/            # Shared utilities (database connections, config)
+├── utils/            # Shared utilities (database connections, config, result files, statistics helpers, study plumbing)
 └── cli/              # Main CLI entry subcommands (ggt lab | paper | db)
 ```
 
@@ -111,9 +111,10 @@ src/ggTrader/
 | Additional Files | Description |
 |---|---|
 | `data/universe/` | Historical S&P 500 membership records. |
-| `scripts/` | Script utilities for cleaning and backfilling data. |
+| `scripts/` | Operations and evidence scripts (backfills, snapshots, the engine checks), the test runner, and the study tools `study.py` and `verify_pins.py`. |
+| `research/` | One folder per study: report, registered plan, raw results, and the study's own code in its `code/` folder (tests in `code/tests/`; helpers shared by a category in `_lib/`). `research/CODEMOVED.csv` lists every file that moved here from `src/`, `scripts/` or `tests/`. |
 | `tests/lab/` | Code tests to ensure the simulator is working correctly. |
-| `tests/` | `scripts/run_tests.sh` runs the fast core (about two minutes); `scripts/run_tests.sh --full` runs everything and is the gate before a merge, a deploy or a vectorbt upgrade. |
+| `tests/` | `scripts/run_tests.sh` runs the fast core (about two minutes); `scripts/run_tests.sh --full` runs everything (the engine, the study tests and the real-tape checks) and is the gate before a merge, a deploy or a vectorbt upgrade; `scripts/run_tests.sh --studies` runs the study tests only. |
 
 ---
 
@@ -148,6 +149,6 @@ For a deeper dive, check out our detailed guides:
 MIT. See [LICENSE](LICENSE).
 
 The [event-timing audit utility](research/audits/event-timing/event-timing-audit-implementation.md)
-provides offline evidence replay and guarded read-only collection for the
+(code in `research/audits/event-timing/code/`) provides offline evidence replay and guarded read-only collection for the
 registered PEAD/insider timing study. It computes no returns; full collection
 remains blocked pending code review and an authorized contact.

@@ -1,18 +1,16 @@
 """Check that research driver scripts read and write inside the per-study research/ tree.
 
 The drivers are not run: most of them fetch data or run walk-forward optimisation on
-import of ``main``. The checks read each script's source text, and import only the two
-modules whose top level holds constants alone (``lens2_build``, ``wfo_fold_attribution``).
+import of ``main``. The checks read each script's source text. The fold-attribution driver's
+own source check lives with it in research/programme/wfo-methods/code/tests, and the Lens 2
+inventory check in research/audits/root-cause-2026-11-04/code/tests.
 """
 
 from __future__ import annotations
 
 import csv
-import importlib.util
 import re
-import sys
 from pathlib import Path
-from types import ModuleType
 
 import pytest
 
@@ -133,38 +131,3 @@ def test_default_paths_point_into_research_tree(script: str) -> None:
             assert (ROOT / path).parent.is_dir(), f"{script}: folder for {path} missing"
         else:
             assert (ROOT / path).exists(), f"{script}: {path} does not exist"
-
-
-def _load_script(name: str) -> ModuleType:
-    """Import a script whose top level only defines constants and functions."""
-    spec = importlib.util.spec_from_file_location(
-        f"_driver_{name}", _script_path(f"scripts/{name}")
-    )
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_lens2_resolves_every_inventory_artifact() -> None:
-    lens2 = _load_script("lens2_build.py")
-    inventory = lens2.load(lens2.INVENTORY_JSON)
-    listed = {r["raw_artifact"] for r in inventory if r.get("raw_artifact")}
-    for art in listed:
-        loc = lens2.ARTIFACT_LOCATIONS.get(Path(art).name, art)
-        if loc.startswith("results/"):
-            continue  # gitignored run output; absent on a fresh clone by design
-        assert (ROOT / loc).is_file(), f"{art} -> {loc} missing"
-    for key in lens2.HANDLERS:
-        if not key.startswith("results/"):
-            assert key in lens2.ARTIFACT_LOCATIONS.values(), key
-
-
-def test_fold_attribution_sources_exist() -> None:
-    attribution = _load_script("wfo_fold_attribution.py")
-    for filename, _ in attribution.RUN_SOURCES:
-        path = attribution.ARTIFACT_PATHS[filename]
-        assert Path(path).name == filename
-        assert (ROOT / path).is_file(), path
-    assert attribution.DEFAULT_OUT.parent.is_dir()

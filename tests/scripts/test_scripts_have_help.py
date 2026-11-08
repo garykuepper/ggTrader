@@ -33,16 +33,26 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 CODEMOVED = ROOT / "research/CODEMOVED.csv"
-LAB = ROOT / "src/ggTrader/lab"
+INTRADAY_OBSERVER = ROOT / "research/intraday/spy-momentum-prospective-observer/code"
+EVENT_TIMING = ROOT / "research/audits/event-timing/code"
 
 #: Thin wrappers whose parser lives in the library, keyed by repo-relative path:
 #: script -> (library file, entry function). A slice that moves a wrapper or its library updates
 #: the entry in the same commit.
 DELEGATES = {
-    "scripts/event_timing_audit.py": (LAB / "event_timing_audit.py", "main"),
-    "scripts/insider_acceptance_diagnostic.py": (LAB / "event_acceptance_diagnostic.py", "main"),
-    "scripts/intraday_observe.py": (LAB / "intraday_observer.py", "main"),
-    "scripts/intraday_observer_job.py": (LAB / "intraday_observer.py", "job_main"),
+    "research/audits/event-timing/code/run.py": (EVENT_TIMING / "event_timing_audit.py", "main"),
+    "research/audits/event-timing/code/insider_acceptance_diagnostic.py": (
+        EVENT_TIMING / "event_acceptance_diagnostic.py",
+        "main",
+    ),
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observe.py": (
+        INTRADAY_OBSERVER / "intraday_observer.py",
+        "main",
+    ),
+    "research/intraday/spy-momentum-prospective-observer/code/intraday_observer_job.py": (
+        INTRADAY_OBSERVER / "intraday_observer.py",
+        "job_main",
+    ),
 }
 
 #: Calls a module top level may make: constants, paths, regexes, loggers, sys.path set-up.
@@ -50,7 +60,8 @@ MODULE_CALLS = frozenset(
     {
         "re.compile", "Path", "Path(__file__).resolve", "sys.path.insert", "sys.path.append",
         "str", "frozenset", "set", "tuple", "dict", "any", "tempfile.gettempdir", "date",
-        "date.today", "logging.getLogger", "find_project_root", "os.environ.get", "pd.Timestamp",
+        "date.today", "datetime.date", "logging.getLogger", "find_project_root", "repo_root",
+        "os.environ.get", "pd.Timestamp", "ZoneInfo",
         "matplotlib.use", "bootstrap", "FastMCP", "FigureSpec", "OptionBlock", "Point", "WfoPolicy",
         "i.startswith", "'\\n\\n'.join", "','.join",
     }
