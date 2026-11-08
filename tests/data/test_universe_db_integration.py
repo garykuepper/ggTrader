@@ -16,12 +16,8 @@ Run (the main database is only the door to the server, hence the explicit consen
 from __future__ import annotations
 
 import gzip
-import os
 import threading
-import uuid
-from collections.abc import Iterator
 from datetime import date, datetime, timedelta, timezone
-from urllib.parse import urlparse, urlunparse
 
 import psycopg2
 import pytest
@@ -43,77 +39,15 @@ from ggTrader.data.universe_db import (
     connect,
     load_vintage,
     read_vintage,
-    to_psycopg_url,
     verify_vintage,
 )
-from ggTrader.utils.config import get_db_connection_string
+from tests.data.scratch_db import ROLES
 
 pytestmark = [pytest.mark.db, pytest.mark.integration]
 
-ROLES = ("universe_reader", "universe_loader")
 V1_AT = datetime(2026, 6, 9, tzinfo=timezone.utc)
 V2_AT = datetime(2026, 11, 7, 18, 26, 50, tzinfo=timezone.utc)
 D = date.fromisoformat
-
-
-def _server_url() -> str:
-    url = os.environ.get("GGT_TEST_DB_URL")
-    if not url:
-        pytest.skip("GGT_TEST_DB_URL is not set")
-    url = to_psycopg_url(url)
-    try:
-        production = to_psycopg_url(get_db_connection_string())
-    except ValueError:
-        production = ""
-    shared = url == production or urlparse(url).path.lstrip("/") == "ggtrader"
-    if shared and os.environ.get("GGT_TEST_DB_ALLOW_SHARED") != "1":
-        pytest.skip("GGT_TEST_DB_URL is the production database; set GGT_TEST_DB_ALLOW_SHARED=1")
-    return url
-
-
-class _Url(str):
-    """A connection string whose repr hides it, so a failing test never prints credentials."""
-
-    def __repr__(self) -> str:
-        return "<scratch database url>"
-
-
-@pytest.fixture
-def db_url() -> Iterator[str]:
-    """A fresh scratch database with the real DDL applied; dropped (with its roles) afterwards."""
-    server = _server_url()
-    name = f"ggt_test_{uuid.uuid4().hex[:12]}"
-    admin = psycopg2.connect(server)
-    admin.autocommit = True
-    with admin.cursor() as cur:
-        cur.execute("SELECT rolname FROM pg_roles WHERE rolname = ANY(%s)", (list(ROLES),))
-        roles_before = {row[0] for row in cur.fetchall()}
-        cur.execute(f'CREATE DATABASE "{name}"')
-    parts = urlparse(server)
-    scratch = urlunparse(parts._replace(path=f"/{name}"))
-    try:
-        conn = connect(scratch)
-        try:
-            apply_ddl(conn)
-        finally:
-            conn.close()
-        yield _Url(scratch)
-    finally:
-        with admin.cursor() as cur:
-            cur.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
-            for role in ROLES:
-                if role not in roles_before:
-                    cur.execute(f'DROP ROLE IF EXISTS "{role}"')
-        admin.close()
-
-
-@pytest.fixture
-def conn(db_url: str) -> Iterator[psycopg2.extensions.connection]:
-    connection = connect(db_url)
-    try:
-        yield connection
-    finally:
-        connection.close()
 
 
 def _v1_bytes() -> bytes:
