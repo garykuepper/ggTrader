@@ -7,7 +7,15 @@ from typing import Any
 
 #: Markers whose tests stay out of the FAST CORE (the developer loop). The same names are
 #: registered in pyproject.toml; tests/test_tiers.py fails if the two lists differ.
-FAST_EXCLUDED: tuple[str, ...] = ("integration", "slow", "numba", "tripwire", "study", "tooling")
+FAST_EXCLUDED: tuple[str, ...] = (
+    "integration",
+    "db",
+    "slow",
+    "numba",
+    "tripwire",
+    "study",
+    "tooling",
+)
 
 #: tier -> pytest marker expression. FULL is the merge, deploy and vectorbt-upgrade gate: it is
 #: also what a bare ``pytest`` runs (the pyproject default), so nothing is skipped by accident.

@@ -71,6 +71,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "integration: tests that hit live external services (network, DB); run with -m integration",
+    "db: needs a PostgreSQL server (a throwaway database on GGT_TEST_DB_URL); always also marked integration",
     "slow: a single test of 3 s or more, or an end-to-end test on the frozen real tape; FULL tier only",
     "numba: runs the numba engine (JIT compile cost); the default engine is rust; FULL tier only",
     "tripwire: only meaningful when a dependency pin moves; FULL tier only",
