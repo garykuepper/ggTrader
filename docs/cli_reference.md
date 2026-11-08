@@ -392,8 +392,9 @@ stops the run before any order is possible. Each message names its fix
 is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows the
 `DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
 pinned `db:<id>` or to a caller-injected `now` (replays and tests). A match belongs to one vintage:
-loading a newer vintage starts again from "never matched". With vintage 1 loaded and no match
-recorded the gate refuses today.
+loading a newer vintage starts again from "never matched". Since slice M5a the latest vintage is
+vintage 2 (loaded 2026-11-08) and it has no recorded match, so the gate refuses today; that is
+expected until `check-holdings` matches a fresh SPY file against it.
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
 
@@ -432,7 +433,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages. |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
 
 ### Examples:
 ```bash
@@ -516,6 +517,43 @@ is recorded as `fetch_failed` with `detail.reason` = `stale_source`, `holdings_a
 `max_holdings_age_days`; it is never a match, never compared, and its raw bytes are still archived.
 Override the limit with the environment variable `GGT_HOLDINGS_MAX_AGE_DAYS` (a positive whole
 number; a bad value stops the command before anything is downloaded).
+
+**Vintage 2, export and reinstate (slice M5a).**
+
+```bash
+# Vintage 2 is the fja05680 upstream download of 2026-11-07, loaded byte for byte. The historical
+# rewrites (10, above the limit of 5) make --force and --reason mandatory, by design.
+ggt db load-sp500 --from-file upstream.csv --source fja05680/sp500 \
+    --source-url 'https://raw.githubusercontent.com/fja05680/sp500/master/S%26P%20500%20Historical%20Components%20%26%20Changes%20(Updated).csv' \
+    --retrieved-at 2026-11-07T18:26:50Z --upstream-commit a2430f2af0c79ddf0748e91de11bdeb1616ab5a7 \
+    --expect-sha256 36326709d46d6cd25834de5df457b16f5f96fad3a06b9beac28f7b88aa0b0d54 \
+    --parent 1 --force --reason "..." [--commit]
+
+# Dump schema universe (schema and data) to a timestamped file; prints path, size and sha256
+ggt db membership export [--out-dir data/exports/universe]
+
+# Roll back: a NEW vintage (source 'reinstate') with the content of vintage N
+ggt db membership reinstate --load-id 1 --reason "undo the 2026-11-07 refresh" [--parent 2] [--commit]
+```
+
+`export` runs `pg_dump --schema=universe --format=custom` into `data/exports/universe/universe_<UTC
+timestamp>.dump` (the folder is git-ignored through `data/exports/`; dumps are never committed). It
+is read-only, refuses to overwrite a file, writes through a `.partial` name and renames only a
+non-empty success, and passes the password to `pg_dump` through the environment, never on the
+command line; error text is redacted. The dump holds the tables, the append-only triggers, the
+functions and the grants, but not the `btree_gist` extension: restore is `CREATE EXTENSION
+btree_gist` on the target, then `pg_restore --no-owner FILE` (the restore drill of slice M6 will
+rehearse exactly this).
+
+`reinstate` never deletes or edits anything. The new vintage has `source='reinstate'`,
+`parent_load_id` = the latest vintage, `reinstates_load_id` = N, `retrieved_at` = now and the
+reason in `note`. It copies vintage N's stored bytes and hashes, marks the parent's rows that N
+lacks as superseded by the new load, and inserts, as new rows, N's intervals that the parent
+lacks (a row superseded once can never be revived, so the intervals come back as new rows). It is
+refused (exit 2, nothing written) when the reason is empty, N does not exist or fails its own
+hash, the latest vintage already has N's content, the normalizer version differs, or `--parent`
+no longer names the latest vintage. A rollback needs no `--force`. The new vintage has no
+matched check, so the live gate refuses until `check-holdings` matches it.
 
 **Upstream check, status and diff (slice M4).**
 
