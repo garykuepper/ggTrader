@@ -19,7 +19,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent.parent
+from ggTrader.utils.study import bootstrap
+
+ROOT = bootstrap(__file__)
 #: Lens inputs (repo-relative), each at its own location in the root-cause audit folder.
 INVENTORY_JSON = "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json"
 LENS1_JSON = "research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json"

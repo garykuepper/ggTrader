@@ -17,7 +17,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Rectangle  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+from ggTrader.utils.study import bootstrap
+
+REPO_ROOT = bootstrap(__file__)
 DEFAULT_OUT_DIR = "research/audits/root-cause-2026-11-04/figures"
 
 # Source files (repo-relative, date prefix kept). Every plotted number cites one of these lines.
