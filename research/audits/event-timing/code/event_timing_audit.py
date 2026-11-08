@@ -21,8 +21,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import pandas as pd
 import pandas_market_calendars as mcal
 import psycopg2
-
-from ggTrader.data.core.index_constituents import all_members_between, load_sp500_history
 from ggTrader.lab.event_timing_sources import (
     ReferencedSources,
     SecEdgarClient,
@@ -38,6 +36,8 @@ from ggTrader.lab.event_timing_sources import (
     parse_filing_header,
     reviewed_fields,
 )
+
+from ggTrader.data.core.index_constituents import all_members_between, load_sp500_history
 
 LOG = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[3]

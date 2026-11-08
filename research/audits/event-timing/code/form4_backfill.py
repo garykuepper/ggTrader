@@ -14,15 +14,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
-from sqlalchemy import text
-
-from ggTrader.lab.data import equity_universe_between
 from ggTrader.lab.form4_data import (
     cache_filing,
     ensure_schema,
     list_form4_filings,
     load_ticker_cik_map,
 )
+from sqlalchemy import text
+
+from ggTrader.lab.data import equity_universe_between
 from ggTrader.lab.persist import get_engine
 
 EARLIEST_FILING_DATE = "2015-01-01"

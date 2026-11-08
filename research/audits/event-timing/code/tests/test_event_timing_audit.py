@@ -20,7 +20,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from ggTrader.lab.event_timing_audit import (
     AnnualA6Coverage,
     AuditClock,
@@ -1286,7 +1285,6 @@ def test_censoring_depends_only_on_window_end_and_not_missing_bars():
 
 def test_db_rejects_writes_before_connecting_and_omits_dsn(monkeypatch):
     import psycopg2
-
     from ggTrader.lab.event_timing_audit import ReadOnlyDb
 
     secret = "must-never-appear"

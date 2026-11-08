@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-
 from ggTrader.lab.earnings_surprise_data import (
     REPORT_LAG_DAYS,
     available_as_of,
@@ -103,13 +102,13 @@ class TestAvailableAsOf:
 
 @pytest.mark.integration
 def test_cache_and_load_roundtrip():
-    from sqlalchemy import text
-
     from ggTrader.lab.earnings_surprise_data import (
         cache_symbol_surprises,
         ensure_schema,
         load_earnings_surprises,
     )
+    from sqlalchemy import text
+
     from ggTrader.lab.persist import get_engine
 
     ensure_schema()

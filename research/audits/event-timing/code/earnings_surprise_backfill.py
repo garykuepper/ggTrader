@@ -14,9 +14,9 @@ import argparse
 import time
 
 import pandas as pd
+from ggTrader.lab.earnings_surprise_data import cache_symbol_surprises
 
 from ggTrader.lab.data import equity_universe_between
-from ggTrader.lab.earnings_surprise_data import cache_symbol_surprises
 
 LOOKBACK_LIMIT = 100  # yfinance quarters per symbol -- covers back to ~2002 for most
 
