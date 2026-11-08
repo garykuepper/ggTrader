@@ -269,3 +269,49 @@ def test_read_result_json_rejects_a_missing_year_freq(tmp_path: Path) -> None:
 def test_compare_ignores_the_strategy_source_hash(prov: dict) -> None:
     other = {**prov, "strategy_sha256": "a" * 64, "strategy_files": {"x.py": "b" * 64}}
     assert provenance.compare(prov, other).flag == "SAME_STACK"
+
+
+# ---- the membership list (spec 3.5, slice M3) -------------------------------------------------
+
+SHA_A, SHA_B = "a" * 64, "b" * 64
+
+
+def _with_membership(prov: dict, sha: str | None) -> dict:
+    out = copy.deepcopy(prov)
+    if sha is not None:
+        out.update(membership_sha256=sha, membership={"kind": "fixture", "fixture": "x"})
+    return out
+
+
+def test_provenance_adds_the_membership_keys_only_when_given(prov: dict) -> None:
+    assert "membership_sha256" not in prov and "membership" not in prov  # existing keys unchanged
+    given = {"membership_sha256": SHA_A, "membership": {"kind": "fixture"}}
+    block = provenance.provenance(membership=given)
+    assert block["membership_sha256"] == SHA_A and block["membership"] == {"kind": "fixture"}
+    assert set(block) - set(given) == set(prov)  # nothing else changed
+    with pytest.raises(ValueError, match="membership must hold"):
+        provenance.provenance(membership={"membership": {}})
+    with pytest.raises(ValueError, match="membership must hold"):
+        provenance.provenance(membership={"membership_sha256": SHA_A, "other": 1})
+
+
+def test_a_different_membership_list_is_flagged_not_comparable(prov: dict) -> None:
+    a, b = _with_membership(prov, SHA_A), _with_membership(prov, SHA_B)
+    c = provenance.compare(a, b)
+    assert (c.flag, c.comparable) == ("MEMBERSHIP_DIFF", False)
+    assert c.differences["membership_sha256"] == (SHA_A, SHA_B)
+    assert provenance.compare(a, _with_membership(prov, SHA_A)).comparable
+    assert provenance.FLAGS.index("MEMBERSHIP_DIFF") == provenance.FLAGS.index("TAPE_DIFF") + 1
+
+
+def test_a_missing_membership_record_is_unknown_not_a_difference(prov: dict) -> None:
+    c = provenance.compare(_with_membership(prov, SHA_A), _with_membership(prov, None))
+    assert (c.flag, c.comparable) == ("SAME_STACK", True)
+    assert "unknown" in c.note and not c.differences
+    assert provenance.compare(_with_membership(prov, None), _with_membership(prov, None)).note == ""
+
+
+def test_the_membership_detail_block_is_informational(prov: dict) -> None:
+    a, b = _with_membership(prov, SHA_A), _with_membership(prov, SHA_A)
+    b["membership"] = {"kind": "db", "load_id": 7, "verified_at": "2026-11-08T00:00:00+00:00"}
+    assert provenance.compare(a, b).flag == "SAME_STACK"
