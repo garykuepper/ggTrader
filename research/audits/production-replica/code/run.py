@@ -11,7 +11,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from ggTrader.lab.replica import ReplicaConfig, SignalPanel, build_signal_panel, run_replica
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
 from ggTrader.lab.data import eligible_at, equity_universe_between, load_ohlcv
@@ -20,8 +19,12 @@ from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.wfo.report import curve_summary
 from ggTrader.utils.fred_data import load_fred_series
 from ggTrader.utils.significance import ExcessStats, excess_stats, passes_pretax_bar, years_for_t
+from ggTrader.utils.study import bootstrap
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = bootstrap(__file__)
+
+from replica import ReplicaConfig, SignalPanel, build_signal_panel, run_replica
+
 WINDOWS = {"primary": ("2021-01-31", "2026-04-30"), "holdout": ("2010-01-31", "2020-12-31")}
 WARMUP_DAYS = 420
 SEAM_THRESHOLD = 0.40

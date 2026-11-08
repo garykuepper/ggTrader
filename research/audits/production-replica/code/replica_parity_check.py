@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from ggTrader.lab.replica import SignalPanel, build_signal_panel
 from sqlalchemy import text
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
@@ -15,8 +14,12 @@ from ggTrader.lab.data import load_ohlcv
 from ggTrader.lab.persist import get_engine
 from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
+from ggTrader.utils.study import bootstrap
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = bootstrap(__file__)
+
+from replica import SignalPanel, build_signal_panel
+
 NON_STRATEGY_REASONS = {SWEEP_TRADE_REASON, CATASTROPHE_STOP_REASON}
 
 

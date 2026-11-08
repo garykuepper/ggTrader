@@ -3,13 +3,16 @@
 import numpy as np
 import pandas as pd
 import pytest
-from ggTrader.lab.replica import REASON_DELISTED, ReplicaConfig, run_replica
+from replica import REASON_DELISTED, ReplicaConfig, run_replica
 
 from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
 from ggTrader.paper.risk import RiskConfig
+from ggTrader.utils.study import load_driver, study_dir
 
 pytestmark = pytest.mark.study
+
+CODE = study_dir(__file__) / "code"
 
 C4 = {s: [10.0] * 5 for s in ["DDD", "AAA", "CCC", "BBB"]}
 
@@ -179,7 +182,7 @@ def test_cash_interest_starts_on_first_decision_bar():
 
 
 def test_build_signal_panel_masks_non_members():
-    from ggTrader.lab.replica import build_signal_panel
+    from replica import build_signal_panel
 
     index = pd.bdate_range("2024-01-01", periods=304, tz="UTC")
     rng = np.random.default_rng(7)
@@ -201,8 +204,9 @@ def test_build_signal_panel_masks_non_members():
 
 
 def test_parity_checker_explains_catchup_and_rejects_exit_before_buy():
-    from ggTrader.lab.replica import SignalPanel
-    from scripts.replica_parity_check import explain_orders
+    from replica import SignalPanel
+
+    explain_orders = load_driver(CODE / "replica_parity_check.py").explain_orders
 
     index = pd.bdate_range("2024-01-01", periods=6, tz="UTC")
     close = pd.DataFrame(10.0, index=index, columns=["AAA", "BBB"])
@@ -228,7 +232,7 @@ def test_parity_checker_explains_catchup_and_rejects_exit_before_buy():
 
 
 def test_entry_eligibility_starts_at_first_selection_and_carries_forward():
-    from ggTrader.lab.replica import _entry_eligibility
+    from replica import _entry_eligibility
 
     index = pd.bdate_range("2024-01-01", periods=8, tz="UTC")
     plans = {index[2]: ["AAA"], index[5]: ["AAA", "BBB"]}

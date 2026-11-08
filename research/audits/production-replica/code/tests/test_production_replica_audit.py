@@ -8,9 +8,12 @@ import pandas as pd
 import pytest
 
 from ggTrader.utils.significance import ExcessStats
-from scripts import production_replica_audit as audit
+from ggTrader.utils.study import load_driver, study_dir
 
 pytestmark = pytest.mark.study
+
+CODE = study_dir(__file__) / "code"
+audit = load_driver(CODE / "run.py")
 
 
 def _results(primary_pass: bool = True, holdout_pass: bool = True) -> dict:
