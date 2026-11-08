@@ -78,6 +78,7 @@ PRE_PARSE_CALLS = frozenset(
         "logging.basicConfig", "(__doc__ or '').strip", "__doc__.splitlines", "argparse.FileType",
         "sorted", "date.today", "Path(__file__).resolve",
         "__doc__.split", "__doc__.strip", "type",
+        "add_membership_argument",
     }
 )  # fmt: skip
 

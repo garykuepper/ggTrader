@@ -113,14 +113,17 @@ def read_long(conn: Any, symbols: list[str], start: str, end: str) -> pd.DataFra
 
 
 def build_symbol_list(
-    universe: str, eval_start: str, eval_end: str, extras: Iterable[str]
+    universe: str, eval_start: str, eval_end: str, extras: Iterable[str], membership: Any = None
 ) -> list[str]:
-    """PIT universe members at any point in the eval span (yfinance-normalised) plus extras."""
+    """PIT universe members at any point in the eval span (yfinance-normalised) plus extras.
+
+    ``membership`` is the S&P 500 list source (``None``: ``GGT_MEMBERSHIP``, else an error).
+    """
     from ggTrader.lab.data import equity_universe_between
 
     es = pd.Timestamp(eval_start, tz="UTC")
     ee = pd.Timestamp(eval_end, tz="UTC")
-    members = equity_universe_between(es, ee, universe=universe)
+    members = equity_universe_between(es, ee, universe=universe, membership=membership)
     return sorted(set(members) | set(extras))
 
 
@@ -322,6 +325,11 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     p.add_argument("--out-dir", default=str(SNAPSHOT_DIR), help="snapshot directory")
     p.add_argument("--verify-sample", type=int, default=60, help="symbols re-read for the check")
     p.add_argument("--verify-only", metavar="PARQUET", help="only verify an existing file vs DB")
+    # Imported here, not at module level: legacy_reference_runs loads this file under the legacy
+    # interpreter, where ggTrader.data.membership does not exist.
+    from ggTrader.data.membership import ORACLE_SPEC, add_membership_argument
+
+    add_membership_argument(p, default=ORACLE_SPEC)
     return p.parse_args(argv)
 
 
@@ -335,8 +343,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(json.dumps(res, indent=2))
         return 0 if res["identical"] else 1
 
+    from ggTrader.data.membership import source_from_args
+
+    membership = source_from_args(args)
     extras = [s for s in args.extras.split(",") if s]
-    symbols = build_symbol_list(args.universe, args.eval_start, args.eval_end, extras)
+    symbols = build_symbol_list(args.universe, args.eval_start, args.eval_end, extras, membership)
     print(f"[snapshot] {len(symbols)} requested symbols", flush=True)
     tz_name = session_timezone(conn)
     flat = read_long(conn, symbols, args.start, args.end + " 23:59:59")
@@ -382,6 +393,8 @@ def main(argv: Optional[list[str]] = None) -> int:
         "interval": INTERVAL,
         "universe": args.universe,
         "universe_span": [args.eval_start, args.eval_end],
+        # New keys: which S&P 500 list chose the symbols (spec 3.5).
+        **membership.provenance(date.fromisoformat(args.eval_end)),
         "extras": extras,
         "db_session_timezone": tz_name,
         "collapse_daily_duplicates_rows_dropped": dropped,

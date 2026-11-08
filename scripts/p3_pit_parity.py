@@ -6,8 +6,12 @@ for four configurations, and records mismatch counts, sampled dates, build time 
 JSON. Also records the OD6/OD7 policy statistics, per-year member-day coverage and the
 constituent-file age. Read-only: the snapshot is the only input; no database, no network.
 
+The S&P 500 list comes from ``--membership`` (default ``fixture:sp500_v1_2026-06-02``) and its
+vintage is recorded under ``membership`` in the JSON (a new key; the others are unchanged).
+
 Usage:
     scripts/p3_pit_parity.py [--out PATH] [--n-random 160] [--seed 7] [--snapshot PATH]
+        [--membership SPEC]
 Exit status is 1 if any mismatch is found (the examples are in the JSON and printed).
 """
 
@@ -84,6 +88,7 @@ def run_config(
     ohlcv: pd.DataFrame,
     history: pd.DataFrame,
     dates: list,
+    membership: Any,
 ) -> dict[str, Any]:
     """Compare one config on every sampled date; collects every mismatch."""
     from ggTrader.lab.data import eligible_at
@@ -96,7 +101,7 @@ def run_config(
     total_eligible = 0
     t0 = time.perf_counter()
     for d in dates:
-        expected, _ = eligible_at(d, ohlcv.loc[:d], cfg)
+        expected, _ = eligible_at(d, ohlcv.loc[:d], cfg, membership=membership)
         got = set(mask.columns[mask.loc[d].to_numpy()])
         diff = got ^ set(expected)
         total_eligible += len(expected)
@@ -143,19 +148,28 @@ def policy_stats(bars: Any, history: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Run the parity study and write the evidence JSON."""
+def build_parser() -> argparse.ArgumentParser:
+    """The command line (imports ggTrader.data.membership, so it puts ``src`` on the path first)."""
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+    from ggTrader.data.membership import ORACLE_SPEC, add_membership_argument
+
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT / "p3_pit_parity.json")
     ap.add_argument("--n-random", type=int, default=160)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--snapshot", type=Path, default=None)
-    args = ap.parse_args(argv)
+    add_membership_argument(ap, default=ORACLE_SPEC)
+    return ap
 
-    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the parity study and write the evidence JSON."""
+    args = build_parser().parse_args(argv)
+
     from ggTrader.data.bars import load_bars
-    from ggTrader.data.core.index_constituents import load_sp500_history
+    from ggTrader.data.membership import source_from_args
 
+    membership = source_from_args(args)
     bars = load_bars(
         universe="sp500",
         universe_span=EVAL_SPAN,
@@ -164,9 +178,10 @@ def main(argv: list[str] | None = None) -> int:
         extra_symbols=EXTRAS,
         snapshot_path=args.snapshot,
         deep_verify=True,
+        membership=membership,
     )
     close = bars.close
-    history = load_sp500_history()
+    history = membership.history()
     ohlcv = pd.concat({s: close[[s]].rename(columns={s: "close"}) for s in close.columns}, axis=1)
     dates = sample_dates(close, history, args.n_random, args.seed)
     print(f"tape {close.shape}; sampled {len(dates)} dates", flush=True)
@@ -176,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         "pandas": pd.__version__,
         "numpy": np.__version__,
         "snapshot": bars.provenance["snapshot"],
+        **membership.provenance(pd.Timestamp(EVAL_SPAN[1]).date()),
         "tape_shape": list(close.shape),
         "sampled_dates": [str(d.date()) for d in dates],
         "n_sampled": len(dates),
@@ -185,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     for name, kw in CONFIGS.items():
         try:
-            result["configs"][name] = run_config(name, kw, close, ohlcv, history, dates)
+            result["configs"][name] = run_config(name, kw, close, ohlcv, history, dates, membership)
         except Exception as exc:  # keep going; the JSON records the failure
             result["configs"][name] = {"error": repr(exc)}
             print(f"{name}: ERROR {exc!r}", flush=True)

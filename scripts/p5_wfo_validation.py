@@ -7,7 +7,11 @@ JSON against the P0 reference: per-fold windows, winners, gates, anchor use, hal
 OOS equity (max absolute difference), OOS and SPY Sharpe/CAGR/max drawdown.
 
 Resumable: a run whose result JSON already has ``"ok": true`` is skipped unless ``--force``.
-Reads only the hashed Parquet snapshot; nothing touches the database or the network.
+Reads only the hashed Parquet snapshot; nothing touches the network. The S&P 500 membership list
+comes from ``--membership`` (default ``fixture:sp500_v1_2026-06-02``, the vintage the committed
+references were made on; ``db:1`` reads the same list from the database); the vintage is recorded
+in each JSON's ``provenance`` block (``membership_sha256`` and a ``membership`` block), never in
+the payload, so the guarded comparison is unaffected.
 
 History: the evidence files with the suffix ``_legacydefs`` and ``_p5_diff_*`` were produced once
 by an earlier version of this driver that could also score Sortino and CAGR with the legacy
@@ -27,10 +31,18 @@ import sys
 import tempfile
 import time
 import traceback
+from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+
+from ggTrader.data.membership import (
+    ORACLE_SPEC,
+    MembershipSource,
+    add_membership_argument,
+    source_from_args,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROGRAMME = REPO_ROOT / "research" / "programme" / "vectorbt-engine"
@@ -101,7 +113,7 @@ def _ts(value: Any) -> pd.Timestamp:
 # --------------------------------------------------------------------------- the run
 
 
-def load_run_inputs(spec: dict[str, Any]) -> dict[str, Any]:
+def load_run_inputs(spec: dict[str, Any], membership: MembershipSource) -> dict[str, Any]:
     """Bars, benchmark, PIT mask, strategy class/factory and config for a run spec (as P0)."""
     from ggTrader.data.bars import legacy_exclusive_end, load_bars
     from ggTrader.lab.strategies import REGISTRY
@@ -124,6 +136,7 @@ def load_run_inputs(spec: dict[str, Any]) -> dict[str, Any]:
             extra_symbols=["SPY"],
             start=data_start,
             end=end_bar,
+            membership=membership,
         )
     spy_close = bars.close["SPY"].dropna()
     keep = (
@@ -135,7 +148,12 @@ def load_run_inputs(spec: dict[str, Any]) -> dict[str, Any]:
     if spec["universe"] == "cross_asset":
         mask = pd.DataFrame(True, index=bars.close.index, columns=bars.close.columns)
     else:
-        mask = universe_mask(bars.close, spec["universe"], min_history_bars=cfg.min_history_bars)
+        mask = universe_mask(
+            bars.close,
+            spec["universe"],
+            min_history_bars=cfg.min_history_bars,
+            membership=membership,
+        )
     cls = REGISTRY[spec["strategy"]]
     factory: Any = cls
     if spec["strategy"] == "retail_attention":
@@ -159,6 +177,8 @@ def run_case(
     out_dir: Path,
     stem: str,
     min_losing_days: int | None = None,
+    *,
+    membership: MembershipSource,
 ) -> dict[str, Any]:
     """One walk-forward run; returns the JSON-able record (without provenance)."""
     from ggTrader.engine import config as engine_config
@@ -167,7 +187,7 @@ def run_case(
 
     t0 = time.time()
     guard = engine_config.MIN_LOSING_DAYS if min_losing_days is None else min_losing_days
-    inp = load_run_inputs(spec)
+    inp = load_run_inputs(spec, membership)
     bars, grid = inp["bars"], inp["cls"].grid
     result = run_wfo(
         spec["strategy"],
@@ -342,6 +362,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="Sortino degeneracy guard (default: engine.config.MIN_LOSING_DAYS; 0 = off)",
     )
     p.add_argument("--list", action="store_true")
+    add_membership_argument(p, default=ORACLE_SPEC)
     return p.parse_args(argv)
 
 
@@ -355,6 +376,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     from ggTrader.engine import selfcheck
     from ggTrader.engine.provenance import provenance as build_provenance
     from ggTrader.utils.results import write_result_json
+
+    membership = source_from_args(args)
 
     names = list(RUNS) if args.runs == "all" else [r for r in args.runs.split(",") if r]
     unknown = [n for n in names if n not in ALL_RUNS]
@@ -376,7 +399,15 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"[run] {stem}", flush=True)
         t0 = time.time()
         try:
-            payload = run_case(name, spec, int(args.max_gib * GIB), out, stem, args.min_losing_days)
+            payload = run_case(
+                name,
+                spec,
+                int(args.max_gib * GIB),
+                out,
+                stem,
+                args.min_losing_days,
+                membership=membership,
+            )
         except Exception as exc:  # noqa: BLE001 - recorded, the chain continues
             failures += 1
             payload = {
@@ -388,16 +419,22 @@ def main(argv: Optional[list[str]] = None) -> int:
             }
             print(f"[FAIL] {stem}: {payload['error']}", flush=True)
         tape_sha = (payload.get("tape") or {}).get("sha256")
+        # Only runs that read the S&P 500 list record it; the cross-asset basket is static.
+        used = (
+            membership.provenance(date.fromisoformat(spec["end"]))
+            if spec["universe"] == "sp500"
+            else None
+        )
         write_result_json(
             target,
             payload,
-            provenance=build_provenance(tape_sha256=tape_sha),
+            provenance=build_provenance(tape_sha256=tape_sha, membership=used),
         )
         if not payload.get("ok"):
             continue
         saved = json.loads(target.read_text())
         ref_path = REFERENCES / f"_legacy_reference_{name}.json"
-        prov = build_provenance(tape_sha256=tape_sha)
+        prov = build_provenance(tape_sha256=tape_sha, membership=used)
         if ref_path.exists():
             cmp = compare_to_reference(stem, saved, json.loads(ref_path.read_text()), out)
             write_result_json(out / f"_p5_compare_{stem}.json", cmp, provenance=prov)
