@@ -122,7 +122,7 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
     )
     status = subs.add_parser(
         "status",
-        help="Latest vintage, its coverage, verification age and what the live gate would do",
+        help="Latest vintage, last SPY match, known-through date and the live gate verdict",
     )
     status.add_argument(
         "--asof",
@@ -293,7 +293,7 @@ def _print_check(run: CheckRun) -> None:
         )
         for reason in detail.get("would_need_force", []):
             print(f"  a load would need --force: {reason}")
-        print("  nothing was loaded or changed; the verification age was NOT reset")
+        print("  nothing was loaded or changed; this informational check does NOT reset the gate")
     if run.check_id is not None:
         print(f"  recorded as universe.checks row {run.check_id}")
     if run.record_error:

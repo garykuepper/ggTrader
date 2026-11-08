@@ -6,7 +6,8 @@ validates it like the loader does, compares it with the latest vintage and appen
 to ``universe.checks``:
 
 * ``unchanged``: the upstream bytes (or, failing that, the parsed content) equal the latest
-  vintage. Only this outcome resets the verification age that the live gate reads.
+  vintage. Informational only since slice M4b: the upstream feed is dead and the live gate
+  counts from ``check-holdings`` (the SPY match), so this outcome extends no clock.
 * ``refused``: upstream differs. It is reported with the diff summary and left alone; in this
   slice nothing is ever loaded automatically (``detail.result = "differs"``).
 * ``fetch_failed``: the download was unreachable, not a CSV, truncated or invalid.
