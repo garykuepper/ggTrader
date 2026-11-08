@@ -11,11 +11,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from ggTrader.lab.replica import ReplicaConfig, SignalPanel, build_signal_panel, run_replica
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
 from ggTrader.lab.data import eligible_at, equity_universe_between, load_ohlcv
 from ggTrader.lab.persist import _sanitize
-from ggTrader.lab.replica import ReplicaConfig, SignalPanel, build_signal_panel, run_replica
 from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.wfo.report import curve_summary
 from ggTrader.utils.fred_data import load_fred_series

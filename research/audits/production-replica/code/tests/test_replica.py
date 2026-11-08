@@ -3,8 +3,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from ggTrader.lab.replica import REASON_DELISTED, ReplicaConfig, run_replica
+
 from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
 from ggTrader.paper.risk import RiskConfig
