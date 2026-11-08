@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-#: What `ggt paper` must pass: the live S&P 500 list is named at the entry point (slice M3).
-LIVE = "fixture:sp500_v1_2026-06-02"
+#: What `ggt paper` must pass: the live S&P 500 list is named at the entry point. Slice M4 moved
+#: it from the frozen vintage-1 fixture to the latest database vintage, behind the live gate.
+LIVE = "db"
 
 
 class TestPaperCLI:
@@ -66,10 +67,11 @@ class TestPaperCliFlags:
         assert result.exit_code == 0
         run.assert_called_once_with(dry_run=False, read_only=None, notify=False, membership=LIVE)
 
-    def test_the_live_membership_is_the_frozen_vintage_one_fixture(self):
+    def test_the_live_membership_is_the_latest_database_vintage_never_a_fixture(self):
         from ggTrader.paper.trader import LIVE_MEMBERSHIP_SPEC
 
-        assert LIVE_MEMBERSHIP_SPEC == LIVE
+        assert LIVE_MEMBERSHIP_SPEC == LIVE == "db"
+        assert not LIVE_MEMBERSHIP_SPEC.startswith("fixture:")
 
     def test_live_with_dry_run_flags_is_refused(self):
         for flag in ("--dry-run-writes", "--notify"):

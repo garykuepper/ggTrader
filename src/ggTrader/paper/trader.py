@@ -7,7 +7,6 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from ggTrader.data.membership import selected_source
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
@@ -36,7 +35,11 @@ from ggTrader.paper.persist import (
     save_split_correction,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
-from ggTrader.paper.signal_runner import generate_core_signals, refresh_benchmark_tape
+from ggTrader.paper.signal_runner import (
+    generate_core_signals,
+    live_membership_source,
+    refresh_benchmark_tape,
+)
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
     compute_split_corrections,
@@ -65,10 +68,10 @@ _STALE_PENDING_DAYS = 5
 _ET = ZoneInfo("America/New_York")
 _PT = ZoneInfo("America/Los_Angeles")
 
-#: The S&P 500 list `ggt paper` reads: the frozen vintage-1 file, chosen by name (slice M3). It is
-#: the same bytes the trader has always read. Moving to the database, with a freshness gate, is
-#: slice M4; until then nothing else selects a source for the live path.
-LIVE_MEMBERSHIP_SPEC = "fixture:sp500_v1_2026-06-02"
+#: The S&P 500 list `ggt paper` reads: the latest database vintage, behind the freshness gate of
+#: `ggTrader.data.membership_gate` (slice M4). If the database cannot be read, or the list is too
+#: old, the run stops with no orders; it never falls back to the frozen file.
+LIVE_MEMBERSHIP_SPEC = "db"
 
 # Signals are built from the most recent *completed* daily bar, so on a healthy
 # run `as_of` is the prior trading session, not today -- requiring today's date
@@ -593,7 +596,8 @@ class PaperTrader:
 
         try:
             blend = generate_core_signals(
-                persist_tape=not self._read_only, membership=selected_source(self._membership)
+                persist_tape=not self._read_only,
+                membership=live_membership_source(self._membership),
             )
         except SignalGateError as exc:
             # Fail closed: a failed engine self-check or sanity gate means no orders at all.
@@ -613,6 +617,9 @@ class PaperTrader:
                 len(sleeve["sells"]),
                 sleeve["as_of"],
             )
+            membership_gate = sleeve.get("membership_gate") or {}
+            if membership_gate.get("level") == "warn":
+                self._notifier.send(f"<b>⚠️ Membership list:</b> {membership_gate['message']}")
 
         # Late-run gate: a DAY order sent after the close queues to the next open, the
         # overnight-gap slippage the 12:45 schedule exists to avoid. A dry run only warns, so

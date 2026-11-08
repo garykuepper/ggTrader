@@ -3,14 +3,27 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
-from ggTrader.data.membership import MembershipSource
+from ggTrader.data.membership import (
+    MembershipError,
+    MembershipIntegrityError,
+    MembershipSource,
+    MembershipUnavailable,
+    resolve_source,
+    selected_source,
+)
+from ggTrader.data.membership_gate import (
+    CODE_CONFIG,
+    CODE_UNAVAILABLE,
+    decide_gate,
+    gate_applies,
+)
 from ggTrader.engine import selfcheck as engine_selfcheck
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.paper.gates import (
@@ -97,6 +110,39 @@ def require_rust_engine() -> dict[str, Any]:
     return result
 
 
+def live_membership_source(spec: str | None) -> MembershipSource:
+    """The S&P 500 list the live path reads, or a fail-closed ``SignalGateError``.
+
+    An unreadable database, an empty table or a vintage that fails its integrity check is
+    ``membership_unavailable``: no orders, and never a fallback to the frozen file. A missing
+    or malformed selection still raises its own ``MembershipError`` (a configuration error).
+    """
+    try:
+        return selected_source(spec)
+    except (MembershipUnavailable, MembershipIntegrityError) as exc:
+        raise SignalGateError(
+            CODE_UNAVAILABLE,
+            f"{exc}. The live trader never falls back to the frozen file. Fix: check the "
+            "database, run `ggt db membership status`, and load a vintage with "
+            "`ggt db load-sp500` if the table is empty",
+        ) from None
+
+
+def _membership_gate(source: MembershipSource, asof: date, wall_clock: bool) -> dict[str, Any]:
+    """Apply the freshness gate of spec 3.4/D8; raise ``SignalGateError`` on a refusal."""
+    if not gate_applies(source, wall_clock=wall_clock):
+        return {"applied": False, "level": "skipped"}
+    try:
+        decision = decide_gate(source.vintage(), asof)
+    except MembershipError as exc:
+        raise SignalGateError(CODE_CONFIG, str(exc)) from exc
+    if decision.level == "refuse":
+        raise SignalGateError(decision.code or CODE_UNAVAILABLE, decision.message)
+    if decision.level == "warn":
+        _log.warning("membership list warning: %s", decision.message)
+    return decision.as_dict()
+
+
 def _fetch_live_frame(
     symbols: list[str], start: pd.Timestamp, end: pd.Timestamp, persist_tape: bool
 ) -> pd.DataFrame:
@@ -145,11 +191,19 @@ def generate_signals(
         persist_tape: ``False`` keeps every fetched bar in memory only (read-only dry run).
         membership: the S&P 500 list source; the trader passes its explicit choice. ``None`` means
             the source named by ``GGT_MEMBERSHIP`` (an error if unset), never a file default.
+            A wall-clock run on the latest ``db`` vintage passes the membership gate first
+            (:mod:`ggTrader.data.membership_gate`); fixtures, pinned vintages and an injected
+            ``now`` skip it.
 
     Returns:
-        Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars.
+        Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars,
+        membership_gate (the gate's decision, or ``{"applied": False}``).
+
+    Raises:
+        SignalGateError: any gate above, including a stale or lagging membership list.
     """
     cfg = sanity or SANITY
+    wall_clock = now is None
     now = now or datetime.now(timezone.utc)
     engine_info = require_rust_engine()
 
@@ -157,7 +211,9 @@ def generate_signals(
     today_et = pd.Timestamp(now).tz_convert(_ET).date()
     start = today - pd.Timedelta(days=lookback_days)
 
-    members = universe_members_asof(universe, today, membership=membership)
+    source = resolve_source(membership)
+    gate = _membership_gate(source, today.date(), wall_clock)
+    members = universe_members_asof(universe, today, membership=source)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = _fetch_live_frame(symbols, start, today, persist_tape)
@@ -200,6 +256,7 @@ def generate_signals(
         "sells": sells,
         "as_of": str(last_bar.date()),
         "universe_size": len(bars.symbols),
+        "membership_gate": gate,
         "last_exit": last_exit,
         "engine": {k: engine_info.get(k) for k in ("engine", "vectorbt", "vectorbt_rust")},
         "bars": {
