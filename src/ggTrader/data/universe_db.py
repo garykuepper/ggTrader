@@ -16,7 +16,7 @@ import json
 import os
 import subprocess
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -64,6 +64,8 @@ LOADER_URL_ENV = "GGT_MEMBERSHIP_LOADER_URL"
 READ_STATEMENT_TIMEOUT_MS = 120_000
 #: The sources the ``loads.source`` CHECK accepts for a loader-written vintage.
 LOAD_SOURCES = ("fja05680/sp500", "fixture-import")
+#: The ``loads.source`` of a vintage written by :func:`reinstate_vintage` (never by a file load).
+REINSTATE_SOURCE = "reinstate"
 
 
 class LoadRefused(RuntimeError):
@@ -354,7 +356,7 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
                     "SELECT pg_advisory_xact_lock(hashtext('universe:' || %s))", (req.index_name,)
                 )
             latest = latest_load(cur, req.index_name)
-            _check_parent_pin(req, latest)
+            _check_parent_pin(req.parent, latest)
             to_supersede: list[int] = []
             to_insert = intervals
             if latest is not None:
@@ -391,10 +393,10 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
         conn.readonly = previous_readonly
 
 
-def _check_parent_pin(req: LoadRequest, latest: dict[str, Any] | None) -> None:
-    if req.parent is None:
+def _check_parent_pin(pin: int | str | None, latest: dict[str, Any] | None) -> None:
+    if pin is None:
         return
-    expected = None if req.parent == "none" else int(req.parent)
+    expected = None if pin == "none" else int(pin)
     actual = None if latest is None else latest["load_id"]
     if expected != actual:
         raise LoadRefused([f"the latest vintage is {actual}, but the run was pinned to {expected}"])
@@ -480,15 +482,22 @@ def _write_vintage(
     yf: dict[str, str],
     to_supersede: list[int],
     to_insert: list[Interval],
+    *,
+    raw_gzip: bytes | None = None,
+    reinstates_load_id: int | None = None,
 ) -> int:
-    """Insert the load, its bytes, snapshot dates and interval changes; return the new load id."""
+    """Insert the load, its bytes, snapshot dates and interval changes; return the new load id.
+
+    ``raw_gzip`` stores given gzip bytes as they are (a reinstated vintage copies its source's
+    blob byte for byte); by default ``req.raw`` is compressed deterministically (mtime 0).
+    """
     cur.execute(
         "INSERT INTO universe.loads (index_name, source, source_url, upstream_commit, "
         "upstream_etag, retrieved_at, raw_sha256, content_sha256, normalizer_version, "
         "coverage_start, coverage_end, n_snapshot_dates, n_intervals, n_symbols, min_members, "
-        "max_members, rows_added, rows_superseded, parent_load_id, forced, force_reason, "
-        "loader_git_sha, note) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::date, %s::date, "
-        "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING load_id",
+        "max_members, rows_added, rows_superseded, parent_load_id, reinstates_load_id, forced, "
+        "force_reason, loader_git_sha, note) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, "
+        "%s::date, %s::date, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING load_id",
         (
             req.index_name,
             req.source,
@@ -509,6 +518,7 @@ def _write_vintage(
             len(to_insert),
             len(to_supersede),
             report.parent_load_id,
+            reinstates_load_id,
             report.forced,
             req.force_reason if report.forced else None,
             req.loader_git_sha,
@@ -518,7 +528,10 @@ def _write_vintage(
     load_id: int = cur.fetchone()[0]
     cur.execute(
         "INSERT INTO universe.load_blobs (load_id, raw_gzip) VALUES (%s, %s)",
-        (load_id, psycopg2.Binary(gzip.compress(req.raw, mtime=0))),
+        (
+            load_id,
+            psycopg2.Binary(raw_gzip if raw_gzip is not None else gzip.compress(req.raw, mtime=0)),
+        ),
     )
     execute_values(
         cur,
@@ -595,6 +608,122 @@ def _insert_check(
             Json(detail) if detail is not None else None,
         ),
     )
+
+
+def reinstate_vintage(
+    conn: PgConnection,
+    *,
+    load_id: int,
+    reason: str,
+    commit: bool = False,
+    parent: int | Literal["none"] | None = None,
+    now: datetime | None = None,
+    loader_git_sha: str = "unknown",
+    index_name: str = INDEX_NAME,
+) -> LoadReport:
+    """Write a NEW vintage with the content of vintage ``load_id`` (rollback; dry run by default).
+
+    Spec section 2 and Appendix A items 3 and 4. Nothing is deleted or edited: the new vintage
+    (``source='reinstate'``, ``parent_load_id`` = the latest vintage, ``reinstates_load_id`` =
+    ``load_id``) supersedes the parent's rows that the target does not have and inserts, as new
+    rows, the target's intervals the parent lacks. It carries the target's raw bytes (the blob is
+    copied byte for byte) and its content hash, so ``export``/``verify`` treat it like the
+    original. ``retrieved_at`` is ``now``: a reinstatement is a fresh decision, not a re-fetch,
+    and the live gate counts from a SPY match against it, never from this timestamp. The reason
+    goes into ``note`` (a rollback is a human decision, so the upstream refusal rules do not
+    apply; the report still shows the historical/tail/rename split for the owner to read).
+
+    One transaction under the same advisory lock as :func:`load_vintage`; the latest vintage is
+    re-read after the lock and compared with ``parent``. Raises :class:`LoadRefused` with nothing
+    written when the reason is empty, the target is unknown or damaged, the latest vintage
+    already has the target's content, or the pin is stale.
+    """
+    if not reason.strip():
+        raise LoadRefused(["--reason is required: say why this vintage is being reinstated"])
+    instant = now or datetime.now(timezone.utc)
+    if instant.tzinfo is None:
+        raise LoadRefused(["now must be timezone-aware"])
+    conn.rollback()
+    previous_readonly = conn.readonly
+    conn.readonly = not commit
+    try:
+        with conn.cursor() as cur:
+            if commit:
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext('universe:' || %s))", (index_name,)
+                )
+            latest = latest_load(cur, index_name)
+            _check_parent_pin(parent, latest)
+            if latest is None:
+                raise LoadRefused(["nothing is loaded, so there is nothing to reinstate over"])
+            try:
+                target = read_vintage(cur, load_id, index_name)
+            except LookupError as exc:
+                raise LoadRefused([str(exc)]) from None
+            history = target.history()
+            content_hash = content_sha256(history)
+            if content_hash != target.load["content_sha256"]:
+                raise LoadRefused([f"vintage {load_id} fails its own content hash; not reinstated"])
+            if target.load["normalizer_version"] != NORMALIZER_VERSION:
+                raise LoadRefused(
+                    [
+                        f"vintage {load_id} used normalizer {target.load['normalizer_version']}, "
+                        f"this code is {NORMALIZER_VERSION}; reinstate would change symbol_yf"
+                    ]
+                )
+            if latest["content_sha256"] == content_hash:
+                raise LoadRefused(
+                    [f"the latest vintage {latest['load_id']} already has the content of {load_id}"]
+                )
+            cur.execute("SELECT raw_gzip FROM universe.load_blobs WHERE load_id = %s", (load_id,))
+            blob_row = cur.fetchone()
+            blob = None if blob_row is None else bytes(blob_row[0])
+            if blob is None or raw_sha256(gzip.decompress(blob)) != target.load["raw_sha256"]:
+                raise LoadRefused([f"vintage {load_id} has no intact stored bytes; not reinstated"])
+            req = LoadRequest(
+                raw=gzip.decompress(blob),
+                source=REINSTATE_SOURCE,
+                source_url=f"reinstate:load/{load_id}",
+                retrieved_at=instant,
+                note=f"reinstates load {load_id}: {reason.strip()}",
+                parent=parent,
+                commit=commit,
+                loader_git_sha=loader_git_sha,
+                index_name=index_name,
+            )
+            intervals = target.intervals
+            report = _new_report(req, history, intervals, target.load["raw_sha256"], content_hash)
+            parent_vintage = read_vintage(cur, latest["load_id"], index_name)
+            report.parent_load_id = latest["load_id"]
+            report.parent_coverage = (latest["coverage_start"], latest["coverage_end"])
+            to_supersede, to_insert = plan_supersession(parent_vintage.rows, intervals)
+            _fill_parent_diff(report, parent_vintage, history, intervals)
+            report.refusal_reasons = []  # informational only: a rollback needs no --force
+            report.rows_added, report.rows_superseded = len(to_insert), len(to_supersede)
+            if not commit:
+                return report
+            new_id = _write_vintage(
+                cur,
+                req,
+                report,
+                history,
+                _yf_map(history),
+                to_supersede,
+                to_insert,
+                raw_gzip=blob,
+                reinstates_load_id=load_id,
+            )
+            _verify_readback(cur, new_id, index_name, history, content_hash)
+            _insert_check(cur, req, target.load["raw_sha256"], "loaded", new_id, report)
+            conn.commit()
+            report.load_id, report.committed = new_id, True
+            return report
+    except BaseException:
+        conn.rollback()
+        raise
+    finally:
+        conn.rollback()
+        conn.readonly = previous_readonly
 
 
 def verify_vintage(

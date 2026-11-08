@@ -14,6 +14,7 @@ from ggTrader.data.membership import (
     MembershipError,
     redact,
 )
+from ggTrader.data.membership_export import EXPORT_DIR, ExportError, export_universe
 from ggTrader.data.membership_gate import decide_gate, max_verify_age_days
 from ggTrader.data.membership_holdings import HoldingsRun, PgHoldingsStore, check_holdings
 from ggTrader.data.membership_upstream import (
@@ -34,6 +35,7 @@ from ggTrader.data.universe_db import (
     git_sha,
     load_vintage,
     read_vintage,
+    reinstate_vintage,
     save_report_json,
     verify_vintage,
 )
@@ -131,6 +133,44 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         metavar="YYYY-MM-DD",
         help="Judge the live gate at this day instead of today (UTC)",
     )
+    export = subs.add_parser(
+        "export",
+        help="Dump schema universe (schema and data) to a timestamped file; prints path, sha256",
+        description=(
+            "Run pg_dump --schema=universe --format=custom into a new timestamped file and print "
+            "its path, size and sha256. A read-only operation; dump files are git-ignored and "
+            "never committed. Restore: CREATE EXTENSION btree_gist on the target, then "
+            "pg_restore."
+        ),
+    )
+    export.add_argument(
+        "--out-dir",
+        type=Path,
+        default=EXPORT_DIR,
+        help="Folder for the dump (default: data/exports/universe/)",
+    )
+    reinstate = subs.add_parser(
+        "reinstate",
+        help="Write a NEW vintage with the content of an older one (the rollback; dry run unless "
+        "--commit)",
+        description=(
+            "Create a new vintage (source 'reinstate', parent = the latest vintage) whose content "
+            "equals vintage N. Nothing is deleted or edited: the rows the parent has and N lacks "
+            "are marked superseded and N's missing intervals are inserted again as new rows. "
+            "Dry run by default; --commit writes (one transaction under the loader's advisory "
+            "lock). The new vintage has never been matched against the SPY holdings, so the "
+            "live gate refuses it until `check-holdings` matches."
+        ),
+    )
+    reinstate.add_argument("--load-id", type=int, required=True, help="The vintage to reinstate")
+    reinstate.add_argument("--reason", required=True, help="Why (stored in the new load's note)")
+    reinstate.add_argument(
+        "--parent",
+        default=None,
+        help="Pin the latest vintage seen in the dry run (an id); a different latest refuses",
+    )
+    reinstate.add_argument("--commit", action="store_true", help="Write the vintage")
+    reinstate.add_argument("--report-json", type=Path, default=None, help="Save the report")
     diff = subs.add_parser("diff", help="Compare two stored vintages (read-only)")
     diff.add_argument("--from", dest="from_id", type=int, required=True, help="Older load id")
     diff.add_argument("--to", dest="to_id", type=int, required=True, help="Newer load id")
@@ -238,6 +278,10 @@ def run_membership(args: argparse.Namespace) -> int:
         return run_status(args)
     if args.membership_command == "diff":
         return run_diff(args)
+    if args.membership_command == "export":
+        return run_export(args)
+    if args.membership_command == "reinstate":
+        return run_reinstate(args)
     path = args.against_file
     if args.against_fixture is not None:
         try:
@@ -415,6 +459,50 @@ def run_status(args: argparse.Namespace) -> int:
     print(f"  live gate would    {decision.level.upper()}")
     for reason in decision.reasons:
         print(f"    - {reason}")
+    return 0
+
+
+def run_export(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership export``; prints the dump's path, size and sha256."""
+    try:
+        result = export_universe(out_dir=args.out_dir)
+    except ExportError as exc:
+        print(f"export failed: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001 - e.g. no database configuration; never echo URLs
+        first = (str(exc).strip().splitlines() or [""])[0]
+        print(f"export failed: {type(exc).__name__}: {redact(first, None)}", file=sys.stderr)
+        return 1
+    print(f"exported schema universe to {result.path}")
+    print(f"  size    {result.size_bytes} bytes")
+    print(f"  sha256  {result.sha256}")
+    return 0
+
+
+def run_reinstate(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership reinstate --load-id N --reason ...``; dry run unless ``--commit``."""
+    conn = connect()
+    try:
+        report = reinstate_vintage(
+            conn,
+            load_id=args.load_id,
+            reason=args.reason,
+            commit=args.commit,
+            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+            loader_git_sha=git_sha(),
+        )
+    except (LoadRefused, HistoryValidationError) as exc:
+        print(f"REFUSED: {exc}", file=sys.stderr)
+        return EXIT_REFUSED
+    finally:
+        conn.close()
+    print(f"reinstating load {args.load_id} as a new vintage")
+    print_load_report(report)
+    if not report.committed:
+        print("  (dry run: add --commit to write it)")
+    if args.report_json is not None:
+        report.save(args.report_json)
+        print(f"  report saved to {args.report_json}")
     return 0
 
 
