@@ -28,7 +28,6 @@ from typing import Any
 from xml.etree import ElementTree
 
 import requests
-
 from ggTrader.lab.intraday_probe import (
     ENDPOINTS,
     MINUTE_NS,

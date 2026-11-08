@@ -24,8 +24,6 @@ from pathlib import Path
 from typing import Any
 
 import requests
-
-from ggTrader.lab import intraday_momentum as core
 from ggTrader.lab.intraday_probe import (
     RequestDeadline,
     SchemaError,
@@ -35,6 +33,8 @@ from ggTrader.lab.intraday_probe import (
     request_deadline,
     timestamp_ns,
 )
+
+from ggTrader.lab import intraday_momentum as core
 
 ATTEMPTS = 3
 REQUEST_SPACING_SECONDS = 0.65  # ~92 requests/minute, under Basic's documented 200/minute

@@ -9,9 +9,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from ggTrader.lab.intraday_probe import atomic_checkpoint, utc_bounds
 
 from ggTrader.lab import intraday_momentum as core
-from ggTrader.lab.intraday_probe import atomic_checkpoint, utc_bounds
 
 pytestmark = pytest.mark.study
 

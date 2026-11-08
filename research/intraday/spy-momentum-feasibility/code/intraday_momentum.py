@@ -42,7 +42,6 @@ import pandas_market_calendars as mcal
 import requests
 import statsmodels
 import statsmodels.api as sm
-
 from ggTrader.lab.intraday_probe import (
     NEW_YORK,
     SchemaError,

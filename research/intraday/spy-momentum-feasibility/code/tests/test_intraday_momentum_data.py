@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 import requests
+from ggTrader.lab.intraday_probe import utc_bounds
 
 from ggTrader.lab import intraday_momentum as core
 from ggTrader.lab import intraday_momentum_data as data
-from ggTrader.lab.intraday_probe import utc_bounds
 
 pytestmark = pytest.mark.study
 
