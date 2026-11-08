@@ -477,8 +477,11 @@ ggt db membership verify --load-id 1
 ggt db membership verify --load-id 1 --against-fixture sp500_v1_2026-06-02
 ```
 
-`verify` takes `--against-file PATH` (default: the committed vintage-1 file) or
-`--against-fixture NAME`, not both.
+`verify --load-id N` with no other option checks the load against its **own archived bytes** (the
+gzip in `universe.load_blobs`), so every vintage verifies with no options; the older default, the
+committed vintage-1 file, reported a false FAILED for any later load. `--against-file PATH` and
+`--against-fixture NAME` (not both) stay as explicit references. A curated vintage's stored
+evidence files are hash-checked as well.
 
 **SPY holdings match (slice M4b, spec Appendix C).**
 
@@ -555,6 +558,47 @@ hash, the latest vintage already has N's content, the normalizer version differs
 no longer names the latest vintage. A rollback needs no `--force`. The new vintage has no
 matched check, so the live gate refuses until `check-holdings` matches it.
 
+**Curated vintage 3 and the events-file loader (slice M5b).**
+
+The upstream feed stopped on 2026-08-18, so later membership is written from evidence
+(spec Appendix C1, C4). A human confirms each effective date against the S&P DJI press release,
+saves the page, records the change in an **events file** and loads it:
+
+```bash
+# Dry run (default): prints each date's adds, removes, net change and member count; writes nothing
+ggt db load-sp500 --from-events data/universe/membership/events/2026-11-08-sp500-gap-events.csv \
+    --evidence-dir PATH/TO/SAVED/PAGES --parent 2
+
+# ... then write it (one transaction under the loader's advisory lock)
+ggt db load-sp500 --from-events FILE --evidence-dir DIR --parent 2 --commit
+```
+
+Events file (CSV, header exactly `effective_date,action,ticker,announcement_date,evidence_url,evidence_sha256,note,new_ticker`):
+`action` is `add`, `remove` or `rename`. A rename row has the old symbol in `ticker` and the new one in
+`new_ticker`; membership still moves by an ordinary `remove` plus `add` pair (as in every earlier
+vintage), and the rename row only records company continuity in `universe.symbol_changes`
+(old, new, effective date, evidence). Every row needs an `evidence_url`; `evidence_sha256` is the
+sha256 of the saved page (empty = secondary evidence, only a warning). The file is immutable
+evidence once loaded and is listed in `data/universe/membership/MANIFEST.json` under `events`.
+
+The parent is the **latest** vintage (`--parent N` pins which one that must be; a different
+latest vintage refuses, as in every load). The events are applied to the parent's last snapshot
+at their effective dates and the result is written as a new vintage with `source='curated'`,
+`parent_load_id` set, no upstream commit and `source_url` pointing at the events file and the
+evidence URLs. Its raw bytes are the **full generated `date,tickers` CSV** (header, one row per
+snapshot date, same layout as vintage 2), and it has a snapshot row on every event date, even
+when one name changes. The dry run refuses (exit 2, nothing written) when an effective date is
+not after the parent's last snapshot or lies in the future; a removal has no matching present
+member; an addition is already a member; a name is added and removed on one date; a snapshot
+would leave 480..520 members; the events change nothing; a rename's new name is not a member on
+its date; a cited evidence page is not in `--evidence-dir`; or the usual loader rules trip (a
+curated load is classified like any other: tail-only needs no `--force`, `--force` is not
+accepted). The events file and the saved pages (gzip, with their sha256) go into
+`universe.load_evidence`, so the evidence is reproducible from the database alone.
+
+The member count is **not** constant: the S&P 500 had 504 names from 2026-10-01 to 2026-10-05
+(Vylor joined at its spin-off while Corteva stayed until 2026-10-06). Nothing may assume 503.
+
 **Upstream check, status and diff (slice M4).**
 
 ```bash
@@ -630,9 +674,11 @@ The only registered fixture is `sp500_v1_2026-06-02`, the existing file
 
 | `load-sp500` flag | Meaning |
 |---|---|
-| `--from-file PATH` | Required. CSV or CSV.GZ (`date,tickers`); the upstream fetch (`--from-upstream`) is not built yet. |
-| `--retrieved-at ISO` | Required. When the bytes were fetched; needs a zone (`...Z`). |
-| `--source` | `fixture-import` (default) or `fja05680/sp500`. `--source-url`, `--upstream-commit`, `--upstream-etag`, `--note` are stored with the load. |
+| `--from-file PATH` | CSV or CSV.GZ (`date,tickers`); the upstream fetch (`--from-upstream`) is not built. Exactly one of `--from-file` and `--from-events` is required. |
+| `--from-events FILE` | The curated path (slice M5b, below): an events file applied to the latest vintage. |
+| `--evidence-dir DIR` | With `--from-events`: the folder with the saved press-release pages, found by the sha256 each event cites. |
+| `--retrieved-at ISO` | Required with `--from-file` (when the bytes were fetched; needs a zone, `...Z`); `--from-events` defaults to now. |
+| `--source` | `--from-file` only: `fixture-import` (default) or `fja05680/sp500`; an events load is always `curated`. `--source-url`, `--upstream-commit`, `--upstream-etag`, `--note` are stored with the load. |
 | `--expect-sha256` | sha256 of the uncompressed bytes; the load is refused if it differs. |
 | `--parent N` / `none` | Pin the latest vintage seen in the dry run; refused if another load got in first. |
 | `--commit` | Write. Without it the run is a dry run. |
