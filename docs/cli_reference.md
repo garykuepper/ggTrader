@@ -502,11 +502,20 @@ or a count outside 480..520, means the structure is not what we expect and is `f
 the vintage; **the only outcome that advances the live gate**), `mismatch` (`detail.only_in_list`
 and `detail.only_in_holdings` are sorted ticker lists; nothing is loaded) and `fetch_failed`
 (unreachable, HTTP error, truncated, HTML or a wrong structure instead of a workbook, an as-of date
-after today or before the vintage's first snapshot; `detail.reason` says which). `detail` also holds
+after today, **more than 7 days before today** (`detail.reason` = `stale_source`) or before the
+vintage's first snapshot; `detail.reason` says which). `detail` also holds
 the as-of date and text, counts, the source URL, the response headers and the raw sha256. If the
 holdings are dated before the vintage's last change but inside its coverage, they are compared with
 the snapshot in force on their own date (a match then sets no `known_through` beyond the
 vintage's coverage end). `status` shows the last matched check, `known through` and the age.
+
+**Stale-source guard.** The 45-day freshness clock only bounds the time since the last match, so
+an old or cached holdings file would otherwise reset it. A workbook whose as-of date is more than
+`MAX_HOLDINGS_AGE_DAYS` (**7**) calendar days before the check time (exactly 7 days is accepted)
+is recorded as `fetch_failed` with `detail.reason` = `stale_source`, `holdings_age_days` and
+`max_holdings_age_days`; it is never a match, never compared, and its raw bytes are still archived.
+Override the limit with the environment variable `GGT_HOLDINGS_MAX_AGE_DAYS` (a positive whole
+number; a bad value stops the command before anything is downloaded).
 
 **Upstream check, status and diff (slice M4).**
 

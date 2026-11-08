@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-08 (membership database M5a, part 0: `check-holdings` refuses a stale holdings file)
+
+- **A holdings file more than 7 days old can no longer count as a match.** The 45-day freshness clock bounds only the time since the last match, so an old or cached SPY workbook reset it. `compare_holdings` now records `fetch_failed` with `detail.reason = "stale_source"` (and `holdings_age_days`, `max_holdings_age_days`) when the as-of date is more than `MAX_HOLDINGS_AGE_DAYS` (7) calendar days before the check time; the raw bytes are still archived and no comparison is made. Override: `GGT_HOLDINGS_MAX_AGE_DAYS` (positive whole number; a malformed value raises `HoldingsConfigError` before any download). Tests cover 6, 7 (accepted) and 8 days, a future as-of date, a stale file with a different list, the override and the recorded row. Three older tests that used 2026-08 and 2026-01 as-of dates against a 2026-11-08 "today" now pass a `today` near their as-of date, so their assertions are unchanged.
+
 ## 2026-11-08 (membership database M4b: the live gate counts from an independent SPDR SPY match, `check-holdings`)
 
 - **The live gate no longer trusts the dead upstream feed; it counts from a match against the SPDR SPY fund's published holdings (slice M4b of `docs/superpowers/specs/2026-11-07-membership-database-design.md`, Appendix C1 and C3).** The trader is off and stays off; nothing is deployed, no cron, Docker or image file is touched, and no reference number moves.

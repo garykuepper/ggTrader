@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -181,7 +181,7 @@ def test_the_comparison_uses_the_snapshot_at_the_holdings_date_not_the_latest():
     older = [t for t in base_tickers() if t != "GOOGL"] + ["OLD1"]
     data = vintage_data(history(base_tickers()))
     file = holdings_file(holdings_xlsx(older, "As of 15-Aug-2026"))
-    result = compare_holdings(file, data, today=TODAY)
+    result = compare_holdings(file, data, today=date(2026, 8, 18))  # inside the age limit
     # snapshot of 2026-06-02 is `older` apart from the last-sorted ticker swap: see history()
     assert result.detail["compared_snapshot_date"] == "2026-06-02"
     assert result.holdings_as_of == date(2026, 8, 15)
@@ -194,7 +194,7 @@ def test_holdings_older_than_the_last_change_that_match_never_move_known_through
     result = compare_holdings(
         holdings_file(holdings_xlsx(raw_list, "As of 15-Aug-2026")),
         vintage_data(history(base_tickers())),
-        today=TODAY,
+        today=date(2026, 8, 18),  # inside the age limit
     )
     assert result.outcome == "matched"
     assert result.detail["known_through"] == "2026-09-01"  # the vintage's own coverage end
@@ -204,7 +204,7 @@ def test_holdings_dated_before_the_list_begins_cannot_be_compared():
     result = compare_holdings(
         holdings_file(holdings_xlsx(base_tickers(), "As of 01-Jan-2026")),
         vintage_data(history(base_tickers())),
-        today=TODAY,
+        today=date(2026, 1, 3),  # fresh enough, so the coverage rule is the one that fires
     )
     assert (result.outcome, result.exit_code) == ("fetch_failed", 1)
     assert result.detail["reason"] == "as_of_before_coverage"
@@ -215,12 +215,70 @@ def test_holdings_dated_in_the_future_are_refused():
     result = compare(base_tickers(), base_tickers(), as_of_text="As of 09-Nov-2026")
     assert (result.outcome, result.exit_code) == ("fetch_failed", 1)
     assert result.detail["reason"] == "as_of_in_future" and result.matched_load_id is None
+    assert result.raw is not None and "holdings_age_days" not in result.detail
     today = compare_holdings(
         holdings_file(holdings_xlsx(base_tickers(), "As of 08-Nov-2026")),
         vintage_data(history(base_tickers())),
         today=TODAY,
     )
     assert today.outcome == "matched"  # dated today is fine
+
+
+@pytest.mark.parametrize(
+    ("as_of_text", "age", "outcome"),
+    [
+        ("As of 02-Nov-2026", 6, "matched"),
+        ("As of 01-Nov-2026", 7, "matched"),  # exactly at the limit is still accepted
+        ("As of 31-Oct-2026", 8, "fetch_failed"),
+    ],
+)
+def test_a_holdings_file_older_than_the_limit_is_a_stale_source(as_of_text, age, outcome):
+    result = compare(base_tickers(), base_tickers(), as_of_text=as_of_text)
+    assert result.outcome == outcome
+    assert result.detail["holdings_age_days"] == age and result.detail["max_holdings_age_days"] == 7
+    if outcome == "fetch_failed":
+        assert result.detail["reason"] == "stale_source" and result.exit_code == 1
+        assert result.matched_load_id is None and "known_through" not in result.detail
+        assert result.holdings_as_of == TODAY - timedelta(days=age)
+        assert result.raw is not None
+        assert result.raw_sha256 == hashlib.sha256(result.raw).hexdigest()
+    else:
+        assert result.matched_load_id is not None and result.exit_code == 0
+
+
+def test_a_stale_file_with_a_different_list_is_still_only_a_stale_source():
+    result = compare(base_tickers()[:-1], base_tickers(), as_of_text="As of 20-Oct-2026")
+    assert result.outcome == "fetch_failed" and result.detail["reason"] == "stale_source"
+    assert "only_in_list" not in result.detail  # no comparison was made
+
+
+def test_the_age_limit_can_be_overridden_by_the_environment(monkeypatch):
+    assert mh.max_holdings_age_days({}) == mh.MAX_HOLDINGS_AGE_DAYS == 7
+    assert mh.max_holdings_age_days({mh.HOLDINGS_AGE_ENV: "30"}) == 30
+    assert mh.HOLDINGS_AGE_ENV == "GGT_HOLDINGS_MAX_AGE_DAYS"
+    monkeypatch.setenv(mh.HOLDINGS_AGE_ENV, "30")
+    result = compare(base_tickers(), base_tickers(), as_of_text="As of 20-Oct-2026")  # 19 days
+    assert result.outcome == "matched" and result.detail["max_holdings_age_days"] == 30
+
+
+@pytest.mark.parametrize("bad", ["0", "-3", "seven", "1.5"])
+def test_a_malformed_age_override_is_refused_before_any_download(monkeypatch, bad):
+    monkeypatch.setenv(mh.HOLDINGS_AGE_ENV, bad)
+
+    def fetch():
+        raise AssertionError("must not download with a malformed override")
+
+    with pytest.raises(mh.HoldingsConfigError, match=mh.HOLDINGS_AGE_ENV):
+        check_holdings(FakeStore(), fetch=fetch, today=lambda: TODAY)
+
+
+def test_a_stale_file_is_recorded_as_fetch_failed_and_its_bytes_are_archived():
+    raw = holdings_xlsx(base_tickers(), "As of 25-Oct-2026")
+    store = FakeStore()
+    run_ = check_holdings(store, fetch=lambda: holdings_file(raw), today=lambda: TODAY)
+    assert run_.result.outcome == "fetch_failed" and run_.check_id is not None
+    (recorded,) = store.recorded
+    assert recorded.raw == raw and recorded.detail["reason"] == "stale_source"
 
 
 def test_no_vintage_loaded_is_a_mismatch_that_says_so():

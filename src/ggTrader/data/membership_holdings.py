@@ -18,7 +18,8 @@ workbook of the SPDR S&P 500 ETF (SPY), a public file that carries its own "As o
    * ``mismatch``: they differ; the lists of tickers only in our list and only in the holdings are
      in ``detail``. Nothing is loaded or changed.
    * ``fetch_failed``: no usable answer (unreachable, HTTP error, truncated, HTML instead of a
-     workbook, wrong structure, an as-of date in the future or before our coverage).
+     workbook, wrong structure, an as-of date in the future, more than
+     :data:`MAX_HOLDINGS_AGE_DAYS` days old (``stale_source``) or before our coverage).
 
 It never touches ``universe.loads``, ``universe.membership`` or ``universe.snapshot_dates``.
 The network call (:func:`fetch_holdings`, ``get`` injectable) and the database (a
@@ -30,10 +31,11 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Protocol
 
 import requests
@@ -63,6 +65,12 @@ USER_AGENT = (
 TIMEOUT_SECONDS = 60
 #: A real workbook is about 100 kB; anything over this is refused rather than stored.
 MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024
+#: Oldest holdings file a check accepts, in calendar days before the check time. The 45-day
+#: freshness clock only bounds the time since the last match, so without this bound an old or
+#: cached file would still count as a match and reset that clock.
+MAX_HOLDINGS_AGE_DAYS = 7
+#: Environment variable that overrides :data:`MAX_HOLDINGS_AGE_DAYS` (a positive whole number).
+HOLDINGS_AGE_ENV = "GGT_HOLDINGS_MAX_AGE_DAYS"
 #: Outcomes this module writes to ``universe.checks.outcome`` (the CHECK list allows them).
 OUTCOME_MATCHED = "matched"
 OUTCOME_MISMATCH = "mismatch"
@@ -87,6 +95,27 @@ _MONTHS = {
 }  # fmt: skip
 
 GetFn = Callable[..., Any]
+
+
+class HoldingsConfigError(ValueError):
+    """The holdings-age override is not a positive whole number; the check refuses to guess."""
+
+
+def max_holdings_age_days(environ: Mapping[str, str] | None = None) -> int:
+    """The holdings-age limit in force: the environment override, else the constant."""
+    text = (os.environ if environ is None else environ).get(HOLDINGS_AGE_ENV)
+    if text is None or text == "":
+        return MAX_HOLDINGS_AGE_DAYS
+    try:
+        value = int(text)
+    except ValueError:
+        value = 0
+    if value < 1:
+        raise HoldingsConfigError(
+            f"{HOLDINGS_AGE_ENV}={text!r} is not a positive whole number of days; "
+            f"unset it to use the default of {MAX_HOLDINGS_AGE_DAYS}"
+        )
+    return value
 
 
 class HoldingsFetchError(RuntimeError):
@@ -336,14 +365,21 @@ def failed_holdings(
 
 
 def compare_holdings(
-    file: HoldingsFile, latest: VintageData | None, *, today: date
+    file: HoldingsFile,
+    latest: VintageData | None,
+    *,
+    today: date,
+    max_age_days: int | None = None,
 ) -> HoldingsResult:
     """Compare the workbook with the latest vintage on the holdings' as-of date; pure.
 
-    Order of judgement: unreadable workbook -> ``fetch_failed``; as-of date after ``today`` or
-    before the vintage's first snapshot -> ``fetch_failed`` (no honest comparison exists); no
-    vintage loaded or a different set -> ``mismatch``; equal sets -> ``matched``.
+    Order of judgement: unreadable workbook -> ``fetch_failed``; as-of date after ``today``,
+    more than ``max_age_days`` (default :func:`max_holdings_age_days`) before it
+    (``stale_source``) or before the vintage's first snapshot -> ``fetch_failed`` (no honest
+    comparison exists, and none of these counts as a match); no vintage loaded or a different
+    set -> ``mismatch``; equal sets -> ``matched``. The raw bytes are kept in every case.
     """
+    limit = max_holdings_age_days() if max_age_days is None else max_age_days
     raw_hash = raw_sha256(file.raw)
     try:
         holdings = parse_holdings(file.raw)
@@ -363,6 +399,16 @@ def compare_holdings(
         error = HoldingsFetchError(
             "as_of_in_future",
             f"holdings are dated {holdings.as_of}, after today ({today})",
+            file.raw,
+        )
+        return failed_holdings(error, holdings_as_of=holdings.as_of, extra=detail)
+    age_days = (today - holdings.as_of).days
+    detail.update(holdings_age_days=age_days, max_holdings_age_days=limit)
+    if holdings.as_of < today - timedelta(days=limit):
+        error = HoldingsFetchError(
+            "stale_source",
+            f"holdings are dated {holdings.as_of}, {age_days} days before {today} "
+            f"(limit {limit}); an old or cached file cannot count as a match",
             file.raw,
         )
         return failed_holdings(error, holdings_as_of=holdings.as_of, extra=detail)
@@ -490,14 +536,16 @@ def check_holdings(
 
     Never raises for a bad download: that is recorded as ``fetch_failed``. If the row itself
     cannot be written the result is still returned with ``record_error`` set (the live gate then
-    simply does not see a fresh match). Reading the latest vintage may raise (database down).
+    simply does not see a fresh match). Reading the latest vintage may raise (database down), and
+    so does a malformed ``GGT_HOLDINGS_MAX_AGE_DAYS`` (before anything is downloaded).
     """
+    limit = max_holdings_age_days()
     try:
         file = fetch()
     except HoldingsFetchError as exc:
         result = failed_holdings(exc)
     else:
-        result = compare_holdings(file, store.latest(index_name), today=today())
+        result = compare_holdings(file, store.latest(index_name), today=today(), max_age_days=limit)
     try:
         check_id = store.record(index_name, result)
     except Exception as exc:  # noqa: BLE001 - report, do not hide the comparison
