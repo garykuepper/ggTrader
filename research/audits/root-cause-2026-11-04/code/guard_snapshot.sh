@@ -12,8 +12,8 @@
 # raise a false alarm.
 #
 # Usage:
-#   scripts/guard_snapshot.sh [<outfile>]   write to <outfile> (default: stdout)
-#   scripts/guard_snapshot.sh --help
+#   research/audits/root-cause-2026-11-04/code/guard_snapshot.sh [<outfile>]   write to <outfile> (default: stdout)
+#   research/audits/root-cause-2026-11-04/code/guard_snapshot.sh --help
 set -euo pipefail
 
 REPO="/home/flynn/ggTrader"
@@ -24,7 +24,7 @@ TIMER_SUFFIXES=(recover inputs decide archive)
 
 usage() {
     cat <<EOF
-Usage: scripts/guard_snapshot.sh [--help] [<outfile>]
+Usage: research/audits/root-cause-2026-11-04/code/guard_snapshot.sh [--help] [<outfile>]
 
 Write a deterministic, read-only snapshot of off-limits state to <outfile>
 (or stdout if omitted):

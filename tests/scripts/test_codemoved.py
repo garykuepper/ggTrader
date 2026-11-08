@@ -57,7 +57,6 @@ SWEEP_SPECS = (
 SWEEP_EXEMPT = frozenset(
     {
         "src/ggTrader/paper/trader.py",
-        "scripts/lens2_build.py",
         "research/audits/root-cause-2026-11-04/code/lens2_build.py",
         "tests/scripts/test_driver_default_paths.py",
     }
