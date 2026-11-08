@@ -14,6 +14,11 @@ from ggTrader.data.membership import (
     MembershipError,
     redact,
 )
+from ggTrader.data.membership_events import (
+    EventsFileError,
+    PreparedEventsLoad,
+    prepare_events_load,
+)
 from ggTrader.data.membership_export import EXPORT_DIR, ExportError, export_universe
 from ggTrader.data.membership_gate import decide_gate, max_verify_age_days
 from ggTrader.data.membership_holdings import HoldingsRun, PgHoldingsStore, check_holdings
@@ -25,7 +30,7 @@ from ggTrader.data.membership_upstream import (
 )
 from ggTrader.data.universe_algebra import HistoryValidationError
 from ggTrader.data.universe_db import (
-    LOAD_SOURCES,
+    FILE_SOURCES,
     LoadRefused,
     LoadReport,
     LoadRequest,
@@ -63,20 +68,38 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         "load-sp500",
         help="Load an S&P 500 membership file as the next vintage (dry run unless --commit)",
         description=(
-            "Validate a date,tickers file and store it as a new vintage in schema universe. "
-            "Dry run by default: prints the diff against the latest vintage. --commit writes."
+            "Validate a date,tickers file (--from-file) or an events file (--from-events) and "
+            "store the result as a new vintage in schema universe. Dry run by default: prints "
+            "the diff against the latest vintage. --commit writes. An events file is applied "
+            "to the latest vintage's last snapshot at its effective dates and stored as a "
+            "'curated' vintage together with the events file and the saved evidence pages."
         ),
     )
-    load.add_argument(
-        "--from-file", type=Path, required=True, help="CSV or CSV.GZ (upstream fetch is not built)"
+    source = load.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--from-file", type=Path, help="CSV or CSV.GZ (upstream fetch is not built)"
     )
-    load.add_argument("--source", choices=LOAD_SOURCES, default="fixture-import")
+    source.add_argument(
+        "--from-events",
+        type=Path,
+        help="Events file (effective_date,action,ticker,announcement_date,evidence_url,"
+        "evidence_sha256,note,new_ticker): the curated path",
+    )
+    load.add_argument(
+        "--evidence-dir",
+        type=Path,
+        default=None,
+        help="--from-events: folder with the saved evidence pages (found by the sha256 each "
+        "event cites); stored gzipped in universe.load_evidence",
+    )
+    load.add_argument("--source", choices=FILE_SOURCES, default=None, help="--from-file only")
     load.add_argument("--source-url", default=None, help="Where the bytes came from")
     load.add_argument(
         "--retrieved-at",
         type=_parse_instant,
-        required=True,
-        help="ISO instant with a zone, e.g. 2026-06-09T00:00:00Z",
+        default=None,
+        help="ISO instant with a zone, e.g. 2026-06-09T00:00:00Z (required with --from-file; "
+        "--from-events defaults to now)",
     )
     load.add_argument("--upstream-commit", default=None, help="40-hex upstream git commit")
     load.add_argument("--upstream-etag", default=None)
@@ -211,6 +234,8 @@ def print_load_report(report: LoadReport) -> None:
     print(f"  intervals          {report.n_intervals} ({report.n_symbols} symbols)")
     print(f"  members per date   {report.min_members} .. {report.max_members}")
     print(f"  rows added/superseded  {report.rows_added} / {report.rows_superseded}")
+    if report.n_evidence or report.n_symbol_changes:
+        print(f"  evidence files / symbol changes  {report.n_evidence} / {report.n_symbol_changes}")
     print(f"  raw sha256         {report.raw_sha256}")
     print(f"  content sha256     {report.content_sha256}")
     if report.parent_load_id is not None:
@@ -225,11 +250,85 @@ def print_load_report(report: LoadReport) -> None:
         print(f"  needs --force: {reason}")
 
 
+def _print_events_plan(prepared: PreparedEventsLoad) -> None:
+    """Print the dry-run table of an events load: each date's changes and member count."""
+    plan = prepared.plan
+    print(f"events applied to parent load {prepared.parent_load_id}")
+    if plan.parent_last_day is not None:
+        print(f"  {plan.parent_last_day}  parent's last snapshot: {plan.parent_members} members")
+    print("  date        adds   removes   net  members")
+    for change in plan.days:
+        print(
+            f"  {change.day}  +{len(change.adds):<3}  -{len(change.removes):<3}  "
+            f"{change.net:+d}  {change.members:>5}   "
+            f"+[{' '.join(change.adds)}] -[{' '.join(change.removes)}]"
+        )
+    for item in plan.symbol_changes:
+        print(
+            f"  symbol change {item.old_symbol} -> {item.new_symbol} "
+            f"effective {item.effective_date}"
+        )
+    stored = [f"{item.name} ({item.kind})" for item in prepared.request.evidence]
+    print(f"  evidence stored with the vintage: {stored}")
+    for warning in prepared.warnings:
+        print(f"  warning: {warning}")
+
+
+def run_load_from_events(args: argparse.Namespace) -> int:
+    """Run ``ggt db load-sp500 --from-events``: print the table, refuse on any problem."""
+    if args.source is not None or args.upstream_commit or args.upstream_etag:
+        print(
+            "REFUSED: --source/--upstream-* belong to --from-file; a curated vintage has none",
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
+    if args.force:
+        print("REFUSED: --force does not apply to an events file", file=sys.stderr)
+        return EXIT_REFUSED
+    conn = connect()
+    try:
+        prepared = prepare_events_load(
+            conn,
+            events_path=args.from_events,
+            evidence_dir=args.evidence_dir,
+            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+            retrieved_at=args.retrieved_at,
+            commit=args.commit,
+            loader_git_sha=git_sha(),
+            note=args.note,
+            source_url=args.source_url,
+            expect_sha256=args.expect_sha256,
+        )
+        _print_events_plan(prepared)
+        if prepared.problems:
+            for problem in prepared.problems:
+                print(f"REFUSED: {problem}", file=sys.stderr)
+            return EXIT_REFUSED
+        report = load_vintage(conn, prepared.request)
+    except (LoadRefused, HistoryValidationError, EventsFileError) as exc:
+        print(f"REFUSED: {exc}", file=sys.stderr)
+        return EXIT_REFUSED
+    finally:
+        conn.close()
+    print_load_report(report)
+    if not report.committed:
+        print("  (dry run: add --commit to write it)")
+    if args.report_json is not None:
+        report.save(args.report_json)
+        print(f"  report saved to {args.report_json}")
+    return 0
+
+
 def run_load_sp500(args: argparse.Namespace) -> int:
     """Run ``ggt db load-sp500``; returns the process exit code."""
+    if args.from_events is not None:
+        return run_load_from_events(args)
+    if args.retrieved_at is None:
+        print("REFUSED: --from-file needs --retrieved-at", file=sys.stderr)
+        return EXIT_REFUSED
     request = LoadRequest(
         raw=_read_input(args.from_file),
-        source=args.source,
+        source=args.source or "fixture-import",
         source_url=args.source_url or f"file:{args.from_file}",
         retrieved_at=args.retrieved_at,
         upstream_commit=args.upstream_commit,
