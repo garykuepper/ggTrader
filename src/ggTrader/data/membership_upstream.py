@@ -54,6 +54,8 @@ RAW_BASE = f"https://raw.githubusercontent.com/{UPSTREAM_REPO}"
 TIMEOUT_SECONDS = 60
 #: A real history file is a few MB; anything over this is refused rather than stored.
 MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
+#: The commits API reply (one commit asked for) is a few kB; anything over this is refused.
+MAX_COMMITS_BYTES = 1024 * 1024
 #: Content types a CSV may legitimately arrive as (GitHub raw serves ``text/plain``).
 ACCEPTED_CONTENT_TYPES = ("text/plain", "text/csv")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -143,6 +145,7 @@ def _latest_commit(get: GetFn) -> str:
             COMMITS_URL,
             params={"path": UPSTREAM_PATH, "per_page": 1},
             timeout=TIMEOUT_SECONDS,
+            stream=True,
             headers={"Accept": "application/vnd.github+json"},
         )
     except requests.RequestException as exc:
@@ -152,7 +155,13 @@ def _latest_commit(get: GetFn) -> str:
             "http_status", f"the commits API answered HTTP {response.status_code}"
         )
     try:
-        commit = response.json()[0]["sha"]
+        body = read_capped(response, MAX_COMMITS_BYTES)
+    except DownloadTooLarge as exc:
+        raise UpstreamFetchError("too_large", f"the commits API reply is refused: {exc}") from None
+    except requests.RequestException as exc:
+        raise UpstreamFetchError("unreachable", f"the commits reply broke off: {exc}") from None
+    try:
+        commit = json.loads(body)[0]["sha"]
     except (ValueError, LookupError, TypeError):
         raise UpstreamFetchError("invalid", "the commits API reply has no commit sha") from None
     if not isinstance(commit, str) or not _COMMIT.match(commit):

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -63,6 +64,8 @@ class FakeResponse:
         payload: Any = None,
     ) -> None:
         self.status_code = status
+        if payload is not None and not body:
+            body = json.dumps(payload).encode()  # what a JSON reply looks like on the wire
         self.content = body
         self.headers = {k.lower(): v for k, v in (headers or {}).items()}
         self._payload = payload
@@ -204,6 +207,27 @@ def test_an_oversized_upstream_body_is_refused_while_streaming():
         fetch_upstream(get=FakeGet(big), now=lambda: NOW)
     assert caught.value.reason == "too_large"
     assert big.served <= up.MAX_DOWNLOAD_BYTES + 65536 and big.closed
+
+
+def test_an_oversized_commits_reply_is_refused_while_streaming():
+    huge = FakeResponse(200, b"[" + b" " * (up.MAX_COMMITS_BYTES + 5 * 65536) + b"]", {})
+    get = FakeGet(good(csv_bytes(synthetic_history())), commits=huge)
+    with pytest.raises(UpstreamFetchError) as caught:
+        fetch_upstream(get=get, now=lambda: NOW)
+    assert caught.value.reason == "too_large"
+    assert huge.served <= up.MAX_COMMITS_BYTES + 65536 and huge.closed
+
+
+def test_the_commits_request_streams(monkeypatch):
+    seen = {}
+
+    class Spy(FakeGet):
+        def __call__(self, url, **kw):
+            seen.setdefault(url, kw)
+            return super().__call__(url, **kw)
+
+    fetch_upstream(get=Spy(good(csv_bytes(synthetic_history()))), now=lambda: NOW)
+    assert seen[up.COMMITS_URL]["stream"] is True
 
 
 # --------------------------------------------------------------------------- compare
