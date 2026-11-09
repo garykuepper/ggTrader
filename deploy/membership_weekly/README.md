@@ -1,19 +1,26 @@
 # Weekly S&P 500 membership job: install and run book
 
-**Status: TEMPLATES ONLY. The timer is NOT installed and NOT enabled.** It may be enabled only
-after (1) three manual dry runs matched expectations, (2) the `DryRunNotifier` tests pass,
-(3) the restore drill passed, and (4) the owner says go. Nothing here has been deployed.
+**Status: ENABLED on 2026-11-09 by the owner's go** (three clean dry runs, the `DryRunNotifier` tests
+and the restore drill had passed). It runs as the user unit `ggtrader-membership-weekly.timer`
+(Saturday 06:00 Pacific), installed in `~/.config/systemd/user/` from these templates with the
+**host-virtualenv** `ExecStart` (`/home/flynn/ggTrader/.venv/bin/python -u ggt.py db membership
+weekly --notify`) because the `ggtrader_live` image has not been updated and the live trader is
+not to be redeployed for this. The files in this folder stay templates.
 
 ## What the job does (spec Appendix C1)
 
 `ggt db membership weekly` once a week:
 
 1. fetches and archives the raw bytes of the SPDR SPY holdings workbook, the Wikipedia change
-   ledger and current list (MediaWiki API, descriptive User-Agent) and the two chinobing CSVs
-   (`universe.check_blobs` for SPY, `universe.source_snapshots` for the rest; about 7 requests);
+   ledger and current list (MediaWiki API, descriptive User-Agent), the two chinobing CSVs, the
+   S&P Dow Jones Indices news page on PR Newswire and each S&P 500 press release of the last 75
+   days (at most 8; the official source: a release's table gives the effective date of every S&P 500
+   addition and deletion). `universe.check_blobs` holds SPY and `universe.source_snapshots` the
+   rest (about 8 requests, up to 17 when releases are recent);
 2. matches the latest vintage against SPY on the holdings' own date. A match writes a `matched`
    row in `universe.checks`: this is what keeps the live trader's membership gate open;
-3. compares the other sources with our list (disagreements are warnings only);
+3. compares the other sources with our list (disagreements are warnings only; a press release that
+   announces an already-effective change our list lacks is the `press_change_not_in_list` warning);
 4. on any refusal builds a **proposed events file**, keeps its exact bytes in the database
    (`universe.source_snapshots`, source `proposal`), also tries to write a copy under
    `data/exports/membership_proposals/` (git-ignored) and tells you what to check.

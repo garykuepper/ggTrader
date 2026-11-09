@@ -188,7 +188,7 @@ differs from the earlier sections). Commands and flags: [CLI Reference](cli_refe
 **Data flow**
 
 ```
-public sources (SPY holdings, Wikipedia, chinobing CSVs)
+public sources (SPY holdings, Wikipedia, chinobing CSVs, S&P DJI press releases)
         |  weekly job, check-holdings
         v
  universe.checks / check_blobs / source_snapshots   (comparisons and archived bytes; never the list)

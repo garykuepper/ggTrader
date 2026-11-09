@@ -43,7 +43,7 @@ from ggTrader.utils.http_cap import DownloadTooLarge, read_capped
 #: Identifies the job to the servers (Wikimedia asks for a descriptive agent with a contact).
 USER_AGENT = (
     "ggTrader-membership-check/1.0 (https://github.com/garykuepper/ggTrader; "
-    "weekly personal research job, about 8 requests per run)"
+    "weekly personal research job, up to 17 requests per run)"
 )
 #: Seconds to wait for each request.
 TIMEOUT_SECONDS = 60

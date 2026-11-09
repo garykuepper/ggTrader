@@ -527,10 +527,13 @@ ggt db membership weekly --notify    # the same, and sends the one message throu
 # exit 0 clean (or warnings only), 2 a refusal or a proposal (a human acts), 1 the job failed
 ```
 
-One run makes about 7 requests: the SPY workbook, the Wikipedia change ledger ("Historical
+One run makes about 8 requests (up to 17 when the press page lists recent S&P 500 releases): the SPY workbook, the Wikipedia change ledger ("Historical
 components of the S&P 500") and current list through the MediaWiki API (`action=parse`,
 `prop=wikitext`, `maxlag`, a descriptive User-Agent), one MediaWiki query for both pages' last-edit
-times, the two chinobing CSVs on GitHub and the repository's newest commit. Each fetch is
+times, the two chinobing CSVs on GitHub, the repository's newest commit, and the S&P Dow Jones
+Indices news page on PR Newswire plus each S&P 500 release of the last 75 days (at most 8; the
+official source: each release's table gives the effective date of every S&P 500 addition and
+deletion). Each fetch is
 independent: one failing source is recorded and alerted, never fatal to the others. The raw bytes
 of every source are archived (gzip + sha256) in the new append-only `universe.source_snapshots`
 (one row per source per run, tied to the run's `universe.checks` row; the SPY workbook stays in
@@ -541,7 +544,11 @@ of every source are archived (gzip + sha256) in the new append-only `universe.so
 * **Match with SPY** exactly as `check-holdings` (including the 7-day staleness guard). A match is
   recorded as `matched` and extends the live gate's clock and `known_through`; it is recorded even
   when a side source raised an alert, because it only says "our list equals SPY on that date".
-* **Warnings only:** the Wikipedia current list or chinobing's newest snapshot differing from our list.
+* **Warnings only:** the Wikipedia current list or chinobing's newest snapshot differing from our list;
+  an S&P DJI release announcing an S&P 500 change that is already effective but that our list does
+  not show (`press_change_not_in_list`); the press page or a release being unreachable or changed
+  (`press_unavailable`, `press_structure`). The press source never refuses and has no staleness
+  clock (releases are irregular), and a failure never stops the SPY `matched` row from being recorded.
 * **Refuse and alert:** our list differs from SPY, or the SPY file is unusable or stale; a ledger
   row dated after what is already attested is in the future or equals its announcement date
   (taken from the row's refs); a removal with no matching addition would leave 480..520 members;
@@ -555,10 +562,12 @@ of every source are archived (gzip + sha256) in the new append-only `universe.so
   (git-ignored, never overwritten; the container that ran the unit may not keep it). Rebuild the file
   with `ggt db membership proposal --id N --out FILE` (read-only on the database, refuses to
   overwrite FILE, exit 0 written, 1 not found), the command the message names. The columns of `ggt db load-sp500 --from-events` plus `date_source` (`ledger`,
-  `ledger+chinobing`, `chinobing`, `none`) and `needs_confirmation`. Candidates are the set difference
+  `ledger+chinobing`, `chinobing`, `press`, `ledger+press`, `chinobing+press`,
+  `ledger+chinobing+press`, `none`) and `needs_confirmation`. Candidates are the set difference
   with SPY, each with the best effective date from the ledger and chinobing rows after the attested
-  date; `Y` unless the two sources give the same date, it is not in the future and the ledger row is
-  not announcement-dated. A removal and an addition that only chinobing shows together are also
+  date. The official S&P DJI release date wins when there is one. `Y` unless two sources give the same
+  date (the release plus the ledger or chinobing, else the ledger plus chinobing), it is not in the
+  future and the ledger row is not announcement-dated. A removal and an addition that only chinobing shows together are also
   proposed as a `rename`. `evidence_url` and `evidence_sha256` are blank. The loader refuses a file
   with a blank `evidence_url` or any `needs_confirmation` other than `N`/blank, so a proposal cannot be
   loaded unreviewed. The message lists the rows, what to check and the exact `proposal` command and

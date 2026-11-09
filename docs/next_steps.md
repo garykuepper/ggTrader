@@ -56,11 +56,12 @@ run reads only the latest database vintage. See the
 
 Open, each owner-gated or unverified:
 
-1. The weekly job (`ggt db membership weekly`) is built, with systemd templates in
-   `deploy/membership_weekly/`, but its timer is not installed or enabled. Enabling it
-   requires three clean manual dry runs, a restore drill and the owner's go.
-2. A second free source of index changes is not yet chosen. Until then a human confirms
-   effective dates against the S&P DJI press release before any `load-sp500 --commit`.
+1. The weekly job (`ggt db membership weekly`) is ENABLED (owner's go, 2026-11-09): user timer
+   `ggtrader-membership-weekly.timer`, Saturdays 06:00 Pacific, host-virtualenv variant (the
+   `ggtrader_live` image is untouched). First live run sent its heartbeat on 2026-11-09.
+2. The second free source is the S&P DJI press releases themselves (PR Newswire), the official
+   dates. A proposal now carries the release date and clears a row's flag when it agrees with
+   another source; a human still saves the release page as evidence before any `load-sp500 --commit`.
 3. The spec's open checks (Appendix C6) remain: any index change in the gap beyond the
    four reviewed, the exact effective dates of two 2026 renames, and whether the price
    table holds old bars under the reused ticker `P`.
