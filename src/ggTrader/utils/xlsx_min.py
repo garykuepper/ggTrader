@@ -20,6 +20,11 @@ from xml.etree import ElementTree
 MAX_PART_BYTES = 50 * 1024 * 1024
 #: Rows beyond this count are refused (a real holdings sheet has about 510).
 MAX_ROWS = 100_000
+#: Columns beyond this index are refused (a real holdings sheet has 8); a sparse cell far to the
+#: right would otherwise make its row a list of thousands of empty strings.
+MAX_COLUMNS = 256
+#: Dense cells (rows times their widths) accepted in one worksheet; checked before padding.
+MAX_CELLS = 1_000_000
 
 _WORKBOOK = "xl/workbook.xml"
 _WORKBOOK_RELS = "xl/_rels/workbook.xml.rels"
@@ -141,6 +146,7 @@ def read_first_sheet(data: bytes) -> list[list[str]]:
         sheet_path = _first_sheet_path(archive)
         root = _parse_xml(_read_part(archive, sheet_path), sheet_path)
     rows: list[list[str]] = []
+    total_cells = 0
     for row in root.iter():
         if _local(row.tag) != "row":
             continue
@@ -153,9 +159,14 @@ def read_first_sheet(data: bytes) -> list[list[str]]:
                 continue
             match = _CELL_REF.match(cell.get("r") or "")
             col = _column_index(match.group(1)) if match else next_col
+            if col >= MAX_COLUMNS:
+                raise XlsxError(f"cell {cell.get('r')!r} is past the {MAX_COLUMNS} column cap")
             next_col = col + 1
             cells[col] = _cell_text(cell, strings)
         width = max(cells, default=-1) + 1
+        total_cells += width
+        if total_cells > MAX_CELLS:
+            raise XlsxError(f"the worksheet needs more than {MAX_CELLS} cells")
         row_number = row.get("r")
         if row_number and row_number.isdigit():
             # A skipped row number means blank rows; keep positions stable for callers. The

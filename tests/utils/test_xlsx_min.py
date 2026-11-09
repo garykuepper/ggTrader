@@ -121,3 +121,37 @@ def test_reader_refuses_a_non_utf8_declaration_and_still_reads_a_bom_marked_utf8
         read_first_sheet(_sheet_zip(declared.encode()))
     ok = f'<?xml version="1.0" encoding="UTF-8"?><worksheet {_MAIN}><sheetData/></worksheet>'
     assert read_first_sheet(_sheet_zip(b"\xef\xbb\xbf" + ok.encode())) == []
+
+
+def test_reader_refuses_a_sparse_cell_far_to_the_right_before_padding_the_row():
+    cell = '<c r="ZZZ1" t="inlineStr"><is><t>x</t></is></c>'
+    sheet = f'<worksheet {_MAIN}><sheetData><row r="1">{cell}</row></sheetData></worksheet>'
+    with pytest.raises(XlsxError, match="column cap"):
+        read_first_sheet(_sheet_zip(sheet.encode()))
+    edge = '<c r="IV1" t="inlineStr"><is><t>x</t></is></c>'  # column 256, the last allowed
+    ok = f'<worksheet {_MAIN}><sheetData><row r="1">{edge}</row></sheetData></worksheet>'
+    assert len(read_first_sheet(_sheet_zip(ok.encode()))[0]) == 256
+    over = '<c r="IW1" t="inlineStr"><is><t>x</t></is></c>'  # column 257
+    sheet = f'<worksheet {_MAIN}><sheetData><row r="1">{over}</row></sheetData></worksheet>'
+    with pytest.raises(XlsxError, match="column cap"):
+        read_first_sheet(_sheet_zip(sheet.encode()))
+
+
+def test_reader_refuses_many_wide_rows_by_a_cumulative_cell_budget():
+    # 5,000 rows of 256 columns each = 1,280,000 dense cells, over the 1,000,000 budget, while the
+    # XML itself is small
+    rows = "".join(
+        f'<row r="{n}"><c r="IV{n}" t="inlineStr"><is><t>x</t></is></c></row>'
+        for n in range(1, 5001)
+    )
+    sheet = f"<worksheet {_MAIN}><sheetData>{rows}</sheetData></worksheet>"
+    with pytest.raises(XlsxError, match="cells"):
+        read_first_sheet(_sheet_zip(sheet.encode()))
+
+
+def test_reader_still_parses_a_real_sized_holdings_sheet():
+    from tests.data.xlsx_builder import HEADER, holdings_xlsx
+
+    tickers = [f"T{n:03d}" for n in range(503)]
+    rows = read_first_sheet(holdings_xlsx(tickers))
+    assert any(row[:2] == HEADER[:2] for row in rows) and len(rows) > 503
