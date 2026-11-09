@@ -86,14 +86,6 @@ class ParamGrid:
     def __len__(self) -> int:
         return len(self.combos())
 
-    def used_values(self, name: str) -> list[Any]:
-        """Distinct values of ``name`` that occur in a valid combination (first-seen order)."""
-        seen: list[Any] = []
-        for combo in self.combos():
-            if combo[name] not in seen:
-                seen.append(combo[name])
-        return seen
-
     def swept(self) -> list[str]:
         """Names that take more than one value across the valid combinations (sorted)."""
         combos = self.combos()

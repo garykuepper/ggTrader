@@ -43,12 +43,11 @@ def test_rule_with_a_missing_key_is_skipped() -> None:
     assert Lt("x", "y").ok({"x": 5})
 
 
-def test_swept_and_used_values_follow_the_valid_combos() -> None:
+def test_swept_follows_the_valid_combos() -> None:
     grid = ParamGrid.from_sweep(
         {"fast": [5, 50], "slow": [20], "k": [1]}, rules=(Lt("fast", "slow"),)
     )
     assert grid.swept() == []  # fast=50 never occurs in a valid combination
-    assert grid.used_values("fast") == [5]
 
 
 def test_single_and_override() -> None:
