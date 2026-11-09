@@ -378,7 +378,7 @@ wall-clock run on the latest `db` vintage must pass `ggTrader.data.membership_ga
 from an *independent* match: the last `matched` row that `ggt db membership check-holdings` wrote
 (the list equals the SPDR SPY holdings for the holdings' own as-of date). Two clocks decide.
 **Freshness:** the last match may be no more than **45 days** old (override: environment variable
-`GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`, a positive whole number; a bad value stops the run; it drops
+`GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`, a whole number from 1 to 90; anything else stops the run; it drops
 to 10 once the weekly job exists). A list that was never matched is refused outright. **Lag:** the
 day may trail `known_through` (the newest matched holdings as-of date, never earlier than the
 vintage's last change date) by under **90 days** (warn from 90) and under **180 days** (refuse
@@ -392,9 +392,9 @@ stops the run before any order is possible. Each message names its fix
 is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows the
 `DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
 pinned `db:<id>` or to a caller-injected `now` (replays and tests). A match belongs to one vintage:
-loading a newer vintage starts again from "never matched". Since slice M5a the latest vintage is
-vintage 2 (loaded 2026-11-08) and it has no recorded match, so the gate refuses today; that is
-expected until `check-holdings` matches a fresh SPY file against it.
+loading a newer vintage starts again from "never matched": until `check-holdings` matches a fresh
+SPY file against the new latest vintage, the gate refuses. Run `ggt db membership status` to see
+the current vintage, its last match and the gate's decision.
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
 
@@ -566,8 +566,8 @@ an old or cached holdings file would otherwise reset it. A workbook whose as-of 
 `MAX_HOLDINGS_AGE_DAYS` (**7**) calendar days before the check time (exactly 7 days is accepted)
 is recorded as `fetch_failed` with `detail.reason` = `stale_source`, `holdings_age_days` and
 `max_holdings_age_days`; it is never a match, never compared, and its raw bytes are still archived.
-Override the limit with the environment variable `GGT_HOLDINGS_MAX_AGE_DAYS` (a positive whole
-number; a bad value stops the command before anything is downloaded).
+Override the limit with the environment variable `GGT_HOLDINGS_MAX_AGE_DAYS` (a whole number from
+1 to 14; anything else stops the command before anything is downloaded).
 
 **Vintage 2, export and reinstate (slice M5a).**
 

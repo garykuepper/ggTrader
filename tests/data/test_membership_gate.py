@@ -232,7 +232,12 @@ def test_the_environment_overrides_the_limit(monkeypatch):
     assert decide_gate(stale_at_50, ASOF).level == "refuse"
 
 
-@pytest.mark.parametrize("bad", ["0", "-3", "abc", "4.5", " "])
+def test_the_override_accepts_exactly_one_to_ninety_days():
+    assert max_verify_age_days({VERIFY_AGE_ENV: "1"}) == 1
+    assert max_verify_age_days({VERIFY_AGE_ENV: "90"}) == 90
+
+
+@pytest.mark.parametrize("bad", ["0", "-3", "abc", "4.5", " ", "91", "99999"])
 def test_a_bad_override_is_an_error_not_a_silent_default(bad):
     with pytest.raises(GateConfigError, match=VERIFY_AGE_ENV):
         max_verify_age_days({VERIFY_AGE_ENV: bad})

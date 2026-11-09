@@ -254,14 +254,15 @@ def test_a_stale_file_with_a_different_list_is_still_only_a_stale_source():
 
 def test_the_age_limit_can_be_overridden_by_the_environment(monkeypatch):
     assert mh.max_holdings_age_days({}) == mh.MAX_HOLDINGS_AGE_DAYS == 7
-    assert mh.max_holdings_age_days({mh.HOLDINGS_AGE_ENV: "30"}) == 30
+    assert mh.max_holdings_age_days({mh.HOLDINGS_AGE_ENV: "14"}) == 14
+    assert mh.max_holdings_age_days({mh.HOLDINGS_AGE_ENV: "1"}) == 1
     assert mh.HOLDINGS_AGE_ENV == "GGT_HOLDINGS_MAX_AGE_DAYS"
-    monkeypatch.setenv(mh.HOLDINGS_AGE_ENV, "30")
-    result = compare(base_tickers(), base_tickers(), as_of_text="As of 20-Oct-2026")  # 19 days
-    assert result.outcome == "matched" and result.detail["max_holdings_age_days"] == 30
+    monkeypatch.setenv(mh.HOLDINGS_AGE_ENV, "14")
+    result = compare(base_tickers(), base_tickers(), as_of_text="As of 27-Oct-2026")  # 12 days
+    assert result.outcome == "matched" and result.detail["max_holdings_age_days"] == 14
 
 
-@pytest.mark.parametrize("bad", ["0", "-3", "seven", "1.5"])
+@pytest.mark.parametrize("bad", ["0", "-3", "seven", "1.5", "15", "99999"])
 def test_a_malformed_age_override_is_refused_before_any_download(monkeypatch, bad):
     monkeypatch.setenv(mh.HOLDINGS_AGE_ENV, bad)
 

@@ -8,8 +8,8 @@ file, ``ggt db membership check-holdings``). Two clocks decide, both counted in 
 * **Freshness**, ``asof - last matched check``: how long ago our list was last proved equal to
   the SPY holdings (``universe.checks`` row ``matched``). More than :data:`MAX_VERIFY_AGE_DAYS`
   (45 until the weekly job exists, 10 after; the environment variable
-  ``GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`` overrides it) refuses. A list that was never matched
-  refuses outright. A ``check-upstream`` result does not extend this clock.
+  ``GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`` overrides it, 1 to 90 days only) refuses. A list that
+  was never matched refuses outright. A ``check-upstream`` result does not extend this clock.
 * **Lag**, ``asof - known_through``: how far the date through which the list is attested trails
   the day. ``known_through`` is the holdings as-of date of the newest match, never earlier than
   the vintage's own last change date. Equal to or beyond :data:`LAG_WARN_DAYS` (90) warns; equal
@@ -41,7 +41,10 @@ from ggTrader.data.universe_algebra import as_date
 
 #: Longest tolerated age of the last holdings match, in days (D1: 45 until the weekly job).
 MAX_VERIFY_AGE_DAYS = 45
-#: Environment variable that overrides :data:`MAX_VERIFY_AGE_DAYS` (a positive whole number).
+#: Largest value the override may take: a bigger one would quietly switch the freshness clock off.
+MAX_VERIFY_AGE_CEILING_DAYS = 90
+#: Environment variable that overrides :data:`MAX_VERIFY_AGE_DAYS` (a whole number of days from 1
+#: to :data:`MAX_VERIFY_AGE_CEILING_DAYS`).
 VERIFY_AGE_ENV = "GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS"
 #: The date the list is attested through is this many days before the run: warn (C3).
 LAG_WARN_DAYS = 90
@@ -64,7 +67,7 @@ LAG_FIX = (
 
 
 class GateConfigError(MembershipError, ValueError):
-    """The age-limit override is not a positive whole number; the gate refuses to guess."""
+    """The age-limit override is not a whole number of days in range; the gate refuses to guess."""
 
 
 def max_verify_age_days(environ: Mapping[str, str] | None = None) -> int:
@@ -76,10 +79,10 @@ def max_verify_age_days(environ: Mapping[str, str] | None = None) -> int:
         value = int(text)
     except ValueError:
         value = 0
-    if value < 1:
+    if not 1 <= value <= MAX_VERIFY_AGE_CEILING_DAYS:
         raise GateConfigError(
-            f"{VERIFY_AGE_ENV}={text!r} is not a positive whole number of days; "
-            "unset it to use the default of "
+            f"{VERIFY_AGE_ENV}={text!r} is not a whole number of days from 1 to "
+            f"{MAX_VERIFY_AGE_CEILING_DAYS}; unset it to use the default of "
             f"{MAX_VERIFY_AGE_DAYS}"
         )
     return value

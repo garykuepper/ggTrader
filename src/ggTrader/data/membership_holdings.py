@@ -69,7 +69,10 @@ MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024
 #: freshness clock only bounds the time since the last match, so without this bound an old or
 #: cached file would still count as a match and reset that clock.
 MAX_HOLDINGS_AGE_DAYS = 7
-#: Environment variable that overrides :data:`MAX_HOLDINGS_AGE_DAYS` (a positive whole number).
+#: Largest value the override may take: a bigger one would let an old file count as a match.
+MAX_HOLDINGS_AGE_CEILING_DAYS = 14
+#: Environment variable that overrides :data:`MAX_HOLDINGS_AGE_DAYS` (a whole number of days from
+#: 1 to :data:`MAX_HOLDINGS_AGE_CEILING_DAYS`).
 HOLDINGS_AGE_ENV = "GGT_HOLDINGS_MAX_AGE_DAYS"
 #: Outcomes this module writes to ``universe.checks.outcome`` (the CHECK list allows them).
 OUTCOME_MATCHED = "matched"
@@ -98,7 +101,7 @@ GetFn = Callable[..., Any]
 
 
 class HoldingsConfigError(ValueError):
-    """The holdings-age override is not a positive whole number; the check refuses to guess."""
+    """The holdings-age override is not a whole number of days in range; the check refuses."""
 
 
 def max_holdings_age_days(environ: Mapping[str, str] | None = None) -> int:
@@ -110,10 +113,11 @@ def max_holdings_age_days(environ: Mapping[str, str] | None = None) -> int:
         value = int(text)
     except ValueError:
         value = 0
-    if value < 1:
+    if not 1 <= value <= MAX_HOLDINGS_AGE_CEILING_DAYS:
         raise HoldingsConfigError(
-            f"{HOLDINGS_AGE_ENV}={text!r} is not a positive whole number of days; "
-            f"unset it to use the default of {MAX_HOLDINGS_AGE_DAYS}"
+            f"{HOLDINGS_AGE_ENV}={text!r} is not a whole number of days from 1 to "
+            f"{MAX_HOLDINGS_AGE_CEILING_DAYS}; unset it to use the default of "
+            f"{MAX_HOLDINGS_AGE_DAYS}"
         )
     return value
 
