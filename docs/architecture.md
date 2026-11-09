@@ -137,7 +137,7 @@ enough non-NaN closes, alphabetical `max_stocks` cap) in about 0.05 s and 1.2 MB
 window. `membership_mask` is the index-membership part alone. Two optional exit policies are off
 by default because they change numbers: `removal_exits` (exit when a symbol leaves the index)
 and `terminal_exits` (exit at a dead ticker's last valid bar; optimistic, see its docstring).
-The mask builder warns when the constituent list's last snapshot is more than 45 days old. The list itself comes from the membership reader described next.
+The mask builder warns (policy `on_stale`) when the constituent list looks stale: with a membership source, when its last verification is more than 45 days before the run's as-of date (information for research results; the live trader's gate is separate); with a bare history table, when its last snapshot is that old. The list itself comes from the membership reader described next.
 
 ---
 
@@ -157,7 +157,7 @@ differs from the earlier sections). Commands and flags: [CLI Reference](cli_refe
   `symbol_changes` (company continuity across a ticker change; membership itself moves by remove
   plus add), `checks` and `check_blobs` (every comparison against an outside list, with the
   fetched bytes) and `source_snapshots` (raw bytes the weekly job archived). The tables are
-  append-only, enforced by triggers and role privileges. Three vintages exist: 1 the frozen file
+  append-only, enforced by triggers and role privileges; the one permitted update marks a replaced row `superseded_by_load_id`. Three vintages exist: 1 the frozen file
   import, 2 the upstream download (coverage to 2026-08-18), 3 a curated gap-fill (to 2026-11-04).
 - **The one reader** (`ggTrader.data.membership`). `MembershipSource` has two backends: a
   database backend (`db` for the latest vintage, `db:<load_id>` for a pinned one, over a
@@ -209,8 +209,9 @@ when the list is unreadable, empty, never matched against SPY, last matched long
 freshness limit, too far behind the newest attested date, dated in the future, or when the
 newest holdings comparison of that vintage is a mismatch. A match belongs to one vintage, so
 loading a newer vintage starts again from "never matched" until `check-holdings` matches it.
-A live run (`--live`) refuses any membership source but the latest database vintage; dry runs,
-replays and pinned vintages skip the age gate. Limits, override variables and error codes are in
+A live run (`--live`) refuses any membership source but the latest database vintage. A wall-clock
+dry run on the latest `db` vintage applies the same gate; only fixtures, pinned vintages and
+replays with an injected `now` skip it. Limits, override variables and error codes are in
 the CLI Reference (the "Membership gate" paragraph under the `ggt db membership` commands).
 
 ---

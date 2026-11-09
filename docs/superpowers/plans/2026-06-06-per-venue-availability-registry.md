@@ -1,5 +1,7 @@
 # Per-Venue Availability Registry Implementation Plan
 
+> **Superseded 2026-11-08 (kept for history).** `src/ggTrader/data/core/constants.py` (`SYMBOL_MAPPING`, `STABLE_BASES`) named below was deleted in the dead-code cleanup because nothing in the repository used it any more (crypto ingestion stays parked). Do not execute this plan as written; recover the module from git history (for example `git show f70d721a:src/ggTrader/data/core/constants.py`) if the crypto arc resumes.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Track which coins are tradeable on each venue (Kraken, Binance.US) as a persisted, version-controlled snapshot, and intersect the mover-ranking universe against the execution venue's snapshot before the top-N cut.

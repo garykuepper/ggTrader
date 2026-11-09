@@ -12,7 +12,7 @@ from ggTrader.utils.config import get_db_connection_string
 class TimescaleDBLoader(BaseDataLoader):
     """
     Historical data loader connecting to TimescaleDB (PostgreSQL).
-    Consolidates reading OHLCV data and generating mover masks for backtesting.
+    Reads historical OHLCV data for backtesting.
     """
 
     def __init__(self, connection_string: Optional[str] = None):
