@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-08 (documentation fixes: membership database, delegation roles, stale statements)
+
+- **`AGENTS.md`.** The delegation section now carries the owner's 2026-11-08 roles (builders Codex Terra and Luna, Claude Sonnet and Haiku; reviewers Codex Sol and Claude Opus; Sonnet orchestrates and re-verifies each slice; a reviewer never reviews its own model family's build; anything headed for a merge gets both a Sol and an Opus review); the 2026-11-04 "Claude only" rule moved to a superseded note. Section 1 names the membership reader and the `universe` schema, lists `ggt db load-sp500` and `ggt db membership ...`, and Sections 2 and 3 no longer say the S&P 500 list is sourced from the CSV file or refreshed by `download_sp500_history()` (removed from `src/`); the file is the frozen vintage-1 fixture and the source is chosen with `--membership`. The owner-instructions section is unchanged.
+- **`docs/architecture.md`.** Removed the `lab_periods` row (that table has never existed) and described what `--wfo` and `--blend` actually write; added "Membership database and the single reader" (components, data flow, the live gate, the weekly job).
+- **`docs/next_steps.md`.** The trader is described as stopped since 2026-11-06 instead of under observation; added a "Membership database" status with the owner-gated follow-ups. `docs/working_task_list.md` links to the new delegation heading.
+- **Why.** These pages still described the membership list as a file, a table that never existed, a running trader, and the superseded delegation rule, which misleads anyone who starts from them. No code changed.
+
 ## 2026-11-09 (membership database: second review round)
 
 - **A known SPY mismatch closes the live gate.** The newest `matched`/`mismatch` holdings check of the latest vintage (by holdings as-of date, then check time; a mismatch is attributed to a vintage by `detail.compared_load_id`) decides. If it is a `mismatch` the wall-clock gate refuses with `membership_mismatch` (message names `ggt db membership weekly`, `ggt db membership proposal` and the human `load-sp500 --from-events ... --commit` steps) until a later-dated match exists or a newer vintage is loaded. A mismatch older than the last match, a mismatch against another vintage and `fetch_failed` rows never count. `ggt db membership status` prints the newest comparison. `MembershipVintage` gains `latest_check`, `latest_check_as_of`, `latest_check_id`. No DDL.
