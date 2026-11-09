@@ -64,9 +64,9 @@ Open, each owner-gated or unverified:
    another source; a human still saves the release page as evidence before any `load-sp500 --commit`.
 3. The spec's open checks (Appendix C6) are closed (2026-11-09, see the
    [evidence note](../research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md)).
-   They found one data gap: 13 current members have no or stale bars in the price table
-   (BE, FERG, HONA, RDDT, SKYD, VMRK, VYLR; ECHO and FLEX; MRVL, OKTA, P, TWLO). A backfill is a
-   database write and needs the owner's decision.
+   They found one data gap, 13 current members with no or stale bars in the price table,
+   which was filled the same day with `scripts/backfill_missing_members.py` (19,491 rows inserted,
+   4 partial bars refreshed; details in the evidence note).
 
 ## Standing research rules
 
