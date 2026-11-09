@@ -41,6 +41,30 @@ Plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/2026-11-02
 after the parity work clarifies the paper environment. Implementation requires a
 separate decision after the freeze and readiness gates are satisfied.
 
+## Membership database
+
+The S&P 500 membership list lives in PostgreSQL schema `universe` as versioned
+vintages (1 the frozen file import, 2 the upstream download to 2026-08-18, 3 a curated
+gap-fill to 2026-11-04) and is read through one reader, `MembershipSource`. Research
+names its source with `--membership` (or `GGT_MEMBERSHIP`); there is no default. The old
+file `data/universe/sp500_constituents_history.csv.gz` is the immutable vintage-1
+fixture. The live trader's gate refuses to trade on a list that is unreadable, empty,
+unmatched against the SPY fund holdings, mismatched, stale or future-dated, and a live
+run reads only the latest database vintage. See the
+[architecture guide](architecture.md#membership-database-and-the-single-reader) and the
+[CLI reference](cli_reference.md).
+
+Open, each owner-gated or unverified:
+
+1. The weekly job (`ggt db membership weekly`) is built, with systemd templates in
+   `deploy/membership_weekly/`, but its timer is not installed or enabled. Enabling it
+   requires three clean manual dry runs, a restore drill and the owner's go.
+2. A second free source of index changes is not yet chosen. Until then a human confirms
+   effective dates against the S&P DJI press release before any `load-sp500 --commit`.
+3. The spec's open checks (Appendix C6) remain: any index change in the gap beyond the
+   four reviewed, the exact effective dates of two 2026 renames, and whether the price
+   table holds old bars under the reused ticker `P`.
+
 ## Standing research rules
 
 - Use the [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md).
@@ -48,8 +72,9 @@ separate decision after the freeze and readiness gates are satisfied.
   +1.0 percentage point per year net since 1994. B0 is a kill-only replay. B1 is
   a forward shadow book of at least 18 months. Before real money, require six
   months of clean Alpaca paper trading for mechanics.
-- The production paper trader remains frozen. The observation window's qualifying
-  start and any reset are unresolved. Continue observation and document unknowns.
+- The production paper trader has been stopped since 2026-11-06 (its cron lines are
+  commented out); the owner will say when it returns. The
+  observation window's qualifying start and any reset are unresolved. Document unknowns.
 - Momentum, the classic factor screen, and net issuance are closed NO-GO under
   their registered tests. The fixed-rule historical stock model is also NO-GO:
   14.19% CAGR versus SPY at 14.83%, with Newey-West t of -0.69. Exact historical

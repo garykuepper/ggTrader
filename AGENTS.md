@@ -14,28 +14,40 @@ This document serves as the consolidated source of truth for all AI assistants (
   prompts, and handoffs. Preserve honest NO-GO findings and production freezes;
   neither authorizes a shutdown or an account change.
 
-## Delegation preference (2026-11-04)
+## Delegation preference (2026-11-08)
 
-**Claude only, for now** (owner instruction; revisit when the owner says so).
+Owner instruction of 2026-11-08; revisit when the owner says so.
 
 - **Check quota before writing any delegation plan.** The agent cannot see plan usage
   or remaining quota, so ask the owner for current headroom (or have them check the
   Claude usage settings) and size the plan to it: number of subagents, which phases
   run, and where to pause. Report usage after each phase so the owner can stop early.
   If quota is unknown, say so in the plan and default to the smaller, phased version.
-- **Sonnet** (`claude-sonnet-5-5`) is the main orchestrator.
-- **Opus** (`claude-opus-5-5`) takes critical tasks: trust and verdict judgments, audit
-  conclusions, implementation-correctness review, protocol decisions, root-cause ranking
-  and final synthesis.
-- **Haiku** (`claude-haiku-5-5`) takes easy and bulk tasks: extracting numbers from
-  reports and JSON, inventories, listing and cross-referencing, file-by-file reads. Give
-  it the objective, relevant context, constraints and expected verification.
-- A stronger model independently checks Haiku's work (a sample of each batch, plus
-  every figure that reaches a report) before reliance or integration. Opus reviewing
-  Opus is not independent: give the challenger a fresh context with only the evidence
-  and the claims, and state the limitation in the report.
+- **Builders:** ChatGPT Codex Terra (`gpt-6.1-terra`), ChatGPT Codex Luna
+  (`gpt-6-luna`), Claude Sonnet (`claude-sonnet-5-5`) and Claude Haiku
+  (`claude-haiku-5-5`).
+- **Reviewers:** ChatGPT Codex Sol (`gpt-6.1-sol`) and Claude Opus (`claude-opus-5-5`).
+  Opus also takes the critical judgments: trust and verdict calls, audit conclusions,
+  protocol decisions, root-cause ranking and final synthesis.
+- **Orchestrator:** Claude Sonnet. It re-verifies every slice itself (reads the diff, reruns
+  the checks) and does not pass on a builder's or reviewer's claim unchecked.
+- **A reviewer never reviews its own model family's build.** Codex output (Terra, Luna) is
+  reviewed by Opus; Claude output (Sonnet, Haiku) is reviewed by Sol. Anything headed for a
+  merge gets both a Sol review and an Opus review.
+- **Haiku** takes bulk mechanical work: extracting numbers from reports and JSON,
+  inventories, listing and cross-referencing, file-by-file reads. Give it the objective,
+  relevant context, constraints and expected verification. A stronger model samples each
+  batch and checks every figure that reaches a report before it is relied on.
+- Give a reviewer a fresh context with only the evidence and the claims; a model checking
+  its own earlier work is not independent, and the report should say so when it happens.
 - The lead remains responsible for final decisions. Keep private account records out of
   delegate prompts.
+
+*Superseded 2026-11-08 (kept for history):* the 2026-11-04 preference was "Claude only":
+Sonnet orchestrated, Opus took critical tasks (trust and verdict judgments, audit
+conclusions, implementation-correctness review, protocol decisions, root-cause ranking and
+final synthesis), Haiku took easy and bulk tasks, and a stronger model independently
+checked Haiku's work. Codex models were not used under it.
 
 *Superseded 2026-11-04 (kept for history):* the 2026-10-22 preference used agy Gemini
 Flash for bulk and batch work (generous quota), Codex for final synthesis, audit
@@ -60,16 +72,17 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
   * `ggt lab --blend "<strategy>@<universe>,..."` — blend multiple `strategy@universe` sleeves through the gated WFO with the inverse-vol/target-vol overlay (`--target-vol`/`--blend-window`/`--max-leverage`), persisted as a `blend:` lab run. (Infra for orthogonal sleeves; equity-only diversification is a closed NO-GO.)
   * `ggt ingest` — **removed** (P10): it never wrote anything. Research reads the frozen tape or the database read-only through `load_bars`; the live path caches equities on demand through `CachedYFinanceLoader`. Crypto ingestion is parked along with the rest of the crypto arc.
   * `ggt db <subcommand>` — database administration (diagnostics, cleanup, compression, export)
+  * `ggt db load-sp500` and `ggt db membership {verify,status,diff,export,reinstate,check-upstream,check-holdings,weekly,proposal}` — the versioned S&P 500 membership list (load a vintage, compare vintages, cross-check against the SPY fund holdings, propose changes; a vintage is written only by `load-sp500 --commit` or `membership reinstate --commit`, never by the weekly job). Flags and behavior: `docs/cli_reference.md`.
   * `ggt paper [--live]` — run the ensemble paper-trading strategy against Alpaca. Without `--live` it is a dry run that logs intended orders; `--live` places them. This is the production command; it is stopped since 2026-11-06 (see above), so use the dry run until the owner re-enables cron.
 * **Lab Architecture**: 
-  * **Data Layer**: `src/ggTrader/data/` loads OHLCV from TimescaleDB (crypto) or yfinance (equities). SP500 constituents are sourced from a static registry.
+  * **Data Layer**: `src/ggTrader/data/` loads OHLCV from TimescaleDB (crypto) or yfinance (equities). S&P 500 membership is read through `MembershipSource` (`data/membership.py`) from the PostgreSQL `universe` schema (the latest or a pinned vintage) or from a hash-checked frozen fixture; the live trader's gate is `data/membership_gate.py`.
   * **Strategy Layer**: `src/ggTrader/lab/strategies/` holds the ten ported strategies on the engine contract (`ParamGrid`, `build(bars, grid)`); `lab/strategies/vote.py` is the N-of-M vote glue.
   * **Engine**: `src/ggTrader/engine/` is the only package that imports vectorbt (indicator presets, one grouped Rust simulation, statistics at 252 bars).
   * **Walk-Forward**: `src/ggTrader/lab/wfo/` runs the rolling folds, gates, anchor and circuit breaker over slices of one simulation; `lab/universe.py` builds the point-in-time membership mask.
   * **Metrics & Reporting**: window statistics come from `engine/stats.py`; `wfo/report.py` prints the fold table and `curve_summary`.
   * **Shared helpers**: `src/ggTrader/utils/` holds the helpers that studies and the lab share: `significance.py`, `fred_data.py`, `io.py` (atomic writes), `results.py`, `manifest.py` and `binding.py` (hash and provenance records), and `study.py` (study plumbing: `bootstrap`, `repo_root`, `study_dir`).
   * **Study code is not in `src`**: since the study-isolation refactor (2026-11-07) `src/ggTrader/lab/` holds no study modules. Each study keeps its own modules, drivers and tests in its folder under `research/`: a `code/` folder (tests in `code/tests/`), plus a `_lib/` folder per category for helpers that several studies of that category share. The moved screens, audits, tax-lot library, replica tools and intraday family now live there; `research/CODEMOVED.csv` lists every moved file with its hash before and after. Nothing in `src/` imports a study.
-* **State Storage**: `ggt lab --wfo` saves a JSON record only (with a provenance block); `--blend` persists a `blend:` run. The blend persistence is done to TimescaleDB by `src/ggTrader/lab/persist.py`, which creates **seven** tables: `lab_runs` (run metadata), `lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, and `lab_sweep_combos`. There is **no** `lab_periods` table — earlier revisions of this file named one repeatedly and it has never existed.
+* **State Storage**: `ggt lab --wfo` saves a JSON record only (with a provenance block); `--blend` persists a `blend:` run. The blend persistence is done to TimescaleDB by `src/ggTrader/lab/persist.py`, which creates **seven** tables: `lab_runs` (run metadata), `lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, and `lab_sweep_combos`. There is **no** `lab_periods` table — earlier revisions of this file named one repeatedly and it has never existed. The S&P 500 membership list lives apart from the lab tables, in PostgreSQL schema `universe` (`loads`, `membership`, `snapshot_dates`, `load_blobs`, `load_evidence`, `checks`, `check_blobs`, `symbol_changes`, `source_snapshots`). Its tables are append-only: a refresh is a new vintage (1 the frozen file import, 2 the upstream download to 2026-08-18, 3 a curated gap-fill to 2026-11-04), never an edit. DDL is `sql/universe_schema.sql`, applied by `ggt db membership apply-ddl`.
 
 ---
 
@@ -82,7 +95,7 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
   * **Database connectivity**: Inside Docker, the TimescaleDB connection string uses `host.docker.internal:5433`. On the host, use `localhost:5433`.
 * **Lab Run Workflow**:
   1. **Strategy Selection**: Choose a strategy from `REGISTRY` in `src/ggTrader/lab/strategies/registry.py` — the ten ported strategies and any module you add (discovered by scanning the package); the other 28 historical names (`LEGACY_ONLY_STRATEGIES`) are closed NO-GO or untested research whose code lives only at git tag `legacy-engine-vbt0285` (`scripts/legacy_env.sh`). Read the registry rather than trusting any list written here. `ensemble` is the deployed live strategy; check `research/RESEARCH_SNAPSHOT.md` before spending a run on a closed one.
-  2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — SP500 constituents for equities (sourced from `data/universe/sp500_constituents_history.csv.gz`), or top-volume coins for crypto.
+  2. **Universe Selection**: The lab auto-generates the trading universe for the eval period — S&P 500 constituents for equities, read point-in-time from the membership list through `MembershipSource` (`ggTrader.data.membership`), or top-volume coins for crypto. The source is always named, never defaulted: `--membership db` (latest vintage), `db:<load_id>` (a pinned vintage) or `fixture:<name>` on `ggt lab` and the oracle drivers, else the `GGT_MEMBERSHIP` environment variable, else the run stops with `MembershipSourceNotSelected`. The old file `data/universe/sp500_constituents_history.csv.gz` is the immutable vintage-1 fixture `sp500_v1_2026-06-02` (the basis of every committed reference number); it is never edited. `--expect-membership-sha` pins a run to one exact list.
   3. **Walk-Forward Execution**: Overlapping monthly folds are scored from slices of one grouped vectorbt simulation (Rust engine). Each fold trains on historical data (in-sample) and validates on held-out future data (out-of-sample).
   4. **Persistence**: `lab_runs` stores run metadata (strategy, config, timestamps); per-fold and per-sweep detail goes to `lab_plans` / `lab_returns` / `lab_equity` / `lab_summary` / `lab_sweeps` / `lab_sweep_combos`. `ggt lab --wfo` writes only its JSON record (with a provenance block); `--blend` writes a `blend:` row. Research **drivers** (in a study's `code/` folder, or under `scripts/` for the engine evidence drivers) do record their results as JSON (e.g. `scripts/p5_wfo_validation.py` → `research/programme/vectorbt-engine/p5-evidence/_p5_<run>.json`), and any new driver should do the same so a cited number has a raw artifact behind it.
 * **Strategy Parameters**:

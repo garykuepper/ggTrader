@@ -1,6 +1,15 @@
 # Changelog
 
+## 2026-11-08 (dead-code cleanup)
+
 - Remove unused legacy crypto and market-hour constants, mover queries, volume stubs, a FRED cache writer, grid and trends helpers, and redundant engine bindings. These had no production callers; research reference results are unchanged.
+
+## 2026-11-08 (documentation fixes: membership database, delegation roles, stale statements)
+
+- **`AGENTS.md`.** The delegation section now carries the owner's 2026-11-08 roles (builders Codex Terra and Luna, Claude Sonnet and Haiku; reviewers Codex Sol and Claude Opus; Sonnet orchestrates and re-verifies each slice; a reviewer never reviews its own model family's build; anything headed for a merge gets both a Sol and an Opus review); the 2026-11-04 "Claude only" rule moved to a superseded note. Section 1 names the membership reader and the `universe` schema, lists `ggt db load-sp500` and `ggt db membership ...`, and Sections 2 and 3 no longer say the S&P 500 list is sourced from the CSV file or refreshed by `download_sp500_history()` (removed from `src/`); the file is the frozen vintage-1 fixture and the source is chosen with `--membership`. The owner-instructions section is unchanged.
+- **`docs/architecture.md`.** Removed the `lab_periods` row (that table has never existed) and described what `--wfo` and `--blend` actually write; added "Membership database and the single reader" (components, data flow, the live gate, the weekly job).
+- **`docs/next_steps.md`.** The trader is described as stopped since 2026-11-06 instead of under observation; added a "Membership database" status with the owner-gated follow-ups. `docs/working_task_list.md` links to the new delegation heading.
+- **Why.** These pages still described the membership list as a file, a table that never existed, a running trader, and the superseded delegation rule, which misleads anyone who starts from them. No code changed.
 
 ## 2026-11-09 (membership database: second review round)
 

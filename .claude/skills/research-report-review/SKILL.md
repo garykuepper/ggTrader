@@ -65,7 +65,7 @@ Work through these; skip any that can't apply and say why.
      survivorship-biased.
    - Event dates must be known in advance, not the actual announcement date.
 7. **Lab traps.**
-   - `max_leverage` should be 1.0 (default 2.0 overstated results twice).
+   - `max_leverage` defaults to 1.0, the production value since the 2026-11-06 vectorbt-engine rebuild; older runs or `--max-leverage 2.0` overstate the deployed configuration.
    - `SIGNAL_POSITION_SIZE` defaults to 0.03, which makes a signals sleeve
      ~3% invested. Check it was set explicitly.
    - Lab cash earns 0%. A sleeve that sits in cash is understated unless it
