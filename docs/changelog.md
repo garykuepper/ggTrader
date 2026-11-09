@@ -1,5 +1,7 @@
 # Changelog
 
+- Remove the unreferenced legacy crypto constants module and its obsolete agent rule; research reference results are unchanged.
+
 ## 2026-11-09 (membership database: second review round)
 
 - **A known SPY mismatch closes the live gate.** The newest `matched`/`mismatch` holdings check of the latest vintage (by holdings as-of date, then check time; a mismatch is attributed to a vintage by `detail.compared_load_id`) decides. If it is a `mismatch` the wall-clock gate refuses with `membership_mismatch` (message names `ggt db membership weekly`, `ggt db membership proposal` and the human `load-sp500 --from-events ... --commit` steps) until a later-dated match exists or a newer vintage is loaded. A mismatch older than the last match, a mismatch against another vintage and `fetch_failed` rows never count. `ggt db membership status` prints the newest comparison. `MembershipVintage` gains `latest_check`, `latest_check_as_of`, `latest_check_id`. No DDL.
