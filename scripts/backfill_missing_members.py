@@ -43,6 +43,10 @@ from ggTrader.utils.paths import REPO_ROOT
 INTERVAL = "1d"
 DEFAULT_START = "2000-01-01"
 DEFAULT_TOLERANCE = 0.0005
+#: A stored last bar whose volume is off by more than this fraction is also refreshed (a partial
+#: bar has the volume traded so far).
+VOLUME_TOLERANCE = 0.02
+PRICE_COLUMNS = ("open", "high", "low", "close")
 BACKUP_DIRNAME = "ohlcv_backfill"
 COLUMNS = ("open", "high", "low", "close", "volume")
 _SYMBOL = re.compile(r"^[A-Z][A-Z0-9]{0,5}([.\-][A-Z0-9]{1,2})?$")
@@ -57,6 +61,7 @@ class SymbolPlan:
     inserts: pd.DataFrame
     refresh: pd.DataFrame = field(default_factory=pd.DataFrame)
     note: str = ""
+    failed: bool = False
 
     @property
     def n_insert(self) -> int:
@@ -78,8 +83,29 @@ def clean_frame(frame: pd.DataFrame, through: date) -> pd.DataFrame:
     idx = idx.tz_convert("UTC") if idx.tz is not None else idx
     out.index = pd.DatetimeIndex(idx.tz_localize(None) if idx.tz is not None else idx).normalize()
     out = out[out["close"].notna()]
+    out = out[out.index.day_of_week < 5]  # an exchange bar is never on a weekend
     out = out[~out.index.duplicated(keep="last")].sort_index()
     return out[out.index <= pd.Timestamp(through)]
+
+
+def _stored_gaps(stored: dict, fresh) -> tuple[float, float]:
+    """``(largest price gap, volume gap)`` between a stored bar and a complete fresh one.
+
+    Relative differences; a stored NULL or zero field counts as an infinite gap, so the bar is
+    always refreshed from a complete one.
+    """
+    price = 0.0
+    for name in PRICE_COLUMNS:
+        old = stored.get(name)
+        if old is None or old == 0:
+            return float("inf"), 0.0
+        price = max(price, abs(float(fresh[name]) / float(old) - 1.0))
+    old_volume = stored.get("volume")
+    if old_volume is None:
+        return price, float("inf")
+    if old_volume == 0:
+        return price, 0.0 if float(fresh["volume"]) == 0 else float("inf")
+    return price, abs(float(fresh["volume"]) / float(old_volume) - 1.0)
 
 
 def plan_symbol(
@@ -97,7 +123,13 @@ def plan_symbol(
     """
     frame = clean_frame(fetched, through)
     if frame.empty:
-        return SymbolPlan(symbol, stored_last[0] if stored_last else None, frame, note="no data")
+        return SymbolPlan(
+            symbol,
+            stored_last[0] if stored_last else None,
+            frame,
+            note="no data (the download failed or nothing is dated up to --through)",
+            failed=True,
+        )
     if stored_last is None:
         return SymbolPlan(symbol, None, frame, note="whole history")
     last_day, stored = stored_last
@@ -107,10 +139,16 @@ def plan_symbol(
     stamp = pd.Timestamp(last_day)
     if refresh_last and stamp in frame.index:
         fresh = frame.loc[[stamp]]
-        close_gap = abs(float(fresh["close"].iloc[0]) / float(stored["close"]) - 1.0)
-        if close_gap > tolerance:
-            refresh = fresh
-            note = f"last bar {last_day} differs by {close_gap:.4%}"
+        values = fresh.iloc[0]
+        if values.isna().any():
+            note = f"fresh bar for {last_day} has missing fields: not refreshed"
+        else:
+            price_gap, volume_gap = _stored_gaps(stored, values)
+            if price_gap > tolerance or volume_gap > VOLUME_TOLERANCE:
+                refresh = fresh
+                note = (
+                    f"last bar {last_day} differs: price {price_gap:.4%}, volume {volume_gap:.1%}"
+                )
     return SymbolPlan(symbol, last_day, inserts, refresh, note)
 
 
@@ -179,7 +217,11 @@ def fetch_history(symbols: list[str], start: str, through: date) -> dict[str, pd
 
 
 def write_backup(plans: list[SymbolPlan], stored: dict, directory: Path, stamp: str) -> Path | None:
-    """Save every row that will be rewritten, and the keys of every row that will be added."""
+    """Save every row that will be rewritten (``old_row``) and every key that is planned.
+
+    Planned keys are not proof of what was inserted (a concurrent writer may have created one
+    first); the keys actually inserted are appended to the ``_inserted`` file after each commit.
+    """
     if not any(p.n_refresh or p.n_insert for p in plans):
         return None
     directory.mkdir(parents=True, exist_ok=True)
@@ -189,7 +231,7 @@ def write_backup(plans: list[SymbolPlan], stored: dict, directory: Path, stamp: 
         writer.writerow(["kind", "symbol", "timestamp", *COLUMNS])
         for plan in plans:
             for ts in plan.inserts.index:
-                writer.writerow(["insert", plan.symbol, ts.date().isoformat()])
+                writer.writerow(["planned", plan.symbol, ts.date().isoformat()])
             if plan.n_refresh and plan.symbol in stored:
                 day, old = stored[plan.symbol]
                 writer.writerow(
@@ -201,7 +243,7 @@ def write_backup(plans: list[SymbolPlan], stored: dict, directory: Path, stamp: 
 INSERT_SQL = (
     "INSERT INTO ohlcv "
     "(timestamp, symbol, interval, venue, open, high, low, close, volume, trades) "
-    "VALUES %s ON CONFLICT (timestamp, symbol, interval, venue) DO NOTHING"
+    "VALUES %s ON CONFLICT (timestamp, symbol, interval, venue) DO NOTHING RETURNING timestamp"
 )
 REFRESH_SQL = (
     "UPDATE ohlcv SET open = %s, high = %s, low = %s, close = %s, volume = %s "
@@ -209,33 +251,59 @@ REFRESH_SQL = (
 )
 
 
-def commit_plan(conn, plan: SymbolPlan) -> tuple[int, int]:
-    """Write one symbol in one transaction; returns ``(inserted, refreshed)``."""
+def commit_plan(conn, plan: SymbolPlan) -> tuple[list[datetime], int]:
+    """Write one symbol in one transaction; returns ``(inserted timestamps, refreshed count)``.
+
+    The inserted timestamps come from ``RETURNING`` (a key that already existed is skipped by
+    ``DO NOTHING`` and not returned). Each refresh must change exactly one row, else the whole
+    symbol is rolled back.
+    """
     from psycopg2.extras import execute_values
 
-    inserted = refreshed = 0
-    with conn.cursor() as cur:
-        if plan.n_insert:
-            execute_values(cur, INSERT_SQL, rows_for_db(plan.symbol, plan.inserts), page_size=5000)
-            inserted = cur.rowcount
-        for ts, row in plan.refresh.iterrows():
-            cur.execute(
-                REFRESH_SQL,
-                (
-                    float(row["open"]),
-                    float(row["high"]),
-                    float(row["low"]),
-                    float(row["close"]),
-                    None if pd.isna(row["volume"]) else float(row["volume"]),
-                    ts.to_pydatetime().replace(tzinfo=None),
-                    plan.symbol,
-                    INTERVAL,
-                    STOCK_VENUE,
-                ),
-            )
-            refreshed += cur.rowcount
+    inserted: list[datetime] = []
+    refreshed = 0
+    try:
+        with conn.cursor() as cur:
+            if plan.n_insert:
+                returned = execute_values(
+                    cur,
+                    INSERT_SQL,
+                    rows_for_db(plan.symbol, plan.inserts),
+                    page_size=5000,
+                    fetch=True,
+                )
+                inserted = [row[0] for row in returned]
+            for ts, row in plan.refresh.iterrows():
+                cur.execute(
+                    REFRESH_SQL,
+                    (
+                        float(row["open"]),
+                        float(row["high"]),
+                        float(row["low"]),
+                        float(row["close"]),
+                        float(row["volume"]),
+                        ts.to_pydatetime().replace(tzinfo=None),
+                        plan.symbol,
+                        INTERVAL,
+                        STOCK_VENUE,
+                    ),
+                )
+                if cur.rowcount != 1:
+                    raise RuntimeError(f"{plan.symbol}: refresh changed {cur.rowcount} rows")
+                refreshed += 1
+    except Exception:
+        conn.rollback()
+        raise
     conn.commit()
     return inserted, refreshed
+
+
+def append_inserted(path: Path, symbol: str, stamps: list[datetime]) -> None:
+    """Append the keys that were actually inserted (after their commit), flushed to disk."""
+    with path.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        for stamp in stamps:
+            writer.writerow(["inserted", symbol, stamp.date().isoformat()])
 
 
 def parse_symbols(text: str) -> list[str]:
@@ -307,21 +375,28 @@ def main(argv: list[str] | None = None) -> int:
             f"insert {p.n_insert:5} ({span})"
             f"  refresh {p.n_refresh}  {p.note}"
         )
+    unfilled = [p.symbol for p in plans if p.failed]
+    if unfilled:
+        print(f"no usable data for: {', '.join(unfilled)}", file=sys.stderr)
     if not args.commit:
         print("dry run: nothing written (add --commit)")
-        return 0
+        return 1 if unfilled else 0
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup = write_backup(plans, stored, args.backup_dir, stamp)
-    print(f"backup of changed rows and inserted keys: {backup}")
-    failed = 0
+    inserted_path = args.backup_dir / f"backfill_{stamp}_inserted.csv"
+    print(f"backup of changed rows and planned keys: {backup}")
+    print(f"keys actually inserted will be appended to: {inserted_path}")
+    failed = len(unfilled)
     conn = connect()
     try:
         for p in plans:
+            if p.failed:
+                continue
             try:
-                inserted, refreshed = commit_plan(conn, p)
-                print(f"{p.symbol}: inserted {inserted}, refreshed {refreshed}")
+                keys, refreshed = commit_plan(conn, p)
+                append_inserted(inserted_path, p.symbol, keys)
+                print(f"{p.symbol}: inserted {len(keys)}, refreshed {refreshed}")
             except Exception as exc:  # noqa: BLE001 - log and continue with the other symbols
-                conn.rollback()
                 failed += 1
                 print(f"{p.symbol}: FAILED {type(exc).__name__}: {str(exc)[:200]}", file=sys.stderr)
     finally:

@@ -72,13 +72,19 @@ def test_the_last_bar_is_refreshed_only_when_asked_and_only_beyond_the_tolerance
     off = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=False)
     on = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     assert off.n_refresh == 0 and on.n_refresh == 1 and "differs" in on.note
-    same = bars(["2026-09-21", "2026-09-22"], close=10.0)
+    same = bars(["2026-09-21", "2026-09-22"], close=10.0, volume=5.0)
+    same["Open"], same["High"], same["Low"] = 9.0, 11.0, 8.0  # the stored bar, field for field
     assert bm.plan_symbol("P", STORED, same, through=THROUGH, refresh_last=True).n_refresh == 0
 
 
 def test_no_data_plans_nothing():
     plan = bm.plan_symbol("ZZZ", STORED, pd.DataFrame(), through=THROUGH, refresh_last=True)
-    assert plan.n_insert == 0 and plan.n_refresh == 0 and plan.note == "no data"
+    assert (
+        plan.n_insert == 0
+        and plan.n_refresh == 0
+        and plan.failed
+        and plan.note.startswith("no data")
+    )
 
 
 def test_db_rows_carry_naive_midnight_timestamps_and_the_project_conventions():
@@ -98,8 +104,8 @@ def test_symbols_are_validated():
 
 
 class _Cursor:
-    def __init__(self, log):
-        self.log, self.rowcount = log, 1
+    def __init__(self, log, rowcount=1):
+        self.log, self.rowcount = log, rowcount
 
     def __enter__(self):
         return self
@@ -108,40 +114,115 @@ class _Cursor:
         return False
 
     def execute(self, sql, params=None):
-        self.log.append(sql)
-
-    def mogrify(self, template, row):
-        return b"(x)"
+        self.log.append((sql, params))
 
 
 class _Conn:
-    def __init__(self):
-        self.log, self.commits = [], 0
+    def __init__(self, rowcount=1):
+        self.log, self.commits, self.rollbacks, self.rowcount = [], 0, 0, rowcount
 
     def cursor(self):
-        return _Cursor(self.log)
+        return _Cursor(self.log, self.rowcount)
 
     def commit(self):
         self.commits += 1
 
     def rollback(self):
-        pass
+        self.rollbacks += 1
+
+
+def _fake_execute_values(seen):
+    def fake(cur, sql, rows, page_size, fetch=False):
+        seen.append((sql, rows))
+        return [(r[0],) for r in rows] if fetch else None
+
+    return fake
 
 
 def test_the_write_is_insert_do_nothing_plus_a_keyed_update_and_never_a_delete(monkeypatch):
     seen = []
-    monkeypatch.setattr(
-        "psycopg2.extras.execute_values", lambda cur, sql, rows, page_size: seen.append(sql)
-    )
+    monkeypatch.setattr("psycopg2.extras.execute_values", _fake_execute_values(seen))
     frame = bars(["2026-09-21", "2026-09-22"], close=10.5)
     plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     conn = _Conn()
-    assert bm.commit_plan(conn, plan) == (1, 1) and conn.commits == 1
-    text = " ".join(seen + conn.log).upper()
-    assert "ON CONFLICT (TIMESTAMP, SYMBOL, INTERVAL, VENUE) DO NOTHING" in text
+    keys, refreshed = bm.commit_plan(conn, plan)
+    assert keys == [datetime(2026, 9, 22)] and refreshed == 1 and conn.commits == 1
+    text = " ".join([sql for sql, _ in seen] + [sql for sql, _ in conn.log]).upper()
+    assert "ON CONFLICT (TIMESTAMP, SYMBOL, INTERVAL, VENUE) DO NOTHING RETURNING TIMESTAMP" in text
     assert "DO UPDATE" not in text and "DELETE" not in text and "TRUNCATE" not in text
-    update = next(s for s in conn.log if s.startswith("UPDATE"))
-    assert "WHERE timestamp = %s AND symbol = %s AND interval = %s AND venue = %s" in update
+    sql, params = conn.log[0]
+    assert "WHERE timestamp = %s AND symbol = %s AND interval = %s AND venue = %s" in sql
+    # the bound values: the new bar, then the key of the OLD last bar of THIS symbol
+    assert params[5:] == (datetime(2026, 9, 21), "P", "1d", "yfinance")
+    assert params[3] == pytest.approx(10.5) and all(isinstance(v, float) for v in params[:5])
+
+
+def test_a_refresh_that_changes_other_than_one_row_rolls_the_symbol_back(monkeypatch):
+    monkeypatch.setattr("psycopg2.extras.execute_values", _fake_execute_values([]))
+    plan = bm.plan_symbol(
+        "P",
+        STORED,
+        bars(["2026-09-21", "2026-09-22"], close=10.5),
+        through=THROUGH,
+        refresh_last=True,
+    )
+    conn = _Conn(rowcount=0)
+    with pytest.raises(RuntimeError):
+        bm.commit_plan(conn, plan)
+    assert conn.rollbacks == 1 and conn.commits == 0
+
+
+def test_only_the_keys_the_database_returned_count_as_inserted(monkeypatch):
+    def skipping(cur, sql, rows, page_size, fetch=False):
+        return [(r[0],) for r in rows[1:]]  # a concurrent writer already had the first key
+
+    monkeypatch.setattr("psycopg2.extras.execute_values", skipping)
+    plan = bm.plan_symbol(
+        "BE",
+        None,
+        bars(["2026-11-02", "2026-11-03", "2026-11-04"]),
+        through=THROUGH,
+        refresh_last=False,
+    )
+    keys, _ = bm.commit_plan(_Conn(), plan)
+    assert keys == [datetime(2026, 11, 3), datetime(2026, 11, 4)]
+
+
+def test_the_inserted_file_is_appended_after_each_commit(tmp_path):
+    path = tmp_path / "inserted.csv"
+    bm.append_inserted(path, "BE", [datetime(2026, 11, 3)])
+    bm.append_inserted(path, "P", [datetime(2026, 9, 22), datetime(2026, 9, 23)])
+    assert path.read_text().splitlines() == [
+        "inserted,BE,2026-11-03",
+        "inserted,P,2026-09-22",
+        "inserted,P,2026-09-23",
+    ]
+
+
+def test_a_fresh_bar_with_missing_fields_is_never_used_for_a_refresh():
+    frame = bars(["2026-09-21", "2026-09-22"], close=10.5)
+    frame.loc[frame.index[0], "Open"] = float("nan")
+    plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
+    assert plan.n_refresh == 0 and "missing fields" in plan.note
+
+
+def test_a_volume_only_difference_also_triggers_a_refresh():
+    stored = (STORED[0], {**STORED[1], "volume": 5.0})
+    frame = bars(["2026-09-21"], close=10.0, volume=999_999.0)
+    frame["Open"], frame["High"], frame["Low"] = 9.0, 11.0, 8.0
+    plan = bm.plan_symbol("P", stored, frame, through=THROUGH, refresh_last=True)
+    assert plan.n_refresh == 1
+
+
+def test_a_stored_null_field_is_always_refreshed_from_a_complete_bar():
+    stored = (STORED[0], {**STORED[1], "high": None})
+    frame = bars(["2026-09-21"], close=10.0)
+    assert bm.plan_symbol("P", stored, frame, through=THROUGH, refresh_last=True).n_refresh == 1
+
+
+def test_weekend_rows_are_dropped():
+    out = bm.clean_frame(bars(["2026-11-01", "2026-11-02"]), THROUGH)  # a Sunday and a Monday
+    assert [d.date().isoformat() for d in out.index] == ["2026-11-02"]
 
 
 def test_the_backup_lists_every_inserted_key_and_the_old_row(tmp_path):
@@ -150,7 +231,7 @@ def test_the_backup_lists_every_inserted_key_and_the_old_row(tmp_path):
     path = bm.write_backup([plan], {"P": STORED}, tmp_path, "20261109T000000Z")
     lines = path.read_text().splitlines()
     assert lines[0].startswith("kind,symbol,timestamp")
-    assert "insert,P,2026-09-22" in lines and any(
+    assert "planned,P,2026-09-22" in lines and any(
         line.startswith("old_row,P,2026-09-21,9.0") for line in lines
     )
     with pytest.raises(FileExistsError):
@@ -181,6 +262,21 @@ def test_main_refuses_today_or_later_and_a_dry_run_writes_nothing(monkeypatch, c
     assert bm.main(["--symbols", "P", "--through", "2026-11-05"]) == 0
     out = capsys.readouterr().out
     assert "dry run: nothing written" in out and calls["connect"] == 1
+
+
+def test_a_symbol_with_no_usable_download_makes_the_run_fail_even_as_a_dry_run(monkeypatch, capsys):
+    class _Reader:
+        def cursor(self):
+            return _Cursor([])
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("ggTrader.data.universe_db.connect", lambda *a, **k: _Reader())
+    monkeypatch.setattr(bm, "read_last_bars", lambda cur, symbols: {})
+    monkeypatch.setattr(bm, "fetch_history", lambda s, start, through: {"P": pd.DataFrame()})
+    assert bm.main(["--symbols", "P", "--through", "2026-11-05"]) == 1
+    assert "no usable data for: P" in capsys.readouterr().err
 
 
 def test_the_script_has_help():
