@@ -35,8 +35,6 @@ CREATE TABLE IF NOT EXISTS google_trends_interest (
 )
 """
 
-QueryFn = Callable[[str], object]  # returns a callable frame-provider, see fetch_symbol_interest
-
 
 def _default_query_fn(query_term: str, timeframe: str) -> pd.DataFrame:
     from pytrends.request import TrendReq

@@ -8,4 +8,4 @@ from __future__ import annotations
 
 from ggTrader.engine import config
 
-SETTINGS = config.configure()
+config.configure()

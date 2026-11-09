@@ -79,7 +79,7 @@ def test_mismatch_warning_becomes_an_error() -> None:
 
 def test_every_setting_is_documented_by_spec_reference() -> None:
     for name in ("GGT_VBT_ENGINE", "year_freq", "freq", "contract"):
-        assert name in config.__doc__ or name in (config.SETTINGS_DOC or "")
+        assert name in config.__doc__
 
 
 def test_mismatch_warning_is_fatal_on_the_simulator_path_too() -> None:
