@@ -570,3 +570,25 @@ def test_an_upstream_check_appends_one_row_and_extends_nothing_and_changes_nothi
         with pytest.raises(errors.RaiseException):
             cur.execute("UPDATE universe.checks SET outcome = 'unchanged' WHERE check_id = 3")
     conn.rollback()
+
+
+def test_identical_bytes_under_a_new_normalizer_version_are_a_new_vintage(
+    conn, monkeypatch
+) -> None:
+    """Appendix A4: a normalizer change is a new vintage with the same raw and content hash."""
+    from ggTrader.data import universe_db
+
+    raw = _v1_bytes()
+    first = load_vintage(conn, _request(raw))
+    monkeypatch.setattr(universe_db, "NORMALIZER_VERSION", universe_db.NORMALIZER_VERSION + 1)
+    second = load_vintage(conn, _request(raw))
+    assert not second.no_op and second.committed and second.load_id == 2
+    assert second.rows_added == 0 and second.rows_superseded == 0  # the content did not change
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT load_id, raw_sha256, content_sha256, normalizer_version "
+            "FROM universe.loads ORDER BY load_id"
+        )
+        (l1, raw1, content1, v1), (l2, raw2, content2, v2) = cur.fetchall()
+    assert (raw1, content1) == (raw2, content2) and v2 == v1 + 1
+    assert first.load_id == l1 == 1 and l2 == 2

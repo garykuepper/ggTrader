@@ -16,6 +16,7 @@ import json
 import os
 import subprocess
 import tempfile
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -402,7 +403,7 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
                 parent = read_vintage(cur, latest["load_id"], req.index_name)
                 report.parent_load_id = latest["load_id"]
                 report.parent_coverage = (latest["coverage_start"], latest["coverage_end"])
-                if latest["raw_sha256"] == raw_hash:
+                if is_noop_reload(latest, raw_hash):
                     report.no_op = True
                     report.rows_added = 0
                     if req.commit:
@@ -432,6 +433,15 @@ def load_vintage(conn: PgConnection, req: LoadRequest) -> LoadReport:
     finally:
         conn.rollback()
         conn.readonly = previous_readonly
+
+
+def is_noop_reload(latest: Mapping[str, Any], raw_hash: str) -> bool:
+    """True when loading ``raw_hash`` again would change nothing: same bytes, same normalizer.
+
+    Identical bytes read under a different ``NORMALIZER_VERSION`` are not a no-op: the derived
+    ``symbol_yf`` column would differ, so the load is written as a new vintage (spec Appendix A4).
+    """
+    return latest["raw_sha256"] == raw_hash and latest["normalizer_version"] == NORMALIZER_VERSION
 
 
 def _check_parent_pin(pin: int | str | None, latest: dict[str, Any] | None) -> None:
