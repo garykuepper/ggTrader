@@ -4,7 +4,7 @@
 
 **Goal:** Verify and merge the finished S&P 500 membership-database branch to `main`, then remove confirmed dead code, fix the leftover minor issues and stale docs, and refresh the knowledge graph, without ever restarting or deploying the live trader.
 
-**Architecture:** Three gated stages. Stage 1 verifies branch `feature/membership-db` at its final commit exactly as GitHub CI will see it (no database), then merges and pushes it. Stage 2 is a cleanup slice on top of the merged `main`, built by a delegated builder and reviewed by an independent model. Stage 3 refreshes the graph and notes. Every stage ends with the same verification: tests with the database variables removed, the reference backtests, the file pins, lint.
+**Architecture:** Three gated stages. Stage 1 verifies branch `feature/membership-db` at its final commit exactly as GitHub CI will see it (no database), then merges and pushes it. Stage 2 is a cleanup slice on top of the merged `main`, built by delegated builders (Codex Terra/Luna or Claude Sonnet/Haiku) and reviewed by Sol and Opus. Stage 3 refreshes the graph and notes. Every stage ends with the same verification: tests with the database variables removed, the reference backtests, the file pins, lint.
 
 **Tech Stack:** Python 3.12, uv, pytest through `scripts/run_tests.sh`, ruff, PostgreSQL/TimescaleDB (schema `universe`), vulture (run through `uvx`, never added to the project), graphify, GitHub Actions CI.
 
@@ -22,7 +22,7 @@
 - Stop background work only with the TaskStop tool or `kill` of a PID whose full command line was read first; never `pkill -f` with text that appears in the same command, never kill a parent PID found with `ps -o ppid` (see memory note "Never kill by guessed PID").
 - Ruff `E/F/W/I`, line length 100; never `--no-verify`; commits end with `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
 - No real Telegram message from any test or dry run; no private account records in delegate prompts.
-- The owner's delegation rule (2026-11-08): Claude orchestrates and re-verifies every slice itself; Codex `gpt-6.1-terra` / `gpt-6-luna` may build; `gpt-6.1-sol` may review. Call `orchestrator_capabilities` once per thread before the first `delegate_task`.
+- Roles (owner, 2026-11-08). **Builders:** ChatGPT Codex `gpt-6.1-terra` and `gpt-6-luna`, and Claude Sonnet (`claude-sonnet-5-5`) and Haiku (`claude-haiku-5-5`). **Reviewers:** ChatGPT Codex `gpt-6.1-sol` and Claude Opus (`claude-opus-5-5`). **Orchestrator:** Claude Sonnet, which also re-verifies every task itself (database variables removed, reference backtests, pins, lint) whoever built it. A reviewer never reviews its own model's build: when a Claude model built, Sol is the primary reviewer; when a Codex model built, Opus is. Anything that reaches a merge gets BOTH a Sol and an Opus review. Haiku takes bulk, mechanical work (inventories, mention searches, file-by-file reads); a stronger model checks a sample of each Haiku batch and every figure that reaches a report. Build and review prompts are self-contained, carry the constraints above, and contain no private account records. Call `orchestrator_capabilities` once per thread before the first `delegate_task`; Claude children use the `Agent` tool, Codex children use `delegate_task` with `isolation: "worktree"` or an explicit worktree path.
 
 ## Review Focus
 
@@ -48,7 +48,7 @@
 - [ ] **Step 2: Run the full tier with the database variables removed.** `env -u ... scripts/run_tests.sh --full -q > final_v/full.txt` (expected: tests half and study half both end `passed`, zero failed; study half is 777; the earlier totals were fast 1,845, full 2,184 + 777, so the new total is at least that).
 - [ ] **Step 3: Run the reference backtests.** Adapt `scratchpad/m7v/o_run.sh` (output folder `final_v/o`; it already omits the finished-refactor allow-list step) and run it. Expected: `core17_ensemble_sp500 FIELD-EQUAL ... 1/17`, `core17_ensemble_sp500_dsr0 FIELD-EQUAL ... 17/17`, both CSV `cmp` steps and the replay (120/120) exit 0, fresh-clone `ruff check` and `ruff format --check` pass.
 - [ ] **Step 4: Check pins, lint and the database read-only.** `scripts/verify_pins.py` prints the pin line above; `ggt db membership verify --load-id 1`, `2`, `3` (no options) each end `OK`; `ggt db membership status` shows `live gate would PASS`; table counts match Global Constraints.
-- [ ] **Step 5: Decide.** All steps green: continue to Task 2. Anything red: stop and report the first failing command and its output; do not merge.
+- [ ] **Step 5: Decide.** The membership branch already passed Opus (round 1) and Sol (round 2) reviews and its fixes; no further review is needed unless Step 1-4 turn something up. All steps green: continue to Task 2. Anything red: stop and report the first failing command and its output; do not merge.
 
 ### Task 2: Merge to `main`, push, watch CI
 
@@ -73,6 +73,7 @@
 - Test: the existing suites; delete a test only together with the code it alone covers
 
 **Interfaces:**
+- Builders: Haiku runs Step 1 (the mechanical candidate and mention search; Sonnet re-runs a sample of 15 names to check it); Terra builds Steps 2-3 in its own worktree; Luna is the fallback if Terra stalls.
 - Consumes: merged `main` (Task 2).
 - Produces: a branch `cleanup/dead-code` with one commit per removed group and a report listing each candidate as removed or kept with its reason.
 
@@ -84,12 +85,13 @@
 ### Task 4: Cleanup slice B: minor fixes and stale docs
 
 **Files:**
-- Modify: `AGENTS.md` (symlinked as `CLAUDE.md`): delegation section (Codex models per the owner's 2026-11-08 message, Claude stays orchestrator and verifier), section 1 data layer and section 2 universe/data-access bullets (the S&P 500 list now comes from `MembershipSource`; the frozen file is the vintage-1 fixture), the CLI list (`ggt db membership ...`, `ggt db load-sp500`)
+- Modify: `AGENTS.md` (symlinked as `CLAUDE.md`): delegation section (per the owner's 2026-11-08 message: builders Codex Terra and Luna plus Claude Sonnet and Haiku; reviewers Codex Sol and Claude Opus; Claude Sonnet orchestrates and re-verifies; same-model builder and reviewer never pair), section 1 data layer and section 2 universe/data-access bullets (the S&P 500 list now comes from `MembershipSource`; the frozen file is the vintage-1 fixture), the CLI list (`ggt db membership ...`, `ggt db load-sp500`)
 - Modify: `docs/architecture.md` (remove the nonexistent `lab_periods` row; add the `universe` schema and the single reader), `docs/next_steps.md` (state that the trader is off since 2026-11-06 and what the membership build left open), `.claude/skills/research-report-review/SKILL.md` (the old `max_leverage 2.0` wording), `scripts/run_tests.sh` (its closing message lists old marker names)
 - Check, change only if pins stay intact: `research/audits/event-timing/code/form4_backfill.py` and `earnings_surprise_backfill.py` (they skip `bootstrap`)
 - Test: `tests/scripts/test_codemoved.py`, docs sweep tests, the full tier
 
 **Interfaces:**
+- Builders: Sonnet writes the `AGENTS.md`, `docs/architecture.md` and `docs/next_steps.md` edits (they need judgment about what is true); Luna does the mechanical items (`scripts/run_tests.sh` message, skill wording, the backfill-driver check).
 - Consumes: Task 3's branch (or `main` if Task 3 is skipped).
 - Produces: the same branch with doc and script fixes; a changelog entry in `docs/changelog.md`.
 
@@ -107,7 +109,7 @@
 - Consumes: Tasks 3 and 4 verified.
 - Produces: `origin/main` with the cleanup; CI green.
 
-- [ ] **Step 1: Delegate a read-only review** to `gpt-6.1-sol` (`role: review`, reasoning effort high; same constraints as the membership review: no tests, no network, no edits, no credentials printed). It checks that every removed name is truly unused (grep evidence), no pinned or moved study file changed, no test was weakened, and the doc statements are true.
+- [ ] **Step 1: Delegate two independent read-only reviews in parallel,** one to `gpt-6.1-sol` (`delegate_task`, `role: review`, reasoning effort high) and one to Claude Opus (`Agent`, `model: opus`), each in a fresh context with only the diff, this plan and the constraints (no tests, no network, no edits, no credentials printed). Each checks that every removed name is truly unused (grep evidence), no pinned or moved study file changed, no test was weakened, and the doc statements are true. A finding raised by either reviewer and confirmed by reading is fixed; findings raised by only one are verified by the orchestrator before acting.
 - [ ] **Step 2: Fix confirmed findings** with a test that fails before and passes after; re-verify.
 - [ ] **Step 3: Merge and push** as in Task 2 Steps 1-4 (merge commit, push, CI green, no deploy).
 
