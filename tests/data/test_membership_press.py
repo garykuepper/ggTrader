@@ -555,3 +555,86 @@ def test_comparing_the_most_rows_a_release_may_hold_is_fast(tmp_path):
         assert codes(result) == {"press_change_not_in_list"}
 
     assert _timed(go) < 5.0
+
+
+# --------------------------------------------------------------------------- size cap
+
+
+def test_a_press_page_over_the_size_cap_is_refused_and_never_stored(tmp_path):
+    world = World(base_ours())
+    _announce(world, [("Oct 20, 2026", "S&P 500", "Addition", "X", "X0001")])
+    world.press_releases["302925405"] = b"<html>" + b"x" * (mp.MAX_PAGE_BYTES + 1)
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "warn" and codes(result) == {"press_unavailable"}
+    rows = {r.source: r for r in store.runs[0][1]}
+    assert rows["sp_press_302925405"].status == "failed" and rows["sp_press_302925405"].raw is None
+    assert rows["sp_press_302925405"].detail["reason"] == "too_large"
+    assert store.runs[0][0].outcome == "matched"
+
+
+def test_the_size_cap_is_exact_at_the_boundary():
+    for extra, ok in ((0, True), (1, False)):
+        world = World(base_ours())
+        base = press_listing_html([OKTA_CARD])
+        world.press_listing = base + b" " * (mp.MAX_PAGE_BYTES - len(base) + extra)
+        out = mp.fetch_press(get=world, now=lambda: NOW)
+        assert out.listing.ok is ok
+        if ok:
+            assert len(out.listing.raw) == mp.MAX_PAGE_BYTES
+        else:
+            assert out.listing.reason == "too_large" and out.listing.raw is None
+
+
+def _strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from _strings(k)
+            yield from _strings(v)
+    elif isinstance(value, (list, tuple)):
+        for v in value:
+            yield from _strings(v)
+
+
+def test_control_characters_in_a_page_never_reach_the_database_rows(tmp_path):
+    nul = "\x00"
+    world = World(base_ours())
+    world.press_listing = press_listing_html([("Oct 30, 2026, 17:51 ET", OKTA_SLUG, f"Ok{nul}ta")])
+    world.press_releases = {
+        "302925405": press_release_html(
+            [("Oct 20, 2026", "S&P 500", "Addition", f"Co{nul}mpany", "X0001")]
+        )
+    }
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "ok"
+    for row in store.runs[0][1]:
+        assert not any(nul in text for text in _strings([row.url, row.detail])), row.source
+    assert all(nul not in c.company for c in result.press)
+
+
+def test_a_nul_in_an_address_or_ticker_is_a_changed_page_not_a_stored_string(tmp_path):
+    nul = "\x00"
+    world = World(base_ours())
+    world.press_listing = press_listing_html(
+        [("Oct 30, 2026, 17:51 ET", f"x-sp-500-{nul}-302925405", "Okta")]
+    )
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "warn" and codes(result) == {"press_structure"}
+    assert all(nul not in text for r in store.runs[0][1] for text in _strings([r.url, r.detail]))
+    row = ("Oct 20, 2026", "S&P 500", "Addition", "Co", f"X{nul}1")
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(press_release_html([row]), release())
+    assert err.value.code == "bad_row"
+
+
+def test_eight_maximum_size_hostile_pages_cost_only_a_few_seconds():
+    page = b'<html><body><div class="release-body container">' + b"<" * (mp.MAX_PAGE_BYTES - 60)
+    assert len(page) <= mp.MAX_PAGE_BYTES
+
+    def parse_all():
+        for _ in range(8):
+            with pytest.raises(SourceStructureError):
+                mp.parse_press_release(page, release())
+
+    assert _timed(parse_all) < 5.0

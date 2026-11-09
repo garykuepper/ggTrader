@@ -150,8 +150,9 @@ def _request(
     params: dict[str, str] | None = None,
     accept: str = "*/*",
     expect_json: bool = False,
+    max_bytes: int = MAX_DOWNLOAD_BYTES,
 ) -> SourceFetch:
-    """One GET: HTTP 200, complete body, size cap; failures come back as ``ok=False``."""
+    """One GET: HTTP 200, complete body, size cap (``max_bytes``); failures are ``ok=False``."""
     try:
         response = get(
             url,
@@ -172,7 +173,7 @@ def _request(
     if status != 200:
         return _failure(name, url, when, "http_status", f"HTTP {status}", http_status=status)
     try:
-        raw = read_capped(response, MAX_DOWNLOAD_BYTES)
+        raw = read_capped(response, max_bytes)
     except DownloadTooLarge as exc:
         return _failure(name, url, when, "too_large", str(exc), http_status=status)
     except requests.RequestException as exc:
