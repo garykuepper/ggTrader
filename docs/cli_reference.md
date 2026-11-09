@@ -433,7 +433,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `weekly [--notify] [--proposal-dir DIR] [--json PATH]` is the weekly job (fetch and archive the sources, match SPY, cross-check, alert, propose; dry unless `--notify`; never loads a vintage); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
 
 ### Examples:
 ```bash
@@ -512,6 +512,54 @@ the as-of date and text, counts, the source URL, the response headers and the ra
 holdings are dated before the vintage's last change but inside its coverage, they are compared with
 the snapshot in force on their own date (a match then sets no `known_through` beyond the
 vintage's coverage end). `status` shows the last matched check, `known through` and the age.
+
+**Weekly job: fetch, archive, cross-check, alert, propose (slice M6, spec Appendix C1).**
+
+```bash
+ggt db membership weekly             # dry: records the check, prints the message, sends nothing
+ggt db membership weekly --notify    # the same, and sends the one message through TelegramNotifier
+# exit 0 clean (or warnings only), 2 a refusal or a proposal (a human acts), 1 the job failed
+```
+
+One run makes about 7 requests: the SPY workbook, the Wikipedia change ledger ("Historical
+components of the S&P 500") and current list through the MediaWiki API (`action=parse`,
+`prop=wikitext`, `maxlag`, a descriptive User-Agent), one MediaWiki query for both pages' last-edit
+times, the two chinobing CSVs on GitHub and the repository's newest commit. Each fetch is
+independent: one failing source is recorded and alerted, never fatal to the others. The raw bytes
+of every source are archived (gzip + sha256) in the new append-only `universe.source_snapshots`
+(one row per source per run, tied to the run's `universe.checks` row; the SPY workbook stays in
+`check_blobs`; a proposed file is stored there too as source `proposal`). The run writes only
+`checks`, `check_blobs` and `source_snapshots`; it never touches `loads`, `membership`,
+`snapshot_dates` or `load_blobs`.
+
+* **Match with SPY** exactly as `check-holdings` (including the 7-day staleness guard). A match is
+  recorded as `matched` and extends the live gate's clock and `known_through`; it is recorded even
+  when a side source raised an alert, because it only says "our list equals SPY on that date".
+* **Warnings only:** the Wikipedia current list or chinobing's newest snapshot differing from our list.
+* **Refuse and alert:** our list differs from SPY, or the SPY file is unusable or stale; a ledger
+  row dated after what is already attested is in the future or equals its announcement date
+  (taken from the row's refs); a removal with no matching addition would leave 480..520 members;
+  a source is missing, has not changed for more than 14 days (the wiki pages' last edit, chinobing's
+  newest daily snapshot or last commit, SPY's as-of date), has an unreadable last-change date, or
+  has changed structure (the ledger parser checks the header row by row: a missing, renamed or extra
+  column, a row with the wrong cell count, a vanished table). Any refusal with candidate changes
+  writes a proposal.
+* **Proposal:** `data/exports/membership_proposals/proposed_events_<UTC>.csv` (git-ignored, never
+  overwritten). The columns of `ggt db load-sp500 --from-events` plus `date_source` (`ledger`,
+  `ledger+chinobing`, `chinobing`, `none`) and `needs_confirmation`. Candidates are the set difference
+  with SPY, each with the best effective date from the ledger and chinobing rows after the attested
+  date; `Y` unless the two sources give the same date, it is not in the future and the ledger row is
+  not announcement-dated. A removal and an addition that only chinobing shows together are also
+  proposed as a `rename`. `evidence_url` and `evidence_sha256` are blank. The loader refuses a file
+  with a blank `evidence_url` or any `needs_confirmation` other than `N`/blank, so a proposal cannot be
+  loaded unreviewed. The message lists the rows, what to check and the exact `load-sp500
+  --from-events FILE` (dry run) and `--commit` commands.
+
+Deployment templates (not installed): `deploy/membership_weekly/` (user service and Saturday
+06:00 America/Los_Angeles timer, README with the install, disable, message-reading, proposal and
+restore procedures). `scripts/membership_restore_drill.py` dumps the schema, restores it into a
+scratch database, compares every table's row count and every load's hashes, runs `verify` for each
+load and drops the scratch database.
 
 **Stale-source guard.** The 45-day freshness clock only bounds the time since the last match, so
 an old or cached holdings file would otherwise reset it. A workbook whose as-of date is more than
