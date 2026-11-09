@@ -49,12 +49,17 @@ _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
 #: so the cost stays linear in the page size on any input (a lazy ``.*?`` pattern over the whole
 #: card was quadratic on a page of unclosed cards).
 _CARD_OPEN = re.compile(
-    r'<a\s+class="newsreleaseconsolidatelink[^"]*"\s+href="(?P<href>/news-releases/[^"]+\.html)"'
-    r"[^>]*>"
+    r'<a\s{1,20}class="newsreleaseconsolidatelink[^"]{0,200}"\s{1,20}'
+    r'href="(?P<href>/news-releases/[^"]{1,300}\.html)"[^>]{0,300}>'
 )
 _CARD_CLASS = "newsreleaseconsolidatelink"
 _STAMP = re.compile(r"(?<![A-Za-z])([A-Za-z]{3,9})\.?\s+(\d{1,2}),\s+(\d{4})(?!\d)")
-_RELEASE_ID = re.compile(r"-(\d{6,})\.html$")
+_RELEASE_ID = re.compile(r"-(\d{6,12})\.html$")
+#: A real release has a handful of S&P 500 rows; a page with more is not one of S&P's releases.
+MAX_TABLE_ROWS = 2000
+MAX_SP500_ROWS = 200
+#: Longest title kept from a card (the rest of a longer one is cut before tags are stripped).
+MAX_TITLE_CHARS = 1000
 _MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 _MONTH_WORDS = frozenset(
     [
@@ -188,7 +193,8 @@ def parse_press_listing(raw: bytes) -> list[PressRelease]:
         seen.add(ident.group(1))
         title_end = window.find("</h3>", small_end)
         raw_title = window[small_end + 8 : title_end if title_end >= 0 else len(window)]
-        title = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", raw_title)))
+        raw_title = raw_title[:MAX_TITLE_CHARS]
+        title = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]{1,200}>", " ", raw_title)))
         out.append(PressRelease(PRESS_BASE + href, title.strip(), published, ident.group(1)))
     return sorted(out, key=lambda r: (r.published, r.release_id), reverse=True)
 
@@ -237,6 +243,10 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
     parser = _Rows()
     parser.feed(text[start:])
     rows = parser.rows
+    if len(rows) > MAX_TABLE_ROWS:
+        raise SourceStructureError(
+            "too_many_rows", f"release {release.release_id}: {len(rows)} table rows"
+        )
     header_at = next(
         (i for i, r in enumerate(rows) if tuple(c.lower() for c in r[: len(_HEADER)]) == _HEADER),
         None,
@@ -274,6 +284,10 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
         )
     if problems:
         raise SourceStructureError("bad_row", "; ".join(problems[:3]), problems)
+    if len(changes) > MAX_SP500_ROWS:
+        raise SourceStructureError(
+            "too_many_rows", f"release {release.release_id}: {len(changes)} S&P 500 rows"
+        )
     return changes
 
 

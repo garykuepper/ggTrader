@@ -349,9 +349,10 @@ def test_the_dry_run_store_and_notifier_stay_offline():
 
 def test_a_hostile_numeric_reference_reads_as_a_changed_page_not_an_exception():
     huge = "&#" + "9" * 5000 + ";"
-    bad_title = press_listing_html([("Oct 30, 2026, 17:51 ET", OKTA_SLUG, f"Okta {huge}")])
+    # in the date text: it reaches html.unescape (a title is cut at 1,000 characters before that)
+    bad_stamp = press_listing_html([(f"Oct 30, 2026 {huge}", OKTA_SLUG, "Okta")])
     with pytest.raises(SourceStructureError) as err:
-        mp.parse_press_listing(bad_title)
+        mp.parse_press_listing(bad_stamp)
     assert err.value.code == "internal"
     page = press_release_html([("Nov 4, 2026", "S&P 500", "Addition", f"Okta {huge}", "OKTA")])
     with pytest.raises(SourceStructureError) as err:
@@ -362,7 +363,7 @@ def test_a_hostile_numeric_reference_reads_as_a_changed_page_not_an_exception():
 def test_a_hostile_page_only_warns_in_the_weekly_job_and_the_match_is_recorded(tmp_path):
     world = World(base_ours())
     world.press_listing = press_listing_html(
-        [("Oct 30, 2026, 17:51 ET", OKTA_SLUG, "Okta &#" + "9" * 5000 + ";")]
+        [("Oct 30, 2026 &#" + "9" * 5000 + ";", OKTA_SLUG, "Okta")]
     )
     result, store, _ = run(world, tmp_path=tmp_path)
     assert result.status == "warn" and codes(result) == {"press_structure"}
@@ -494,3 +495,63 @@ def test_a_same_day_delete_and_re_add_of_one_ticker_raises_no_warning(tmp_path):
     )
     result, _, _ = run(world, tmp_path=tmp_path)
     assert result.status == "ok" and result.findings == []
+
+
+# --------------------------------------------------------------------------- review round 3
+
+
+def _timed(fn):
+    import time
+
+    started = time.perf_counter()
+    fn()
+    return time.perf_counter() - started
+
+
+def test_an_oversized_release_id_is_a_structure_error_not_an_exception(tmp_path):
+    slug = "okta-set-to-join-sp-500-" + "9" * 5000
+    page = press_listing_html([("Oct 30, 2026, 17:51 ET", slug, "Okta")])
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_listing(page)
+    assert err.value.code == "cards_not_found"  # an id this long is not a card at all
+    world = World(base_ours())
+    world.press_listing = page
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "warn" and codes(result) == {"press_structure"}
+    assert store.runs[0][0].outcome == "matched"
+
+
+def test_opening_tags_without_a_closing_bracket_cost_linear_time():
+    tag = '<a class="newsreleaseconsolidatelink" href="/news-releases/x-sp-500-302925405.html" '
+    page = ("<html>" + tag * 8000).encode()  # no '>' anywhere
+
+    def parse():
+        with pytest.raises(SourceStructureError):
+            mp.parse_press_listing(page)
+
+    assert _timed(parse) < 1.0
+
+
+def test_thousands_of_angle_brackets_in_a_title_cost_linear_time():
+    title = "<" * 200_000
+    page = press_listing_html([("Oct 30, 2026, 17:51 ET", OKTA_SLUG, title)])
+    assert _timed(lambda: mp.parse_press_listing(page)) < 1.0
+
+
+def test_a_release_with_an_absurd_number_of_rows_is_refused():
+    rows = [("Nov 4, 2026", "S&P 500", "Addition", f"C{i}", f"T{i}") for i in range(300)]
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(press_release_html(rows), release())
+    assert err.value.code == "too_many_rows"
+
+
+def test_comparing_the_most_rows_a_release_may_hold_is_fast(tmp_path):
+    rows = [("Oct 20, 2026", "S&P 500", "Addition", f"C{i}", f"T{i:04d}") for i in range(200)]
+    world = World(base_ours())
+    _announce(world, rows)
+
+    def go():
+        result, _, _ = run(world, tmp_path=tmp_path)
+        assert codes(result) == {"press_change_not_in_list"}
+
+    assert _timed(go) < 5.0

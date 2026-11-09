@@ -591,16 +591,17 @@ def _press_vs_list(run: WeeklyRun, ours: set[str], floor: date, today: date) -> 
     """Warn when an announced S&P 500 change that is already effective is not in our list."""
     changes = latest_changes(run.press)
     boundary = min(floor, today)
+    by_ticker: dict[str, list[PressChange]] = {}
+    for c in changes:
+        by_ticker.setdefault(normalize_yf_ticker(c.ticker), []).append(c)
     for change in changes:
         if change.effective > boundary:
             continue  # not yet attested by our list or SPY, or not yet effective
         norm = normalize_yf_ticker(change.ticker)
         later = [
             c
-            for c in changes
-            if normalize_yf_ticker(c.ticker) == norm
-            and c.action != change.action
-            and change.effective <= c.effective <= boundary
+            for c in by_ticker[norm]
+            if c.action != change.action and change.effective <= c.effective <= boundary
         ]
         if later:
             continue  # superseded by a later announced change of the same ticker
