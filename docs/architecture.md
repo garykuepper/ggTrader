@@ -23,8 +23,8 @@ Before diving into the code, here are the core concepts used throughout ggTrader
 | Component | What it does in plain English |
 |---|---|
 | **Core Libraries** | **Python 3.12** (language) · **vectorbt 1.2.0 + vectorbt-rust** on pandas 3 / numpy 2.5 (fast calculations; exact versions in `uv.lock`) · **TimescaleDB** (database) · **yfinance** (free Yahoo Finance data). |
-| **Data Sources** | Fetches live stock data from Yahoo Finance, uses Tiingo as a backup, loads crypto data from the database, and uses historical CSVs to track S&P 500 constituents over time. |
-| **Lab Output** | Saves test records to `lab_runs` (overall results) and `lab_periods` (month-by-month results) in the database. |
+| **Data Sources** | Fetches live stock data from Yahoo Finance, uses Tiingo as a backup, loads crypto data from the database, and tracks S&P 500 constituents over time in a versioned membership list (database schema `universe`, read through one reader; see "Membership database and the single reader"). |
+| **Lab Output** | `ggt lab --wfo` writes a JSON record with a provenance block; `--blend` also persists a `blend:` run to `lab_runs` and the per-fold and per-sweep tables (`lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, `lab_sweep_combos`). |
 | **Paper Trading** | Virtual trading on Alpaca. Includes a machine learning guard (ML feature gate) to filter bad trades, risk checks (guardrails), and Telegram notifications. |
 | **Supported Markets** | US stock indices (S&P 500, Nasdaq-100, Russell 2000) and customizable cryptocurrency pairs. |
 | **Vectorization** | All portfolio calculations run instantly using NumPy and Pandas vector operations. |
@@ -138,7 +138,77 @@ enough non-NaN closes, alphabetical `max_stocks` cap) in about 0.05 s and 1.2 MB
 window. `membership_mask` is the index-membership part alone. Two optional exit policies are off
 by default because they change numbers: `removal_exits` (exit when a symbol leaves the index)
 and `terminal_exits` (exit at a dead ticker's last valid bar; optimistic, see its docstring).
-The mask builder warns when the constituent file's last snapshot is more than 45 days old.
+The mask builder warns when the constituent list's last snapshot is more than 45 days old. The list itself comes from the membership reader described next.
+
+---
+
+## Membership database and the single reader
+
+The S&P 500 membership list is data that changes, so it lives in PostgreSQL schema `universe`
+instead of in a file, and every refresh is kept as a new **vintage**. Design and decisions:
+`docs/superpowers/specs/2026-11-07-membership-database-design.md` (Appendix C wins where it
+differs from the earlier sections). Commands and flags: [CLI Reference](cli_reference.md).
+
+**Components**
+
+- **Schema** (`sql/universe_schema.sql`, applied by `ggt db membership apply-ddl`, safe to repeat).
+  `loads` (one row per vintage, with source, parent, hashes and the normalizer version),
+  `load_blobs` (the raw bytes of each load), `snapshot_dates` and `membership` (the index
+  intervals), `load_evidence` (events file and saved press-release pages of a curated vintage),
+  `symbol_changes` (company continuity across a ticker change; membership itself moves by remove
+  plus add), `checks` and `check_blobs` (every comparison against an outside list, with the
+  fetched bytes) and `source_snapshots` (raw bytes the weekly job archived). The tables are
+  append-only, enforced by triggers and role privileges. Three vintages exist: 1 the frozen file
+  import, 2 the upstream download (coverage to 2026-08-18), 3 a curated gap-fill (to 2026-11-04).
+- **The one reader** (`ggTrader.data.membership`). `MembershipSource` has two backends: a
+  database backend (`db` for the latest vintage, `db:<load_id>` for a pinned one, over a
+  read-only session) and a fixture backend (`fixture:<name>`, a frozen file listed in
+  `data/universe/membership/MANIFEST.json` and hash-checked). The source is always named, by
+  `--membership` or the `GGT_MEMBERSHIP` environment variable; there is no default and no
+  fallback to a file, and an unnamed source raises `MembershipSourceNotSelected`. The old file
+  `data/universe/sp500_constituents_history.csv.gz` is the immutable vintage-1 fixture
+  `sp500_v1_2026-06-02`.
+- **Loader** (`ggt db load-sp500`). Validates a membership file (`--from-file`) or applies a
+  human-confirmed events file (`--from-events`, which writes a `curated` vintage) and stores it
+  as the next vintage. A dry run unless `--commit`. `membership reinstate` writes a new vintage
+  with the content of an older one; `membership export` dumps the whole schema with `pg_dump`;
+  `scripts/membership_restore_drill.py` restores such a dump into a scratch database and
+  compares it with the source.
+- **Cross-checks** (`membership_holdings.py`, `membership_upstream.py`). `check-holdings`
+  matches the latest vintage against the SPDR SPY fund holdings for the holdings' own as-of
+  date and records `matched`, `mismatch` or `fetch_failed` in `checks`. `check-upstream`
+  compares the public upstream list and is informational only.
+- **Weekly job** (`membership_weekly.py`, `membership_sources.py`, `membership_proposal.py`;
+  `ggt db membership weekly`). Fetches and archives the sources, matches SPY, compares the other
+  sources, applies the refuse conditions, and on a difference writes a proposed events file and
+  one alert message. It writes only `checks`, `check_blobs` and `source_snapshots`, and never
+  loads a vintage: a human confirms the effective dates against the S&P DJI press release and
+  runs `load-sp500 --from-events FILE --commit`. Systemd unit templates are under
+  `deploy/membership_weekly/`; they are not installed.
+
+**Data flow**
+
+```
+public sources (SPY holdings, Wikipedia, chinobing CSVs)      human, with S&P DJI press releases
+        |  weekly job / check-holdings                                |  load-sp500 --from-events --commit
+        v                                                             v
+ universe.checks, check_blobs, source_snapshots          universe.loads + membership (new vintage)
+                         \                                          /
+                          +-----------  MembershipSource  --------+
+                                   |                |
+              research: ggt lab, drivers, load_bars,   live trader: membership_gate
+              pit_mask (named spec, any vintage)       (latest "db" vintage only)
+```
+
+**The live gate** (`ggTrader.data.membership_gate`). Before any bar is fetched, a wall-clock
+live run reads the latest database vintage and refuses to trade (`SignalGateError`, no orders)
+when the list is unreadable, empty, never matched against SPY, last matched longer ago than the
+freshness limit, too far behind the newest attested date, dated in the future, or when the
+newest holdings comparison of that vintage is a mismatch. A match belongs to one vintage, so
+loading a newer vintage starts again from "never matched" until `check-holdings` matches it.
+A live run (`--live`) refuses any membership source but the latest database vintage; dry runs,
+replays and pinned vintages skip the age gate. Limits, override variables and error codes are in
+the CLI Reference (section "Membership gate").
 
 ---
 
