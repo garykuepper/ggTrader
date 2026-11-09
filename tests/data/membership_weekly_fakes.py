@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from ggTrader.data.membership_holdings import HoldingsResult
+from ggTrader.data.membership_press import PRESS_LISTING_URL
 from ggTrader.data.membership_sources import (
     CHINO_COMMITS_URL,
     WIKI_API,
@@ -162,6 +163,59 @@ def revisions_json(ledger_edit: str, current_edit: str) -> bytes:
     return json.dumps({"query": {"pages": pages}}).encode()
 
 
+#: ``(published text, slug, title)`` of a listing card; the slug carries the release id.
+PressCard = tuple[str, str, str]
+#: ``(effective text, index, action, company, ticker)`` of a release table row.
+PressRow = tuple[str, str, str, str, str]
+MIDCAP_CARD: PressCard = (
+    "Nov 06, 2026, 18:09 ET",
+    "james-hardie-industries-set-to-join-sp-midcap-400-302932466",
+    "James Hardie Industries Set to Join S&amp;P MidCap 400",
+)
+
+
+def press_listing_html(cards: Sequence[PressCard] = (MIDCAP_CARD,)) -> bytes:
+    """The S&P DJI news page in the shape PR Newswire serves it (checked 2026-11-09)."""
+    items = "".join(
+        f"""<div class="row newsCards" lang="en-US"><div class="col-sm-12 card" role="group">
+<a class="newsreleaseconsolidatelink display-outline w-100" href="/news-releases/{slug}.html">
+<h3 class="no-top-margin remove-outline"><small>{stamp}</small>
+  {title}
+</h3><p class="remove-outline">S&amp;P Dow Jones Indices will make the following...</p>
+</a></div></div>"""
+        for stamp, slug, title in cards
+    )
+    return f"<!DOCTYPE html><html><body>{items}</body></html>".encode()
+
+
+def press_release_html(rows: Sequence[PressRow], *, header: bool = True) -> bytes:
+    """A release page: boilerplate, then the body with the summary table."""
+    head = (
+        "".join(
+            f"<td>{c}</td>"
+            for c in (
+                "Effective Date",
+                "Index Name",
+                "Action",
+                "Company Name",
+                "Ticker",
+                "GICS Sector",
+            )
+        )
+        if header
+        else "<td>Date</td><td>Index</td>"
+    )
+    body = "".join(
+        "<tr>" + "".join(f"<td> {c} </td>" for c in (*row, "Industrials")) + "</tr>" for row in rows
+    )
+    return (
+        "<html><head><style>.x{color:red}</style></head><body><div>nav</div>"
+        '<div class="release-body container"><p>NEW YORK /PRNewswire/ -- S&amp;P Dow Jones '
+        "Indices will make the following changes:</p>"
+        f"<table><tr>{head}</tr>{body}</table></div></body></html>"
+    ).encode()
+
+
 def reply(body: bytes, status: int = 200) -> FakeResponse:
     """A complete 200 reply (``Content-Length`` matches the body)."""
     return FakeResponse(status, body, {"content-length": str(len(body))})
@@ -186,6 +240,8 @@ class World:
         self.ledger_edit = "2026-11-03T10:00:00Z"
         self.current_edit = "2026-11-08T10:00:00Z"
         self.commit_date = "2026-11-08T01:00:00Z"
+        self.press_listing = press_listing_html()
+        self.press_releases: dict[str, bytes] = {}  # release id -> page
         self.errors: dict[str, Exception | FakeResponse] = {}
         self.calls: list[tuple[str, dict[str, str], dict[str, str]]] = []
 
@@ -212,12 +268,21 @@ class World:
             )
         if key == "components":
             return reply(self.components)
+        if key == "press_listing":
+            return reply(self.press_listing)
+        if key.startswith("press_"):
+            page = self.press_releases.get(key.removeprefix("press_"))
+            return reply(page) if page is not None else reply(b"not found", 404)
         return reply(self.changes)
 
     @staticmethod
     def _key(url: str, params: dict[str, str]) -> str:
         if "ssga.com" in url:
             return "spy"
+        if url == PRESS_LISTING_URL:
+            return "press_listing"
+        if "prnewswire.com/news-releases/" in url:
+            return "press_" + url.rsplit("-", 1)[-1].removesuffix(".html")
         if url == WIKI_API:
             if params.get("action") == "query":
                 return "revisions"

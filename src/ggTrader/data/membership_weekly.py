@@ -54,6 +54,16 @@ from ggTrader.data.membership_holdings import (
     fetch_holdings,
     max_holdings_age_days,
 )
+from ggTrader.data.membership_press import (
+    PRESS_LISTING,
+    PRESS_PREFIX,
+    PressChange,
+    PressFetch,
+    fetch_press,
+    latest_changes,
+    parse_press_listing,
+    parse_press_release,
+)
 from ggTrader.data.membership_proposal import (
     PROPOSAL_DIRNAME,
     Proposal,
@@ -246,6 +256,7 @@ class WeeklyRun:
     record_error: str | None = None
     sources: dict[str, SnapshotRow] = field(default_factory=dict)
     proposal: Proposal | None = None
+    press: list[PressChange] = field(default_factory=list)
     proposal_path: Path | None = None
     proposal_sha256: str | None = None
     message: str = ""
@@ -345,6 +356,7 @@ def run_weekly(
         spy = failed_holdings(exc)
     run.spy = spy
     fetched = fetch_sources(get=get, now=clock)
+    press_fetch = fetch_press(get=get, now=clock)
 
     # --- parse
     parsed: dict[str, Any] = {}
@@ -402,6 +414,8 @@ def run_weekly(
         size_bytes=None if spy.raw is None else len(spy.raw),
         detail={"stored_in": "check_blobs", "outcome": spy.outcome, **_spy_summary(spy)},
     )
+
+    _press_sources(run, press_fetch)
 
     # --- findings
     _spy_findings(run, spy)
@@ -518,6 +532,90 @@ def _source_findings(
         )
 
 
+def _press_sources(run: WeeklyRun, fetched: PressFetch) -> None:
+    """Record the S&P DJI press releases and parse their S&P 500 tables; warnings only.
+
+    This source is official but irregular (no release for weeks is normal), so it never refuses,
+    never counts as stale and never stops the SPY ``matched`` row from being recorded.
+    """
+    listing = fetched.listing
+    newest: date | None = None
+    extra: dict[str, Any] = {}
+    if listing.ok and listing.raw is not None:
+        try:
+            releases = parse_press_listing(listing.raw)
+            newest = releases[0].published if releases else None
+            extra = {"n_sp500_releases": len(releases), "n_fetched": len(fetched.releases)}
+        except SourceStructureError as exc:
+            extra = {"structure_error": exc.code, "problems": exc.problems}
+            run.findings.append(
+                Finding("warn", "press_structure", f"{listing.name}: {exc.code}: {str(exc)[:200]}")
+            )
+    else:
+        run.findings.append(
+            Finding(
+                "warn",
+                "press_unavailable",
+                f"{listing.name}: not fetched ({listing.reason}: {listing.error})",
+            )
+        )
+    run.sources[listing.name] = _source_row(listing, newest, extra)
+    for release, source in fetched.releases:
+        detail: dict[str, Any] = {"title": release.title, "published": release.published}
+        if source.ok and source.raw is not None:
+            try:
+                changes = parse_press_release(source.raw, release)
+                run.press.extend(changes)
+                detail["n_sp500_rows"] = len(changes)
+            except SourceStructureError as exc:
+                detail.update({"structure_error": exc.code, "problems": exc.problems})
+                run.findings.append(
+                    Finding(
+                        "warn",
+                        "press_structure",
+                        f"{source.name}: {exc.code}: {str(exc)[:200]}",
+                    )
+                )
+        else:
+            run.findings.append(
+                Finding(
+                    "warn",
+                    "press_unavailable",
+                    f"{source.name}: not fetched ({source.reason}: {source.error})",
+                )
+            )
+        run.sources[source.name] = _source_row(source, release.published, detail)
+
+
+def _press_vs_list(run: WeeklyRun, ours: set[str], floor: date, today: date) -> None:
+    """Warn when an announced S&P 500 change that is already effective is not in our list."""
+    changes = latest_changes(run.press)
+    boundary = min(floor, today)
+    by_ticker: dict[str, list[PressChange]] = {}
+    for c in changes:
+        by_ticker.setdefault(normalize_yf_ticker(c.ticker), []).append(c)
+    for change in changes:
+        if change.effective > boundary:
+            continue  # not yet attested by our list or SPY, or not yet effective
+        norm = normalize_yf_ticker(change.ticker)
+        later = [
+            c
+            for c in by_ticker[norm]
+            if c.action != change.action and change.effective <= c.effective <= boundary
+        ]
+        if later:
+            continue  # superseded by a later announced change of the same ticker
+        if change.action == "add" and norm not in ours:
+            what = f"S&P DJI announced {change.ticker} added effective {change.effective}"
+        elif change.action == "remove" and norm in ours:
+            what = f"S&P DJI announced {change.ticker} removed effective {change.effective}"
+        else:
+            continue
+        run.findings.append(
+            Finding("warn", "press_change_not_in_list", f"{what}, but our list disagrees")
+        )
+
+
 def _compare_and_propose(
     run: WeeklyRun,
     latest: VintageData,
@@ -561,6 +659,8 @@ def _compare_and_propose(
                 _diff_text(ours, set(components.tickers), f"chinobing ({components.day})"),
             )
         )
+
+    _press_vs_list(run, ours, floor, today)
 
     # refusals about the ledger's newest rows (those after what is already attested)
     pending = _ledger_pending(ledger, floor) if ledger is not None else []
@@ -607,6 +707,7 @@ def _compare_and_propose(
         today=today,
         our_count=len(history_members_asof(history, snapshot_day)),
         spy_as_of=spy_as_of,
+        press=run.press,
     )
     for problem in run.proposal.count_problems:
         run.findings.append(Finding("refuse", "count_out_of_range", problem))
@@ -696,7 +797,11 @@ def compose_message(run: WeeklyRun, today: date) -> str:
     """The one Telegram message of the run (HTML): a heartbeat, a note or an action request."""
     esc = html.escape
     spy = run.spy
-    names = [r for n, r in run.sources.items() if n != "proposal"]
+    names = [
+        r
+        for n, r in run.sources.items()
+        if n != "proposal" and (n == PRESS_LISTING or not n.startswith(PRESS_PREFIX))
+    ]
     if run.status == STATUS_ERROR and spy is None:
         return "<b>S&amp;P 500 list check: JOB ERROR</b>\n" + "\n".join(
             esc(f.text) for f in run.findings

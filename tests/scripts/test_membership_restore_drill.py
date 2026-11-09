@@ -58,4 +58,4 @@ def test_unit_templates_are_templates_that_do_not_notify_by_accident():
     assert "db membership weekly --notify" in service and "__REPO_ROOT__" in service
     assert "OnCalendar=Sat *-*-* 06:00:00 America/Los_Angeles" in timer
     readme = (UNITS / "README.md").read_text()
-    assert "NOT installed and NOT enabled" in readme and "restore" in readme.lower()
+    assert "The files in this folder stay templates" in readme and "restore" in readme.lower()

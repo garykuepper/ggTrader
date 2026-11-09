@@ -85,7 +85,8 @@ def test_a_clean_run_records_a_match_archives_every_source_and_sends_a_heartbeat
     world = World(base_ours())
     result, store, notifier = run(world, tmp_path=tmp_path)
     assert result.status == "ok" and result.exit_code == 0 and result.findings == []
-    assert len(world.calls) == 7  # four sources, two metadata calls, the SPY workbook
+    # four sources, two metadata calls, the SPY workbook, the press page
+    assert len(world.calls) == 8
     assert len(store.runs) == 1
     check, rows = store.runs[0]
     assert (check.outcome, check.matched_load_id) == ("matched", 1)
@@ -98,6 +99,7 @@ def test_a_clean_run_records_a_match_archives_every_source_and_sends_a_heartbeat
         "chinobing_components",
         "chinobing_changes",
         "spy_holdings",
+        "sp_press_listing",
     }
     by_name = {r.source: r for r in rows}
     assert by_name["wikipedia_ledger"].raw == world.ledger
@@ -123,7 +125,7 @@ def test_the_run_uses_a_descriptive_user_agent_and_an_independent_get_per_source
 # --------------------------------------------------------------------------- the mismatch
 
 
-def fabricated_mismatch(tmp_path: Path):
+def fabricated_mismatch(tmp_path: Path, tweak=None):
     """Our list vs a SPY file with one clean swap, a date disagreement, a rename and an
     announcement-dated ledger row; the sources give candidate dates for each."""
     ours = base_ours()
@@ -174,6 +176,8 @@ def fabricated_mismatch(tmp_path: Path):
             (date(2026, 11, 6), ["ZZANN"], ["X0030"]),
         ]
     )
+    if tweak is not None:
+        tweak(world)
     result, store, notifier = run(world, tmp_path=tmp_path)
     return world, spy, result, store, notifier
 
@@ -404,7 +408,8 @@ def test_a_missing_source_is_alerted_and_the_others_are_still_archived(
     }[key]
     assert by_name[broken].status == "failed" and by_name[broken].raw is None
     assert by_name[broken].detail["reason"] == reason
-    assert sum(1 for r in rows if r.status == "ok") == 4  # the other three sources and SPY
+    # the other three sources, the press page and SPY
+    assert sum(1 for r in rows if r.status == "ok") == 5
     assert broken in notifier.messages[0]
 
 

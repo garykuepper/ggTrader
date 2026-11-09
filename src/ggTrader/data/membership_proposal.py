@@ -7,7 +7,8 @@ events-file format of ``ggt db load-sp500 --from-events`` (``membership_events``
 columns:
 
 * ``date_source``: where the effective date came from (``ledger``, ``ledger+chinobing``,
-  ``chinobing`` or ``none``);
+  ``chinobing``, ``press`` (the official S&P DJI release), ``ledger+press``, ``chinobing+press``,
+  ``ledger+chinobing+press`` or ``none``);
 * ``needs_confirmation``: ``Y`` unless two independent sources give the same date, the date is not
   in the future and the ledger row does not look like it carries the announcement date.
 
@@ -30,6 +31,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker
 from ggTrader.data.membership_events import EVENT_COLUMNS, PROPOSAL_COLUMNS
+from ggTrader.data.membership_press import PressChange
 from ggTrader.data.membership_sources import ChinoChange, LedgerRow
 from ggTrader.data.universe_algebra import MAX_MEMBERS, MIN_MEMBERS
 
@@ -41,12 +43,17 @@ LEDGER_SLACK_DAYS = 14
 #: A chinobing row up to this many days before the floor still counts (it observes a change up
 #: to one day before the effective date).
 CHINO_SLACK_DAYS = 3
-#: Date sources, as written in the file.
-SOURCE_LEDGER, SOURCE_BOTH, SOURCE_CHINO, SOURCE_NONE = (
+#: A press-release row up to this many days before the floor still counts (a correction release
+#: can move the date of a change announced earlier).
+PRESS_SLACK_DAYS = 14
+#: Date sources, as written in the file. A source joined to the official press date with ``+``
+#: agrees with it exactly (``ledger+press``, ``chinobing+press``, ``ledger+chinobing+press``).
+SOURCE_LEDGER, SOURCE_BOTH, SOURCE_CHINO, SOURCE_NONE, SOURCE_PRESS = (
     "ledger",
     "ledger+chinobing",
     "chinobing",
     "none",
+    "press",
 )
 _ACTION_ORDER = {"remove": 0, "add": 1, "rename": 2}
 #: Directory name under ``data/exports`` (git-ignored) where proposals are written.
@@ -67,6 +74,7 @@ class ProposalRow:
     note: str = ""
     ledger_date: date | None = None
     chino_date: date | None = None
+    press_date: date | None = None
 
     def as_cells(self) -> list[str]:
         """The CSV cells in :data:`FILE_COLUMNS` order; evidence stays blank for the human."""
@@ -110,15 +118,25 @@ def raw_spelling(normalised: str, *seen: str) -> str:
 
 
 def _choose_date(
-    ledger: LedgerRow | None, chino_day: date | None, today: date
+    ledger: LedgerRow | None,
+    chino_day: date | None,
+    today: date,
+    press: PressChange | None = None,
 ) -> tuple[date | None, str, bool, list[str]]:
-    """``(effective, date_source, needs_confirmation, notes)`` from the two sources' dates."""
+    """``(effective, date_source, needs_confirmation, notes)`` from the sources' dates.
+
+    ``press`` is the S&P DJI press release's row for the same change, when there is one. It is the
+    official effective date, so it wins, but a flag is cleared only when it agrees with the
+    ledger's or chinobing's date and is not in the future.
+    """
     notes: list[str] = []
     led = ledger.effective if ledger else None
     if led:
         notes.append(f"ledger {led}")
     if chino_day:
         notes.append(f"chinobing {chino_day} (observation date)")
+    if press is not None:
+        return _with_press(press, led, chino_day, today, notes)
     suspect = False
     if ledger is not None and led is not None:
         if led > today:
@@ -144,6 +162,26 @@ def _choose_date(
     return None, SOURCE_NONE, True, ["no source dates this change; fill in the effective date"]
 
 
+def _with_press(
+    press: PressChange, led: date | None, chino_day: date | None, today: date, notes: list[str]
+) -> tuple[date, str, bool, list[str]]:
+    """The date rule when the official press release dates the change."""
+    notes.append(f"S&P DJI release of {press.published}: effective {press.effective} ({press.url})")
+    agreeing = [
+        name
+        for name, day in (("ledger", led), ("chinobing", chino_day))
+        if day is not None and day == press.effective
+    ]
+    for name, day in (("ledger", led), ("chinobing", chino_day)):
+        if day is not None and day != press.effective and name not in agreeing:
+            notes.append(f"{name} date {day} differs from the release")
+    future = press.effective > today
+    if future:
+        notes.append("the release date is in the future (not yet effective)")
+    source = "+".join([*agreeing, SOURCE_PRESS])
+    return press.effective, source, future or not agreeing, notes
+
+
 def build_proposal(
     *,
     adds: Sequence[str],
@@ -155,6 +193,7 @@ def build_proposal(
     today: date,
     our_count: int,
     spy_as_of: date | None = None,
+    press: Sequence[PressChange] = (),
 ) -> Proposal:
     """Candidate rows for ``adds`` / ``removes`` (normalised tickers); pure.
 
@@ -163,7 +202,8 @@ def build_proposal(
     ledger and chinobing rows after it, with a little slack because a row may carry an announcement
     date or an observation date). ``our_count`` is the size of our list before the changes: dated
     rows are applied in order, and a running count outside 480..520 (typically a removal with no
-    matching addition) is reported in ``count_problems``.
+    matching addition) is reported in ``count_problems``. ``press`` are the official S&P DJI
+    release rows (``membership_press``); the newest release's row for a change dates it.
     """
     ledger_cut = floor - timedelta(days=LEDGER_SLACK_DAYS)
     chino_cut = floor - timedelta(days=CHINO_SLACK_DAYS)
@@ -188,6 +228,11 @@ def build_proposal(
         for t in change.removed:
             ch_rem[_norm(t)] = change.day
             spelling[_norm(t)] = t
+    press_cut = floor - timedelta(days=PRESS_SLACK_DAYS)
+    pr_by_key: dict[tuple[str, str], PressChange] = {}
+    for change in sorted(press, key=lambda c: c.order):  # the newest release per change wins ...
+        pr_by_key[(change.action, _norm(change.ticker))] = change
+    pr_by_key = {k: c for k, c in pr_by_key.items() if c.effective > press_cut}  # ... then the cut
     proposal = Proposal()
     by_key: dict[tuple[str, str], ProposalRow] = {}
     for action, tickers, led, ch in (
@@ -196,7 +241,8 @@ def build_proposal(
     ):
         for norm in sorted(tickers):
             lrow = led.get(norm)
-            effective, source, needs, notes = _choose_date(lrow, ch.get(norm), today)
+            prow = pr_by_key.get((action, norm))
+            effective, source, needs, notes = _choose_date(lrow, ch.get(norm), today, prow)
             ticker = (
                 our_raw.get(norm, raw_spelling(norm, spelling.get(norm, "")))
                 if action == "remove"
@@ -217,6 +263,7 @@ def build_proposal(
                 note="; ".join(notes),
                 ledger_date=lrow.effective if lrow else None,
                 chino_date=ch.get(norm),
+                press_date=prow.effective if prow else None,
             )
             by_key[(action, norm)] = row
             proposal.rows.append(row)
