@@ -352,10 +352,20 @@ def test_a_short_body_is_a_truncated_download_that_keeps_what_arrived():
 
 
 def test_an_oversized_download_is_refused_unread():
-    big = b"x" * (mh.MAX_DOWNLOAD_BYTES + 1)
+    big = b"x" * (mh.MAX_DOWNLOAD_BYTES + 5 * 65536)
+    reply = FakeResponse(200, big, {})
     with pytest.raises(HoldingsFetchError) as caught:
-        fetch_holdings(get=FakeGet(FakeResponse(200, big, {})))
+        fetch_holdings(get=FakeGet(reply))
     assert caught.value.reason == "too_large" and caught.value.raw is None
+    assert (
+        reply.served <= mh.MAX_DOWNLOAD_BYTES + 65536 and reply.closed
+    )  # streamed and stopped, not buffered
+
+
+def test_the_download_asks_for_a_stream_so_the_cap_applies_before_buffering():
+    get = FakeGet(ok(holdings_xlsx(base_tickers())))
+    fetch_holdings(get=get, now=lambda: NOW)
+    assert get.calls[0][1]["stream"] is True
 
 
 # --------------------------------------------------------------------------- the runner

@@ -50,6 +50,7 @@ from ggTrader.data.universe_algebra import (
     raw_sha256,
 )
 from ggTrader.data.universe_db import INDEX_NAME, VintageData, connect
+from ggTrader.utils.http_cap import DownloadTooLarge, read_capped
 from ggTrader.utils.xlsx_min import XlsxError, read_first_sheet
 
 #: The public SPY daily holdings workbook (State Street / SPDR).
@@ -179,6 +180,7 @@ def fetch_holdings(
             HOLDINGS_URL,
             timeout=TIMEOUT_SECONDS,
             allow_redirects=True,
+            stream=True,  # read under the byte cap instead of buffering the whole reply
             headers={
                 "User-Agent": USER_AGENT,
                 "Accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*",
@@ -190,9 +192,12 @@ def fetch_holdings(
     retrieved_at = clock()
     if response.status_code != 200:
         raise HoldingsFetchError("http_status", f"the host answered HTTP {response.status_code}")
-    raw = bytes(response.content)
-    if len(raw) > MAX_DOWNLOAD_BYTES:
-        raise HoldingsFetchError("too_large", f"the download is {len(raw)} bytes, over the cap")
+    try:
+        raw = read_capped(response, MAX_DOWNLOAD_BYTES)
+    except DownloadTooLarge as exc:
+        raise HoldingsFetchError("too_large", f"the download is refused: {exc}") from None
+    except requests.RequestException as exc:
+        raise HoldingsFetchError("unreachable", f"the download broke off: {exc}") from None
     declared = response.headers.get("content-length")
     if declared is not None and not response.headers.get("content-encoding"):
         if declared.isdigit() and int(declared) != len(raw):

@@ -38,6 +38,7 @@ import requests
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker
 from ggTrader.data.universe_algebra import MAX_MEMBERS, MIN_MEMBERS
+from ggTrader.utils.http_cap import DownloadTooLarge, read_capped
 
 #: Identifies the job to the servers (Wikimedia asks for a descriptive agent with a contact).
 USER_AGENT = (
@@ -157,6 +158,7 @@ def _request(
             params=params,
             timeout=TIMEOUT_SECONDS,
             allow_redirects=True,
+            stream=True,  # read under the byte cap instead of buffering the whole reply
             headers={
                 "User-Agent": USER_AGENT,
                 "Accept": accept,
@@ -169,9 +171,12 @@ def _request(
     status = int(response.status_code)
     if status != 200:
         return _failure(name, url, when, "http_status", f"HTTP {status}", http_status=status)
-    raw = bytes(response.content)
-    if len(raw) > MAX_DOWNLOAD_BYTES:
-        return _failure(name, url, when, "too_large", f"{len(raw)} bytes", http_status=status)
+    try:
+        raw = read_capped(response, MAX_DOWNLOAD_BYTES)
+    except DownloadTooLarge as exc:
+        return _failure(name, url, when, "too_large", str(exc), http_status=status)
+    except requests.RequestException as exc:
+        return _failure(name, url, when, "unreachable", f"{type(exc).__name__}: {exc}")
     if not raw:
         return _failure(name, url, when, "empty", "the body is empty", http_status=status)
     declared = response.headers.get("content-length")

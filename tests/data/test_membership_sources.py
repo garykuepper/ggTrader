@@ -301,3 +301,13 @@ def test_an_unexpected_exception_in_one_fetch_cannot_abort_the_others():
     world.errors["ledger"] = ValueError("boom")  # not a requests error
     fetched = fetch_sources(get=world, now=lambda: NOW)
     assert fetched[ms.LEDGER].reason == "internal" and fetched[ms.CURRENT].ok
+
+
+def test_an_oversized_source_is_refused_while_streaming():
+    big = reply(b"x" * (ms.MAX_DOWNLOAD_BYTES + 5 * 65536))
+    world = World(base_ours())
+    world.errors["current"] = big
+    fetched = fetch_sources(get=world, now=lambda: NOW)
+    failed = [f for f in fetched.values() if not f.ok]
+    assert [f.reason for f in failed] == ["too_large"]
+    assert big.served <= ms.MAX_DOWNLOAD_BYTES + 65536 and big.closed

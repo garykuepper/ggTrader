@@ -43,6 +43,7 @@ from ggTrader.data.universe_algebra import (
     refusal_reasons,
 )
 from ggTrader.data.universe_db import INDEX_NAME, VintageData, connect, latest_load, read_vintage
+from ggTrader.utils.http_cap import DownloadTooLarge, read_capped
 
 #: The upstream repository and file the sp500 history comes from (MIT licence).
 UPSTREAM_REPO = "fja05680/sp500"
@@ -51,6 +52,8 @@ COMMITS_URL = f"https://api.github.com/repos/{UPSTREAM_REPO}/commits"
 RAW_BASE = f"https://raw.githubusercontent.com/{UPSTREAM_REPO}"
 #: Seconds to wait for each request.
 TIMEOUT_SECONDS = 60
+#: A real history file is a few MB; anything over this is refused rather than stored.
+MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024
 #: Content types a CSV may legitimately arrive as (GitHub raw serves ``text/plain``).
 ACCEPTED_CONTENT_TYPES = ("text/plain", "text/csv")
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
@@ -98,7 +101,9 @@ def fetch_upstream(
     url = raw_url(commit)
     try:
         # identity encoding keeps Content-Length equal to the body length we count
-        response = get(url, timeout=TIMEOUT_SECONDS, headers={"Accept-Encoding": "identity"})
+        response = get(
+            url, timeout=TIMEOUT_SECONDS, stream=True, headers={"Accept-Encoding": "identity"}
+        )
     except requests.RequestException as exc:
         raise UpstreamFetchError("unreachable", f"cannot reach {UPSTREAM_REPO}: {exc}") from None
     retrieved_at = clock()
@@ -109,7 +114,12 @@ def fetch_upstream(
         raise UpstreamFetchError(
             "content_type", f"upstream sent content-type {content_type!r}, not a CSV"
         )
-    raw = bytes(response.content)
+    try:
+        raw = read_capped(response, MAX_DOWNLOAD_BYTES)
+    except DownloadTooLarge as exc:
+        raise UpstreamFetchError("too_large", f"the download is refused: {exc}") from None
+    except requests.RequestException as exc:
+        raise UpstreamFetchError("unreachable", f"the download broke off: {exc}") from None
     declared = response.headers.get("content-length")
     if declared is not None and not response.headers.get("content-encoding"):
         if declared.isdigit() and int(declared) != len(raw):

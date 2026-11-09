@@ -66,6 +66,17 @@ class FakeResponse:
         self.content = body
         self.headers = {k.lower(): v for k, v in (headers or {}).items()}
         self._payload = payload
+        self.served = 0  # bytes handed out by iter_content
+        self.closed = False
+
+    def iter_content(self, chunk_size: int = 1) -> Any:
+        for start in range(0, len(self.content), chunk_size):
+            chunk = self.content[start : start + chunk_size]
+            self.served += len(chunk)
+            yield chunk
+
+    def close(self) -> None:
+        self.closed = True
 
     def json(self) -> Any:
         if self._payload is None:
@@ -183,6 +194,16 @@ def test_a_compressed_body_is_not_judged_by_content_length():
     raw = csv_bytes(synthetic_history())
     reply = good(raw, **{"content-length": "12345", "content-encoding": "gzip"})
     assert fetch_upstream(get=FakeGet(reply), now=lambda: NOW).raw == raw
+
+
+def test_an_oversized_upstream_body_is_refused_while_streaming():
+    big = FakeResponse(
+        200, b"x" * (up.MAX_DOWNLOAD_BYTES + 5 * 65536), {"content-type": "text/plain"}
+    )
+    with pytest.raises(UpstreamFetchError) as caught:
+        fetch_upstream(get=FakeGet(big), now=lambda: NOW)
+    assert caught.value.reason == "too_large"
+    assert big.served <= up.MAX_DOWNLOAD_BYTES + 65536 and big.closed
 
 
 # --------------------------------------------------------------------------- compare
