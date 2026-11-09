@@ -25,7 +25,7 @@ Three **separate plans are proposed but not yet written**. Start the paper-parit
 
 The production paper trader remains frozen. A plan or design does not authorize a return test, installation, scheduling, container change or order. A parity incident resets the window; elapsed calendar time does not establish readiness.
 
-**Models:** Claude only for now; follow the [delegation guidance](../AGENTS.md#delegation-preference-2026-11-04). Check quota with the owner before writing a delegation plan. Sonnet orchestrates, Opus takes critical tasks, Haiku takes easy and bulk tasks, and a stronger model checks Haiku's output before reliance. Keep private account records out of delegate prompts.
+**Models:** follow the [delegation guidance](../AGENTS.md#delegation-preference-2026-11-08). Check quota with the owner before writing a delegation plan. Keep private account records out of delegate prompts.
 
 ## Open decisions
 
