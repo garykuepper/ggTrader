@@ -13,7 +13,6 @@ import hashlib
 import json
 import shutil
 import traceback
-import warnings
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -30,11 +29,9 @@ from ggTrader.data.membership import (
     MembershipIntegrityError,
     MembershipSourceNotSelected,
     MembershipSpecError,
-    MembershipStaleError,
-    MembershipStaleWarning,
     MembershipUnavailable,
     PgMembershipStore,
-    check_membership_age,
+    age_since_verified,
     load_manifest,
     membership_source,
     parse_spec,
@@ -516,91 +513,12 @@ def test_provenance_refuses_a_timestamp_as_the_as_of_day() -> None:
         _small().provenance(pd.Timestamp("2026-11-08"))  # type: ignore[arg-type]
 
 
-def test_age_of_the_vintage_one_fixture_today_matches_the_spec() -> None:
-    result = check_membership_age(_small().vintage(), D("2026-11-08"))
-    assert (result.age_since_verified_days, result.age_since_change_days) == (152, 159)
-    assert result.verdict == "ok" and result.reasons == ()
-
-
-@pytest.mark.parametrize(
-    ("asof", "verdict"),
-    [
-        ("2026-06-19", "ok"),  # 10 days: at the limit, not above it
-        ("2026-06-20", "warn"),  # 11 days
-        ("2026-07-24", "warn"),  # 45 days
-        ("2026-07-25", "refuse"),  # 46 days
-    ],
-)
-def test_verified_age_thresholds_are_strictly_greater_than(asof: str, verdict: str) -> None:
-    result = check_membership_age(
-        _small().vintage(), D(asof), verified_warn_days=10, verified_refuse_days=45
-    )
-    assert result.verdict == verdict
-    assert bool(result.reasons) == (verdict != "ok")
-
-
-def test_the_lag_bound_uses_the_last_change_date() -> None:
-    vintage = _small().vintage()  # last change 2026-06-02
-    assert check_membership_age(vintage, D("2026-08-31"), lag_warn_days=90).verdict == "ok"
-    assert check_membership_age(vintage, D("2026-09-01"), lag_warn_days=90).verdict == "warn"
-    refused = check_membership_age(vintage, D("2026-11-30"), lag_warn_days=90, lag_refuse_days=180)
-    assert refused.verdict == "refuse" and "last change date" in refused.reasons[0]
-
-
-def test_refuse_outranks_warn_and_both_rules_report() -> None:
-    result = check_membership_age(
-        _small().vintage(),
-        D("2026-11-08"),
-        verified_warn_days=10,
-        verified_refuse_days=400,
-        lag_warn_days=10,
-        lag_refuse_days=100,
-    )
-    assert result.verdict == "refuse" and len(result.reasons) == 2
-
-
-def test_a_vintage_verified_after_the_as_of_day_is_never_stale() -> None:
-    result = check_membership_age(
-        _small().vintage(), D("2024-01-02"), verified_warn_days=0, verified_refuse_days=0
-    )
-    assert result.age_since_verified_days < 0 and result.verdict == "ok"
-
-
-def test_an_unchecked_threshold_never_fires() -> None:
-    assert check_membership_age(_small().vintage(), D("2040-01-01")).verdict == "ok"
-
-
-def test_warn_above_refuse_is_a_mistake() -> None:
-    with pytest.raises(ValueError, match="must not exceed"):
-        check_membership_age(
-            _small().vintage(), D("2026-11-08"), verified_warn_days=50, verified_refuse_days=10
-        )
-
-
-def test_enforce_raises_on_refuse_and_warns_on_warn() -> None:
-    vintage = _small().vintage()
-    with pytest.raises(MembershipStaleError, match=V1):
-        check_membership_age(vintage, D("2026-11-08"), verified_refuse_days=45, enforce=True)
-    with pytest.warns(MembershipStaleWarning):
-        check_membership_age(vintage, D("2026-11-08"), verified_warn_days=45, enforce=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        check_membership_age(vintage, D("2026-06-10"), verified_warn_days=45, enforce=True)
-
-
-def test_the_age_check_refuses_a_datetime_as_of_day() -> None:
-    with pytest.raises(TypeError, match="datetime.date"):
-        check_membership_age(_small().vintage(), datetime(2026, 11, 8))  # type: ignore[arg-type]
-
-
 def test_a_recorded_unchanged_check_moves_verified_at_forward() -> None:
     later = BASE_TIME + timedelta(days=140)
     store = FakeMembershipStore()
     store.add(synthetic_history(5), retrieved_at=BASE_TIME, verified_at=later)
     vintage = DbMembershipSource(store=store).vintage()
-    result = check_membership_age(vintage, D("2026-11-08"), verified_refuse_days=45)
-    assert result.age_since_verified_days == (D("2026-11-08") - later.date()).days == 12
-    assert result.verdict == "ok"
+    assert age_since_verified(vintage, D("2026-11-08")) == 12
 
 
 # ---- CLI: verify --against-fixture -------------------------------------------------------------

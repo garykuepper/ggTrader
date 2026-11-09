@@ -686,9 +686,10 @@ raises `MembershipSourceNotSelected`. If `db` cannot be read it raises `Membersh
 `GGT_MEMBERSHIP_DB_URL` when set, else the project's usual connection, over a read-only session.
 A source offers `history()` (the shape of `load_sp500_history()`), `members_asof`,
 `all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
-name plus content checksum, for result JSON). `check_membership_age(vintage, asof, ...)` compares
-a vintage's age with warn and refuse thresholds you pass; the live gate (`membership_gate`,
-slices M4 and M4b) has its own inclusive lag thresholds and is the only caller that enforces them.
+name plus content checksum, for result JSON). The live gate
+(`membership_gate`, slices M4 and M4b) is the only place that enforces an age: it counts from the
+last SPY holdings match. The `verified_at` instant in a result's provenance is informational for
+research results and is not the gate's clock.
 
 **Every reader now takes the source (slice M3).** `universe_members_asof`, `universe_all_between`,
 `sp500_members_asof`, `all_members_between`, `eligible_at`, `equity_universe_between`,

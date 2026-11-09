@@ -74,9 +74,10 @@ def check_constituent_age(
 
     With a source (``membership``, else the one selected by ``GGT_MEMBERSHIP``) the spec 3.4
     rule applies: ``age_days`` is still ``asof - coverage_end`` (information only) and the list is
-    *stale* when ``asof - verified_at`` exceeds ``max_age_days``, i.e. when our copy was last
-    proved equal to upstream too long ago. A vintage verified after ``asof`` is never stale, so
-    replaying an old backtest is not penalised.
+    *stale* when ``asof - verified_at`` exceeds ``max_age_days``. ``verified_at`` is informational
+    provenance for research results, not the live gate's clock (that is the last SPY holdings
+    match, ``membership_gate``). A vintage verified after ``asof`` is never stale, so replaying
+    an old backtest is not penalised.
 
     Returns a JSON-able record for the run provenance.
     """

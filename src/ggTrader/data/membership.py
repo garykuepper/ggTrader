@@ -32,7 +32,6 @@ import gzip
 import json
 import os
 import re
-import warnings
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -95,14 +94,6 @@ class MembershipIntegrityError(MembershipError):
     """The data read does not match its recorded hashes or counts."""
 
 
-class MembershipStaleError(MembershipError):
-    """The vintage is older than the allowed age (``check_membership_age(enforce=True)``)."""
-
-
-class MembershipStaleWarning(UserWarning):
-    """The vintage is past a warn threshold (``check_membership_age(enforce=True)``)."""
-
-
 # --------------------------------------------------------------------------- vintage record
 
 
@@ -125,8 +116,9 @@ class MembershipVintage:
     coverage_start: date
     coverage_end: date
     retrieved_at: datetime
-    #: Legacy instant kept for research age reports: the load's ``retrieved_at``, or the last
-    #: matched holdings check if later. The live gate does **not** read it (see ``matched_at``).
+    #: Informational only, recorded in the provenance of research results: the load's
+    #: ``retrieved_at``, or the last matched holdings check if later. It is NOT the gate's clock
+    #: (the gate counts from ``matched_at`` and ``known_through``, Appendix C3).
     verified_at: datetime
     #: When this list was last proved equal to the SPDR SPY holdings (the newest ``matched`` check
     #: for this load), else ``None``: never matched. The live gate's freshness clock (C3).
@@ -159,7 +151,10 @@ class MembershipVintage:
 
 
 def age_since_verified(vintage: MembershipVintage, asof: date) -> int:
-    """Days from ``verified_at`` (UTC date) to ``asof``; negative if verified after ``asof``."""
+    """Days from ``verified_at`` (UTC date) to ``asof``; negative if verified after ``asof``.
+
+    Informational (research provenance); the live gate uses :func:`age_since_matched` instead.
+    """
     return (as_date(asof) - _utc(vintage.verified_at).date()).days
 
 
@@ -171,79 +166,6 @@ def age_since_matched(vintage: MembershipVintage, asof: date) -> int | None:
     if vintage.matched_at is None:
         return None
     return (as_date(asof) - _utc(vintage.matched_at).date()).days
-
-
-# --------------------------------------------------------------------------- age check (3.4)
-
-
-@dataclass(frozen=True)
-class MembershipAge:
-    """Result of :func:`check_membership_age`.
-
-    ``age_since_change_days`` is ``asof - coverage_end`` (information, plus the optional lag
-    bound); ``age_since_verified_days`` is ``asof - verified_at``. ``verdict`` is ``ok``,
-    ``warn`` or ``refuse``; ``reasons`` says which threshold fired.
-    """
-
-    asof: date
-    age_since_verified_days: int
-    age_since_change_days: int
-    verdict: Literal["ok", "warn", "refuse"]
-    reasons: tuple[str, ...]
-
-
-def check_membership_age(
-    vintage: MembershipVintage,
-    asof: date,
-    *,
-    verified_warn_days: int | None = None,
-    verified_refuse_days: int | None = None,
-    lag_warn_days: int | None = None,
-    lag_refuse_days: int | None = None,
-    enforce: bool = False,
-) -> MembershipAge:
-    """Age of a vintage at ``asof`` against thresholds you choose (spec 3.4 and decision D8).
-
-    *Stale* means ``age_since_verified > verified_*_days``: our copy was last proved equal to
-    upstream too long ago. A vintage verified after ``asof`` has a negative age and is never
-    stale, so a replay of an old backtest is not penalised. The lag bound is the separate
-    ``asof - coverage_end`` limit of D8 (upstream's last change date). A threshold left ``None``
-    is not checked; a warn threshold must not exceed its refuse threshold.
-
-    With ``enforce=True`` a ``warn`` emits :class:`MembershipStaleWarning` and a ``refuse`` raises
-    :class:`MembershipStaleError`; by default the result is returned and the caller decides.
-    Who applies this and when (the live gate only, only for the latest ``db`` vintage on a
-    wall-clock run) is slice M4's business, not this helper's.
-    """
-    for warn, refuse, name in (
-        (verified_warn_days, verified_refuse_days, "verified"),
-        (lag_warn_days, lag_refuse_days, "lag"),
-    ):
-        if warn is not None and refuse is not None and warn > refuse:
-            raise ValueError(f"{name}_warn_days ({warn}) must not exceed {name}_refuse_days")
-    day = as_date(asof)
-    verified = age_since_verified(vintage, day)
-    change = (day - vintage.coverage_end).days
-    refuse_reasons: list[str] = []
-    warn_reasons: list[str] = []
-    for value, warn, refuse, what in (
-        (verified, verified_warn_days, verified_refuse_days, "last verified"),
-        (change, lag_warn_days, lag_refuse_days, "last change date"),
-    ):
-        if refuse is not None and value > refuse:
-            refuse_reasons.append(f"{what} {value} days before {day} (refuse above {refuse})")
-        elif warn is not None and value > warn:
-            warn_reasons.append(f"{what} {value} days before {day} (warn above {warn})")
-    verdict: Literal["ok", "warn", "refuse"] = (
-        "refuse" if refuse_reasons else "warn" if warn_reasons else "ok"
-    )
-    result = MembershipAge(day, verified, change, verdict, tuple(refuse_reasons + warn_reasons))
-    if enforce and verdict != "ok":
-        text = f"membership {_describe(vintage)}: " + "; ".join(result.reasons)
-        if verdict == "refuse":
-            raise MembershipStaleError(text)
-        warnings.warn(text, MembershipStaleWarning, stacklevel=2)
-    return result
 
 
 def _describe(vintage: MembershipVintage) -> str:
