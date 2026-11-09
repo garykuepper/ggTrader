@@ -89,6 +89,8 @@ DEFAULT_PROPOSAL_DIR = REPO_ROOT / "data" / "exports" / PROPOSAL_DIRNAME
 MAX_MESSAGE_CHARS = 3500
 #: Rows of the proposal quoted in the message; the rest are in the file.
 MAX_MESSAGE_ROWS = 12
+#: File name the message suggests for ``ggt db membership proposal --out``.
+PROPOSAL_OUT = "proposed_events.csv"
 #: Statuses of a run, worst last.
 STATUS_OK, STATUS_WARN, STATUS_REFUSE, STATUS_ERROR = "ok", "warn", "refuse", "error"
 
@@ -192,6 +194,44 @@ class PgWeeklyStore(PgHoldingsStore):
             return check_id
         finally:
             conn.close()
+
+
+class ProposalNotFound(LookupError):
+    """The check has no stored proposal (it proposed nothing, or the id is wrong)."""
+
+
+def decode_stored_proposal(
+    check_id: int, raw_gzip: bytes | None, expected_sha256: str | None
+) -> bytes:
+    """The proposal bytes of a stored ``source_snapshots`` row, checked against its hash."""
+    if raw_gzip is None:
+        raise ProposalNotFound(f"check {check_id} has a proposal row but it holds no bytes")
+    data = gzip.decompress(bytes(raw_gzip))
+    if expected_sha256 is not None and raw_sha256(data) != expected_sha256:
+        raise ValueError(f"the stored proposal of check {check_id} does not match its sha256")
+    return data
+
+
+def read_stored_proposal(check_id: int, url: str | None = None) -> bytes:
+    """The proposed events file the weekly job stored for ``check_id`` (read-only session).
+
+    The file written to ``data/exports/membership_proposals/`` can vanish with a container; the
+    bytes in ``universe.source_snapshots`` (source ``proposal``) cannot.
+    """
+    conn = connect(url, read_only=True)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT raw_gzip, raw_sha256 FROM universe.source_snapshots "
+                "WHERE check_id = %s AND source = 'proposal'",
+                (check_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        raise ProposalNotFound(f"check {check_id} stored no proposal")
+    return decode_stored_proposal(check_id, row[0], row[1])
 
 
 @dataclass
@@ -700,11 +740,16 @@ def _proposal_text(run: WeeklyRun) -> str:
     esc = html.escape
     assert run.proposal is not None
     path = run.proposal_path
-    where = _relative(path) if path else "(file not written)"
+    if run.check_id is not None:
+        # The file on disk may vanish with a container; the stored bytes do not.
+        where = PROPOSAL_OUT
+        fetch = f"<code>ggt db membership proposal --id {run.check_id} --out {where}</code>"
+    else:
+        where = _relative(path) if path else "(file not written)"
+        fetch = f"<code>{esc(where)}</code>"
     lines = [
         f"<b>Proposed events file</b> ({len(run.proposal.rows)} rows, "
-        f"{run.proposal.n_needing_confirmation} need confirmation; nothing was loaded): "
-        f"<code>{esc(where)}</code>"
+        f"{run.proposal.n_needing_confirmation} need confirmation; nothing was loaded): {fetch}"
     ]
     for row in run.proposal.rows[:MAX_MESSAGE_ROWS]:
         when = row.effective.isoformat() if row.effective else "date unknown"

@@ -435,7 +435,7 @@ ggt db <subcommand>
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
-| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `weekly [--notify] [--proposal-dir DIR] [--json PATH]` is the weekly job (fetch and archive the sources, match SPY, cross-check, alert, propose; dry unless `--notify`; never loads a vintage); `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `weekly [--notify] [--proposal-dir DIR] [--json PATH]` is the weekly job (fetch and archive the sources, match SPY, cross-check, alert, propose; dry unless `--notify`; never loads a vintage); `proposal --id N --out FILE` writes the proposed events file the weekly job stored for check N; `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
 
 ### Examples:
 ```bash
@@ -546,16 +546,19 @@ of every source are archived (gzip + sha256) in the new append-only `universe.so
   has changed structure (the ledger parser checks the header row by row: a missing, renamed or extra
   column, a row with the wrong cell count, a vanished table). Any refusal with candidate changes
   writes a proposal.
-* **Proposal:** `data/exports/membership_proposals/proposed_events_<UTC>.csv` (git-ignored, never
-  overwritten). The columns of `ggt db load-sp500 --from-events` plus `date_source` (`ledger`,
+* **Proposal:** the exact bytes are stored in `universe.source_snapshots` (source `proposal`, under
+  the run's check id) and a copy is tried at `data/exports/membership_proposals/proposed_events_<UTC>.csv`
+  (git-ignored, never overwritten; the container that ran the unit may not keep it). Rebuild the file
+  with `ggt db membership proposal --id N --out FILE` (read-only on the database, refuses to
+  overwrite FILE, exit 0 written, 1 not found), the command the message names. The columns of `ggt db load-sp500 --from-events` plus `date_source` (`ledger`,
   `ledger+chinobing`, `chinobing`, `none`) and `needs_confirmation`. Candidates are the set difference
   with SPY, each with the best effective date from the ledger and chinobing rows after the attested
   date; `Y` unless the two sources give the same date, it is not in the future and the ledger row is
   not announcement-dated. A removal and an addition that only chinobing shows together are also
   proposed as a `rename`. `evidence_url` and `evidence_sha256` are blank. The loader refuses a file
   with a blank `evidence_url` or any `needs_confirmation` other than `N`/blank, so a proposal cannot be
-  loaded unreviewed. The message lists the rows, what to check and the exact `load-sp500
-  --from-events FILE` (dry run) and `--commit` commands.
+  loaded unreviewed. The message lists the rows, what to check and the exact `proposal` command and
+  the `load-sp500 --from-events FILE` (dry run) and `--commit` commands.
 
 Deployment templates (not installed): `deploy/membership_weekly/` (user service and Saturday
 06:00 America/Los_Angeles timer, README with the install, disable, message-reading, proposal and

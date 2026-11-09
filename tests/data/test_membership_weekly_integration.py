@@ -162,6 +162,12 @@ def test_a_mismatch_stores_the_proposal_bytes_and_still_loads_nothing(
         assert sha == hashlib.sha256(run.proposal_path.read_bytes()).hexdigest()
     vintage = DbMembershipSource("latest", store=PgMembershipStore(db_url)).vintage()
     assert vintage.matched_at is None  # a mismatch never advances the gate
+    # the proposal can be rebuilt from the database alone, byte for byte
+    from ggTrader.data.membership_weekly import ProposalNotFound, read_stored_proposal
+
+    assert read_stored_proposal(run.check_id, db_url) == run.proposal_path.read_bytes()
+    with pytest.raises(ProposalNotFound):
+        read_stored_proposal(run.check_id + 1000, db_url)
 
 
 def test_a_failed_snapshot_row_rolls_the_whole_record_back(conn, db_url) -> None:

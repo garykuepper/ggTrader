@@ -238,8 +238,11 @@ def test_a_mismatch_writes_a_proposal_with_dates_sources_and_confirmation_flags(
     rel = f"data/exports/membership_proposals/{path.name}"
     assert "ACTION NEEDED" in message and "nothing was loaded" in message
     assert "press release" in message and "needs_confirmation" in message
-    assert f"<code>ggt db load-sp500 --from-events {path}" in message  # proposal_dir is a tmp dir
-    assert "--commit</code>" in message and rel not in message
+    # the message names the command that rebuilds the file from the database, not a path that
+    # may vanish with the container (the fake store's first check id is 1)
+    assert "<code>ggt db membership proposal --id 1 --out proposed_events.csv</code>" in message
+    assert "<code>ggt db load-sp500 --from-events proposed_events.csv" in message
+    assert "--commit</code>" in message and rel not in message and str(path) not in message
     assert "ZZNEW" in message and "CONFIRM" in message
 
 
@@ -750,3 +753,81 @@ def test_proposal_names_never_collide_and_are_never_overwritten(tmp_path):
     before = clash.read_bytes()
     third, _, _ = run(world, tmp_path=tmp_path)  # same second as the first
     assert "proposal_not_written" in codes(third) and clash.read_bytes() == before
+
+
+# --------------------------------------------------------------------------- the stored proposal
+
+
+def test_without_a_recorded_check_id_the_message_falls_back_to_the_file_path(tmp_path):
+    ours = base_ours()
+    world = World(ours)
+    world.spy = holdings_xlsx([t for t in ours if t != "X0010"] + ["ZZAGR"], "As of 06-Nov-2026")
+    world.changes = changes_csv([(date(2026, 11, 2), ["ZZAGR"], ["X0010"])])
+    store = FakeWeeklyStore(ours, fail_record=True)
+    result, _, notifier = run(world, store=store, tmp_path=tmp_path)
+    assert result.check_id is None and result.proposal_path is not None
+    message = notifier.messages[0]
+    assert "membership proposal --id" not in message
+    assert result.proposal_path.name in message
+
+
+def test_the_stored_proposal_comes_back_byte_for_byte_and_is_checked_against_its_hash():
+    data = b"effective_date,action,ticker\n2026-11-02,add,AAA\n"
+    digest = hashlib.sha256(data).hexdigest()
+    assert mw.decode_stored_proposal(7, gzip.compress(data), digest) == data
+    with pytest.raises(ValueError, match="sha256"):
+        mw.decode_stored_proposal(7, gzip.compress(data), "0" * 64)
+    with pytest.raises(mw.ProposalNotFound, match="no bytes"):
+        mw.decode_stored_proposal(7, None, digest)
+
+
+def _proposal_args(tmp_path: Path, out: str = "p.csv", check: int = 7):
+    return argparse.Namespace(id=check, out=tmp_path / out)
+
+
+def test_the_proposal_command_writes_the_stored_bytes_and_will_not_overwrite(
+    tmp_path, monkeypatch, capsys
+):
+    data = b"effective_date,action,ticker\n2026-11-02,add,AAA\n"
+    monkeypatch.setattr(cmd_membership, "read_stored_proposal", lambda check_id: data)
+    args = _proposal_args(tmp_path, "sub/p.csv")
+    assert cmd_membership.run_proposal(args) == 0
+    assert args.out.read_bytes() == data
+    assert str(args.out) in capsys.readouterr().out
+    args.out.write_bytes(b"edited by a human")
+    assert cmd_membership.run_proposal(args) == 1  # refuses to overwrite the edited file
+    assert args.out.read_bytes() == b"edited by a human"
+
+
+def test_the_proposal_command_reports_a_missing_proposal_and_hides_connection_text(
+    tmp_path, monkeypatch, capsys
+):
+    def missing(check_id):
+        raise mw.ProposalNotFound(f"check {check_id} stored no proposal")
+
+    monkeypatch.setattr(cmd_membership, "read_stored_proposal", missing)
+    assert cmd_membership.run_proposal(_proposal_args(tmp_path)) == 1
+    assert "stored no proposal" in capsys.readouterr().err
+
+    def broken(check_id):
+        raise RuntimeError("postgresql://user:secret@host/db refused")
+
+    monkeypatch.setattr(cmd_membership, "read_stored_proposal", broken)
+    assert cmd_membership.run_proposal(_proposal_args(tmp_path)) == 1
+    err = capsys.readouterr().err
+    assert "secret" not in err and "RuntimeError" in err
+    assert not (tmp_path / "p.csv").exists()
+
+
+def test_the_proposal_command_is_registered_with_help():
+    import io as _io
+    from contextlib import redirect_stdout
+
+    parser = argparse.ArgumentParser()
+    from ggTrader.cli.cmd_db import register_db_parser
+
+    register_db_parser(parser.add_subparsers(dest="command"))
+    buffer = _io.StringIO()
+    with pytest.raises(SystemExit) as caught, redirect_stdout(buffer):
+        parser.parse_args(["db", "membership", "proposal", "--help"])
+    assert caught.value.code == 0 and "--id" in buffer.getvalue() and "--out" in buffer.getvalue()

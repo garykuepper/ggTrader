@@ -29,7 +29,14 @@ from ggTrader.data.membership_upstream import (
     check_upstream,
     recent_checks,
 )
-from ggTrader.data.membership_weekly import PgWeeklyStore, WeeklyRun, plain_text, run_weekly
+from ggTrader.data.membership_weekly import (
+    PgWeeklyStore,
+    ProposalNotFound,
+    WeeklyRun,
+    plain_text,
+    read_stored_proposal,
+    run_weekly,
+)
 from ggTrader.data.universe_algebra import HistoryValidationError
 from ggTrader.data.universe_db import (
     FILE_SOURCES,
@@ -172,6 +179,19 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         help="Folder for a proposed events file (default: data/exports/membership_proposals/)",
     )
     weekly.add_argument("--json", type=Path, default=None, help="Also save the run summary here")
+    proposal = subs.add_parser(
+        "proposal",
+        help="Write the proposed events file the weekly job stored for a check (read-only)",
+        description=(
+            "Read the proposed events file that `weekly` stored in universe.source_snapshots "
+            "(source 'proposal') for check ID and write its exact bytes to FILE. Read-only on "
+            "the database; refuses to overwrite FILE. The message of the weekly job names this "
+            "command because the file it also writes under data/exports/membership_proposals/ "
+            "may not outlive the container. Exit 0 written, 1 not found or not written."
+        ),
+    )
+    proposal.add_argument("--id", type=int, required=True, help="The check id from the message")
+    proposal.add_argument("--out", type=Path, required=True, metavar="FILE", help="File to write")
     status = subs.add_parser(
         "status",
         help="Latest vintage, last SPY match, known-through date and the live gate verdict",
@@ -402,6 +422,8 @@ def run_membership(args: argparse.Namespace) -> int:
         return run_check_holdings(args)
     if args.membership_command == "weekly":
         return run_weekly_command(args)
+    if args.membership_command == "proposal":
+        return run_proposal(args)
     if args.membership_command == "status":
         return run_status(args)
     if args.membership_command == "diff":
@@ -589,6 +611,31 @@ def run_weekly_command(args: argparse.Namespace) -> int:
         }
         args.json.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     return run.exit_code
+
+
+def run_proposal(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership proposal --id N --out FILE``: write the stored bytes to a file."""
+    try:
+        data = read_stored_proposal(args.id)
+    except ProposalNotFound as exc:
+        print(f"no proposal: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001 - never echo a connection string
+        first = (str(exc).strip().splitlines() or [""])[0]
+        print(
+            f"cannot read the proposal: {type(exc).__name__}: {redact(first, None)}",
+            file=sys.stderr,
+        )
+        return 1
+    try:
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        with args.out.open("xb") as handle:  # never overwrite an edited file
+            handle.write(data)
+    except OSError as exc:
+        print(f"cannot write {args.out}: {exc}", file=sys.stderr)
+        return 1
+    print(f"wrote {len(data)} bytes of check {args.id}'s proposal to {args.out}")
+    return 0
 
 
 def run_status(args: argparse.Namespace) -> int:

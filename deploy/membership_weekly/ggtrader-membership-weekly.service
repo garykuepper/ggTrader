@@ -2,7 +2,9 @@
 # User unit: copy to ~/.config/systemd/user/ only after the owner says go.
 # Deterministic job, no LLM. It runs the same code the live reader uses (the ggtrader_live image),
 # fetches and archives the public sources, checks the S&P 500 list, and sends ONE Telegram message.
-# It never loads a membership vintage; a human does that from the proposal it writes.
+# It never loads a membership vintage; a human does that from the proposal it stores in the
+# database (universe.source_snapshots). The container is removed after each run, so the message
+# names `ggt db membership proposal --id N --out FILE`, which rebuilds the file from the database.
 [Unit]
 Description=ggTrader weekly S&P 500 membership check (fetch, archive, cross-check, propose)
 Wants=network-online.target

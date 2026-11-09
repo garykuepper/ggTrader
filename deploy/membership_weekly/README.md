@@ -14,8 +14,10 @@ after (1) three manual dry runs matched expectations, (2) the `DryRunNotifier` t
 2. matches the latest vintage against SPY on the holdings' own date. A match writes a `matched`
    row in `universe.checks`: this is what keeps the live trader's membership gate open;
 3. compares the other sources with our list (disagreements are warnings only);
-4. on any refusal writes a **proposed events file** to `data/exports/membership_proposals/`
-   (git-ignored) and tells you what to check. **It never loads a vintage.**
+4. on any refusal builds a **proposed events file**, keeps its exact bytes in the database
+   (`universe.source_snapshots`, source `proposal`), also tries to write a copy under
+   `data/exports/membership_proposals/` (git-ignored) and tells you what to check.
+   **It never loads a vintage.**
 
 Refusal conditions: our list differs from SPY; the SPY file is missing, stale (over 7 days) or
 unusable; a ledger row after what is already attested is dated in the future or on its
@@ -29,7 +31,9 @@ changed for 14 days, has an unreadable last-change date or has changed structure
 - Telegram settings (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) in the compose `.env`.
 - The image contains this code: push, let `docker-build.yml` publish, `docker compose pull`
   (see the `ggtrader-deploy` skill). Until then use the host-venv variant below.
-- `data/` is bind-mounted into the container (`./data:/app/data`), so proposals appear on the host.
+- The unit runs `docker compose run --rm`, and the copy of a proposal under `data/` is only a
+  convenience (it depends on the container's bind mount and is gone if the write fails). The
+  message therefore names `ggt db membership proposal`, which rebuilds the file from the database.
 
 ## Dry runs (no Telegram; they DO record a check row)
 
@@ -79,7 +83,13 @@ With the timer off, the live gate refuses after 45 days without a `matched` chec
 
 ## When it proposes a change
 
-1. Open the file named in the message (`data/exports/membership_proposals/proposed_events_*.csv`).
+1. Write the file from the database, using the check id in the message (read-only on the
+   database; it refuses to overwrite a file you have already edited):
+
+```bash
+ggt db membership proposal --id N --out proposed_events.csv
+```
+
    Columns are the events-file columns plus `date_source` and `needs_confirmation`.
 2. For every row, confirm the effective date in the **S&P DJI press release**
    (press.spglobal.com; search the company). Ledger dates may be the announcement date and
@@ -92,8 +102,8 @@ With the timer off, the live gate refuses after 45 days without a `matched` chec
 5. Dry run, read the per-date adds/removes and counts, then commit:
 
 ```bash
-ggt db load-sp500 --from-events FILE --evidence-dir DIR
-ggt db load-sp500 --from-events FILE --evidence-dir DIR --commit
+ggt db load-sp500 --from-events proposed_events.csv --evidence-dir DIR
+ggt db load-sp500 --from-events proposed_events.csv --evidence-dir DIR --commit
 ```
 
 6. `ggt db membership check-holdings` (or wait for the next Saturday run) must now say `matched`.
