@@ -230,9 +230,9 @@ def build_proposal(
             spelling[_norm(t)] = t
     press_cut = floor - timedelta(days=PRESS_SLACK_DAYS)
     pr_by_key: dict[tuple[str, str], PressChange] = {}
-    for change in sorted(press, key=lambda c: c.order):
-        if change.effective > press_cut:
-            pr_by_key[(change.action, _norm(change.ticker))] = change
+    for change in sorted(press, key=lambda c: c.order):  # the newest release per change wins ...
+        pr_by_key[(change.action, _norm(change.ticker))] = change
+    pr_by_key = {k: c for k, c in pr_by_key.items() if c.effective > press_cut}  # ... then the cut
     proposal = Proposal()
     by_key: dict[tuple[str, str], ProposalRow] = {}
     for action, tickers, led, ch in (

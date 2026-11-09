@@ -600,7 +600,7 @@ def _press_vs_list(run: WeeklyRun, ours: set[str], floor: date, today: date) -> 
             for c in changes
             if normalize_yf_ticker(c.ticker) == norm
             and c.action != change.action
-            and change.effective < c.effective <= boundary
+            and change.effective <= c.effective <= boundary
         ]
         if later:
             continue  # superseded by a later announced change of the same ticker

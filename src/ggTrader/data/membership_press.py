@@ -45,14 +45,26 @@ LOOKBACK_DAYS = 75
 MAX_RELEASES = 8
 #: A release is about the S&P 500 when this word sequence is in its address slug (title).
 _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
-_CARD = re.compile(
+#: The opening tag of a release card. The card's text is then taken with plain ``str.find`` calls,
+#: so the cost stays linear in the page size on any input (a lazy ``.*?`` pattern over the whole
+#: card was quadratic on a page of unclosed cards).
+_CARD_OPEN = re.compile(
     r'<a\s+class="newsreleaseconsolidatelink[^"]*"\s+href="(?P<href>/news-releases/[^"]+\.html)"'
-    r"[^>]*>\s*<h3[^>]*>\s*<small>(?P<stamp>[^<]+)</small>(?P<title>.*?)</h3>",
-    re.S,
+    r"[^>]*>"
 )
-_STAMP = re.compile(r"([A-Za-z]{3,9})\.?\s+(\d{1,2}),\s+(\d{4})")
+_CARD_CLASS = "newsreleaseconsolidatelink"
+_STAMP = re.compile(r"(?<![A-Za-z])([A-Za-z]{3,9})\.?\s+(\d{1,2}),\s+(\d{4})(?!\d)")
 _RELEASE_ID = re.compile(r"-(\d{6,})\.html$")
 _MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+_MONTH_WORDS = frozenset(
+    [
+        *_MONTHS,
+        "sept",
+        *"january february march april june july august september october".split(),
+        "november",
+        "december",
+    ]
+)
 _BODY_MARK = 'class="release-body'
 _HEADER = ("effective date", "index name", "action", "company name", "ticker", "gics sector")
 _ACTIONS = {"addition": "add", "deletion": "remove"}
@@ -109,6 +121,8 @@ def parse_press_date(text: str) -> date | None:
     found = _STAMP.search(html.unescape(text))
     if not found:
         return None
+    if found.group(1).lower() not in _MONTH_WORDS:
+        return None
     month = _month(found.group(1))
     if month is None:
         return None
@@ -145,16 +159,26 @@ def parse_press_listing(raw: bytes) -> list[PressRelease]:
     changed); a page with cards but none about the S&P 500 returns an empty list.
     """
     text = raw.decode("utf-8", errors="replace")
-    cards = list(_CARD.finditer(text))
-    if not cards:
+    opens = list(_CARD_OPEN.finditer(text))
+    if not opens:
         raise SourceStructureError("cards_not_found", "no release cards on the S&P DJI news page")
+    if text.count(_CARD_CLASS) > len(opens):
+        raise SourceStructureError(
+            "bad_card",
+            f"{text.count(_CARD_CLASS)} release cards on the page but {len(opens)} readable",
+        )
     out: list[PressRelease] = []
     seen: set[str] = set()
-    for card in cards:
+    for i, card in enumerate(opens):
         href = card.group("href")
         slug = href.rsplit("/", 1)[-1]
         ident = _RELEASE_ID.search(href)
-        published = parse_press_date(card.group("stamp"))
+        limit = opens[i + 1].start() if i + 1 < len(opens) else len(text)  # windows never overlap
+        end = text.find("</a>", card.end(), limit)
+        window = text[card.end() : end if end >= 0 else limit]
+        small_at = window.find("<small>")
+        small_end = window.find("</small>", small_at) if small_at >= 0 else -1
+        published = parse_press_date(window[small_at + 7 : small_end]) if small_end >= 0 else None
         if ident is None or published is None:
             raise SourceStructureError(
                 "bad_card", f"cannot read the id or date of release card {href!r}"
@@ -162,7 +186,9 @@ def parse_press_listing(raw: bytes) -> list[PressRelease]:
         if not _SLUG_SP500.search(slug) or ident.group(1) in seen:
             continue
         seen.add(ident.group(1))
-        title = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", card.group("title"))))
+        title_end = window.find("</h3>", small_end)
+        raw_title = window[small_end + 8 : title_end if title_end >= 0 else len(window)]
+        title = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", raw_title)))
         out.append(PressRelease(PRESS_BASE + href, title.strip(), published, ident.group(1)))
     return sorted(out, key=lambda r: (r.published, r.release_id), reverse=True)
 

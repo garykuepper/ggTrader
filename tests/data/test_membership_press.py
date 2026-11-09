@@ -419,3 +419,78 @@ def test_a_truncated_sp500_row_is_a_structure_error():
     with pytest.raises(SourceStructureError) as err:
         mp.parse_press_release(page, release())
     assert err.value.code == "bad_row"
+
+
+# --------------------------------------------------------------------------- review round 2
+
+
+def test_a_card_with_a_logo_before_its_heading_is_still_read():
+    card = (
+        '<div class="card"><a class="newsreleaseconsolidatelink display-outline w-100" '
+        f'href="/news-releases/{OKTA_SLUG}.html"><div class="img-parent-fixed"><img src="x"></div>'
+        '<h3 class="no-top-margin"><small>Oct 30, 2026, 17:51 ET</small> Okta Set to Join '
+        "S&amp;P 500</h3></a></div>"
+    )
+    found = mp.parse_press_listing(f"<html>{card}</html>".encode())
+    assert [r.release_id for r in found] == ["302925405"] and found[0].title.endswith("S&P 500")
+
+
+def test_a_card_the_parser_cannot_read_is_a_structure_error_not_a_silent_drop():
+    good = press_listing_html([OKTA_CARD]).decode()
+    odd = '<a class="newsreleaseconsolidatelink" href="https://elsewhere/x">odd</a>'
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_listing((good + odd).encode())
+    assert err.value.code == "bad_card"
+
+
+def test_parsing_time_stays_linear_on_a_page_of_unclosed_cards():
+    import time
+
+    card = (
+        '<a class="newsreleaseconsolidatelink x" href="/news-releases/a-sp-500-302925405.html">'
+        "<h3><small>Oct 30, 2026</small> title "
+    )
+    started = time.perf_counter()
+    found = mp.parse_press_listing((card * 6000).encode())  # about 700 KB, no closing tags
+    assert [r.release_id for r in found] == ["302925405"]  # the same release, deduplicated
+    assert time.perf_counter() - started < 1.0
+
+
+@pytest.mark.parametrize("text", ["Mayo 3, 2026", "May 3, 20269", "Nov 4, 99999"])
+def test_loose_month_words_and_long_years_are_not_dates(text):
+    assert mp.parse_press_date(text) is None
+
+
+def test_a_correction_that_moves_the_date_earlier_is_not_lost_to_the_slack_cut():
+    # floor 2026-11-20 -> cut 11-06; the correction (11-05) must not leave the stale 11-10 alive
+    first = mp.PressChange(
+        date(2026, 11, 10), "add", "ZZNEW", "New", date(2026, 11, 2), "u1", "302900100"
+    )
+    fixed = mp.PressChange(
+        date(2026, 11, 5), "add", "ZZNEW", "New", date(2026, 11, 3), "u2", "302900200"
+    )
+    row = build_proposal(
+        adds=["ZZNEW"],
+        removes=[],
+        our_raw={},
+        ledger=[],
+        chino=[],
+        floor=date(2026, 11, 20),
+        today=date(2026, 11, 21),
+        our_count=500,
+        press=[first, fixed],
+    ).rows[0]
+    assert row.press_date is None and row.date_source == "none"  # neither date is used
+
+
+def test_a_same_day_delete_and_re_add_of_one_ticker_raises_no_warning(tmp_path):
+    world = World(base_ours())
+    _announce(
+        world,
+        [
+            ("Oct 20, 2026", "S&P 500", "Deletion", "Same", "X0003"),
+            ("Oct 20, 2026", "S&P 500", "Addition", "Same", "X0003"),
+        ],
+    )
+    result, _, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "ok" and result.findings == []
