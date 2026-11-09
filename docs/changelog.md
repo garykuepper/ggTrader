@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-09 (price table backfill for 13 current members)
+
+- New `scripts/backfill_missing_members.py`: dry run by default; `INSERT ... ON CONFLICT DO NOTHING ... RETURNING`; optional `--refresh-last` rewrites only the last stored bar, only from a complete fresh bar, saving the old row first; a symbol is refused when its stored bars before the last disagree with the download by more than 1% or the last bar is off by more than 5%; bars only up to a pinned `--through`; naive-UTC midnight timestamps like the loader; per-symbol transaction; backup and inserted-keys files in `data/exports/ohlcv_backfill/`. Reviewed by Sol (five findings) and Opus; all fixed with tests (fast tier 2,273, study tier 777).
+- Run with the owner's go: 19,491 rows inserted, 4 partial 2026-09-21 bars refreshed (MRVL, OKTA, P, TWLO); BE, FERG, HONA, RDDT, SKYD, VMRK, VYLR, ECHO, FLEX now have bars through 2026-11-05. All 503 current members have bars. Other symbols unchanged.
+
 ## 2026-11-09 (membership: open checks closed with the official releases)
 
 - New evidence note `research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md`: the five open checks of spec Appendix C6 are answered from the S&P DJI releases and two company releases; vintage 3 needs no change. Found on the way: 13 of the 503 current members have no or stale bars in the `ohlcv` table (not written to; a backfill needs a decision). No code changed.

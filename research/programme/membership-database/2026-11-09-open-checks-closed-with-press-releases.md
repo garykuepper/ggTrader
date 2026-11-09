@@ -63,3 +63,12 @@ Pages were fetched on 2026-11-09 from PR Newswire (the copies of the S&P DJI rel
 - News page listing `0af519455ae87cfa08b05943b15f6e313a69fc58ab572d3afba111ef364c78dd`
 
 Company releases: [EchoStar](https://echostar.gcs-web.com/news-releases/news-release-details/echostar-changing-stocker-ticker-sats-echo-marking-companys-next), [BNY](https://www.bny.com/corporate/global/en/about-us/newsroom/press-release/bny-announces-planned-change-of-stock-ticker-symbol-to-bny-130465.html). The weekly job now archives the same S&P DJI pages every Saturday in `universe.source_snapshots`.
+
+## Update: the price-table gap was filled (2026-11-09, evening)
+
+With the owner's go, `scripts/backfill_missing_members.py` (insert-only, reviewed by Sol and Opus; see the changelog) filled the 13 tickers up to 2026-11-05:
+
+- **Inserted 19,491 rows:** BE 2,083; FERG 4,236; HONA 101; RDDT 660; SKYD 5,263; VMRK 6,752; VYLR 26 (all whole history); ECHO 119 and FLEX 119 (2026-05-19 on); MRVL, OKTA, P, TWLO 33 each (2026-09-22 on).
+- **Refreshed 4 rows:** the 2026-09-21 bar of MRVL, OKTA, P and TWLO, which had been captured mid-session (price 0.19% to 1.31% off the complete bar, volume 31% to 60% lower). The old rows are in `data/exports/ohlcv_backfill/backfill_20261109T224708Z.csv` (git-ignored, this machine only), the keys actually inserted in `..._inserted.csv`.
+- **Checked afterwards:** no weekend or non-midnight timestamp and no non-positive close among the 33,718 rows of the 13 tickers; SPY, AAPL, MSFT, SATS and BNY unchanged; every one of the 503 current members now has bars through at least 2026-11-03.
+- **Known limits:** SKYD carries PSKY's history and VMRK carries EQR's (the same precedent as BNY and BK), so a screen that takes "every symbol with bars" would count those companies twice; the membership mask avoids this. MRVL's new bars sit 0.02% below its stored history (an ex-dividend date after its last stored bar). Other mid-session bars deeper in history (for example MRVL 2026-07-24, 0.55% off) were not touched.
