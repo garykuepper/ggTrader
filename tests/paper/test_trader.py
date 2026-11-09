@@ -117,6 +117,16 @@ def _stub_benchmark_tape():
 
 
 @pytest.fixture(autouse=True)
+def _stub_live_membership_guard():
+    """Let the live-run tests below keep the fixture list from the conftest environment.
+
+    The guard that refuses a live run on anything but the latest database vintage has its own
+    tests in `test_live_membership_guard.py`, which do not use this stub."""
+    with patch("ggTrader.paper.trader.require_live_membership_spec"):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def _stub_last_buy_dates():
     """Keep the missed-exit catch-up's paper_trades lookup off the real DB.
     Default `{}` means "no entry dates known", which disables the catch-up."""

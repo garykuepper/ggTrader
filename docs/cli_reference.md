@@ -391,7 +391,9 @@ stops the run before any order is possible. Each message names its fix
 (`ggt db membership check-holdings`, and `ggt db load-sp500` if it reports a mismatch). A warning
 is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows the
 `DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
-pinned `db:<id>` or to a caller-injected `now` (replays and tests). A match belongs to one vintage:
+pinned `db:<id>` or to a caller-injected `now` (replays and tests). Because those skip the gate, a live run (`--live`, or `run_paper_trading(dry_run=False)`)
+refuses any membership source but the latest database vintage (`db`) with code
+`membership_not_live`, before any broker call; a dry run may still rehearse a fixture. A match belongs to one vintage:
 loading a newer vintage starts again from "never matched": until `check-holdings` matches a fresh
 SPY file against the new latest vintage, the gate refuses. Run `ggt db membership status` to see
 the current vintage, its last match and the gate's decision.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date, datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -10,6 +11,9 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.membership import (
+    ENV_VAR as MEMBERSHIP_ENV_VAR,
+)
 from ggTrader.data.membership import (
     MembershipError,
     MembershipIntegrityError,
@@ -45,6 +49,9 @@ from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 _log = logging.getLogger(__name__)
 
 _ET = ZoneInfo("America/New_York")
+
+#: ``SignalGateError`` code for a live run that was not given the latest database vintage.
+CODE_NOT_LIVE = "membership_not_live"
 
 #: Production bounds of the input/output sanity gates (see ``paper/gates.py``).
 SANITY = SanityConfig()
@@ -108,6 +115,25 @@ def require_rust_engine() -> dict[str, Any]:
             f"the trader requires the rust engine, the self-check ran {result.get('engine')!r}",
         )
     return result
+
+
+def require_live_membership_spec(spec: str | None, *, dry_run: bool) -> None:
+    """Refuse a live run whose S&P 500 list is not the latest database vintage (spec ``db``).
+
+    The freshness gate skips fixtures and pinned vintages, so a live run on one would trade with
+    no gate at all. The effective spec is ``spec`` or else ``GGT_MEMBERSHIP``. A dry run is free
+    to rehearse any source. Raises ``SignalGateError`` (``membership_not_live``) before any
+    broker call or order.
+    """
+    if dry_run:
+        return
+    effective = spec or os.environ.get(MEMBERSHIP_ENV_VAR) or None
+    if effective != "db":
+        raise SignalGateError(
+            CODE_NOT_LIVE,
+            f"a live run must read the latest database vintage (membership spec 'db'), not "
+            f"{effective!r}: fixtures and pinned vintages skip the freshness gate",
+        )
 
 
 def live_membership_source(spec: str | None) -> MembershipSource:

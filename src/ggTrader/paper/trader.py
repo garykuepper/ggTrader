@@ -39,6 +39,7 @@ from ggTrader.paper.signal_runner import (
     generate_core_signals,
     live_membership_source,
     refresh_benchmark_tape,
+    require_live_membership_spec,
 )
 from ggTrader.paper.split_check import (
     apply_corrections_to_positions,
@@ -134,6 +135,7 @@ class PaperTrader:
                 ``db:<id>``); ``None`` defers to ``GGT_MEMBERSHIP`` and fails if that is unset.
                 ``run_paper_trading`` always passes one.
         """
+        require_live_membership_spec(membership, dry_run=dry_run)
         self._broker = broker
         self._notifier = notifier
         self._risk = RiskGuard(risk_cfg or config_from_env())
@@ -1252,6 +1254,7 @@ def run_paper_trading(
     effective_read_only = dry_run if read_only is None else read_only
     if effective_read_only and not dry_run:
         raise ValueError("--dry-run-writes/read-only only applies to a dry run, not --live")
+    require_live_membership_spec(membership, dry_run=dry_run)  # before any broker call
     broker = AlpacaBroker()
     account = broker.get_account()
     if not dry_run and account["multiplier"] > 1.0:
