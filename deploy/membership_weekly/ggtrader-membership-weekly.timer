@@ -1,0 +1,15 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. See README.md. Saturday 06:00 Pacific, once a week.
+[Unit]
+Description=ggTrader weekly S&P 500 membership check timer
+
+[Timer]
+OnCalendar=Sat *-*-* 06:00:00 America/Los_Angeles
+AccuracySec=1min
+RandomizedDelaySec=0
+# If the machine was off at 06:00, run once when it next starts (a week without a check is
+# exactly the failure the live gate is there to catch).
+Persistent=true
+Unit=ggtrader-membership-weekly.service
+
+[Install]
+WantedBy=timers.target
