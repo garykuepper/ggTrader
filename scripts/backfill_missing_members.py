@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -115,6 +117,27 @@ def _stored_gaps(stored: dict, fresh) -> tuple[float, float, bool]:
     return price, abs(float(fresh["volume"]) / float(old_volume) - 1.0), has_null
 
 
+def invalid_rows(frame: pd.DataFrame) -> list[str]:
+    """Reasons a downloaded frame cannot be written (none for a sane one).
+
+    Checks values, not just presence: non-finite numbers, a non-positive close, a negative open,
+    high or low, a negative volume, and a high clearly below the low.
+    """
+    problems = []
+    values = frame.astype(float)
+    if not values.map(lambda v: math.isnan(v) or math.isfinite(v)).all().all():
+        problems.append("non-finite value")
+    if (values["close"] <= 0).any():
+        problems.append("non-positive close")
+    if ((values[["open", "high", "low"]] < 0).any()).any():
+        problems.append("negative open/high/low")
+    if (values["volume"] < 0).any():
+        problems.append("negative volume")
+    if ((values["high"] < values["low"] * (1 - 1e-6)).fillna(False)).any():
+        problems.append("high below low")
+    return problems
+
+
 def plan_symbol(
     symbol: str,
     stored_last: tuple[date, dict[str, float]] | None,
@@ -134,6 +157,15 @@ def plan_symbol(
     not a partial bar.
     """
     frame = clean_frame(fetched, through)
+    bad = invalid_rows(frame) if not frame.empty else []
+    if bad:
+        return SymbolPlan(
+            symbol,
+            stored_last[0] if stored_last else None,
+            frame.iloc[0:0],
+            note=f"invalid downloaded values ({', '.join(bad)}): refused",
+            failed=True,
+        )
     if frame.empty:
         return SymbolPlan(
             symbol,
@@ -145,18 +177,32 @@ def plan_symbol(
     if stored_last is None:
         return SymbolPlan(symbol, None, frame, note="whole history")
     last_day, stored = stored_last
-    for day, old in prior:
+    checked = 0
+    for day, old in (stored_last, *prior):
         stamp_old = pd.Timestamp(day)
         if stamp_old in frame.index and old.get("close"):
+            checked += 1
             gap = abs(float(frame.loc[stamp_old, "close"]) / float(old["close"]) - 1.0)
-            if gap > HISTORY_TOLERANCE:
+            limit = MAX_REFRESH_GAP if day == last_day else HISTORY_TOLERANCE
+            if gap > limit:
                 return SymbolPlan(
                     symbol,
                     last_day,
                     frame.iloc[0:0],
-                    note=f"history differs on {day} by {gap:.2%}: not the same series, refused",
+                    note=(
+                        f"stored {day} differs from the download by {gap:.2%} "
+                        f"(limit {limit:.0%}): not the same series, refused"
+                    ),
                     failed=True,
                 )
+    if checked == 0:
+        return SymbolPlan(
+            symbol,
+            last_day,
+            frame.iloc[0:0],
+            note="no stored bar overlaps the download, so the series cannot be verified: refused",
+            failed=True,
+        )
     inserts = frame[frame.index > pd.Timestamp(last_day)]
     refresh = pd.DataFrame(columns=list(COLUMNS))
     note = ""
@@ -340,11 +386,13 @@ def commit_plan(conn, plan: SymbolPlan) -> tuple[list[datetime], int]:
 
 
 def append_inserted(path: Path, symbol: str, stamps: list[datetime]) -> None:
-    """Append the keys that were actually inserted (after their commit), flushed to disk."""
+    """Append the keys that were actually inserted (after their commit), synced to disk."""
     with path.open("a", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
         for stamp in stamps:
             writer.writerow(["inserted", symbol, stamp.date().isoformat()])
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def parse_symbols(text: str) -> list[str]:
@@ -437,11 +485,22 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             try:
                 keys, refreshed = commit_plan(conn, p)
-                append_inserted(inserted_path, p.symbol, keys)
-                print(f"{p.symbol}: inserted {len(keys)}, refreshed {refreshed}")
             except Exception as exc:  # noqa: BLE001 - log and continue with the other symbols
                 failed += 1
                 print(f"{p.symbol}: FAILED {type(exc).__name__}: {str(exc)[:200]}", file=sys.stderr)
+                continue
+            try:
+                append_inserted(inserted_path, p.symbol, keys)
+            except OSError as exc:
+                failed += 1
+                print(
+                    f"{p.symbol}: COMMITTED ({len(keys)} inserted, {refreshed} refreshed) but the "
+                    f"inserted-keys file could not be written ({exc}); the keys are in the "
+                    "planned file, the rows are in the table",
+                    file=sys.stderr,
+                )
+                continue
+            print(f"{p.symbol}: inserted {len(keys)}, refreshed {refreshed}")
     finally:
         conn.close()
     return 1 if failed else 0

@@ -338,6 +338,104 @@ def test_a_commit_run_writes_the_backup_before_any_database_write(monkeypatch, t
     assert inserted.read_text().strip() == "inserted,BE,2026-11-03"
 
 
+def test_the_five_percent_guard_applies_even_without_refresh_last():
+    frame = bars(["2026-09-21", "2026-09-22"], close=21.0)  # stored 10.0
+    plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=False)
+    assert plan.failed and plan.n_insert == 0 and "not the same series" in plan.note
+
+
+def test_a_download_that_overlaps_no_stored_bar_cannot_be_verified_and_is_refused():
+    frame = bars(["2026-09-22", "2026-09-23"], close=10.0)  # nothing on or before the last stored
+    plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
+    assert plan.failed and plan.n_insert == 0 and "cannot be verified" in plan.note
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "reason"),
+    [
+        ("Close", -1.0, "non-positive close"),
+        ("Close", float("inf"), "non-finite"),
+        ("Volume", -5.0, "negative volume"),
+        ("Open", -2.0, "negative open"),
+        ("High", 1.0, "high below low"),  # High 1.0 < Low 9.0
+    ],
+)
+def test_invalid_downloaded_values_refuse_the_whole_symbol(field, value, reason):
+    frame = bars(["2026-11-03", "2026-11-04"])
+    frame.loc[frame.index[1], field] = value
+    plan = bm.plan_symbol("BE", None, frame, through=THROUGH, refresh_last=False)
+    assert plan.failed and plan.n_insert == 0 and reason in plan.note
+
+
+def test_zero_volume_is_valid():
+    frame = bars(["2026-11-03"], volume=0.0)
+    plan = bm.plan_symbol("FERG", None, frame, through=THROUGH, refresh_last=False)
+    assert not plan.failed and plan.n_insert == 1
+
+
+def _commit_main(monkeypatch, tmp_path, append=None):
+    order = []
+
+    class _Reader:
+        def cursor(self):
+            return _Cursor([])
+
+        def close(self):
+            pass
+
+    class _Writer:
+        def close(self):
+            pass
+
+    monkeypatch.setattr(
+        "ggTrader.data.universe_db.connect",
+        lambda *a, **k: _Reader() if k.get("read_only") else _Writer(),
+    )
+    monkeypatch.setattr(bm, "read_recent_bars", lambda cur, symbols: {})
+    monkeypatch.setattr(bm, "fetch_history", lambda s, start, through: {"BE": bars(["2026-11-03"])})
+    real_backup = bm.write_backup
+
+    def backup(*a, **k):
+        order.append("backup")
+        return real_backup(*a, **k)
+
+    def commit(conn, plan):
+        order.append("commit")
+        return [datetime(2026, 11, 3)], 0
+
+    def journal(path, symbol, stamps):
+        order.append("append")
+        if append is not None:
+            raise append
+
+    monkeypatch.setattr(bm, "write_backup", backup)
+    monkeypatch.setattr(bm, "commit_plan", commit)
+    monkeypatch.setattr(bm, "append_inserted", journal)
+    code = bm.main(
+        ["--symbols", "BE", "--through", "2026-11-05", "--commit", "--backup-dir", str(tmp_path)]
+    )
+    return code, order
+
+
+def test_the_order_is_backup_then_commit_then_journal(monkeypatch, tmp_path):
+    code, order = _commit_main(monkeypatch, tmp_path)
+    assert code == 0 and order == ["backup", "commit", "append"]
+
+
+def test_a_journal_failure_after_the_commit_is_reported_as_committed(monkeypatch, tmp_path, capsys):
+    code, order = _commit_main(monkeypatch, tmp_path, append=OSError("disk full"))
+    err = capsys.readouterr().err
+    assert code == 1 and order == ["backup", "commit", "append"]
+    assert "COMMITTED" in err and "planned file" in err
+
+
+def test_the_journal_is_synced_to_disk(monkeypatch, tmp_path):
+    synced = []
+    monkeypatch.setattr(bm.os, "fsync", lambda fd: synced.append(fd))
+    bm.append_inserted(tmp_path / "j.csv", "BE", [datetime(2026, 11, 3)])
+    assert len(synced) == 1
+
+
 def test_the_script_has_help():
     import subprocess
 
