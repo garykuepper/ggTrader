@@ -53,10 +53,6 @@ CONTRACT_VERSION = 1
 #: change starts E2.
 BASELINE_EPOCH = "E1"
 
-SETTINGS_DOC = (
-    "GGT_VBT_ENGINE year_freq freq contract: see the module docstring; each setting cites the spec."
-)
-
 # The exact text vectorbt._engine.is_rust_available warns with on a minor mismatch.
 _MISMATCH_MESSAGE = re.compile(r"vectorbt .*version mismatch")
 
