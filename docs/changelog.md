@@ -1,6 +1,6 @@
 # Changelog
 
-- Remove the unreferenced legacy crypto constants module and its obsolete agent rule; research reference results are unchanged.
+- Remove unused legacy crypto and market-hour constants, mover queries, volume stubs, a FRED cache writer, grid and trends helpers, and redundant engine bindings. These had no production callers; research reference results are unchanged.
 
 ## 2026-11-09 (membership database: second review round)
 
