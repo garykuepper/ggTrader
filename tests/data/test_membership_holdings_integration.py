@@ -93,15 +93,54 @@ def test_the_ddl_is_idempotent_and_widens_an_old_outcome_list(
         assert "matched" in definition and "mismatch" in definition
         cur.execute("SELECT outcome FROM universe.checks")
         assert cur.fetchall() == [("refused",)]  # the old row survived untouched
-        for outcome in ("matched", "mismatch"):
-            cur.execute(
-                "INSERT INTO universe.checks (index_name, outcome) VALUES ('sp500', %s)", (outcome,)
-            )
+        cur.execute(
+            "INSERT INTO universe.checks (index_name, outcome) VALUES ('sp500', 'mismatch')"
+        )
         with pytest.raises(errors.CheckViolation):
             cur.execute(
                 "INSERT INTO universe.checks (index_name, outcome) VALUES ('sp500', 'bogus')"
             )
     conn.rollback()
+
+
+def test_a_matched_row_must_name_its_vintage_and_the_holdings_date(
+    conn: psycopg2.extensions.connection,
+) -> None:
+    _load_synthetic(conn)
+    insert = (
+        "INSERT INTO universe.checks (index_name, outcome, matched_load_id, detail) "
+        "VALUES ('sp500', 'matched', %s, %s)"
+    )
+    for load_id, detail in (
+        (None, '{"holdings_as_of": "2026-11-05"}'),
+        (1, "{}"),
+        (1, None),
+        (1, '{"holdings_as_of": "soon"}'),
+    ):
+        with conn.cursor() as cur, pytest.raises(errors.CheckViolation):
+            cur.execute(insert, (load_id, detail))
+        conn.rollback()
+    with conn.cursor() as cur:
+        cur.execute(insert, (1, '{"holdings_as_of": "2026-11-05"}'))  # complete: accepted
+        cur.execute("INSERT INTO universe.checks (index_name, outcome) VALUES ('sp500', 'refused')")
+    conn.commit()
+    apply_ddl(conn)  # idempotent with the constraint (and rows) already there
+
+
+def test_a_matched_row_without_a_holdings_date_never_counts_even_without_the_constraint(
+    conn: psycopg2.extensions.connection, db_url: str
+) -> None:
+    _load_synthetic(conn)
+    with conn.cursor() as cur:  # an older database that lacks the new constraint
+        cur.execute("ALTER TABLE universe.checks DROP CONSTRAINT checks_matched_complete_check")
+        cur.execute(
+            "INSERT INTO universe.checks (index_name, outcome, matched_load_id, detail) "
+            "VALUES ('sp500', 'matched', 1, '{}')"
+        )
+    conn.commit()
+    vintage = DbMembershipSource("latest", store=PgMembershipStore(db_url)).vintage()
+    assert vintage.matched_at is None and vintage.known_through is None
+    assert decide_gate(vintage, TODAY).level == "refuse"
 
 
 def test_a_match_is_recorded_archived_and_read_by_the_gate_and_nothing_else_changes(

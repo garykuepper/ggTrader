@@ -50,11 +50,15 @@ VERIFY_AGE_ENV = "GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS"
 LAG_WARN_DAYS = 90
 #: ... and refuse (C3).
 LAG_REFUSE_DAYS = 180
+#: A match may be dated at most this many calendar days after the run's day (time zones); a
+#: match from further in the future is a bad row or a bad clock, never a fresh attestation.
+FUTURE_TOLERANCE_DAYS = 1
 
 #: ``SignalGateError`` codes (spec 3.4 names the first two; the lag code is the D8 counterpart).
 CODE_UNAVAILABLE = "membership_unavailable"
 CODE_STALE = "membership_stale"
 CODE_LAG = "membership_lag"
+CODE_FUTURE = "membership_future_match"
 CODE_CONFIG = "membership_gate_config"
 
 Level = Literal["pass", "warn", "refuse"]
@@ -135,9 +139,11 @@ def decide_gate(
 ) -> GateDecision:
     """Pass, warn or refuse ``vintage`` at calendar day ``asof``; no clock, no database.
 
-    ``max_verify_age=None`` reads :func:`max_verify_age_days`. A match dated after ``asof`` has a
-    negative age and never trips the freshness check. The code is the first refusal found (stale
-    before lag); ``reasons`` lists all that fired.
+    ``max_verify_age=None`` reads :func:`max_verify_age_days`. A match whose instant, or whose
+    attested date, lies more than :data:`FUTURE_TOLERANCE_DAYS` day after ``asof`` refuses
+    (``membership_future_match``): the gate runs on the wall clock, so such a row is a defect, not
+    a replay. The code is the first refusal found (future, stale, lag); ``reasons`` lists all that
+    fired.
     """
     day = as_date(asof)
     limit = max_verify_age_days() if max_verify_age is None else max_verify_age
@@ -146,6 +152,19 @@ def decide_gate(
     lag = (day - (attested if attested is not None else vintage.coverage_end)).days
     refuse: list[tuple[str, str]] = []
     warn: list[str] = []
+    ahead = max(
+        -match_age if match_age is not None else 0,
+        (attested - day).days if attested is not None else 0,
+    )
+    if ahead > FUTURE_TOLERANCE_DAYS:
+        refuse.append(
+            (
+                CODE_FUTURE,
+                f"the newest SPDR SPY holdings match of the S&P 500 list is dated {ahead} days "
+                f"after {day} (allowed: {FUTURE_TOLERANCE_DAYS}); a match from the future "
+                "cannot be trusted; inspect universe.checks and the system clock",
+            )
+        )
     if match_age is None:
         refuse.append(
             (

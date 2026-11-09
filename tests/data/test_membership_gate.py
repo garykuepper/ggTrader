@@ -14,6 +14,7 @@ import pytest
 
 from ggTrader.data.membership import DbMembershipSource, MembershipVintage
 from ggTrader.data.membership_gate import (
+    CODE_FUTURE,
     CODE_LAG,
     CODE_STALE,
     LAG_REFUSE_DAYS,
@@ -103,7 +104,9 @@ def test_the_named_constants_are_the_decided_values():
         (46, 90, "refuse", CODE_STALE),  # a refusal beats a warning; stale is reported first
         (46, 180, "refuse", CODE_STALE),  # both refuse: one code, both reasons
         (45, 90, "warn", None),
-        (-5, 0, "pass", None),  # matched after the run's day (a replay) is never stale
+        (-1, 0, "pass", None),  # one day ahead is tolerated (time zones)
+        (-2, 0, "refuse", CODE_FUTURE),  # two days ahead is not
+        (-30, 0, "refuse", CODE_FUTURE),
         (None, 0, "refuse", CODE_STALE),  # never matched: refused, whatever the lag
         (None, 30, "refuse", CODE_STALE),
     ],
@@ -142,6 +145,22 @@ def test_a_dead_pipeline_does_alarm_even_after_a_long_quiet_spell():
     assert decide_gate(quiet, ASOF + timedelta(days=89), max_verify_age=10_000).level == "pass"
     assert decide_gate(quiet, ASOF + timedelta(days=90), max_verify_age=10_000).level == "warn"
     assert decide_gate(quiet, ASOF + timedelta(days=180), max_verify_age=10_000).code == CODE_LAG
+
+
+def test_a_match_dated_in_the_future_refuses_with_a_clear_message():
+    future_check = _vintage(match_days_ago=-3, lag_days=0)
+    decision = decide_gate(future_check, ASOF, max_verify_age=45)
+    assert decision.level == "refuse" and decision.code == CODE_FUTURE
+    assert "3 days after 2026-11-08" in decision.message and "universe.checks" in decision.message
+
+
+def test_an_attested_date_in_the_future_refuses_even_when_the_check_instant_is_not():
+    vintage = replace(_vintage(match_days_ago=0, lag_days=0), known_through=date(2026, 11, 20))
+    decision = decide_gate(vintage, ASOF, max_verify_age=45)
+    assert decision.level == "refuse" and decision.code == CODE_FUTURE
+    assert "12 days after" in decision.message
+    at_edge = replace(vintage, known_through=ASOF + timedelta(days=1))
+    assert decide_gate(at_edge, ASOF, max_verify_age=45).level == "pass"
 
 
 def test_a_never_matched_list_names_the_command_that_fixes_it():

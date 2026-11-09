@@ -473,12 +473,15 @@ _VERIFIED_SQL = (
     "SELECT GREATEST(l.retrieved_at, COALESCE(max(c.checked_at), l.retrieved_at)) "
     "FROM universe.loads l LEFT JOIN universe.checks c "
     "ON c.index_name = l.index_name AND c.matched_load_id = l.load_id "
-    "AND c.outcome = 'matched' WHERE l.load_id = %s GROUP BY l.load_id, l.retrieved_at"
+    "AND c.outcome = 'matched' AND c.detail->>'holdings_as_of' IS NOT NULL "
+    "WHERE l.load_id = %s GROUP BY l.load_id, l.retrieved_at"
 )
-#: Newest matched holdings check of one load and the latest as-of date any of them attested.
+#: Newest matched holdings check of one load and the latest as-of date any of them attested. A
+#: 'matched' row without a holdings as-of date attests nothing and is ignored.
 _MATCHED_SQL = (
     "SELECT max(checked_at), max((detail->>'holdings_as_of')::date) FROM universe.checks "
-    "WHERE index_name = %s AND matched_load_id = %s AND outcome = 'matched'"
+    "WHERE index_name = %s AND matched_load_id = %s AND outcome = 'matched' "
+    "AND detail->>'holdings_as_of' IS NOT NULL"
 )
 
 

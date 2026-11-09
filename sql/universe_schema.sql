@@ -130,6 +130,22 @@ BEGIN
     END IF;
 END $$;
 
+-- A 'matched' row is the only thing that advances the live gate, so it must name the vintage it
+-- matched and carry the holdings as-of date (stored in detail). Added after the first matches;
+-- ADD CONSTRAINT only validates the (tiny) table, and every earlier matched row satisfies it.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'universe.checks'::regclass AND conname = 'checks_matched_complete_check'
+    ) THEN
+        ALTER TABLE universe.checks ADD CONSTRAINT checks_matched_complete_check CHECK (
+            outcome <> 'matched' OR (
+                matched_load_id IS NOT NULL
+                AND COALESCE(detail->>'holdings_as_of' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', false)));
+    END IF;
+END $$;
+
 -- The raw bytes behind a holdings check (the SPY workbook), gzipped, kept apart like load_blobs.
 CREATE TABLE IF NOT EXISTS universe.check_blobs (
     check_id   BIGINT PRIMARY KEY REFERENCES universe.checks (check_id),
