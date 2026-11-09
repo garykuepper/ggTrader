@@ -42,7 +42,10 @@ def bars(days, close=10.0, tz=None, volume=1000.0):
     )
 
 
-STORED = (date(2026, 9, 21), {"open": 9.0, "high": 11.0, "low": 8.0, "close": 10.0, "volume": 5.0})
+STORED = (
+    date(2026, 9, 21),
+    {"open": 10.0, "high": 11.0, "low": 9.0, "close": 10.0, "volume": 1000.0},
+)
 
 
 def test_clean_frame_makes_naive_utc_dates_drops_no_close_and_future_bars():
@@ -68,12 +71,11 @@ def test_a_stale_symbol_gets_only_the_bars_after_its_last_stored_one():
 
 
 def test_the_last_bar_is_refreshed_only_when_asked_and_only_beyond_the_tolerance():
-    frame = bars(["2026-09-21", "2026-09-22"], close=10.5)  # fresh close 10.5 vs stored 10.0
+    frame = bars(["2026-09-21", "2026-09-22"], close=10.2)  # fresh close 10.2 vs stored 10.0 (2%)
     off = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=False)
     on = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     assert off.n_refresh == 0 and on.n_refresh == 1 and "differs" in on.note
-    same = bars(["2026-09-21", "2026-09-22"], close=10.0, volume=5.0)
-    same["Open"], same["High"], same["Low"] = 9.0, 11.0, 8.0  # the stored bar, field for field
+    same = bars(["2026-09-21", "2026-09-22"], close=10.0)  # the stored bar, field for field
     assert bm.plan_symbol("P", STORED, same, through=THROUGH, refresh_last=True).n_refresh == 0
 
 
@@ -142,7 +144,7 @@ def _fake_execute_values(seen):
 def test_the_write_is_insert_do_nothing_plus_a_keyed_update_and_never_a_delete(monkeypatch):
     seen = []
     monkeypatch.setattr("psycopg2.extras.execute_values", _fake_execute_values(seen))
-    frame = bars(["2026-09-21", "2026-09-22"], close=10.5)
+    frame = bars(["2026-09-21", "2026-09-22"], close=10.2)
     plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     conn = _Conn()
     keys, refreshed = bm.commit_plan(conn, plan)
@@ -154,7 +156,7 @@ def test_the_write_is_insert_do_nothing_plus_a_keyed_update_and_never_a_delete(m
     assert "WHERE timestamp = %s AND symbol = %s AND interval = %s AND venue = %s" in sql
     # the bound values: the new bar, then the key of the OLD last bar of THIS symbol
     assert params[5:] == (datetime(2026, 9, 21), "P", "1d", "yfinance")
-    assert params[3] == pytest.approx(10.5) and all(isinstance(v, float) for v in params[:5])
+    assert params[3] == pytest.approx(10.2) and all(isinstance(v, float) for v in params[:5])
 
 
 def test_a_refresh_that_changes_other_than_one_row_rolls_the_symbol_back(monkeypatch):
@@ -162,7 +164,7 @@ def test_a_refresh_that_changes_other_than_one_row_rolls_the_symbol_back(monkeyp
     plan = bm.plan_symbol(
         "P",
         STORED,
-        bars(["2026-09-21", "2026-09-22"], close=10.5),
+        bars(["2026-09-21", "2026-09-22"], close=10.2),
         through=THROUGH,
         refresh_last=True,
     )
@@ -200,16 +202,15 @@ def test_the_inserted_file_is_appended_after_each_commit(tmp_path):
 
 
 def test_a_fresh_bar_with_missing_fields_is_never_used_for_a_refresh():
-    frame = bars(["2026-09-21", "2026-09-22"], close=10.5)
+    frame = bars(["2026-09-21", "2026-09-22"], close=10.2)
     frame.loc[frame.index[0], "Open"] = float("nan")
     plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     assert plan.n_refresh == 0 and "missing fields" in plan.note
 
 
 def test_a_volume_only_difference_also_triggers_a_refresh():
-    stored = (STORED[0], {**STORED[1], "volume": 5.0})
-    frame = bars(["2026-09-21"], close=10.0, volume=999_999.0)
-    frame["Open"], frame["High"], frame["Low"] = 9.0, 11.0, 8.0
+    stored = STORED
+    frame = bars(["2026-09-21"], close=10.0, volume=2000.0)  # prices equal, volume doubled
     plan = bm.plan_symbol("P", stored, frame, through=THROUGH, refresh_last=True)
     assert plan.n_refresh == 1
 
@@ -226,13 +227,13 @@ def test_weekend_rows_are_dropped():
 
 
 def test_the_backup_lists_every_inserted_key_and_the_old_row(tmp_path):
-    frame = bars(["2026-09-21", "2026-09-22"], close=10.5)
+    frame = bars(["2026-09-21", "2026-09-22"], close=10.2)
     plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
     path = bm.write_backup([plan], {"P": STORED}, tmp_path, "20261109T000000Z")
     lines = path.read_text().splitlines()
     assert lines[0].startswith("kind,symbol,timestamp")
     assert "planned,P,2026-09-22" in lines and any(
-        line.startswith("old_row,P,2026-09-21,9.0") for line in lines
+        line.startswith("old_row,P,2026-09-21,10.0") for line in lines
     )
     with pytest.raises(FileExistsError):
         bm.write_backup([plan], {"P": STORED}, tmp_path, "20261109T000000Z")  # never overwritten
@@ -257,7 +258,7 @@ def test_main_refuses_today_or_later_and_a_dry_run_writes_nothing(monkeypatch, c
         return _Reader()
 
     monkeypatch.setattr("ggTrader.data.universe_db.connect", fake_connect)
-    monkeypatch.setattr(bm, "read_last_bars", lambda cur, symbols: {})
+    monkeypatch.setattr(bm, "read_recent_bars", lambda cur, symbols: {})
     monkeypatch.setattr(bm, "fetch_history", lambda s, start, through: {"P": bars(["2026-11-03"])})
     assert bm.main(["--symbols", "P", "--through", "2026-11-05"]) == 0
     out = capsys.readouterr().out
@@ -273,10 +274,68 @@ def test_a_symbol_with_no_usable_download_makes_the_run_fail_even_as_a_dry_run(m
             pass
 
     monkeypatch.setattr("ggTrader.data.universe_db.connect", lambda *a, **k: _Reader())
-    monkeypatch.setattr(bm, "read_last_bars", lambda cur, symbols: {})
+    monkeypatch.setattr(bm, "read_recent_bars", lambda cur, symbols: {})
     monkeypatch.setattr(bm, "fetch_history", lambda s, start, through: {"P": pd.DataFrame()})
     assert bm.main(["--symbols", "P", "--through", "2026-11-05"]) == 1
     assert "no usable data for: P" in capsys.readouterr().err
+
+
+def test_a_prior_bar_that_disagrees_means_a_different_series_and_the_symbol_is_refused():
+    frame = bars(["2026-09-18", "2026-09-21", "2026-09-22"], close=10.0)
+    prior = ((date(2026, 9, 18), {"close": 8.0}),)  # the download says 10.0: 25% apart
+    plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=False, prior=prior)
+    assert plan.failed and plan.n_insert == 0 and "not the same series" in plan.note
+    ok = ((date(2026, 9, 18), {"close": 10.0}),)
+    assert not bm.plan_symbol(
+        "P", STORED, frame, through=THROUGH, refresh_last=False, prior=ok
+    ).failed
+
+
+def test_a_last_bar_off_by_more_than_five_percent_is_refused_not_refreshed():
+    frame = bars(["2026-09-21", "2026-09-22"], close=21.0)  # stored 10.0: a 2-for-1 look
+    plan = bm.plan_symbol("P", STORED, frame, through=THROUGH, refresh_last=True)
+    assert plan.failed and plan.n_refresh == 0 and plan.n_insert == 0 and "refused" in plan.note
+
+
+def test_today_is_refused_as_the_end_date(capsys):
+    from datetime import datetime, timezone
+
+    today = datetime.now(timezone.utc).date().isoformat()
+    assert bm.main(["--symbols", "P", "--through", today]) == 2
+
+
+def test_a_commit_run_writes_the_backup_before_any_database_write(monkeypatch, tmp_path):
+    order = []
+
+    class _Reader:
+        def cursor(self):
+            return _Cursor([])
+
+        def close(self):
+            pass
+
+    class _Writer:
+        def close(self):
+            pass
+
+    monkeypatch.setattr(
+        "ggTrader.data.universe_db.connect",
+        lambda *a, **k: _Reader() if k.get("read_only") else _Writer(),
+    )
+    monkeypatch.setattr(bm, "read_recent_bars", lambda cur, symbols: {})
+    monkeypatch.setattr(bm, "fetch_history", lambda s, start, through: {"BE": bars(["2026-11-03"])})
+
+    def fake_commit(conn, plan):
+        order.append(("commit", sorted(p.name for p in tmp_path.iterdir())))
+        return [datetime(2026, 11, 3)], 0
+
+    monkeypatch.setattr(bm, "commit_plan", fake_commit)
+    code = bm.main(
+        ["--symbols", "BE", "--through", "2026-11-05", "--commit", "--backup-dir", str(tmp_path)]
+    )
+    assert code == 0 and order and any(n.endswith(".csv") for n in order[0][1])
+    inserted = next(p for p in tmp_path.iterdir() if p.name.endswith("_inserted.csv"))
+    assert inserted.read_text().strip() == "inserted,BE,2026-11-03"
 
 
 def test_the_script_has_help():

@@ -47,6 +47,13 @@ DEFAULT_TOLERANCE = 0.0005
 #: bar has the volume traded so far).
 VOLUME_TOLERANCE = 0.02
 PRICE_COLUMNS = ("open", "high", "low", "close")
+#: A last bar further off than this is not a partial bar (split? another company on a reused
+#: ticker?): the symbol is refused, not refreshed.
+MAX_REFRESH_GAP = 0.05
+#: The stored bars before the last one must agree with the download this closely (dividend
+#: adjustment moves them by hundredths of a percent); else the history is not the same company's.
+HISTORY_TOLERANCE = 0.01
+HISTORY_BARS = 6
 BACKUP_DIRNAME = "ohlcv_backfill"
 COLUMNS = ("open", "high", "low", "close", "volume")
 _SYMBOL = re.compile(r"^[A-Z][A-Z0-9]{0,5}([.\-][A-Z0-9]{1,2})?$")
@@ -88,24 +95,24 @@ def clean_frame(frame: pd.DataFrame, through: date) -> pd.DataFrame:
     return out[out.index <= pd.Timestamp(through)]
 
 
-def _stored_gaps(stored: dict, fresh) -> tuple[float, float]:
-    """``(largest price gap, volume gap)`` between a stored bar and a complete fresh one.
+def _stored_gaps(stored: dict, fresh) -> tuple[float, float, bool]:
+    """``(largest price gap, volume gap, has_null)`` of a stored bar against a complete fresh one.
 
-    Relative differences; a stored NULL or zero field counts as an infinite gap, so the bar is
-    always refreshed from a complete one.
+    Relative differences over the stored fields that have a value; ``has_null`` is true when a
+    stored field is NULL or zero (such a bar is always refreshed from a complete one).
     """
     price = 0.0
+    has_null = False
     for name in PRICE_COLUMNS:
         old = stored.get(name)
         if old is None or old == 0:
-            return float("inf"), 0.0
+            has_null = True
+            continue
         price = max(price, abs(float(fresh[name]) / float(old) - 1.0))
     old_volume = stored.get("volume")
-    if old_volume is None:
-        return price, float("inf")
-    if old_volume == 0:
-        return price, 0.0 if float(fresh["volume"]) == 0 else float("inf")
-    return price, abs(float(fresh["volume"]) / float(old_volume) - 1.0)
+    if old_volume is None or old_volume == 0:
+        return price, 0.0, True
+    return price, abs(float(fresh["volume"]) / float(old_volume) - 1.0), has_null
 
 
 def plan_symbol(
@@ -116,10 +123,15 @@ def plan_symbol(
     through: date,
     refresh_last: bool,
     tolerance: float = DEFAULT_TOLERANCE,
+    prior: tuple = (),
 ) -> SymbolPlan:
     """Pure: which rows to insert and (optionally) which last stored bar to refresh.
 
-    ``stored_last`` is ``(date, {open,high,low,close,volume})`` of the newest stored bar, or None.
+    ``stored_last`` is ``(date, {open,high,low,close,volume})`` of the newest stored bar, or None;
+    ``prior`` are the few stored bars before it in the same shape. The symbol is refused
+    (``failed``) when those bars disagree with the download by more than ``HISTORY_TOLERANCE`` or
+    the last bar is off by more than ``MAX_REFRESH_GAP``: that is a different company or a split,
+    not a partial bar.
     """
     frame = clean_frame(fetched, through)
     if frame.empty:
@@ -133,6 +145,18 @@ def plan_symbol(
     if stored_last is None:
         return SymbolPlan(symbol, None, frame, note="whole history")
     last_day, stored = stored_last
+    for day, old in prior:
+        stamp_old = pd.Timestamp(day)
+        if stamp_old in frame.index and old.get("close"):
+            gap = abs(float(frame.loc[stamp_old, "close"]) / float(old["close"]) - 1.0)
+            if gap > HISTORY_TOLERANCE:
+                return SymbolPlan(
+                    symbol,
+                    last_day,
+                    frame.iloc[0:0],
+                    note=f"history differs on {day} by {gap:.2%}: not the same series, refused",
+                    failed=True,
+                )
     inserts = frame[frame.index > pd.Timestamp(last_day)]
     refresh = pd.DataFrame(columns=list(COLUMNS))
     note = ""
@@ -143,8 +167,16 @@ def plan_symbol(
         if values.isna().any():
             note = f"fresh bar for {last_day} has missing fields: not refreshed"
         else:
-            price_gap, volume_gap = _stored_gaps(stored, values)
-            if price_gap > tolerance or volume_gap > VOLUME_TOLERANCE:
+            price_gap, volume_gap, has_null = _stored_gaps(stored, values)
+            if price_gap > MAX_REFRESH_GAP:
+                return SymbolPlan(
+                    symbol,
+                    last_day,
+                    frame.iloc[0:0],
+                    note=f"last bar {last_day} differs by {price_gap:.2%}: refused (split?)",
+                    failed=True,
+                )
+            if has_null or price_gap > tolerance or volume_gap > VOLUME_TOLERANCE:
                 refresh = fresh
                 note = (
                     f"last bar {last_day} differs: price {price_gap:.4%}, volume {volume_gap:.1%}"
@@ -174,21 +206,30 @@ def rows_for_db(symbol: str, frame: pd.DataFrame) -> list[tuple]:
     return records
 
 
-def read_last_bars(cur, symbols: list[str]) -> dict[str, tuple[date, dict[str, float]]]:
-    """Newest stored daily bar per symbol (read-only SELECT)."""
-    out: dict[str, tuple[date, dict[str, float]]] = {}
+def read_recent_bars(
+    cur, symbols: list[str], count: int = HISTORY_BARS
+) -> dict[str, list[tuple[date, dict[str, float]]]]:
+    """The newest ``count`` stored daily bars per symbol, newest first (read-only SELECT)."""
+    out: dict[str, list[tuple[date, dict[str, float]]]] = {}
     for symbol in symbols:
         cur.execute(
             "SELECT timestamp, open, high, low, close, volume FROM ohlcv "
-            "WHERE symbol = %s AND interval = %s AND venue = %s ORDER BY timestamp DESC LIMIT 1",
-            (symbol, INTERVAL, STOCK_VENUE),
+            "WHERE symbol = %s AND interval = %s AND venue = %s ORDER BY timestamp DESC LIMIT %s",
+            (symbol, INTERVAL, STOCK_VENUE, count),
         )
-        row = cur.fetchone()
-        if row is not None:
-            out[symbol] = (
-                row[0].date(),
-                dict(zip(COLUMNS, (None if v is None else float(v) for v in row[1:]), strict=True)),
-            )
+        rows = cur.fetchall()
+        if rows:
+            out[symbol] = [
+                (
+                    row[0].date(),
+                    dict(
+                        zip(
+                            COLUMNS, (None if v is None else float(v) for v in row[1:]), strict=True
+                        )
+                    ),
+                )
+                for row in rows
+            ]
     return out
 
 
@@ -350,9 +391,10 @@ def main(argv: list[str] | None = None) -> int:
     reader = connect(read_only=True)
     try:
         with reader.cursor() as cur:
-            stored = read_last_bars(cur, args.symbols)
+            recent = read_recent_bars(cur, args.symbols)
     finally:
         reader.close()
+    stored = {symbol: bars_[0] for symbol, bars_ in recent.items()}
     # one download from the earliest start any symbol needs (a symbol with bars needs ~a week back)
     fetched = fetch_history(args.symbols, args.start, args.through)
     plans = [
@@ -363,6 +405,7 @@ def main(argv: list[str] | None = None) -> int:
             through=args.through,
             refresh_last=args.refresh_last,
             tolerance=args.tolerance,
+            prior=tuple(recent.get(s, [])[1:]),
         )
         for s in args.symbols
     ]
