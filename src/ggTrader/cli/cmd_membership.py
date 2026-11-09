@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import json
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -28,6 +29,7 @@ from ggTrader.data.membership_upstream import (
     check_upstream,
     recent_checks,
 )
+from ggTrader.data.membership_weekly import PgWeeklyStore, WeeklyRun, plain_text, run_weekly
 from ggTrader.data.universe_algebra import HistoryValidationError
 from ggTrader.data.universe_db import (
     FILE_SOURCES,
@@ -44,6 +46,7 @@ from ggTrader.data.universe_db import (
     save_report_json,
     verify_vintage,
 )
+from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 
 #: ``ggt db load-sp500`` exit codes.
 EXIT_REFUSED = 2
@@ -142,6 +145,33 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
             "changes a vintage. Exit 0 matched, 2 mismatch, 1 failure."
         ),
     )
+    weekly = subs.add_parser(
+        "weekly",
+        help="Weekly job: fetch and archive the sources, check the list, alert, PROPOSE changes",
+        description=(
+            "Fetch and archive the raw bytes of the SPDR SPY holdings, the Wikipedia change "
+            "ledger and current list and the chinobing CSVs (universe.check_blobs and "
+            "universe.source_snapshots); match the latest vintage against SPY (a match advances "
+            "the live gate); compare the other sources (warnings only); apply the refusal "
+            "conditions; and on any refusal write a PROPOSED events file under "
+            "data/exports/membership_proposals/ for a human to confirm and load. It NEVER loads "
+            "a vintage. Dry by default: the message is printed and logged and nothing is sent; "
+            "--notify sends it through Telegram. Exit 0 clean (or warnings), 2 a refusal or a "
+            "proposal, 1 the job failed."
+        ),
+    )
+    weekly.add_argument(
+        "--notify",
+        action="store_true",
+        help="Send the message through the real TelegramNotifier (default: dry, nothing is sent)",
+    )
+    weekly.add_argument(
+        "--proposal-dir",
+        type=Path,
+        default=None,
+        help="Folder for a proposed events file (default: data/exports/membership_proposals/)",
+    )
+    weekly.add_argument("--json", type=Path, default=None, help="Also save the run summary here")
     status = subs.add_parser(
         "status",
         help="Latest vintage, last SPY match, known-through date and the live gate verdict",
@@ -370,6 +400,8 @@ def run_membership(args: argparse.Namespace) -> int:
         return run_check_upstream(args)
     if args.membership_command == "check-holdings":
         return run_check_holdings(args)
+    if args.membership_command == "weekly":
+        return run_weekly_command(args)
     if args.membership_command == "status":
         return run_status(args)
     if args.membership_command == "diff":
@@ -500,6 +532,63 @@ def run_check_holdings(args: argparse.Namespace) -> int:
     if run.record_error:
         return 1
     return run.result.exit_code
+
+
+def _print_weekly(run: WeeklyRun) -> None:
+    print(f"weekly membership check: {run.status.upper()} (exit {run.exit_code})")
+    if run.spy is not None:
+        spy = run.spy
+        print(
+            f"  SPY holdings       {spy.outcome.upper()} as of {spy.holdings_as_of} vs "
+            f"load {run.load_id} (attested floor {run.floor})"
+        )
+    for name, row in run.sources.items():
+        changed = row.last_change.isoformat() if row.last_change else "unknown"
+        size = "-" if row.size_bytes is None else f"{row.size_bytes} bytes"
+        sha = (row.raw_sha256 or "-")[:12]
+        print(f"  source {name:<21} {row.status:<6} last change {changed:<10} {size:>14} sha {sha}")
+    for finding in run.findings:
+        print(f"  [{finding.severity}] {finding.code}: {finding.text}")
+    if run.proposal is not None:
+        where = run.proposal_path or "(not written)"
+        print(f"  proposal: {len(run.proposal.rows)} rows -> {where}")
+        for row in run.proposal.rows:
+            when = row.effective.isoformat() if row.effective else "unknown"
+            flag = "CONFIRM" if row.needs_confirmation else "agreed"
+            cells = f"{row.action:<6} {row.ticker} {row.new_ticker} [{row.date_source}]"
+            print(f"    {when} {cells} {flag}")
+    if run.check_id is not None:
+        print(f"  recorded as universe.checks row {run.check_id}; nothing was loaded")
+    if run.record_error:
+        print(f"  NOT RECORDED: {run.record_error}", file=sys.stderr)
+
+
+def run_weekly_command(args: argparse.Namespace) -> int:
+    """Run ``ggt db membership weekly``; the real Telegram notifier exists only with --notify."""
+    notifier = TelegramNotifier() if args.notify else DryRunNotifier(None)
+    try:
+        run = run_weekly(PgWeeklyStore(), notifier, proposal_dir=args.proposal_dir)
+    except Exception as exc:  # noqa: BLE001 - never echo a connection string
+        first = (str(exc).strip().splitlines() or [""])[0]
+        print(f"weekly check failed: {type(exc).__name__}: {redact(first, None)}", file=sys.stderr)
+        return 1
+    _print_weekly(run)
+    if args.notify:
+        print(f"  Telegram: {'sent' if run.delivered else 'NOT SENT (see TELEGRAM_* settings)'}")
+        if not run.delivered:
+            return 1
+    else:
+        print("  dry run: nothing was sent. The message would be:")
+        print("    " + plain_text(run.message).replace("\n", "\n    "))
+    if args.json is not None:
+        summary = {
+            "status": run.status,
+            "message": run.message,
+            "check_id": run.check_id,
+            "findings": [vars(f) for f in run.findings],
+        }
+        args.json.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    return run.exit_code
 
 
 def run_status(args: argparse.Namespace) -> int:

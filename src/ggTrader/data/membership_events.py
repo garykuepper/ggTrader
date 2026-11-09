@@ -60,6 +60,10 @@ EVENT_COLUMNS = (
     "note",
     "new_ticker",
 )
+#: Two trailing columns a *proposed* events file (``ggt db membership weekly``) adds. A file may
+#: carry them; any row still marked ``needs_confirmation`` = ``Y`` is refused, so a proposal
+#: cannot be loaded until a human has confirmed each date and set the flag to ``N`` (or blanked it).
+PROPOSAL_COLUMNS = ("date_source", "needs_confirmation")
 ACTIONS = ("add", "remove", "rename")
 _SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -141,15 +145,26 @@ def parse_events_csv(raw: bytes) -> list[Event]:
     except UnicodeDecodeError as exc:
         raise EventsFileError([f"not valid UTF-8: {exc}"]) from exc
     rows = list(csv.reader(io.StringIO(text, newline="")))
-    if not rows or tuple(rows[0]) != EVENT_COLUMNS:
-        raise EventsFileError([f"header must be {','.join(EVENT_COLUMNS)}, got {rows[:1]}"])
+    header = tuple(rows[0]) if rows else ()
+    if header not in (EVENT_COLUMNS, EVENT_COLUMNS + PROPOSAL_COLUMNS):
+        raise EventsFileError(
+            [
+                f"header must be {','.join(EVENT_COLUMNS)} "
+                f"(optionally followed by {','.join(PROPOSAL_COLUMNS)}), got {rows[:1]}"
+            ]
+        )
     events: list[Event] = []
     seen: set[tuple[date, str, str]] = set()
     for line, row in enumerate(rows[1:], start=2):
-        if len(row) != len(EVENT_COLUMNS):
-            problems.append(f"line {line}: expected {len(EVENT_COLUMNS)} columns, got {len(row)}")
+        if len(row) != len(header):
+            problems.append(f"line {line}: expected {len(header)} columns, got {len(row)}")
             continue
-        eff_text, action, ticker, ann_text, url, sha, note, new_ticker = row
+        eff_text, action, ticker, ann_text, url, sha, note, new_ticker = row[: len(EVENT_COLUMNS)]
+        if len(header) > len(EVENT_COLUMNS) and row[-1].strip().upper() not in ("", "N", "NO"):
+            problems.append(
+                f"line {line}: still marked needs_confirmation={row[-1]!r}; confirm the date "
+                "against the S&P DJI press release, then set it to N"
+            )
         effective = _parse_date(eff_text, "effective_date", line, problems)
         announced = _parse_date(ann_text, "announcement_date", line, problems)
         if action not in ACTIONS:
