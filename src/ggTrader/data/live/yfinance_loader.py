@@ -99,16 +99,3 @@ class YFinanceDataLoader(BaseDataLoader):
     def list_symbols(self) -> List[str]:
         """Return the pre-configured S&P 500 list."""
         return SP500_SYMBOLS
-
-    def get_top_by_volume(
-        self,
-        limit: int = 50,
-        window: str = "30d",
-    ) -> List[dict]:
-        """Rank S&P 500 stocks by average daily dollar volume.
-
-        Returns list of dicts with 'symbol', 'rank', 'average_notional_volume'.
-        """
-        # This will be implemented more efficiently in update_universe_stocks.py
-        # but providing a stub here for interface completeness.
-        raise NotImplementedError("Use scripts/update_universe_stocks.py for volume ranking")

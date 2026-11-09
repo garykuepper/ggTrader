@@ -163,10 +163,3 @@ class TiingoDataLoader(BaseDataLoader):
     def list_symbols(self) -> List[str]:
         """Return the pre-configured S&P 500 list."""
         return SP500_SYMBOLS
-
-    def get_top_by_volume(
-        self,
-        limit: int = 50,
-        window: str = "30d",
-    ) -> List[dict]:
-        raise NotImplementedError("Use scripts/update_universe_stocks.py for volume ranking")
