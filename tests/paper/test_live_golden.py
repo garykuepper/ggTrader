@@ -20,11 +20,15 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
+from ggTrader.data.membership import FixtureMembershipSource
+
 REPO = Path(__file__).resolve().parents[2]
 GOLDEN = REPO / "research/programme/vectorbt-engine/legacy-references/live_golden_legacy.json"
 TAPE = REPO / "data/snapshots/ohlcv_20261106.parquet"
 EVAL_SPAN = ("2021-01-31", "2026-04-30")
 BAR_WINDOW = ("2019-03-01", "2026-10-30")
+#: The vintage the golden was recorded against.
+SOURCE = FixtureMembershipSource("sp500_v1_2026-06-02")
 
 pytestmark = [
     # Not in the fast core (38 s) but required in the FULL tier before any deploy of paper/ or the
@@ -47,6 +51,7 @@ def tape_frame() -> pd.DataFrame:
         extra_symbols=("SPY", "TLT", "GLD", "PDBC", "BIL"),
         start=BAR_WINDOW[0],
         end=BAR_WINDOW[1],
+        membership=SOURCE,
     )
     return bars.legacy_frame()
 
@@ -81,7 +86,7 @@ def test_rebuilt_signal_runner_reproduces_the_live_golden(tape_frame, golden):
             now = datetime.fromisoformat(rec["session"]).replace(
                 hour=20, minute=0, tzinfo=timezone.utc
             )
-            got = signal_runner.generate_signals(now=now)
+            got = signal_runner.generate_signals(now=now, membership=SOURCE)
             diff = {
                 key: (got[key], rec[key])
                 for key in ("buys", "sells", "last_exit", "as_of", "universe_size")

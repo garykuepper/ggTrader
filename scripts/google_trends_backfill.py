@@ -15,6 +15,7 @@ import time
 
 import pandas as pd
 
+from ggTrader.data.membership import add_membership_argument, source_from_args
 from ggTrader.lab.data import equity_universe_between
 from ggTrader.lab.google_trends_data import cache_symbol_interest, ensure_schema
 
@@ -23,15 +24,17 @@ EARLIEST_DATE = "2015-01-01"
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Parse the (empty) command line, then run; ``--help`` exits before any work."""
+    """Parse the command line (``--membership``), then run; ``--help`` exits before any work."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.parse_args(argv)
+    add_membership_argument(parser)
+    args = parser.parse_args(argv)
+    membership = source_from_args(args)
     ensure_schema()
     eval_start = pd.Timestamp(EARLIEST_DATE, tz="UTC")
     eval_end = pd.Timestamp.now(tz="UTC")
-    symbols = equity_universe_between(eval_start, eval_end, universe="sp500")
+    symbols = equity_universe_between(eval_start, eval_end, universe="sp500", membership=membership)
     print(
         f"Backfilling Google Trends data for {len(symbols)} SP500 (ever-member) symbols", flush=True
     )

@@ -7,11 +7,13 @@ blend, and persistence.
 
 from __future__ import annotations
 
+from datetime import date
 from functools import reduce
 from typing import Any, NamedTuple
 
 import pandas as pd
 
+from ggTrader.data.membership import MembershipSource, resolve_source
 from ggTrader.lab import persist
 from ggTrader.lab.allocation import combine_sleeves
 from ggTrader.lab.data import STOCK_BASE_CONFIG
@@ -66,6 +68,7 @@ def _engine_curves(
     market: str,
     base_config: dict,
     snapshot: str | None,
+    membership: MembershipSource,
 ) -> tuple[dict[str, pd.Series], pd.Series, dict[str, Any]]:
     """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
     from ggTrader.engine.provenance import provenance as build_provenance
@@ -75,7 +78,9 @@ def _engine_curves(
 
     es = pd.Timestamp(eval_start, tz="UTC")
     ee = pd.Timestamp(eval_end, tz="UTC")
-    bars = load_run_bars(sorted({u for _, u in sleeves}), cfg, es, ee, snapshot)
+    bars = load_run_bars(
+        sorted({u for _, u in sleeves}), cfg, es, ee, snapshot, membership=membership
+    )
     spy_close = bars.close["SPY"].dropna()
     curves: dict[str, pd.Series] = {}
     sources: dict[str, Any] = {}
@@ -88,7 +93,7 @@ def _engine_curves(
         except ValueError as exc:
             raise SystemExit(f"blend sleeve {label!r}: {exc}") from exc
         sources[label] = registry.source_sha256(cls)
-        sleeve, mask = sleeve_inputs(bars, universe, cfg, es, ee)
+        sleeve, mask = sleeve_inputs(bars, universe, cfg, es, ee, membership=membership)
         if not sleeve.symbols:
             raise SystemExit(
                 f"blend sleeve {label!r}: no symbols available for universe {universe!r}"
@@ -110,7 +115,11 @@ def _engine_curves(
             raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
         curves[label] = result.oos_equity
     tape = (bars.provenance or {}).get("snapshot") or {}
-    stamp = build_provenance(tape_sha256=tape.get("sha256"), extra={"strategy_sources": sources})
+    stamp = build_provenance(
+        tape_sha256=tape.get("sha256"),
+        extra={"strategy_sources": sources},
+        membership=membership.provenance(date.fromisoformat(eval_end)),
+    )
     return curves, spy_close, stamp
 
 
@@ -126,13 +135,16 @@ def run_blend(
     window: int = 60,
     max_leverage: float = 1.0,
     snapshot: str | None = None,
+    membership: MembershipSource | None = None,
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
     curves (inverse-vol -> target-vol), persist as a lab run, return BlendResult.
 
     Each sleeve runs through the vectorbt-engine walk-forward (``lab.wfo``) on the frozen tape
     (``snapshot`` overrides the file); the ``lab_runs`` row carries the engine provenance block.
-    Only strategies ported to the engine contract can be sleeves.
+    Only strategies ported to the engine contract can be sleeves. ``membership`` is the S&P 500
+    list source (``None``: the one selected by ``GGT_MEMBERSHIP``, else an error); its vintage is
+    stored in the run's provenance.
 
     NOTE: max_leverage defaults to 1.0, the deployed value
     (src/ggTrader/paper/overlay.py). Until 2026-11 the default was 2.0 (the idealised research
@@ -140,7 +152,14 @@ def run_blend(
     2026-07-13 and 2026-08-18). Pass 2.0 explicitly for the unconstrained comparison.
     """
     curves, spy_close, stamp = _engine_curves(
-        sleeves, cfg, eval_start, eval_end, market, base_config, snapshot
+        sleeves,
+        cfg,
+        eval_start,
+        eval_end,
+        market,
+        base_config,
+        snapshot,
+        resolve_source(membership),
     )
 
     blend_eq, returns_df, diag = blend_curves(

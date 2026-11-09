@@ -6,7 +6,9 @@ tape, with the live loader replaced by a slice of the hashed Parquet snapshot, a
 ``buys``, ``sells``, ``last_exit``, ``as_of`` and ``universe_size`` with the legacy golden.
 It also records the margins of every sanity gate (so the bounds can be tuned from data).
 
-Reads the frozen snapshot only: no database, no network, no write to ``ohlcv``.
+Reads the frozen snapshot only: no network, no write to ``ohlcv``. The S&P 500 list comes from
+``--membership`` (default ``fixture:sp500_v1_2026-06-02``; ``db:1`` reads the same list from the
+database) and its vintage is recorded in the JSON's ``provenance`` block.
 
 Usage:
     systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0 \\
@@ -27,6 +29,8 @@ from unittest.mock import patch
 import pandas as pd
 
 from ggTrader.data.bars import load_bars
+from ggTrader.data.membership import ORACLE_SPEC, add_membership_argument, source_from_args
+from ggTrader.engine.provenance import provenance as build_provenance
 from ggTrader.paper import signal_runner
 from ggTrader.paper.gates import SanityConfig
 from ggTrader.utils.results import write_result_json
@@ -51,7 +55,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--golden", type=Path, default=GOLDEN)
     parser.add_argument("--out", type=Path, default=OUT)
+    add_membership_argument(parser, default=ORACLE_SPEC)
     args = parser.parse_args(argv)
+    membership = source_from_args(args)
 
     golden = json.loads(args.golden.read_text())
     bars = load_bars(
@@ -60,6 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         extra_symbols=EXTRAS,
         start=BAR_WINDOW[0],
         end=BAR_WINDOW[1],
+        membership=membership,
     )
     frame = bars.legacy_frame()
     symbols_of = frame.columns.get_level_values(0)
@@ -76,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
             now = datetime.fromisoformat(rec["session"]).replace(
                 hour=20, minute=0, tzinfo=timezone.utc
             )
-            got = signal_runner.generate_signals(now=now)
+            got = signal_runner.generate_signals(now=now, membership=membership)
             diff = {k: {"new": got[k], "legacy": rec[k]} for k in COMPARED if got[k] != rec[k]}
             rows.append(
                 {
@@ -121,7 +128,13 @@ def main(argv: list[str] | None = None) -> int:
         "mismatches": mismatches[:25],
         "per_session": rows,
     }
-    write_result_json(args.out, result)
+    write_result_json(
+        args.out,
+        result,
+        provenance=build_provenance(
+            membership=membership.provenance(pd.Timestamp(EVAL_SPAN[1]).date())
+        ),
+    )
     log(
         f"live golden: {result['sessions_equal']}/{len(golden)} sessions equal in {seconds}s; "
         f"margins {result['gate_margins']}"

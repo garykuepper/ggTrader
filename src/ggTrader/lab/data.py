@@ -12,6 +12,7 @@ from ggTrader.data.core.index_constituents import (
     universe_all_between,
     universe_members_asof,
 )
+from ggTrader.data.membership import MembershipSource
 from ggTrader.lab.strategy import LabConfig
 
 #: Default research config for daily-bar US equities.
@@ -256,10 +257,18 @@ def equity_universe_between(
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
     universe: str = DEFAULT_UNIVERSE,
+    membership: Optional[MembershipSource] = None,
 ) -> List[str]:
-    """All yfinance-normalized members that existed anywhere in the span."""
+    """All yfinance-normalized members that existed anywhere in the span.
+
+    ``membership`` is the source of the S&P 500 list (``None``: the one selected by
+    ``GGT_MEMBERSHIP``, else an error); static universes ignore it.
+    """
     return sorted(
-        {normalize_yf_ticker(t) for t in universe_all_between(universe, eval_start, eval_end)}
+        {
+            normalize_yf_ticker(t)
+            for t in universe_all_between(universe, eval_start, eval_end, membership=membership)
+        }
     )
 
 
@@ -299,9 +308,15 @@ def eligible_at(
     past: pd.DataFrame,
     cfg: LabConfig,
     universe: str = DEFAULT_UNIVERSE,
+    membership: Optional[MembershipSource] = None,
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """Members at asof with enough history in ``past`` (data <= asof)."""
-    members = [normalize_yf_ticker(m) for m in universe_members_asof(universe, asof)]
+    """Members at asof with enough history in ``past`` (data <= asof).
+
+    ``membership`` as in :func:`equity_universe_between`.
+    """
+    members = [
+        normalize_yf_ticker(m) for m in universe_members_asof(universe, asof, membership=membership)
+    ]
     have = set(past.columns.get_level_values(0).unique())
     eligible: List[str] = []
     for sym in members:

@@ -38,7 +38,8 @@ from typing import Any, Optional, Sequence
 import numpy as np
 import pandas as pd
 
-from ggTrader.data.core.index_constituents import load_sp500_history, normalize_yf_ticker
+from ggTrader.data.core.index_constituents import normalize_yf_ticker
+from ggTrader.data.membership import MembershipSource, age_since_verified, resolve_source
 
 #: Constituent-file age (days since its last snapshot row) beyond which the builder warns.
 #: ESTIMATE per spec 5.7 and OD5; tune from dry-run data.
@@ -63,31 +64,58 @@ def check_constituent_age(
     *,
     max_age_days: int = DEFAULT_MAX_AGE_DAYS,
     on_stale: str = "warn",
+    membership: Optional[MembershipSource] = None,
 ) -> dict[str, Any]:
-    """How old is the constituent file at ``asof``? Warn, raise or ignore when too old.
+    """How old is the constituent list at ``asof``? Warn, raise or ignore when too old.
 
-    Age is ``asof`` minus the date of the file's last snapshot row. A quiet stretch with no
-    index changes also ages the file, so this is a prompt to refresh (OD5), not proof of error.
+    With a bare ``membership_history`` table (synthetic tests, old callers) age is ``asof`` minus
+    the date of the last snapshot row: a quiet stretch with no index changes also ages it, so this
+    is a prompt to refresh (OD5), not proof of error.
+
+    With a source (``membership``, else the one selected by ``GGT_MEMBERSHIP``) the spec 3.4
+    rule applies: ``age_days`` is still ``asof - coverage_end`` (information only) and the list is
+    *stale* when ``asof - verified_at`` exceeds ``max_age_days``. ``verified_at`` is informational
+    provenance for research results, not the live gate's clock (that is the last SPY holdings
+    match, ``membership_gate``). A vintage verified after ``asof`` is never stale, so replaying
+    an old backtest is not penalised.
+
     Returns a JSON-able record for the run provenance.
     """
     if on_stale not in STALE_POLICIES:
         raise ValueError(f"on_stale must be one of {STALE_POLICIES}, got {on_stale!r}")
-    hist = membership_history if membership_history is not None else load_sp500_history()
-    last = hist.index[-1]
     ts = pd.Timestamp(asof)
     ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
-    age = int((ts - last).days)
+    extra: dict[str, Any] = {}
+    if membership_history is not None:
+        last = membership_history.index[-1]
+        age = int((ts - last).days)
+        stale = age > max_age_days
+        what, shown = "last snapshot", age
+        record_last = str(last.date())
+    else:
+        vintage = resolve_source(membership).vintage()
+        age = (ts.date() - vintage.coverage_end).days
+        verified = age_since_verified(vintage, ts.date())
+        stale = verified > max_age_days
+        what, shown = "last verification", verified
+        record_last = str(vintage.coverage_end)
+        extra = {
+            "age_since_verified_days": verified,
+            "verified_at": vintage.verified_at.isoformat(),
+            "membership_sha256": vintage.content_sha256,
+        }
     record = {
-        "last_snapshot": str(last.date()),
+        "last_snapshot": record_last,
         "asof": str(ts.date()),
         "age_days": age,
         "max_age_days": max_age_days,
-        "stale": age > max_age_days,
+        "stale": stale,
+        **extra,
     }
-    if record["stale"] and on_stale != "ignore":
+    if stale and on_stale != "ignore":
         msg = (
-            f"constituent file is stale: last snapshot {record['last_snapshot']} is {age} days "
-            f"before {record['asof']} (limit {max_age_days}); refresh per OD5"
+            f"constituent file is stale: {what} is {shown} days before {record['asof']} "
+            f"(limit {max_age_days}; last snapshot {record_last}); refresh per OD5"
         )
         if on_stale == "raise":
             raise StaleConstituentsError(msg)
@@ -114,14 +142,21 @@ def membership_mask(
     index: pd.DatetimeIndex,
     symbols: Sequence[str],
     membership_history: Optional[pd.DataFrame] = None,
+    *,
+    membership: Optional[MembershipSource] = None,
 ) -> pd.DataFrame:
     """True where ``symbol`` is a PIT index member on the bar (``dates x symbols``, bool).
 
     ``membership_history`` is the ``load_sp500_history()`` table (UTC date index, a ``tickers``
-    list per row); ``None`` loads the committed file. Column names are matched as given; only
-    the history's tickers are normalised, as in ``eligible_at``.
+    list per row); without it the table comes from ``membership`` (else the source selected by
+    ``GGT_MEMBERSHIP``; there is no file default). Column names are matched as given; only the
+    history's tickers are normalised, as in ``eligible_at``.
     """
-    hist = membership_history if membership_history is not None else load_sp500_history()
+    hist = (
+        membership_history
+        if membership_history is not None
+        else resolve_source(membership).history()
+    )
     cols = _check_columns(symbols)
     idx = _utc_index(index)
     if len(idx) and idx[0] < hist.index[0]:
@@ -159,6 +194,7 @@ def pit_mask(
     close: pd.DataFrame,
     membership_history: Optional[pd.DataFrame] = None,
     *,
+    membership: Optional[MembershipSource] = None,
     min_history_bars: int = 400,
     max_stocks: Optional[int] = None,
     static_members: Optional[Sequence[str]] = None,
@@ -169,7 +205,9 @@ def pit_mask(
 
     Args:
         close: ``dates x symbols`` closes (NaN where no bar). Index must be strictly increasing.
-        membership_history: PIT constituent table; ``None`` loads the committed file.
+        membership_history: PIT constituent table (tests); without it, ``membership``.
+        membership: the source of the table (spec 3.3); ``None`` uses the one selected by
+            ``GGT_MEMBERSHIP`` and raises ``MembershipSourceNotSelected`` if none is.
         min_history_bars: required non-NaN closes up to the bar (lab default 400; live/sweeps 60).
         max_stocks: keep only the first ``max_stocks`` eligible symbols alphabetically per bar.
         static_members: for a non-PIT universe, the fixed member list (skips the age check).
@@ -192,8 +230,9 @@ def pit_mask(
                 membership_history,
                 max_age_days=max_age_days,
                 on_stale=on_stale,
+                membership=membership,
             )
-        member = membership_mask(close.index, cols, membership_history)
+        member = membership_mask(close.index, cols, membership_history, membership=membership)
 
     enough = np.cumsum(close.notna().to_numpy(), axis=0) >= min_history_bars
     mask = member.to_numpy() & enough

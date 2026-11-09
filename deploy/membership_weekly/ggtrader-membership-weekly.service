@@ -1,0 +1,28 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. Read README.md in this folder first.
+# User unit: copy to ~/.config/systemd/user/ only after the owner says go.
+# Deterministic job, no LLM. It runs the same code the live reader uses (the ggtrader_live image),
+# fetches and archives the public sources, checks the S&P 500 list, and sends ONE Telegram message.
+# It never loads a membership vintage; a human does that from the proposal it stores in the
+# database (universe.source_snapshots). The container is removed after each run, so the message
+# names `ggt db membership proposal --id N --out FILE`, which rebuilds the file from the database.
+[Unit]
+Description=ggTrader weekly S&P 500 membership check (fetch, archive, cross-check, propose)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+# __REPO_ROOT__ is the checkout that holds docker-compose.yaml and .env (the live trader's folder).
+WorkingDirectory=__REPO_ROOT__
+# Preferred: the container (same code and same database route as the live reader).
+ExecStart=/usr/bin/docker compose run --rm -T ggtrader_live python -u ggt.py db membership weekly --notify
+# Alternative (host virtualenv, see README.md): replace ExecStart with
+# ExecStart=__REPO_ROOT__/.venv/bin/python -u ggt.py db membership weekly --notify
+TimeoutStartSec=600
+# Exit 2 = a refusal or a proposal (a human must act); exit 1 = the job itself failed. Both make
+# the unit show as failed, which is intended: `systemctl --user status` then tells the story.
+Restart=no
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ggtrader-membership-weekly

@@ -11,6 +11,12 @@ yfinance loader raise, so a stray read fails loudly instead of fetching or writi
 strategy that normally reads a table (retail_attention) gets an empty interest frame, which is
 what the database holds (the table is empty).
 
+The legacy code reads the S&P 500 list from its own extracted copy of the frozen file, so
+``--membership`` (default ``fixture:sp500_v1_2026-06-02``) can only name a fixture: the script
+checks that the file the legacy code reads has exactly that fixture's recorded hash and writes the
+vintage into every result as ``membership_sha256`` and ``membership`` (new keys). It uses only
+the standard library for this, because ``ggTrader.data.membership`` does not exist at the tag.
+
 Example:
     legacy-engine/venv/bin/python scripts/legacy_reference_runs.py \\
         --legacy-src legacy-engine/src/src --runs smoke2_ensemble_sp500
@@ -37,6 +43,11 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 OUT_DIR = Path(tempfile.gettempdir()) / "ggtrader_evidence" / "legacy-references"
 SNAPSHOT_DIR = REPO_ROOT / "data" / "snapshots"
 LEGACY_TAG = "legacy-engine-vbt0285"
+MEMBERSHIP_MANIFEST = REPO_ROOT / "data" / "universe" / "membership" / "MANIFEST.json"
+#: The vintage the committed references were made on (same value as ggTrader.data.membership).
+ORACLE_MEMBERSHIP = "fixture:sp500_v1_2026-06-02"
+#: Filled by :func:`pin_membership`; copied into every result header.
+MEMBERSHIP_RECORD: dict[str, Any] = {}
 
 EVAL_START = "2021-01-31"
 EVAL_END_17 = "2026-04-30"  # exactly 17 folds (anchor-fix reproduction script)
@@ -71,6 +82,47 @@ def bootstrap_legacy(legacy_src: Path) -> None:
     where = Path(ggTrader.__file__).resolve()
     if legacy_src.resolve() not in where.parents:
         raise RuntimeError(f"ggTrader imported from {where}, not from {legacy_src}")
+
+
+def pin_membership(spec: str) -> dict[str, Any]:
+    """Check that the legacy code's constituent file is the fixture ``spec`` names; record it.
+
+    Returns the header fields ``membership_sha256`` and ``membership``. Must run after
+    :func:`bootstrap_legacy`. Standard library only (see the module docstring).
+    """
+    kind, _, name = spec.partition(":")
+    if kind != "fixture" or not name:
+        raise SystemExit(
+            f"--membership {spec!r}: the legacy code reads its own frozen file, so only "
+            "fixture:<name> can be verified here"
+        )
+    fixtures = json.loads(MEMBERSHIP_MANIFEST.read_text(encoding="utf-8"))["fixtures"]
+    if name not in fixtures:
+        raise SystemExit(f"unknown membership fixture {name!r}; manifest has {sorted(fixtures)}")
+    entry = fixtures[name]
+    from ggTrader.data.core import index_constituents as legacy_ic  # noqa: PLC0415
+
+    read_by_legacy = Path(legacy_ic.SP500_HISTORY_CSV)
+    actual = hashlib.sha256(read_by_legacy.read_bytes()).hexdigest()
+    if actual != entry["gz_sha256"]:
+        raise SystemExit(
+            f"the legacy code reads {read_by_legacy} (sha256 {actual}), which is not fixture "
+            f"{name!r} (sha256 {entry['gz_sha256']}); refusing to record a wrong vintage"
+        )
+    MEMBERSHIP_RECORD.clear()
+    MEMBERSHIP_RECORD.update(
+        membership_sha256=entry["content_sha256"],
+        membership={
+            "kind": "fixture",
+            "fixture": name,
+            "gz_sha256": entry["gz_sha256"],
+            "raw_sha256": entry["raw_sha256"],
+            "coverage_start": entry["coverage"]["start"],
+            "coverage_end": entry["coverage"]["end"],
+            "read_by_legacy_code": str(read_by_legacy),
+        },
+    )
+    return dict(MEMBERSHIP_RECORD)
 
 
 def block_io() -> None:
@@ -353,6 +405,7 @@ def _common_header(name: str, spec: dict[str, Any], tape: Tape) -> dict[str, Any
             "symbols": tape.entry["symbols"],
         },
         "started": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        **MEMBERSHIP_RECORD,
     }
 
 
@@ -675,6 +728,13 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     p.add_argument("--list", action="store_true", help="list run names and exit")
     p.add_argument("--eval-end", help="override eval_end of the selected wfo runs (for fallbacks)")
     p.add_argument("--suffix", default="", help="suffix appended to the run name when overriding")
+    p.add_argument(
+        "--membership",
+        default=ORACLE_MEMBERSHIP,
+        metavar="fixture:NAME",
+        help="S&P 500 list the legacy code must be reading (default %(default)s); the script "
+        "verifies the file's hash and records the vintage in every result",
+    )
     return p.parse_args(argv)
 
 
@@ -695,6 +755,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 2
 
     bootstrap_legacy(Path(args.legacy_src))
+    pin_membership(args.membership)
     block_io()
     helpers = import_snapshot_helpers()
     path, entry = pick_snapshot(args.snapshot)

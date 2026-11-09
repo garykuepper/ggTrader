@@ -257,8 +257,10 @@ lists are `REGISTRY` and `LEGACY_ONLY_STRATEGIES` in `src/ggTrader/lab/strategie
 | `--skip` | 21 | Most recent days skipped in the momentum measure (weight strategies). |
 | `--max-stocks` | None | Cap the total number of stocks loaded (useful for super-fast test runs). |
 | `--sweep-param` | none | Override one axis of the strategy's parameter grid, for example `--sweep-param rsi_oversold=20,25,30,35` (repeat the flag for several axes). |
+| `--membership SPEC` | none (see below) | Where the S&P 500 membership list is read from: `db` (latest vintage), `db:<load_id>` or `fixture:<name>`, for example `fixture:sp500_v1_2026-06-02` (the frozen vintage 1 that every committed reference number was made on). **There is deliberately no default**: without the flag the `GGT_MEMBERSHIP` environment variable is used, and if that is also unset the run stops at once with `MembershipSourceNotSelected`, before loading any data. The flag is needed for any universe, not only `sp500`. |
+| `--expect-membership-sha SHA256` | none | Refuse to run unless the chosen vintage's content sha256 equals this (pins a reproduction to the exact list). |
 | `--snapshot PATH` | newest in `data/snapshots/MANIFEST.json` | The Parquet tape to read. |
-| `--result-json PATH` | `results/lab/wfo_<strategy>_<universe>_<start>_<end>_vbt.json` | `--wfo`: where to write the run record. Every record carries a provenance block (vectorbt and Rust versions, the engine that actually ran, tape sha256, statistic definitions, baseline epoch). With `--blend` the same block is stored on the `lab_runs` row. |
+| `--result-json PATH` | `results/lab/wfo_<strategy>_<universe>_<start>_<end>_vbt.json` | `--wfo`: where to write the run record. Every record carries a provenance block (vectorbt and Rust versions, the engine that actually ran, tape sha256, statistic definitions, baseline epoch, and the membership list used: `membership_sha256` plus a `membership` block with the load id or fixture name, coverage and ages). With `--blend` the same block is stored on the `lab_runs` row. |
 
 ### Simulation Modes (Choose One)
 
@@ -280,8 +282,16 @@ When running a `--blend`, you can customize the portfolio combination overlay us
 ### Lab Examples
 
 ```bash
-# Walk-forward the voting (ensemble) strategy on the pinned 17-fold window (frozen tape)
-ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
+# Walk-forward the voting (ensemble) strategy on the pinned 17-fold window (frozen tape),
+# on the frozen vintage-1 S&P 500 list (the list the reference numbers were made on)
+ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30 \
+    --membership fixture:sp500_v1_2026-06-02
+
+# The same list read from the database (load 1 is the same bytes; the result must be identical)
+ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30 --membership db:1
+
+# Or choose once for the shell
+export GGT_MEMBERSHIP=fixture:sp500_v1_2026-06-02
 
 # The same on Nasdaq-100 stocks instead of the S&P 500
 ggt lab --strategy ensemble --wfo --universe nasdaq100 --eval-start 2021-01-31 --eval-end 2026-04-30
@@ -357,7 +367,40 @@ ggt paper                      # read-only dry run: logs intended orders, writes
 ggt paper --notify             # same, forwarding the DRY RUN lines to Telegram with a [DRY RUN] prefix
 ggt paper --dry-run-writes     # the pre-rebuild dry run: also writes ledger/snapshot/peak/tape state
 ggt paper --live               # places real paper orders (the only way to; refuses the two flags above)
+
+# The S&P 500 list is named at the entry point: since slice M4 ggt paper reads the latest
+# database vintage ("db") behind the membership gate below. There is no flag to change it and
+# no fallback to a file.
 ```
+
+**Membership gate (slice M4, redefined in M4b per spec Appendix C3).** Before any bar is fetched, a
+wall-clock run on the latest `db` vintage must pass `ggTrader.data.membership_gate`. The gate counts
+from an *independent* match: the last `matched` row that `ggt db membership check-holdings` wrote
+(the list equals the SPDR SPY holdings for the holdings' own as-of date). Two clocks decide.
+**Freshness:** the last match may be no more than **45 days** old (override: environment variable
+`GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS`, a whole number from 1 to 90; anything else stops the run; it drops
+to 10 once the weekly job exists). A list that was never matched is refused outright. **Lag:** the
+day may trail `known_through` (the newest matched holdings as-of date, never earlier than the
+vintage's last change date) by under **90 days** (warn from 90) and under **180 days** (refuse
+from 180). A quiet spell without index changes therefore raises no alarm while the matches keep
+coming; a dead pipeline does. A `check-upstream` result extends neither clock. **Known mismatch:** if the newest holdings check of the latest vintage (by the holdings' as-of date, then
+check time, among `matched` and `mismatch` rows for that vintage) is a `mismatch`, the gate refuses
+with `membership_mismatch` until a later-dated match exists or a newer vintage is loaded; a mismatch
+dated before the last match, a mismatch against another vintage and `fetch_failed` rows never close
+it. `ggt db membership status` prints the newest comparison. A refusal raises
+`SignalGateError` with code `membership_stale` (including "never matched"), `membership_lag`, `membership_future_match`, `membership_mismatch`,
+`membership_unavailable` (database unreadable, table empty or the vintage fails its integrity
+check) or `membership_gate_config`, sends the usual "Signal gate - no orders placed" message, and
+stops the run before any order is possible. Each message names its fix
+(`ggt db membership check-holdings`, and `ggt db load-sp500` if it reports a mismatch). A warning
+is logged and sent through the notifier ("Membership list: ..."); in a dry run it follows the
+`DryRunNotifier` rules (Telegram only with `--notify`). The gate never applies to fixtures, to a
+pinned `db:<id>` or to a caller-injected `now` (replays and tests). Because those skip the gate, a live run (`--live`, or `run_paper_trading(dry_run=False)`)
+refuses any membership source but the latest database vintage (`db`) with code
+`membership_not_live`, before any broker call; a dry run may still rehearse a fixture. A match belongs to one vintage:
+loading a newer vintage starts again from "never matched": until `check-holdings` matches a fresh
+SPY file against the new latest vintage, the gate refuses. Run `ggt db membership status` to see
+the current vintage, its last match and the gate's decision.
 
 A dry run without `--live` submits no order. Since P7 it is also read-only by default: no schema DDL, ledger, pending-order booking, snapshot, peak, split-state, dividend or price-tape write, and bars are fetched from yfinance into memory instead of the caching loader. The late-run gate only warns in a dry run so it can be rehearsed at any hour. See `research/programme/vectorbt-engine/P7-completion.md` for what the old dry run wrote.
 
@@ -395,6 +438,8 @@ ggt db <subcommand>
 | `truncate` | Wipes out database tables completely (asks for confirmation first). |
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
+| `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |
+| `membership` | `apply-ddl` creates or refreshes schema `universe` (safe to repeat); `verify` compares a stored vintage with a file or a registered fixture on every snapshot date; `check-upstream` compares the public upstream list with the latest vintage and records the check (informational); `check-holdings` matches the latest vintage against the SPDR SPY holdings file and records the check (this is what keeps the live gate open); `weekly [--notify] [--proposal-dir DIR] [--json PATH]` is the weekly job (fetch and archive the sources, match SPY, cross-check, alert, propose; dry unless `--notify`; never loads a vintage); `proposal --id N --out FILE` writes the proposed events file the weekly job stored for check N; `status` shows the latest vintage and what the live gate would decide; `diff --from A --to B` compares two vintages; `export` dumps the whole `universe` schema with `pg_dump` and prints the file's path, size and sha256; `reinstate --load-id N --reason TEXT` writes a new vintage with the content of vintage N (dry run unless `--commit`). |
 
 ### Examples:
 ```bash
@@ -410,6 +455,299 @@ ggt db compression --enable
 # Back up the database to a backup.sql file
 ggt db export > backup.sql
 ```
+
+### Versioned S&P 500 membership (`universe` schema)
+
+Spec: `docs/superpowers/specs/2026-11-07-membership-database-design.md`. Slice M1 built the
+schema, the loader and `verify`; slice M2 added the read door (`ggTrader.data.membership`, below)
+and the fixtures manifest. No backtest, oracle or trade reads the new door yet (slice M3
+migrates the readers), so no reference number moves.
+
+```bash
+# M0: create / refresh the schema (sql/universe_schema.sql; idempotent)
+ggt db membership apply-ddl
+
+# M1: dry run (default) prints the diff against the latest vintage and writes nothing
+ggt db load-sp500 --from-file data/universe/sp500_constituents_history.csv.gz \
+    --source fixture-import --retrieved-at 2026-06-09T00:00:00Z --parent none
+
+# ... then write it (one transaction under an advisory lock)
+ggt db load-sp500 --from-file data/universe/sp500_constituents_history.csv.gz \
+    --source fixture-import --retrieved-at 2026-06-09T00:00:00Z --parent none --commit \
+    --note "committed f8c7efe0; true retrieval time unknown"
+
+# Compare vintage 1 with the file on all 2,712 snapshot dates and every calendar day (read-only)
+ggt db membership verify --load-id 1
+
+# The same, against a registered fixture (its three hashes are checked before the comparison)
+ggt db membership verify --load-id 1 --against-fixture sp500_v1_2026-06-02
+```
+
+`verify --load-id N` with no other option checks the load against its **own archived bytes** (the
+gzip in `universe.load_blobs`), so every vintage verifies with no options; the older default, the
+committed vintage-1 file, reported a false FAILED for any later load. `--against-file PATH` and
+`--against-fixture NAME` (not both) stay as explicit references. A curated vintage's stored
+evidence files are hash-checked as well.
+
+**SPY holdings match (slice M4b, spec Appendix C).**
+
+```bash
+# Download the public SPDR SPY holdings workbook, compare its tickers with the latest vintage's
+# members on the holdings' own as-of date, record one check row (and the raw bytes)
+ggt db membership check-holdings     # exit 0 matched, 2 mismatch (reported, nothing loaded), 1 failure
+```
+
+The workbook (`https://www.ssga.com/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx`,
+fetched with a browser-style User-Agent, redirects followed) is read with the Python standard
+library only (`ggTrader.utils.xlsx_min`; no spreadsheet dependency). The header row is the first
+row with a `Ticker` cell, the date is the "As of DD-Mon-YYYY" text above it. Cash, placeholder and
+other non-equity lines (a `-` or `USD` ticker, a ticker that is not letters/digits plus an optional
+share class, a `Cash`/`Other` sector) are dropped and listed in `detail.excluded_lines`. Both
+sides go through `normalize_yf_ticker` (`BRK.B` and `BRK-B` are the same ticker). A duplicate ticker,
+or a count outside 480..520, means the structure is not what we expect and is `fetch_failed`.
+
+`check-holdings` appends exactly one row to `universe.checks` per run and archives the raw bytes
+(gzip, with their sha256) in `universe.check_blobs` whenever bytes arrived. It never touches
+`loads`, `membership` or `snapshot_dates`. Outcomes: `matched` (equal sets; `matched_load_id` is
+the vintage; **the only outcome that advances the live gate**), `mismatch` (`detail.only_in_list`
+and `detail.only_in_holdings` are sorted ticker lists; nothing is loaded) and `fetch_failed`
+(unreachable, HTTP error, truncated, HTML or a wrong structure instead of a workbook, an as-of date
+after today, **more than 7 days before today** (`detail.reason` = `stale_source`) or before the
+vintage's first snapshot; `detail.reason` says which). `detail` also holds
+the as-of date and text, counts, the source URL, the response headers and the raw sha256. If the
+holdings are dated before the vintage's last change but inside its coverage, they are compared with
+the snapshot in force on their own date (a match then sets no `known_through` beyond the
+vintage's coverage end). `status` shows the last matched check, `known through` and the age.
+
+**Weekly job: fetch, archive, cross-check, alert, propose (slice M6, spec Appendix C1).**
+
+```bash
+ggt db membership weekly             # dry: records the check, prints the message, sends nothing
+ggt db membership weekly --notify    # the same, and sends the one message through TelegramNotifier
+# exit 0 clean (or warnings only), 2 a refusal or a proposal (a human acts), 1 the job failed
+```
+
+One run makes about 7 requests: the SPY workbook, the Wikipedia change ledger ("Historical
+components of the S&P 500") and current list through the MediaWiki API (`action=parse`,
+`prop=wikitext`, `maxlag`, a descriptive User-Agent), one MediaWiki query for both pages' last-edit
+times, the two chinobing CSVs on GitHub and the repository's newest commit. Each fetch is
+independent: one failing source is recorded and alerted, never fatal to the others. The raw bytes
+of every source are archived (gzip + sha256) in the new append-only `universe.source_snapshots`
+(one row per source per run, tied to the run's `universe.checks` row; the SPY workbook stays in
+`check_blobs`; a proposed file is stored there too as source `proposal`). The run writes only
+`checks`, `check_blobs` and `source_snapshots`; it never touches `loads`, `membership`,
+`snapshot_dates` or `load_blobs`.
+
+* **Match with SPY** exactly as `check-holdings` (including the 7-day staleness guard). A match is
+  recorded as `matched` and extends the live gate's clock and `known_through`; it is recorded even
+  when a side source raised an alert, because it only says "our list equals SPY on that date".
+* **Warnings only:** the Wikipedia current list or chinobing's newest snapshot differing from our list.
+* **Refuse and alert:** our list differs from SPY, or the SPY file is unusable or stale; a ledger
+  row dated after what is already attested is in the future or equals its announcement date
+  (taken from the row's refs); a removal with no matching addition would leave 480..520 members;
+  a source is missing, has not changed for more than 14 days (the wiki pages' last edit, chinobing's
+  newest daily snapshot or last commit, SPY's as-of date), has an unreadable last-change date, or
+  has changed structure (the ledger parser checks the header row by row: a missing, renamed or extra
+  column, a row with the wrong cell count, a vanished table). Any refusal with candidate changes
+  writes a proposal.
+* **Proposal:** the exact bytes are stored in `universe.source_snapshots` (source `proposal`, under
+  the run's check id) and a copy is tried at `data/exports/membership_proposals/proposed_events_<UTC>.csv`
+  (git-ignored, never overwritten; the container that ran the unit may not keep it). Rebuild the file
+  with `ggt db membership proposal --id N --out FILE` (read-only on the database, refuses to
+  overwrite FILE, exit 0 written, 1 not found), the command the message names. The columns of `ggt db load-sp500 --from-events` plus `date_source` (`ledger`,
+  `ledger+chinobing`, `chinobing`, `none`) and `needs_confirmation`. Candidates are the set difference
+  with SPY, each with the best effective date from the ledger and chinobing rows after the attested
+  date; `Y` unless the two sources give the same date, it is not in the future and the ledger row is
+  not announcement-dated. A removal and an addition that only chinobing shows together are also
+  proposed as a `rename`. `evidence_url` and `evidence_sha256` are blank. The loader refuses a file
+  with a blank `evidence_url` or any `needs_confirmation` other than `N`/blank, so a proposal cannot be
+  loaded unreviewed. The message lists the rows, what to check and the exact `proposal` command and
+  the `load-sp500 --from-events FILE` (dry run) and `--commit` commands.
+
+Deployment templates (not installed): `deploy/membership_weekly/` (user service and Saturday
+06:00 America/Los_Angeles timer, README with the install, disable, message-reading, proposal and
+restore procedures). `scripts/membership_restore_drill.py` dumps the schema, restores it into a
+scratch database, compares every table's row count and every load's hashes, runs `verify` for each
+load and drops the scratch database.
+
+**Stale-source guard.** The 45-day freshness clock only bounds the time since the last match, so
+an old or cached holdings file would otherwise reset it. A workbook whose as-of date is more than
+`MAX_HOLDINGS_AGE_DAYS` (**7**) calendar days before the check time (exactly 7 days is accepted)
+is recorded as `fetch_failed` with `detail.reason` = `stale_source`, `holdings_age_days` and
+`max_holdings_age_days`; it is never a match, never compared, and its raw bytes are still archived.
+Override the limit with the environment variable `GGT_HOLDINGS_MAX_AGE_DAYS` (a whole number from
+1 to 14; anything else stops the command before anything is downloaded).
+
+**Vintage 2, export and reinstate (slice M5a).**
+
+```bash
+# Vintage 2 is the fja05680 upstream download of 2026-11-07, loaded byte for byte. The historical
+# rewrites (10, above the limit of 5) make --force and --reason mandatory, by design.
+ggt db load-sp500 --from-file upstream.csv --source fja05680/sp500 \
+    --source-url 'https://raw.githubusercontent.com/fja05680/sp500/master/S%26P%20500%20Historical%20Components%20%26%20Changes%20(Updated).csv' \
+    --retrieved-at 2026-11-07T18:26:50Z --upstream-commit a2430f2af0c79ddf0748e91de11bdeb1616ab5a7 \
+    --expect-sha256 36326709d46d6cd25834de5df457b16f5f96fad3a06b9beac28f7b88aa0b0d54 \
+    --parent 1 --force --reason "..." [--commit]
+
+# Dump schema universe (schema and data) to a timestamped file; prints path, size and sha256
+ggt db membership export [--out-dir data/exports/universe]
+
+# Roll back: a NEW vintage (source 'reinstate') with the content of vintage N
+ggt db membership reinstate --load-id 1 --reason "undo the 2026-11-07 refresh" [--parent 2] [--commit]
+```
+
+`export` runs `pg_dump --schema=universe --format=custom` into `data/exports/universe/universe_<UTC
+timestamp>.dump` (the folder is git-ignored through `data/exports/`; dumps are never committed). It
+is read-only, refuses to overwrite a file, writes through a `.partial` name and renames only a
+non-empty success, and passes the password to `pg_dump` through the environment, never on the
+command line; error text is redacted. The dump holds the tables, the append-only triggers, the
+functions and the grants, but not the `btree_gist` extension: restore is `CREATE EXTENSION
+btree_gist` on the target, then `pg_restore --no-owner FILE` (the restore drill of slice M6 will
+rehearse exactly this).
+
+`reinstate` never deletes or edits anything. The new vintage has `source='reinstate'`,
+`parent_load_id` = the latest vintage, `reinstates_load_id` = N, `retrieved_at` = now and the
+reason in `note`. It copies vintage N's stored bytes and hashes, marks the parent's rows that N
+lacks as superseded by the new load, and inserts, as new rows, N's intervals that the parent
+lacks (a row superseded once can never be revived, so the intervals come back as new rows). It is
+refused (exit 2, nothing written) when the reason is empty, N does not exist or fails its own
+hash, the latest vintage already has N's content, the normalizer version differs, or `--parent`
+no longer names the latest vintage. A rollback needs no `--force`. The new vintage has no
+matched check, so the live gate refuses until `check-holdings` matches it.
+
+**Curated vintage 3 and the events-file loader (slice M5b).**
+
+The upstream feed stopped on 2026-08-18, so later membership is written from evidence
+(spec Appendix C1, C4). A human confirms each effective date against the S&P DJI press release,
+saves the page, records the change in an **events file** and loads it:
+
+```bash
+# Dry run (default): prints each date's adds, removes, net change and member count; writes nothing
+ggt db load-sp500 --from-events data/universe/membership/events/2026-11-08-sp500-gap-events.csv \
+    --evidence-dir PATH/TO/SAVED/PAGES --parent 2
+
+# ... then write it (one transaction under the loader's advisory lock)
+ggt db load-sp500 --from-events FILE --evidence-dir DIR --parent 2 --commit
+```
+
+Events file (CSV, header exactly `effective_date,action,ticker,announcement_date,evidence_url,evidence_sha256,note,new_ticker`):
+`action` is `add`, `remove` or `rename`. A rename row has the old symbol in `ticker` and the new one in
+`new_ticker`; membership still moves by an ordinary `remove` plus `add` pair (as in every earlier
+vintage), and the rename row only records company continuity in `universe.symbol_changes`
+(old, new, effective date, evidence). Every row needs an `evidence_url`; `evidence_sha256` is the
+sha256 of the saved page (empty = secondary evidence, only a warning). The file is immutable
+evidence once loaded and is listed in `data/universe/membership/MANIFEST.json` under `events`.
+
+The parent is the **latest** vintage (`--parent N` pins which one that must be; a different
+latest vintage refuses, as in every load). The events are applied to the parent's last snapshot
+at their effective dates and the result is written as a new vintage with `source='curated'`,
+`parent_load_id` set, no upstream commit and `source_url` pointing at the events file and the
+evidence URLs. Its raw bytes are the **full generated `date,tickers` CSV** (header, one row per
+snapshot date, same layout as vintage 2), and it has a snapshot row on every event date, even
+when one name changes. The dry run refuses (exit 2, nothing written) when an effective date is
+not after the parent's last snapshot or lies in the future; a removal has no matching present
+member; an addition is already a member; a name is added and removed on one date; a snapshot
+would leave 480..520 members; the events change nothing; a rename's new name is not a member on
+its date; a cited evidence page is not in `--evidence-dir`; or the usual loader rules trip (a
+curated load is classified like any other: tail-only needs no `--force`, `--force` is not
+accepted). The events file and the saved pages (gzip, with their sha256) go into
+`universe.load_evidence`, so the evidence is reproducible from the database alone.
+
+The member count is **not** constant: the S&P 500 had 504 names from 2026-10-01 to 2026-10-05
+(Vylor joined at its spin-off while Corteva stayed until 2026-10-06). Nothing may assume 503.
+
+**Upstream check, status and diff (slice M4).**
+
+```bash
+# Fetch fja05680/sp500 at its newest commit, compare with the latest vintage, record one check row
+ggt db membership check-upstream     # exit 0 equal, 2 differs (reported, not loaded), 1 failure
+
+# Latest vintage, coverage, last verification, recent checks, and the live gate's verdict
+ggt db membership status [--asof 2026-11-29]
+
+# Two stored vintages: dates only on one side, changed dates, historical / tail / rename split
+ggt db membership diff --from 1 --to 2 [--json diff.json]
+```
+
+`check-upstream` appends exactly one row to `universe.checks` and never touches `loads` or
+`membership`; a differing upstream is reported and is **never loaded automatically** (loading is
+`ggt db load-sp500`). Since M4b the check is informational: the upstream feed is dead and the
+gate no longer counts it. Outcomes: `unchanged` (the raw bytes, or failing that the parsed content,
+equal the latest vintage; it no longer resets any clock), `refused`
+(upstream differs; `detail.result = "differs"` carries the upstream coverage end, the dates only on
+each side and the historical / tail / rename split) and `fetch_failed` (unreachable, HTTP error,
+a content type that is not text, a body shorter than its `Content-Length` or not ending in a
+newline, or a file that fails the loader's validation). The file is read at the exact commit the
+GitHub commits API names, so bytes and commit always match. `status` and `diff` are read-only.
+
+**Reading membership from code (`ggTrader.data.membership`, slice M2).** Pick a source by name;
+there is no default and no fallback:
+
+| Spec string | Reads |
+|---|---|
+| `db` | The latest vintage in the database, resolved to one load id when the source is built. |
+| `db:<load_id>` | That exact vintage (what a cited result should pin). |
+| `fixture:<name>` | A frozen file listed in `data/universe/membership/MANIFEST.json`, hash-checked. |
+
+`membership_source(spec)` takes the string, else the environment variable `GGT_MEMBERSHIP`, else
+raises `MembershipSourceNotSelected`. If `db` cannot be read it raises `MembershipUnavailable`
+(connection details redacted); it never reads a fixture instead. The reader login is
+`GGT_MEMBERSHIP_DB_URL` when set, else the project's usual connection, over a read-only session.
+A source offers `history()` (the shape of `load_sp500_history()`), `members_asof`,
+`all_members_between`, `snapshot_asof`, `vintage()` and `provenance()` (vintage number or fixture
+name plus content checksum, for result JSON). The live gate
+(`membership_gate`, slices M4 and M4b) is the only place that enforces an age: it counts from the
+last SPY holdings match. The `verified_at` instant in a result's provenance is informational for
+research results and is not the gate's clock.
+
+**Every reader now takes the source (slice M3).** `universe_members_asof`, `universe_all_between`,
+`sp500_members_asof`, `all_members_between`, `eligible_at`, `equity_universe_between`,
+`pit_mask`, `membership_mask`, `check_constituent_age`, `universe_mask`, `load_bars(universe=
+'sp500', membership=...)` (required there), `generate_signals` and `compute_sleeve_curve` have a
+`membership=` argument. Passing `None` means "the source named by `GGT_MEMBERSHIP`", and raises
+`MembershipSourceNotSelected` if that is unset; no function falls back to a file.
+`load_sp500_history()` with no argument selects a source the same way, and `load_sp500_history(path)`
+stays a plain file reader for frozen studies that name their file. `download_sp500_history()` is
+gone: nothing in `src/` writes a membership file. The process caches the source once per spec and
+the history frame once per content hash. The root `conftest.py` sets
+`GGT_MEMBERSHIP=fixture:sp500_v1_2026-06-02` for every test, so no test needs the database.
+
+**Drivers (`--membership SPEC`, `--expect-membership-sha SHA256`).** The oracle drivers
+`scripts/p5_wfo_validation.py`, `p7_live_golden.py`, `p3_pit_parity.py` and
+`make_tape_snapshot.py` default to `fixture:sp500_v1_2026-06-02`; `equity_backfill.py` (needed for
+`--universe sp500`) and `google_trends_backfill.py` have no default, as `ggt lab`.
+`legacy_reference_runs.py` runs the legacy code, which reads its own copy of the frozen file, so it
+accepts only `fixture:<name>` and checks that the file the legacy code reads has that fixture's
+hash. Each driver records the vintage in its JSON: in the `provenance` block as
+`membership_sha256` and `membership` (`kind`, `load_id` or `fixture`, `raw_sha256`, coverage,
+`retrieved_at`, `verified_at`, `age_since_verified_days`), never in the payload, so the guarded
+comparison with the committed evidence is unaffected (`p3_pit_parity.py` and
+`make_tape_snapshot.py` write plain JSON and add the two keys at the top level). `provenance.compare`
+treats a difference in `membership_sha256` as `MEMBERSHIP_DIFF` (not comparable); a record without
+it is "unknown", no flag.
+
+The only registered fixture is `sp500_v1_2026-06-02`, the existing file
+`data/universe/sp500_constituents_history.csv.gz`, which stays where it is and is never edited
+(file sha256 `b30739a3...`, content sha256 `256e022d...`; it is vintage 1, load 1 on Encom).
+
+| `load-sp500` flag | Meaning |
+|---|---|
+| `--from-file PATH` | CSV or CSV.GZ (`date,tickers`); the upstream fetch (`--from-upstream`) is not built. Exactly one of `--from-file` and `--from-events` is required. |
+| `--from-events FILE` | The curated path (slice M5b, below): an events file applied to the latest vintage. |
+| `--allow-count-change` | With `--from-events`: accept a date whose additions and removals differ by more than one name. By default such a swing (two or more) is refused as a likely missing or doubled row; a swing of one (a spin-off added the day it completes) loads without it. |
+| `--evidence-dir DIR` | With `--from-events`: the folder with the saved press-release pages, found by the sha256 each event cites. |
+| `--retrieved-at ISO` | Required with `--from-file` (when the bytes were fetched; needs a zone, `...Z`); `--from-events` defaults to now. |
+| `--source` | `--from-file` only: `fixture-import` (default) or `fja05680/sp500`; an events load is always `curated`. `--source-url`, `--upstream-commit`, `--upstream-etag`, `--note` are stored with the load. |
+| `--expect-sha256` | sha256 of the uncompressed bytes; the load is refused if it differs. |
+| `--parent N` / `none` | Pin the latest vintage seen in the dry run; refused if another load got in first. |
+| `--commit` | Write. Without it the run is a dry run. |
+| `--force --reason TEXT` | Needed when the diff against the parent is suspicious (coverage shrinks, more than 5 historical rewrites, 25 tail changes or 3 renames). |
+| `--report-json PATH` | Save the diff report. |
+
+Exit status: 0 success, 2 refused (validation, pin, hash or suspicious diff), 1 `verify` found a
+difference. The connection is the project's usual one; `GGT_MEMBERSHIP_LOADER_URL` overrides it
+for the loader only. Tests that need a real server are marked `integration` and `db`, run only on
+request (`GGT_TEST_DB_URL`), and use a throwaway database.
 
 ---
 

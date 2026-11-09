@@ -13,6 +13,7 @@ import pandas as pd
 
 from ggTrader.data.bars import BAR_FIELDS, Bars
 from ggTrader.data.core.index_constituents import snapshot_members
+from ggTrader.data.membership import MembershipSource
 from ggTrader.lab import universe as universe_mod
 from ggTrader.lab.strategies.contract import ParamGrid
 
@@ -76,15 +77,21 @@ def universe_mask(
     *,
     min_history_bars: int,
     max_stocks: int | None = None,
+    membership: MembershipSource | None = None,
 ) -> pd.DataFrame:
     """Daily eligibility mask equal to ``eligible_at(asof, past, cfg, universe)`` on every bar.
 
-    ``sp500`` is point-in-time; every other universe is a static snapshot list (so a bar earlier
-    than the snapshot still counts the symbol, as the legacy call did).
+    ``sp500`` is point-in-time and reads ``membership`` (``None``: the source selected by
+    ``GGT_MEMBERSHIP``, else an error); every other universe is a static snapshot list (so a bar
+    earlier than the snapshot still counts the symbol, as the legacy call did).
     """
     if universe == "sp500":
         return universe_mod.pit_mask(
-            close, min_history_bars=min_history_bars, max_stocks=max_stocks, on_stale="ignore"
+            close,
+            membership=membership,
+            min_history_bars=min_history_bars,
+            max_stocks=max_stocks,
+            on_stale="ignore",
         )
     return universe_mod.pit_mask(
         close,

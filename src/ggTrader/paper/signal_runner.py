@@ -3,13 +3,31 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+import os
+from datetime import date, datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.membership import (
+    ENV_VAR as MEMBERSHIP_ENV_VAR,
+)
+from ggTrader.data.membership import (
+    MembershipError,
+    MembershipIntegrityError,
+    MembershipSource,
+    MembershipUnavailable,
+    resolve_source,
+    selected_source,
+)
+from ggTrader.data.membership_gate import (
+    CODE_CONFIG,
+    CODE_UNAVAILABLE,
+    decide_gate,
+    gate_applies,
+)
 from ggTrader.engine import selfcheck as engine_selfcheck
 from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.paper.gates import (
@@ -31,6 +49,9 @@ from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 _log = logging.getLogger(__name__)
 
 _ET = ZoneInfo("America/New_York")
+
+#: ``SignalGateError`` code for a live run that was not given the latest database vintage.
+CODE_NOT_LIVE = "membership_not_live"
 
 #: Production bounds of the input/output sanity gates (see ``paper/gates.py``).
 SANITY = SanityConfig()
@@ -96,6 +117,58 @@ def require_rust_engine() -> dict[str, Any]:
     return result
 
 
+def require_live_membership_spec(spec: str | None, *, dry_run: bool) -> None:
+    """Refuse a live run whose S&P 500 list is not the latest database vintage (spec ``db``).
+
+    The freshness gate skips fixtures and pinned vintages, so a live run on one would trade with
+    no gate at all. The effective spec is ``spec`` or else ``GGT_MEMBERSHIP``. A dry run is free
+    to rehearse any source. Raises ``SignalGateError`` (``membership_not_live``) before any
+    broker call or order.
+    """
+    if dry_run:
+        return
+    effective = spec or os.environ.get(MEMBERSHIP_ENV_VAR) or None
+    if effective != "db":
+        raise SignalGateError(
+            CODE_NOT_LIVE,
+            f"a live run must read the latest database vintage (membership spec 'db'), not "
+            f"{effective!r}: fixtures and pinned vintages skip the freshness gate",
+        )
+
+
+def live_membership_source(spec: str | None) -> MembershipSource:
+    """The S&P 500 list the live path reads, or a fail-closed ``SignalGateError``.
+
+    An unreadable database, an empty table or a vintage that fails its integrity check is
+    ``membership_unavailable``: no orders, and never a fallback to the frozen file. A missing
+    or malformed selection still raises its own ``MembershipError`` (a configuration error).
+    """
+    try:
+        return selected_source(spec)
+    except (MembershipUnavailable, MembershipIntegrityError) as exc:
+        raise SignalGateError(
+            CODE_UNAVAILABLE,
+            f"{exc}. The live trader never falls back to the frozen file. Fix: check the "
+            "database, run `ggt db membership status`, and load a vintage with "
+            "`ggt db load-sp500` if the table is empty",
+        ) from None
+
+
+def _membership_gate(source: MembershipSource, asof: date, wall_clock: bool) -> dict[str, Any]:
+    """Apply the freshness gate of spec 3.4/D8; raise ``SignalGateError`` on a refusal."""
+    if not gate_applies(source, wall_clock=wall_clock):
+        return {"applied": False, "level": "skipped"}
+    try:
+        decision = decide_gate(source.vintage(), asof)
+    except MembershipError as exc:
+        raise SignalGateError(CODE_CONFIG, str(exc)) from exc
+    if decision.level == "refuse":
+        raise SignalGateError(decision.code or CODE_UNAVAILABLE, decision.message)
+    if decision.level == "warn":
+        _log.warning("membership list warning: %s", decision.message)
+    return decision.as_dict()
+
+
 def _fetch_live_frame(
     symbols: list[str], start: pd.Timestamp, end: pd.Timestamp, persist_tape: bool
 ) -> pd.DataFrame:
@@ -119,6 +192,7 @@ def generate_signals(
     sanity: SanityConfig | None = None,
     now: datetime | None = None,
     persist_tape: bool = True,
+    membership: MembershipSource | None = None,
 ) -> dict:
     """Fetch recent data for a PIT universe and return today's ensemble signals.
 
@@ -141,11 +215,21 @@ def generate_signals(
         sanity: gate bounds (default: production bounds).
         now: the run time (default: the wall clock); injectable for tests.
         persist_tape: ``False`` keeps every fetched bar in memory only (read-only dry run).
+        membership: the S&P 500 list source; the trader passes its explicit choice. ``None`` means
+            the source named by ``GGT_MEMBERSHIP`` (an error if unset), never a file default.
+            A wall-clock run on the latest ``db`` vintage passes the membership gate first
+            (:mod:`ggTrader.data.membership_gate`); fixtures, pinned vintages and an injected
+            ``now`` skip it.
 
     Returns:
-        Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars.
+        Dict with keys buys, sells, last_exit, as_of, universe_size, engine, bars,
+        membership_gate (the gate's decision, or ``{"applied": False}``).
+
+    Raises:
+        SignalGateError: any gate above, including a stale or lagging membership list.
     """
     cfg = sanity or SANITY
+    wall_clock = now is None
     now = now or datetime.now(timezone.utc)
     engine_info = require_rust_engine()
 
@@ -153,7 +237,9 @@ def generate_signals(
     today_et = pd.Timestamp(now).tz_convert(_ET).date()
     start = today - pd.Timedelta(days=lookback_days)
 
-    members = universe_members_asof(universe, today)
+    source = resolve_source(membership)
+    gate = _membership_gate(source, today.date(), wall_clock)
+    members = universe_members_asof(universe, today, membership=source)
     symbols = sorted({normalize_yf_ticker(t) for t in members})
 
     ohlcv = _fetch_live_frame(symbols, start, today, persist_tape)
@@ -196,6 +282,7 @@ def generate_signals(
         "sells": sells,
         "as_of": str(last_bar.date()),
         "universe_size": len(bars.symbols),
+        "membership_gate": gate,
         "last_exit": last_exit,
         "engine": {k: engine_info.get(k) for k in ("engine", "vectorbt", "vectorbt_rust")},
         "bars": {
@@ -210,13 +297,16 @@ def generate_signals(
     }
 
 
-def generate_blended_signals() -> dict:
+def generate_blended_signals(membership: MembershipSource | None = None) -> dict:
     """Generate today's signals for all three sleeves, recomputing the
     inverse-vol/target-vol overlay monthly. On any failure to recompute
     (e.g. an OHLCV fetch error on a rebalance date), falls back to the last
     stored weights/scale rather than raising."""
     today = pd.Timestamp.now(tz="UTC").normalize()
-    sleeves = {universe: generate_signals(universe=universe) for universe in SLEEVE_UNIVERSES}
+    sleeves = {
+        universe: generate_signals(universe=universe, membership=membership)
+        for universe in SLEEVE_UNIVERSES
+    }
 
     state = get_rebalance_state()
     rebalanced_today = False
@@ -224,7 +314,9 @@ def generate_blended_signals() -> dict:
 
     if should_rebalance(state["rebalance_date"] if state else None, today):
         try:
-            curves = {u: compute_sleeve_curve(u, today) for u in SLEEVE_UNIVERSES}
+            curves = {
+                u: compute_sleeve_curve(u, today, membership=membership) for u in SLEEVE_UNIVERSES
+            }
             weights, scale = compute_weights_and_scale(curves)
         except Exception:
             if state is None:
@@ -249,7 +341,9 @@ def generate_blended_signals() -> dict:
     }
 
 
-def generate_core_signals(persist_tape: bool = True) -> dict:
+def generate_core_signals(
+    persist_tape: bool = True, membership: MembershipSource | None = None
+) -> dict:
     """Generate today's signals for the standalone SP500 core strategy,
     wrapped in the same shape `generate_blended_signals()` returns so
     `trader.py`'s sleeve-iteration/buy-sizing logic needs no changes.
@@ -265,8 +359,11 @@ def generate_core_signals(persist_tape: bool = True) -> dict:
 
     Args:
         persist_tape: ``False`` (read-only dry run) keeps every fetched bar in memory only.
+        membership: the S&P 500 list source, as in :func:`generate_signals`.
     """
-    core_signals = generate_signals(universe="sp500", persist_tape=persist_tape)
+    core_signals = generate_signals(
+        universe="sp500", persist_tape=persist_tape, membership=membership
+    )
     return {
         "sleeves": {"sp500": core_signals},
         "weights": {"sp500": 1.0},

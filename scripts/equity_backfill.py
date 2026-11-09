@@ -6,7 +6,8 @@ hit the DB cache instead of downloading live from yfinance.
 
 Usage:
     source .venv/bin/activate
-    python scripts/equity_backfill.py [--universe sp500] [--start 2000-01-01] [--batch 50]
+    python scripts/equity_backfill.py --membership db [--universe sp500] [--start 2000-01-01]
+        [--batch 50]   # --membership is needed for sp500 (or set GGT_MEMBERSHIP)
     python scripts/equity_backfill.py --universe midcap400 --start 2018-01-01
 """
 
@@ -24,14 +25,25 @@ from ggTrader.data.core.index_constituents import (
     normalize_yf_ticker,
     universe_all_between,
 )
+from ggTrader.data.membership import MembershipSource, add_membership_argument, source_from_args
 from ggTrader.lab.data import fetch_stock_ohlcv
 
 
 def resolve_symbols(
-    universe: str, start_ts: pd.Timestamp, end_ts: pd.Timestamp, benchmark: str
+    universe: str,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
+    benchmark: str,
+    membership: MembershipSource | None = None,
 ) -> list[str]:
-    """All members of `universe` across [start, end] plus the benchmark, normalized + sorted."""
-    members = {normalize_yf_ticker(t) for t in universe_all_between(universe, start_ts, end_ts)}
+    """All members of `universe` across [start, end] plus the benchmark, normalized + sorted.
+
+    `membership` is the S&P 500 list source (needed for `sp500` only).
+    """
+    members = {
+        normalize_yf_ticker(t)
+        for t in universe_all_between(universe, start_ts, end_ts, membership=membership)
+    }
     members.add(normalize_yf_ticker(benchmark))
     return sorted(members)
 
@@ -46,13 +58,15 @@ def main() -> None:
         default=None,
         help="Benchmark ticker to include (default: SPY for sp500, MDY for midcap400)",
     )
+    add_membership_argument(p)
     args = p.parse_args()
+    membership = source_from_args(args) if args.universe == "sp500" else None
 
     start_ts = pd.Timestamp(args.start, tz="UTC")
     end_ts = pd.Timestamp.now(tz="UTC").normalize()
 
     benchmark = args.benchmark or ("MDY" if args.universe == "midcap400" else "SPY")
-    members = resolve_symbols(args.universe, start_ts, end_ts, benchmark)
+    members = resolve_symbols(args.universe, start_ts, end_ts, benchmark, membership)
 
     print(f"Backfilling {len(members)} symbols from {args.start} to {end_ts.date()}")
     print(f"Batch size: {args.batch}")

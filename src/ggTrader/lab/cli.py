@@ -13,6 +13,7 @@ from typing import List
 
 import pandas as pd
 
+from ggTrader.data.membership import add_membership_argument, source_from_args
 from ggTrader.lab.data import CRYPTO_BASE_CONFIG, STOCK_BASE_CONFIG
 from ggTrader.lab.strategies import registry
 from ggTrader.lab.strategy import LabConfig
@@ -103,6 +104,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Parquet tape to read (default: the newest in data/snapshots).",
     )
+    add_membership_argument(p)
     p.add_argument(
         "--result-json",
         default=None,
@@ -121,6 +123,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def run_lab(argv: List[str] | None = None) -> str:
     args = build_arg_parser().parse_args(argv)
+    # Raises MembershipSourceNotSelected (naming --membership and GGT_MEMBERSHIP) when neither is
+    # set, before any data is loaded; there is deliberately no default source.
+    membership = source_from_args(args)
     cfg = LabConfig(
         top_n=args.top_n,
         lookback=args.lookback,
@@ -151,6 +156,7 @@ def run_lab(argv: List[str] | None = None) -> str:
             window=args.blend_window,
             max_leverage=args.max_leverage,
             snapshot=args.snapshot,
+            membership=membership,
         )
         print(result.table)
         print(f"blend run complete: {result.run_id}")
@@ -173,6 +179,7 @@ def run_lab(argv: List[str] | None = None) -> str:
         overrides=_parse_sweep_params(args.sweep_param) or None,
         snapshot=args.snapshot,
         result_json=args.result_json,
+        membership=membership,
     )
     return outcome if isinstance(outcome, str) else outcome.table
 

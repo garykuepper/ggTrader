@@ -10,6 +10,10 @@ import pytest
 
 from tests import tiers
 
+#: The S&P 500 list every test reads unless it says otherwise: the frozen vintage-1 fixture, so
+#: no test needs the database (spec 3.2 and 7; slice M3).
+TEST_MEMBERSHIP = "fixture:sp500_v1_2026-06-02"
+
 matplotlib.use("Agg")
 
 
@@ -69,3 +73,14 @@ def _no_dotenv():
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr("ggTrader.utils.config.load_dotenv", lambda *a, **k: False)
         yield
+
+
+@pytest.fixture(autouse=True)
+def _membership_is_a_fixture(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Select the frozen membership fixture for every test, so none can reach the database.
+
+    Library code that is handed no `membership=` reads the source named by `GGT_MEMBERSHIP`
+    (`ggTrader.data.membership.selected_source`); with this set that is a file. Tests of the
+    selection itself clear or change the variable.
+    """
+    monkeypatch.setenv("GGT_MEMBERSHIP", TEST_MEMBERSHIP)

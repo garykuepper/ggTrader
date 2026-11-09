@@ -284,12 +284,23 @@ class TestGenerateCoreSignals:
 
         result = generate_core_signals()
 
-        mock_generate.assert_called_once_with(universe="sp500", persist_tape=True)
+        mock_generate.assert_called_once_with(universe="sp500", persist_tape=True, membership=None)
         assert result["sleeves"] == {"sp500": mock_generate.return_value}
         assert result["weights"] == {"sp500": 1.0}
         assert result["scale"] == 1.0
         assert result["rebalanced_today"] is False
         assert result["fallback_used"] is False
+
+    @patch("ggTrader.paper.signal_runner.generate_signals")
+    def test_the_chosen_membership_source_is_passed_down(self, mock_generate):
+        from ggTrader.paper.signal_runner import generate_core_signals
+
+        source = object()
+        mock_generate.return_value = {"buys": [], "sells": [], "as_of": "2026-09-16"}
+        generate_core_signals(persist_tape=False, membership=source)
+        mock_generate.assert_called_once_with(
+            universe="sp500", persist_tape=False, membership=source
+        )
 
     @patch("ggTrader.paper.signal_runner.generate_signals")
     def test_core_weights_restore_full_slot_size(self, mock_generate):
@@ -572,3 +583,219 @@ class TestTapeIsNotWrittenWhenAskedNot:
         with members, fetch as cached_path:
             generate_signals(lookback_days=120, sanity=PERMISSIVE)
         cached_path.assert_called_once()
+
+
+class _DbSource:
+    """A stand-in latest-``db`` source: only the vintage matters to the gate."""
+
+    def __init__(
+        self, *, verified_days_ago: int | None, lag_days: int, pinned: bool = False
+    ) -> None:
+        """``verified_days_ago`` is the age of the last holdings match (None = never matched)."""
+        from datetime import datetime, timedelta, timezone
+
+        from ggTrader.data.membership import MembershipVintage
+
+        today = datetime.now(timezone.utc).date()
+        matched = (
+            None
+            if verified_days_ago is None
+            else datetime.combine(
+                today - timedelta(days=verified_days_ago), datetime.min.time(), timezone.utc
+            )
+        )
+        attested = today - timedelta(days=lag_days)
+        self.pinned = pinned
+        self._vintage = MembershipVintage(
+            "sp500", "db", 1, None, "0" * 64, "1" * 64,
+            today - timedelta(days=lag_days + 3000), attested,
+            matched or datetime(2026, 6, 9, tzinfo=timezone.utc),
+            matched or datetime(2026, 6, 9, tzinfo=timezone.utc),
+            matched, None if matched is None else attested,
+        )  # fmt: skip
+
+    def vintage(self):
+        return self._vintage
+
+
+class TestLiveMembershipGate:
+    """`generate_signals` refuses on a stale or lagging membership list, before any data fetch."""
+
+    @staticmethod
+    def _run(source, **kwargs):
+        from ggTrader.paper.signal_runner import generate_signals
+
+        return generate_signals(lookback_days=120, sanity=PERMISSIVE, membership=source, **kwargs)
+
+    @pytest.mark.parametrize(
+        ("verified_days_ago", "lag_days", "code"),
+        [(46, 0, "membership_stale"), (0, 180, "membership_lag"), (46, 200, "membership_stale")],
+    )
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_refuses_before_fetching_any_bar(self, mock_fetch, verified_days_ago, lag_days, code):
+        source = _DbSource(verified_days_ago=verified_days_ago, lag_days=lag_days)
+        with pytest.raises(SignalGateError) as caught:
+            self._run(source)
+        assert caught.value.code == code
+        mock_fetch.assert_not_called()
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_the_refusal_names_the_fix(self, mock_fetch):
+        with pytest.raises(SignalGateError, match="ggt db membership check-holdings"):
+            self._run(_DbSource(verified_days_ago=60, lag_days=0))
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_list_never_matched_against_spy_refuses_and_names_the_fix(self, mock_fetch):
+        with pytest.raises(SignalGateError, match="check-holdings") as caught:
+            self._run(_DbSource(verified_days_ago=None, lag_days=10))
+        assert caught.value.code == "membership_stale"
+        assert "never been matched" in str(caught.value)
+        mock_fetch.assert_not_called()
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_fresh_list_passes_and_the_decision_is_in_the_result(self, mock_fetch, mock_members):
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        result = self._run(_DbSource(verified_days_ago=2, lag_days=10))
+        assert result["membership_gate"]["level"] == "pass"
+        assert result["membership_gate"]["applied"] is True
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_the_boundaries_still_pass(self, mock_fetch, mock_members):
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        result = self._run(_DbSource(verified_days_ago=45, lag_days=89))
+        assert result["membership_gate"]["level"] == "pass"
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_warning_goes_into_the_result_and_the_log(self, mock_fetch, mock_members, caplog):
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        with caplog.at_level("WARNING"):
+            result = self._run(_DbSource(verified_days_ago=1, lag_days=100))
+        assert result["membership_gate"]["level"] == "warn"
+        assert "attested only through" in result["membership_gate"]["message"]
+        assert "membership list warning" in caplog.text
+
+    @pytest.mark.parametrize("pinned", [False, True])
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_replay_is_never_gated(self, mock_fetch, mock_members, pinned):
+        """An injected `now` (a replay or a test) and a pinned vintage skip the gate."""
+        from datetime import datetime, timezone
+
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        stale = _DbSource(verified_days_ago=400, lag_days=400, pinned=pinned)
+        kwargs = {} if pinned else {"now": datetime(2026, 6, 19, 17, 0, tzinfo=timezone.utc)}
+        result = self._run(stale, **kwargs)
+        assert result["membership_gate"] == {"applied": False, "level": "skipped"}
+
+    @patch("ggTrader.paper.signal_runner.universe_members_asof")
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_fixture_is_never_gated_even_on_the_wall_clock(self, mock_fetch, mock_members):
+        from ggTrader.data.membership import membership_source
+
+        symbols = [f"SYM{i}" for i in range(20)]
+        mock_members.return_value = symbols
+        mock_fetch.return_value = _mock_ohlcv(symbols)
+        result = self._run(membership_source("fixture:sp500_v1_2026-06-02"))
+        assert result["membership_gate"]["applied"] is False
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_a_bad_age_override_stops_the_run(self, mock_fetch, monkeypatch):
+        monkeypatch.setenv("GGT_MEMBERSHIP_MAX_VERIFY_AGE_DAYS", "forever")
+        with pytest.raises(SignalGateError) as caught:
+            self._run(_DbSource(verified_days_ago=1, lag_days=1))
+        assert caught.value.code == "membership_gate_config"
+        mock_fetch.assert_not_called()
+
+
+class TestLiveMembershipSource:
+    """`live_membership_source` turns an unreadable database into a fail-closed gate error."""
+
+    @pytest.fixture(autouse=True)
+    def _fresh_cache(self):
+        from ggTrader.data import membership
+
+        membership.clear_source_cache()
+        yield
+        membership.clear_source_cache()
+
+    @staticmethod
+    def _use_store(monkeypatch, store):
+        from ggTrader.data import membership
+
+        monkeypatch.setattr(
+            membership.PgMembershipStore,
+            "read",
+            lambda self, load_id, index_name="sp500": store.read(load_id, index_name),
+        )
+
+    def test_an_unreadable_database_refuses_and_never_reads_a_fixture(self, monkeypatch):
+        from ggTrader.data import membership
+        from ggTrader.paper.signal_runner import live_membership_source
+        from tests.data.membership_fakes import FailingStore
+
+        self._use_store(monkeypatch, FailingStore())
+        fixture_read = []
+        monkeypatch.setattr(
+            membership,
+            "FixtureMembershipSource",
+            lambda *a, **k: fixture_read.append(a) or pytest.fail("fell back to a fixture"),
+        )
+        with pytest.raises(SignalGateError) as caught:
+            live_membership_source("db")
+        assert caught.value.code == "membership_unavailable"
+        assert "never falls back to the frozen file" in str(caught.value)
+        assert "ggt db membership status" in str(caught.value)
+        assert fixture_read == []
+
+    def test_an_empty_table_refuses(self, monkeypatch):
+        from ggTrader.paper.signal_runner import live_membership_source
+        from tests.data.membership_fakes import FakeMembershipStore
+
+        self._use_store(monkeypatch, FakeMembershipStore())  # nothing loaded
+        with pytest.raises(SignalGateError) as caught:
+            live_membership_source("db")
+        assert caught.value.code == "membership_unavailable"
+
+    def test_a_vintage_that_fails_its_integrity_check_refuses(self, monkeypatch):
+        from ggTrader.paper.signal_runner import live_membership_source
+        from tests.data.membership_fakes import FakeMembershipStore, synthetic_history
+
+        store = FakeMembershipStore()
+        load_id = store.add(synthetic_history())
+        stored = store.vintages[load_id]
+        store.vintages[load_id] = type(stored)(
+            {**stored.load, "content_sha256": "f" * 64}, stored.dates, stored.intervals,
+            stored.verified_at,
+        )  # fmt: skip
+        self._use_store(monkeypatch, store)
+        with pytest.raises(SignalGateError, match="membership_unavailable"):
+            live_membership_source("db")
+
+    def test_a_readable_database_gives_the_latest_vintage(self, monkeypatch):
+        from ggTrader.paper.signal_runner import live_membership_source
+        from tests.data.membership_fakes import FakeMembershipStore, synthetic_history
+
+        store = FakeMembershipStore()
+        store.add(synthetic_history())
+        self._use_store(monkeypatch, store)
+        source = live_membership_source("db")
+        assert source.vintage().kind == "db" and source.pinned is False
+
+    def test_a_missing_selection_is_still_the_configuration_error(self, monkeypatch):
+        from ggTrader.data.membership import MembershipSourceNotSelected
+        from ggTrader.paper.signal_runner import live_membership_source
+
+        monkeypatch.delenv("GGT_MEMBERSHIP")
+        with pytest.raises(MembershipSourceNotSelected):
+            live_membership_source(None)

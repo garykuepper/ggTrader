@@ -23,7 +23,8 @@ def test_every_tier_marker_is_registered_in_pyproject() -> None:
 
 def test_the_tiers_name_the_markers_they_leave_out() -> None:
     assert tiers.TIER_MARKEXPR["fast"] == (
-        "not integration and not slow and not numba and not tripwire and not study and not tooling"
+        "not integration and not db and not slow and not numba and not tripwire "
+        "and not study and not tooling"
     )
     assert tiers.TIER_MARKEXPR["full"] == "not integration"
     assert tiers.TIER_MARKEXPR["studies"] == "study and not integration"

@@ -8,6 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ggTrader.paper.gates import SignalGateError
+
 # Fixed "today" every test's signals["as_of"] defaults to, so the Item-4
 # freshness gate (as_of must equal today in ET) doesn't need to be
 # individually stubbed per test. Tests that deliberately exercise staleness
@@ -111,6 +113,16 @@ def _stub_benchmark_tape():
     `TestBenchmarkTapeKeepalive` patch it explicitly; a test-level patch
     applies inside this fixture and wins."""
     with patch("ggTrader.paper.trader.refresh_benchmark_tape", return_value=[]):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _stub_live_membership_guard():
+    """Let the live-run tests below keep the fixture list from the conftest environment.
+
+    The guard that refuses a live run on anything but the latest database vintage has its own
+    tests in `test_live_membership_guard.py`, which do not use this stub."""
+    with patch("ggTrader.paper.trader.require_live_membership_spec"):
         yield
 
 
@@ -2352,7 +2364,34 @@ class TestReadOnlyDryRun:
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
         trader, _b, _n = self._dry_trader()
         trader.run()
-        mock_signals.assert_called_once_with(persist_tape=False)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is False
+
+    def test_the_trader_hands_its_chosen_membership_source_to_the_signals(self, mock_signals):
+        from ggTrader.paper.trader import PaperTrader
+
+        mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        _t, broker, notifier = _make_trader()
+        trader = PaperTrader(
+            broker, notifier, dry_run=True, membership="fixture:sp500_v1_2026-06-02"
+        )
+        trader.run()
+        source = mock_signals.call_args.kwargs["membership"]
+        assert source.vintage().fixture == "sp500_v1_2026-06-02"  # the frozen file, by name
+
+    def test_a_trader_with_no_membership_choice_fails_loudly_and_trades_nothing(
+        self, mock_signals, monkeypatch
+    ):
+        from ggTrader.data import membership
+        from ggTrader.data.membership import MembershipSourceNotSelected
+
+        membership.clear_source_cache()
+        monkeypatch.delenv("GGT_MEMBERSHIP")
+        trader, broker, notifier = self._dry_trader()
+        with pytest.raises(MembershipSourceNotSelected):
+            trader.run()
+        mock_signals.assert_not_called()  # no signals, hence no orders, and no guessed source
+        assert "signal generation error" in notifier.send.call_args.args[0]
 
     def test_legacy_dry_run_with_writes_still_persists(self, mock_signals):
         from ggTrader.paper.trader import PaperTrader
@@ -2365,7 +2404,8 @@ class TestReadOnlyDryRun:
             trader.run()
         assert mocks["init_paper_schema"].called and mocks["log_snapshot"].called
         assert mocks["refresh_benchmark_tape"].called
-        mock_signals.assert_called_once_with(persist_tape=True)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is True
 
     def test_live_default_is_unchanged(self, mock_signals):
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=_TEST_TODAY)
@@ -2379,7 +2419,8 @@ class TestReadOnlyDryRun:
         assert mocks["save_peak_value"].called
         assert mocks["refresh_benchmark_tape"].called
         assert result["skipped_writes"] == []
-        mock_signals.assert_called_once_with(persist_tape=True)
+        mock_signals.assert_called_once()
+        assert mock_signals.call_args.kwargs["persist_tape"] is True
         broker.submit_buy.assert_called_once()
 
     def test_a_live_run_cannot_be_read_only(self, mock_signals):
@@ -2506,3 +2547,203 @@ class TestRunPaperTradingReadOnly:
             with pytest.raises(ValueError):
                 run_paper_trading(dry_run=False, read_only=True)
         broker_cls.assert_not_called()
+
+
+_FIXTURE = "fixture:sp500_v1_2026-06-02"
+
+
+class TestLiveMembershipGate:
+    """Slice M4: the live trader reads the database list and stops, with no orders, if that list
+    is unreadable, empty, unmatched against the SPDR SPY holdings for too long or attested too far
+    back (spec 3.4 as revised by Appendix C3)."""
+
+    @pytest.fixture(autouse=True)
+    def _fresh_source_cache(self):
+        from ggTrader.data import membership
+
+        membership.clear_source_cache()
+        yield
+        membership.clear_source_cache()
+
+    @staticmethod
+    def _store(monkeypatch, *, verified_days_ago=1, history_end=None):
+        """Serve a fake database vintage through the real ``PgMembershipStore.read`` seam.
+
+        ``verified_days_ago`` is the age of the last holdings match (``None``: never matched);
+        the match attests the list through its own day or the history's end, whichever is first.
+        """
+        from datetime import timedelta
+
+        from ggTrader.data import membership
+        from tests.data.membership_fakes import FakeMembershipStore, synthetic_history
+
+        store = FakeMembershipStore()
+        now = datetime.now(timezone.utc)
+        history = synthetic_history()
+        if history_end is not None:  # shift the history so it ends where the test wants
+            offset = history_end - max(history)
+            history = {day + offset: members for day, members in history.items()}
+        matched_at = None if verified_days_ago is None else now - timedelta(days=verified_days_ago)
+        store.add(
+            history,
+            retrieved_at=now - timedelta(days=400),
+            matched_at=matched_at,
+            matched_as_of=None if matched_at is None else min(matched_at.date(), max(history)),
+        )
+        monkeypatch.setattr(
+            membership.PgMembershipStore,
+            "read",
+            lambda self, load_id, index_name="sp500": store.read(load_id, index_name),
+        )
+        return store
+
+    @staticmethod
+    def _live_trader(membership="db"):
+        from ggTrader.paper.trader import PaperTrader
+
+        _t, broker, notifier = _make_trader()
+        return PaperTrader(broker, notifier, dry_run=False, membership=membership), broker, notifier
+
+    @staticmethod
+    def _assert_no_order_path_was_reached(broker, mock_fetch):
+        broker.submit_buy.assert_not_called()
+        broker.submit_sell.assert_not_called()
+        broker.get_account.assert_not_called()  # the run stopped before sizing anything
+        mock_fetch.assert_not_called()  # and before a single bar was fetched
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    @patch("ggTrader.paper.signal_runner.engine_selfcheck.selfcheck")
+    def test_a_stale_verification_stops_the_run_with_no_orders(
+        self, mock_selfcheck, mock_fetch, monkeypatch
+    ):
+        mock_selfcheck.return_value = {"engine": "rust"}
+        self._store(monkeypatch, verified_days_ago=46, history_end=datetime.now().date())
+        trader, broker, notifier = self._live_trader()
+        with pytest.raises(SignalGateError) as caught:
+            trader.run()
+        assert caught.value.code == "membership_stale"
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+        message = notifier.send.call_args.args[0]
+        assert "Signal gate" in message and "ggt db membership check-holdings" in message
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    @patch("ggTrader.paper.signal_runner.engine_selfcheck.selfcheck")
+    def test_a_list_never_matched_against_spy_stops_the_run_with_no_orders(
+        self, mock_selfcheck, mock_fetch, monkeypatch
+    ):
+        mock_selfcheck.return_value = {"engine": "rust"}
+        self._store(monkeypatch, verified_days_ago=None, history_end=datetime.now().date())
+        trader, broker, notifier = self._live_trader()
+        with pytest.raises(SignalGateError) as caught:
+            trader.run()
+        assert caught.value.code == "membership_stale"
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+        assert "never been matched" in notifier.send.call_args.args[0]
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    @patch("ggTrader.paper.signal_runner.engine_selfcheck.selfcheck")
+    def test_a_list_that_lags_by_180_days_stops_the_run(
+        self, mock_selfcheck, mock_fetch, monkeypatch
+    ):
+        from datetime import timedelta
+
+        mock_selfcheck.return_value = {"engine": "rust"}
+        end = datetime.now(timezone.utc).date() - timedelta(days=180)
+        self._store(monkeypatch, verified_days_ago=0, history_end=end)
+        trader, broker, notifier = self._live_trader()
+        with pytest.raises(SignalGateError) as caught:
+            trader.run()
+        assert caught.value.code == "membership_lag"
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+        assert "ggt db load-sp500" in notifier.send.call_args.args[0]
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_an_unreadable_database_stops_the_run_and_never_reads_the_frozen_file(
+        self, mock_fetch, monkeypatch
+    ):
+        from ggTrader.data import membership
+        from tests.data.membership_fakes import FailingStore
+
+        failing = FailingStore()
+        monkeypatch.setattr(
+            membership.PgMembershipStore,
+            "read",
+            lambda self, load_id, index_name="sp500": failing.read(load_id, index_name),
+        )
+        reads = []
+        monkeypatch.setattr(
+            membership,
+            "FixtureMembershipSource",
+            lambda *a, **k: reads.append(a) or pytest.fail("fell back to the fixture"),
+        )
+        trader, broker, notifier = self._live_trader()
+        with pytest.raises(SignalGateError) as caught:
+            trader.run()
+        assert caught.value.code == "membership_unavailable"
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+        assert reads == []
+        assert "never falls back to the frozen file" in notifier.send.call_args.args[0]
+
+    @patch("ggTrader.paper.signal_runner.fetch_stock_ohlcv")
+    def test_an_empty_table_stops_the_run(self, mock_fetch, monkeypatch):
+        from ggTrader.data import membership
+        from tests.data.membership_fakes import FakeMembershipStore
+
+        empty = FakeMembershipStore()
+        monkeypatch.setattr(
+            membership.PgMembershipStore,
+            "read",
+            lambda self, load_id, index_name="sp500": empty.read(load_id, index_name),
+        )
+        trader, broker, _n = self._live_trader()
+        with pytest.raises(SignalGateError, match="membership_unavailable"):
+            trader.run()
+        self._assert_no_order_path_was_reached(broker, mock_fetch)
+
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_a_warning_reaches_the_notifier_and_trading_goes_on(self, mock_signals):
+        blend = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        blend["sleeves"]["sp500"]["membership_gate"] = {
+            "applied": True,
+            "level": "warn",
+            "message": "the list's last change date is 2026-06-02, 100 days before 2026-09-10",
+        }
+        mock_signals.return_value = blend
+        trader, broker, notifier = self._live_trader(_FIXTURE)
+        trader.run()
+        sent = [call.args[0] for call in notifier.send.call_args_list]
+        assert any("Membership list" in text and "100 days" in text for text in sent)
+        broker.get_account.assert_called()  # a warning never stops the run
+
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_the_warning_is_logged_not_sent_in_a_silent_dry_run(self, mock_signals):
+        """With the real DryRunNotifier the line stays out of Telegram unless --notify."""
+        from ggTrader.paper.notifier import DryRunNotifier
+        from ggTrader.paper.trader import PaperTrader
+
+        blend = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        blend["sleeves"]["sp500"]["membership_gate"] = {
+            "level": "warn",
+            "message": "lag warning",
+        }
+        mock_signals.return_value = blend
+        _t, broker, _n = _make_trader()
+        telegram = MagicMock()
+        silent = PaperTrader(broker, DryRunNotifier(telegram), dry_run=True, membership=_FIXTURE)
+        silent.run()
+        telegram.send.assert_not_called()
+        forwarded = PaperTrader(
+            broker, DryRunNotifier(telegram, forward=True), dry_run=True, membership=_FIXTURE
+        )
+        forwarded.run()
+        assert any("lag warning" in call.args[0] for call in telegram.send.call_args_list)
+        assert all(call.args[0].startswith("[DRY RUN] ") for call in telegram.send.call_args_list)
+
+    @patch("ggTrader.paper.trader.generate_core_signals")
+    def test_a_passing_gate_adds_no_message(self, mock_signals):
+        blend = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
+        blend["sleeves"]["sp500"]["membership_gate"] = {"applied": True, "level": "pass"}
+        mock_signals.return_value = blend
+        trader, _b, notifier = self._live_trader(_FIXTURE)
+        trader.run()
+        assert not any("Membership list" in c.args[0] for c in notifier.send.call_args_list)

@@ -64,12 +64,18 @@ FLAGS = (
     "VBT_VERSION_DIFF",
     "PANDAS_MAJOR_DIFF",
     "TAPE_DIFF",
+    "MEMBERSHIP_DIFF",
     "CONTRACT_DIFF",
     "EPOCH_DIFF",
 )
 _COMPARABLE = {"SAME_STACK", "ENGINE_DIFF", "PATCH_DIFF", "VBT_VERSION_DIFF"}
+#: Membership keys (spec 3.5): ``membership`` is the detail block (informational, ignored);
+#: ``membership_sha256`` is the identity of the S&P 500 list read, handled by its own flag.
+MEMBERSHIP_KEYS = ("membership", "membership_sha256")
 #: Informational keys: when and from which code the result was made, not which stack ran it.
 _IGNORED_KEYS = {
+    "membership",
+    "membership_sha256",
     "created_utc",
     "git_sha",
     "git_dirty",
@@ -123,6 +129,7 @@ def provenance(
     *,
     tape_sha256: str | None = None,
     extra: dict[str, Any] | None = None,
+    membership: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the provenance block for a result produced now.
 
@@ -133,6 +140,9 @@ def provenance(
     Args:
         tape_sha256: hash of the frozen data snapshot behind the result, if any.
         extra: additional fields; they may not override any stack field.
+        membership: the ``MembershipSource.provenance(asof)`` fields (``membership_sha256`` and
+            the ``membership`` block). Added only when given: a record without them says nothing
+            about which S&P 500 list it used (``compare`` treats that as unknown).
     """
     probe = selfcheck.selfcheck()
     block: dict[str, Any] = {
@@ -157,6 +167,11 @@ def provenance(
         if key in block:
             raise ValueError(f"extra may not override the stack field {key!r}")
         block[key] = value
+    if membership is not None:
+        unknown = set(membership) - set(MEMBERSHIP_KEYS)
+        if unknown or "membership_sha256" not in membership:
+            raise ValueError(f"membership must hold {MEMBERSHIP_KEYS}, got {sorted(membership)}")
+        block.update(membership)
     return block
 
 
@@ -216,6 +231,13 @@ def compare(
     if "tape_sha256" in diffs:
         flags.append("TAPE_DIFF")
         note = "different data snapshots: a number gap may be the tape, not the engine"
+    sha_a, sha_b = a.get("membership_sha256"), b.get("membership_sha256")
+    if sha_a and sha_b and sha_a != sha_b:
+        diffs["membership_sha256"] = (sha_a, sha_b)
+        flags.append("MEMBERSHIP_DIFF")
+        note = "different S&P 500 membership lists: a number gap may be the list, not the engine"
+    elif bool(sha_a) != bool(sha_b):
+        note = note or "membership list unknown on one side (no membership_sha256 recorded)"
     if "contract_version" in diffs or "definitions" in diffs:
         flags.append("CONTRACT_DIFF")
         if "definitions" in diffs:

@@ -97,3 +97,55 @@ def test_arg_parser_market_crypto():
         ["--strategy", "xs_momentum", "--wfo", "--market", "crypto"]
     )
     assert args.market == "crypto"
+
+
+def test_membership_flags_are_in_the_parser_and_default_to_nothing():
+    args = build_arg_parser().parse_args(["--wfo"])
+    assert args.membership is None and args.expect_membership_sha is None
+    args = build_arg_parser().parse_args(
+        ["--wfo", "--membership", "fixture:sp500_v1_2026-06-02", "--expect-membership-sha", "ab"]
+    )
+    assert args.membership == "fixture:sp500_v1_2026-06-02" and args.expect_membership_sha == "ab"
+
+
+def test_lab_without_a_membership_source_stops_before_loading_anything(monkeypatch):
+    """No --membership and no GGT_MEMBERSHIP: the clear error, never a quiet default."""
+    from ggTrader.data import membership
+    from ggTrader.data.membership import MembershipSourceNotSelected
+
+    membership.clear_source_cache()
+    monkeypatch.delenv("GGT_MEMBERSHIP")
+    for argv in (
+        ["--strategy", "ensemble", "--wfo"],
+        ["--blend", "ensemble@sp500"],
+        ["--wfo"],
+    ):
+        with pytest.raises(MembershipSourceNotSelected, match="--membership.*GGT_MEMBERSHIP"):
+            run_lab(argv)
+
+
+def test_lab_hands_the_chosen_source_to_the_walk_forward(monkeypatch):
+    import ggTrader.lab.wfo.cli_support as cli_support
+    from ggTrader.data import membership
+
+    membership.clear_source_cache()
+    monkeypatch.delenv("GGT_MEMBERSHIP")
+    seen = {}
+
+    def fake_run(*args, **kwargs):
+        seen["membership"] = kwargs["membership"]
+        return "table"
+
+    monkeypatch.setattr(cli_support, "run_vbt_wfo", fake_run)
+    out = run_lab(
+        ["--strategy", "ensemble", "--wfo", "--membership", "fixture:sp500_v1_2026-06-02"]
+    )
+    assert out == "table"
+    assert seen["membership"].vintage().fixture == "sp500_v1_2026-06-02"
+
+
+def test_lab_refuses_a_membership_that_does_not_match_the_pinned_hash():
+    from ggTrader.data.membership import MembershipIntegrityError
+
+    with pytest.raises(MembershipIntegrityError, match="expected"):
+        run_lab(["--strategy", "ensemble", "--wfo", "--expect-membership-sha", "0" * 64])

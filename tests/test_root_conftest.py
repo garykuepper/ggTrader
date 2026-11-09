@@ -41,6 +41,21 @@ INNER_TEST = textwrap.dedent(
 )
 
 
+#: A test collected from outside tests/ that asserts the membership fixture is selected for it.
+MEMBERSHIP_INNER_TEST = textwrap.dedent(
+    """
+    import os
+
+    from ggTrader.data.membership import selected_source
+
+
+    def test_membership_is_the_frozen_fixture():
+        assert os.environ["GGT_MEMBERSHIP"] == "fixture:sp500_v1_2026-06-02"
+        assert selected_source().vintage().kind == "fixture"
+    """
+)
+
+
 def _pytest(*args: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", *args],
@@ -56,7 +71,14 @@ def test_the_shared_conftest_is_at_the_repo_root_only() -> None:
     assert (ROOT / "conftest.py").is_file()
     assert not (ROOT / "tests" / "conftest.py").exists()
     text = (ROOT / "conftest.py").read_text()
-    for needle in ("_no_dotenv", "--tier", "--update-golden", "--golden-reason", "Agg"):
+    for needle in (
+        "_no_dotenv",
+        "_membership_is_a_fixture",
+        "--tier",
+        "--update-golden",
+        "--golden-reason",
+        "Agg",
+    ):
         assert needle in text, needle
 
 
@@ -70,6 +92,23 @@ def test_a_test_collected_from_outside_tests_cannot_see_a_tmp_dotenv() -> None:
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     assert "GGT_SENTINEL_KEY" not in os.environ
+
+
+def test_membership_is_the_frozen_fixture_in_this_test() -> None:
+    from ggTrader.data.membership import selected_source
+
+    assert os.environ["GGT_MEMBERSHIP"] == "fixture:sp500_v1_2026-06-02"
+    assert selected_source().vintage().kind == "fixture"
+
+
+def test_membership_is_the_frozen_fixture_in_a_test_outside_tests() -> None:
+    scratch = Path(tempfile.mkdtemp(prefix=".sentinel_", dir=ROOT))
+    try:
+        (scratch / "test_inner.py").write_text(MEMBERSHIP_INNER_TEST)
+        result = _pytest(str(scratch / "test_inner.py"), "-q")
+        assert result.returncode == 0, result.stdout[-1500:] + result.stderr[-500:]
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def test_the_sentinel_has_teeth_without_the_fixture_the_key_would_load() -> None:

@@ -72,10 +72,13 @@ def paper(
     """
     if live and (dry_run_writes or notify):
         raise typer.BadParameter("--dry-run-writes and --notify only apply to a dry run")
-    from ggTrader.paper.trader import run_paper_trading
+    from ggTrader.paper.trader import LIVE_MEMBERSHIP_SPEC, run_paper_trading
 
     result = run_paper_trading(
-        dry_run=not live, read_only=None if live else not dry_run_writes, notify=notify
+        dry_run=not live,
+        read_only=None if live else not dry_run_writes,
+        notify=notify,
+        membership=LIVE_MEMBERSHIP_SPEC,
     )
     print("Paper trading complete:")
     print(f"  Buys:   {result['buys']}")
