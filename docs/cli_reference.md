@@ -533,7 +533,7 @@ components of the S&P 500") and current list through the MediaWiki API (`action=
 times, the two chinobing CSVs on GitHub, the repository's newest commit, and the S&P Dow Jones
 Indices news page on PR Newswire plus each S&P 500 release of the last 75 days (at most 8; the
 official source: each release's table gives the effective date of every S&P 500 addition and
-deletion; a page over 1.5 MB is refused, not stored). Each fetch is
+deletion; a page over 1 MB is refused, not stored). Each fetch is
 independent: one failing source is recorded and alerted, never fatal to the others. The raw bytes
 of every source are archived (gzip + sha256) in the new append-only `universe.source_snapshots`
 (one row per source per run, tied to the run's `universe.checks` row; the SPY workbook stays in

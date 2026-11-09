@@ -44,7 +44,14 @@ PRESS_PREFIX = "sp_press_"
 LOOKBACK_DAYS = 75
 MAX_RELEASES = 8
 #: Largest page kept or parsed (the real ones are about 200 KB): at most 9 pages, 13.5 MB, per run.
-MAX_PAGE_BYTES = 1_500_000
+MAX_PAGE_BYTES = 1_000_000
+#: Most of a release page that is parsed after the start of its body (a real body is about 20 KB):
+#: bounds the parser's CPU on a hostile page (1.5 MB of '<' took 2 s).
+MAX_BODY_CHARS = 300_000
+#: A ticker as S&P writes it (letters, digits, dot, dash); anything else is a changed page.
+_TICKER_OK = re.compile(r"^[A-Za-z0-9.\-]{1,10}$")
+#: Control characters (NUL above all: Postgres text and JSONB refuse it) never leave this module.
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 #: A release is about the S&P 500 when this word sequence is in its address slug (title).
 _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
 #: The opening tag of a release card. The card's text is then taken with plain ``str.find`` calls,
@@ -52,7 +59,7 @@ _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
 #: card was quadratic on a page of unclosed cards).
 _CARD_OPEN = re.compile(
     r'<a\s{1,20}class="newsreleaseconsolidatelink[^"]{0,200}"\s{1,20}'
-    r'href="(?P<href>/news-releases/[^"]{1,300}\.html)"[^>]{0,300}>'
+    r'href="(?P<href>/news-releases/[A-Za-z0-9._~%/-]{1,300}\.html)"[^>]{0,300}>'
 )
 _CARD_CLASS = "newsreleaseconsolidatelink"
 _STAMP = re.compile(r"(?<![A-Za-z])([A-Za-z]{3,9})\.?\s+(\d{1,2}),\s+(\d{4})(?!\d)")
@@ -197,6 +204,7 @@ def parse_press_listing(raw: bytes) -> list[PressRelease]:
         raw_title = window[small_end + 8 : title_end if title_end >= 0 else len(window)]
         raw_title = raw_title[:MAX_TITLE_CHARS]
         title = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]{1,200}>", " ", raw_title)))
+        title = _CONTROL.sub("", title)
         out.append(PressRelease(PRESS_BASE + href, title.strip(), published, ident.group(1)))
     return sorted(out, key=lambda r: (r.published, r.release_id), reverse=True)
 
@@ -243,7 +251,7 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
     if start < 0:
         raise SourceStructureError("body_not_found", f"release {release.release_id}: no body")
     parser = _Rows()
-    parser.feed(text[start:])
+    parser.feed(text[start : start + MAX_BODY_CHARS])
     rows = parser.rows
     if len(rows) > MAX_TABLE_ROWS:
         raise SourceStructureError(
@@ -270,6 +278,9 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
         action = _ACTIONS.get(row[2].strip().lower())
         day = parse_press_date(row[0])
         ticker = row[4].strip()
+        if not _TICKER_OK.match(ticker):
+            problems.append(f"unreadable ticker in S&P 500 row {row!r}")
+            continue
         if action is None or day is None or not ticker:
             problems.append(f"unreadable S&P 500 row {row!r}")
             continue
@@ -278,7 +289,7 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
                 day,
                 action,
                 ticker,
-                row[3].strip(),
+                _CONTROL.sub("", row[3]).strip(),
                 release.published,
                 release.url,
                 release.release_id,
