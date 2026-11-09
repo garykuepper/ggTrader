@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-09 (membership database: second review round)
+
+- **A known SPY mismatch closes the live gate.** The newest `matched`/`mismatch` holdings check of the latest vintage (by holdings as-of date, then check time; a mismatch is attributed to a vintage by `detail.compared_load_id`) decides. If it is a `mismatch` the wall-clock gate refuses with `membership_mismatch` (message names `ggt db membership weekly`, `ggt db membership proposal` and the human `load-sp500 --from-events ... --commit` steps) until a later-dated match exists or a newer vintage is loaded. A mismatch older than the last match, a mismatch against another vintage and `fetch_failed` rows never count. `ggt db membership status` prints the newest comparison. `MembershipVintage` gains `latest_check`, `latest_check_as_of`, `latest_check_id`. No DDL.
+- **xlsx reader budgets.** A column index past 256 and more than 1,000,000 dense cells per worksheet are refused (`XlsxError`) before any row is padded (a cell in column ZZZ used to make an 18,278-entry row).
+- **Commits API reply bounded.** `_latest_commit` streams the reply under a 1 MB cap (`too_large` `UpstreamFetchError` beyond it) instead of `response.json()` on an unbounded body.
+- **Normalizer version.** Identical raw bytes loaded under a different `NORMALIZER_VERSION` are a new vintage (same raw and content hash, new normalizer version), not an `unchanged` no-op (`is_noop_reload`). The content hash is unchanged; spec Appendix C7 records that it covers dates and raw tickers only and that the normalizer version is stored beside it.
+- **Counts (database variables removed).** Fast tier 1,859 (was 1,845); full tier 2,198 + 777 study = 2,975 (was 2,184 + 777 = 2,961). Scratch-database `integration` tests for the touched modules pass. Reference numbers unchanged: core17 0.3905 / 3.50 % / 1/17, dsr0 0.6374 / 3.41 % / 17/17, golden 120/120.
+
 ## 2026-11-09 (membership database: fixes from the independent review)
 
 - **xlsx reader.** A row number past `MAX_ROWS` (100,000) is refused before any padding (one `<row r="300000">` used to return 300,000 rows), and any XML part that is not UTF-8 (UTF-16/32, EBCDIC, or a declared non-UTF-8 encoding) is refused, so the DOCTYPE/ENTITY byte guard sees what the parser sees.
