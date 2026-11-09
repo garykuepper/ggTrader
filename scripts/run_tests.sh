@@ -194,7 +194,7 @@ fi
 
 if [[ "$TIER" == "fast" ]]; then
     echo >&2
-    echo "FAST CORE only: the slow, numba, tripwire, study, tooling and integration tests" >&2
+    echo "FAST CORE only: the slow, numba, tripwire, study, tooling, integration and db tests" >&2
     echo "were deselected (see the deselected count above)." >&2
     echo "Run scripts/run_tests.sh --full before any merge, deploy or vectorbt upgrade." >&2
 fi
