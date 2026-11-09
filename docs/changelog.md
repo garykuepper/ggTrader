@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 (backfill tool hardening after the second Sol review)
+
+- `scripts/backfill_missing_members.py`: the 5% last-bar guard now applies without `--refresh-last`; a symbol whose stored bars overlap the download on no date is refused (the series cannot be verified); downloaded values are validated (non-finite, non-positive close, negative open/high/low/volume, high below low) and one bad row refuses the symbol; the inserted-keys file is synced to disk, and a journal failure after a commit is reported as "COMMITTED" with the recovery source. Ordering (backup, commit, journal) is tested and each new guard was mutation-checked. The earlier run is unaffected (its journal reconciles with the table: 19,491 keys). A rerun on the same 13 tickers plans zero inserts.
+
 ## 2026-11-09 (price table backfill for 13 current members)
 
 - New `scripts/backfill_missing_members.py`: dry run by default; `INSERT ... ON CONFLICT DO NOTHING ... RETURNING`; optional `--refresh-last` rewrites only the last stored bar, only from a complete fresh bar, saving the old row first; a symbol is refused when its stored bars before the last disagree with the download by more than 1% or the last bar is off by more than 5%; bars only up to a pinned `--through`; naive-UTC midnight timestamps like the loader; per-symbol transaction; backup and inserted-keys files in `data/exports/ohlcv_backfill/`. Reviewed by Sol (five findings) and Opus; all fixed with tests (fast tier 2,273, study tier 777).
