@@ -84,3 +84,32 @@ class TestRowsForUpsert:
         rows = _rows_for_upsert("CPIAUCSL", df)
         assert all(isinstance(r["value"], float) for r in rows)
         assert rows[-1]["value"] == pytest.approx(330.0)
+
+
+@pytest.mark.integration
+def test_cache_and_load_roundtrip():
+    from sqlalchemy import text
+
+    from ggTrader.lab.persist import get_engine
+    from ggTrader.utils.fred_data import cache_series, ensure_schema, load_fred_series
+
+    ensure_schema()
+    marker = "ZZTEST_FRED"
+    with get_engine().begin() as conn:
+        conn.execute(text("DELETE FROM fred_series WHERE series_id = :s"), {"s": marker})
+
+    raw = _csv(marker, [("2020-01-01", "1.23"), ("2020-02-01", "1.45")])
+    n = cache_series(marker, http_fetch=lambda sid: raw)
+    assert n == 2
+
+    df = load_fred_series(marker, "2019-01-01", "2021-01-01")
+    assert len(df) == 2
+    assert df.iloc[0]["value"] == pytest.approx(1.23)
+
+    # Re-caching upserts, not duplicates.
+    cache_series(marker, http_fetch=lambda sid: raw)
+    df2 = load_fred_series(marker, "2019-01-01", "2021-01-01")
+    assert len(df2) == 2
+
+    with get_engine().begin() as conn:
+        conn.execute(text("DELETE FROM fred_series WHERE series_id = :s"), {"s": marker})

@@ -110,6 +110,27 @@ def _rows_for_upsert(series_id: str, df: pd.DataFrame) -> list[dict]:
     ]
 
 
+def cache_series(series_id: str, http_fetch: HttpFetch | None = None) -> int:
+    """Fetch one FRED series and upsert it into the DB cache."""
+    df = fetch_fred_series(series_id, http_fetch=http_fetch)
+    if df.empty:
+        return 0
+    from ggTrader.lab.persist import get_engine  # lazy: keeps this module free of lab imports
+
+    ensure_schema()
+    rows = _rows_for_upsert(series_id, df)
+    upsert_sql = text(
+        """
+        INSERT INTO fred_series (series_id, date, value)
+        VALUES (:series_id, :date, :value)
+        ON CONFLICT (series_id, date) DO UPDATE SET value = EXCLUDED.value
+        """
+    )
+    with get_engine().begin() as conn:
+        conn.execute(upsert_sql, rows)
+    return len(rows)
+
+
 def load_fred_series(series_id: str, start: str, end: str) -> pd.DataFrame:
     """Load a cached FRED series for [start, end] from the DB."""
     from ggTrader.lab.persist import get_engine  # lazy: keeps this module free of lab imports
