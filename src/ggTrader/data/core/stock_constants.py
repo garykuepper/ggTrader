@@ -11,13 +11,6 @@ YFINANCE_INTERVAL_MAP = {
     "1d": "1d",
 }
 
-# NYSE market hours (Eastern Time)
-MARKET_OPEN_HOUR = 9
-MARKET_OPEN_MINUTE = 30
-MARKET_CLOSE_HOUR = 16
-MARKET_CLOSE_MINUTE = 0
-MARKET_TIMEZONE = "US/Eastern"
-
 # S&P 500 constituents (Top 50 by market cap as a starting point)
 # Note: In production, use scripts/update_universe_stocks.py to fetch dynamically.
 SP500_SYMBOLS = [
