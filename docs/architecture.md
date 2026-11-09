@@ -189,15 +189,19 @@ differs from the earlier sections). Commands and flags: [CLI Reference](cli_refe
 **Data flow**
 
 ```
-public sources (SPY holdings, Wikipedia, chinobing CSVs)      human, with S&P DJI press releases
-        |  weekly job / check-holdings                                |  load-sp500 --from-events --commit
-        v                                                             v
- universe.checks, check_blobs, source_snapshots          universe.loads + membership (new vintage)
-                         \                                          /
-                          +-----------  MembershipSource  --------+
-                                   |                |
-              research: ggt lab, drivers, load_bars,   live trader: membership_gate
-              pit_mask (named spec, any vintage)       (latest "db" vintage only)
+public sources (SPY holdings, Wikipedia, chinobing CSVs)
+        |  weekly job, check-holdings
+        v
+ universe.checks / check_blobs / source_snapshots   (comparisons and archived bytes; never the list)
+
+ human, with S&P DJI press releases
+        |  load-sp500 --from-events FILE --commit
+        v
+ universe.loads + membership   (a new vintage)
+        |
+ MembershipSource  (db, db:<id> or fixture:<name>, always named)
+        |-- research: ggt lab, drivers, load_bars, pit_mask (any named vintage)
+        '-- live trader: membership_gate (latest "db" vintage; also reads universe.checks)
 ```
 
 **The live gate** (`ggTrader.data.membership_gate`). Before any bar is fetched, a wall-clock
