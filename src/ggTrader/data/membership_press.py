@@ -15,6 +15,7 @@ database, and a failure of this source never closes the live gate (it only raise
 
 from __future__ import annotations
 
+import functools
 import html
 import re
 from collections.abc import Callable, Sequence
@@ -24,6 +25,7 @@ from html.parser import HTMLParser
 
 import requests
 
+from ggTrader.data.core.index_constituents import normalize_yf_ticker
 from ggTrader.data.membership_sources import (
     GetFn,
     SourceFetch,
@@ -81,6 +83,12 @@ class PressChange:
     company: str
     published: date
     url: str
+    release_id: str = "0"
+
+    @property
+    def order(self) -> tuple[date, int, date]:
+        """Newest release last: publication day, then release id (it grows with time), then date."""
+        return (self.published, int(self.release_id), self.effective)
 
 
 @dataclass
@@ -110,6 +118,26 @@ def parse_press_date(text: str) -> date | None:
         return None
 
 
+def _structure_guard(parse):
+    """Turn any unexpected exception of a parser into a ``SourceStructureError`` (code internal).
+
+    A hostile or oddly broken page (for example a huge numeric character reference that makes
+    ``html.unescape`` raise) must read as a changed page, never escape into the weekly job.
+    """
+
+    @functools.wraps(parse)
+    def guarded(*args, **kwargs):
+        try:
+            return parse(*args, **kwargs)
+        except SourceStructureError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            raise SourceStructureError("internal", f"{type(exc).__name__}: {exc}"[:200]) from exc
+
+    return guarded
+
+
+@_structure_guard
 def parse_press_listing(raw: bytes) -> list[PressRelease]:
     """The S&P 500 releases on the news page, newest first.
 
@@ -168,6 +196,7 @@ class _Rows(HTMLParser):
             self._cell.append(data)
 
 
+@_structure_guard
 def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
     """The S&P 500 additions and deletions in a release's summary table.
 
@@ -194,10 +223,11 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
     changes: list[PressChange] = []
     problems: list[str] = []
     for row in rows[header_at + 1 :]:
-        if len(row) < 5:
-            continue
-        index = row[1].strip().lower()
+        index = row[1].strip().lower() if len(row) > 1 else ""
         if index != "s&p 500":
+            continue
+        if len(row) < 5:
+            problems.append(f"truncated S&P 500 row {row!r}")
             continue
         action = _ACTIONS.get(row[2].strip().lower())
         day = parse_press_date(row[0])
@@ -206,7 +236,15 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
             problems.append(f"unreadable S&P 500 row {row!r}")
             continue
         changes.append(
-            PressChange(day, action, ticker, row[3].strip(), release.published, release.url)
+            PressChange(
+                day,
+                action,
+                ticker,
+                row[3].strip(),
+                release.published,
+                release.url,
+                release.release_id,
+            )
         )
     if problems:
         raise SourceStructureError("bad_row", "; ".join(problems[:3]), problems)
@@ -261,6 +299,6 @@ def fetch_press(
 def latest_changes(changes: Sequence[PressChange]) -> list[PressChange]:
     """One row per ``(action, ticker)``: the one from the newest release (a correction wins)."""
     best: dict[tuple[str, str], PressChange] = {}
-    for change in sorted(changes, key=lambda c: (c.published, c.effective)):
-        best[(change.action, change.ticker.upper())] = change
+    for change in sorted(changes, key=lambda c: c.order):
+        best[(change.action, normalize_yf_ticker(change.ticker))] = change
     return sorted(best.values(), key=lambda c: (c.effective, c.action, c.ticker))

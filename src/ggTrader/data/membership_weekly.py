@@ -590,8 +590,9 @@ def _press_sources(run: WeeklyRun, fetched: PressFetch) -> None:
 def _press_vs_list(run: WeeklyRun, ours: set[str], floor: date, today: date) -> None:
     """Warn when an announced S&P 500 change that is already effective is not in our list."""
     changes = latest_changes(run.press)
+    boundary = min(floor, today)
     for change in changes:
-        if change.effective > min(floor, today):
+        if change.effective > boundary:
             continue  # not yet attested by our list or SPY, or not yet effective
         norm = normalize_yf_ticker(change.ticker)
         later = [
@@ -599,7 +600,7 @@ def _press_vs_list(run: WeeklyRun, ours: set[str], floor: date, today: date) -> 
             for c in changes
             if normalize_yf_ticker(c.ticker) == norm
             and c.action != change.action
-            and c.effective > change.effective
+            and change.effective < c.effective <= boundary
         ]
         if later:
             continue  # superseded by a later announced change of the same ticker

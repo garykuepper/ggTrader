@@ -342,3 +342,80 @@ def test_the_dry_run_store_and_notifier_stay_offline():
     # guard: the helpers used above never reach a database or Telegram
     assert FakeWeeklyStore(base_ours()).runs == [] and RecordingNotifier().messages == []
     assert NOW == datetime(2026, 11, 9, 14, 0, tzinfo=timezone.utc)
+
+
+# --------------------------------------------------------------------------- review fixes
+
+
+def test_a_hostile_numeric_reference_reads_as_a_changed_page_not_an_exception():
+    huge = "&#" + "9" * 5000 + ";"
+    bad_title = press_listing_html([("Oct 30, 2026, 17:51 ET", OKTA_SLUG, f"Okta {huge}")])
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_listing(bad_title)
+    assert err.value.code == "internal"
+    page = press_release_html([("Nov 4, 2026", "S&P 500", "Addition", f"Okta {huge}", "OKTA")])
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(page, release())
+    assert err.value.code == "internal"
+
+
+def test_a_hostile_page_only_warns_in_the_weekly_job_and_the_match_is_recorded(tmp_path):
+    world = World(base_ours())
+    world.press_listing = press_listing_html(
+        [("Oct 30, 2026, 17:51 ET", OKTA_SLUG, "Okta &#" + "9" * 5000 + ";")]
+    )
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "warn" and codes(result) == {"press_structure"}
+    assert store.runs[0][0].outcome == "matched"
+
+
+def test_the_correction_with_the_higher_release_id_wins_even_on_the_same_day():
+    first = mp.PressChange(
+        date(2026, 11, 5), "add", "OKTA", "Okta", date(2026, 10, 30), "u1", "302925405"
+    )
+    fixed = mp.PressChange(
+        date(2026, 11, 4), "add", "OKTA", "Okta", date(2026, 10, 30), "u2", "302925999"
+    )
+    assert [c.effective for c in mp.latest_changes([fixed, first])] == [date(2026, 11, 4)]
+
+
+def test_the_proposal_uses_the_newest_release_on_the_same_day():
+    first = mp.PressChange(
+        date(2026, 11, 5), "add", "ZZNEW", "New", date(2026, 11, 2), "u1", "302925405"
+    )
+    fixed = mp.PressChange(
+        date(2026, 11, 4), "add", "ZZNEW", "New", date(2026, 11, 2), "u2", "302925999"
+    )
+    assert _proposal([fixed, first]).rows[0].effective == date(2026, 11, 4)
+
+
+def test_dotted_and_dashed_spellings_are_one_ticker_in_corrections():
+    first = mp.PressChange(
+        date(2026, 10, 20), "add", "BRK.B", "Berkshire", date(2026, 10, 1), "u1", "302900001"
+    )
+    fixed = mp.PressChange(
+        date(2026, 11, 12), "add", "BRK-B", "Berkshire", date(2026, 11, 2), "u2", "302900002"
+    )
+    assert [c.effective for c in mp.latest_changes([first, fixed])] == [date(2026, 11, 12)]
+
+
+def test_a_future_opposite_change_does_not_hide_a_current_discrepancy(tmp_path):
+    world = World(base_ours())
+    _announce(
+        world,
+        [
+            ("Oct 20, 2026", "S&P 500", "Addition", "Ghost", "GHOST"),
+            ("Dec 1, 2026", "S&P 500", "Deletion", "Ghost", "GHOST"),  # not yet effective
+        ],
+    )
+    result, _, _ = run(world, tmp_path=tmp_path)
+    assert codes(result) == {"press_change_not_in_list"}
+    assert "GHOST added" in " ".join(f.text for f in result.findings)
+
+
+def test_a_truncated_sp500_row_is_a_structure_error():
+    cells = "<tr><td>Nov 4, 2026</td><td>S&amp;P 500</td><td>Addition</td><td>Okta</td></tr>"
+    page = press_release_html([]).replace(b"</table>", cells.encode() + b"</table>")
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(page, release())
+    assert err.value.code == "bad_row"

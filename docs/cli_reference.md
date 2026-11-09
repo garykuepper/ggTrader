@@ -567,13 +567,15 @@ of every source are archived (gzip + sha256) in the new append-only `universe.so
   with SPY, each with the best effective date from the ledger and chinobing rows after the attested
   date. The official S&P DJI release date wins when there is one. `Y` unless two sources give the same
   date (the release plus the ledger or chinobing, else the ledger plus chinobing), it is not in the
-  future and the ledger row is not announcement-dated. A removal and an addition that only chinobing shows together are also
+  future and, when no release dates the change, the ledger row is not announcement-dated (an
+  agreeing official release makes that last test moot). A removal and an addition that only chinobing shows together are also
   proposed as a `rename`. `evidence_url` and `evidence_sha256` are blank. The loader refuses a file
   with a blank `evidence_url` or any `needs_confirmation` other than `N`/blank, so a proposal cannot be
   loaded unreviewed. The message lists the rows, what to check and the exact `proposal` command and
   the `load-sp500 --from-events FILE` (dry run) and `--commit` commands.
 
-Deployment templates (not installed): `deploy/membership_weekly/` (user service and Saturday
+Deployment templates (the timer was enabled on 2026-11-09 from these files; see the README):
+`deploy/membership_weekly/` (user service and Saturday
 06:00 America/Los_Angeles timer, README with the install, disable, message-reading, proposal and
 restore procedures). `scripts/membership_restore_drill.py` dumps the schema, restores it into a
 scratch database, compares every table's row count and every load's hashes, runs `verify` for each
