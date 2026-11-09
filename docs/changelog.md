@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-09 (weekly message: fit the limit without breaking the HTML; press source review round 5, Argon)
+
+- **The weekly Telegram message is cut at a line end and its open `<b>`/`<code>` tags are closed.** A blind slice at 3,460 characters could split a tag and make Telegram refuse the whole alert (HTTP 400, `--notify` exit 1). At most 8 findings per severity are quoted (300 characters each, then "... and N more"), so the proposal commands at the end are no longer the part that gets cut. The match was always recorded first; this only protects the alert.
+- Press source: C1 control characters (`\x80`-`\x9f`) are removed with the C0 ones; the problems kept from a bad table row are at most 3 strings of 200 characters. New tests pin the limits, the table-row cap for other indices, the title cut and the message shape (each proved to fail when the guarded behaviour is removed).
+
 ## 2026-11-09 (press source: review rounds 1-3 and a size cap)
 
 - Fixes from two Sol reviews and one Opus review of `membership_press`: every parser failure (including a huge numeric character reference or release id) is a `press_structure` warning, never an exception; the listing is read with bounded, linear-time patterns (cards with a logo are read, an unreadable card is an error); corrections are ordered by publication day then release id; a release over 2,000 table rows or 200 S&P 500 rows is refused; a page over 1 MB (`MAX_PAGE_BYTES`; real pages are about 200 KB) is refused and not stored, so a run keeps at most 9 pages; only the first 300,000 characters after a release body starts are parsed (8 hostile maximum-size pages cost 3.3 s of CPU, not 16 s); control characters (NUL above all, which Postgres refuses) are removed from titles and company names, and an address or ticker with anything outside URL-safe or ticker characters is a changed page, so page content can no longer make the check row fail to commit. `_request` takes a `max_bytes` argument.
