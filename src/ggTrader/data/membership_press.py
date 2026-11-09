@@ -43,6 +43,8 @@ PRESS_PREFIX = "sp_press_"
 #: Only releases published this many days back (or newer) are fetched, at most ``MAX_RELEASES``.
 LOOKBACK_DAYS = 75
 MAX_RELEASES = 8
+#: Largest page kept or parsed (the real ones are about 200 KB): at most 9 pages, 13.5 MB, per run.
+MAX_PAGE_BYTES = 1_500_000
 #: A release is about the S&P 500 when this word sequence is in its address slug (title).
 _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
 #: The opening tag of a release card. The card's text is then taken with plain ``str.find`` calls,
@@ -307,7 +309,14 @@ def fetch_press(
     clock = now or (lambda: datetime.now(timezone.utc))
     get = get or requests.get
     try:
-        listing = _request(get, PRESS_LISTING, PRESS_LISTING_URL, clock, accept="text/html")
+        listing = _request(
+            get,
+            PRESS_LISTING,
+            PRESS_LISTING_URL,
+            clock,
+            accept="text/html",
+            max_bytes=MAX_PAGE_BYTES,
+        )
     except Exception as exc:  # noqa: BLE001 - one source must never abort the job
         listing = _failure(
             PRESS_LISTING, PRESS_LISTING_URL, clock(), "internal", f"{type(exc).__name__}: {exc}"
@@ -322,7 +331,14 @@ def fetch_press(
     cutoff = clock().astimezone(timezone.utc).date() - timedelta(days=lookback_days)
     for release in [r for r in wanted if r.published >= cutoff][:max_releases]:
         try:
-            fetched = _request(get, release.source_name, release.url, clock, accept="text/html")
+            fetched = _request(
+                get,
+                release.source_name,
+                release.url,
+                clock,
+                accept="text/html",
+                max_bytes=MAX_PAGE_BYTES,
+            )
         except Exception as exc:  # noqa: BLE001
             fetched = _failure(
                 release.source_name,

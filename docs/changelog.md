@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 (press source: review rounds 1-3 and a size cap)
+
+- Fixes from two Sol reviews and one Opus review of `membership_press`: every parser failure (including a huge numeric character reference or release id) is a `press_structure` warning, never an exception; the listing is read with bounded, linear-time patterns (cards with a logo are read, an unreadable card is an error); corrections are ordered by publication day then release id; a release over 2,000 table rows or 200 S&P 500 rows is refused; a page over 1.5 MB (`MAX_PAGE_BYTES`; real pages are about 200 KB) is refused and not stored, so a run keeps at most 9 pages. `_request` takes a `max_bytes` argument.
+
 ## 2026-11-09 (membership: S&P DJI press releases as the second source; weekly timer enabled)
 
 - **New source `membership_press`.** The weekly job now also fetches the S&P Dow Jones Indices news page on PR Newswire (free, no login) and each S&P 500 release of the last 75 days (at most 8). A release's table `Effective Date | Index Name | Action | Company Name | Ticker | GICS Sector` gives the official effective date of every S&P 500 addition and deletion. The raw pages are archived in `universe.source_snapshots` (`sp_press_listing`, `sp_press_<release id>`).

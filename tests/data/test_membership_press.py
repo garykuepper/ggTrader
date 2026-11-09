@@ -555,3 +555,25 @@ def test_comparing_the_most_rows_a_release_may_hold_is_fast(tmp_path):
         assert codes(result) == {"press_change_not_in_list"}
 
     assert _timed(go) < 5.0
+
+
+# --------------------------------------------------------------------------- size cap
+
+
+def test_a_press_page_over_the_size_cap_is_refused_and_never_stored(tmp_path):
+    world = World(base_ours())
+    _announce(world, [("Oct 20, 2026", "S&P 500", "Addition", "X", "X0001")])
+    world.press_releases["302925405"] = b"<html>" + b"x" * (mp.MAX_PAGE_BYTES + 1)
+    result, store, _ = run(world, tmp_path=tmp_path)
+    assert result.status == "warn" and codes(result) == {"press_unavailable"}
+    rows = {r.source: r for r in store.runs[0][1]}
+    assert rows["sp_press_302925405"].status == "failed" and rows["sp_press_302925405"].raw is None
+    assert rows["sp_press_302925405"].detail["reason"] == "too_large"
+    assert store.runs[0][0].outcome == "matched"
+
+
+def test_a_page_at_the_cap_is_still_accepted():
+    world = World(base_ours())
+    world.press_listing = press_listing_html([OKTA_CARD]) + b" " * 1000
+    out = mp.fetch_press(get=world, now=lambda: NOW)
+    assert out.listing.ok and len(out.listing.raw) < mp.MAX_PAGE_BYTES
