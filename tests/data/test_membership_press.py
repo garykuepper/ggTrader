@@ -638,3 +638,85 @@ def test_eight_maximum_size_hostile_pages_cost_only_a_few_seconds():
                 mp.parse_press_release(page, release())
 
     assert _timed(parse_all) < 5.0
+
+
+# --------------------------------------------------------------------------- review round 5
+
+
+class _Balanced(__import__("html.parser", fromlist=["HTMLParser"]).HTMLParser):
+    """Telegram's HTML subset: every <b> / <code> must be closed, nothing else is allowed."""
+
+    def __init__(self):
+        super().__init__()
+        self.stack = []
+        self.bad = False
+
+    def handle_starttag(self, tag, attrs):
+        self.stack.append(tag)
+
+    def handle_endtag(self, tag):
+        if not self.stack or self.stack.pop() != tag:
+            self.bad = True
+
+
+def _well_formed(text: str) -> bool:
+    parser = _Balanced()
+    parser.feed(text)
+    parser.close()
+    import re
+
+    bare = re.sub(r"&(amp|lt|gt|quot|#x27);", "", text)
+    return not parser.bad and not parser.stack and "&" not in bare
+
+
+def test_a_flood_of_press_warnings_still_gives_a_valid_message_with_the_commands(tmp_path):
+    rows = [("Aug 3, 2026", "S&P 500", "Addition", f"C{i}", f"ZQ{i:03d}") for i in range(60)]
+    _, _, result, store, notifier = fabricated_mismatch(
+        tmp_path, tweak=lambda w: _announce(w, rows)
+    )
+    message = notifier.messages[0]
+    assert len(message) <= 4096 and _well_formed(message)
+    assert "and 5" in message and "more (see the log)" in message  # 60 warnings -> 8 shown + count
+    assert "ggt db membership proposal --id 1 --out proposed_events.csv" in message
+    assert "--commit</code>" in message  # the commands survive: findings were capped, not the tail
+
+
+@pytest.mark.parametrize(
+    "tail",
+    ["x" * 5000, "<code>" + "y" * 5000, "&amp;" * 1500, "<b>" + "z" * 3490 + "<co"],
+)
+def test_an_over_long_message_is_cut_into_well_formed_html(tail):
+    from ggTrader.data import membership_weekly as mw
+
+    cut = mw._fit_message("head\n" + tail)
+    assert len(cut) <= mw.MAX_MESSAGE_CHARS and cut.endswith("see the log and the file)")
+    assert _well_formed(cut)
+
+
+def test_more_table_rows_than_any_real_release_is_refused_even_for_other_indices():
+    tiny = "<tr><td>x</td></tr>" * (mp.MAX_TABLE_ROWS + 1)  # small enough to fit the parsed window
+    page = b'<html><div class="release-body container"><table>' + tiny.encode() + b"</table>"
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(page, release())
+    assert err.value.code == "too_many_rows"
+
+
+def test_the_published_limits_are_the_documented_ones():
+    assert (mp.MAX_PAGE_BYTES, mp.MAX_BODY_CHARS, mp.MAX_TABLE_ROWS) == (1_000_000, 300_000, 2000)
+    assert (mp.MAX_SP500_ROWS, mp.MAX_RELEASES, mp.LOOKBACK_DAYS) == (200, 8, 75)
+
+
+def test_a_long_title_is_cut_and_c1_controls_are_removed():
+    title = "Okta\x85\x9f " + "<" * 50 + "t" * 5000
+    page = press_listing_html([("Oct 30, 2026, 17:51 ET", OKTA_SLUG, title)])
+    found = mp.parse_press_listing(page)
+    assert len(found[0].title) <= mp.MAX_TITLE_CHARS
+    assert "\x85" not in found[0].title and "\x9f" not in found[0].title
+
+
+def test_bad_row_problems_never_keep_a_whole_hostile_cell():
+    row = ("Nov 4, 2026", "S&P 500", "Addition", "Co", "A" * 100_000)
+    with pytest.raises(SourceStructureError) as err:
+        mp.parse_press_release(press_release_html([row]), release())
+    assert err.value.code == "bad_row"
+    assert all(len(p) <= 200 for p in err.value.problems) and len(err.value.problems) <= 3

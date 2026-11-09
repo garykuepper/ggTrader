@@ -51,7 +51,7 @@ MAX_BODY_CHARS = 300_000
 #: A ticker as S&P writes it (letters, digits, dot, dash); anything else is a changed page.
 _TICKER_OK = re.compile(r"^[A-Za-z0-9.\-]{1,10}$")
 #: Control characters (NUL above all: Postgres text and JSONB refuse it) never leave this module.
-_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
 #: A release is about the S&P 500 when this word sequence is in its address slug (title).
 _SLUG_SP500 = re.compile(r"(?:^|-)sp-500(?:-|$)")
 #: The opening tag of a release card. The card's text is then taken with plain ``str.find`` calls,
@@ -296,7 +296,8 @@ def parse_press_release(raw: bytes, release: PressRelease) -> list[PressChange]:
             )
         )
     if problems:
-        raise SourceStructureError("bad_row", "; ".join(problems[:3]), problems)
+        kept = [p[:200] for p in problems[:3]]  # never keep a whole hostile cell
+        raise SourceStructureError("bad_row", "; ".join(kept), kept)
     if len(changes) > MAX_SP500_ROWS:
         raise SourceStructureError(
             "too_many_rows", f"release {release.release_id}: {len(changes)} S&P 500 rows"

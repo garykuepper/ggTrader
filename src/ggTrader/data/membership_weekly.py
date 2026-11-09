@@ -97,6 +97,9 @@ STALE_SOURCE_DAYS = 14
 DEFAULT_PROPOSAL_DIR = REPO_ROOT / "data" / "exports" / PROPOSAL_DIRNAME
 #: Telegram refuses messages over 4096 characters; stay clear of it.
 MAX_MESSAGE_CHARS = 3500
+#: Findings quoted per severity in the message (the rest are counted), each cut at this length.
+MAX_MESSAGE_FINDINGS = 8
+MAX_FINDING_CHARS = 300
 #: Rows of the proposal quoted in the message; the rest are in the file.
 MAX_MESSAGE_ROWS = 12
 #: File name the message suggests for ``ggt db membership proposal --out``.
@@ -828,17 +831,49 @@ def compose_message(run: WeeklyRun, today: date) -> str:
     warnings = [f for f in run.findings if f.severity == "warn"]
     if refusals:
         lines.append("<b>Refused / alerts</b>")
-        lines += [f"- {esc(f.text)}" for f in refusals]
+        lines += _finding_lines(refusals)
     if warnings:
         lines.append("<b>Warnings</b>")
-        lines += [f"- {esc(f.text)}" for f in warnings]
+        lines += _finding_lines(warnings)
     if run.proposal is not None and run.proposal.rows:
         lines.append(_proposal_text(run))
     lines.append("Sources: " + "; ".join(esc(_source_line(r)) for r in names))
     text = "\n".join(lines)
-    if len(text) > MAX_MESSAGE_CHARS:
-        text = text[: MAX_MESSAGE_CHARS - 40] + "\n... (cut; see the log and the file)"
-    return text
+    return _fit_message(text)
+
+
+def _finding_lines(findings: list[Finding]) -> list[str]:
+    """At most ``MAX_MESSAGE_FINDINGS`` lines, each cut, then a count of the rest."""
+    lines = [
+        f"- {html.escape(f.text[:MAX_FINDING_CHARS])}" for f in findings[:MAX_MESSAGE_FINDINGS]
+    ]
+    if len(findings) > MAX_MESSAGE_FINDINGS:
+        lines.append(f"- ... and {len(findings) - MAX_MESSAGE_FINDINGS} more (see the log)")
+    return lines
+
+
+def _fit_message(text: str) -> str:
+    """Cut an over-long message at a line end and close any ``<b>``/``<code>`` left open.
+
+    Telegram refuses a message whose HTML is not well formed, so a blind slice (which can split
+    a tag or an entity) would lose the whole alert.
+    """
+    if len(text) <= MAX_MESSAGE_CHARS:
+        return text
+    tail = "\n... (cut; see the log and the file)"
+    room = MAX_MESSAGE_CHARS - len(tail) - len("</code></b>")
+    cut = text[:room]
+    newline = cut.rfind("\n")
+    if newline > 0:
+        cut = cut[:newline]
+    elif cut.rfind("&") > cut.rfind(";"):
+        cut = cut[: cut.rfind("&")]  # do not leave half an entity such as "&am"
+    if cut.rfind("<") > cut.rfind(">"):
+        cut = cut[: cut.rfind("<")]  # nor half a tag such as "<co"
+    closers = "".join(
+        f"</{tag}>" for tag in ("code", "b") if cut.count(f"<{tag}>") > cut.count(f"</{tag}>")
+    )
+    return cut + closers + tail
 
 
 def _proposal_text(run: WeeklyRun) -> str:
