@@ -138,6 +138,26 @@ CREATE TABLE IF NOT EXISTS universe.check_blobs (
 );
 ALTER TABLE universe.check_blobs ALTER COLUMN raw_gzip SET STORAGE EXTERNAL;
 
+-- Every source the weekly job fetched (M6): one row per source per run, with the exact bytes
+-- (gzip) so "what did Wikipedia say that Saturday?" can be answered from the database alone.
+-- The SPY workbook of a run stays in check_blobs (raw_gzip is NULL for it here); a proposed
+-- events file is stored here too (source 'proposal'). Append-only like every other table.
+CREATE TABLE IF NOT EXISTS universe.source_snapshots (
+    snapshot_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    check_id    BIGINT      NOT NULL REFERENCES universe.checks (check_id),
+    source      TEXT        NOT NULL CHECK (source <> ''),
+    url         TEXT        NOT NULL,
+    status      TEXT        NOT NULL CHECK (status IN ('ok', 'failed')),
+    fetched_at  TIMESTAMPTZ NOT NULL,
+    last_change DATE,        -- the source's own last-change date (NULL = unknown)
+    raw_sha256  TEXT        CHECK (raw_sha256 ~ '^[0-9a-f]{64}$'),  -- of the uncompressed bytes
+    size_bytes  INT         CHECK (size_bytes >= 0),
+    raw_gzip    BYTEA,
+    detail      JSONB,
+    UNIQUE (check_id, source)
+);
+ALTER TABLE universe.source_snapshots ALTER COLUMN raw_gzip SET STORAGE EXTERNAL;
+
 -- Company continuity across a ticker change (M5b). Membership itself stays "remove plus add"
 -- as in every earlier vintage; this table says that two symbols are one company, from when,
 -- and on what evidence. Written together with the curated vintage that states it.
@@ -202,7 +222,7 @@ DECLARE
     t text;
 BEGIN
     FOREACH t IN ARRAY ARRAY['loads', 'load_blobs', 'snapshot_dates', 'checks', 'check_blobs',
-                          'symbol_changes', 'load_evidence'] LOOP
+                          'symbol_changes', 'load_evidence', 'source_snapshots'] LOOP
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON universe.%I', t || '_frozen_t', t);
         EXECUTE format(
             'CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON universe.%I '
@@ -245,16 +265,16 @@ END $$;
 GRANT USAGE ON SCHEMA universe TO universe_reader, universe_loader;
 GRANT SELECT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
     universe.membership, universe.checks, universe.check_blobs, universe.symbol_changes,
-    universe.load_evidence TO universe_reader, universe_loader;
+    universe.load_evidence, universe.source_snapshots TO universe_reader, universe_loader;
 ALTER DEFAULT PRIVILEGES IN SCHEMA universe GRANT SELECT ON TABLES TO universe_reader;
 
 GRANT INSERT ON universe.loads, universe.load_blobs, universe.snapshot_dates,
     universe.membership, universe.checks, universe.check_blobs, universe.symbol_changes,
-    universe.load_evidence TO universe_loader;
+    universe.load_evidence, universe.source_snapshots TO universe_loader;
 -- The only UPDATE the loader may ever do, as a column privilege.
 GRANT UPDATE (superseded_by_load_id) ON universe.membership TO universe_loader;
 GRANT USAGE ON SEQUENCE universe.loads_load_id_seq, universe.membership_interval_id_seq,
-    universe.checks_check_id_seq TO universe_loader;
+    universe.checks_check_id_seq, universe.source_snapshots_snapshot_id_seq TO universe_loader;
 
 REVOKE ALL ON FUNCTION universe.membership_guard(), universe.frozen_guard(),
     universe.snapshot(TEXT, BIGINT) FROM PUBLIC;

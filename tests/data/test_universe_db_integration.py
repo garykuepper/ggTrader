@@ -144,6 +144,7 @@ def test_ddl_is_idempotent_and_stays_inside_the_universe_schema(db_url: str) -> 
                 "loads",
                 "membership",
                 "snapshot_dates",
+                "source_snapshots",
                 "symbol_changes",
             ]
             cur.execute(
@@ -151,7 +152,7 @@ def test_ddl_is_idempotent_and_stays_inside_the_universe_schema(db_url: str) -> 
                 "JOIN pg_namespace n ON n.oid = c.relnamespace "
                 "WHERE n.nspname = 'universe' AND NOT t.tgisinternal"
             )
-            assert cur.fetchone()[0] == 16  # (update/delete + truncate) x 8 tables
+            assert cur.fetchone()[0] == 18  # (update/delete + truncate) x 9 tables
             cur.execute(
                 "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
                 "WHERE conname = 'membership_no_live_overlap'"
@@ -348,6 +349,7 @@ def test_triggers_refuse_update_delete_and_truncate(conn) -> None:
         "check_blobs",
         "symbol_changes",
         "load_evidence",
+        "source_snapshots",
     ):
         _expect_refused(conn, f"TRUNCATE universe.{table} CASCADE")
     _expect_refused(conn, "DELETE FROM universe.loads WHERE load_id = 1")

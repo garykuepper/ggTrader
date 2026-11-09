@@ -480,36 +480,45 @@ class PgHoldingsStore(PgCheckStore):
     only writes this module makes.
     """
 
+    def insert(self, cur: Any, index_name: str, result: HoldingsResult) -> int:
+        """INSERT the check row and, when bytes arrived, their gzip; return the ``check_id``.
+
+        Runs on the caller's cursor and commits nothing, so a caller (the weekly job) can add
+        more rows in the same transaction.
+        """
+        detail = {**result.detail, "result": result.result}
+        cur.execute(
+            "INSERT INTO universe.checks (index_name, raw_sha256, upstream_commit, "
+            "outcome, matched_load_id, detail) VALUES (%s, %s, %s, %s, %s, %s) "
+            "RETURNING check_id",
+            (
+                index_name,
+                result.raw_sha256,
+                None,
+                result.outcome,
+                result.matched_load_id,
+                Json(json.loads(json.dumps(detail, default=str))),
+            ),
+        )
+        check_id = int(cur.fetchone()[0])
+        if result.raw is not None:
+            cur.execute(
+                "INSERT INTO universe.check_blobs (check_id, raw_sha256, raw_gzip) "
+                "VALUES (%s, %s, %s)",
+                (
+                    check_id,
+                    hashlib.sha256(result.raw).hexdigest(),
+                    gzip.compress(result.raw, mtime=0),
+                ),
+            )
+        return check_id
+
     def record(self, index_name: str, result: HoldingsResult) -> int:  # type: ignore[override]
         """Append the check row and, when bytes arrived, their gzip (deterministic, mtime 0)."""
-        detail = {**result.detail, "result": result.result}
         conn = connect(self._url)
         try:
             with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO universe.checks (index_name, raw_sha256, upstream_commit, "
-                    "outcome, matched_load_id, detail) VALUES (%s, %s, %s, %s, %s, %s) "
-                    "RETURNING check_id",
-                    (
-                        index_name,
-                        result.raw_sha256,
-                        None,
-                        result.outcome,
-                        result.matched_load_id,
-                        Json(json.loads(json.dumps(detail, default=str))),
-                    ),
-                )
-                check_id = int(cur.fetchone()[0])
-                if result.raw is not None:
-                    cur.execute(
-                        "INSERT INTO universe.check_blobs (check_id, raw_sha256, raw_gzip) "
-                        "VALUES (%s, %s, %s)",
-                        (
-                            check_id,
-                            hashlib.sha256(result.raw).hexdigest(),
-                            gzip.compress(result.raw, mtime=0),
-                        ),
-                    )
+                check_id = self.insert(cur, index_name, result)
             conn.commit()
             return check_id
         finally:
