@@ -93,8 +93,7 @@ src/ggTrader/
 │   ├── snapshot.py              # Reads and hash-verifies the frozen Parquet tape (MANIFEST.json)
 │   ├── core/
 │   │   ├── base_loader.py       # Basic instructions for downloading data
-│   │   ├── stock_constants.py   # Yahoo Finance parameters and S&P 500 constants
-│   │   └── constants.py         # Crypto mappings and quote currencies
+│   │   └── stock_constants.py   # Yahoo Finance parameters and S&P 500 constants
 │   ├── historical/
 │   │   └── timescaledb_loader.py # Fetches historical prices from your local database
 │   └── live/
@@ -212,7 +211,7 @@ newest holdings comparison of that vintage is a mismatch. A match belongs to one
 loading a newer vintage starts again from "never matched" until `check-holdings` matches it.
 A live run (`--live`) refuses any membership source but the latest database vintage; dry runs,
 replays and pinned vintages skip the age gate. Limits, override variables and error codes are in
-the CLI Reference (section "Membership gate").
+the CLI Reference (the "Membership gate" paragraph under the `ggt db membership` commands).
 
 ---
 
