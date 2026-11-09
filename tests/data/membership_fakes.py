@@ -31,6 +31,9 @@ class FakeMembershipStore:
         verified_at: datetime | None = None,
         matched_at: datetime | None = None,
         matched_as_of: date | None = None,
+        latest_check: str | None = None,
+        latest_check_as_of: date | None = None,
+        latest_check_id: int | None = None,
         index_name: str = "sp500",
     ) -> int:
         """Store ``history`` as the next vintage and return its load id.
@@ -58,6 +61,9 @@ class FakeMembershipStore:
             verified_at or matched_at or retrieved_at,
             matched_at,
             matched_as_of,
+            latest_check,
+            latest_check_as_of,
+            latest_check_id,
         )
         return load_id
 

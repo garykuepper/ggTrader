@@ -17,6 +17,13 @@ file, ``ggt db membership check-holdings``). Two clocks decide, both counted in 
   without index changes raises no alarm while the matches keep coming; a dead pipeline does.
   A never-matched list is measured from its last change date.
 
+* **Mismatch**: the newest holdings check of the latest vintage, ordered by the holdings' as-of
+  date and then the check time, among ``matched`` and ``mismatch`` rows for that vintage. If it is
+  a ``mismatch`` the list is known to differ from the SPY holdings and the gate refuses
+  (``membership_mismatch``) until a later-dated match exists or a newer vintage is loaded. A
+  mismatch dated before the last match, a mismatch against another vintage and ``fetch_failed``
+  rows never close the gate.
+
 The gate applies to a real run only: a wall-clock ``now`` reading the *latest* ``db`` vintage
 (:func:`gate_applies`). It is skipped for fixtures, for a pinned ``db:<id>`` and when a caller
 injects ``now`` (replays and tests), so evidence runs are never blocked. Nothing here reads the
@@ -59,6 +66,7 @@ CODE_UNAVAILABLE = "membership_unavailable"
 CODE_STALE = "membership_stale"
 CODE_LAG = "membership_lag"
 CODE_FUTURE = "membership_future_match"
+CODE_MISMATCH = "membership_mismatch"
 CODE_CONFIG = "membership_gate_config"
 
 Level = Literal["pass", "warn", "refuse"]
@@ -142,7 +150,8 @@ def decide_gate(
     ``max_verify_age=None`` reads :func:`max_verify_age_days`. A match whose instant, or whose
     attested date, lies more than :data:`FUTURE_TOLERANCE_DAYS` day after ``asof`` refuses
     (``membership_future_match``): the gate runs on the wall clock, so such a row is a defect, not
-    a replay. The code is the first refusal found (future, stale, lag); ``reasons`` lists all that
+    a replay. A newest holdings check that is a ``mismatch`` refuses too (``membership_mismatch``).
+    The code is the first refusal found (future, mismatch, stale, lag); ``reasons`` lists all that
     fired.
     """
     day = as_date(asof)
@@ -163,6 +172,20 @@ def decide_gate(
                 f"the newest SPDR SPY holdings match of the S&P 500 list is dated {ahead} days "
                 f"after {day} (allowed: {FUTURE_TOLERANCE_DAYS}); a match from the future "
                 "cannot be trusted; inspect universe.checks and the system clock",
+            )
+        )
+    if vintage.latest_check == "mismatch":
+        check = "" if vintage.latest_check_id is None else f" (check {vintage.latest_check_id})"
+        refuse.append(
+            (
+                CODE_MISMATCH,
+                f"the newest comparison with the SPDR SPY holdings{check}, as of "
+                f"{vintage.latest_check_as_of}, found that the S&P 500 list differs from them, "
+                "and no later holdings file has matched since; run `ggt db membership weekly` "
+                "(or `ggt db membership proposal --id N --out FILE` for the stored proposal), "
+                "confirm the changes against the S&P DJI press release, then load them with "
+                "`ggt db load-sp500 --from-events FILE --commit`. The gate reopens when a "
+                "later holdings file matches or a newer vintage is loaded",
             )
         )
     if match_age is None:

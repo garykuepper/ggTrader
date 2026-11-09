@@ -16,6 +16,7 @@ from ggTrader.data.membership import DbMembershipSource, MembershipVintage
 from ggTrader.data.membership_gate import (
     CODE_FUTURE,
     CODE_LAG,
+    CODE_MISMATCH,
     CODE_STALE,
     LAG_REFUSE_DAYS,
     LAG_WARN_DAYS,
@@ -357,3 +358,73 @@ def test_the_vintage_dataclass_defaults_keep_old_callers_working():
         NOW, NOW,
     )  # fmt: skip
     assert v.matched_at is None and v.known_through is None
+
+
+# --------------------------------------------------------------------------- a known mismatch
+
+
+def _checked(outcome: str | None, as_of_days_ago: int = 0, check_id: int | None = 12):
+    base = _vintage(match_days_ago=0, lag_days=0)
+    if outcome is None:
+        return base
+    return replace(
+        base,
+        latest_check=outcome,
+        latest_check_as_of=ASOF - timedelta(days=as_of_days_ago),
+        latest_check_id=check_id,
+    )
+
+
+@pytest.mark.parametrize(
+    ("outcome", "level", "code"),
+    [
+        (None, "pass", None),  # no holdings check recorded beyond the match itself
+        ("matched", "pass", None),  # a match is the newest: open
+        ("mismatch", "refuse", CODE_MISMATCH),  # a match, then a newer mismatch: closed
+    ],
+)
+def test_the_newest_holdings_check_decides_a_match_then_a_mismatch_closes_the_gate(
+    outcome, level, code
+):
+    decision = decide_gate(_checked(outcome), ASOF, max_verify_age=45)
+    assert (decision.level, decision.code) == (level, code)
+
+
+def test_a_mismatch_refusal_names_the_check_and_the_human_steps():
+    decision = decide_gate(_checked("mismatch", as_of_days_ago=3), ASOF, max_verify_age=45)
+    text = decision.message
+    assert "check 12" in text and "2026-11-05" in text
+    for needle in ("membership weekly", "membership proposal", "load-sp500", "--commit"):
+        assert needle in text
+    assert decision.age_since_match_days == 0  # the match itself is fresh: only the mismatch closes
+
+
+def test_a_mismatch_with_no_match_at_all_reports_both_reasons_and_mismatch_leads():
+    never = replace(_vintage(match_days_ago=None, lag_days=159), latest_check="mismatch")
+    decision = decide_gate(never, ASOF, max_verify_age=45)
+    assert decision.code == CODE_MISMATCH and len(decision.reasons) >= 2
+
+
+def test_the_status_command_prints_the_newest_comparison(monkeypatch, capsys):
+    from ggTrader.cli import cmd_membership
+    from ggTrader.data.membership import DbMembershipSource
+    from tests.data.membership_fakes import FakeMembershipStore, synthetic_history
+
+    store = FakeMembershipStore()
+    store.add(
+        synthetic_history(3),
+        matched_at=_at(ASOF),
+        matched_as_of=ASOF,
+        latest_check="mismatch",
+        latest_check_as_of=ASOF,
+        latest_check_id=9,
+    )
+    monkeypatch.setattr(
+        cmd_membership, "DbMembershipSource", lambda which: DbMembershipSource(which, store=store)
+    )
+    monkeypatch.setattr(cmd_membership, "recent_checks", lambda *a, **k: [])
+    args = type("A", (), {"asof": ASOF})()
+    assert cmd_membership.run_status(args) == 0
+    out = capsys.readouterr().out
+    assert "newest comparison  mismatch as of 2026-11-08 (check 9)" in out
+    assert "REFUSE" in out and "membership weekly" in out

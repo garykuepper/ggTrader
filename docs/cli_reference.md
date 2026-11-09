@@ -383,8 +383,12 @@ to 10 once the weekly job exists). A list that was never matched is refused outr
 day may trail `known_through` (the newest matched holdings as-of date, never earlier than the
 vintage's last change date) by under **90 days** (warn from 90) and under **180 days** (refuse
 from 180). A quiet spell without index changes therefore raises no alarm while the matches keep
-coming; a dead pipeline does. A `check-upstream` result extends neither clock. A refusal raises
-`SignalGateError` with code `membership_stale` (including "never matched"), `membership_lag`,
+coming; a dead pipeline does. A `check-upstream` result extends neither clock. **Known mismatch:** if the newest holdings check of the latest vintage (by the holdings' as-of date, then
+check time, among `matched` and `mismatch` rows for that vintage) is a `mismatch`, the gate refuses
+with `membership_mismatch` until a later-dated match exists or a newer vintage is loaded; a mismatch
+dated before the last match, a mismatch against another vintage and `fetch_failed` rows never close
+it. `ggt db membership status` prints the newest comparison. A refusal raises
+`SignalGateError` with code `membership_stale` (including "never matched"), `membership_lag`, `membership_future_match`, `membership_mismatch`,
 `membership_unavailable` (database unreadable, table empty or the vintage fails its integrity
 check) or `membership_gate_config`, sends the usual "Signal gate - no orders placed" message, and
 stops the run before any order is possible. Each message names its fix

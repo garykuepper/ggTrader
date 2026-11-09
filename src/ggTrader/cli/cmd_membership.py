@@ -666,6 +666,13 @@ def run_status(args: argparse.Namespace) -> int:
     else:
         print(f"  last matched check {v.matched_at.isoformat()}")
         print(f"  known through      {v.known_through}")
+    if v.latest_check is None:
+        print("  newest comparison  none (no matched or mismatch holdings check for this load)")
+    else:
+        print(
+            f"  newest comparison  {v.latest_check} as of {v.latest_check_as_of} "
+            f"(check {v.latest_check_id})"
+        )
     try:
         checks = recent_checks(v.index_name, 3)
     except Exception as exc:  # noqa: BLE001 - informational only

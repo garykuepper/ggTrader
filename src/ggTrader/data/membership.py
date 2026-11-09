@@ -126,6 +126,14 @@ class MembershipVintage:
     #: The latest date through which the list is attested: the newest holdings as-of date of a
     #: ``matched`` check, never earlier than ``coverage_end``; ``None`` when never matched.
     known_through: date | None = None
+    #: Outcome (``matched`` or ``mismatch``) of the newest holdings check of this list, ordered by
+    #: the holdings' as-of date and then the check time; ``None`` when there is none. A
+    #: ``mismatch`` newest of all closes the live gate (``membership_gate``, code
+    #: ``membership_mismatch``). ``fetch_failed`` rows and mismatches against another vintage
+    #: never count.
+    latest_check: str | None = None
+    latest_check_as_of: date | None = None
+    latest_check_id: int | None = None
 
     def provenance(self, asof: date | None = None) -> dict[str, Any]:
         """The provenance fields of spec 3.5: ``membership_sha256`` and the ``membership`` block.
@@ -459,6 +467,10 @@ class StoredVintage:
     verified_at: datetime
     matched_at: datetime | None = None
     matched_as_of: date | None = None
+    #: The newest ``matched``/``mismatch`` holdings check of this load: (outcome, as-of, check id).
+    latest_check: str | None = None
+    latest_check_as_of: date | None = None
+    latest_check_id: int | None = None
 
 
 class MembershipStore(Protocol):
@@ -482,6 +494,16 @@ _MATCHED_SQL = (
     "SELECT max(checked_at), max((detail->>'holdings_as_of')::date) FROM universe.checks "
     "WHERE index_name = %s AND matched_load_id = %s AND outcome = 'matched' "
     "AND detail->>'holdings_as_of' IS NOT NULL"
+)
+#: The newest holdings check of one load by the holdings' as-of date, then check time: a
+#: ``matched`` row for this load, or a ``mismatch`` row whose ``detail.compared_load_id`` is this
+#: load (text comparison, so a malformed detail cannot raise). ``fetch_failed`` never counts.
+_LATEST_CHECK_SQL = (
+    "SELECT outcome, (detail->>'holdings_as_of')::date, check_id FROM universe.checks "
+    "WHERE index_name = %(index)s AND detail->>'holdings_as_of' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' "
+    "AND ((outcome = 'matched' AND matched_load_id = %(load)s) "
+    "OR (outcome = 'mismatch' AND detail->>'compared_load_id' = %(load_text)s)) "
+    "ORDER BY (detail->>'holdings_as_of')::date DESC, checked_at DESC, check_id DESC LIMIT 1"
 )
 
 
@@ -536,6 +558,11 @@ class PgMembershipStore:
                     verified = cur.fetchone()[0]
                     cur.execute(_MATCHED_SQL, (index_name, load_id))
                     matched_at, matched_as_of = cur.fetchone()
+                    cur.execute(
+                        _LATEST_CHECK_SQL,
+                        {"index": index_name, "load": load_id, "load_text": str(load_id)},
+                    )
+                    newest = cur.fetchone() or (None, None, None)
             finally:
                 conn.close()
         except LookupError as exc:
@@ -547,7 +574,13 @@ class PgMembershipStore:
                 f"({type(exc).__name__}: {redact(first_line, url)})"
             ) from None
         return StoredVintage(
-            data.load, data.dates, data.intervals, verified, matched_at, matched_as_of
+            data.load,
+            data.dates,
+            data.intervals,
+            verified,
+            matched_at,
+            matched_as_of,
+            *newest,
         )
 
 
@@ -614,6 +647,9 @@ class DbMembershipSource(_SnapshotSource):
                 known_through=(
                     None if stored.matched_as_of is None else max(days[-1], stored.matched_as_of)
                 ),
+                latest_check=stored.latest_check,
+                latest_check_as_of=stored.latest_check_as_of,
+                latest_check_id=stored.latest_check_id,
             ),
         )
 
