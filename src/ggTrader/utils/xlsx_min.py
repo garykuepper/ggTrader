@@ -27,6 +27,8 @@ _SHARED_STRINGS = "xl/sharedStrings.xml"
 _FALLBACK_SHEET = "xl/worksheets/sheet1.xml"
 _REL_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 _CELL_REF = re.compile(r"^([A-Za-z]{1,3})(\d+)$")
+_XML_DECL_ENCODING = re.compile(rb"^\s*<\?xml[^>]*?encoding\s*=\s*[\"']([^\"']+)[\"']", re.I)
+_UTF8_BOM = b"\xef\xbb\xbf"
 
 
 class XlsxError(ValueError):
@@ -55,7 +57,25 @@ def _read_part(archive: zipfile.ZipFile, name: str) -> bytes:
     return data
 
 
+def _require_utf8(data: bytes, name: str) -> None:
+    """Refuse any XML part that is not UTF-8, so the byte scan below sees what the parser sees.
+
+    A UTF-16/32 or EBCDIC part hides ``<!DOCTYPE`` and ``<!ENTITY`` from an ASCII byte search yet
+    is decoded by the parser, so only plain UTF-8 (with or without a BOM) is accepted.
+    """
+    body = data[len(_UTF8_BOM) :] if data.startswith(_UTF8_BOM) else data
+    stripped = body.lstrip(b" \t\r\n")
+    if not stripped.startswith(b"<") or stripped[1:2] == b"\x00" or b"\x00" in stripped[:4]:
+        raise XlsxError(
+            f"part {name!r} is not UTF-8 XML (UTF-16/32 and other encodings are refused)"
+        )
+    declared = _XML_DECL_ENCODING.match(stripped)
+    if declared and declared.group(1).decode("latin-1").strip().lower() not in {"utf-8", "utf8"}:
+        raise XlsxError(f"part {name!r} declares a non-UTF-8 encoding, which is refused")
+
+
 def _parse_xml(data: bytes, name: str) -> ElementTree.Element:
+    _require_utf8(data, name)
     head = data[:4096].lower()
     if b"<!doctype" in head or b"<!entity" in data.lower():
         raise XlsxError(f"part {name!r} declares a DOCTYPE or entity, which is refused")
@@ -138,9 +158,11 @@ def read_first_sheet(data: bytes) -> list[list[str]]:
         width = max(cells, default=-1) + 1
         row_number = row.get("r")
         if row_number and row_number.isdigit():
-            # A skipped row number means blank rows; keep positions stable for callers.
-            while len(rows) < int(row_number) - 1:
-                rows.append([])
+            # A skipped row number means blank rows; keep positions stable for callers. The
+            # padding is bounded by the same cap, so one huge row number cannot allocate millions.
+            if int(row_number) > MAX_ROWS:
+                raise XlsxError(f"row number {row_number} is over the {MAX_ROWS} row cap")
+            rows.extend([] for _ in range(int(row_number) - 1 - len(rows)))
         rows.append([cells.get(i, "") for i in range(width)])
     return rows
 

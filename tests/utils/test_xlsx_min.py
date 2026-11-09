@@ -77,3 +77,47 @@ def test_reader_refuses_malformed_xml_and_a_bad_shared_string_pointer():
         archive.writestr("xl/worksheets/sheet1.xml", sheet)
     with pytest.raises(XlsxError, match="missing shared string"):
         read_first_sheet(buffer.getvalue())
+
+
+def _sheet_zip(sheet_bytes: bytes) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("xl/worksheets/sheet1.xml", sheet_bytes)
+    return buffer.getvalue()
+
+
+_MAIN = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+
+
+def test_reader_refuses_one_huge_row_number_before_padding_to_it():
+    sheet = f'<worksheet {_MAIN}><sheetData><row r="300000"/></sheetData></worksheet>'
+    with pytest.raises(XlsxError, match="row cap"):
+        read_first_sheet(_sheet_zip(sheet.encode()))
+
+
+def test_reader_accepts_a_row_number_at_the_cap_and_refuses_one_past_it():
+    def sheet_with(number: int) -> bytes:
+        text = f'<worksheet {_MAIN}><sheetData><row r="{number}"/></sheetData></worksheet>'
+        return _sheet_zip(text.encode())
+
+    assert len(read_first_sheet(sheet_with(100_000))) == 100_000
+    with pytest.raises(XlsxError, match="row cap"):
+        read_first_sheet(sheet_with(100_001))
+
+
+@pytest.mark.parametrize("codec", ["utf-16", "utf-16-le", "utf-16-be", "utf-32"])
+def test_reader_refuses_a_utf16_part_that_declares_an_entity(codec):
+    text = (
+        '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE x [<!ENTITY a "aaaa">]>'
+        f"<worksheet {_MAIN}><sheetData/></worksheet>"
+    )
+    with pytest.raises(XlsxError, match="UTF-8"):
+        read_first_sheet(_sheet_zip(text.encode(codec)))
+
+
+def test_reader_refuses_a_non_utf8_declaration_and_still_reads_a_bom_marked_utf8_part():
+    declared = f'<?xml version="1.0" encoding="ISO-8859-1"?><worksheet {_MAIN}/>'
+    with pytest.raises(XlsxError, match="non-UTF-8"):
+        read_first_sheet(_sheet_zip(declared.encode()))
+    ok = f'<?xml version="1.0" encoding="UTF-8"?><worksheet {_MAIN}><sheetData/></worksheet>'
+    assert read_first_sheet(_sheet_zip(b"\xef\xbb\xbf" + ok.encode())) == []
