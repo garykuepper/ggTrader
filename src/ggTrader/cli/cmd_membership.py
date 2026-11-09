@@ -102,6 +102,12 @@ def register_membership_parsers(db_subs: argparse._SubParsersAction) -> None:
         help="--from-events: folder with the saved evidence pages (found by the sha256 each "
         "event cites); stored gzipped in universe.load_evidence",
     )
+    load.add_argument(
+        "--allow-count-change",
+        action="store_true",
+        help="--from-events: accept a date whose additions and removals differ by more than one "
+        "(by default a swing of two or more names on one date is refused as a likely missing row)",
+    )
     load.add_argument("--source", choices=FILE_SOURCES, default=None, help="--from-file only")
     load.add_argument("--source-url", default=None, help="Where the bytes came from")
     load.add_argument(
@@ -348,6 +354,7 @@ def run_load_from_events(args: argparse.Namespace) -> int:
             note=args.note,
             source_url=args.source_url,
             expect_sha256=args.expect_sha256,
+            allow_count_change=args.allow_count_change,
         )
         _print_events_plan(prepared)
         if prepared.problems:

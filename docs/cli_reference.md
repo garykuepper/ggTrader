@@ -730,6 +730,7 @@ The only registered fixture is `sp500_v1_2026-06-02`, the existing file
 |---|---|
 | `--from-file PATH` | CSV or CSV.GZ (`date,tickers`); the upstream fetch (`--from-upstream`) is not built. Exactly one of `--from-file` and `--from-events` is required. |
 | `--from-events FILE` | The curated path (slice M5b, below): an events file applied to the latest vintage. |
+| `--allow-count-change` | With `--from-events`: accept a date whose additions and removals differ by more than one name. By default such a swing (two or more) is refused as a likely missing or doubled row; a swing of one (a spin-off added the day it completes) loads without it. |
 | `--evidence-dir DIR` | With `--from-events`: the folder with the saved press-release pages, found by the sha256 each event cites. |
 | `--retrieved-at ISO` | Required with `--from-file` (when the bytes were fetched; needs a zone, `...Z`); `--from-events` defaults to now. |
 | `--source` | `--from-file` only: `fixture-import` (default) or `fja05680/sp500`; an events load is always `curated`. `--source-url`, `--upstream-commit`, `--upstream-etag`, `--note` are stored with the load. |

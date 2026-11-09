@@ -199,7 +199,9 @@ def parse_events_csv(raw: bytes) -> list[Event]:
     return events
 
 
-def plan_events(parent: History, events: list[Event], *, today: date) -> EventsPlan:
+def plan_events(
+    parent: History, events: list[Event], *, today: date, allow_count_change: bool = False
+) -> EventsPlan:
     """Apply the events to the parent's last snapshot and return the generated history.
 
     Every effective date of an add/remove event becomes a snapshot row (carry-forward, as in the
@@ -208,7 +210,10 @@ def plan_events(parent: History, events: list[Event], *, today: date) -> EventsP
     the future; a removal that is not a present member; an addition that is already one; a name
     added and removed on one date; a member count outside ``MIN_MEMBERS``..``MAX_MEMBERS``; no
     add/remove at all, or a result equal to the parent; a rename whose old name was not a member
-    before and whose new name is not one on its date.
+    before and whose new name is not one on its date. A date whose additions and removals differ
+    by more than one is also a problem unless ``allow_count_change`` (``--allow-count-change``):
+    the index changes size by at most one name at a time (a spin-off adds one), so a bigger swing
+    means a missing or doubled row, and a human must say it is intended.
     """
     plan = EventsPlan(history=dict(parent))
     if not parent:
@@ -242,6 +247,12 @@ def plan_events(parent: History, events: list[Event], *, today: date) -> EventsP
         for ticker in adds:
             if ticker in state:
                 plan.problems.append(f"{day}: addition of {ticker}, already a member")
+        if abs(len(adds) - len(removes)) > 1 and not allow_count_change:
+            plan.problems.append(
+                f"{day}: {len(adds)} additions against {len(removes)} removals changes the count "
+                f"by {len(adds) - len(removes):+d}; check for a missing or doubled row, or pass "
+                "--allow-count-change if the index really changed size"
+            )
         state = (state - set(removes)) | set(adds)
         if not MIN_MEMBERS <= len(state) <= MAX_MEMBERS:
             plan.problems.append(
@@ -343,6 +354,7 @@ def prepare_events_load(
     note: str | None = None,
     source_url: str | None = None,
     expect_sha256: str | None = None,
+    allow_count_change: bool = False,
     index_name: str = INDEX_NAME,
 ) -> PreparedEventsLoad:
     """Read the parent vintage and build the curated load; nothing is written here.
@@ -370,7 +382,12 @@ def prepare_events_load(
             parent_history = read_vintage(cur, latest["load_id"], index_name).history()
     finally:
         conn.rollback()
-    plan = plan_events(parent_history, events, today=today or datetime.now(timezone.utc).date())
+    plan = plan_events(
+        parent_history,
+        events,
+        today=today or datetime.now(timezone.utc).date(),
+        allow_count_change=allow_count_change,
+    )
     files, evidence_problems, warnings = collect_evidence(
         events_raw, events_path.name, events, evidence_dir
     )

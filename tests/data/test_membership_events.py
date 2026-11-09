@@ -266,3 +266,31 @@ def test_events_mode_refuses_upstream_options_and_force_before_opening_the_datab
     assert "REFUSED" in capsys.readouterr().err
     needs_time = _load_args("--from-file", "f.csv")
     assert cmd_membership.run_load_sp500(needs_time) == 2  # --retrieved-at is required here
+
+
+def test_a_date_that_changes_the_count_by_more_than_one_is_refused_without_the_flag() -> None:
+    rows = [_row("2026-09-21", "add", "AAA1"), _row("2026-09-21", "add", "AAA2")]
+    plan = _plan(rows)
+    assert any(
+        "changes the count by +2" in p and "--allow-count-change" in p for p in plan.problems
+    )
+    allowed = plan_events(
+        _parent(), parse_events_csv(_csv(*rows)), today=TODAY, allow_count_change=True
+    )
+    assert allowed.problems == [] and allowed.days[0].members == 505
+
+
+def test_a_swing_of_one_name_is_allowed_the_spin_off_and_the_replacement_load_as_before() -> None:
+    spin_off = _plan([_row("2026-10-01", "add", "VYLR")])
+    assert spin_off.problems == [] and spin_off.days[0].members == 504
+    assert _plan(_gap_rows()).problems == []  # the real gap: swings of 0, +1, -1 and 0
+
+
+def test_removals_outnumbering_additions_by_two_are_refused_too() -> None:
+    plan = _plan([_row("2026-09-21", "remove", "X0010"), _row("2026-09-21", "remove", "X0011")])
+    assert any("changes the count by -2" in p for p in plan.problems)
+
+
+def test_the_flag_is_wired_from_the_command_line() -> None:
+    assert _load_args("--from-events", "e.csv").allow_count_change is False
+    assert _load_args("--from-events", "e.csv", "--allow-count-change").allow_count_change is True
