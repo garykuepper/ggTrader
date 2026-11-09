@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 (membership: open checks closed with the official releases)
+
+- New evidence note `research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md`: the five open checks of spec Appendix C6 are answered from the S&P DJI releases and two company releases; vintage 3 needs no change. Found on the way: 13 of the 503 current members have no or stale bars in the `ohlcv` table (not written to; a backfill needs a decision). No code changed.
+
 ## 2026-11-09 (weekly message: fit the limit without breaking the HTML; press source review round 5, Argon)
 
 - **The weekly Telegram message is cut at a line end and its open `<b>`/`<code>` tags are closed.** A blind slice at 3,460 characters could split a tag and make Telegram refuse the whole alert (HTTP 400, `--notify` exit 1). At most 8 findings per severity are quoted (300 characters each, then "... and N more"), so the proposal commands at the end are no longer the part that gets cut. The match was always recorded first; this only protects the alert.

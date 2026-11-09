@@ -62,9 +62,11 @@ Open, each owner-gated or unverified:
 2. The second free source is the S&P DJI press releases themselves (PR Newswire), the official
    dates. A proposal now carries the release date and clears a row's flag when it agrees with
    another source; a human still saves the release page as evidence before any `load-sp500 --commit`.
-3. The spec's open checks (Appendix C6) remain: any index change in the gap beyond the
-   four reviewed, the exact effective dates of two 2026 renames, and whether the price
-   table holds old bars under the reused ticker `P`.
+3. The spec's open checks (Appendix C6) are closed (2026-11-09, see the
+   [evidence note](../research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md)).
+   They found one data gap: 13 current members have no or stale bars in the price table
+   (BE, FERG, HONA, RDDT, SKYD, VMRK, VYLR; ECHO and FLEX; MRVL, OKTA, P, TWLO). A backfill is a
+   database write and needs the owner's decision.
 
 ## Standing research rules
 
