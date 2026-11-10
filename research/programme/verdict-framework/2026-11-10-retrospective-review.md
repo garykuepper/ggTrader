@@ -25,7 +25,15 @@ provenance only; they are not new annotations or judgments.
 | Prompt-kit review with an explicit verdict section (2026-11-05) | 1 | Excluded as a review-only status; source remains linked |
 | Engine synthesis and benchmark-framework documents screened after audit | 3 | Excluded with documented scope reasons |
 | Additional text-search document candidates | 68 | Excluded with source-specific reasons after review: summaries, methods, status or duplicate material |
-| **Total inventory records** | **188** | **0 pending; 116 excluded; 72 reviewed/included** |
+| Archive text-search candidates | 6 | Excluded: 4 engineering/operations documents and 2 historical summaries of existing decisions |
+| Coverage-review candidate scopes | 19 | 18 reviewed/included; pipeline discovery parent excluded in favor of run-level records |
+| Lens 8 crypto scopes | 4 | May recalibration included; snapshot grouping, tournament component and March pipeline parent excluded in favor of scoped records |
+| Additional stock specification scopes | 7 | Reviewed/included as standalone and blend decisions |
+| Cross-asset forward shadow scope | 1 | Included as a separate UNRESOLVED stage; rule authority and qualifying observations remain unresolved |
+| March pipeline run identifiers | 29 | 27 reviewed/included as reported attempts; 2 excluded as example/wiring |
+| Further MidCap and possible archived sizing scopes | 4 | 2 MidCap stages included; blend mapping and possible 10% trial remain pending |
+| Dated Kraken snapshot scopes | 3 | Included; one original report unavailable, two external reports hash-recorded |
+| **Total inventory records** | **261** | **2 pending; 128 excluded; 131 reviewed/included** |
 
 One Lens-2 STATUS row, live parity, was separately reviewed as an operational status instead of being excluded; it is not an edge test.
 
@@ -100,7 +108,7 @@ inventory/register checks. An independent Sol reviewer checked all 114 copied au
 
 Completion requires zero unaccounted discovered verdict-bearing items, all included records
 reviewed, every exclusion supported by an explicit reason and source, and successful register
-validation. All 188 identified items have been reviewed or explicitly excluded. The text search and index reconciliation remain bounded and cannot establish that every unindexed or differently worded historical verdict has been found, so discovery remains INCOMPLETE. Current state: **188 identified inventory records, 0 pending, 116 explicit exclusions, 72 included/reviewed**. See the [replica batch](2026-11-10-review-replica.md), [stock batch](2026-11-10-review-stock.md), [remaining stock batch](2026-11-10-review-remaining.md), [defense batch](2026-11-10-review-defense.md) and [crypto batch](2026-11-10-review-crypto.md), [stock allocation batch](2026-11-10-review-more-stock.md) [other allocation batch](2026-11-10-review-more-allocation.md), [ensemble](2026-11-10-review-more-ensemble.md), [strategy](2026-11-10-review-more-strategy.md) [additional studies](2026-11-10-review-more-studies.md), and [final inventory batch](2026-11-10-review-final-inventory.md); current JSON is authoritative for counts.
+validation. The original 188 identified items have been reviewed or explicitly excluded; a subsequent archive scan identified six documents; four engineering or operations documents and two summaries of existing decisions are excluded with reasons. The text search and index reconciliation remain bounded and cannot establish that every unindexed or differently worded historical verdict has been found, so discovery remains INCOMPLETE. Current state: **261 identified inventory records, 2 pending, 128 explicit exclusions, 131 included/reviewed**. See the [replica batch](2026-11-10-review-replica.md), [stock batch](2026-11-10-review-stock.md), [remaining stock batch](2026-11-10-review-remaining.md), [defense batch](2026-11-10-review-defense.md) and [crypto batch](2026-11-10-review-crypto.md), [stock allocation batch](2026-11-10-review-more-stock.md) [other allocation batch](2026-11-10-review-more-allocation.md), [ensemble](2026-11-10-review-more-ensemble.md), [strategy](2026-11-10-review-more-strategy.md) [additional studies](2026-11-10-review-more-studies.md), and [final inventory batch](2026-11-10-review-final-inventory.md); current JSON is authoritative for counts.
 
 ## Limits
 
@@ -109,3 +117,23 @@ artifact was changed. This inventory does not claim the lens audit covered post-
 not treat the audit's 114 records as independent tests. Reviewed records carry scoped evidence and action annotations without authorizing new progression. The 2026-11-08 and 2026-11-09 evidence notes add no new
 candidate verdict; the prompt-kit review is excluded as review-only; later or unindexed work
 remains subject to discovery and append-only inventory additions.
+
+The archive scan reviewed two historical summary documents against the register and original-source links. Their repeated verdicts remain governed by the existing study records; engineering and operational status items are not new candidate verdicts. Five linked research documents were not directly cited by the register: event-timing source/implementation/amendment, paper-freeze readiness, and accruals feasibility. These are source, operational or feasibility material, not newly completed strategy verdicts; this scan was not an exhaustive source audit.
+
+A subsequent independent coverage review identified potentially collapsed candidate specifications, a historical pipeline experiment, and status exclusions containing comparative decisions. The initially identified candidate scopes were recorded as pending, not treated as validated independent verdicts; the pipeline entry may require further subdivision. Original family rows and existing decisions remain unchanged pending source verification.
+
+The allocation/crypto and stock source audits identified four additional Lens 8 crypto records and seven separate PEAD, congressional and insider scopes; the latter have since been reviewed and annotated. Source-backed corrections were appended to the core/SPY, IBIT, funding-carry and A23 revisions. The dual and cross-sectional momentum replay annotations now distinguish arithmetic-return MDE from the CAGR gate; the combined dual record is unresolved until its historical decisions are separately represented. Existing revisions remain visible.
+
+Opus cross-family review identified inconsistent action rationale across batches and uncertainty about French-screen registration, among other questions. Those require record-by-record adjudication; no blanket label rewrite has been made. Replica closure, stop, approval and shadow-stage source corrections are appended; a separate shadow scope is pending. MidCap STATUS exclusion retains its audit history with a correction pointing to the pending test scope.
+
+A subsequent action-consistency review identified documented closure decisions that had been recorded as HOLD. Ten bounded historical specifications now have appended CLOSE annotations with their original sources; evidence and protocol validity remain separate. The momentum screen retains its unresolved registration-timing qualification and the shadow HOLD explicitly concerns unresolved scope and observation records. These changes authorize no continuation, trading or production change. The other pending scopes and remaining action records still require source-specific review.
+
+Source reviews added individual stock-screen hypotheses, standalone and blend decisions, historical equity configurations, and twelve March pipeline comparisons. Family/study summaries remain traceable and must not be counted as additional independent tests. The fifteen remaining March attempts are now included as source-reported outcomes; matching reported results do not prove independent replications. Original Holm families remain unchanged.
+
+A further Opus review identified missing family relationships, summary double-counting risk, and historical pipeline and MidCap scope limitations. Newly added records now link to their family where available; family summaries are labeled in the register and included totals are not independent-test counts. Four further MidCap/sizing scopes are pending. The March dry runs with reported outcomes are recorded as attempts; a dry-run label alone is not grounds for exclusion.
+
+The March pipeline source review recorded all fifteen additional source-reported attempts separately, with no formal verdict invented; windows and execution identity remain unresolved. The excluded Phase-3B wiring sample also has a reported outcome, now recorded in its exclusion reason.
+
+The crypto and MidCap source review added three dated Kraken snapshots, the May recalibration, and separate MidCap standalone and breaker-change records. The grouped snapshot and tournament selection-score records are excluded as grouping/component material. Two original Kraken reports and the May report were inspected outside this worktree and their hashes recorded; they are not packaged in this checkout. Weight-specific MidCap outcomes and the existence of a 10% equity trial remain pending.
+
+A cross-family source review identified incompatible three-month and 12-month shadow rules, plus missing contemporaneous qualification evidence. The shadow is now separately recorded as UNRESOLVED/HOLD; an earlier parent description of observations is corrected by an appended revision. The later B1 stock standard has not been applied retroactively.

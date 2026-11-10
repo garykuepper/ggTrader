@@ -456,3 +456,44 @@ def test_zero_pending_does_not_claim_complete_discovery_without_evidence(records
     inventory["coverage_evidence"] = "source.md"
     assert register.validate(inventory, annotations, tmp_path) == []
     assert "REVIEWED" in register.render(inventory, annotations)
+
+
+def test_parent_links_are_checked_and_summaries_are_labeled(records, tmp_path):
+    inventory, annotations = records
+    child = annotations["verdicts"][0]
+    child["parent_verdict_id"] = "missing"
+    assert register.validate(inventory, annotations, tmp_path)
+    parent = copy.deepcopy(child)
+    parent.update(verdict_id="parent", parent_verdict_id=None)
+    parent["revisions"][0]["annotation_revision_id"] = "parent-revision"
+    parent["revisions"][0]["record_role"] = "summary"
+    annotations["verdicts"].append(parent)
+    child["parent_verdict_id"] = "parent"
+    assert not register.validate(inventory, annotations, tmp_path)
+    result = register.render(inventory, annotations)
+    assert "Summary, not an independent test" in result
+    assert "Parent: parent" in result
+
+
+def test_summary_role_survives_later_revision(records):
+    inventory, annotations = records
+    revisions = annotations["verdicts"][0]["revisions"]
+    revisions[0]["record_role"] = "summary"
+    later = dict(revisions[0], annotation_revision_id="later", date="2026-02-01")
+    del later["record_role"]
+    revisions.append(later)
+    assert "Summary, not an independent test" in register.render(inventory, annotations)
+
+
+def test_parent_cycles_and_cross_study_relationships_fail(records, tmp_path):
+    inventory, annotations = records
+    first = annotations["verdicts"][0]
+    second = copy.deepcopy(first)
+    second.update(verdict_id="v2", parent_verdict_id="v1")
+    second["revisions"][0]["annotation_revision_id"] = "r2"
+    annotations["verdicts"].append(second)
+    first["parent_verdict_id"] = "v2"
+    assert register.validate(inventory, annotations, tmp_path)
+    del first["parent_verdict_id"]
+    second["study_id"] = "other-study"
+    assert register.validate(inventory, annotations, tmp_path)

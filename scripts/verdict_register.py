@@ -181,6 +181,27 @@ def validate(inventory: dict, annotations: dict, root: Path) -> list[str]:
                 errors.append(f"{rev_id}: invalid evidence label")
             if not isinstance(revision.get("action"), str) or revision["action"] not in ACTIONS:
                 errors.append(f"{rev_id}: invalid action label")
+    verdict_by_id = {
+        v["verdict_id"]: v
+        for v in verdicts
+        if isinstance(v, dict) and isinstance(v.get("verdict_id"), str)
+    }
+    for ident, verdict in verdict_by_id.items():
+        parent = verdict.get("parent_verdict_id")
+        if parent is None:
+            continue
+        if not isinstance(parent, str) or parent not in verdict_by_id:
+            errors.append(f"{ident}: invalid parent verdict")
+            continue
+        if verdict.get("study_id") != verdict_by_id[parent].get("study_id"):
+            errors.append(f"{ident}: parent belongs to a different study")
+        visited = {ident}
+        while isinstance(parent, str) and parent in verdict_by_id:
+            if parent in visited:
+                errors.append(f"{ident}: parent cycle")
+                break
+            visited.add(parent)
+            parent = verdict_by_id[parent].get("parent_verdict_id")
     for ident, row in by_id.items():
         if row.get("disposition") == "included" and ident not in covered:
             errors.append(f"{ident}: included inventory record has no verdict")
@@ -285,7 +306,9 @@ def render(inventory: dict, annotations: dict) -> str:
         + "; ".join(f"{key}: {value}" for key, value in counts.items()),
         "",
         "Original study records remain authoritative. An empty inventory does not establish "
-        "coverage. Pending rows transcribe discovery sources and have not been independently "
+        "coverage. Included counts contain summary records as well as individual records; "
+        "they are not a count of independent tests. Pending rows transcribe discovery sources "
+        "and have not been independently "
         "reviewed against the original study.",
         "",
         "| Study / specification / stage | Original verdict | Protocol | "
@@ -303,9 +326,13 @@ def render(inventory: dict, annotations: dict) -> str:
         ]
         chronological = sorted(verdict["revisions"], key=lambda r: r["date"])
         current_protocol = verdict["protocol_result"]
+        current_role = None
         for revision in chronological:
             current_protocol = revision.get("protocol_result", current_protocol)
+            current_role = revision.get("record_role", current_role)
         label = " / ".join(cell(verdict[k]) for k in ("study_id", "specification_id", "stage_id"))
+        if current_role == "summary":
+            label += " (Summary, not an independent test)"
         anchor = revision_anchor(latest["annotation_revision_id"])
         lines.append(
             f"| {label} | {cell(verdict['original_verdict'])} | "
@@ -331,6 +358,7 @@ def render(inventory: dict, annotations: dict) -> str:
                 "",
                 f"Inventory: {verdict['inventory_id']}  ",
                 f"Initial protocol determination: {verdict['protocol_result']}  ",
+                f"Parent: {verdict.get('parent_verdict_id') or 'none'}  ",
                 f"Source: [original](../{quote(verdict['source'], safe='/')})",
                 "",
             ]

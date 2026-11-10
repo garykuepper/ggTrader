@@ -718,7 +718,7 @@
         "audit_verdict_type": "STATUS",
         "audit_classification": "inconclusive"
       },
-      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item. Correction: the Lens 2 STATUS classification does not establish absence of historical performance tests; the separate MidCap comparative record is included; individual stage mapping remains pending.",
       "title": "stocks midcap400 reversion",
       "original_audit_verdict": "Researching"
     },
@@ -1461,7 +1461,7 @@
         "audit_verdict_type": "STATUS",
         "audit_classification": "inconclusive"
       },
-      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item. Correction: the substantive bundle reversion is separately recorded as verdict-discovery-review-0e04b32e8b97b155.",
       "title": "crypto config tweaks reverted 2026 04 02",
       "original_audit_verdict": "reverted"
     },
@@ -1712,613 +1712,1209 @@
       "inventory_id": "discovery-md-7457dc94d4573a7b",
       "source": "research/README.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/README.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Index/navigation document; it points to the verdict register and introduces no independently tested hypothesis or result."
     },
     {
       "inventory_id": "discovery-md-b0f4ff463bf0254c",
       "source": "research/RESEARCH_INDEX.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/RESEARCH_INDEX.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Research index that summarizes and links existing studies; it is derivative and creates no new experimental verdict."
     },
     {
       "inventory_id": "discovery-md-5e1ebbcac3490f77",
       "source": "research/TEMPLATE-brief.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/TEMPLATE-brief.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Unfilled draft template explicitly says it is not registered; no candidate, frozen arms, or computed evidence exists."
     },
     {
       "inventory_id": "discovery-md-8798399a16b0a62d",
       "source": "research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Observational advisory review includes measured paper-versus-SPY performance and finds insufficient evidence; research/RESEARCH_INDEX.md classifies it as a read-only advisory review, not a candidate research verdict. Its empirical observations remain in its source."
     },
     {
       "inventory_id": "discovery-md-8f7e66cdfe659233",
       "source": "research/audits/event-timing/2026-10-21-event-timing-audit.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/event-timing/2026-10-21-event-timing-audit.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Registered event-data integrity audit brief, not a return test; it specifies questions/protocol before computation and cannot itself carry an empirical verdict."
     },
     {
       "inventory_id": "discovery-md-f85b5b8e62b87965",
       "source": "research/audits/event-timing/2026-10-23-event-timing-audit-decision.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/event-timing/2026-10-23-event-timing-audit-decision.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Decision resolves data/timestamp convention and feasibility only; it explicitly reports no OOS SPY comparison and no established improvement. Method/status decision, not return verdict."
     },
     {
       "inventory_id": "discovery-md-b57f052f22071c87",
       "source": "research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Engineering/method audit includes two real folds and an anchor A/B comparison, but aggregate OOS impact was not measured and original strategy verdicts remain unchanged. Not a separate candidate strategy verdict."
     },
     {
       "inventory_id": "discovery-md-d11a6d2856878401",
       "source": "research/audits/research-process/2026-11-01-research-process-audit.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/research-process/2026-11-01-research-process-audit.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Cross-study process audit synthesizes existing verdicts, limitations, and follow-ups; it states no verdict/classification changed. Duplicate review, not a new experiment."
     },
     {
       "inventory_id": "discovery-md-e7d2c96a85eab8d1",
       "source": "research/audits/root-cause-2026-11-04/README.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/README.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Folder guide and audit scope/reading order; no independent hypothesis or evidence."
     },
     {
       "inventory_id": "discovery-md-a71ed1918dd5510a",
       "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Intermediate trust-audit output, explicitly unreviewed; audits source reliability and does not test a return hypothesis."
     },
     {
       "inventory_id": "discovery-md-43013425d3545fb5",
       "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Interim checkpoint and proposed follow-up run list; status/progress record, not a completed test."
     },
     {
       "inventory_id": "discovery-md-c9beab08e1e7d310",
       "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Independent challenge/review of another synthesis, not an independent experiment or verdict."
     },
     {
       "inventory_id": "discovery-md-f30431d0bf942f8e",
       "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Cross-project root-cause synthesis that ranks explanations for historical outcomes; it summarizes existing evidence rather than testing a distinct registered candidate."
     },
     {
       "inventory_id": "discovery-md-a1bbb83e8a0bac55",
       "source": "research/audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Plain-language restatement of root-cause findings; derivative synthesis, not a separate empirical test."
     },
     {
       "inventory_id": "discovery-md-0e3aea10a1ea09dc",
       "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Defines audit classification vocabulary and selection rules; protocol/method specification, not a result."
     },
     {
       "inventory_id": "discovery-md-42d5488f9012384b",
       "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Feasibility/target arithmetic lens within the root-cause audit; does not test a distinct investable strategy or produce a strategy verdict."
     },
     {
       "inventory_id": "discovery-md-5b332afcd45f7c48",
       "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Coverage-gap inventory within the audit; identifies missing evidence and is not an independent return test."
     },
     {
       "inventory_id": "discovery-md-d29ff7d5f56f8f3e",
       "source": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Execution ledger and task rulings; administrative record, not empirical evidence."
     },
     {
       "inventory_id": "discovery-md-8b633e44146739e1",
       "source": "research/audits/root-cause-2026-11-04/reference-sheet.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reference-sheet.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Glossary/reference sheet for the audit; no tested claim."
     },
     {
       "inventory_id": "discovery-md-bc3010ceb742ba6c",
       "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Citation verification of a model review; review-quality audit, not strategy evidence."
     },
     {
       "inventory_id": "discovery-md-0cd511240163509e",
       "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "External/model review of root-cause synthesis; derivative opinion, not a distinct experiment."
     },
     {
       "inventory_id": "discovery-md-57174d79c444942f",
       "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Consolidates reviewers\u2019 directional opinions (including a verification caveat); not an independent empirical test."
     },
     {
       "inventory_id": "discovery-md-424a76473d9652a3",
       "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Reviewer assessment and recommendations on the root-cause synthesis; no independent returns test."
     },
     {
       "inventory_id": "discovery-md-d9ebe68731e7b16e",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Study brief, DRAFT r7: explicitly says no intraday prices/signals/returns inspected; gates and window unapproved. It is a proposed protocol, not an observed verdict."
     },
     {
       "inventory_id": "discovery-md-022a7ff4568f9e02",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-trading-feasibility.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-24-intraday-trading-feasibility.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Verification review reports research UNRESOLVED and no bars or strategy returns. This is source/method and feasibility review, not an independent strategy outcome."
     },
     {
       "inventory_id": "discovery-md-6a72052d9065813e",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-argon-review-assessment.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-argon-review-assessment.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Parent assessment of an independent plan review; conditional research-plan direction only, explicitly not candidate GO or owner authorization."
     },
     {
       "inventory_id": "discovery-md-d25460c2416cad2f",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Approved r8 protocol/protocol-finalization status. Stage 0A remains unresolved; no price inspection or strategy scoring authorized. Protocol approval is not a strategy verdict."
     },
     {
       "inventory_id": "discovery-md-e06c56b73990d34f",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Investigation plan and scoped authorization to diagnose missing data; plan has no measured strategy outcome."
     },
     {
       "inventory_id": "discovery-md-745d20f90843c71b",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Data-gap investigation concludes UNRESOLVED (data), explicitly not a strategy NO-GO; no candidate returns or gates were computed. This is a distinct data finding from Stage 0A, retained in its source."
     },
     {
       "inventory_id": "discovery-md-41a1a7191a309ca9",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Argon independent plan review conditional on sequence/protocol approval; it recommends process steps and contains no candidate test result."
     },
     {
       "inventory_id": "discovery-md-338d6db934a77441",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-opus-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-opus-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Opus plan review evaluates research sequence and downstream decision coherence; conditional process recommendation, not measured candidate verdict."
     },
     {
       "inventory_id": "discovery-md-1a4171eeae78c5d4",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Draft decision memo proposes protocol defaults; explicitly unapproved and authorizes no data or return work."
     },
     {
       "inventory_id": "discovery-md-eb3484c7ad1f1104",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-branch-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-branch-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Final-branch code review of mocked implementation; defect/review disposition, not an empirical strategy verdict."
     },
     {
       "inventory_id": "discovery-md-e6327a4512dcb8fa",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-fix-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-fix-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Scoped re-review of implementation fixes; code quality/specification review, not a return or strategy result."
     },
     {
       "inventory_id": "discovery-md-2eb1feaff363c0c0",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Mocked implementation/preflight status; explicitly says no candidate price/return analysis and original Stage 0A remains unresolved."
     },
     {
       "inventory_id": "discovery-md-e4eed28c74577e0d",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-task-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-task-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Task/specification review PASS and quality approval are implementation review findings; no candidate performance evidence."
     },
     {
       "inventory_id": "discovery-md-a8f15f4b93f7002f",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Stage 0A coverage contract is a protocol/authorization document, not a result."
     },
     {
       "inventory_id": "discovery-md-03dc78232125003e",
       "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Stage 0A concludes sampled coverage unresolved and auction branch unresolved, explicitly a data-preflight finding with no strategy returns. Not a strategy verdict."
     },
     {
       "inventory_id": "discovery-md-465c7fefe39967c8",
       "source": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Prospective observer is descriptive/operational research; activation unapproved and not a confirmatory profitability test."
     },
     {
       "inventory_id": "discovery-md-88040fe703a713f4",
       "source": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Protocol review NEEDS FIXES and parent resolution are protocol/method review status; no code or observation started."
     },
     {
       "inventory_id": "discovery-md-4f83f23312eda3dc",
       "source": "research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Approved forward-paper evidence protocol governing future candidates; standards/method document, not a candidate verdict."
     },
     {
       "inventory_id": "discovery-md-d44d70f360502ffd",
       "source": "research/programme/prompt-kit-review/_research-prompt-kit-source.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/prompt-kit-review/_research-prompt-kit-source.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Reusable research prompt kit; operational guidance, not completed research evidence."
     },
     {
       "inventory_id": "discovery-md-d30729c60eaa3aa9",
       "source": "research/programme/vectorbt-engine/P0-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P0-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Status/evidence record for the engine migration. Its legacy ensemble comparison explicitly says Sharpe 0.39 vs SPY 0.78, unchanged from the already-recorded NO-GO; diagnostic DSR-zero row is also below SPY. Duplicate/status, not a new strategy verdict."
     },
     {
       "inventory_id": "discovery-md-026db4642821e148",
       "source": "research/programme/vectorbt-engine/P1-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P1-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Engineering phase exit criteria (stack compatibility, tests and dispatch), not a strategy performance evaluation or verdict."
     },
     {
       "inventory_id": "discovery-md-e48cbac0940598f3",
       "source": "research/programme/vectorbt-engine/P2-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P2-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Engine adapter, parity, test and upgrade-tooling status; the reported voter-flip check reproduces S5 methodology and creates no independent strategy decision."
     },
     {
       "inventory_id": "discovery-md-e3141d1caac45f88",
       "source": "research/programme/vectorbt-engine/P3-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P3-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Data-layer and point-in-time-universe implementation verification only; no strategy outcome."
     },
     {
       "inventory_id": "discovery-md-bc0ae9fc645936ba",
       "source": "research/programme/vectorbt-engine/P4-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P4-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Strategy-port fidelity and implementation status; parity acceptance concerns reproducing legacy behavior, not whether any strategy has an edge."
     },
     {
       "inventory_id": "discovery-md-9b5c80ca91536bcc",
       "source": "research/programme/vectorbt-engine/P5-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P5-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "WFO engine rewrite and parity/operational status; any comparison is migration validation and does not establish a distinct strategy verdict."
     },
     {
       "inventory_id": "discovery-md-d436feed454c369a",
       "source": "research/programme/vectorbt-engine/P7-completion.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P7-completion.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Paper trader integration, golden signals and dry-run readiness are operational status, not return evidence or strategy verdict."
     },
     {
       "inventory_id": "discovery-md-0a06467912067c7d",
       "source": "research/programme/vectorbt-engine/P8b-fixups.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/P8b-fixups.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Upgrade-procedure defect remediation and rehearsal status; no strategy return test or verdict."
     },
     {
       "inventory_id": "discovery-md-98a6f3d30855bc31",
       "source": "research/programme/vectorbt-engine/legacy-scripts/README.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/legacy-scripts/README.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Archive index describing moved historical scripts and preservation rationale; it contains no distinct research decision."
     },
     {
       "inventory_id": "discovery-md-19a01eecc79c7f04",
       "source": "research/programme/vectorbt-engine/legacy-src/README.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/legacy-src/README.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Archive index for removed legacy source/tests; preservation status only, no strategy verdict."
     },
     {
       "inventory_id": "discovery-md-672b4695a1fb8438",
       "source": "research/programme/vectorbt-engine/p1-parity/p1-17fold-parity.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/p1-parity/p1-17fold-parity.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Closes a stack migration parity criterion by comparing old/new execution on the same reference. This is implementation parity, not independent evidence for a strategy verdict."
     },
     {
       "inventory_id": "discovery-md-87ea87240086abe7",
       "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-A-vectorbt-0285-inventory.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-A-vectorbt-0285-inventory.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Library feature inventory and tooling assessment, not a strategy test or verdict."
     },
     {
       "inventory_id": "discovery-md-4491da280aee4c18",
       "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-B-vectorbt-1x-and-rust.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-B-vectorbt-1x-and-rust.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Dependency/engine migration feasibility and cost assessment; tooling decision, not a strategy return verdict."
     },
     {
       "inventory_id": "discovery-md-d877391ce721cfb1",
       "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-C-ggtrader-handrolled-inventory.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-C-ggtrader-handrolled-inventory.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Code inventory of existing lab/paper components, not an empirical strategy verdict."
     },
     {
       "inventory_id": "discovery-md-4dc110f714667d64",
       "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-D-vectorbt-wfo-and-agents.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-D-vectorbt-wfo-and-agents.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "WFO tooling and agent workflow assessment; methodological/engineering recommendation, not a strategy verdict."
     },
     {
       "inventory_id": "discovery-md-148dd3a67143e9c9",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S1-target-architecture.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S1-target-architecture.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Target architecture specification; proposed system design rather than a completed strategy evaluation."
     },
     {
       "inventory_id": "discovery-md-82e5e6980168a125",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S3-stack-migration.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S3-stack-migration.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Hands-on stack migration feasibility specification; implementation recommendation, not a strategy result."
     },
     {
       "inventory_id": "discovery-md-040c72126753057d",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S4-strategy-port-inventory.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S4-strategy-port-inventory.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Classifies legacy strategy implementations for porting. It does not test outcomes; existing strategy verdicts remain elsewhere and no distinct verdict is introduced."
     },
     {
       "inventory_id": "discovery-md-5ad10f798f034d44",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S5-validation-protocol.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S5-validation-protocol.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Defines validation and re-baseline gates for the engine migration. Protocol/method specification, not an observed strategy verdict."
     },
     {
       "inventory_id": "discovery-md-538cadc575d0d292",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S6-data-and-universe.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S6-data-and-universe.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Data and point-in-time universe design/verification; methodological infrastructure, no distinct strategy outcome."
     },
     {
       "inventory_id": "discovery-md-6eea834ca943436c",
       "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S8-complementary-tools.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S8-complementary-tools.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Third-party tool comparison and adoption recommendations for the lab; tooling/method verdicts, not strategy verdicts."
     },
     {
       "inventory_id": "discovery-md-f650b9711c955e92",
       "source": "research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "The report explicitly labels itself documentary attribution, not a new strategy verdict. It attributes saved folds among gate failures, anchor deployment and winner deployment; it says existing closed verdicts stand and does not infer undeployed-winner performance."
     },
     {
       "inventory_id": "discovery-md-6330502615fbbb8b",
       "source": "research/prompts/local-implementation-prompt-TEMPLATE.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/prompts/local-implementation-prompt-TEMPLATE.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Unfilled prompt template for future strategy implementation; no candidate result."
     },
     {
       "inventory_id": "discovery-md-0dcb55a600b6611e",
       "source": "research/prompts/web-strategy-research-prompt.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/prompts/web-strategy-research-prompt.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Prompt instructions for external idea discovery; proposed hypotheses are not tested findings."
     },
     {
       "inventory_id": "discovery-md-a487e53eef516bab",
       "source": "research/stock-signals/feasibility/2026-11-02-family-scope-review.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/stock-signals/feasibility/2026-11-02-family-scope-review.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Documentary definitions-only review explicitly uses no returns/result files and changes no verdict; classification/status review only."
     },
     {
       "inventory_id": "discovery-md-1f68a91a0cd23788",
       "source": "research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
       "disposition": "excluded",
-      "inventory_kind": "unreviewed_discovery_candidate",
+      "inventory_kind": "reviewed_discovery_candidate",
       "title": "Discovery candidate: research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
-      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
       "reason": "Feasibility inventory explicitly computes no returns, recommends no candidate, and authorizes no test; its matrix is intake/status rather than a verdict."
+    },
+    {
+      "inventory_id": "discovery-md-1e222c77d611fad7",
+      "source": "docs/archive/2026-07-06_strategy_recommendations.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/2026-07-06_strategy_recommendations.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Archived strategy roadmap repeats earlier IC, Kelly, exit, ML, momentum and MTF findings and proposes future candidates; it contains no new standalone test or verdict. Historical claims remain subject to original reports and later audit."
+    },
+    {
+      "inventory_id": "discovery-md-ac7ae72d613d703b",
+      "source": "docs/archive/alpaca_cli.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/alpaca_cli.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Alpaca CLI documentation; Go refers to the programming language, not a research verdict."
+    },
+    {
+      "inventory_id": "discovery-md-5b6f444c81693208",
+      "source": "docs/archive/future_tweaks_plan.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/future_tweaks_plan.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Operations improvement plan; go-live refers to deployment timing rather than a candidate study verdict."
+    },
+    {
+      "inventory_id": "discovery-md-f1a7c88c31642c64",
+      "source": "docs/archive/next-steps-history-2026-11-03.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/next-steps-history-2026-11-03.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Archived worklist summarizes previously recorded research decisions and operational/data status, including factor, momentum, replica and allocation studies; it is not a new candidate evaluation. Original reports and later audit remain authoritative."
+    },
+    {
+      "inventory_id": "discovery-md-f7d5f62be5975eb9",
+      "source": "docs/archive/profiling_report_2026-06-05.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/profiling_report_2026-06-05.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Runtime profiling report; term matches refer to engineering profiling, not a separate candidate verdict."
+    },
+    {
+      "inventory_id": "discovery-md-063e427b0cc75b49",
+      "source": "docs/archive/refactor_vectorbt_simplification.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archive discovery candidate: docs/archive/refactor_vectorbt_simplification.md",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Refactoring plan; go ahead denotes approval of implementation phases, not a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-review-299da3a3e28e3804",
+      "source": "docs/roadmap.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "June dual momentum result",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-4178eeb6305fabea",
+      "source": "docs/roadmap.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Idiosyncratic volatility blend decision",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-9680ee50debf51f5",
+      "source": "docs/roadmap.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "MidCap blend and diversification decision",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-0e04b32e8b97b155",
+      "source": "docs/archive/future_tweaks_plan.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Crypto bundled configuration reversion",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-9d40666ceba3d87f",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "March crypto pipeline experiment comparisons",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Discovery parent covers the same March pipeline history; run-level records and pending entries preserve distinct configurations. Matching summaries do not establish independent replications."
+    },
+    {
+      "inventory_id": "discovery-review-81bc4be829e689b4",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 1",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-704e8b300cc3da64",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 2",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-dc55cbb695ae6f6d",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 3",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-540876494e97cefb",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 4",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-3870fc66a5d9db3f",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 5",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-e49b24be2eb9e4f5",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 6",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-a8df9b4c1661e2c0",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 7",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-f7c93345eaced497",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Archived equity trial configuration 8",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-33d258e678d42aa1",
+      "source": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Factor screen hypothesis H1",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-3aa6aa095de349c3",
+      "source": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Factor screen hypothesis H2",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-d468ba371dae22d4",
+      "source": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Factor screen hypothesis H3",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-fb7a3c652016db4b",
+      "source": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Factor screen hypothesis H4",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-bc0fb570f79cc4cf",
+      "source": "research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Momentum screen BIG candidate",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-983be3b6a7ad5bcd",
+      "source": "research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Momentum screen SMALL candidate",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-lens8-crypto-wfo-research-snapshots-kraken",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "crypto-wfo-research-snapshots-kraken",
+      "scope_note": "Lens 8 record; verify individual experiments, overlap with other discovery entries, and source availability.",
+      "reason": "Discovery grouping covers three dated snapshots; separately identified snapshot records preserve their distinct scopes. Matching snapshots and later bundled reversion are not independent confirmations."
+    },
+    {
+      "inventory_id": "discovery-lens8-crypto-wfo-recalibration-2026-05-01",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "crypto-wfo-recalibration-2026-05-01",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-lens8-crypto-pipeline-runs-2026-03",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "crypto-pipeline-runs-2026-03",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Discovery parent covers the same March pipeline history; run-level records and pending entries preserve distinct configurations. Matching summaries do not establish independent replications."
+    },
+    {
+      "inventory_id": "discovery-lens8-crypto-wfo-tournament-robustness",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "crypto-wfo-tournament-robustness",
+      "scope_note": "Lens 8 record; verify individual experiments, overlap with other discovery entries, and source availability.",
+      "reason": "Selection-component scores duplicate the April 2 snapshot report: TAO 0.9896 and TRUMP 0.5045; no isolated incremental-benefit test located. Original external report exists outside this worktree; selection scores do not establish an edge."
+    },
+    {
+      "inventory_id": "discovery-review-07f2af97fdbd3484",
+      "source": "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "PEAD SP500 standalone",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-fb26a8ebe3776a29",
+      "source": "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "PEAD fourth-sleeve blend",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-05beecb8d7c0783d",
+      "source": "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "PEAD Russell 2000 standalone",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-e22097e5baa05eee",
+      "source": "research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Congress standalone",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-c8ad8e366fe09258",
+      "source": "research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Congress fourth-sleeve blend",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-aafb15980f772582",
+      "source": "research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Insider cluster standalone",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-ef4d96140807388f",
+      "source": "research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Insider cluster fourth-sleeve blend",
+      "scope_note": "Reviewed source-specific historical scope; see linked annotation."
+    },
+    {
+      "inventory_id": "discovery-review-fe12b892259fd8fc",
+      "source": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "Cross-asset static sleeve forward shadow stage and governing rule",
+      "scope_note": "Separate forward shadow stage; governing rule and qualifying contemporaneous records remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260321_221917",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260321_221917",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "The source labels this manual entry an example row to replace, not an actual reported run."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260321_230422",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260321_230422",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260321_232640",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260321_232640",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_083256",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_083256",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_085044",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_085044",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_085426",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_085426",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_092410",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_092410",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_093524",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_093524",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_093621",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_093621",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_093919",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_093919",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_100009",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_100009",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_100424",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_100424",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_101334",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_101334",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_103806",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_103806",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_104314",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_104314",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_104527",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_104527",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_120807",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "excluded",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_120807",
+      "scope_note": "Reviewed and excluded with source-specific reason.",
+      "reason": "Documented Phase-3B wiring/sample run, not a standalone advancement verdict; observations remain in source. The automated history separately reports \u22127.07% total return, \u22122.42% CAGR, \u221266.64 pp excess CAGR and 301 trades; it remains a wiring/sample run rather than a documented advancement decision."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_120916",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_120916",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_121218",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_121218",
+      "scope_note": "Reviewed historical run; source and assumptions remain provisional."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_143117",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_143117",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_143439",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_143439",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_205756",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_205756",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_210034",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_210034",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_214320",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_214320",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_222728",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_222728",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_224231",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_224231",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_225700",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_225700",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260322_225844",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260322_225844",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-pipeline-pipeline_20260323_160240",
+      "source": "docs/archive/pipeline_run_history.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "pipeline_20260323_160240",
+      "scope_note": "Source-reported historical attempt; run artifacts and specification provenance remain unresolved."
+    },
+    {
+      "inventory_id": "discovery-review-725a80de2cc0ca70",
+      "source": "docs/roadmap.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "MidCap standalone versus MDY",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-review-8bb3ce665d093d4e",
+      "source": "docs/roadmap.md",
+      "disposition": "pending",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "MidCap 50/50 and 70/30 blend outcome mapping",
+      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes."
+    },
+    {
+      "inventory_id": "discovery-review-4e89788ebfa35417",
+      "source": "docs/roadmap.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "MidCap gate investigation and breaker rule change",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-review-8faf1f5e3f69a7de",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "disposition": "pending",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Archived equity 10% sizing trial existence",
+      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes."
+    },
+    {
+      "inventory_id": "discovery-crypto-research_20260329_120504",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "March 29 Kraken snapshot",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-crypto-research_20260401_225306",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "April 1 Kraken snapshot",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-crypto-research_20260402_123248",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "disposition": "included",
+      "inventory_kind": "reviewed_discovery_candidate",
+      "title": "April 2 Kraken snapshot",
+      "scope_note": "Source-reviewed historical record; inference remains unresolved."
     }
   ],
   "coverage_complete": false
