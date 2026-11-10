@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import time
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from ggTrader.paper import cash_sweep, catastrophe_stop
@@ -13,8 +15,10 @@ from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_divid
 from ggTrader.paper.gates import SignalGateError, late_run_reason
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
-    clear_pending_order,
+    attach_broker_order,
+    clear_pending_order,  # noqa: F401 - legacy test compatibility
     clear_split_correction,
+    create_order_intent,
     get_accrued_dividend_keys,
     get_earliest_snapshot,
     get_last_buy_dates,
@@ -25,14 +29,18 @@ from ggTrader.paper.persist import (
     get_snapshot_history,
     get_total_dividend_accrual,
     get_trade_history_dates,
+    get_unresolved_order_intents,
     init_paper_schema,
     log_dividend_accrual,
-    log_pending_order,
+    log_pending_order,  # noqa: F401 - compatibility for existing test patches
     log_snapshot,
-    log_trade,
+    log_trade,  # noqa: F401 - legacy test compatibility
     mark_pending_order_stale,
+    paper_run_lock,
     save_peak_value,
     save_split_correction,
+    settle_legacy_pending_order,
+    settle_order_intent,
 )
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
 from ggTrader.paper.signal_runner import (
@@ -146,6 +154,7 @@ class PaperTrader:
             raise ValueError("read_only requires dry_run: a live run must book its trades")
         #: Names of the persistence calls a read-only run skipped (for the run record).
         self.skipped_writes: list[str] = []
+        self._paper_lock = None
 
     def _write(self, fn, *args, **kwargs):
         """Call a persistence function, or record and skip it in read-only mode."""
@@ -156,6 +165,112 @@ class PaperTrader:
             _log.info("read-only: skipped write %s", name)
             return None
         return fn(*args, **kwargs)
+
+    def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
+        """Persist the identity before submitting an order under the run lock."""
+        if side not in ("BUY", "SELL"):
+            raise ValueError("Invalid order side")
+        client_id = str(uuid4())
+        create_order_intent(
+            client_id,
+            _today_et().isoformat(),
+            side,
+            symbol,
+            amount,
+            "notional" if side == "BUY" else "qty",
+            reason,
+        )
+        self._paper_lock.verify()
+        submit = self._broker.submit_buy if side == "BUY" else self._broker.submit_sell
+        stage = "submit"
+        try:
+            order_id = submit(symbol, amount, client_id)
+            stage = "attach"
+            attach_broker_order(client_id, order_id)
+        except Exception:
+            try:
+                self._notifier.send(f"Order {client_id} failed at {stage}; investigation required")
+            except Exception:
+                _log.exception("Failed to notify about order %s at %s", client_id, stage)
+            raise
+        return order_id
+
+    def _reconcile_order_intents(self) -> set[str]:
+        """Resolve terminal intents and block uncertain or working orders."""
+        try:
+            intents = get_unresolved_order_intents()
+            legacy_ids = {p["order_id"] for p in get_pending_orders()}
+            working = set()
+            for intent in intents:
+                client_id = intent["client_order_id"]
+                info = self._broker.get_order_by_client_id(client_id)
+                oid = info.get("id")
+                if (
+                    not isinstance(oid, str)
+                    or not oid.strip()
+                    or info.get("client_order_id") != client_id
+                    or (intent.get("broker_order_id") and intent["broker_order_id"] != oid)
+                    or oid in legacy_ids
+                    or str(info.get("symbol", "")).upper() != intent["symbol"].upper()
+                    or str(info.get("side", "")).upper() != intent["side"].upper()
+                ):
+                    raise ValueError("Order identity mismatch or duplicate legacy order")
+                kind = intent["amount_kind"]
+                actual, expected = Decimal(str(info.get(kind))), Decimal(str(intent["amount"]))
+                tolerance = Decimal("0.01") if kind == "notional" else Decimal("0.000000001")
+                if (
+                    not actual.is_finite()
+                    or not expected.is_finite()
+                    or abs(actual - expected) > tolerance
+                ):
+                    raise ValueError("Order amount mismatch")
+                qty = Decimal(str(info.get("filled_qty")))
+                price_value = info.get("filled_avg_price")
+                price = Decimal(str(price_value)) if price_value is not None else None
+                if (
+                    not qty.is_finite()
+                    or qty < 0
+                    or (price is not None and (not price.is_finite() or price < 0))
+                    or (qty > 0 and (price is None or price <= 0))
+                ):
+                    raise ValueError("Invalid order fill")
+                status = info.get("status")
+                terminal = {"filled", "canceled", "rejected", "expired"}
+                active = {
+                    "new",
+                    "accepted",
+                    "pending_new",
+                    "partially_filled",
+                    "pending_cancel",
+                    "pending_replace",
+                    "accepted_for_bidding",
+                    "held",
+                    "stopped",
+                    "calculated",
+                }
+                if status == "filled" and qty == 0:
+                    raise ValueError("Filled order has no fill")
+                if status not in terminal | active:
+                    raise ValueError("Unknown order status")
+                attach_broker_order(client_id, oid)
+                if status in terminal:
+                    settle_order_intent(
+                        client_id,
+                        oid,
+                        float(qty),
+                        float(price) if price is not None else None,
+                        status,
+                    )
+                else:
+                    working.add(intent["symbol"])
+            if working:
+                raise RuntimeError("Unresolved working orders block submissions")
+            return working
+        except Exception as exc:
+            self._notifier.send(
+                f"<b>🛑 Order recovery/pending orders failed — no orders placed:</b> {exc}"
+            )
+            raise
 
     def _missed_exits(
         self, positions: dict, last_exit: dict[str, str], already: set[str]
@@ -250,22 +365,26 @@ class PaperTrader:
                 info = self._broker.get_order(oid)
             except Exception as exc:
                 _log.warning("Reconcile: get_order(%s) failed: %s", oid, exc)
-                still_pending.add(po["symbol"])
-                continue
+                raise
 
             status = info.get("status", "pending")
-            filled_qty = info.get("filled_qty") or 0.0
-            filled_price = info.get("filled_avg_price") or 0.0
-            filled = filled_qty > 0 and filled_price > 0
+            filled_qty = info.get("filled_qty")
+            filled_price = info.get("filled_avg_price")
             terminal = status in ("filled", "canceled", "rejected", "expired")
             if not terminal:
                 still_pending.add(po["symbol"])
                 self._flag_if_stale(po, now)
                 continue  # still working — try again next run
 
-            if filled:
+            try:
+                settle_legacy_pending_order(oid, filled_qty, filled_price, status)
+            except Exception as exc:
+                self._notifier.send(
+                    f"<b>🛑 Could not settle pending order {oid} — no orders placed:</b> {exc}"
+                )
+                raise
+            if filled_qty > 0:
                 amount = filled_qty * filled_price
-                log_trade(po["run_date"], po["side"], po["symbol"], amount, oid, po.get("reason"))
                 self._notifier.trade_alert(
                     po["side"],
                     po["symbol"],
@@ -275,10 +394,6 @@ class PaperTrader:
                     price=filled_price,
                     status=f"{status} (reconciled)",
                 )
-            try:
-                clear_pending_order(oid)
-            except Exception as exc:
-                _log.warning("Reconcile: clear_pending_order(%s) failed: %s", oid, exc)
         return still_pending
 
     def _poll_orders(
@@ -574,6 +689,17 @@ class PaperTrader:
         errors.append(f"{label} {symbol}: {exc}")
 
     def run(self) -> dict:
+        """Hold the live lock throughout the run."""
+        if self._dry_run:
+            return self._run()
+        with paper_run_lock() as lock:
+            self._paper_lock = lock
+            try:
+                return self._run()
+            finally:
+                self._paper_lock = None
+
+    def _run(self) -> dict:
         try:
             self._write(init_paper_schema)
         except Exception as exc:
@@ -582,6 +708,8 @@ class PaperTrader:
         # Settle any orders that filled after a prior run exited, and note
         # which symbols still have an order open so we don't double up on
         # them below.
+        if not self._dry_run:
+            self._reconcile_order_intents()
         pending_symbols = self._reconcile_pending_orders()
 
         # Market-open gate: cron has no calendar awareness, so a holiday or
@@ -853,25 +981,24 @@ class PaperTrader:
                         f"unrealized {pct:.1%} breached {threshold:.1%} floor)"
                     )
                     continue
-                try:
-                    oid = self._broker.submit_sell(symbol, qty)
-                    stopped_symbols.add(symbol)
-                    executed_sells.append(symbol)
-                    pending_orders.append(
-                        (
-                            oid,
-                            "SELL",
-                            symbol,
-                            strategy_positions[symbol]["market_value"],
-                            catastrophe_stop.CATASTROPHE_STOP_REASON,
-                        )
+                oid = self._submit_order(
+                    "SELL", symbol, qty, catastrophe_stop.CATASTROPHE_STOP_REASON
+                )
+                stopped_symbols.add(symbol)
+                executed_sells.append(symbol)
+                pending_orders.append(
+                    (
+                        oid,
+                        "SELL",
+                        symbol,
+                        strategy_positions[symbol]["market_value"],
+                        catastrophe_stop.CATASTROPHE_STOP_REASON,
                     )
-                    self._notifier.send(
-                        f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
-                        f"breached {threshold:.1%} floor — selling qty {qty}."
-                    )
-                except Exception as exc:
-                    self._order_failed(errors, untradable_hit, "CATASTROPHE STOP", symbol, exc)
+                )
+                self._notifier.send(
+                    f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
+                    f"breached {threshold:.1%} floor — selling qty {qty}."
+                )
             if stopped_symbols:
                 strategy_positions = {
                     sym: pos
@@ -936,25 +1063,24 @@ class PaperTrader:
                             f"(${sell_action.notional:.0f}, funding strategy buys)"
                         )
                     else:
-                        try:
-                            # Alpaca paper credits a market sell's proceeds to
-                            # cash immediately (no T+1/T+2 settlement lag), so
-                            # it's safe to treat this cash as available to the
-                            # strategy buys submitted later in this same run.
-                            # A same-run sell -> buy sequence would NOT be
-                            # safe on a broker with real settlement delay.
-                            oid = self._broker.submit_sell(sweep_sym, sell_qty)
-                            pending_orders.append(
-                                (
-                                    oid,
-                                    "SELL",
-                                    sweep_sym,
-                                    sell_action.notional,
-                                    cash_sweep.SWEEP_TRADE_REASON,
-                                )
+                        # Alpaca paper credits a market sell's proceeds to
+                        # cash immediately (no T+1/T+2 settlement lag), so
+                        # it's safe to treat this cash as available to the
+                        # strategy buys submitted later in this same run.
+                        # A same-run sell -> buy sequence would NOT be
+                        # safe on a broker with real settlement delay.
+                        oid = self._submit_order(
+                            "SELL", sweep_sym, sell_qty, cash_sweep.SWEEP_TRADE_REASON
+                        )
+                        pending_orders.append(
+                            (
+                                oid,
+                                "SELL",
+                                sweep_sym,
+                                sell_action.notional,
+                                cash_sweep.SWEEP_TRADE_REASON,
                             )
-                        except Exception as exc:
-                            self._order_failed(errors, untradable_hit, "SWEEP SELL", sweep_sym, exc)
+                        )
 
         # Sells first — free up position slots. `regular_sell_count` (not
         # `executed_sells`) is what feeds the slots_available math below: a
@@ -979,15 +1105,12 @@ class PaperTrader:
                 regular_sell_count += 1
                 self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
                 continue
-            try:
-                oid = self._broker.submit_sell(symbol, qty)
-                executed_sells.append(symbol)
-                regular_sell_count += 1
-                pending_orders.append(
-                    (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
-                )
-            except Exception as exc:
-                self._order_failed(errors, untradable_hit, "SELL", symbol, exc)
+            oid = self._submit_order("SELL", symbol, qty, None)
+            executed_sells.append(symbol)
+            regular_sell_count += 1
+            pending_orders.append(
+                (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
+            )
 
         # Wait for every sell submitted so far (catastrophe stop, sweep funding,
         # strategy exits) to fill before buying: Alpaca credits proceeds only on
@@ -996,6 +1119,9 @@ class PaperTrader:
         filled_orders: dict[str, dict] = self._poll_orders(
             [o for o in pending_orders if o[1] == "SELL"]
         )
+
+        if filled_orders and not self._dry_run:
+            self._reconcile_order_intents()
 
         slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
         buys_attempted = 0
@@ -1042,19 +1168,19 @@ class PaperTrader:
                         f"(${sleeve_notional:.0f}, sleeve={universe})"
                     )
                     continue
-                try:
-                    oid = self._broker.submit_buy(symbol, sleeve_notional)
-                    executed_buys.append(symbol)
-                    buys_attempted += 1
-                    sleeve_open_count[universe] += 1
-                    pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
-                except Exception as exc:
-                    self._order_failed(errors, untradable_hit, "BUY", symbol, exc)
+                oid = self._submit_order("BUY", symbol, sleeve_notional, None)
+                executed_buys.append(symbol)
+                buys_attempted += 1
+                sleeve_open_count[universe] += 1
+                pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
 
         # Poll the remaining (buy) orders until they fill (or timeout)
         filled_orders.update(
             self._poll_orders([o for o in pending_orders if o[0] not in filled_orders])
         )
+
+        if pending_orders and not self._dry_run:
+            self._reconcile_order_intents()
 
         if sweep_on:
             # Sweep BUY: deploy whatever cash is left over after the strategy's
@@ -1079,19 +1205,19 @@ class PaperTrader:
                         f"<b>🔍 DRY RUN sweep buy:</b> {sweep_sym} (${buy_action.notional:.0f})"
                     )
                 else:
-                    try:
-                        oid = self._broker.submit_buy(sweep_sym, buy_action.notional)
-                        sweep_buy_order = (
-                            oid,
-                            "BUY",
-                            sweep_sym,
-                            buy_action.notional,
-                            cash_sweep.SWEEP_TRADE_REASON,
-                        )
-                        filled_orders.update(self._poll_orders([sweep_buy_order]))
-                        pending_orders.append(sweep_buy_order)
-                    except Exception as exc:
-                        self._order_failed(errors, untradable_hit, "SWEEP BUY", sweep_sym, exc)
+                    oid = self._submit_order(
+                        "BUY", sweep_sym, buy_action.notional, cash_sweep.SWEEP_TRADE_REASON
+                    )
+                    sweep_buy_order = (
+                        oid,
+                        "BUY",
+                        sweep_sym,
+                        buy_action.notional,
+                        cash_sweep.SWEEP_TRADE_REASON,
+                    )
+                    filled_orders.update(self._poll_orders([sweep_buy_order]))
+                    pending_orders.append(sweep_buy_order)
+                    self._reconcile_order_intents()
 
         # Alert on every submitted order, but only book the trade ledger at a
         # real executed value — never the intended notional. Orders still
@@ -1104,8 +1230,6 @@ class PaperTrader:
             filled_qty = info.get("filled_qty") or 0.0
             filled_price = info.get("filled_avg_price") or 0.0
             filled = filled_qty > 0 and filled_price > 0
-            terminal = status in ("filled", "canceled", "rejected", "expired")
-
             trade_amount = filled_qty * filled_price if filled else amount
             self._notifier.trade_alert(
                 side,
@@ -1116,34 +1240,8 @@ class PaperTrader:
                 price=filled_price if filled else None,
                 status=status,
             )
-            if terminal:
-                if filled:
-                    # run_date is the ET calendar date of THIS run (the session the
-                    # order was actually placed/filled in), not signals["as_of"]
-                    # (the date of the last completed bar the signal was computed
-                    # from, which trails by one session and was the vector for the
-                    # OHLCV day-shift bug -- see _today_et() and
-                    # scripts/migrate_paper_dates_20260822.py).
-                    log_trade(today_et.isoformat(), side, symbol, trade_amount, oid, reason)
-                else:
-                    _log.info(
-                        "Order %s (%s %s) terminal unfilled (status=%s); no ledger entry",
-                        oid,
-                        side,
-                        symbol,
-                        status,
-                    )
-            else:
-                # accepted / new / pending / partially_filled — settle next run.
-                # Same run_date reasoning as log_trade above.
-                log_pending_order(today_et.isoformat(), side, symbol, amount, oid, reason)
-                _log.info(
-                    "Order %s (%s %s) still working (status=%s); queued for reconciliation",
-                    oid,
-                    side,
-                    symbol,
-                    status,
-                )
+            # Leave durable intents for the next reconciliation pass; do not
+            # create a second legacy representation or book a separate trade.
 
         if untradable_hit:
             self._notifier.send(

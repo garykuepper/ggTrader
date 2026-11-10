@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import math
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date
 
 from sqlalchemy import text
@@ -10,6 +13,23 @@ from sqlalchemy import text
 from ggTrader.lab.persist import get_engine as _get_engine
 
 _SCHEMA = """
+CREATE TABLE IF NOT EXISTS paper_order_intents (
+    client_order_id TEXT PRIMARY KEY,
+    run_date DATE NOT NULL,
+    side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),
+    symbol TEXT NOT NULL,
+    amount DOUBLE PRECISION NOT NULL CHECK (amount > 0 AND amount < 'Infinity'::float8),
+    amount_kind TEXT NOT NULL CHECK ((side = 'BUY' AND amount_kind = 'notional') OR
+                                     (side = 'SELL' AND amount_kind = 'qty')),
+    reason TEXT,
+    broker_order_id TEXT UNIQUE,
+    state TEXT NOT NULL DEFAULT 'intent' CHECK (state IN ('intent', 'submitted', 'resolved')),
+    terminal_status TEXT,
+    filled_qty DOUBLE PRECISION,
+    filled_avg_price DOUBLE PRECISION,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS paper_trades (
     id SERIAL PRIMARY KEY,
     run_date DATE NOT NULL,
@@ -83,6 +103,212 @@ def init_paper_schema() -> None:
         conn.commit()
 
 
+_LOCK_KEY = 1734837291
+_TERMINAL_STATUSES = {"filled", "canceled", "expired", "rejected"}
+
+
+def create_order_intent(
+    client_order_id: str,
+    run_date: str,
+    side: str,
+    symbol: str,
+    amount: float,
+    amount_kind: str,
+    reason: str | None,
+) -> None:
+    """Commit an order intent before contacting the broker."""
+    with _get_engine().begin() as conn:
+        conn.execute(
+            text("""INSERT INTO paper_order_intents
+            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)
+            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)
+        """),
+            locals(),
+        )
+
+
+def get_unresolved_order_intents() -> list[dict]:
+    """Return durable intents that still require reconciliation."""
+    with _get_engine().connect() as conn:
+        return [
+            dict(row)
+            for row in conn.execute(
+                text(
+                    "SELECT * FROM paper_order_intents WHERE state != 'resolved' "
+                    "ORDER BY created_at"
+                )
+            ).mappings()
+        ]
+
+
+def _lock_order_and_reject_pending(conn, order_id: str) -> None:
+    """Serialize representations and reject an existing legacy pending row."""
+    conn.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id})
+    if (
+        conn.execute(
+            text("SELECT 1 FROM paper_pending_orders WHERE order_id = :id"), {"id": order_id}
+        ).first()
+        is not None
+    ):
+        raise ValueError("Order has both pending and intent representations")
+
+
+def attach_broker_order(client_order_id: str, order_id: str) -> None:
+    """Attach a broker ID, rejecting missing or conflicting intents."""
+    with _get_engine().begin() as conn:
+        _lock_order_and_reject_pending(conn, order_id)
+        row = (
+            conn.execute(
+                text(
+                    "SELECT broker_order_id, state FROM paper_order_intents "
+                    "WHERE client_order_id = :id FOR UPDATE"
+                ),
+                {"id": client_order_id},
+            )
+            .mappings()
+            .first()
+        )
+        if row is None or (row["broker_order_id"] not in (None, order_id)):
+            raise ValueError("Missing intent or conflicting broker order")
+        if row["broker_order_id"] is None:
+            if row["state"] != "intent":
+                raise ValueError("Invalid intent state")
+            conn.execute(
+                text(
+                    "UPDATE paper_order_intents SET broker_order_id = :order_id, "
+                    "state = 'submitted', updated_at = now() WHERE client_order_id = :id"
+                ),
+                {"id": client_order_id, "order_id": order_id},
+            )
+
+
+def settle_order_intent(
+    client_order_id: str,
+    order_id: str,
+    filled_qty: float,
+    filled_avg_price: float | None,
+    terminal_status: str,
+) -> None:
+    """Record validated terminal execution and resolve its intent atomically."""
+    if (
+        filled_qty is None
+        or not math.isfinite(filled_qty)
+        or filled_qty < 0
+        or terminal_status not in _TERMINAL_STATUSES
+        or (terminal_status == "filled" and filled_qty == 0)
+        or (
+            filled_qty > 0
+            and (
+                filled_avg_price is None
+                or not math.isfinite(filled_avg_price)
+                or filled_avg_price <= 0
+            )
+        )
+        or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
+    ):
+        raise ValueError("Invalid terminal fill")
+    amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
+    if not math.isfinite(amount):
+        raise ValueError("Invalid fill value")
+    with _get_engine().begin() as conn:
+        _lock_order_and_reject_pending(conn, order_id)
+        row = (
+            conn.execute(
+                text("SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE"),
+                {"id": client_order_id},
+            )
+            .mappings()
+            .first()
+        )
+        if row is None or row["broker_order_id"] not in (None, order_id):
+            raise ValueError("Missing intent or conflicting broker order")
+        if row["state"] == "resolved":
+            if (
+                row["broker_order_id"],
+                row["filled_qty"],
+                row["filled_avg_price"],
+                row["terminal_status"],
+            ) != (order_id, filled_qty, filled_avg_price, terminal_status):
+                raise ValueError("Conflicting settlement")
+            return
+        trades = conn.execute(
+            text(
+                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                "WHERE order_id = :id FOR UPDATE"
+            ),
+            {"id": order_id},
+        ).all()
+        expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
+        if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
+            raise ValueError("Conflicting historical trade")
+        if filled_qty > 0 and not trades:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
+                    "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
+                ),
+                {
+                    "run_date": row["run_date"],
+                    "side": row["side"],
+                    "symbol": row["symbol"],
+                    "amount": amount,
+                    "order_id": order_id,
+                    "reason": row["reason"],
+                },
+            )
+        conn.execute(
+            text(
+                "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', "
+                "terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, "
+                "updated_at = now() WHERE client_order_id = :id"
+            ),
+            {
+                "id": client_order_id,
+                "order_id": order_id,
+                "status": terminal_status,
+                "qty": filled_qty,
+                "price": filled_avg_price,
+            },
+        )
+
+
+class PaperRunLock:
+    """A session lock whose ownership can be checked before submission."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def verify(self) -> None:
+        """Fail if the dedicated session no longer owns its advisory lock."""
+        held = self._conn.execute(
+            text(
+                "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE "
+                "locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 "
+                "AND objid = :key AND objsubid = 1 AND granted)"
+            ),
+            {"key": _LOCK_KEY},
+        ).scalar_one()
+        if not held:
+            raise RuntimeError("Paper run lock lost")
+
+
+@contextmanager
+def paper_run_lock() -> Iterator[PaperRunLock]:
+    """Hold an exclusive advisory lock on a dedicated database session."""
+    with _get_engine().connect() as conn:
+        acquired = conn.execute(
+            text("SELECT pg_try_advisory_lock(:key)"), {"key": _LOCK_KEY}
+        ).scalar_one()
+        if not acquired:
+            raise RuntimeError("Paper run already locked")
+        try:
+            lock = PaperRunLock(conn)
+            lock.verify()
+            yield lock
+        finally:
+            conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": _LOCK_KEY})
+
+
 def log_trade(
     run_date: str,
     side: str,
@@ -96,6 +322,21 @@ def log_trade(
     ordinary strategy trade, preserving the historical meaning of this
     ledger for every caller that doesn't pass it."""
     with _get_engine().connect() as conn:
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
+        )
+        trades = conn.execute(
+            text(
+                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                "WHERE order_id = :id FOR UPDATE"
+            ),
+            {"id": order_id},
+        ).all()
+        expected = (date.fromisoformat(run_date), side, symbol, amount, reason)
+        if len(trades) > 1 or (trades and tuple(trades[0]) != expected):
+            raise ValueError("Conflicting historical trade")
+        if trades:
+            return
         conn.execute(
             text(
                 "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
@@ -111,6 +352,73 @@ def log_trade(
             },
         )
         conn.commit()
+
+
+def settle_legacy_pending_order(
+    order_id: str, filled_qty: float, filled_avg_price: float | None, terminal_status: str
+) -> None:
+    """Atomically book a legacy execution and remove its pending row."""
+    if (
+        filled_qty is None
+        or not math.isfinite(filled_qty)
+        or filled_qty < 0
+        or terminal_status not in _TERMINAL_STATUSES
+        or (terminal_status == "filled" and filled_qty == 0)
+        or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
+        or (filled_qty > 0 and (filled_avg_price is None or filled_avg_price <= 0))
+    ):
+        raise ValueError("Invalid terminal fill")
+    amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
+    if not math.isfinite(amount):
+        raise ValueError("Invalid fill value")
+    with _get_engine().begin() as conn:
+        conn.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
+        )
+        row = (
+            conn.execute(
+                text("SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE"),
+                {"id": order_id},
+            )
+            .mappings()
+            .first()
+        )
+        if row is None:
+            raise ValueError("Missing legacy pending order")
+        intent = conn.execute(
+            text("SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1"),
+            {"id": order_id},
+        ).first()
+        if intent is not None:
+            raise ValueError("Order has both pending and intent representations")
+        trades = conn.execute(
+            text(
+                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                "WHERE order_id = :id FOR UPDATE"
+            ),
+            {"id": order_id},
+        ).all()
+        expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
+        if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
+            raise ValueError("Conflicting historical trade")
+        if filled_qty > 0 and not trades:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
+                    "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
+                ),
+                {
+                    "run_date": row["run_date"],
+                    "side": row["side"],
+                    "symbol": row["symbol"],
+                    "amount": amount,
+                    "order_id": order_id,
+                    "reason": row["reason"],
+                },
+            )
+        conn.execute(
+            text("DELETE FROM paper_pending_orders WHERE order_id = :id"), {"id": order_id}
+        )
 
 
 def log_pending_order(

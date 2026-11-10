@@ -554,3 +554,11 @@ credential file under the owner-approved activation. Corrupt evidence yields unr
 without statistics, and cannot be waived by resume.
 See the [protocol](../research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md)
 and [CLI reference](cli_reference.md#prospective-intraday-practice-journal).
+
+Paper order recovery persists a client-ID intent before broker submission. Live runs hold a
+session advisory lock and reconcile unresolved intents before submitting; per-order transaction
+locks serialize intent and legacy settlement. A pending legacy representation alongside an
+intent fails closed. Settlement and intent resolution are atomic. Uncertain submissions,
+working orders, and identity mismatches block new orders and require investigation; a lost
+session lock cannot perfectly fence a process already contacting the broker. The paper trader
+remains stopped pending the owner's explicit authorization to resume cron.

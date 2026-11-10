@@ -3074,3 +3074,11 @@ Losses appeared catastrophic but Kraken showed otherwise. Root cause was a singl
 - Record read-only stored metadata counts and identify one candidate original
   for the unresolved 2018 amendment. Stored counts are not source coverage;
   mapping, detector provenance, reconstruction and PEAD gates remain unverified.
+
+### 2026-11-09 — paper order recovery
+
+Added durable client-ID order intents, reconciliation before new submissions, and atomic fill
+settlement. Ambiguous or working orders block new submissions for investigation; legacy pending
+orders remain supported and conflicting representations fail closed. Session and per-order
+advisory locks coordinate compliant runners but cannot perfectly fence an already issued broker
+call. The paper trader remains stopped pending owner authorization to resume cron.

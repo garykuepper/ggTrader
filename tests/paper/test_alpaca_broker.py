@@ -118,19 +118,71 @@ class TestSubmitOrders:
         mock_order = MagicMock()
         mock_order.id = "order-123"
         broker._client.submit_order.return_value = mock_order
-        oid = broker.submit_buy("AAPL", notional=1000.0)
+        oid = broker.submit_buy("AAPL", notional=1000.0, client_order_id="client-buy")
         assert oid == "order-123"
         call_kwargs = broker._client.submit_order.call_args
         req = call_kwargs[0][0] if call_kwargs[0] else call_kwargs[1].get("order_data")
         assert req.symbol == "AAPL"
+        assert req.notional == 1000.0
+        assert req.side.value == "buy"
+        assert req.time_in_force.value == "day"
+        assert req.client_order_id == "client-buy"
 
     def test_submit_sell_quantity(self):
         broker = _make_broker()
         mock_order = MagicMock()
         mock_order.id = "order-456"
         broker._client.submit_order.return_value = mock_order
-        oid = broker.submit_sell("AAPL", qty=10.0)
+        oid = broker.submit_sell("AAPL", qty=10.0, client_order_id="client-sell")
         assert oid == "order-456"
+        req = broker._client.submit_order.call_args.args[0]
+        assert req.symbol == "AAPL"
+        assert req.qty == 10.0
+        assert req.side.value == "sell"
+        assert req.time_in_force.value == "day"
+        assert req.client_order_id == "client-sell"
+
+
+class TestOrderLookup:
+    @pytest.mark.parametrize("filled_qty,price", [(None, None), ("2.5", "123.45")])
+    def test_lookup_normalizes_both_paths(self, filled_qty, price):
+        from types import SimpleNamespace
+
+        broker = _make_broker()
+        order = SimpleNamespace(
+            id="broker-id",
+            client_order_id="client-id",
+            symbol="AAPL",
+            side="buy",
+            qty=None,
+            notional="1000",
+            status="new",
+            filled_qty=filled_qty,
+            filled_avg_price=price,
+        )
+        broker._client.get_order_by_client_id.return_value = order
+        broker._client.get_order_by_id.return_value = order
+        expected = {
+            "id": "broker-id",
+            "client_order_id": "client-id",
+            "symbol": "AAPL",
+            "side": "buy",
+            "qty": None,
+            "notional": 1000.0,
+            "status": "new",
+            "filled_qty": float(filled_qty) if filled_qty is not None else None,
+            "filled_avg_price": float(price) if price is not None else None,
+        }
+        assert broker.get_order_by_client_id("client-id") == expected
+        broker._client.get_order_by_client_id.assert_called_once_with("client-id")
+        assert broker.get_order("broker-id") == expected
+        broker._client.get_order_by_id.assert_called_once_with("broker-id")
+
+    def test_lookup_propagates_errors(self):
+        broker = _make_broker()
+        broker._client.get_order_by_client_id.side_effect = RuntimeError("not found")
+        with pytest.raises(RuntimeError, match="not found"):
+            broker.get_order_by_client_id("client-id")
 
 
 class TestGetClock:

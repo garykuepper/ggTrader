@@ -799,3 +799,8 @@ disposition. The new timing PASS is date-only convention compliance, with
 observed dissemination UNVERIFIED. Amendment identity/hash binds both progress
 and result metadata; old registrations or changed code/policy cannot resume.
 This does not authorize collection, a budget reset or cache migration.
+
+Paper live runs persist order intents before submission and reconcile unresolved client IDs
+before new orders. Ambiguous submissions, working orders, or conflicting legacy pending rows
+block submissions and require investigation; no reset command is provided. The trader remains
+stopped, and cron resumes only on the owner's explicit authorization. Dry runs do not submit.

@@ -66,38 +66,48 @@ class AlpacaBroker:
         """
         return {s for s in symbols if not self._client.get_asset(s).tradable}
 
-    def submit_buy(self, symbol: str, notional: float) -> str:
+    def submit_buy(self, symbol: str, notional: float, client_order_id: str) -> str:
         req = MarketOrderRequest(
             symbol=symbol,
             notional=round(notional, 2),
             side=OrderSide.BUY,
             time_in_force=TimeInForce.DAY,
+            client_order_id=client_order_id,
         )
         order = self._client.submit_order(req)
         return str(order.id)
 
-    def submit_sell(self, symbol: str, qty: float) -> str:
+    def submit_sell(self, symbol: str, qty: float, client_order_id: str) -> str:
         req = MarketOrderRequest(
             symbol=symbol,
             qty=qty,
             side=OrderSide.SELL,
             time_in_force=TimeInForce.DAY,
+            client_order_id=client_order_id,
         )
         order = self._client.submit_order(req)
         return str(order.id)
 
     def get_order(self, order_id: str) -> dict:
-        o = self._client.get_order_by_id(order_id)
+        return self._normalize_order(self._client.get_order_by_id(order_id))
+
+    def get_order_by_client_id(self, client_order_id: str) -> dict:
+        return self._normalize_order(self._client.get_order_by_client_id(client_order_id))
+
+    @staticmethod
+    def _normalize_order(o: object) -> dict:
+        """Normalize broker order fields without inventing missing fill values."""
         return {
             "id": str(o.id),
+            "client_order_id": o.client_order_id,
             "symbol": o.symbol,
             "side": o.side.value if hasattr(o.side, "value") else str(o.side),
             "qty": float(o.qty) if o.qty is not None else None,
             "notional": float(o.notional) if o.notional is not None else None,
-            "filled_qty": float(o.filled_qty) if o.filled_qty is not None else 0.0,
+            "filled_qty": float(o.filled_qty) if o.filled_qty is not None else None,
             "filled_avg_price": float(o.filled_avg_price)
             if o.filled_avg_price is not None
-            else 0.0,
+            else None,
             "status": o.status.value if hasattr(o.status, "value") else str(o.status),
         }
 
