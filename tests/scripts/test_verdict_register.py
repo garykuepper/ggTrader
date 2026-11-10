@@ -371,3 +371,88 @@ def test_cli_checks_tracked_inventory_history(records, tmp_path, monkeypatch):
     monkeypatch.setattr(register, "ROOT", tmp_path)
     assert register.main(["render"]) != 0
     assert not (tmp_path / "research/VERDICT_REGISTER.md").exists()
+
+
+def test_pending_items_are_visible_without_invented_judgments(records):
+    inventory, annotations = records
+    inventory["records"][1].update(
+        title="Strategy awaiting review",
+        source="source.md",
+        original_audit_verdict="NO-GO (audit transcription)",
+    )
+    output = register.render(inventory, annotations)
+    assert "Strategy awaiting review" in output
+    assert "NO-GO (audit transcription)" in output
+    assert "NOT REVIEWED" in output
+    assert "[source](../source.md)" in output
+
+
+def test_replica_model_holdout_and_live_parity_are_distinct(records, tmp_path):
+    inventory, annotations = records
+    first = annotations["verdicts"][0]
+    first.update(study_id="replica", specification_id="daily-model", stage_id="primary")
+    for index, stage, original, protocol in (
+        (2, "holdout", "INCONCLUSIVE", "STOPPED"),
+        (3, "live-parity", "UNVERIFIED", "UNRESOLVED"),
+    ):
+        inventory["records"].append(
+            {"inventory_id": f"replica-{index}", "disposition": "included", "source": "source.md"}
+        )
+        item = copy.deepcopy(first)
+        item.update(
+            inventory_id=f"replica-{index}",
+            verdict_id=f"replica-v{index}",
+            stage_id=stage,
+            original_verdict=original,
+            protocol_result=protocol,
+        )
+        item["revisions"][0]["annotation_revision_id"] = f"replica-r{index}"
+        annotations["verdicts"].append(item)
+    assert register.validate(inventory, annotations, tmp_path) == []
+    result = register.render(inventory, annotations)
+    assert all(stage in result for stage in ("primary", "holdout", "live-parity"))
+    assert all(original in result for original in ("NO-GO", "INCONCLUSIVE", "UNVERIFIED"))
+
+
+def test_same_day_append_is_current_even_if_revision_id_sorts_earlier(records):
+    inventory, annotations = records
+    revision = annotations["verdicts"][0]["revisions"][0]
+    revision["annotation_revision_id"] = "z-first"
+    annotations["verdicts"][0]["revisions"].append(
+        dict(revision, annotation_revision_id="a-later", evidence="UNRESOLVED")
+    )
+    summary = register.render(inventory, annotations).split("## Detailed records")[0]
+    assert "UNRESOLVED" in summary
+    assert "a-later" in summary
+
+
+def test_protocol_correction_is_append_only_and_visible(records, tmp_path):
+    inventory, baseline = records
+    updated = copy.deepcopy(baseline)
+    earlier = updated["verdicts"][0]["revisions"][0]
+    updated["verdicts"][0]["revisions"].append(
+        dict(
+            earlier,
+            annotation_revision_id="correction",
+            date="2026-02-01",
+            protocol_result="UNRESOLVED",
+        )
+    )
+    assert register.validate_history(baseline, updated) == []
+    assert register.validate(inventory, updated, tmp_path) == []
+    output = register.render(inventory, updated)
+    assert "UNRESOLVED" in output.split("## Detailed records")[0]
+    assert "NOT MET" in output.split("## Detailed records")[1]
+    updated["verdicts"][0]["revisions"][-1]["protocol_result"] = "invalid"
+    assert register.validate(inventory, updated, tmp_path)
+
+
+def test_zero_pending_does_not_claim_complete_discovery_without_evidence(records, tmp_path):
+    inventory, annotations = records
+    inventory["records"] = [inventory["records"][0]]
+    assert "INCOMPLETE" in register.render(inventory, annotations)
+    inventory["coverage_complete"] = True
+    assert register.validate(inventory, annotations, tmp_path)
+    inventory["coverage_evidence"] = "source.md"
+    assert register.validate(inventory, annotations, tmp_path) == []
+    assert "REVIEWED" in register.render(inventory, annotations)

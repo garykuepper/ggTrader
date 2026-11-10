@@ -12,6 +12,8 @@ included below where identified.
 
 For the process review and evidence limitations, see the [2026-11-01 research process audit](audits/research-process/2026-11-01-research-process-audit.md) and its [claim ledger](audits/research-process/_research_process_audit_ledger.json).
 
+For the evidence/action verdict review and its coverage status, see the [verdict register](VERDICT_REGISTER.md). Original studies remain authoritative.
+
 ## How to read the classifications
 
 - **NO-GO**: a specified test failed its registered or documented standard. It

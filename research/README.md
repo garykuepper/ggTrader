@@ -4,6 +4,10 @@ Everything ggTrader has learned from research lives here: one folder per study, 
 
 To find a study by question, date, status or nickname (A23 = the 70/30 SPY/SSO allocation; PEAD = post-earnings-announcement drift), start with [RESEARCH_INDEX.md](RESEARCH_INDEX.md). For the roster of everything tried and its verdict, see [RESEARCH_SNAPSHOT.md](RESEARCH_SNAPSHOT.md). The backlog of untried ideas is [WEB_RESEARCH_CANDIDATES.md](WEB_RESEARCH_CANDIDATES.md), and the report format is [TEMPLATE-research-report.md](TEMPLATE-research-report.md).
 
+## Verdict register
+
+The [verdict register](VERDICT_REGISTER.md) is the entry point for original verdicts and dated evidence/action annotations. Its coverage is explicitly marked incomplete while review is in progress; original study records remain authoritative.
+
 ## Current review
 
 The newest look at the whole record is the 2026-11-04 root-cause investigation. Start with its [reading route](audits/root-cause-2026-11-04/README.md), or read the one-page [executive summary](audits/root-cause-2026-11-04/2026-11-05-executive-summary.md) first, then the [findings in plain English](audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md) and the [consolidated direction review](audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md), with the [reference sheet](audits/root-cause-2026-11-04/reference-sheet.md) open for the terms. The 29 optional re-checks (called Phase 2) proposed at the end of the first phase were deliberately not run.
@@ -52,3 +56,5 @@ The `docs/` folder keeps architecture ([architecture.md](../docs/architecture.md
 ## Finding an old path
 
 Reports written before 2026-11-05 cite paths under the old `docs` research folder. [MOVED.csv](MOVED.csv) lists the old path and the new path of every moved file (248 rows: the 174 moved by the first reorganization plus the 74 intraday files moved when the intraday branch was brought onto this layout), and marks the three briefs that gained a `-brief` ending. It is a lookup table only: it does not make a missing path exist.
+
+Prospective registration aids: [return brief](programme/verdict-framework/TEMPLATE-return-brief.md) and [defense brief](programme/verdict-framework/TEMPLATE-defense-brief.md). These templates do not approve a study or amend existing gates.

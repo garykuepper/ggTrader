@@ -1,1 +1,2090 @@
-{"verdicts": []}
+{
+  "verdicts": [
+    {
+      "study_id": "production-replica",
+      "specification_id": "historical-daily-bar-model-2026-10-19",
+      "verdict_id": "production-replica-primary",
+      "inventory_id": "lens2-stocks-production-replica",
+      "stage_id": "primary-2021-2026",
+      "original_verdict": "NO-GO (approved closure of historical daily-bar model; raw run INCONCLUSIVE/stopped)",
+      "source": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "production-replica-primary-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The original artifact reports the primary arm below both pass bars (CAGR 14.1871% versus SPY 14.8294%, difference -0.6423 pp/year; Newey-West t -0.6898). The approved closure records the historical model NO-GO; it is preserved. A later audit found incorrect PARA identity with unmeasured impact, so the validity of the primary result and the affected protocol determination remain unresolved under the new framework. After-tax was not triggered. Lens 9 estimated a 4.24 pp/year detectable effect for annualized mean excess under its assumptions, not a CAGR confidence interval; no inference of no modest benefit follows.",
+          "sources": [
+            "research/audits/production-replica/2026-10-19-production-replica-audit.md",
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+            "research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md",
+            "research/audits/production-replica/_production_replica_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "The primary passed its registered data detector, not a full price-identity verification. Later audit identified incorrect PARA prices and did not establish their return impact; no new validity clearance or causal effect is inferred. The audit MDE is for annualized mean excess, not a confidence bound on the CAGR gap. The closure amendment was approved after results; its NO-GO scope is distinct from the original stopped raw run."
+        }
+      ]
+    },
+    {
+      "study_id": "production-replica",
+      "specification_id": "historical-daily-bar-model-2026-10-19",
+      "verdict_id": "production-replica-holdout",
+      "inventory_id": "lens2-stocks-production-replica-holdout-2010-2020",
+      "stage_id": "holdout-2010-2020",
+      "original_verdict": "INCONCLUSIVE",
+      "source": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+      "protocol_result": "STOPPED",
+      "revisions": [
+        {
+          "annotation_revision_id": "production-replica-holdout-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Coverage 87.39% exceeded the 70% floor, but the registered tainted-trade stop triggered: 21 trade/artifact matches represent 11 distinct symbol-date trades; remaining sensitivity arms were not run. The approved closure keeps holdout performance non-citable and does not clear the stop. The original INCONCLUSIVE verdict is preserved; the framework evidence label UNRESOLVED reflects the data fault.",
+          "sources": [
+            "research/audits/production-replica/2026-10-19-production-replica-audit.md",
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+            "research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md",
+            "research/audits/production-replica/_production_replica_results.json"
+          ],
+          "approval": null,
+          "uncertainties": "Flags are not proof every move is false: RHT may reflect a genuine corporate event; mixed identity in TIE/MEE is an inference. Detector limitations and survivorship risk remain; holdout performance is not investment evidence."
+        }
+      ]
+    },
+    {
+      "study_id": "production-replica",
+      "specification_id": "historical-daily-bar-model-2026-10-19",
+      "verdict_id": "production-replica-live-parity",
+      "inventory_id": "lens2-stocks-production-replica-live-parity",
+      "stage_id": "historical-live-parity",
+      "original_verdict": "UNVERIFIED",
+      "source": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "production-replica-live-parity-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "This is an operational parity status, not a return test. The original gate required 100% of live strategy orders explained; the recorded check explained 10 of 32 (31.25%), including 19 manual liquidations in the unchanged denominator. The approved parity amendment allows the narrower daily-bar study to proceed while exact deployed-trader replication stays unverified.",
+          "sources": [
+            "research/audits/production-replica/2026-10-19-production-replica-audit.md",
+            "research/audits/production-replica/2026-10-19-production-replica-parity-amendment.md",
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+            "research/audits/production-replica/2026-10-19-production-replica-closure-amendment.md",
+            "research/audits/production-replica/_replica_parity_20261019.json"
+          ],
+          "approval": null,
+          "uncertainties": "AEE sale reproduces with the former lookback, but exact decision-time yfinance inputs for ALL and ARES could not be recovered. Hypothetical partial-bar substitutions are diagnostics, not verified inputs. This check cannot establish the historical live path or its return edge."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-momentum-french-screen",
+      "inventory_id": "lens2-stocks-momentum-french-screen",
+      "study_id": "stocks-momentum",
+      "specification_id": "big-and-small-hiprior",
+      "stage_id": "phase-1",
+      "original_verdict": "NO-GO",
+      "protocol_result": "NOT MET",
+      "source": "research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-momentum-french-screen-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Both BIG and SMALL HiPRIOR fail A1: smallest one-sided p=0.000941902 exceeds the first two-test Holm threshold 0.000675; A2 net CAGR differences 1994-01\u20132026-04 are +0.081863 and +0.197551 pp/yr versus +1.0 pp/yr. A1 uses 1927-01\u20132026-04, NW(12), and 1%/3% annual base haircuts. Original NO-GO and closure follow the stated two-gate rule. The numerical policy outcome is preserved; prior registration of the timing-sensitive prospective claim is unverified.",
+          "sources": [
+            "research/stock-signals/momentum/2026-10-20-momentum-retest.md",
+            "research/stock-signals/momentum/2026-10-20-momentum-french-screen-nogo.md",
+            "research/stock-signals/momentum/_momentum_french_screen_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 9 cannot compute an effect-size MDE from the stored artifact; power and effects ruled out are unknown. The audit calls registration late: the brief and results first appear in the same commit, so prior commitment cannot be verified. French portfolios compare with French market, not SPY; fixed haircuts are not realized costs or tax and do not test a stock-level implementation."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-factor-screen-h1-h4",
+      "inventory_id": "lens2-stocks-factor-screen-h1-h4",
+      "study_id": "stocks-factor-screen",
+      "specification_id": "h1-hiop-h2-hibm-h3-loinv-h4-value-momentum",
+      "stage_id": "phase-1",
+      "original_verdict": "NO-GO",
+      "protocol_result": "NOT MET",
+      "source": "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-factor-screen-h1-h4-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "All four fail both gates: first Holm-ranked H4 p=0.090310 exceeds 0.0003375; A2 1994-01\u20132026-04 net CAGR differences H1 +0.826675, H2 -0.620700, H3 -0.000702, H4 -0.559214 pp/yr each miss +1.0. A1 is 1963-07\u20132026-04, NW(12), family alpha 0.00135; annual base haircuts 1% H1\u2013H3, 1.5% H4. Original NO-GO and closure follow the registered two-gate rule.",
+          "sources": [
+            "research/stock-signals/factor-screen/2026-10-20-factor-screen.md",
+            "research/stock-signals/factor-screen/2026-10-21-factor-screen-nogo.md",
+            "research/stock-signals/factor-screen/_factor_screen_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 9 cannot compute an effect-size MDE from the stored artifact; power and effects ruled out are unknown. French BIG is broader than S&P 500; market is French total return, not SPY. Haircuts are policy assumptions, not actual trading costs or tax. The sample informed factor development and the 2013 diagnostic includes some pre-publication data."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-net-issuance-screen",
+      "inventory_id": "lens2-stocks-net-issuance-screen",
+      "study_id": "stocks-net-issuance",
+      "specification_id": "big-negni-h1",
+      "stage_id": "part-a",
+      "original_verdict": "NO-GO",
+      "protocol_result": "NOT MET",
+      "source": "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-net-issuance-screen-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "BIG NegNI fails A1 (NW(12) t=0.26, one-sided p=0.398 versus t\u22653 and p\u22640.00135, one hypothesis) and A2 (+0.48 pp/yr versus +1.0). A1 covers 1963-07\u20132026-04 and A2 1994-01\u20132026-04, at 1% annual base haircut. Original NO-GO and closure follow the registered two-gate rule; other issuance buckets are diagnostics.",
+          "sources": [
+            "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen.md",
+            "research/stock-signals/net-issuance/2026-10-23-net-issuance-screen-nogo.md",
+            "research/stock-signals/net-issuance/_net_issuance_screen_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 9 cannot compute an effect-size MDE from the stored artifact; power and effects ruled out are unknown. French BIG is not an S&P 500 implementation; French market is not SPY. Haircuts are policy assumptions, not measured costs or taxes. Historical anomaly development overlaps the test; serial candidate selection is not controlled by the single-test threshold."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-pead",
+      "inventory_id": "lens2-stocks-pead",
+      "study_id": "stocks-pead",
+      "specification_id": "pead",
+      "stage_id": "top-surprise-quintile-sp500-and-russell2000",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-pead-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Matched-window SP500 OOS Sharpe 0.58 equals SPY 0.58; adding as fourth blend sleeve reduced Sharpe 1.14 to 1.06 and worsened MaxDD -5.39% to -6.51%. The longer-window SP500 Sharpe 0.93 did not persist. Russell 2000 long-window Sharpe 0.77 tied SPY and had 60% regime halts. Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/pead/2026-07-17-pead-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "The report provides WFO summaries but no raw result artifact suitable for the audit power calculation. Lens 2 records contaminated inputs (day shift, duplicate SPY rows, anchor leak, DSR units), partial code verification, no registered brief found, and no Lens 9 MDE. Audit power is unestablished; this does not show zero power or no smaller edge."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-congress-trades",
+      "inventory_id": "lens2-stocks-congress-trades",
+      "study_id": "stocks-congress-trades",
+      "specification_id": "congress-trades",
+      "stage_id": "house-stock-act-mirroring-sp500",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-congress-trades-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Matched-window OOS Sharpe 0.36 versus SPY 0.58. Adding as a fourth blend sleeve reduced Sharpe 1.14 to 1.04 and worsened MaxDD -5.39% to -5.43%, despite long-window Sharpe 0.89. Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/congress-trades/2026-07-19-congress-trades-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 reports no raw artifact for its recomputation or power estimate, contaminated inputs (day shift, duplicate SPY rows, anchor leak, DSR units), partial code verification, and no preregistered brief found. Power/effect ruled out remains unknown, not zero."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-index-deletion-fade",
+      "inventory_id": "lens2-stocks-index-deletion-fade",
+      "study_id": "stocks-index-deletion-fade",
+      "specification_id": "index-deletion-fade",
+      "stage_id": "buy-sp500-deletions-21-42-63-days",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/index-deletion/2026-07-17-index-deletion-fade-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-index-deletion-fade-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "SP500 WFO OOS Sharpe 0.30 versus SPY 0.76, CAGR 6.0% versus 15.2%, MaxDD -68.7% versus -33.7%; 17/42 gates passed and regime halt was active in 32/42 folds. Addendum event study: t=0.35, p=0.72. Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/index-deletion/2026-07-17-index-deletion-fade-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 records contaminated inputs (day shift, duplicate SPY rows, anchor leak, DSR units), partial code verification, no brief found, and no raw artifact for its MDE calculation. The report's event-study summary supports the stated NO-GO but is not a documented precision/power analysis. The supplementary event comparison is post-hoc, gross, and compares held versus ordinary stock-days, not SPY; its nonsignificant result does not establish a null."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-max-effect",
+      "inventory_id": "lens2-stocks-max-effect",
+      "study_id": "stocks-max-effect",
+      "specification_id": "max-effect",
+      "stage_id": "bottom-max-quintile-sp500",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/max-effect/2026-07-17-max-effect-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-max-effect-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Reported OOS Sharpe 0.39\u20130.45 versus SPY 0.76\u20130.88, CAGR about 5.0\u20135.1% versus 15.2%, and MaxDD -36.5% versus -33.7%; healthy WFO diagnostics did not translate to economic competitiveness or a diversification case (correlation 0.692). Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/max-effect/2026-07-17-max-effect-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "The report notes slight run/window drift and cites summary metrics, but Lens 2 has no raw artifact for recomputation/MDE; it flags duplicate SPY rows, anchor leak and DSR units, code unverifiable, and no registered brief found. Power and effects ruled out are unknown; do not infer no edge from absent artifact."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-insider-cluster-buy",
+      "inventory_id": "lens2-stocks-insider-cluster-buy",
+      "study_id": "stocks-insider-cluster-buy",
+      "specification_id": "insider-cluster",
+      "stage_id": "form4-nonplan-cluster-purchases-sp500",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-insider-cluster-buy-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Matched-window OOS Sharpe 0.39 versus SPY 0.58; fourth blend sleeve moved Sharpe 1.14 to 1.12 and MaxDD -5.39% to -5.45%. Long-window Sharpe was 0.76 with 29/40 gate passes, but did not persist on the matched window. Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/insider-cluster/2026-07-19-insider-cluster-buy-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 records contaminated inputs (day shift, duplicate SPY rows, anchor leak, DSR units), partial code verification, no preregistered brief found and no raw artifact for MDE. The report calls this a real-but-small/inconsistent effect; audit power is unestablished, not a statistical exclusion of smaller benefit."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-short-interest",
+      "inventory_id": "lens2-stocks-short-interest",
+      "study_id": "stocks-short-interest",
+      "specification_id": "short-interest",
+      "stage_id": "finra-days-to-cover-trend-free-data-sp500",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-short-interest-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Free-data version OOS Sharpe 0.27 versus SPY 0.61, CAGR 3.8% versus 13.0%, WFE 0.11, regime halt 16/20 folds, and selected parameters stable in 1/20 folds. Report closes this version and does not claim to test paid borrow-cost data. Original NO-GO is preserved. The historical report\u2019s stated advancement decision was not met; this annotation does not claim that statistical evidence rules out all useful effects. The source reports a historical NO-GO; the audit identifies input contamination and missing registration or artifacts, so the validity of the affected inference and a registered protocol determination are unresolved.",
+          "sources": [
+            "research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 reports contaminated inputs (day shift, duplicate SPY rows, anchor leak, DSR units), partial code verification, no brief found, and no raw artifact for MDE. WFO instability is the report's rationale for NO-GO; formal power and the size of effects ruled out remain unknown."
+        }
+      ]
+    },
+    {
+      "study_id": "cross-asset-sleeve",
+      "specification_id": "static-80-20-spy-tlt-gld-pdbc",
+      "verdict_id": "cross-asset-static-80-20-sleeve",
+      "inventory_id": "lens2-cross-asset-static-80-20-sleeve",
+      "stage_id": "primary-static-arm",
+      "original_verdict": "GO (shadow only)",
+      "source": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+      "protocol_result": "MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "cross-asset-static-80-20-sleeve-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The frozen static-arm bar was met: pinned 2021-02-01\u20132026-04-30 Sharpe 0.973 vs SPY 0.896 and MaxDD \u221221.3% vs \u221224.5%; 2016-01-04\u20132026-04-30 Sharpe 0.967 vs 0.872 and MaxDD \u221228.4% vs \u221233.7%; 2022 return \u221215.8% vs \u221218.6%; checks held at 3 bp and under each single-leg removal. CAGR lagged SPY by 1.1 pp/yr on both windows. These are original policy checks, not statistical support for defensive benefit. The post-hoc pinned Sharpe-gap 90% CI was [\u22120.02,+0.18]; long-window CI [+0.03,+0.16] is post-hoc and neither is a registered downside/wealth noninferiority joint test. Preserve the original GO-for-shadow result; no approved forward scope is evidenced here.",
+          "sources": [
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+            "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 1 calls the static headline clean; Lens 2/Lens 9 cannot compute interval or MDE from the artifact's CAGR/Sharpe fields. Both pinned and long windows were inspected in the prior sanity check; the bootstrap is post-hoc and DESCRIPTIVE, not untouched prospective evidence. Tax, after-tax wealth, broader crisis coverage, and a forward shadow are not established. Report table begins 2021-02-01, while raw JSON metadata begins 2021-01-31."
+        }
+      ]
+    },
+    {
+      "study_id": "cross-asset-sleeve",
+      "specification_id": "static-80-20-spy-tlt-gld-dbc-holdout",
+      "verdict_id": "cross-asset-sleeve-holdout-2007-2011",
+      "inventory_id": "lens2-cross-asset-sleeve-holdout-2007-2011",
+      "stage_id": "holdout-2007-06-to-2011-02",
+      "original_verdict": "PASSED (weak)",
+      "source": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+      "protocol_result": "MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "cross-asset-sleeve-holdout-2007-2011-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The separately frozen 2007-06-01\u20132011-02-28 holdout met its restricted checks: static 80/20 with DBC had Sharpe 0.172 vs SPY 0.078 and MaxDD \u221246.3% vs \u221255.2%; results held at 3 bp. Its brief explicitly calls this weak support because the roughly 3.75-year span is dominated by 2008, likely to flatter the mix. It does not establish material downside improvement plus wealth noninferiority. Preserve PASSED (weak); protocol MET is not proof of persistent defensive effect. The report records CAGR 1.3% versus -1.7% and 2008 total return -29.9% versus -36.8% for SPY.",
+          "sources": [
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-holdout.md",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+            "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_holdout_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 1 calls the holdout clean and Lens 7 spot-checked recomputation. Lens 6 is unverifiable; Lens 9 cannot compute t-statistic, uncertainty, or MDE. The report records that SPY differed from the OHLCV tape on one overlap day outside the holdout. The period is limited and does not cover varied adverse regimes. The holdout brief states that data from 2011-03 onward had already been seen."
+        }
+      ]
+    },
+    {
+      "study_id": "cross-asset-sleeve",
+      "specification_id": "slow-trend-252d-and-wfo-126-189-252",
+      "verdict_id": "cross-asset-sleeve-trend-arm",
+      "inventory_id": "lens2-cross-asset-sleeve-trend-arm",
+      "stage_id": "trend-arm-primary-and-wfo",
+      "original_verdict": "fails its bar",
+      "source": "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "cross-asset-sleeve-trend-arm-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The registered trend-preference rule was not met: pinned trend improvement over static was only +0.007 Sharpe and +1.6 MaxDD points versus required +0.05 Sharpe or +3 points without Sharpe loss; WFO halted in folds 2\u20138, violating the no-halt condition. Long-window trend Sharpe was below static (0.948 vs 0.967). This supports the original narrow conclusion that this timing arm adds nothing over static under its rule, not a general absence of defensive value. The original closure is preserved. The report gives 14/17 WFO gate passes and lookback 126 winning 8/17. The clean pinned comparison alone fails the necessary first condition, independently of uncertain WFO validity.",
+          "sources": [
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve.md",
+            "research/allocation/cross-asset-sleeve/_cross_asset_sleeve_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 1 says pinned comparison is clean but WFO validity is unknown (it predates an engine fix); Lens 2 records DSR-unit uncertainty, code unverifiable, and no MDE; Lens 9 cannot compute uncertainty. NOT MET is the registered policy/operational outcome; broad inference is inconclusive."
+        }
+      ]
+    },
+    {
+      "study_id": "commodity-trend",
+      "specification_id": "a3-commodity-trend-12-1-volatility-regime-filter",
+      "verdict_id": "cross-asset-commodity-trend",
+      "inventory_id": "lens2-cross-asset-commodity-trend",
+      "stage_id": "wfo-50-folds-from-2013",
+      "original_verdict": "NO-GO",
+      "source": "research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "cross-asset-commodity-trend-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The report states that the ETF-only 14-single-commodity universe, 12\u20131 momentum with volatility filter, and top-N/threshold WFO produced OOS Sharpe 0.13 vs SPY 0.74, CAGR 1.0%, MaxDD \u221237.0% vs \u221233.7%, 27/50 gates, and an active regime halt. Preserve the original NO-GO. The audit found no raw artifact or brief, anchor-leak contamination that may favor the candidate, duplicate-SPY contamination of unclear direction, unknown DSR units, unverifiable code, and no power estimate. These prevent valid protocol and evidence re-determination; they do not make the reported NO-GO proof of no edge. The original report documents closure of this specification; unresolved evidence does not reverse that action.",
+          "sources": [
+            "research/allocation/commodity-trend/2026-07-20-commodity-trend-nogo.md",
+            "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "The report has prose performance claims but the audited raw artifact was not found. Audit contamination concerns WFO and its impact is unknown. The tested question is isolated commodity trend/filter versus SPY, not commodity diversification against a fixed passive allocation. Carry and basis-reversal legs were outside scope and remain untested."
+        }
+      ]
+    },
+    {
+      "study_id": "fx-hedge-overlay",
+      "specification_id": "dynamic-carry-value-trend-hedge-vs-static-policy",
+      "verdict_id": "cross-asset-fx-hedge-overlay",
+      "inventory_id": "lens2-cross-asset-fx-hedge-overlay",
+      "stage_id": "2017-01-02-to-2026-06-30-oos-static-baseline",
+      "original_verdict": "NO-GO",
+      "source": "research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "cross-asset-fx-hedge-overlay-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The report's primary claim is dynamic hedge versus static policy on two ETF pairs, not hedging versus SPY. It reports dynamic Sharpe 0.41, CAGR 6.0%, MaxDD \u221236.7%, below static 50/50 (0.66, 12.4%, \u221234.8%) and 100%-hedged (0.73, 14.7%, \u221235.9%). Preserve the original NO-GO for this retail-proxy rule. The audit found no raw artifact or brief, anchor-leak contamination that may favor the candidate, duplicate-SPY contamination of unclear direction, unknown DSR units, unverifiable code, and no MDE. These faults prevent independent protocol or inferential determination; the result does not establish a general case against dynamic currency hedging. The original report documents closure of this specification; unresolved evidence does not reverse that action. The unhedged reference was 0.53 Sharpe, 9.7% CAGR and -35.2% MaxDD; SPY reference was 0.74, 15.2% and -33.7%.",
+          "sources": [
+            "research/allocation/fx-hedge/2026-07-20-fx-hedge-overlay-nogo.md",
+            "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "The academic claim and report comparator are dynamic versus static FX hedge policies; SPY is reference-only. The available JPY/EUR ETF proxy history does not test the broader strategy. The audit found no raw artifact, so values were not independently recomputed. No owner-approved continuation is evidenced."
+        }
+      ]
+    },
+    {
+      "study_id": "crypto-edge-search",
+      "specification_id": "per-coin-wfo-gates-universe-fees-2026-06-08",
+      "verdict_id": "crypto-edge-search-2026-06-08",
+      "inventory_id": "lens2-crypto-edge-search-2026-06-08",
+      "stage_id": "three-run-sweep-and-holdout",
+      "original_verdict": "no deployable edge",
+      "source": "docs/archive/edge_search_report_2026-06-08.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "crypto-edge-search-2026-06-08-other-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The source reports the top-11 Binance.US run had zero full-cascade passers; the all-51 Binance.US run had two marginal passers and +13.8% CAGR versus BTC +38.8%; and the Kraken top-100 run returned -10.0%. The report says no passer had a clean, trade-rich positive holdout and closes the cheap gate, universe, and venue/fee levers. Preserve the original \u201cno deployable edge\u201d verdict and this bounded scope. Lens 8 says the Binance.US tape includes 44% Kraken copies, flags survivorship, and notes the headline venue flip is confounded by universe, tape, selected coins, and fees. The underlying raw results are absent from the repository and Lens 2 reports data unknown, no raw artifact, and no pre-registered brief. These prevent independent validation of the inference and registered protocol result; they do not establish that every crypto strategy lacks an edge.",
+          "sources": [
+            "docs/archive/edge_search_report_2026-06-08.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md"
+          ],
+          "approval": null,
+          "uncertainties": "Reported values are sourced to the 2026-06-08 report and Lens 8 reanalysis; no raw results were independently recomputed. Binance.US copied-bar provenance, survivorship and confounded venue comparison limit causal interpretation. The source tested long-only spot WFO in the listed universes and venues; it did not test directional shorting, broader crypto strategies or a longer history."
+        }
+      ]
+    },
+    {
+      "study_id": "crypto-funding-carry",
+      "specification_id": "funding-carry-phase4-basis-proxy-b",
+      "verdict_id": "crypto-funding-carry-phase4",
+      "inventory_id": "lens2-crypto-funding-carry-phase4",
+      "stage_id": "basis-proxy-b-with-real-funding-a-context",
+      "original_verdict": "directionally credible but not numerically trustworthy",
+      "source": "docs/archive/phase4_funding_carry.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "crypto-funding-carry-phase4-other-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The Phase 4 report describes a delta-neutral long-spot/short-PF_XBTUSD funding-carry test. Its real-funding run reports +0.45%, Sharpe 4.44 and 8 trades over 2025-05-15\u20132026-05-15; the report itself limits the basis proxy as not quotable and notes zero trade-event overlap between the real-funding and proxy runs. Lens 8 confirms the results are prose-only, with inputs and legacy code noted as existing, but no raw result artifact is available; Lens 2 found no brief or registered bar. Preserve the original cautious verdict. Numerical evidence and the registered protocol determination cannot be independently checked without a raw result and a registered brief; unknown power alone is not the reason for UNRESOLVED. The quoted cautious verdict refers specifically to basis-proxy B; the report treats real-funding A separately as its canonical quotable result.",
+          "sources": [
+            "docs/archive/phase4_funding_carry.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md"
+          ],
+          "approval": null,
+          "uncertainties": "No results artifact or pre-registration was located. The report\u2019s input dataset and legacy code are described in the source and Lens 8, but this annotation does not access the database or reconstruct the run. One year of real funding data and eight trades are thin; the basis proxy differs in trade timing and is not a valid substitute."
+        }
+      ]
+    },
+    {
+      "study_id": "crypto-ibit-overnight-session",
+      "specification_id": "ibit-session-return-split-2024-01-11-to-2026-10-23",
+      "verdict_id": "crypto-ibit-overnight-session",
+      "inventory_id": "lens2-crypto-ibit-overnight-session",
+      "stage_id": "intraday-weeknight-weekend-descriptive-split",
+      "original_verdict": "closed in practice \u2014 do not build",
+      "source": "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "crypto-ibit-overnight-session-other-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "DESCRIPTIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The original finding is a descriptive split of IBIT ETF session returns, not a registered strategy test. The JSON artifact reports separate intraday, weeknight and weekend statistics; Lens 2 notes no benchmark series, no registered bar, and that `overnight_all` lacks a t-statistic, so it selected the three available sub-rows for partial recomputation. Lens 8 says the crypto Sharpe annualization issue does not affect these total-return results. Preserve the source\u2019s \u201cclosed in practice \u2014 do not build\u201d action. Because there is no registered decision rule and the artifact\u2019s selected statistic does not match a single declared verdict arm, protocol determination is unresolved; the descriptive split does not establish a deployable edge.",
+          "sources": [
+            "research/crypto/artifacts-2026-10-25-crypto-web-batch/ibit_overnight_split.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md"
+          ],
+          "approval": null,
+          "uncertainties": "This artifact concerns IBIT (a US-listed ETF), despite its crypto inventory grouping. It tests absolute session returns, not excess returns versus a benchmark. The audit\u2019s iid t-statistics and post-hoc selection are descriptive; the window, session counts and means do not resolve whether the pattern persists or is tradeable."
+        }
+      ]
+    },
+    {
+      "study_id": "crypto-kraken-live-bot",
+      "specification_id": "kraken-live-bot-pnl-claim-april-2026",
+      "verdict_id": "crypto-kraken-live-bot-pnl",
+      "inventory_id": "lens2-crypto-kraken-live-bot-pnl",
+      "stage_id": "reported-five-day-live-pnl",
+      "original_verdict": "modestly profitable",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "crypto-kraken-live-bot-pnl-other-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 8 traces the claim to +$9.88 realized over about five Kraken trading days and notes an approximately $100 mid-window capital injection, with Kraken-era trade records and the investigation script missing. Its live evidence table has zero rows in the `trades` and `equity_curves` tables and identifies no checkable performance artifact. Lens 2 records no raw artifact, unverified code, and no registered brief. Preserve the original \u201cmodestly profitable\u201d claim as the historical verdict while marking evidence and protocol unresolved; the dollar gain cannot be verified or interpreted as a return without capital-flow and trade records. The old engine\u2019s removal is recorded history, not an action recommendation about the project.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md"
+          ],
+          "approval": null,
+          "uncertainties": "Trade records, the source P&L script, starting/ending capital and full external cash-flow-adjusted return are unavailable. The capital injection makes the dollar figure unsuitable as a performance rate; no inference about profitability follows."
+        }
+      ]
+    },
+    {
+      "study_id": "crypto-wfo-textbook-reset",
+      "specification_id": "seven-coin-textbook-wfo-fee-sweep-2026-05",
+      "verdict_id": "crypto-wfo-textbook-reset",
+      "inventory_id": "lens2-crypto-wfo-textbook-reset",
+      "stage_id": "gate-results-frictionless-through-realistic-fees",
+      "original_verdict": "closed",
+      "source": "docs/superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "crypto-wfo-textbook-reset-other-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The closure report records a same-universe, same-grid fee sweep with 36, 14, 13 and 0 aggregate-gate passers from frictionless through Kraken taker costs, and states that zero coins formed a portfolio in every variant. It also distinguishes the separate venue decision that selected 22 BTC/ETH/DOGE combos and deferred 14 TRX combos. Lens 8 found the inventory\u2019s cited raw artifact points to the frictionless run rather than the realistic-fee run; the latter\u2019s gate count is reconstructed from worker logs, and no portfolio formed even at zero cost. Lens 2 reports no registered brief, no excess-vs-benchmark statistic, and unverified code. Preserve the original closed result and the narrow WFO/fee-sweep scope. The mispointed artifact, incomplete durable evidence and missing registered brief prevent an independent determination of the affected protocol and portfolio claims.",
+          "sources": [
+            "docs/superpowers/closures/2026-05-12-wfo-textbook-reset-and-venue-migration.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens8-crypto.md"
+          ],
+          "approval": null,
+          "uncertainties": "The closure report is detailed, but the realistic-fee raw snapshot was not preserved at the cited location; Lens 8 says the stated zero-pass count is available in worker logs. Do not conflate the aggregate gate-pass counts with deployable portfolios or with the separate venue/migration decision. Crypto data provenance and survivorship concerns remain under Lens 8; no new computation was done."
+        }
+      ]
+    },
+    {
+      "verdict_id": "verdict-stocks-a23-static-leverage",
+      "inventory_id": "lens2-stocks-a23-static-leverage",
+      "study_id": "static-leverage",
+      "specification_id": "a23-static-70-30-spy-sso-after-tax",
+      "stage_id": "owner-allocation-decision",
+      "original_verdict": "GO for owner decision",
+      "protocol_result": "MET",
+      "source": "research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-a23-static-leverage-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The registered primary criteria were after-tax CAGR \u2265 SPY +1.0 pp/year on the 2006-06-21\u20132026-09-29 real-SSO window and not below SPY on the 1993-02-01\u20132006-06-20 synthetic holdout. The report records the 70/30 arm clearing both using the historical financing path; its 2026-09-30 +2.5 pp funding-cost sensitivity reduces the main-window margin to +0.80 pp/year, below the same +1.0 bar. Preserve GO for owner decision and the documented owner adoption of 1.3x; the sensitivity does not authorize changing the allocation. Lens 2 found clean data and recomputation, but code was not examined and Lens 9 could not compute power because the stored artifact lacks the needed uncertainty inputs. The historical result and current funding condition are distinct determinations; no alpha inference is intended.",
+          "sources": [
+            "research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md",
+            "research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md",
+            "research/allocation/static-leverage/_static_leverage_aftertax_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 9 could not compute MDE/power from the stored result fields; this is absence of a computable effect-size uncertainty estimate, not evidence of zero power or invalidity by itself. Lens 6 has no code review row. The report identifies these as already-seen windows; moreover the synthetic holdout uses a financing spread calibrated on later real SSO returns and so is not untouched OOS. The +2.5 pp funding sensitivity was a historical scenario dated 2026-09-30, not a current market measurement. The comparison is an allocation-risk study with substantially deeper drawdowns, not stock-selection alpha."
+        }
+      ],
+      "evaluation_dates": {
+        "primary_real_ssO": "2006-06-21 to 2026-09-29",
+        "synthetic_holdout": "1993-02-01 to 2006-06-20",
+        "funding_sensitivity": "2026-09-30 report sensitivity; historical main window with +2.5 pp annual funding-cost offset (~4.1% bills)"
+      },
+      "data_vintage": "Real SPY/SSO and rates are the inputs used by the 2026-09-30 report; source report warns mutable upstream yfinance inputs and calibration can drift. Pre-2006 SSO is synthetic, calibrated on 2006-06 to 2026-09 real overlap (SPY proxy, T-bill + 0.75% spread and 0.88% fee). These dates have already been seen; the earlier series is calibrated using later returns, so it is not untouched OOS.",
+      "registered_criteria": "1.3x 70/30 SPY/SSO, fixed \u00b18 percentage-point month-end band, 1 bp/side and taxable lot accounting. For consideration: after-tax CAGR at least +1.0 pp/year above after-tax SPY on 2006-07 through 2026-09 and not below after-tax SPY on labelled synthetic 1993\u20132006 holdout. Sharpe below SPY is expected and not a fail; ratio sweep is reporting-only."
+    },
+    {
+      "verdict_id": "verdict-stocks-a24-sleeve-trend-rider",
+      "inventory_id": "lens2-stocks-a24-sleeve-trend-rider",
+      "study_id": "static-leverage",
+      "specification_id": "a24-sma-sleeve-vs-static-70-30",
+      "stage_id": "real-sso-window",
+      "original_verdict": "NO-GO as a return improvement",
+      "protocol_result": "UNRESOLVED",
+      "source": "research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-a24-sleeve-trend-rider-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "On the 2006-06-21\u20132026-09-29 real-SSO window, the report shows A24 below the displayed static 70/30 comparator after tax (11.73% vs 12.00% at 24%/15%; 10.80% vs 11.33% at 40.8%/23.8%), with shallower drawdown and higher realized short-term gains. The registered bar requires a static comparator at the same average exposure, and the report/artifact do not establish that the displayed 70/30 comparison matches A24 average exposure. Therefore the registered protocol determination is UNRESOLVED, while the original NO-GO as a return improvement and its documented close are preserved as the source decision. The evidence label is UNRESOLVED: Lens 6 code review is absent and Lens 9 could not estimate power from the prose-only evidence.",
+          "sources": [
+            "research/allocation/static-leverage/2026-09-30-static-fractional-leverage-brief.md",
+            "research/allocation/static-leverage/2026-09-30-static-fractional-leverage.md",
+            "research/allocation/static-leverage/_static_leverage_aftertax_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "The key comparator condition\u2014static book at A24\u2019s same average exposure\u2014is not established in the report/artifact, so the registered criterion cannot be independently determined from the cited comparison. Lens 9 has no raw artifact for a power estimate; this is unavailable uncertainty, not evidence that power alone invalidates the result. This NO-GO is limited to return improvement; the source reports a separate drawdown trade-off. No broad inference about every trend overlay follows."
+        }
+      ],
+      "evaluation_dates": {
+        "primary_real_ssO": "2006-06-21 to 2026-09-29",
+        "synthetic_holdout": "1993-02-01 to 2006-06-20 (reported context; A24 bar is against static book on real-SSO window)"
+      },
+      "data_vintage": "Same report inputs as A23: real SPY/SSO and rates used for the 2026-09-30 report, with mutable upstream yfinance history; pre-2006 SSO is synthetic. The A24 primary comparison is the real-SSO window.",
+      "registered_criteria": "A24: 60% SPY core plus 40% sleeve switched to SSO when month-end SPY close is \u22652% above its 10-month SMA and back to SPY when \u22652% below; decisions trade next bar. Compare after tax against the static book at the same average exposure, not SPY; freeze parameters and report switches/year and short-term-gain share."
+    },
+    {
+      "verdict_id": "verdict-stocks-century-leverage",
+      "inventory_id": "lens2-stocks-century-leverage",
+      "study_id": "century-leverage",
+      "specification_id": "static-fractional-leverage-century-taxable-stress",
+      "stage_id": "registered-2027-owner-review-rule",
+      "original_verdict": "keep 30%",
+      "protocol_result": "MET",
+      "source": "research/allocation/century-leverage/2026-10-23-century-leverage.md",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-century-leverage-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The registered rule returns keep 30% because no alternative passes all four conditions. On the primary 24%/15% path, 30% has 10.71% full-window after-tax CAGR versus 9.47% at 0%, but reaches \u221291.4% drawdown and trips the \u221290% ruin flag; 15% reaches \u221287.9% but is 0.54 pp/year below 30%, failing the required +0.5 pp/year improvement over 30%. The report states 0%, 15%, 45%, and 60% also fail at least one of the four criteria. Preserve keep 30% as advice for the 2027-09-30 review only, despite the identified rule limitation that it may retain a ruin-flagged incumbent. Lens 2 found clean data and recomputation but code unexamined and power uncomputable; the inferential/evidence status remains INCONCLUSIVE.",
+          "sources": [
+            "research/allocation/century-leverage/2026-10-23-century-leverage-brief.md",
+            "research/allocation/century-leverage/2026-10-23-century-leverage.md",
+            "research/allocation/century-leverage/_century_leverage_results.json",
+            "research/allocation/century-leverage/2026-10-23-century-leverage-ruling-r1.md",
+            "research/allocation/century-leverage/2026-10-23-century-leverage-ruling-r2.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens9-power-and-regime.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 9 cannot compute MDE/power from the available artifact; the report\u2019s decision is a deterministic registered recommendation rule, so missing power alone does not invalidate that rule outcome. Lens 6 did not examine code. Data are proxy/synthetic: French all-US market is not S&P 500; the synthetic 2x leg is calibrated on modern overlap and carried backward, with no historical fund failure, margin/counterparty risk, or verified historical financing. Tax rates are current-law hypotheticals; synthetic 2x distributions are zero. The rule checks ruin on the full window only. The 30% arm trips ruin and no alternative meets all gates; this is a design limitation explicitly described by the report, not a rationale to alter the dated action."
+        }
+      ],
+      "evaluation_dates": {
+        "full_window": "1926-07-01 to 2026-06-30",
+        "registered_subperiods": [
+          "1926-1945",
+          "1946-1972",
+          "1973-1981",
+          "1982-1999",
+          "2000-2026-06"
+        ],
+        "calibration": "2006-06-21 to 2026-04-30"
+      },
+      "data_vintage": "Ken French daily Fama-French factor archive with 202608 database vintage (daily labels through 2026-08-31); frozen Shiller dividend input ends 2026-06, so ruling r2 truncates evaluation at 2026-06-30. Synthetic 2x leg calibrated on frozen real SPY/SSO and French RF over 2006-06-21\u20132026-04-30; 0.84% fee is primary scenario. French market is value-weighted all-US, not S&P 500.",
+      "registered_criteria": "Fixed arms 0%, 15%, 30%, 45%, 60% SSO; primary 24%/15% federal tax. For the 2027-09-30 review, recommend an alternative only if it clears all: full-window after-tax CAGR at least +0.5 pp/year over 30%; 1973\u20131981 CAGR not below 30%; full-window max drawdown no more than 10 pp deeper than 30%; and no \u221290% ruin flag. Below-30 proposal additionally requires 30% itself trips ruin or trails 0% full-window CAGR. Otherwise advise keep 30%; this is review advice only, not trade authorization."
+    },
+    {
+      "verdict_id": "proposed-more-stocks-core-spy-blend-keep",
+      "inventory_id": "lens2-stocks-core-spy-blend-keep",
+      "source": "research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md",
+      "original_verdict": "KEEP",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-stocks-core-spy-blend-keep-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Historical scope is the roughly 8% stock exposure tested in the 2026-09-24 construction. Sharpe 0.80 vs 0.78 and equal 12.96% CAGR; report says live size is unvalidated. Lens 2 finds DSR-unit contamination of unknown direction, code/spec mismatch and no MDE. Preserve KEEP only for tested construction; inference and transfer to live sizing are unresolved.",
+          "sources": [
+            "research/allocation/core-spy-blend/2026-09-24-core-spy-blend-keep.md",
+            "research/allocation/core-spy-blend/_core_spy_blend_20260924.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "core-spy-blend",
+      "specification_id": "stocks-core-spy-blend-keep",
+      "stage_id": "historical-classification"
+    },
+    {
+      "verdict_id": "proposed-more-stocks-equity-diversification-sleeves",
+      "inventory_id": "lens2-stocks-equity-diversification-sleeves",
+      "source": "research/RESEARCH_SNAPSHOT.md",
+      "original_verdict": "failed",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-stocks-equity-diversification-sleeves-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records SPY duplicates, anchor leak, PIT-universe contamination, no raw artifact, no brief, prose-only recomputation and no power estimate. Contamination includes strategy-favoring components; no valid return inference or protocol determination can be recovered. Preserve \u201cfailed\u201d as historical wording, without converting it into evidence against a valid registered benefit.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "equity-diversification-sleeves",
+      "specification_id": "stocks-equity-diversification-sleeves",
+      "stage_id": "historical-classification"
+    },
+    {
+      "verdict_id": "proposed-more-stocks-live-revert-blend-to-core",
+      "inventory_id": "lens2-stocks-live-revert-blend-to-core",
+      "source": "research/RESEARCH_SNAPSHOT.md",
+      "original_verdict": "Underperforms; Revert Queued",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-stocks-live-revert-blend-to-core-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 finds PIT-universe and DSR-unit contamination (direction mixed/unknown), no found preregistration and no measurable power; Lens 6 code match is affirmative. Preserve the documented underperformance/revert-queued record, but contaminated inputs and unknown inferential precision leave performance determination unresolved.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens1_tape_state.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "live-revert-blend-to-core",
+      "specification_id": "stocks-live-revert-blend-to-core",
+      "stage_id": "historical-classification"
+    },
+    {
+      "verdict_id": "proposed-more-stocks-position-sizing-regimes",
+      "inventory_id": "lens2-stocks-position-sizing-regimes",
+      "source": "research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md",
+      "original_verdict": "Inconclusive",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-stocks-position-sizing-regimes-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The report headline is a single ungated window, not the gated WFO represented in the JSON; Lens 7 documents that mismatch and that the gated results were not incorporated into the report. Lens 2 also identifies PIT-universe and DSR-unit contamination and no t-statistic. Preserve the original Inconclusive verdict and its limited scope; neither the headline nor the separate JSON supports a generalized sizing conclusion.",
+          "sources": [
+            "research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md",
+            "research/paper-system/position-sizing/_position_sizing_wfo_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "position-sizing-regimes",
+      "specification_id": "stocks-position-sizing-regimes",
+      "stage_id": "historical-classification"
+    },
+    {
+      "verdict_id": "proposed-more-stocks-three-sleeve-blend-1-14",
+      "inventory_id": "lens2-stocks-three-sleeve-blend-1-14",
+      "source": "research/RESEARCH_SNAPSHOT.md",
+      "original_verdict": "GO",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-stocks-three-sleeve-blend-1-14-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "No raw artifact; Lens 2 finds SPY duplicates, anchor leak, PIT-universe contamination, DSR units, code mismatch and prose-only recomputation; Lens 7 finds no brief. The reported 1.14 result cannot support a valid determination. Preserve GO as historical wording; the later reproduction is a distinct record.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "three-sleeve-blend",
+      "specification_id": "stocks-three-sleeve-blend-1-14",
+      "stage_id": "historical-classification"
+    },
+    {
+      "verdict_id": "proposed-more-cross-asset-fomc-drift-corrected-harness",
+      "inventory_id": "lens2-cross-asset-fomc-drift-corrected-harness",
+      "source": "research/audits/production-replica/2026-10-19-production-replica-fomc-timing-amendment.md",
+      "original_verdict": "NO-GO stands",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-cross-asset-fomc-drift-corrected-harness-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The registered corrected-harness rule requires net event t >= 3.0 and WFE >= 0.50. The clustered artifact reports net t=0.981, and the separate audit reruns artifact reports WFE=0.244, so both registered conditions fail and the original NO-GO stands for this corrected event-study specification. Lens 6 did not examine code, so the evidence label remains INCONCLUSIVE and the result does not generalize to cross-asset allocation. The prior MDE comparison is removed.",
+          "sources": [
+            "research/audits/production-replica/2026-10-19-production-replica-audit.md",
+            "research/audits/production-replica/2026-10-19-production-replica-fomc-timing-amendment.md",
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+            "research/audits/production-replica/_fomc_clustered_event_study_20261020.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/production-replica/_audit_reruns_20261019.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "NOT MET"
+        }
+      ],
+      "study_id": "fomc-drift",
+      "specification_id": "cross-asset-fomc-drift-corrected-harness",
+      "stage_id": "registered-net-event-and-wfe-gates"
+    },
+    {
+      "verdict_id": "proposed-more-cross-asset-fomc-drift-wfo",
+      "inventory_id": "lens2-cross-asset-fomc-drift-wfo",
+      "source": "research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-cross-asset-fomc-drift-wfo-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 finds day shift, SPY duplicates, anchor leak, DSR units and pre-entry event returns; no raw artifact or found brief and recomputation is prose-only. Some known issues favor the strategy; historical NO-GO cannot be treated as a valid registered determination. Preserve its exact verdict and mark evidence/protocol unresolved.",
+          "sources": [
+            "research/allocation/fomc-drift/2026-07-20-fomc-drift-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "fomc-drift",
+      "specification_id": "cross-asset-fomc-drift-wfo",
+      "stage_id": "historical-wfo-classification"
+    },
+    {
+      "verdict_id": "proposed-more-cross-asset-month-end-treasury",
+      "inventory_id": "lens2-cross-asset-month-end-treasury",
+      "source": "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md",
+      "original_verdict": "NO-GO",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-cross-asset-month-end-treasury-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The registered five-criterion study fails its WFO and portfolio criteria. Independently, the portfolio arm reports Sharpe 0.909 versus SPY 0.896 but MaxDD -24.9% versus -24.5%, so the registered requirement that drawdown be no worse fails. The artifact records the NO-GO checks; preserve protocol NOT MET. Lens 2 flags DSR-unit contamination of unknown direction, so edge inference remains UNRESOLVED.",
+          "sources": [
+            "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve.md",
+            "research/allocation/month-end-treasury/2026-09-24-month-end-treasury-sleeve-nogo.md",
+            "research/allocation/month-end-treasury/_month_end_treasury_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "NOT MET"
+        }
+      ],
+      "study_id": "month-end-treasury",
+      "specification_id": "cross-asset-month-end-treasury",
+      "stage_id": "registered-five-criterion-study"
+    },
+    {
+      "verdict_id": "proposed-more-cross-asset-treasury-curve",
+      "inventory_id": "lens2-cross-asset-treasury-curve",
+      "source": "research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md",
+      "original_verdict": "NO-GO",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-cross-asset-treasury-curve-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 reports no raw artifact, no found pre-registered brief, SPY duplicates/anchor leak/DSR contamination, and prose-only recomputation. With inputs and registered decision rule unavailable, validity and determination cannot be established. Preserve NO-GO as historical disposition only.",
+          "sources": [
+            "research/allocation/treasury-curve/2026-07-20-treasury-curve-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Proposed annotation only. No owner approval or operational authorization is implied.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "study_id": "treasury-curve",
+      "specification_id": "cross-asset-treasury-curve",
+      "stage_id": "historical-verdict-classification"
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "conviction-mtf-lineage",
+      "verdict_id": "stocks-ensemble-conviction",
+      "inventory_id": "lens2-stocks-ensemble-conviction",
+      "stage_id": "historical-research",
+      "original_verdict": "Soft NO-GO",
+      "source": "research/RESEARCH_SNAPSHOT.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-conviction-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'Soft NO-GO' (inconclusive); this supplemental record preserves that historical decision without granting authorization. The source roster only preserves snapshot/lineage claims, with no primary run report or raw artifact available in this checkout; the source audit additionally records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (both favor strategy), and a DSR-unit fault (direction unknown). Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/RESEARCH_SNAPSHOT.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive. Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: yes; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. The source roster only preserves snapshot/lineage claims, with no primary run report or raw artifact available in this checkout; the source audit additionally records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (both favor strategy), and a DSR-unit fault (direction unknown). No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ic-weighted-voting-2026-06-28",
+      "verdict_id": "stocks-ensemble-ic-2026-06-28",
+      "inventory_id": "lens2-stocks-ensemble-ic-2026-06-28",
+      "stage_id": "historical-research",
+      "original_verdict": "NO-GO",
+      "source": "research/programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-ic-2026-06-28-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'NO-GO' (unreliable NO (flawed test)); this supplemental record preserves that historical decision without granting authorization. The June result is compared with the later-voided 1.12 baseline and Lens 6 found a code/spec mismatch. The source audit records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit contamination (direction unknown); the inventory records no raw run artifact; the available historical result summary is in the relocated initial-research-plan report. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md",
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable NO (flawed test). Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. The historical result summary is present at the relocated initial-research-plan path cited above. The June result is compared with the later-voided 1.12 baseline and Lens 6 found a code/spec mismatch. The source audit records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit contamination (direction unknown); its raw run artifact is unavailable. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ensemble-ic-pit-rebaseline",
+      "verdict_id": "stocks-ensemble-ic-pit",
+      "inventory_id": "lens2-stocks-ensemble-ic-pit",
+      "stage_id": "historical-research",
+      "original_verdict": "closed NO-GO",
+      "source": "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-ic-pit-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Lens 2 records 'closed NO-GO' (inconclusive); this supplemental record preserves that historical decision without granting authorization. This PIT run is closed NO-GO in the original source. Lens 1 identifies DSR-unit contamination; its effect direction is unknown. Lens 9 could not compute the requested MDE because the stored artifact lacks SPY CAGR and t-statistic; unknown power is not itself a validity fault. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+            "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+            "research/RESEARCH_SNAPSHOT.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive. Lens 1: contaminated ['dsr_units']; Lens 6: yes; Lens 7: prereg=pre-registered; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. This PIT run is closed NO-GO in the original source. Lens 1 identifies DSR-unit contamination; its effect direction is unknown. Lens 9 could not compute the requested MDE because the stored artifact lacks SPY CAGR and t-statistic; unknown power is not itself a validity fault. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "kelly-sizing-2026-07",
+      "verdict_id": "stocks-ensemble-kelly-2026-07",
+      "inventory_id": "lens2-stocks-ensemble-kelly-2026-07",
+      "stage_id": "historical-research",
+      "original_verdict": "NO-GO",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-kelly-2026-07-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'NO-GO' (inconclusive); this supplemental record preserves that historical decision without granting authorization. The July finding is preserved as a historical NO-GO, but it was compared with the later-voided 1.12 baseline, has no raw run artifact in the source record, and Lens 6 found a code/spec mismatch. Tape contamination includes anchor leakage and non-PIT membership (favor strategy), duplicate SPY rows (unclear), and DSR units (unknown). Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "docs/superpowers/specs/2026-07-06-kelly-position-sizing-design.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive. Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. The July finding is preserved as a historical NO-GO, but it was compared with the later-voided 1.12 baseline, has no raw run artifact in the source record, and Lens 6 found a code/spec mismatch. Tape contamination includes anchor leakage and non-PIT membership (favor strategy), duplicate SPY rows (unclear), and DSR units (unknown). No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ensemble-kelly-pit-rebaseline",
+      "verdict_id": "stocks-ensemble-kelly-pit",
+      "inventory_id": "lens2-stocks-ensemble-kelly-pit",
+      "stage_id": "historical-research",
+      "original_verdict": "closed NO-GO",
+      "source": "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-kelly-pit-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Lens 2 records 'closed NO-GO' (inconclusive); this supplemental record preserves that historical decision without granting authorization. This PIT run is closed NO-GO in the original source. Lens 1 identifies DSR-unit contamination; its effect direction is unknown. Lens 9 could not compute the requested MDE because the stored artifact lacks SPY CAGR and t-statistic; unknown power is not itself a validity fault. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+            "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+            "research/RESEARCH_SNAPSHOT.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive. Lens 1: contaminated ['dsr_units']; Lens 6: yes; Lens 7: prereg=no brief found; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. This PIT run is closed NO-GO in the original source. Lens 1 identifies DSR-unit contamination; its effect direction is unknown. Lens 9 could not compute the requested MDE because the stored artifact lacks SPY CAGR and t-statistic; unknown power is not itself a validity fault. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ndh-baseline-1-12",
+      "verdict_id": "stocks-ensemble-ndh-baseline-1-12",
+      "inventory_id": "lens2-stocks-ensemble-ndh-baseline-1-12",
+      "stage_id": "historical-research",
+      "original_verdict": "Validated",
+      "source": "docs/changelog.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-ndh-baseline-1-12-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'Validated' (unreliable GO); this supplemental record preserves that historical decision without granting authorization. The headline 1.12 Sharpe did not reproduce and its original evaluation window is unrecoverable. Lens 1 records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), plus DSR-unit contamination (direction unknown); Lens 6 found code/spec mismatch. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/RESEARCH_SNAPSHOT.md",
+            "docs/changelog.md",
+            "docs/roadmap.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable GO. Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. The headline 1.12 Sharpe did not reproduce and its original evaluation window is unrecoverable. Lens 1 records duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), plus DSR-unit contamination (direction unknown); Lens 6 found code/spec mismatch. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ensemble-wfo-2026-06-20",
+      "verdict_id": "stocks-ensemble-wfo-validated-2026-06-20",
+      "inventory_id": "lens2-stocks-ensemble-wfo-validated-2026-06-20",
+      "stage_id": "historical-research",
+      "original_verdict": "Validated",
+      "source": "docs/changelog.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ensemble-wfo-validated-2026-06-20-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'Validated' (unreliable GO); this supplemental record preserves that historical decision without granting authorization. This early GO is preserved as a historical verdict, but the evidence is contaminated: duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit fault (direction unknown). Lens 6 found code/spec mismatch; no raw artifact is available. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/RESEARCH_SNAPSHOT.md",
+            "docs/changelog.md",
+            "docs/archive/roadmap-pre-lab.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable GO. Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. This early GO is preserved as a historical verdict, but the evidence is contaminated: duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit fault (direction unknown). Lens 6 found code/spec mismatch; no raw artifact is available. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "ic-kelly-rebaseline-pre-pit",
+      "verdict_id": "stocks-ic-kelly-rebaseline-pre-pit",
+      "inventory_id": "lens2-stocks-ic-kelly-rebaseline-pre-pit",
+      "stage_id": "historical-research",
+      "original_verdict": "invalid",
+      "source": "research/audits/rebaseline/2026-09-23-ic-kelly-rebaseline-invalid.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-ic-kelly-rebaseline-pre-pit-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'invalid' (inconclusive); this supplemental record preserves that historical decision without granting authorization. The original report calls this run invalid and says neither variant is closed. The WFO omitted point-in-time membership; Kelly\u2019s headline CAGR is driven by a post-delisting SIVB bar ($0.0013 to $0.11). The corresponding IC signature was presumed to be the same artifact but was not measured per day. DSR-unit fault direction is also unknown; the original report and raw artifact are available at their relocated research/audits/rebaseline paths. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "research/audits/rebaseline/2026-09-23-ic-kelly-rebaseline-invalid.md",
+            "research/audits/rebaseline/_ic_kelly_rebaseline_20260923.json",
+            "docs/superpowers/specs/2026-06-28-ensemble-ic-weighted-voting-design.md",
+            "docs/superpowers/specs/2026-07-06-kelly-position-sizing-design.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive. Lens 1: contaminated ['pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=pre-registered; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. The original report calls this run invalid and says neither variant is closed. The WFO omitted point-in-time membership; Kelly\u2019s headline CAGR is driven by a post-delisting SIVB bar ($0.0013 to $0.11). The corresponding IC signature was presumed to be the same artifact but was not measured per day. DSR-unit fault direction is also unknown; the original report and raw artifact are available at their relocated research/audits/rebaseline paths. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-ensemble",
+      "specification_id": "voter-ablation-5-voter",
+      "verdict_id": "stocks-voter-ablation-5-voter",
+      "inventory_id": "lens2-stocks-voter-ablation-5-voter",
+      "stage_id": "historical-research",
+      "original_verdict": "Best = core+macd+vbb (5-voter, drop MTF)",
+      "source": "docs/project_snapshot_2026-06-28.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-voter-ablation-5-voter-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Lens 2 records 'Best = core+macd+vbb (5-voter, drop MTF)' (unreliable GO); this supplemental record preserves that historical decision without granting authorization. The recorded best configuration is preserved as a historical GO, but Lens 1 identifies duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit contamination (direction unknown); Lens 6 found code/spec mismatch. The inventory points to an external memory report and records no raw artifact; the available in-repository snapshot and changelog provide historical corroboration, with primary traceability limited. Evidence remains UNRESOLVED because the reported contamination/code/source limitations do not establish a clean result. Unknown power alone is not treated as a fault.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/records/_investigation_inventory.json",
+            "docs/project_snapshot_2026-06-28.md",
+            "docs/changelog.md",
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens6-implementation-correctness.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable GO. Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. The inventory source path points to an external memory report; current in-repository corroboration is cited. The recorded best configuration is preserved as a historical GO, but Lens 1 identifies duplicate SPY rows (direction unclear), anchor leakage and non-PIT membership (favor strategy), and DSR-unit contamination (direction unknown); Lens 6 found code/spec mismatch. The original memory report/raw artifact is not present in this checkout, so primary evidence remains limited. No new performance claim or authorization is made."
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-bb-reversion",
+      "inventory_id": "lens2-stocks-bb-reversion",
+      "study_id": "bb-reversion",
+      "specification_id": "bb-reversion-historical-wfo",
+      "stage_id": "historical-wfo-classification",
+      "original_verdict": "Beat SPY in WFO",
+      "source": "docs/changelog.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-bb-reversion-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical record says bb_reversion beat SPY in WFO (Sharpe 0.80 vs 0.59; CAGR 17%+), but this is a historical component result, not a current independent GO. Lens 2 found no raw artifact or registered brief, prose-only recomputation, and contamination from duplicate SPY rows, anchor leakage, PIT-universe construction and unknown DSR units; anchor leakage and PIT-universe construction are flagged as favoring the strategy; DSR direction is unknown. Preserve the original limited component verdict; do not infer an independent edge or alter the voter role.",
+          "sources": [
+            "docs/changelog.md",
+            "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "No source raw artifact or registered decision bar was found. Lens 2 reports mixed-direction contamination, including strategy-favoring anchor/PIT issues; inference and protocol determination remain unresolved. This does not reverse the historical component result or change the current ensemble.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-conviction-bb",
+      "inventory_id": "lens2-stocks-conviction-bb",
+      "study_id": "conviction-bb",
+      "specification_id": "conviction-bb-sizing",
+      "stage_id": "historical-inactive-classification",
+      "original_verdict": "Inactive",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-conviction-bb-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The 2026-09-10 audit records conviction sizing as inactive with zero extra profit; the current snapshot says it has no dedicated modern validation. Lens 2 found no raw artifact, an unexamined implementation, contaminated inputs (including strategy-favoring anchor/PIT effects), and no registered bar. Preserve the inactive historical status for this sizing version; the record does not establish that conviction sizing has no possible benefit under every design.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The available sources do not provide an independently checkable result, registered protocol, or power estimate. The audit specifically marks code unverifiable and the data contamination mixed.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-dual-momentum",
+      "inventory_id": "lens2-stocks-dual-momentum",
+      "study_id": "dual-momentum",
+      "specification_id": "dual-momentum-top-50-vacuity-and-corrected-replay",
+      "stage_id": "june-64-month-finding-and-october-corrected-replay",
+      "original_verdict": "vacuous at this book size",
+      "source": "docs/changelog.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-dual-momentum-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "Two records must remain distinct. The June 12 changelog entry covers a 64-month 2021-02\u20132026-05 top-50 run: it calls dual_momentum \u201cvacuous at this book size\u201d because the negative-momentum filter never fired, with minimum selected momentum +12.2% in October 2022. Separately, the corrected replay artifact `research/audits/production-replica/_audit_reruns_20261019.json` covers 2021-01-31\u20132026-04-30 and contains a `dual_momentum` record: t=0.7606, CAGR difference +4.3674 pp/year, t bar 3.0, CAGR bar +1.0 pp/year, 0/17 gates, and anchor used in every fold. Thus the recorded protocol result is NOT MET (the t and WFO gate conditions fail; the CAGR difference alone clears its bar). Lens 2 found clean inputs and matching code; the effect-size MDE is 22.66 pp/year at t\u22653, far above +1.0 pp/year, so evidence is INCONCLUSIVE rather than evidence against all smaller effects. The corrected replay artifact contains aggregate statistics, not daily return observations for a new independent recomputation. Preserve each decision at its own window and scope; neither record establishes that the dual filter adds value on another book size or period.",
+          "sources": [
+            "docs/changelog.md",
+            "research/stock-signals/momentum/2026-10-20-momentum-retest.md",
+            "research/audits/production-replica/_audit_reruns_20261019.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The +12.2% minimum and \u201cvacuous\u201d statement belong only to the June 12 64-month top-50 record. The October corrected replay is separately represented in the preserved aggregate JSON, but its daily OOS return series is not available here for independent recomputation. Lens 9\u2019s MDE is for annualized mean excess, not a CAGR confidence interval; power is too weak to resolve the +1.0 pp/year hurdle. The French portfolio momentum screen is another distinct specification.",
+          "protocol_result": "NOT MET"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-ema-cross",
+      "inventory_id": "lens2-stocks-ema-cross",
+      "study_id": "ema-cross",
+      "specification_id": "ema-cross-historical-component",
+      "stage_id": "historical-component-classification",
+      "original_verdict": "matches SPY, no alpha",
+      "source": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-ema-cross-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The surviving investigation inventory records the historical \u201cmatches SPY, no alpha\u201d claim (Sharpe 0.90, CAGR 19.7%) and identifies its lineage as the memory file `project_research_phase_2026-06-18.md`; that memory file is not present in the repository. The current strategy snapshot identifies ema_cross as an ensemble component. Lens 2 found no raw artifact or registered bar, only prose-level recomputation, partial code review, and PIT-universe contamination flagged as favoring the strategy. Preserve the limited historical classification without treating it as a verified independent edge or changing its ensemble role.",
+          "sources": [
+            "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The original metric\u2019s cited memory lineage is not preserved, and there is no raw artifact or registered decision bar. Lens 2 flags PIT-universe contamination; neither evidence nor protocol can be independently determined.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-macd-divergence",
+      "inventory_id": "lens2-stocks-macd-divergence",
+      "study_id": "macd-divergence",
+      "specification_id": "macd-divergence-historical-sharpe-claim",
+      "stage_id": "historical-shipped-classification",
+      "original_verdict": "Shipped",
+      "source": "docs/roadmap.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-macd-divergence-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The roadmap records that the MACD divergence signal was shipped and improved a historical Sharpe from 0.68 to 0.89; the research snapshot now treats it as a component with independent edge unverified. Lens 2 found no raw artifact or registered edge bar, prose-only recomputation, and mixed contamination: anchor leakage and PIT-universe construction favor the strategy, while duplicate-SPY and DSR-unit effects are unclear/unknown. Preserve the historical shipped/component scope; this does not establish an independent edge or authorize changing production composition.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The reported Sharpe change is not independently recomputable from a preserved raw artifact. The audit classifies the historical GO as unreliable and reports no registered bar; evidence and protocol determination are unresolved.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-mtf-reversion",
+      "inventory_id": "lens2-stocks-mtf-reversion",
+      "study_id": "mtf-reversion",
+      "specification_id": "mtf-reversion-weekly-rsi-voter",
+      "stage_id": "historical-voter-test",
+      "original_verdict": "NO-GO",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-mtf-reversion-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The source audit reports weekly-RSI MTF reversion degraded the ensemble Sharpe from 0.68 to 0.49 and labels the voter NO-GO/removed. Lens 2 found no raw artifact or registered bar, prose-only recomputation, partial code review, and mixed input contamination including anchor leakage and PIT-universe construction that favor the candidate. Preserve the NO-GO for this weekly-RSI voter and its reported historical scope; the contaminated record cannot support a broader claim about all timeframe filters.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "docs/roadmap.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "No raw result or registered decision rule was located, so protocol and inferential evidence remain unresolved despite the source's documented historical NO-GO.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-idio-vol",
+      "inventory_id": "lens2-stocks-idio-vol",
+      "study_id": "idio-vol",
+      "specification_id": "idio-vol-standalone-cross-sectional-sleeve",
+      "stage_id": "standalone-wfo-classification",
+      "original_verdict": "Rejected as a standalone strategy",
+      "source": "docs/roadmap.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-idio-vol-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The roadmap reports standalone OOS Sharpe 0.57 vs SPY 0.58, CAGR 10.2% vs 13.0%, WFE 0.51, and the selected winner in 4/17 folds; it explicitly rejects the standalone allocation. It records a shallower drawdown and 0.447 correlation as a possible diversification hypothesis, then a separate 4-sleeve blend test found Sharpe 1.01 vs 1.03 and MaxDD \u221212.08% vs \u221210.59%, closing that blend arc too. Lens 2 found no raw artifact or pre-registered bar and flags duplicate-SPY, anchor-leak and DSR-unit issues, with direction mixed/unknown. Preserve the standalone rejection; the diversification follow-ups are separate records and no broader absence-of-edge claim follows.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "Metrics are sourced from prose; Lens 2 could not recompute from a raw artifact and found no brief. Contamination and absent power analysis prevent a valid independent inference or protocol determination.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-pairs-stat-arb",
+      "inventory_id": "lens2-stocks-pairs-stat-arb",
+      "study_id": "pairs-stat-arb",
+      "specification_id": "same-sector-unhedged-monthly-pairs-zscore",
+      "stage_id": "corrected-42-fold-wfo",
+      "original_verdict": "NO-GO",
+      "source": "research/stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-pairs-stat-arb-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The source tests same-sector pairs, correlation filter \u22650.7, unhedged 1:1 log-spread z-score and monthly rebalance. Its 2026-07-26 corrected-data rerun reports the headline unchanged: OOS Sharpe \u22120.42 vs SPY 0.88, CAGR \u22122.6% vs 15.2%, WFE \u22120.16, 13/42 gate passes, and the recommended parameters selected 1/42 folds; it preserves NO-GO for this version. Lens 2 separately flags duplicate-SPY, anchor-leak and DSR-unit issues, no raw artifact, unverifiable code and no registered brief, so current framework evidence/protocol remain unresolved. The report leaves faster rebalance frequency as an untested infrastructure question; that is outside this monthly specification.",
+          "sources": [
+            "research/stock-signals/pairs-stat-arb/2026-07-17-pairs-stat-arb-nogo.md",
+            "docs/roadmap.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The report claims a corrected rerun with unchanged numbers, but Lens 2 did not locate a raw artifact for independent recomputation and found no registered brief. Keep the uncertainty confined to the affected evidence; do not generalize this result to faster-cadence pairs strategies.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-short-volume-ratio",
+      "inventory_id": "lens2-stocks-short-volume-ratio",
+      "study_id": "short-volume-ratio",
+      "specification_id": "finra-short-volume-ratio-long-low-short-high",
+      "stage_id": "27-fold-wfo-free-data-proxy",
+      "original_verdict": "NO-GO",
+      "source": "research/stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-short-volume-ratio-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The report tests the free-data FINRA short-volume-ratio proxy (long lowest / short highest quintile), not the paper\u2019s transaction-level liquidity-demand/supply decomposition. It reports OOS Sharpe 0.21 vs SPY 0.72, CAGR 1.1% vs 17.0%, 16/27 gate passes and regime halt in 20/27 folds, and explicitly closes this proxy with a no-deploy decision. Lens 2 flags a day shift of unknown impact, duplicate-SPY and DSR-unit issues, anchor leakage favoring the strategy, no raw artifact, no brief, and partial code review. Preserve the historical NO-GO for this proxy; it does not decide the unavailable finer-grained signal or other short-volume uses.",
+          "sources": [
+            "research/stock-signals/short-volume/2026-07-19-short-volume-ratio-nogo.md",
+            "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-inventory.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "The historical summary is prose-only in the audited record. Because the day-shift impact is unknown and other contamination is mixed, neither a valid performance inference nor a registered protocol result can be independently assigned.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "verdict_id": "proposed-more-strategy-stocks-six-indicator-ensemble",
+      "inventory_id": "lens2-stocks-six-indicator-ensemble",
+      "study_id": "six-indicator-ensemble",
+      "specification_id": "six-indicator-ensemble-including-mtf-voter",
+      "stage_id": "historical-ensemble-comparison",
+      "original_verdict": "NO-GO",
+      "source": "docs/roadmap.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "proposed-more-strategy-stocks-six-indicator-ensemble-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The roadmap and 2026-09-10 audit state that the six-indicator variant included the harmful MTF voter and degraded versus the five-voter model; the five-voter model was retained. Lens 2 found no raw artifact or registered bar, prose-only recomputation, partial code review, and mixed contamination including anchor leakage and PIT-universe construction that favor the strategy. Preserve the historical NO-GO for this six-voter construction; it is not a verdict on every ensemble composition.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json"
+          ],
+          "approval": null,
+          "uncertainties": "No exact comparative metric or raw artifact was located in the audit, and no registered rule was found. Contamination prevents a valid independent inference; the historical qualitative NO-GO remains scoped to this MTF-containing variant.",
+          "protocol_result": "UNRESOLVED"
+        }
+      ]
+    },
+    {
+      "study_id": "exit-rule-sweep",
+      "specification_id": "exit-rule-sweep",
+      "verdict_id": "exit-rule-sweep-historical",
+      "inventory_id": "lens2-stocks-exit-rule-sweep",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "exit-rule-sweep-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical NO-GO is preserved. Lens 2 found no raw artifact, no study-specific pre-registered bar, contaminated inputs (duplicate SPY rows, anchor leak, PIT universe and DSR units), partial code verification, and prose-only recomputation. These faults prevent treating the recorded drawdown or fold instability as a verified protocol result.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "docs/superpowers/specs/2026-06-28-exit-rule-sweep-design.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "headline-sentiment",
+      "specification_id": "headline-sentiment",
+      "verdict_id": "headline-sentiment-historical",
+      "inventory_id": "lens2-stocks-headline-sentiment",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO (PROVISIONAL)",
+      "source": "research/stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "headline-sentiment-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The provisional NO-GO is preserved. The report itself says provisional; the audit found the printed SPY Sharpe wrong (1.14 vs about 1.61), day-shift/duplicate-SPY/anchor-leak/DSR contamination, no raw artifact, and no per-study pre-registration. The performance inference remains unresolved; unknown power alone is not the issue.",
+          "sources": [
+            "research/stock-signals/headline-sentiment/2026-07-24-headline-sentiment-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/audits/implementation/2026-07-25-strategy-implementation-audit.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "leveraged-rotation",
+      "specification_id": "leveraged-rotation",
+      "verdict_id": "leveraged-rotation-historical",
+      "inventory_id": "lens2-stocks-leveraged-rotation",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO",
+      "source": "research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "leveraged-rotation-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The original NO-GO is preserved. The reported weak returns and severe drawdowns are not independently recoverable from a raw artifact; Lens 2 records duplicate-SPY, anchor, DSR and survivorship contamination, code unverifiable, and prose-only recomputation. The numerical verdict is therefore unresolved.",
+          "sources": [
+            "research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "leveraged-trend",
+      "specification_id": "leveraged-trend",
+      "verdict_id": "leveraged-trend-historical",
+      "inventory_id": "lens2-stocks-leveraged-trend",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO",
+      "source": "research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "leveraged-trend-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The original NO-GO is preserved. No raw artifact is available; Lens 2 records duplicate-SPY, anchor and DSR contamination, code unverifiable, prose-only recomputation, and a comparator distinction between SPY and each ETF\u2019s own buy-and-hold. The performance inference remains unresolved.",
+          "sources": [
+            "research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/allocation/cross-asset-sleeve/2026-09-28-cross-asset-sleeve-brief.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "ml-entry-gate-falsified",
+      "specification_id": "ml-entry-gate-falsified",
+      "verdict_id": "ml-entry-gate-falsified-historical",
+      "inventory_id": "lens2-stocks-ml-entry-gate-falsified",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "ml-entry-gate-falsified-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical anti-predictive NO-GO is preserved. The audit identified training gate membership/purge leakage that favored the gate, with no raw artifact, no verified code replay, and prose-only recomputation. Because the contamination favors the tested gate, the negative claim cannot be accepted as a clean falsification; implementation was recorded live in the inventory, so this annotation does not change operational state.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "docs/roadmap.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "overnight-gap",
+      "specification_id": "overnight-gap",
+      "verdict_id": "overnight-gap-historical",
+      "inventory_id": "lens2-stocks-overnight-gap",
+      "stage_id": "historical-result",
+      "original_verdict": "Rejected",
+      "source": "docs/roadmap.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "overnight-gap-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The recorded rejection is preserved. Lens 2 found duplicate-SPY, anchor, PIT-universe and DSR contamination, no raw artifact, partial code review, no pre-registration and prose-only recomputation. The reported performance is not an auditable protocol result.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "trailing-stops",
+      "specification_id": "trailing-stops",
+      "verdict_id": "trailing-stops-historical",
+      "inventory_id": "lens2-stocks-trailing-stops",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO",
+      "source": "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "trailing-stops-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical NO-GO is preserved as a documented observation, but the verdict framework cannot establish its scope or protocol outcome: no raw artifact, contaminated inputs, no Lens 6 row, no pre-registered bar and prose-only recomputation. Do not interpret it as a quantified general result.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "docs/roadmap.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "turn-of-month-rotation",
+      "specification_id": "turn-of-month-rotation",
+      "verdict_id": "turn-of-month-rotation-historical",
+      "inventory_id": "lens2-stocks-turn-of-month-rotation",
+      "stage_id": "historical-result",
+      "original_verdict": "recommend not queuing",
+      "source": "research/WEB_RESEARCH_CANDIDATES.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "turn-of-month-rotation-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Preserve the source\u2019s recommendation not to queue. This was an intake/sanity screen with no raw artifact, no applicable preregistration, no code review or recomputation, and no quantitative protocol determination. Lens 1 found no listed contamination, but that does not supply missing evidence.",
+          "sources": [
+            "research/WEB_RESEARCH_CANDIDATES.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "vix-entry-throttling",
+      "specification_id": "vix-entry-throttling",
+      "verdict_id": "vix-entry-throttling-historical",
+      "inventory_id": "lens2-stocks-vix-entry-throttling",
+      "stage_id": "historical-result",
+      "original_verdict": "Historical NO-GO",
+      "source": "research/RESEARCH_SNAPSHOT.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "vix-entry-throttling-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical status is preserved. The inventory points only to a snapshot/optimization plan, with no raw artifact, no per-study bar, contaminated input lineage, no Lens 6 row and prose-only recomputation. Evidence is insufficient to validate the result or its scope.",
+          "sources": [
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/programme/initial-research-plan/2026-06-28-alpha-optimization-execution-plan.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "xs-momentum-2026-06",
+      "specification_id": "xs-momentum-2026-06",
+      "verdict_id": "xs-momentum-2026-06-historical",
+      "inventory_id": "lens2-stocks-xs-momentum-2026-06",
+      "stage_id": "historical-result",
+      "original_verdict": "no risk-adjusted edge",
+      "source": "docs/changelog.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "xs-momentum-2026-06-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical June claim is preserved as a historical claim, but its comparisons conflict across sources and no raw artifact is available. Lens 1 has no recorded tape assessment, Lens 6 is partial, Lens 7 is prose-only, and later corrected replay supersedes this run. Do not carry the June numbers as validated evidence.",
+          "sources": [
+            "docs/changelog.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "xs-momentum-corrected-replay",
+      "specification_id": "xs-momentum-corrected-replay",
+      "verdict_id": "xs-momentum-corrected-replay-historical",
+      "inventory_id": "lens2-stocks-xs-momentum-corrected-replay",
+      "stage_id": "historical-result",
+      "original_verdict": "NO-GO stands",
+      "source": "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "xs-momentum-corrected-replay-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The historical NO-GO stands under its registered criteria: the corrected replay reports a +4.3674 pp/year CAGR gap, which clears the +1.0 pp/year economic bar, but Newey-West t=0.76055 does not clear t>=3; 0/17 folds passed and the anchor was used in all folds. The primary window is 2021-01-31..2026-04-30. Lens 2 reports clean tape, matching code, and a spot-checked recomputation, while Lens 9's MDE of 22.66 pp/year cannot resolve the +1 pp/year bar. Framework evidence remains INCONCLUSIVE because the power is insufficient for that bar; the registered protocol result is NOT MET, and the historical NO-GO stands.",
+          "sources": [
+            "research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "research/stock-signals/momentum/2026-10-20-momentum-retest.md",
+            "research/audits/production-replica/_audit_reruns_20261019.json"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; INCONCLUSIVE describes uncertainty under this framework."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-nasdaq100-single-core",
+      "specification_id": "stocks-nasdaq100-single-core",
+      "verdict_id": "review-stocks-nasdaq100-single-core",
+      "inventory_id": "lens2-stocks-nasdaq100-single-core",
+      "stage_id": "historical-review",
+      "original_verdict": "rejected; SP500 stays the core",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-nasdaq100-single-core-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The rejection compared against the subsequently voided 1.12 baseline and used pre-fix code. Lens 2 explicitly labels the negative finding an unreliable NO. Preserve the historical decision that SP500 remained core, but the comparative return inference is invalidated; do not treat this as evidence that NASDAQ-100 is inferior.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+            "research/audits/rebaseline/_anchor_fix_reproduction_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable NO (flawed test); Lens 1: contaminated ['spy_duplicates', 'anchor_leak', 'pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-sp500-core-anchor-fix-reproduction",
+      "specification_id": "stocks-sp500-core-anchor-fix-reproduction",
+      "verdict_id": "review-stocks-sp500-core-anchor-fix-reproduction",
+      "inventory_id": "lens2-stocks-sp500-core-anchor-fix-reproduction",
+      "stage_id": "historical-review",
+      "original_verdict": "did not reproduce",
+      "source": "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-sp500-core-anchor-fix-reproduction-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "This is a provenance/reproducibility finding about whether the historically cited baseline reproduces after the anchor-leak fix, not a registered strategy rejection. On the pinned 2021-01-31..2026-04-30 window, the cited 1.12 SP500-core Sharpe did not reproduce; the fresh core result was Sharpe 0.97, CAGR 7.8%, MaxDD -7.6%, gates 12/17. Lens 2 additionally flags PIT-universe/DSR-unit contamination, code mismatch and no brief, so preserve the observed reproduction failure while leaving a valid strategy return verdict unresolved.",
+          "sources": [
+            "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+            "research/audits/rebaseline/_anchor_fix_reproduction_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive; Lens 1: contaminated ['pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved.",
+          "source": "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "revision": {
+        "rationale": "This is a provenance/reproducibility finding about whether the historically cited baseline reproduces after the anchor-leak fix, not a registered strategy rejection. On the pinned 2021-01-31..2026-04-30 window, the cited 1.12 SP500-core Sharpe did not reproduce; the fresh core result was Sharpe 0.97, CAGR 7.8%, MaxDD -7.6%, gates 12/17. Lens 2 additionally flags PIT-universe/DSR-unit contamination, code mismatch and no brief, so preserve the observed reproduction failure while leaving a valid strategy return verdict unresolved.",
+        "sources": [
+          "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+          "research/audits/rebaseline/_anchor_fix_reproduction_results.json",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+        ]
+      }
+    },
+    {
+      "study_id": "stocks-sp500-core-corrected-tape-rebaseline",
+      "specification_id": "stocks-sp500-core-corrected-tape-rebaseline",
+      "verdict_id": "review-stocks-sp500-core-corrected-tape-rebaseline",
+      "inventory_id": "lens2-stocks-sp500-core-corrected-tape-rebaseline",
+      "stage_id": "historical-review",
+      "original_verdict": "Live Core",
+      "source": "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-sp500-core-corrected-tape-rebaseline-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The \u201cLive Core\u201d GO is unreliable: Lens 1 identifies PIT-universe contamination that favored the strategy and DSR-unit contamination; Lens 6 says run-time code did not match the specification / tested non-live code. Lens 7 spot-checked recomputation but found no registered brief; Lens 9 could not compute MDE. Do not use this historical GO as validated performance evidence or an operational authorization.",
+          "sources": [
+            "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+            "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: unreliable GO; Lens 1: contaminated ['pit_universe', 'dsr_units']; Lens 6: no; Lens 7: prereg=no brief found; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved.",
+          "source": "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md"
+        }
+      ],
+      "revision": {
+        "sources": [
+          "research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md",
+          "research/audits/rebaseline/_rebaseline_corrected_tape_20260822.json",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+        ]
+      }
+    },
+    {
+      "study_id": "stocks-sp500-core-pit-rebaseline",
+      "specification_id": "stocks-sp500-core-pit-rebaseline",
+      "verdict_id": "review-stocks-sp500-core-pit-rebaseline",
+      "inventory_id": "lens2-stocks-sp500-core-pit-rebaseline",
+      "stage_id": "historical-review",
+      "original_verdict": "loses to SPY",
+      "source": "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-sp500-core-pit-rebaseline-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The observed historical result is that this PIT rebaseline lost to SPY on the pinned 2021-01-31..2026-04-30 window (artifact reports ensemble Sharpe 0.59 versus SPY 0.78). Preserve that observed comparison. Separately, DSR-unit contamination means the gate count/protocol validity is unresolved; do not recast the observed loss as a validated registered NO-GO or claim that the lost-to-SPY observation itself is disproved.",
+          "sources": [
+            "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+            "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive; Lens 1: contaminated ['dsr_units']; Lens 6: partly; Lens 7: prereg=no brief found; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved.",
+          "source": "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+          "protocol_result": "UNRESOLVED"
+        }
+      ],
+      "revision": {
+        "rationale": "The observed historical result is that this PIT rebaseline lost to SPY on the pinned 2021-01-31..2026-04-30 window (artifact reports ensemble Sharpe 0.59 versus SPY 0.78). Preserve that observed comparison. Separately, DSR-unit contamination means the gate count/protocol validity is unresolved; do not recast the observed loss as a validated registered NO-GO or claim that the lost-to-SPY observation itself is disproved.",
+        "sources": [
+          "research/audits/rebaseline/2026-09-23-pit-rebaseline-core-nogo.md",
+          "research/audits/rebaseline/_pit_rebaseline_20260923.json",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+        ]
+      }
+    },
+    {
+      "study_id": "lens2-stocks-sp500-equity-research-doc-trials",
+      "specification_id": "lens2-stocks-sp500-equity-research-doc-trials",
+      "verdict_id": "review-lens2-stocks-sp500-equity-research-doc-trials",
+      "inventory_id": "lens2-stocks-sp500-equity-research-doc-trials",
+      "stage_id": "historical-review",
+      "original_verdict": "RECOMMENDED",
+      "source": "docs/archive/sp500_equity_strategy_research.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-lens2-stocks-sp500-equity-research-doc-trials-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "Completed historical trials are documented in the archived equity-strategy research record. The June 10 invalidation identified selection/parameter leakage, survivorship and replay defects. Preserve the fact that trials occurred and their historical conclusions, but do not treat their return inference as validated.",
+          "sources": [
+            "docs/archive/sp500_equity_strategy_research.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "This is a source-backed historical review. No new return computation was performed; missing market-return MDE is not used to negate a model-specific synthetic result."
+        }
+      ]
+    },
+    {
+      "study_id": "lens2-stocks-three-pct-position-size",
+      "specification_id": "lens2-stocks-three-pct-position-size",
+      "verdict_id": "review-lens2-stocks-three-pct-position-size",
+      "inventory_id": "lens2-stocks-three-pct-position-size",
+      "stage_id": "historical-review",
+      "original_verdict": "Done",
+      "source": "docs/roadmap.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-lens2-stocks-three-pct-position-size-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "This is a substantive historical performance claim: the roadmap says increasing per-signal cash size from 2% to 3% beat SPY on a risk-adjusted basis. The audit identifies duplicate-SPY, anchor-leak and PIT-universe contamination, with the latter faults favoring the strategy, and only partial code review/prose recomputation. Preserve the historical claim but mark its evidence unresolved. No evidence establishes duplication with another verdict.",
+          "sources": [
+            "docs/roadmap.md",
+            "research/paper-system/position-sizing/2026-08-19-position-sizing-regimes.md",
+            "research/paper-system/position-sizing/_position_sizing_wfo_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "This is a source-backed historical review. No new return computation was performed; missing market-return MDE is not used to negate a model-specific synthetic result."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-wfo-policy-synthetic",
+      "specification_id": "stocks-wfo-policy-synthetic",
+      "verdict_id": "review-stocks-wfo-policy-synthetic",
+      "inventory_id": "lens2-stocks-wfo-policy-synthetic",
+      "stage_id": "historical-review",
+      "original_verdict": "supported under this model",
+      "source": "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md",
+      "protocol_result": "MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-wfo-policy-synthetic-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The preregistered synthetic test reports P_halt > 0.50 = 0.875, meeting its registered synthetic protocol threshold. Record protocol MET and preserve \u201csupported under this model\u201d as a model-specific outcome. This does not establish market-return benefit or authorize adopting the policy; the proposed operational action remains HOLD. Lens 9 market-return MDE is not applicable to this synthetic protocol outcome.",
+          "sources": [
+            "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md",
+            "research/programme/wfo-methods/_wfo_policy_synthetic_results.json",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive; Lens 1: clean []; Lens 6: no row; Lens 7: prereg=pre-registered; recompute=yes (haiku_spot_checked); Lens 9: not computable from artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved.",
+          "source": "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md",
+          "protocol_result": "MET"
+        }
+      ],
+      "revision": {
+        "action": "HOLD (model-specific protocol result; no operational change)",
+        "rationale": "The preregistered synthetic test reports P_halt > 0.50 = 0.875, meeting its registered synthetic protocol threshold. Record protocol MET and preserve \u201csupported under this model\u201d as a model-specific outcome. This does not establish market-return benefit or authorize adopting the policy; the proposed operational action remains HOLD. Lens 9 market-return MDE is not applicable to this synthetic protocol outcome.",
+        "sources": [
+          "research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md",
+          "research/programme/wfo-methods/_wfo_policy_synthetic_results.json",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+          "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md"
+        ]
+      }
+    },
+    {
+      "study_id": "stocks-wfo-tournament-sp500-monthly",
+      "specification_id": "stocks-wfo-tournament-sp500-monthly",
+      "verdict_id": "review-stocks-wfo-tournament-sp500-monthly",
+      "inventory_id": "lens2-stocks-wfo-tournament-sp500-monthly",
+      "stage_id": "historical-review",
+      "original_verdict": "clear NO-GO",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "review-stocks-wfo-tournament-sp500-monthly-2026-11-10",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The source reports a clear NO-GO, but Lens 2 records unknown data validity, unverifiable code, no brief, prose-only recomputation and no raw artifact for MDE. Preserve the historical NO-GO/action; the audit cannot establish that the negative return inference is a valid registered protocol result.",
+          "sources": [
+            "research/RESEARCH_SNAPSHOT.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens7-research-accuracy.md",
+            "docs/equity_monthly_walkforward.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 classification: inconclusive; Lens 1: unknown []; Lens 6: unverifiable; Lens 7: prereg=no brief found; recompute=prose-only (flagged); Lens 9: no raw artifact; mde_t3=None. Missing power is not treated as evidence of no effect; where the audit identifies contamination or absent/unverifiable inputs, the return inference remains unresolved."
+        }
+      ]
+    }
+  ]
+}

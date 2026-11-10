@@ -1,1 +1,2325 @@
-{"cutoff": "2026-11-10", "sources": [], "records": []}
+{
+  "cutoff": "2026-11-10",
+  "head": "e51d46ce806a29b2c055aab97cda6664243f2b9d",
+  "dirty_paths_at_inventory_start": [
+    "docs/superpowers/plans/2026-11-10-verdict-register-and-framework.md",
+    "docs/superpowers/specs/2026-11-10-research-verdict-framework-design.md",
+    "research/programme/benchmark-objectives/"
+  ],
+  "sources": [
+    "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+    "research/programme/benchmark-objectives/2026-11-10-claim-verification.md",
+    "research/programme/benchmark-objectives/2026-11-10-objectives-benchmarks-consolidated.md",
+    "research/programme/membership-database/2026-11-08-reference-numbers-on-corrected-membership.md",
+    "research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md",
+    "research/programme/prompt-kit-review/2026-11-05-research-prompt-kit-review.md",
+    "research/programme/vectorbt-engine/reports/2026-11-05-research-F-synthesis-and-verdict.md"
+  ],
+  "records": [
+    {
+      "inventory_id": "lens2-stocks-a23-static-leverage",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-a23-static-leverage",
+        "original_audit_verdict": "GO for owner decision",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks a23 static leverage",
+      "original_audit_verdict": "GO for owner decision"
+    },
+    {
+      "inventory_id": "lens2-stocks-a24-sleeve-trend-rider",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-a24-sleeve-trend-rider",
+        "original_audit_verdict": "NO-GO as a return improvement",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks a24 sleeve trend rider",
+      "original_audit_verdict": "NO-GO as a return improvement"
+    },
+    {
+      "inventory_id": "lens2-stocks-accruals-feasibility",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-accruals-feasibility",
+        "original_audit_verdict": "unresolved",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks accruals feasibility",
+      "original_audit_verdict": "unresolved"
+    },
+    {
+      "inventory_id": "lens2-stocks-after-tax-lot-engine",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-after-tax-lot-engine",
+        "original_audit_verdict": "Library implemented, unvalidated",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks after tax lot engine",
+      "original_audit_verdict": "Library implemented, unvalidated"
+    },
+    {
+      "inventory_id": "lens2-stocks-analyst-revisions",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-analyst-revisions",
+        "original_audit_verdict": "Infeasible",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks analyst revisions",
+      "original_audit_verdict": "Infeasible"
+    },
+    {
+      "inventory_id": "lens2-stocks-anomaly-driven-demand",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-anomaly-driven-demand",
+        "original_audit_verdict": "Infeasible",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks anomaly driven demand",
+      "original_audit_verdict": "Infeasible"
+    },
+    {
+      "inventory_id": "lens2-stocks-avb-eqr-merger-holding",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-avb-eqr-merger-holding",
+        "original_audit_verdict": "CORRECTED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks avb eqr merger holding",
+      "original_audit_verdict": "CORRECTED"
+    },
+    {
+      "inventory_id": "lens2-stocks-bb-reversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-bb-reversion",
+        "original_audit_verdict": "Beat SPY in WFO",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks bb reversion",
+      "original_audit_verdict": "Beat SPY in WFO"
+    },
+    {
+      "inventory_id": "lens2-stocks-century-leverage",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-century-leverage",
+        "original_audit_verdict": "keep 30%",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks century leverage",
+      "original_audit_verdict": "keep 30%"
+    },
+    {
+      "inventory_id": "lens2-stocks-congress-trades",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-congress-trades",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks congress trades",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-conviction-bb",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-conviction-bb",
+        "original_audit_verdict": "Inactive",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks conviction bb",
+      "original_audit_verdict": "Inactive"
+    },
+    {
+      "inventory_id": "lens2-stocks-core-spy-blend-keep",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-core-spy-blend-keep",
+        "original_audit_verdict": "KEEP",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks core spy blend keep",
+      "original_audit_verdict": "KEEP"
+    },
+    {
+      "inventory_id": "lens2-stocks-daily-threshold-tilt",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-daily-threshold-tilt",
+        "original_audit_verdict": "untriaged",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks daily threshold tilt",
+      "original_audit_verdict": "untriaged"
+    },
+    {
+      "inventory_id": "lens2-stocks-dual-momentum",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-dual-momentum",
+        "original_audit_verdict": "vacuous at this book size",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks dual momentum",
+      "original_audit_verdict": "vacuous at this book size"
+    },
+    {
+      "inventory_id": "lens2-stocks-ema-cross",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ema-cross",
+        "original_audit_verdict": "matches SPY, no alpha",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ema cross",
+      "original_audit_verdict": "matches SPY, no alpha"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-conviction",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-conviction",
+        "original_audit_verdict": "Soft NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ensemble conviction",
+      "original_audit_verdict": "Soft NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-ic-2026-06-28",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-ic-2026-06-28",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "unreliable NO (flawed test)"
+      },
+      "title": "stocks ensemble ic 2026 06 28",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-ic-pit",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-ic-pit",
+        "original_audit_verdict": "closed NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ensemble ic pit",
+      "original_audit_verdict": "closed NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-kelly-2026-07",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-kelly-2026-07",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ensemble kelly 2026 07",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-kelly-pit",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-kelly-pit",
+        "original_audit_verdict": "closed NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ensemble kelly pit",
+      "original_audit_verdict": "closed NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-ndh-baseline-1-12",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-ndh-baseline-1-12",
+        "original_audit_verdict": "Validated",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks ensemble ndh baseline 1 12",
+      "original_audit_verdict": "Validated"
+    },
+    {
+      "inventory_id": "lens2-stocks-ensemble-wfo-validated-2026-06-20",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ensemble-wfo-validated-2026-06-20",
+        "original_audit_verdict": "Validated",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks ensemble wfo validated 2026 06 20",
+      "original_audit_verdict": "Validated"
+    },
+    {
+      "inventory_id": "lens2-stocks-equity-diversification-sleeves",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-equity-diversification-sleeves",
+        "original_audit_verdict": "failed",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks equity diversification sleeves",
+      "original_audit_verdict": "failed"
+    },
+    {
+      "inventory_id": "lens2-stocks-equity-pre-fomc-drift-intake",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-equity-pre-fomc-drift-intake",
+        "original_audit_verdict": "rejected on intake",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks equity pre fomc drift intake",
+      "original_audit_verdict": "rejected on intake"
+    },
+    {
+      "inventory_id": "lens2-stocks-event-audit-readiness-decision",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-event-audit-readiness-decision",
+        "original_audit_verdict": "UNRESOLVED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks event audit readiness decision",
+      "original_audit_verdict": "UNRESOLVED"
+    },
+    {
+      "inventory_id": "lens2-stocks-event-evidence-resolution-workbook",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-event-evidence-resolution-workbook",
+        "original_audit_verdict": "UNRESOLVED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks event evidence resolution workbook",
+      "original_audit_verdict": "UNRESOLVED"
+    },
+    {
+      "inventory_id": "lens2-stocks-event-timing-audit-decision",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-event-timing-audit-decision",
+        "original_audit_verdict": "PARK",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks event timing audit decision",
+      "original_audit_verdict": "PARK"
+    },
+    {
+      "inventory_id": "lens2-stocks-exit-rule-sweep",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-exit-rule-sweep",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks exit rule sweep",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-factor-screen-h1-h4",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-factor-screen-h1-h4",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks factor screen h1 h4",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-family-scope-review",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-family-scope-review",
+        "original_audit_verdict": "undetermined",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks family scope review",
+      "original_audit_verdict": "undetermined"
+    },
+    {
+      "inventory_id": "lens2-stocks-form-144-inversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-form-144-inversion",
+        "original_audit_verdict": "downgraded; low priority",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks form 144 inversion",
+      "original_audit_verdict": "downgraded; low priority"
+    },
+    {
+      "inventory_id": "lens2-stocks-forward-paper-standard",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-forward-paper-standard",
+        "original_audit_verdict": "approved",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks forward paper standard",
+      "original_audit_verdict": "approved"
+    },
+    {
+      "inventory_id": "lens2-stocks-free-data-stock-feasibility",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-free-data-stock-feasibility",
+        "original_audit_verdict": "No candidate is recommended here",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks free data stock feasibility",
+      "original_audit_verdict": "No candidate is recommended here"
+    },
+    {
+      "inventory_id": "lens2-stocks-headline-sentiment",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-headline-sentiment",
+        "original_audit_verdict": "NO-GO (PROVISIONAL)",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks headline sentiment",
+      "original_audit_verdict": "NO-GO (PROVISIONAL)"
+    },
+    {
+      "inventory_id": "lens2-stocks-ic-kelly-rebaseline-pre-pit",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ic-kelly-rebaseline-pre-pit",
+        "original_audit_verdict": "invalid",
+        "audit_verdict_type": "TEST-INCONCLUSIVE",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ic kelly rebaseline pre pit",
+      "original_audit_verdict": "invalid"
+    },
+    {
+      "inventory_id": "lens2-stocks-idio-vol",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-idio-vol",
+        "original_audit_verdict": "Rejected as a standalone strategy",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks idio vol",
+      "original_audit_verdict": "Rejected as a standalone strategy"
+    },
+    {
+      "inventory_id": "lens2-stocks-index-deletion-fade",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-index-deletion-fade",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks index deletion fade",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-insider-acceptance-time-diagnostic",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-insider-acceptance-time-diagnostic",
+        "original_audit_verdict": "DRAFT, owner approval required",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks insider acceptance time diagnostic",
+      "original_audit_verdict": "DRAFT, owner approval required"
+    },
+    {
+      "inventory_id": "lens2-stocks-insider-cluster-buy",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-insider-cluster-buy",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks insider cluster buy",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-insider-identity-inventory",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-insider-identity-inventory",
+        "original_audit_verdict": "UNRESOLVED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks insider identity inventory",
+      "original_audit_verdict": "UNRESOLVED"
+    },
+    {
+      "inventory_id": "lens2-stocks-institutional-rebalancing-tilt",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-institutional-rebalancing-tilt",
+        "original_audit_verdict": "untriaged",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks institutional rebalancing tilt",
+      "original_audit_verdict": "untriaged"
+    },
+    {
+      "inventory_id": "lens2-stocks-intraday-feasibility",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-intraday-feasibility",
+        "original_audit_verdict": "UNRESOLVED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks intraday feasibility",
+      "original_audit_verdict": "UNRESOLVED"
+    },
+    {
+      "inventory_id": "lens2-stocks-july-research-program-summary",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-july-research-program-summary",
+        "original_audit_verdict": "closed NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks july research program summary",
+      "original_audit_verdict": "closed NO-GO",
+      "reason": "Status-only aggregate of a research-program batch; it consolidates prior study closures and is not an independent candidate or evaluation. Preserve its closed NO-GO as source status; exclude from verdict rows."
+    },
+    {
+      "inventory_id": "lens2-stocks-leveraged-rotation",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-leveraged-rotation",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks leveraged rotation",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-leveraged-trend",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-leveraged-trend",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks leveraged trend",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-live-revert-blend-to-core",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-live-revert-blend-to-core",
+        "original_audit_verdict": "Underperforms; Revert Queued",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks live revert blend to core",
+      "original_audit_verdict": "Underperforms; Revert Queued"
+    },
+    {
+      "inventory_id": "lens2-stocks-macd-divergence",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-macd-divergence",
+        "original_audit_verdict": "Shipped",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks macd divergence",
+      "original_audit_verdict": "Shipped"
+    },
+    {
+      "inventory_id": "lens2-stocks-max-effect",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-max-effect",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks max effect",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-midcap400-reversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-midcap400-reversion",
+        "original_audit_verdict": "Researching",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks midcap400 reversion",
+      "original_audit_verdict": "Researching"
+    },
+    {
+      "inventory_id": "lens2-stocks-ml-entry-gate-falsified",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ml-entry-gate-falsified",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks ml entry gate falsified",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-momentum-french-screen",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-momentum-french-screen",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks momentum french screen",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-mtf-reversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-mtf-reversion",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks mtf reversion",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-nasdaq100-single-core",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-nasdaq100-single-core",
+        "original_audit_verdict": "rejected; SP500 stays the core",
+        "audit_verdict_type": "NO",
+        "audit_classification": "unreliable NO (flawed test)"
+      },
+      "title": "stocks nasdaq100 single core",
+      "original_audit_verdict": "rejected; SP500 stays the core"
+    },
+    {
+      "inventory_id": "lens2-stocks-net-issuance-screen",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-net-issuance-screen",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks net issuance screen",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-ohlcv-day-shift",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-ohlcv-day-shift",
+        "original_audit_verdict": "RESOLVED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks ohlcv day shift",
+      "original_audit_verdict": "RESOLVED"
+    },
+    {
+      "inventory_id": "lens2-stocks-option-iv-skew",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-option-iv-skew",
+        "original_audit_verdict": "Infeasible",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks option iv skew",
+      "original_audit_verdict": "Infeasible"
+    },
+    {
+      "inventory_id": "lens2-stocks-overnight-gap",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-overnight-gap",
+        "original_audit_verdict": "Rejected",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks overnight gap",
+      "original_audit_verdict": "Rejected"
+    },
+    {
+      "inventory_id": "lens2-stocks-pairs-stat-arb",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-pairs-stat-arb",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks pairs stat arb",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-paper-freeze-readiness",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-paper-freeze-readiness",
+        "original_audit_verdict": "not demonstrated clean",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks paper freeze readiness",
+      "original_audit_verdict": "not demonstrated clean"
+    },
+    {
+      "inventory_id": "lens2-stocks-pead",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-pead",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks pead",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-position-sizing-regimes",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-position-sizing-regimes",
+        "original_audit_verdict": "Inconclusive",
+        "audit_verdict_type": "TEST-INCONCLUSIVE",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks position sizing regimes",
+      "original_audit_verdict": "Inconclusive"
+    },
+    {
+      "inventory_id": "lens2-stocks-production-replica",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-production-replica",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks production replica",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-production-replica-holdout-2010-2020",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-production-replica-holdout-2010-2020",
+        "original_audit_verdict": "INCONCLUSIVE",
+        "audit_verdict_type": "TEST-INCONCLUSIVE",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks production replica holdout 2010 2020",
+      "original_audit_verdict": "INCONCLUSIVE"
+    },
+    {
+      "inventory_id": "lens2-stocks-production-replica-live-parity",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-production-replica-live-parity",
+        "original_audit_verdict": "UNVERIFIED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks production replica live parity",
+      "original_audit_verdict": "UNVERIFIED",
+      "scope_note": "Operational parity status, not a strategy return test; retained separately for required replica review."
+    },
+    {
+      "inventory_id": "lens2-stocks-retail-attention",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-retail-attention",
+        "original_audit_verdict": "PAUSED (not GO/NO-GO)",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks retail attention",
+      "original_audit_verdict": "PAUSED (not GO/NO-GO)"
+    },
+    {
+      "inventory_id": "lens2-stocks-rsi-reversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-rsi-reversion",
+        "original_audit_verdict": "Component; independent edge unverified",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks rsi reversion",
+      "original_audit_verdict": "Component; independent edge unverified"
+    },
+    {
+      "inventory_id": "lens2-stocks-short-interest",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-short-interest",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks short interest",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-short-volume-ratio",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-short-volume-ratio",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks short volume ratio",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-six-indicator-ensemble",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-six-indicator-ensemble",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks six indicator ensemble",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-sp500-core-anchor-fix-reproduction",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-sp500-core-anchor-fix-reproduction",
+        "original_audit_verdict": "did not reproduce",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks sp500 core anchor fix reproduction",
+      "original_audit_verdict": "did not reproduce"
+    },
+    {
+      "inventory_id": "lens2-stocks-sp500-core-corrected-tape-rebaseline",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-sp500-core-corrected-tape-rebaseline",
+        "original_audit_verdict": "Live Core",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks sp500 core corrected tape rebaseline",
+      "original_audit_verdict": "Live Core"
+    },
+    {
+      "inventory_id": "lens2-stocks-sp500-core-pit-rebaseline",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-sp500-core-pit-rebaseline",
+        "original_audit_verdict": "loses to SPY",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks sp500 core pit rebaseline",
+      "original_audit_verdict": "loses to SPY"
+    },
+    {
+      "inventory_id": "lens2-stocks-sp500-equity-research-doc-trials",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-sp500-equity-research-doc-trials",
+        "original_audit_verdict": "RECOMMENDED",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks sp500 equity research doc trials",
+      "original_audit_verdict": "RECOMMENDED"
+    },
+    {
+      "inventory_id": "lens2-stocks-spy-duplicate-rows",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-spy-duplicate-rows",
+        "original_audit_verdict": "Direction sound; absolute Sharpe understated ~29%",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks spy duplicate rows",
+      "original_audit_verdict": "Direction sound; absolute Sharpe understated ~29%"
+    },
+    {
+      "inventory_id": "lens2-stocks-three-pct-position-size",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-three-pct-position-size",
+        "original_audit_verdict": "Done",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks three pct position size",
+      "original_audit_verdict": "Done"
+    },
+    {
+      "inventory_id": "lens2-stocks-three-sleeve-blend-1-14",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-three-sleeve-blend-1-14",
+        "original_audit_verdict": "GO",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks three sleeve blend 1 14",
+      "original_audit_verdict": "GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-trailing-stops",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-trailing-stops",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks trailing stops",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-turn-of-month-rotation",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-turn-of-month-rotation",
+        "original_audit_verdict": "recommend not queuing",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks turn of month rotation",
+      "original_audit_verdict": "recommend not queuing"
+    },
+    {
+      "inventory_id": "lens2-stocks-two-symbol-sweep-design",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-two-symbol-sweep-design",
+        "original_audit_verdict": "design only; not authorized",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks two symbol sweep design",
+      "original_audit_verdict": "design only; not authorized"
+    },
+    {
+      "inventory_id": "lens2-stocks-vix-entry-throttling",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-vix-entry-throttling",
+        "original_audit_verdict": "Historical NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks vix entry throttling",
+      "original_audit_verdict": "Historical NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-vol-managed-spy",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-vol-managed-spy",
+        "original_audit_verdict": "untriaged (shortlist)",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks vol managed spy",
+      "original_audit_verdict": "untriaged (shortlist)"
+    },
+    {
+      "inventory_id": "lens2-stocks-volume-bb-reversion",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-volume-bb-reversion",
+        "original_audit_verdict": "Component; independent edge unverified",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks volume bb reversion",
+      "original_audit_verdict": "Component; independent edge unverified"
+    },
+    {
+      "inventory_id": "lens2-stocks-voter-ablation-5-voter",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-voter-ablation-5-voter",
+        "original_audit_verdict": "Best = core+macd+vbb (5-voter, drop MTF)",
+        "audit_verdict_type": "GO",
+        "audit_classification": "unreliable GO"
+      },
+      "title": "stocks voter ablation 5 voter",
+      "original_audit_verdict": "Best = core+macd+vbb (5-voter, drop MTF)"
+    },
+    {
+      "inventory_id": "lens2-stocks-wfo-anchor-leakage-fix",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-wfo-anchor-leakage-fix",
+        "original_audit_verdict": "SUPERSEDED",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "stocks wfo anchor leakage fix",
+      "original_audit_verdict": "SUPERSEDED"
+    },
+    {
+      "inventory_id": "lens2-stocks-wfo-policy-synthetic",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-wfo-policy-synthetic",
+        "original_audit_verdict": "supported under this model",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks wfo policy synthetic",
+      "original_audit_verdict": "supported under this model"
+    },
+    {
+      "inventory_id": "lens2-stocks-wfo-tournament-sp500-monthly",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-wfo-tournament-sp500-monthly",
+        "original_audit_verdict": "clear NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks wfo tournament sp500 monthly",
+      "original_audit_verdict": "clear NO-GO"
+    },
+    {
+      "inventory_id": "lens2-stocks-xs-momentum-2026-06",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-xs-momentum-2026-06",
+        "original_audit_verdict": "no risk-adjusted edge",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks xs momentum 2026 06",
+      "original_audit_verdict": "no risk-adjusted edge"
+    },
+    {
+      "inventory_id": "lens2-stocks-xs-momentum-corrected-replay",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "stocks-xs-momentum-corrected-replay",
+        "original_audit_verdict": "NO-GO stands",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "stocks xs momentum corrected replay",
+      "original_audit_verdict": "NO-GO stands"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-commodity-trend",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-commodity-trend",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset commodity trend",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-etf-implied-fx-expectations",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-etf-implied-fx-expectations",
+        "original_audit_verdict": "untriaged; contested pending direct re-read",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "cross asset etf implied fx expectations",
+      "original_audit_verdict": "untriaged; contested pending direct re-read"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-fomc-drift-corrected-harness",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-fomc-drift-corrected-harness",
+        "original_audit_verdict": "NO-GO stands",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset fomc drift corrected harness",
+      "original_audit_verdict": "NO-GO stands"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-fomc-drift-wfo",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-fomc-drift-wfo",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset fomc drift wfo",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-fx-hedge-overlay",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-fx-hedge-overlay",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset fx hedge overlay",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-month-end-treasury",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-month-end-treasury",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset month end treasury",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-on-deck-candidate-feasibility",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-on-deck-candidate-feasibility",
+        "original_audit_verdict": "Infeasible or blocked for most candidates; B1 and B4 data-feasible but gated on crypto dormancy",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "cross asset on deck candidate feasibility",
+      "original_audit_verdict": "Infeasible or blocked for most candidates; B1 and B4 data-feasible but gated on crypto dormancy"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-sleeve-holdout-2007-2011",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-sleeve-holdout-2007-2011",
+        "original_audit_verdict": "PASSED (weak)",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset sleeve holdout 2007 2011",
+      "original_audit_verdict": "PASSED (weak)"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-sleeve-trend-arm",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-sleeve-trend-arm",
+        "original_audit_verdict": "fails its bar",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset sleeve trend arm",
+      "original_audit_verdict": "fails its bar"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-static-80-20-sleeve",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-static-80-20-sleeve",
+        "original_audit_verdict": "GO (shadow only)",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset static 80 20 sleeve",
+      "original_audit_verdict": "GO (shadow only)"
+    },
+    {
+      "inventory_id": "lens2-cross-asset-treasury-curve",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "cross-asset-treasury-curve",
+        "original_audit_verdict": "NO-GO",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "cross asset treasury curve",
+      "original_audit_verdict": "NO-GO"
+    },
+    {
+      "inventory_id": "lens2-crypto-binance-us-live-trader",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-binance-us-live-trader",
+        "original_audit_verdict": "On hold",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto binance us live trader",
+      "original_audit_verdict": "On hold"
+    },
+    {
+      "inventory_id": "lens2-crypto-config-tweaks-reverted-2026-04-02",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-config-tweaks-reverted-2026-04-02",
+        "original_audit_verdict": "reverted",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto config tweaks reverted 2026 04 02",
+      "original_audit_verdict": "reverted"
+    },
+    {
+      "inventory_id": "lens2-crypto-defi-tokenized-equity-arb",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-defi-tokenized-equity-arb",
+        "original_audit_verdict": "Do not build \u2014 watch-and-revisit only",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto defi tokenized equity arb",
+      "original_audit_verdict": "Do not build \u2014 watch-and-revisit only"
+    },
+    {
+      "inventory_id": "lens2-crypto-diversity-cap-disabled-2026-05-07",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-diversity-cap-disabled-2026-05-07",
+        "original_audit_verdict": "disabled",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto diversity cap disabled 2026 05 07",
+      "original_audit_verdict": "disabled"
+    },
+    {
+      "inventory_id": "lens2-crypto-edge-search-2026-06-08",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-edge-search-2026-06-08",
+        "original_audit_verdict": "no deployable edge",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "crypto edge search 2026 06 08",
+      "original_audit_verdict": "no deployable edge"
+    },
+    {
+      "inventory_id": "lens2-crypto-funding-carry-phase4",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-funding-carry-phase4",
+        "original_audit_verdict": "directionally credible but not numerically trustworthy",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "crypto funding carry phase4",
+      "original_audit_verdict": "directionally credible but not numerically trustworthy"
+    },
+    {
+      "inventory_id": "lens2-crypto-ibit-overnight-session",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-ibit-overnight-session",
+        "original_audit_verdict": "closed in practice \u2014 do not build",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "crypto ibit overnight session",
+      "original_audit_verdict": "closed in practice \u2014 do not build"
+    },
+    {
+      "inventory_id": "lens2-crypto-kraken-live-bot-pnl",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-kraken-live-bot-pnl",
+        "original_audit_verdict": "modestly profitable",
+        "audit_verdict_type": "GO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "crypto kraken live bot pnl",
+      "original_audit_verdict": "modestly profitable"
+    },
+    {
+      "inventory_id": "lens2-crypto-perp-funding-carry-candidate",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-perp-funding-carry-candidate",
+        "original_audit_verdict": "Infeasible",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto perp funding carry candidate",
+      "original_audit_verdict": "Infeasible"
+    },
+    {
+      "inventory_id": "lens2-crypto-spot-etf-flow-persistence",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-spot-etf-flow-persistence",
+        "original_audit_verdict": "parked (infeasible)",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto spot etf flow persistence",
+      "original_audit_verdict": "parked (infeasible)"
+    },
+    {
+      "inventory_id": "lens2-crypto-tsmom-btc",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-tsmom-btc",
+        "original_audit_verdict": "untriaged (literature only)",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto tsmom btc",
+      "original_audit_verdict": "untriaged (literature only)"
+    },
+    {
+      "inventory_id": "lens2-crypto-venue-migration-path-d",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-venue-migration-path-d",
+        "original_audit_verdict": "defer (90-day)",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto venue migration path d",
+      "original_audit_verdict": "defer (90-day)"
+    },
+    {
+      "inventory_id": "lens2-crypto-web-research-batch-2026-10-25",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-web-research-batch-2026-10-25",
+        "original_audit_verdict": "Literature candidates in the register",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto web research batch 2026 10 25",
+      "original_audit_verdict": "Literature candidates in the register"
+    },
+    {
+      "inventory_id": "lens2-crypto-wfo-overfitting-param-stability",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "excluded",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-wfo-overfitting-param-stability",
+        "original_audit_verdict": "NO-OP",
+        "audit_verdict_type": "STATUS",
+        "audit_classification": "inconclusive"
+      },
+      "reason": "Lens-2 fixed vocabulary labels this as STATUS (feasibility, design, intake, literature, untriaged, component, operations, data-fix, or audit status), not a test of an edge; retained as an explicit exclusion from verdict rows. This is an inventory disposition, not a reassessment of the underlying item.",
+      "title": "crypto wfo overfitting param stability",
+      "original_audit_verdict": "NO-OP"
+    },
+    {
+      "inventory_id": "lens2-crypto-wfo-textbook-reset",
+      "source": "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+      "disposition": "included",
+      "inventory_kind": "historical_lens2_classification",
+      "source_reference": {
+        "classification_id": "crypto-wfo-textbook-reset",
+        "original_audit_verdict": "closed",
+        "audit_verdict_type": "NO",
+        "audit_classification": "inconclusive"
+      },
+      "title": "crypto wfo textbook reset",
+      "original_audit_verdict": "closed"
+    },
+    {
+      "inventory_id": "post-audit-membership-reference-2026-11-08",
+      "source": "research/programme/membership-database/2026-11-08-reference-numbers-on-corrected-membership.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_document_review",
+      "reason": "Evidence note states no verdict changes; vintage comparison preserves prior results and is not a new candidate verdict.",
+      "title": "membership reference (2026 11 08)"
+    },
+    {
+      "inventory_id": "post-audit-membership-checks-2026-11-09",
+      "source": "research/programme/membership-database/2026-11-09-open-checks-closed-with-press-releases.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_document_review",
+      "reason": "Evidence note closes data-membership checks and explicitly changes no code, reference run, or stored list; it is not a new candidate verdict.",
+      "title": "membership checks (2026 11 09)"
+    },
+    {
+      "inventory_id": "post-audit-prompt-kit-review-2026-11-05",
+      "source": "research/programme/prompt-kit-review/2026-11-05-research-prompt-kit-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_verdict_review",
+      "source_reference": {
+        "original_verdict": "Mine it for checks; do not adopt it as written.",
+        "note": "Explicit Verdict section; review is not a strategy return test."
+      },
+      "title": "Research prompt-kit review",
+      "original_audit_verdict": "Mine it for checks; do not adopt it as written.",
+      "reason": "Review-only recommendation about a prompt kit; not a strategy verdict or registered return test. Adoption status remains in its source review."
+    },
+    {
+      "inventory_id": "post-audit-vectorbt-engine-synthesis-2026-11-05",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-F-synthesis-and-verdict.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_document_review",
+      "reason": "The research index classifies this as methods and tooling and explicitly says no strategy verdict changed. It is an engine decision/synthesis, not a candidate strategy verdict in this retrospective inventory.",
+      "title": "vectorbt engine synthesis (2026 11 05)"
+    },
+    {
+      "inventory_id": "post-audit-benchmark-objectives-2026-11-10",
+      "source": "research/programme/benchmark-objectives/2026-11-10-objectives-benchmarks-consolidated.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_document_review",
+      "reason": "Framework proposal and synthesis, not a completed candidate evaluation or new study verdict; it explicitly says proposals are not approved rules and existing verdicts do not change.",
+      "title": "benchmark objectives (2026 11 10)"
+    },
+    {
+      "inventory_id": "post-audit-claim-verification-2026-11-10",
+      "source": "research/programme/benchmark-objectives/2026-11-10-claim-verification.md",
+      "disposition": "excluded",
+      "inventory_kind": "post_audit_document_review",
+      "reason": "Source-claim verification supporting the proposed framework, not a completed candidate evaluation or new study verdict; it says no research result was generated.",
+      "title": "claim verification (2026 11 10)"
+    },
+    {
+      "inventory_id": "discovery-md-7457dc94d4573a7b",
+      "source": "research/README.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/README.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Index/navigation document; it points to the verdict register and introduces no independently tested hypothesis or result."
+    },
+    {
+      "inventory_id": "discovery-md-b0f4ff463bf0254c",
+      "source": "research/RESEARCH_INDEX.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/RESEARCH_INDEX.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Research index that summarizes and links existing studies; it is derivative and creates no new experimental verdict."
+    },
+    {
+      "inventory_id": "discovery-md-5e1ebbcac3490f77",
+      "source": "research/TEMPLATE-brief.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/TEMPLATE-brief.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Unfilled draft template explicitly says it is not registered; no candidate, frozen arms, or computed evidence exists."
+    },
+    {
+      "inventory_id": "discovery-md-8798399a16b0a62d",
+      "source": "research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/artifacts-2026-09-09-perf-review/ggtrader_paper_review_20260909.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Observational advisory review includes measured paper-versus-SPY performance and finds insufficient evidence; research/RESEARCH_INDEX.md classifies it as a read-only advisory review, not a candidate research verdict. Its empirical observations remain in its source."
+    },
+    {
+      "inventory_id": "discovery-md-8f7e66cdfe659233",
+      "source": "research/audits/event-timing/2026-10-21-event-timing-audit.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/event-timing/2026-10-21-event-timing-audit.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Registered event-data integrity audit brief, not a return test; it specifies questions/protocol before computation and cannot itself carry an empirical verdict."
+    },
+    {
+      "inventory_id": "discovery-md-f85b5b8e62b87965",
+      "source": "research/audits/event-timing/2026-10-23-event-timing-audit-decision.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/event-timing/2026-10-23-event-timing-audit-decision.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Decision resolves data/timestamp convention and feasibility only; it explicitly reports no OOS SPY comparison and no established improvement. Method/status decision, not return verdict."
+    },
+    {
+      "inventory_id": "discovery-md-b57f052f22071c87",
+      "source": "research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/rebaseline/2026-08-18-wfo-anchor-leakage-fix.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Engineering/method audit includes two real folds and an anchor A/B comparison, but aggregate OOS impact was not measured and original strategy verdicts remain unchanged. Not a separate candidate strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-d11a6d2856878401",
+      "source": "research/audits/research-process/2026-11-01-research-process-audit.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/research-process/2026-11-01-research-process-audit.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Cross-study process audit synthesizes existing verdicts, limitations, and follow-ups; it states no verdict/classification changed. Duplicate review, not a new experiment."
+    },
+    {
+      "inventory_id": "discovery-md-e7d2c96a85eab8d1",
+      "source": "research/audits/root-cause-2026-11-04/README.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/README.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Folder guide and audit scope/reading order; no independent hypothesis or evidence."
+    },
+    {
+      "inventory_id": "discovery-md-a71ed1918dd5510a",
+      "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-phase0-trust-audit.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Intermediate trust-audit output, explicitly unreviewed; audits source reliability and does not test a return hypothesis."
+    },
+    {
+      "inventory_id": "discovery-md-43013425d3545fb5",
+      "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-phase1-checkpoint.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Interim checkpoint and proposed follow-up run list; status/progress record, not a completed test."
+    },
+    {
+      "inventory_id": "discovery-md-c9beab08e1e7d310",
+      "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-challenge.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Independent challenge/review of another synthesis, not an independent experiment or verdict."
+    },
+    {
+      "inventory_id": "discovery-md-f30431d0bf942f8e",
+      "source": "research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-04-root-cause-investigation.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Cross-project root-cause synthesis that ranks explanations for historical outcomes; it summarizes existing evidence rather than testing a distinct registered candidate."
+    },
+    {
+      "inventory_id": "discovery-md-a1bbb83e8a0bac55",
+      "source": "research/audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Plain-language restatement of root-cause findings; derivative synthesis, not a separate empirical test."
+    },
+    {
+      "inventory_id": "discovery-md-0e3aea10a1ea09dc",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-sensitivity-spec.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Defines audit classification vocabulary and selection rules; protocol/method specification, not a result."
+    },
+    {
+      "inventory_id": "discovery-md-42d5488f9012384b",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens4-feasibility-and-ceiling.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Feasibility/target arithmetic lens within the root-cause audit; does not test a distinct investable strategy or produce a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-5b332afcd45f7c48",
+      "source": "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens5-coverage-gaps.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Coverage-gap inventory within the audit; identifies missing evidence and is not an independent return test."
+    },
+    {
+      "inventory_id": "discovery-md-d29ff7d5f56f8f3e",
+      "source": "research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/records/2026-11-04-investigation-ledger.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Execution ledger and task rulings; administrative record, not empirical evidence."
+    },
+    {
+      "inventory_id": "discovery-md-8b633e44146739e1",
+      "source": "research/audits/root-cause-2026-11-04/reference-sheet.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reference-sheet.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Glossary/reference sheet for the audit; no tested claim."
+    },
+    {
+      "inventory_id": "discovery-md-bc3010ceb742ba6c",
+      "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-review-verification.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Citation verification of a model review; review-quality audit, not strategy evidence."
+    },
+    {
+      "inventory_id": "discovery-md-0cd511240163509e",
+      "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-argon-synthesis-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "External/model review of root-cause synthesis; derivative opinion, not a distinct experiment."
+    },
+    {
+      "inventory_id": "discovery-md-57174d79c444942f",
+      "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-direction-reviews-consolidated.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Consolidates reviewers\u2019 directional opinions (including a verification caveat); not an independent empirical test."
+    },
+    {
+      "inventory_id": "discovery-md-424a76473d9652a3",
+      "source": "research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/audits/root-cause-2026-11-04/reviews/2026-11-05-senior-quant-direction-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Reviewer assessment and recommendations on the root-cause synthesis; no independent returns test."
+    },
+    {
+      "inventory_id": "discovery-md-d9ebe68731e7b16e",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-24-intraday-feasibility.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Study brief, DRAFT r7: explicitly says no intraday prices/signals/returns inspected; gates and window unapproved. It is a proposed protocol, not an observed verdict."
+    },
+    {
+      "inventory_id": "discovery-md-022a7ff4568f9e02",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-24-intraday-trading-feasibility.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-24-intraday-trading-feasibility.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Verification review reports research UNRESOLVED and no bars or strategy returns. This is source/method and feasibility review, not an independent strategy outcome."
+    },
+    {
+      "inventory_id": "discovery-md-6a72052d9065813e",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-argon-review-assessment.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-argon-review-assessment.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Parent assessment of an independent plan review; conditional research-plan direction only, explicitly not candidate GO or owner authorization."
+    },
+    {
+      "inventory_id": "discovery-md-d25460c2416cad2f",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-feasibility-r8.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Approved r8 protocol/protocol-finalization status. Stage 0A remains unresolved; no price inspection or strategy scoring authorized. Protocol approval is not a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-e06c56b73990d34f",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation-plan.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Investigation plan and scoped authorization to diagnose missing data; plan has no measured strategy outcome."
+    },
+    {
+      "inventory_id": "discovery-md-745d20f90843c71b",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-gap-investigation.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Data-gap investigation concludes UNRESOLVED (data), explicitly not a strategy NO-GO; no candidate returns or gates were computed. This is a distinct data finding from Stage 0A, retained in its source."
+    },
+    {
+      "inventory_id": "discovery-md-41a1a7191a309ca9",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-argon-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Argon independent plan review conditional on sequence/protocol approval; it recommends process steps and contains no candidate test result."
+    },
+    {
+      "inventory_id": "discovery-md-338d6db934a77441",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-opus-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-overall-plan-opus-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Opus plan review evaluates research sequence and downstream decision coherence; conditional process recommendation, not measured candidate verdict."
+    },
+    {
+      "inventory_id": "discovery-md-1a4171eeae78c5d4",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-decision-memo.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Draft decision memo proposes protocol defaults; explicitly unapproved and authorizes no data or return work."
+    },
+    {
+      "inventory_id": "discovery-md-eb3484c7ad1f1104",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-branch-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-final-branch-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Final-branch code review of mocked implementation; defect/review disposition, not an empirical strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-e6327a4512dcb8fa",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-fix-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-fix-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Scoped re-review of implementation fixes; code quality/specification review, not a return or strategy result."
+    },
+    {
+      "inventory_id": "discovery-md-2eb1feaff363c0c0",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-implementation.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Mocked implementation/preflight status; explicitly says no candidate price/return analysis and original Stage 0A remains unresolved."
+    },
+    {
+      "inventory_id": "discovery-md-e4eed28c74577e0d",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-task-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-task-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Task/specification review PASS and quality approval are implementation review findings; no candidate performance evidence."
+    },
+    {
+      "inventory_id": "discovery-md-a8f15f4b93f7002f",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-contract.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Stage 0A coverage contract is a protocol/authorization document, not a result."
+    },
+    {
+      "inventory_id": "discovery-md-03dc78232125003e",
+      "source": "research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-feasibility/2026-10-25-intraday-stage0a-coverage.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Stage 0A concludes sampled coverage unresolved and auction branch unresolved, explicitly a data-preflight finding with no strategy returns. Not a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-465c7fefe39967c8",
+      "source": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-observation.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Prospective observer is descriptive/operational research; activation unapproved and not a confirmatory profitability test."
+    },
+    {
+      "inventory_id": "discovery-md-88040fe703a713f4",
+      "source": "research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/intraday/spy-momentum-prospective-observer/2026-10-25-intraday-prospective-protocol-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Protocol review NEEDS FIXES and parent resolution are protocol/method review status; no code or observation started."
+    },
+    {
+      "inventory_id": "discovery-md-4f83f23312eda3dc",
+      "source": "research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/evidence-standard/2026-10-23-forward-paper-standard.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Approved forward-paper evidence protocol governing future candidates; standards/method document, not a candidate verdict."
+    },
+    {
+      "inventory_id": "discovery-md-d44d70f360502ffd",
+      "source": "research/programme/prompt-kit-review/_research-prompt-kit-source.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/prompt-kit-review/_research-prompt-kit-source.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Reusable research prompt kit; operational guidance, not completed research evidence."
+    },
+    {
+      "inventory_id": "discovery-md-d30729c60eaa3aa9",
+      "source": "research/programme/vectorbt-engine/P0-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P0-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Status/evidence record for the engine migration. Its legacy ensemble comparison explicitly says Sharpe 0.39 vs SPY 0.78, unchanged from the already-recorded NO-GO; diagnostic DSR-zero row is also below SPY. Duplicate/status, not a new strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-026db4642821e148",
+      "source": "research/programme/vectorbt-engine/P1-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P1-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Engineering phase exit criteria (stack compatibility, tests and dispatch), not a strategy performance evaluation or verdict."
+    },
+    {
+      "inventory_id": "discovery-md-e48cbac0940598f3",
+      "source": "research/programme/vectorbt-engine/P2-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P2-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Engine adapter, parity, test and upgrade-tooling status; the reported voter-flip check reproduces S5 methodology and creates no independent strategy decision."
+    },
+    {
+      "inventory_id": "discovery-md-e3141d1caac45f88",
+      "source": "research/programme/vectorbt-engine/P3-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P3-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Data-layer and point-in-time-universe implementation verification only; no strategy outcome."
+    },
+    {
+      "inventory_id": "discovery-md-bc0ae9fc645936ba",
+      "source": "research/programme/vectorbt-engine/P4-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P4-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Strategy-port fidelity and implementation status; parity acceptance concerns reproducing legacy behavior, not whether any strategy has an edge."
+    },
+    {
+      "inventory_id": "discovery-md-9b5c80ca91536bcc",
+      "source": "research/programme/vectorbt-engine/P5-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P5-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "WFO engine rewrite and parity/operational status; any comparison is migration validation and does not establish a distinct strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-d436feed454c369a",
+      "source": "research/programme/vectorbt-engine/P7-completion.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P7-completion.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Paper trader integration, golden signals and dry-run readiness are operational status, not return evidence or strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-0a06467912067c7d",
+      "source": "research/programme/vectorbt-engine/P8b-fixups.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/P8b-fixups.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Upgrade-procedure defect remediation and rehearsal status; no strategy return test or verdict."
+    },
+    {
+      "inventory_id": "discovery-md-98a6f3d30855bc31",
+      "source": "research/programme/vectorbt-engine/legacy-scripts/README.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/legacy-scripts/README.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Archive index describing moved historical scripts and preservation rationale; it contains no distinct research decision."
+    },
+    {
+      "inventory_id": "discovery-md-19a01eecc79c7f04",
+      "source": "research/programme/vectorbt-engine/legacy-src/README.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/legacy-src/README.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Archive index for removed legacy source/tests; preservation status only, no strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-672b4695a1fb8438",
+      "source": "research/programme/vectorbt-engine/p1-parity/p1-17fold-parity.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/p1-parity/p1-17fold-parity.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Closes a stack migration parity criterion by comparing old/new execution on the same reference. This is implementation parity, not independent evidence for a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-87ea87240086abe7",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-A-vectorbt-0285-inventory.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-A-vectorbt-0285-inventory.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Library feature inventory and tooling assessment, not a strategy test or verdict."
+    },
+    {
+      "inventory_id": "discovery-md-4491da280aee4c18",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-B-vectorbt-1x-and-rust.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-B-vectorbt-1x-and-rust.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Dependency/engine migration feasibility and cost assessment; tooling decision, not a strategy return verdict."
+    },
+    {
+      "inventory_id": "discovery-md-d877391ce721cfb1",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-C-ggtrader-handrolled-inventory.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-C-ggtrader-handrolled-inventory.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Code inventory of existing lab/paper components, not an empirical strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-4dc110f714667d64",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-05-research-D-vectorbt-wfo-and-agents.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-05-research-D-vectorbt-wfo-and-agents.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "WFO tooling and agent workflow assessment; methodological/engineering recommendation, not a strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-148dd3a67143e9c9",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S1-target-architecture.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S1-target-architecture.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Target architecture specification; proposed system design rather than a completed strategy evaluation."
+    },
+    {
+      "inventory_id": "discovery-md-82e5e6980168a125",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S3-stack-migration.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S3-stack-migration.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Hands-on stack migration feasibility specification; implementation recommendation, not a strategy result."
+    },
+    {
+      "inventory_id": "discovery-md-040c72126753057d",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S4-strategy-port-inventory.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S4-strategy-port-inventory.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Classifies legacy strategy implementations for porting. It does not test outcomes; existing strategy verdicts remain elsewhere and no distinct verdict is introduced."
+    },
+    {
+      "inventory_id": "discovery-md-5ad10f798f034d44",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S5-validation-protocol.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S5-validation-protocol.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Defines validation and re-baseline gates for the engine migration. Protocol/method specification, not an observed strategy verdict."
+    },
+    {
+      "inventory_id": "discovery-md-538cadc575d0d292",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S6-data-and-universe.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S6-data-and-universe.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Data and point-in-time universe design/verification; methodological infrastructure, no distinct strategy outcome."
+    },
+    {
+      "inventory_id": "discovery-md-6eea834ca943436c",
+      "source": "research/programme/vectorbt-engine/reports/2026-11-06-spec-S8-complementary-tools.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/vectorbt-engine/reports/2026-11-06-spec-S8-complementary-tools.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Third-party tool comparison and adoption recommendations for the lab; tooling/method verdicts, not strategy verdicts."
+    },
+    {
+      "inventory_id": "discovery-md-f650b9711c955e92",
+      "source": "research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/programme/wfo-methods/2026-11-02-wfo-fold-attribution.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "The report explicitly labels itself documentary attribution, not a new strategy verdict. It attributes saved folds among gate failures, anchor deployment and winner deployment; it says existing closed verdicts stand and does not infer undeployed-winner performance."
+    },
+    {
+      "inventory_id": "discovery-md-6330502615fbbb8b",
+      "source": "research/prompts/local-implementation-prompt-TEMPLATE.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/prompts/local-implementation-prompt-TEMPLATE.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Unfilled prompt template for future strategy implementation; no candidate result."
+    },
+    {
+      "inventory_id": "discovery-md-0dcb55a600b6611e",
+      "source": "research/prompts/web-strategy-research-prompt.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/prompts/web-strategy-research-prompt.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Prompt instructions for external idea discovery; proposed hypotheses are not tested findings."
+    },
+    {
+      "inventory_id": "discovery-md-a487e53eef516bab",
+      "source": "research/stock-signals/feasibility/2026-11-02-family-scope-review.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/stock-signals/feasibility/2026-11-02-family-scope-review.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Documentary definitions-only review explicitly uses no returns/result files and changes no verdict; classification/status review only."
+    },
+    {
+      "inventory_id": "discovery-md-1f68a91a0cd23788",
+      "source": "research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
+      "disposition": "excluded",
+      "inventory_kind": "unreviewed_discovery_candidate",
+      "title": "Discovery candidate: research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
+      "scope_note": "Text-search match only; not yet verified to contain a distinct verdict.",
+      "reason": "Feasibility inventory explicitly computes no returns, recommends no candidate, and authorizes no test; its matrix is intake/status rather than a verdict."
+    }
+  ],
+  "coverage_complete": false
+}

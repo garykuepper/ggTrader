@@ -72,6 +72,11 @@ def validate(inventory: dict, annotations: dict, root: Path) -> list[str]:
     else:
         for source in sources:
             check_source(source, "inventory")
+    coverage_complete = inventory.get("coverage_complete", False)
+    if not isinstance(coverage_complete, bool):
+        errors.append("inventory: coverage_complete must be a boolean")
+    elif coverage_complete:
+        check_source(inventory.get("coverage_evidence"), "inventory coverage")
     records = inventory.get("records")
     verdicts = annotations.get("verdicts")
     if not isinstance(records, list):
@@ -164,6 +169,11 @@ def validate(inventory: dict, annotations: dict, root: Path) -> list[str]:
                 not isinstance(uncertainty, str) or not uncertainty.strip()
             ):
                 errors.append(f"{rev_id}: uncertainties must be text or null")
+            if "protocol_result" in revision and (
+                not isinstance(revision["protocol_result"], str)
+                or revision["protocol_result"] not in PROTOCOLS
+            ):
+                errors.append(f"{rev_id}: invalid protocol result")
             if (
                 not isinstance(revision.get("evidence"), str)
                 or revision["evidence"] not in EVIDENCE
@@ -261,7 +271,11 @@ def render(inventory: dict, annotations: dict) -> str:
         key: sum(r["disposition"] == key for r in records)
         for key in ("included", "pending", "excluded")
     }
-    status = "INCOMPLETE" if counts["pending"] or not records else "REVIEWED"
+    status = (
+        "REVIEWED"
+        if records and not counts["pending"] and inventory.get("coverage_complete") is True
+        else "INCOMPLETE"
+    )
     lines = [
         "# Research verdict register",
         "",
@@ -271,7 +285,8 @@ def render(inventory: dict, annotations: dict) -> str:
         + "; ".join(f"{key}: {value}" for key, value in counts.items()),
         "",
         "Original study records remain authoritative. An empty inventory does not establish "
-        "coverage.",
+        "coverage. Pending rows transcribe discovery sources and have not been independently "
+        "reviewed against the original study.",
         "",
         "| Study / specification / stage | Original verdict | Protocol | "
         "Evidence | Action | Source / annotation |",
@@ -283,14 +298,30 @@ def render(inventory: dict, annotations: dict) -> str:
 
     verdicts = sorted(annotations["verdicts"], key=lambda v: v["verdict_id"])
     for verdict in verdicts:
-        latest = max(verdict["revisions"], key=lambda r: (r["date"], r["annotation_revision_id"]))
+        latest = max(enumerate(verdict["revisions"]), key=lambda item: (item[1]["date"], item[0]))[
+            1
+        ]
+        chronological = sorted(verdict["revisions"], key=lambda r: r["date"])
+        current_protocol = verdict["protocol_result"]
+        for revision in chronological:
+            current_protocol = revision.get("protocol_result", current_protocol)
         label = " / ".join(cell(verdict[k]) for k in ("study_id", "specification_id", "stage_id"))
         anchor = revision_anchor(latest["annotation_revision_id"])
         lines.append(
             f"| {label} | {cell(verdict['original_verdict'])} | "
-            f"{cell(verdict['protocol_result'])} | {cell(latest['evidence'])} | "
+            f"{cell(current_protocol)} | {cell(latest['evidence'])} | "
             f"{cell(latest['action'])} | [source](../{quote(verdict['source'], safe='/')}) / "
             f"[{cell(latest['annotation_revision_id'])}](#{anchor}) ({latest['date']}) |"
+        )
+    for row in sorted(records, key=lambda r: r["inventory_id"]):
+        if row["disposition"] != "pending":
+            continue
+        title = cell(row.get("title", row["inventory_id"]))
+        original = cell(row.get("original_audit_verdict", "unknown"))
+        source = quote(row["source"], safe="/")
+        lines.append(
+            f"| {title} | {original} | NOT REVIEWED | NOT REVIEWED | "
+            f"NOT REVIEWED | [source](../{source}) |"
         )
     lines.extend(["", "## Detailed records", ""])
     for verdict in verdicts:
@@ -299,18 +330,19 @@ def render(inventory: dict, annotations: dict) -> str:
                 f"### {verdict['verdict_id']}",
                 "",
                 f"Inventory: {verdict['inventory_id']}  ",
+                f"Initial protocol determination: {verdict['protocol_result']}  ",
                 f"Source: [original](../{quote(verdict['source'], safe='/')})",
                 "",
             ]
         )
-        for rev in sorted(
-            verdict["revisions"], key=lambda r: (r["date"], r["annotation_revision_id"])
-        ):
+        for rev in sorted(verdict["revisions"], key=lambda r: r["date"]):
             lines.extend(
                 [
                     f'- <a id="{revision_anchor(rev["annotation_revision_id"])}"></a>'
                     f"**{rev['annotation_revision_id']}** ({rev['date']}): "
-                    f"{rev['evidence']} / {rev['action']}. {rev['rationale']} "
+                    f"{rev['evidence']} / {rev['action']}. "
+                    f"Protocol update: {rev.get('protocol_result', 'unchanged')}. "
+                    f"{rev['rationale']} "
                     f"Approval: {rev['approval'] or 'unknown'}; "
                     f"Uncertainties: {rev['uncertainties'] or 'unknown'}. "
                     + " ".join(
