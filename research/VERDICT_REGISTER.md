@@ -4,7 +4,7 @@ Inventory cutoff: 2026-11-10
 Status: **INCOMPLETE**  
 Identified: 261; included: 131; pending: 2; excluded: 128
 
-Original study records remain authoritative. An empty inventory does not establish coverage. Included counts contain summary records as well as individual records; they are not a count of independent tests. Pending rows transcribe discovery sources and have not been independently reviewed against the original study.
+Original study records remain authoritative. An empty inventory does not establish coverage. Included counts contain summary records as well as individual records; they are not a count of independent tests. Pending rows transcribe discovery sources and await final disposition; source-review notes are linked where available.
 
 | Study / specification / stage | Original verdict | Protocol | Evidence | Action | Source / annotation |
 | --- | --- | --- | --- | --- | --- |
@@ -139,8 +139,8 @@ Original study records remain authoritative. An empty inventory does not establi
 | vix-entry-throttling / vix-entry-throttling / historical-result | Historical NO-GO | UNRESOLVED | UNRESOLVED | CLOSE THIS SPECIFICATION | [source](../research/RESEARCH_SNAPSHOT.md) / [vix-entry-throttling-historical-action-review-2026-11-10](#revision-3deddda823244b955a9d53a7d9ad04df1202a273e864ff45566e7cf2c6d565e1) (2026-11-10) |
 | xs-momentum-2026-06 / xs-momentum-2026-06 / historical-result | no risk-adjusted edge | UNRESOLVED | UNRESOLVED | HOLD / PARK THIS VERSION | [source](../docs/changelog.md) / [xs-momentum-2026-06-2026-11-10](#revision-8211314544e03535b45140491868a77c06de84ddd93bacd9a96340713aec31f6) (2026-11-10) |
 | xs-momentum-corrected-replay / xs-momentum-corrected-replay / historical-result | NO-GO stands | NOT MET | INCONCLUSIVE | CLOSE THIS SPECIFICATION | [source](../research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md) / [xs-momentum-corrected-replay-historical-action-review-2026-11-10](#revision-334e33cc1b806c70901969c87da8150bbb0b924d345fd158dad51b2340f3bc2b) (2026-11-10) |
-| MidCap 50/50 and 70/30 blend outcome mapping | unknown | NOT REVIEWED | NOT REVIEWED | NOT REVIEWED | [source](../docs/roadmap.md) |
-| Archived equity 10% sizing trial existence | unknown | NOT REVIEWED | NOT REVIEWED | NOT REVIEWED | [source](../docs/archive/sp500_equity_strategy_research.md) |
+| MidCap 50/50 and 70/30 blend outcome mapping | unknown | UNRESOLVED (source-reviewed; pending) | UNRESOLVED (source-reviewed; pending) | NOT ASSIGNED | [source](../docs/roadmap.md) / [review](../research/programme/verdict-framework/2026-11-10-midcap-and-sizing-source-review.md): The two weight-specific outcomes remain unverified despite evidence that a run likely printed both rows. |
+| Archived equity 10% sizing trial existence | unknown | UNRESOLVED (source-reviewed; pending) | UNRESOLVED (source-reviewed; pending) | NOT ASSIGNED | [source](../docs/archive/sp500_equity_strategy_research.md) / [review](../research/programme/verdict-framework/2026-11-10-midcap-and-sizing-source-review.md): No identifiable 10% result or run was found; its absence is not established. |
 
 ## Detailed records
 

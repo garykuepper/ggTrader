@@ -95,6 +95,9 @@ def validate(inventory: dict, annotations: dict, root: Path) -> list[str]:
             errors.append(f"duplicate inventory ID: {ident}")
         by_id[ident] = row
         check_source(row.get("source"), ident)
+        if "review_source" in row:
+            check_source(row["review_source"], ident)
+            required(row, "review_note", ident)
         disposition = row.get("disposition")
         if not isinstance(disposition, str) or disposition not in {
             "pending",
@@ -267,6 +270,9 @@ def validate_inventory_history(baseline: dict, current: dict) -> list[str]:
             continue
         if old.get("source") != new.get("source"):
             errors.append(f"{ident}: inventory source changed")
+        for field in ("review_source", "review_note"):
+            if field in old and old[field] != new.get(field):
+                errors.append(f"{ident}: recorded {field} changed")
         previous = old.get("disposition")
         disposition = new.get("disposition")
         if previous != "pending" and disposition != previous:
@@ -308,8 +314,7 @@ def render(inventory: dict, annotations: dict) -> str:
         "Original study records remain authoritative. An empty inventory does not establish "
         "coverage. Included counts contain summary records as well as individual records; "
         "they are not a count of independent tests. Pending rows transcribe discovery sources "
-        "and have not been independently "
-        "reviewed against the original study.",
+        "and await final disposition; source-review notes are linked where available.",
         "",
         "| Study / specification / stage | Original verdict | Protocol | "
         "Evidence | Action | Source / annotation |",
@@ -346,9 +351,15 @@ def render(inventory: dict, annotations: dict) -> str:
         title = cell(row.get("title", row["inventory_id"]))
         original = cell(row.get("original_audit_verdict", "unknown"))
         source = quote(row["source"], safe="/")
+        review = ""
+        if row.get("review_source"):
+            note = cell(row["review_note"])
+            link = quote(row["review_source"], safe="/")
+            review = f" / [review](../{link}): {note}"
+        state = "UNRESOLVED (source-reviewed; pending)" if review else "NOT REVIEWED"
         lines.append(
-            f"| {title} | {original} | NOT REVIEWED | NOT REVIEWED | "
-            f"NOT REVIEWED | [source](../{source}) |"
+            f"| {title} | {original} | {state} | {state} | "
+            f"NOT ASSIGNED | [source](../{source}){review} |"
         )
     lines.extend(["", "## Detailed records", ""])
     for verdict in verdicts:
@@ -401,6 +412,14 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Compare with trusted inventory JSON; otherwise use the tracked HEAD version.",
     )
+    parser.add_argument(
+        "--history",
+        action="store_true",
+        help="Validate each committed first-parent register version; requires full Git history.",
+    )
+    parser.add_argument(
+        "--base-ref", help="Compare both register inputs against a trusted Git commit."
+    )
     args = parser.parse_args(argv)
     try:
         inventory = json.loads((ROOT / DIRECTORY / "inventory.json").read_text())
@@ -425,6 +444,91 @@ def main(argv: list[str] | None = None) -> int:
                     check=True,
                 ).stdout
             )
+
+        if args.history:
+            shallow = subprocess.run(
+                ["git", "rev-parse", "--is-shallow-repository"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            if shallow != "false":
+                raise ValueError("Full Git history is required for --history")
+            for filename, compare in (
+                ("annotations.json", validate_history),
+                ("inventory.json", validate_inventory_history),
+            ):
+                path = (DIRECTORY / filename).as_posix()
+                commits = subprocess.run(
+                    [
+                        "git",
+                        "log",
+                        "--first-parent",
+                        "--reverse",
+                        "--format=%H",
+                        "HEAD",
+                        "--",
+                        path,
+                    ],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout.splitlines()
+                if not commits:
+                    raise ValueError(f"No committed history for {path}")
+                previous = None
+                for commit in commits:
+                    content = subprocess.run(
+                        ["git", "show", f"{commit}:{path}"],
+                        cwd=ROOT,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    ).stdout
+                    current = json.loads(content)
+                    if previous is not None:
+                        errors.extend(f"{commit[:12]}: {e}" for e in compare(previous, current))
+                    previous = current
+
+        if args.base_ref:
+            base = subprocess.run(
+                ["git", "rev-parse", "--verify", "--end-of-options", f"{args.base_ref}^{{commit}}"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+            base_files = []
+            present = []
+            for filename in ("annotations.json", "inventory.json"):
+                path = (DIRECTORY / filename).as_posix()
+                listing = subprocess.run(
+                    ["git", "ls-tree", "--name-only", base, "--", path],
+                    cwd=ROOT,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout.splitlines()
+                exists = path in listing
+                present.append(exists)
+                if exists:
+                    blob = subprocess.run(
+                        ["git", "show", f"{base}:{path}"],
+                        cwd=ROOT,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    base_files.append(json.loads(blob.stdout))
+                else:
+                    base_files.append(None)
+            if present[0] != present[1]:
+                raise ValueError("Trusted base has an incomplete register")
+            if present[0] and not errors:
+                errors.extend(validate_history(base_files[0], annotations))
+                errors.extend(validate_inventory_history(base_files[1], inventory))
 
         baseline = read_baseline("annotations.json", args.baseline)
         inventory_baseline = read_baseline("inventory.json", args.inventory_baseline)
@@ -453,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
                 Path(name).unlink(missing_ok=True)
             print(f"Wrote {output}")
         return 0
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"Register error: {exc}")
         return 1
 

@@ -497,3 +497,237 @@ def test_parent_cycles_and_cross_study_relationships_fail(records, tmp_path):
     del first["parent_verdict_id"]
     second["study_id"] = "other-study"
     assert register.validate(inventory, annotations, tmp_path)
+
+
+def test_pending_source_review_is_linked_and_validated(records, tmp_path):
+    inventory, annotations = records
+    pending = inventory["records"][1]
+    pending["review_source"] = "missing.md"
+    assert register.validate(inventory, annotations, tmp_path)
+    pending["review_source"] = "source.md"
+    pending["review_note"] = "Weight-specific outcomes unavailable"
+    assert not register.validate(inventory, annotations, tmp_path)
+    rendered = register.render(inventory, annotations)
+    assert "Weight-specific outcomes unavailable" in rendered
+    assert "[review](../source.md)" in rendered
+
+
+def test_history_check_rejects_committed_rewrite(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (folder / "inventory.json").write_text(json.dumps(inventory))
+    path = folder / "annotations.json"
+    path.write_text(json.dumps(annotations))
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "original"], cwd=tmp_path, check=True)
+    annotations["verdicts"][0]["original_verdict"] = "GO"
+    path.write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "rewrite"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--history"]) != 0
+    assert "baseline verdict changed" in capsys.readouterr().out
+
+
+def test_history_check_rejects_deleted_committed_register(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (folder / "inventory.json").write_text(json.dumps(inventory))
+    path = folder / "annotations.json"
+    path.write_text(json.dumps(annotations))
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "original"], cwd=tmp_path, check=True)
+    path.unlink()
+    subprocess.run(["git", "add", "-u"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "delete"], cwd=tmp_path, check=True)
+    path.write_text(json.dumps(annotations))
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--history"]) != 0
+    assert "Register error" in capsys.readouterr().out
+
+
+def test_inventory_history_preserves_recorded_review_notes(records):
+    inventory, _ = records
+    inventory["records"][1].update(review_source="source.md", review_note="Unverified")
+    changed = copy.deepcopy(inventory)
+    changed["records"][1]["review_note"] = "Rewritten"
+    assert register.validate_inventory_history(inventory, changed)
+    changed["records"][1]["review_note"] = "Unverified"
+    del changed["records"][1]["review_source"]
+    assert register.validate_inventory_history(inventory, changed)
+
+
+def test_history_check_refuses_shallow_clone(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    source = tmp_path / "source-repo"
+    folder = source / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (source / "source.md").write_text("source")
+    (folder / "inventory.json").write_text(json.dumps(inventory))
+    (folder / "annotations.json").write_text(json.dumps(annotations))
+    subprocess.run(["git", "init", "-q", str(source)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=source, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=source, check=True)
+    subprocess.run(["git", "add", "."], cwd=source, check=True)
+    subprocess.run(["git", "commit", "-qm", "initial"], cwd=source, check=True)
+    (source / "extra").write_text("next")
+    subprocess.run(["git", "add", "."], cwd=source, check=True)
+    subprocess.run(["git", "commit", "-qm", "next"], cwd=source, check=True)
+    clone = tmp_path / "shallow"
+    subprocess.run(["git", "clone", "-q", "--depth=1", source.as_uri(), str(clone)], check=True)
+    monkeypatch.setattr(register, "ROOT", clone)
+    assert register.main(["render", "--history"]) != 0
+    assert "Full Git history is required" in capsys.readouterr().out
+
+
+def test_history_check_compares_trusted_merge_base(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (tmp_path / "source.md").write_text("source")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    (tmp_path / "seed").write_text("seed")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "seed"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "checkout", "-qb", "feature"], cwd=tmp_path, check=True)
+    (folder / "inventory.json").write_text(json.dumps(inventory))
+    (folder / "annotations.json").write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "feature-register"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "checkout", "-qb", "base", "HEAD^"], cwd=tmp_path, check=True)
+    folder.mkdir(parents=True, exist_ok=True)
+    base_inventory = copy.deepcopy(inventory)
+    base_inventory["records"].append(
+        {"inventory_id": "base-only", "disposition": "pending", "source": "source.md"}
+    )
+    (folder / "inventory.json").write_text(json.dumps(base_inventory))
+    (folder / "annotations.json").write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "base-register"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "checkout", "-q", "feature"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "merge", "-qs", "ours", "--no-edit", "base"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--history"]) == 0
+    assert register.main(["render", "--history", "--base-ref", "base"]) != 0
+    assert "base-only" in capsys.readouterr().out
+
+
+def test_history_accepts_append_then_rejects_inventory_rewrite(
+    records, tmp_path, monkeypatch, capsys
+):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (tmp_path / "source.md").write_text("source")
+    inventory_file = folder / "inventory.json"
+    annotations_file = folder / "annotations.json"
+    inventory_file.write_text(json.dumps(inventory))
+    annotations_file.write_text(json.dumps(annotations))
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "initial"], cwd=tmp_path, check=True)
+    revision = dict(
+        annotations["verdicts"][0]["revisions"][0], annotation_revision_id="r2", date="2026-02-01"
+    )
+    annotations["verdicts"][0]["revisions"].append(revision)
+    annotations_file.write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "append"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--history"]) == 0
+    inventory["records"].pop(2)
+    inventory_file.write_text(json.dumps(inventory))
+    subprocess.run(["git", "add", str(inventory_file)], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "remove"], cwd=tmp_path, check=True)
+    assert register.main(["render", "--history"]) != 0
+    assert "baseline inventory record removed" in capsys.readouterr().out
+
+
+def test_trusted_base_null_documents_do_not_bootstrap(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (tmp_path / "source.md").write_text("source")
+    inv = folder / "inventory.json"
+    ann = folder / "annotations.json"
+    inv.write_text("null")
+    ann.write_text("null")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "invalid base"], cwd=tmp_path, check=True)
+    inv.write_text(json.dumps(inventory))
+    ann.write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "valid head"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--base-ref", "HEAD^"]) != 0
+    assert "invalid baseline" in capsys.readouterr().out
+
+
+def test_trusted_base_read_error_fails_closed(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (tmp_path / "source.md").write_text("source")
+    (folder / "inventory.json").write_text(json.dumps(inventory))
+    (folder / "annotations.json").write_text(json.dumps(annotations))
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "base"], cwd=tmp_path, check=True)
+    real_run = subprocess.run
+
+    def fail_read(args, **kwargs):
+        if args[:2] == ["git", "show"] and args[2].endswith(
+            ":research/programme/verdict-framework/annotations.json"
+        ):
+            raise subprocess.CalledProcessError(128, args)
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    monkeypatch.setattr(register.subprocess, "run", fail_read)
+    assert register.main(["render", "--base-ref", "HEAD"]) != 0
+    assert "Register error" in capsys.readouterr().out
+
+
+def test_trusted_base_bootstrap_partial_and_invalid_ref(records, tmp_path, monkeypatch, capsys):
+    inventory, annotations = records
+    folder = tmp_path / "research/programme/verdict-framework"
+    folder.mkdir(parents=True)
+    (tmp_path / "source.md").write_text("source")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "empty base"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "tag", "empty-base"], cwd=tmp_path, check=True)
+    inv = folder / "inventory.json"
+    ann = folder / "annotations.json"
+    inv.write_text(json.dumps(inventory))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "partial base"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "tag", "partial-base"], cwd=tmp_path, check=True)
+    ann.write_text(json.dumps(annotations))
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "complete head"], cwd=tmp_path, check=True)
+    monkeypatch.setattr(register, "ROOT", tmp_path)
+    assert register.main(["render", "--base-ref", "empty-base"]) == 0
+    assert register.main(["render", "--base-ref", "partial-base"]) != 0
+    assert "incomplete register" in capsys.readouterr().out
+    assert register.main(["render", "--base-ref", "no-such-ref"]) != 0
+    assert "Register error" in capsys.readouterr().out

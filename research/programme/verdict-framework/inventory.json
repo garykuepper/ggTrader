@@ -2874,7 +2874,9 @@
       "disposition": "pending",
       "inventory_kind": "unreviewed_discovery_candidate",
       "title": "MidCap 50/50 and 70/30 blend outcome mapping",
-      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes."
+      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes.",
+      "review_source": "research/programme/verdict-framework/2026-11-10-midcap-and-sizing-source-review.md",
+      "review_note": "The two weight-specific outcomes remain unverified despite evidence that a run likely printed both rows."
     },
     {
       "inventory_id": "discovery-review-4e89788ebfa35417",
@@ -2890,7 +2892,9 @@
       "disposition": "pending",
       "inventory_kind": "unreviewed_discovery_candidate",
       "title": "Archived equity 10% sizing trial existence",
-      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes."
+      "scope_note": "Opus source review identified an incompletely mapped stage or possible unrecorded trial; do not assume a separate result exists. Review found no weight-specific result table for MidCap blend, or identified 10% trial result; leave pending, do not invent outcomes.",
+      "review_source": "research/programme/verdict-framework/2026-11-10-midcap-and-sizing-source-review.md",
+      "review_note": "No identifiable 10% result or run was found; its absence is not established."
     },
     {
       "inventory_id": "discovery-crypto-research_20260329_120504",

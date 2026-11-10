@@ -6,7 +6,7 @@ To find a study by question, date, status or nickname (A23 = the 70/30 SPY/SSO a
 
 ## Verdict register
 
-The [verdict register](VERDICT_REGISTER.md) is the entry point for original verdicts and dated evidence/action annotations. Its coverage is explicitly marked incomplete while review is in progress; original study records remain authoritative.
+The [verdict register](VERDICT_REGISTER.md) is the entry point for original verdicts and dated evidence/action annotations. Its coverage is explicitly marked incomplete while review is in progress; original study records remain authoritative. Run `.venv/bin/python scripts/verdict_register.py check --history` with full Git history to validate artifacts and committed first-parent changes; CI runs this check on the pull-request head and also compares against the pull-request base using `--base-ref`. If the base predates the register entirely, history checking starts with the first committed register; a history rewrite that removes earlier commits remains outside this check. CI runs the pull request’s own checker and workflow, so a change to either can weaken the gate; the merge-tree step validates current structure and rendering, not committed history. Branch-protection requirements must be verified separately. A pending record currently supports one immutable source-review note; additional reviews require a schema extension or a separately linked review record.
 
 ## Current review
 
