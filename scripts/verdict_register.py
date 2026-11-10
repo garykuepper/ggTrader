@@ -291,7 +291,7 @@ def revision_anchor(ident: str) -> str:
     return "revision-" + hashlib.sha256(ident.encode("utf-8")).hexdigest()
 
 
-def render(inventory: dict, annotations: dict) -> str:
+def render(inventory: dict, annotations: dict, descriptions: dict | None = None) -> str:
     """Render a deterministic summary and the complete revision history."""
     records = inventory["records"]
     counts = {
@@ -316,16 +316,34 @@ def render(inventory: dict, annotations: dict) -> str:
         "they are not a count of independent tests. Pending rows transcribe discovery sources "
         "and await final disposition; source-review notes are linked where available.",
         "",
-        "| Study / specification / stage | Original verdict | Protocol | "
-        "Evidence | Action | Source / annotation |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "## How to read this register",
+        "",
+        "**Original verdict** is the historical decision. **Protocol** records whether "
+        "the applicable rule was met, not whether an edge exists. **Evidence** describes "
+        "what can be inferred: unresolved means a fault or missing information prevents "
+        "a valid conclusion; inconclusive means the evidence does not resolve the question. "
+        "Descriptive results are observations, not confirmatory tests.",
+        "",
+        "**Action** records the annotated disposition of that specific version. "
+        "Close preserves a historical closure; hold means it is parked. Neither grants "
+        "authorization for new research or trading. Explanations below show the latest "
+        "recorded rationale and uncertainty; follow history for prior revisions and sources. "
+        "An unrecorded approval field does not establish that no approval exists; "
+        "the cited source may document a historical decision.",
+        "",
+        "## Studies",
+        "",
     ]
 
     def cell(value: object) -> str:
         return str(value).replace("|", "\\|").replace("\n", " ")
 
     verdicts = sorted(annotations["verdicts"], key=lambda v: v["verdict_id"])
-    for verdict in verdicts:
+    current_study = None
+    for verdict in sorted(
+        verdicts,
+        key=lambda v: (v["study_id"], v["specification_id"], v["stage_id"], v["verdict_id"]),
+    ):
         latest = max(enumerate(verdict["revisions"]), key=lambda item: (item[1]["date"], item[0]))[
             1
         ]
@@ -335,16 +353,53 @@ def render(inventory: dict, annotations: dict) -> str:
         for revision in chronological:
             current_protocol = revision.get("protocol_result", current_protocol)
             current_role = revision.get("record_role", current_role)
-        label = " / ".join(cell(verdict[k]) for k in ("study_id", "specification_id", "stage_id"))
+        if verdict["study_id"] != current_study:
+            current_study = verdict["study_id"]
+            description = cell(
+                (descriptions or {}).get(current_study, "Description not yet documented")
+            )
+            lines.extend(
+                [
+                    "",
+                    f"### Study: {current_study}",
+                    "",
+                    f"**What it does:** {description}",
+                    "",
+                    "| Record | Original verdict / Protocol | Evidence and action: why | Action |",
+                    "| --- | --- | --- | --- |",
+                ]
+            )
+        label = " / ".join(cell(verdict[k]) for k in ("specification_id", "stage_id"))
         if current_role == "summary":
             label += " (Summary, not an independent test)"
         anchor = revision_anchor(latest["annotation_revision_id"])
-        lines.append(
-            f"| {label} | {cell(verdict['original_verdict'])} | "
-            f"{cell(current_protocol)} | {cell(latest['evidence'])} | "
-            f"{cell(latest['action'])} | [source](../{quote(verdict['source'], safe='/')}) / "
-            f"[{cell(latest['annotation_revision_id'])}](#{anchor}) ({latest['date']}) |"
+        rationale = cell(latest["rationale"])
+        uncertainty = cell(latest["uncertainties"] or "Not recorded.")
+        action = cell(latest["action"])
+        action_explanation = {
+            "CLOSE THIS SPECIFICATION": "This version is closed.",
+            "HOLD / PARK THIS VERSION": (
+                "No new action is authorized; this does not describe current holdings."
+            ),
+            "CONTINUE RESEARCH": "Continue only within the recorded approval.",
+            "ELIGIBLE FOR NEXT STAGE": "Eligibility is not authorization to proceed.",
+        }[latest["action"]]
+        approval = latest.get("approval")
+        authority = (
+            f"<br>Recorded authority: {cell(approval['reference'])}; {cell(approval['scope'])}"
+            if approval
+            else "<br>Approval not recorded in this annotation."
         )
+        lines.append(
+            f"| {label}<br>[source](../{quote(verdict['source'], safe='/')}) · "
+            f"[history](#{anchor}) | {cell(verdict['original_verdict'])}<br>"
+            f"Protocol: {cell(current_protocol)} | **{cell(latest['evidence'])}**: "
+            f"{rationale}<br>Uncertainty: {uncertainty} | {action}<br>{action_explanation}"
+            f"{authority} |"
+        )
+    lines.extend(
+        ["", "## Pending records", "", "No verdict or action assigned to these items.", ""]
+    )
     for row in sorted(records, key=lambda r: r["inventory_id"]):
         if row["disposition"] != "pending":
             continue
@@ -356,10 +411,13 @@ def render(inventory: dict, annotations: dict) -> str:
             note = cell(row["review_note"])
             link = quote(row["review_source"], safe="/")
             review = f" / [review](../{link}): {note}"
-        state = "UNRESOLVED (source-reviewed; pending)" if review else "NOT REVIEWED"
+        review_status = "Source reviewed; awaiting annotation" if review else "Not yet reviewed"
+        description = cell(
+            (descriptions or {}).get(row["inventory_id"], "Description not yet documented")
+        )
         lines.append(
-            f"| {title} | {original} | {state} | {state} | "
-            f"NOT ASSIGNED | [source](../{source}){review} |"
+            f"- **{title}:** {description} {review_status}. Original audit entry: {original}. "
+            f"[Source](../{source}){review}"
         )
     lines.extend(["", "## Detailed records", ""])
     for verdict in verdicts:
@@ -382,8 +440,8 @@ def render(inventory: dict, annotations: dict) -> str:
                     f"{rev['evidence']} / {rev['action']}. "
                     f"Protocol update: {rev.get('protocol_result', 'unchanged')}. "
                     f"{rev['rationale']} "
-                    f"Approval: {rev['approval'] or 'unknown'}; "
-                    f"Uncertainties: {rev['uncertainties'] or 'unknown'}. "
+                    f"Approval: {rev['approval'] or 'not recorded in this annotation'}; "
+                    f"Uncertainties: {rev['uncertainties'] or 'unknown'} "
                     + " ".join(
                         f"[evidence](../{quote(source, safe='/')})" for source in rev["sources"]
                     )
@@ -539,7 +597,16 @@ def main(argv: list[str] | None = None) -> int:
         if errors:
             print("\n".join(errors))
             return 1
-        content = render(inventory, annotations)
+        descriptions_path = ROOT / DIRECTORY / "study_descriptions.json"
+        descriptions = (
+            json.loads(descriptions_path.read_text()) if descriptions_path.exists() else {}
+        )
+        if not isinstance(descriptions, dict) or any(
+            not isinstance(k, str) or not isinstance(v, str) or not v.strip()
+            for k, v in descriptions.items()
+        ):
+            raise ValueError("Study descriptions must map IDs to nonempty text")
+        content = render(inventory, annotations, descriptions)
         output = ROOT / OUTPUT
         if args.command == "check":
             if not output.is_file() or output.read_text() != content:

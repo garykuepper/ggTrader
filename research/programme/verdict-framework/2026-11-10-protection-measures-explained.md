@@ -1,0 +1,21 @@
+# Three ways to study protection
+
+**2026-11-10 — exploration only.** The owner asked to explore all three measures. The numbers below are invented illustrations, not forecasts, targets or study results. A future confirmatory study must choose its primary measure in advance or account for multiple opportunities to pass.
+
+| Question | Simple illustration | What the eventual study must define | Limitation |
+| --- | --- | --- | --- |
+| How deep can a fall get? | A portfolio peaks at $100 and later reaches $70: its peak-to-trough decline is 30%. | Observation window, valuation frequency, whether withdrawals count, and whether to measure the worst decline or a specified market episode. | The worst observed fall can be dominated by one event; a short window may miss a worse event. |
+| How much is lost in a bad year? | Starting at $100 and ending a specified year at $88 gives a 12% loss for that year, assuming no flows. | Calendar or rolling year, how a bad year is selected, flows, and the measure compared across the candidate and benchmark. | A calendar boundary can split a decline; adjacent rolling years overlap and are not independent crises. |
+| How long to recover? | Starting from a $100 peak, a portfolio falls and returns to $100 two years after that peak. | Which peak and recovery date, treatment of cash flows and inflation, valuation frequency, and how to handle a period that has not recovered when the study ends. | Recovery can be unobserved within the sample; comparing only completed recoveries biases the picture. |
+
+For each question, compare the proposed policy with a specified, investable fixed alternative, with consistent costs, cash yields, taxes and starting state. A fixed SPY-and-Treasury-bill mix is a candidate comparator; SPY can also be shown to make opportunity cost visible. Neither the weights nor the acceptable wealth sacrifice have been chosen. A less-exposed mix can reduce losses without establishing timing or stock-selection skill.
+
+Also show wealth at the end of the period, including a separately labeled hypothetical after-tax scenario when inputs permit: a policy can reduce one loss measure while ending with less wealth. A short forward observation with no relevant decline cannot establish crisis protection. The historical cross-asset shadow's rules and evidence remain unresolved in the [shadow brief](2026-11-10-cross-asset-shadow-decision-brief.md). A defensive protocol requires the applicable prospective amendment before it can change existing gates.
+
+An Opus review recommends comparing candidate and benchmark over the same dates; each portfolio's own worst year may occur in a different year and answers a different question. For recovery, distinguish time from the peak to regaining it from time from the low to regaining it. If the study ends before recovery, report the spell as at least the observed duration; do not drop it. Daily closing values can reveal lows missed by month-end observations, but neither necessarily captures an intraday low. Pre-inception index or cash proxies must be labeled and are not automatically investable.
+
+One possible first primary measure is the candidate's return in a prespecified type of calendar year, compared with the benchmark in those same years. This is a reviewer suggestion, not an owner selection. The other two measures can remain descriptive. Alternatively, requiring all registered outcomes to pass or allowing any one to pass are different statistical claims; any alternative-pass rule needs prespecified multiplicity control. A lower-risk portfolio may recover its own earlier peak sooner yet still have less wealth than its benchmark, so report recovery and the wealth trade-off separately.
+
+For a later data inventory, the repository has `data/external/a23_inputs/SPY.csv` and `BIL.csv`, along with French factor archives. Their existence alone does not verify date coverage, total-return construction, provenance, suitability or rights for this study. Inspect metadata and provenance before choosing a window, and do not imply pre-inception ETF history exists. No asset values or performance were computed for this note.
+
+No investment policy, test, shadow start, broker action or change to production is authorized by these examples.

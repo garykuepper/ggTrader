@@ -72,6 +72,54 @@ def test_valid_revisions_and_stages_preserve_identity(records, tmp_path):
     assert register.validate(inventory, annotations, tmp_path) == []
 
 
+def test_index_describes_studies_and_marks_missing_descriptions(records):
+    inventory, annotations = records
+    rendered = register.render(inventory, annotations, {"study": "Buy stocks | hold cash."})
+    assert "What it does" in rendered
+    assert "Buy stocks \\| hold cash." in rendered
+    assert "Description not yet documented" in rendered
+
+
+def test_study_index_shows_reasons_and_pending_separately(records):
+    inventory, annotations = records
+    revision = annotations["verdicts"][0]["revisions"][0]
+    revision["rationale"] = "Recorded explanation for this outcome."
+    revision["uncertainties"] = "The original data are missing."
+    output = register.render(inventory, annotations, {"study": "A trading strategy."})
+    index = output.split("## Detailed records")[0]
+    assert "### Study: study" in index
+    assert "Recorded explanation for this outcome." in index
+    assert "The original data are missing." in index
+    assert "## Pending records" in index
+    assert "No verdict or action assigned" in index
+    assert f"#{register.revision_anchor('r1')}" in index
+
+
+def test_index_preserves_material_qualifications(records):
+    inventory, annotations = records
+    revision = annotations["verdicts"][0]["revisions"][0]
+    revision["rationale"] = "Result was 1.2. It was reported historically. Further detail remains."
+    revision["uncertainties"] = "Original input missing. A separate qualification remains."
+    output = register.render(inventory, annotations)
+    index, history = output.split("## Detailed records")
+    assert "Result was 1.2. It was reported historically." in index
+    assert "Further detail remains." in index
+    assert "A separate qualification remains." in index
+    assert "Further detail remains." in history
+    assert "A separate qualification remains." in history
+    assert "does not describe current holdings" in index
+
+
+def test_index_shows_recorded_action_authority_and_scope(records):
+    inventory, annotations = records
+    revision = annotations["verdicts"][0]["revisions"][0]
+    revision["approval"] = {"reference": "owner decision", "scope": "Closure only"}
+    index = register.render(inventory, annotations).split("## Detailed records")[0]
+    assert "Closure only" in index
+    assert "owner decision" in index
+    assert "Evidence and action: why" in index
+
+
 @pytest.mark.parametrize(
     "mutation",
     [
@@ -180,7 +228,7 @@ def test_revision_requires_explicit_approval_and_uncertainty(records, tmp_path):
     revision.update(approval=None, uncertainties=None)
     assert not register.validate(inventory, annotations, tmp_path)
     output = register.render(inventory, annotations)
-    assert "Approval: unknown" in output
+    assert "Approval: not recorded in this annotation" in output
     assert "Uncertainties: unknown" in output
 
 
@@ -383,8 +431,8 @@ def test_pending_items_are_visible_without_invented_judgments(records):
     output = register.render(inventory, annotations)
     assert "Strategy awaiting review" in output
     assert "NO-GO (audit transcription)" in output
-    assert "NOT REVIEWED" in output
-    assert "[source](../source.md)" in output
+    assert "No verdict or action assigned" in output
+    assert "[Source](../source.md)" in output
 
 
 def test_replica_model_holdout_and_live_parity_are_distinct(records, tmp_path):
@@ -423,7 +471,7 @@ def test_same_day_append_is_current_even_if_revision_id_sorts_earlier(records):
     )
     summary = register.render(inventory, annotations).split("## Detailed records")[0]
     assert "UNRESOLVED" in summary
-    assert "a-later" in summary
+    assert f"#{register.revision_anchor('a-later')}" in summary
 
 
 def test_protocol_correction_is_append_only_and_visible(records, tmp_path):
