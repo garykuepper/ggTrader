@@ -2747,3 +2747,39 @@ class TestLiveMembershipGate:
         trader, _b, notifier = self._live_trader(_FIXTURE)
         trader.run()
         assert not any("Membership list" in c.args[0] for c in notifier.send.call_args_list)
+
+
+@pytest.mark.parametrize("stop_enabled", [False, True])
+@patch("ggTrader.paper.trader.generate_core_signals")
+def test_pending_order_read_failure_stops_live_run(mock_signals, stop_enabled):
+    mock_signals.return_value = _blend(buys=["MSFT"], sells=["NXPI"])
+    trader, broker, notifier = _make_trader(
+        positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)}
+    )
+    with (
+        patch.dict(
+            "os.environ",
+            {"CATASTROPHE_STOP_ENABLED": str(stop_enabled).lower(), "CASH_SWEEP_ENABLED": "true"},
+        ),
+        patch("ggTrader.paper.trader.get_pending_orders", side_effect=RuntimeError("DB down")),
+        pytest.raises(RuntimeError, match="DB down"),
+    ):
+        trader.run()
+    broker.submit_buy.assert_not_called()
+    broker.submit_sell.assert_not_called()
+    assert any("pending orders" in str(call).lower() for call in notifier.send.call_args_list)
+
+
+def test_pending_order_read_failure_dry_run_still_rehearses():
+    from ggTrader.paper.trader import PaperTrader
+
+    _, broker, notifier = _make_trader()
+    trader = PaperTrader(broker, notifier, dry_run=True, read_only=True)
+    with (
+        patch("ggTrader.paper.trader.get_pending_orders", side_effect=RuntimeError("DB down")),
+        patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], [])),
+    ):
+        result = trader.run()
+    assert result["buys"] == ["MSFT"]
+    broker.submit_buy.assert_not_called()
+    broker.submit_sell.assert_not_called()

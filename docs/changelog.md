@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 (paper pending-order safety)
+
+- Live paper runs now stop before submitting orders if pending-order state cannot be read; dry runs warn that their intended orders may conflict. This avoids treating unknown working orders as absent. The trader remains stopped.
+
 ## 2026-11-09 (backfill tool hardening after the second Sol review)
 
 - `scripts/backfill_missing_members.py`: the 5% last-bar guard now applies without `--refresh-last`; a symbol whose stored bars overlap the download on no date is refused (the series cannot be verified); downloaded values are validated (non-finite, non-positive close, negative open/high/low/volume, high below low) and one bad row refuses the symbol; the inserted-keys file is synced to disk, and a journal failure after a commit is reported as "COMMITTED" with the recovery source. Ordering (backup, commit, journal) is tested and each new guard was mutation-checked. The earlier run is unaffected (its journal reconciles with the table: 19,491 keys). A rerun on the same 13 tickers plans zero inserts.

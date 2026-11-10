@@ -230,7 +230,12 @@ class PaperTrader:
         try:
             pending = get_pending_orders()
         except Exception as exc:
-            _log.warning("Could not load pending orders (non-fatal): %s", exc)
+            if not self._dry_run:
+                self._notifier.send(
+                    f"<b>🛑 Could not load pending orders — no orders placed:</b> {exc}"
+                )
+                raise
+            _log.warning("Could not load pending orders; dry-run intentions may conflict: %s", exc)
             return still_pending
 
         if self._read_only:
