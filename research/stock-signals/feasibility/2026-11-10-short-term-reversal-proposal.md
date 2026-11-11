@@ -8,6 +8,8 @@ Compare one long-only portfolio: `BIG LoPRIOR` from the `Average Value Weighted 
 
 The locally frozen portfolio ZIP has SHA-256 `1c4070b54f42c3e4cf58420f6f7e460c08de886e32574ddb71c17bfa2c606260`; the market ZIP has SHA-256 `b03d39e4bb253dda0f14893db3b78e64b40b8d6549a0fc0fd4111dae84c98618`. Both are in `ggTrader-refs/reversal-20261111` outside the repository. The provider returned both same-hash files on 2026-11-11 UTC with last-modified times 14 seconds apart; this does not prove identical underlying vintages. The [driver](code/reversal_screen.py) refuses other hashes and can verify inputs with `--check-only` without parsing return tables. If either input must change, amend the proposal before viewing results.
 
+**Provenance clarification after review:** the local manifest records the portfolio download at 04:01 UTC on November 11 and the market file as copied from a November 10 23:14 UTC download; it does not record a market-file Last-Modified header. The review found both CSVs identify the September 2026 CRSP database, but this does not prove every underlying input has the same vintage.
+
 ## Proposed fixed rules
 
 - **Windows:** July 1963–April 2026 and January 1994–April 2026. These match the earlier accruals screen's endpoints and do not constitute an unseen holdout.
