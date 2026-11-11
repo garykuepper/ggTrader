@@ -85,11 +85,20 @@ def test_cli_checks_hash_and_refuses_to_overwrite(tmp_path, monkeypatch):
         {"signalname": "PS", "port": "10", "date": dates, "ret": 1.0, "Nlong": 100, "Nshort": 0}
     ).to_parquet(file, index=False)
     monkeypatch.setattr(module, "PORTFOLIO_SHA256", hashlib.sha256(file.read_bytes()).hexdigest())
+    value_file = tmp_path / module.VALUE_FILE
+    value_file.write_bytes(b"synthetic value archive")
+    monkeypatch.setattr(module, "VALUE_DIR", tmp_path)
+    monkeypatch.setattr(module, "VALUE_SHA256", hashlib.sha256(value_file.read_bytes()).hexdigest())
     monkeypatch.setattr(
         module, "verify_manifest", lambda _: {module.MARKET_FILE: {"sha256": module.MARKET_SHA256}}
     )
     monkeypatch.setattr(
         module, "load_market_total_return", lambda _: pd.DataFrame({"mkt": 0.005}, index=dates)
+    )
+    monkeypatch.setattr(
+        module.french_data,
+        "load_size_factor_vw",
+        lambda *_: pd.DataFrame({"big": 0.004}, index=dates),
     )
     with monkeypatch.context() as check:
         check.setattr(
@@ -106,7 +115,9 @@ def test_cli_checks_hash_and_refuses_to_overwrite(tmp_path, monkeypatch):
         ["screen", "--portfolio", str(file), "--french", str(tmp_path), "--out", str(out)],
     )
     module.main()
-    assert json.loads(out.read_text())["results"]["full"]["comparison"]["months"] == 648
+    payload = json.loads(out.read_text())
+    assert payload["results"]["full"]["comparison"]["months"] == 648
+    assert payload["descriptive_candidate_vs_big_value"]["full"]["comparison"]["months"] == 648
     with pytest.raises(FileExistsError):
         module.main()
     out.unlink()

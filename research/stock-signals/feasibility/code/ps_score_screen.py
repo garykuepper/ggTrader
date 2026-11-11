@@ -12,7 +12,7 @@ import pandas as pd
 
 from ggTrader.utils.study import bootstrap
 
-bootstrap(__file__)
+ROOT = bootstrap(__file__)
 
 import french_data
 from accruals_comparison import screen
@@ -23,6 +23,9 @@ from ggTrader.utils import significance
 PORTFOLIO_SHA256 = "76599d94beab94cc8973d8a126e8efbed98ee79f677738c55b2389f17387ba96"
 MARKET_FILE = "F-F_Research_Data_Factors_CSV.zip"
 MARKET_SHA256 = "b03d39e4bb253dda0f14893db3b78e64b40b8d6549a0fc0fd4111dae84c98618"
+VALUE_DIR = ROOT / "data/external/french"
+VALUE_FILE = "6_Portfolios_2x3_CSV.zip"
+VALUE_SHA256 = "82b66ccd6a4dff103eba51b60e1f2310eaa94bbebbb843550173b972c64cdbff"
 
 
 def select_long(frame: pd.DataFrame) -> pd.Series:
@@ -73,6 +76,8 @@ def main() -> None:
     manifest = verify_manifest(args.french)
     if MARKET_FILE not in manifest or manifest[MARKET_FILE]["sha256"] != MARKET_SHA256:
         raise ValueError("Unexpected French market archive")
+    if hashlib.sha256((VALUE_DIR / VALUE_FILE).read_bytes()).hexdigest() != VALUE_SHA256:
+        raise ValueError("Unexpected French value archive")
     if args.check_only:
         print("Inputs verified; no return values examined and no authorization implied.")
         return
@@ -81,6 +86,7 @@ def main() -> None:
     )
     candidate = select_long(frame)
     market = load_market_total_return(args.french)["mkt"]
+    value = french_data.load_size_factor_vw(VALUE_FILE, VALUE_DIR)["big"]
     result = {
         "status": "historical portfolio research; no trading authorization",
         "source": "Open Source Asset Pricing 2026.10: PS portfolio 10, long-only",
@@ -90,7 +96,11 @@ def main() -> None:
             "stock-level execution or future evidence; "
             "existing value and profitability NO-GOs preserved"
         ),
-        "input_sha256": {"portfolio": PORTFOLIO_SHA256, "french_market": MARKET_SHA256},
+        "input_sha256": {
+            "portfolio": PORTFOLIO_SHA256,
+            "french_market": MARKET_SHA256,
+            "french_value": VALUE_SHA256,
+        },
         "driver_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "calculator_sha256": hashlib.sha256(
             Path(__file__).with_name("accruals_comparison.py").read_bytes()
@@ -98,6 +108,7 @@ def main() -> None:
         "parser_sha256": hashlib.sha256(Path(french_data.__file__).read_bytes()).hexdigest(),
         "significance_sha256": hashlib.sha256(Path(significance.__file__).read_bytes()).hexdigest(),
         "results": evaluate(candidate, market),
+        "descriptive_candidate_vs_big_value": evaluate(candidate, value),
     }
     with args.out.open("x", encoding="utf-8") as out:
         json.dump(result, out, indent=2, allow_nan=False)
