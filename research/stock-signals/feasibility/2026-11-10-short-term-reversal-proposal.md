@@ -1,6 +1,6 @@
 # Proposed monthly reversal screen
 
-**Status: UNAPPROVED.** This is a prospective specification for a historical, already-published portfolio comparison. No reversal return calculation or trading action is authorized by this document. The owner has not approved this candidate. This is a local record, not an independent timestamp.
+**Status: APPROVED for the historical screen.** The owner approved this specified screen in the conversation on 2026-11-11 UTC. This is a local record, not an independent timestamp. No paper or live trading is authorized.
 
 ## Question and inputs
 
@@ -20,4 +20,4 @@ The locally frozen portfolio ZIP has SHA-256 `1c4070b54f42c3e4cf58420f6f7e460c08
 
 The 52-week-high and prior daily mean-reversion results remain separate and unchanged. This candidate was considered after many previous searches; no family-wide correction across those searches or independence from related ideas is claimed. The published portfolio does not establish point-in-time stock identity, executable next-session fills, realistic turnover costs or after-tax performance. A pass would not authorize paper or live trading; a miss would not rule out a smaller effect.
 
-The owner must approve this candidate brief before a historical run. The specification and driver must be committed before the calculation. Input and code hashes identify the files used but do not provide an independent witness to when returns were viewed. The production freeze remains in force.
+The owner approved this candidate before the historical run. The specification and driver must be committed before the calculation. Input and code hashes identify the files used but do not provide an independent witness to when returns were viewed. The production freeze remains in force.
