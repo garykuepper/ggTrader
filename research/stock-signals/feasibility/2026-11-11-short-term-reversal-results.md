@@ -1,0 +1,9 @@
+# Monthly reversal screen: result
+
+**Result: both specified hurdles not met; independent review pending.** The owner approved the [fixed specification](2026-11-10-short-term-reversal-proposal.md) before the calculation. The approval and specification were committed locally in `e901e74e`; that is not an independent timestamp.
+
+The screen compared the published, value-weighted `BIG LoPRIOR` portfolio with the French broad market, not SPY. After the assumed 1% annual candidate cost, its July 1963–April 2026 annualized return was **8.79% versus 10.83%** for the market. The full-window Newey–West statistic was **−0.646** (one-sided p **0.741**), below the required t ≥ 3. Since 1994, the portfolio returned **7.76% versus 10.87%**, a **−3.11 percentage-point annual gap**, below the required +1 point. Both pre-specified gates failed.
+
+The portfolio's worst month-end drawdown was **−75.01%**, compared with **−50.31%** for the market. Under the 2% cost stress, annualized returns since 1994 were **6.69% versus 10.87%**. The 1% and 2% costs are assumptions, not measured execution costs; returns are pretax. The historical data were published and other related ideas had already been examined. The portfolio is not an executable stock picker, and this comparison does not establish that every reversal idea fails.
+
+The [raw result](_short_term_reversal_20261111.json) records input and code hashes and the fixed-window calculations. Its status text reflects the driver's wording before approval; the owner subsequently approved the screen before it ran. This result authorizes no paper or live trading, and the production freeze remains in force.
