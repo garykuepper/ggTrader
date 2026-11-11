@@ -10,4 +10,6 @@ Use July 1963–April 2026 and January 1994–April 2026. Deduct an assumed 1% a
 
 April 2026 matches the earlier accruals screen's fixed end date; later available months are excluded, not treated as a holdout. This one-cell test uses the single-test threshold; no Holm or other correction is claimed across this and earlier screened ideas. It tests raw return outperformance: a miss does not disprove a risk-adjusted low-volatility effect. The published portfolios form at month-end, and next-session execution is untested. An independent pre-run review verified the mapping and code without viewing returns; both files identify the September 2026 CRSP database.
 
+The pre-run review was delivered by Claude Opus in the task conversation; its detailed report is not preserved in a repository artifact. It checked the mapping, source hashes and code without examining return values. This is a conversational record, not an external timestamp.
+
 The owner approved the dated brief before any return calculation. A pass would not demonstrate an executable individual-stock picker, account for tax, or authorize paper or live trading. The production freeze and prior verdicts remain in force.
