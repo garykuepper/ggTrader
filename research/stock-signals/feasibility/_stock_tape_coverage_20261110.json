@@ -1,0 +1,1040 @@
+{
+  "purpose": "Research data availability only; no price, return or identity validation",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "membership_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "audit_code_sha256": "c1db2b1281d31c1d364f11577ee4c2a65bcbffa073312ac720621e46cfeb1ac8",
+  "calendar": "NYSE, pandas-market-calendars",
+  "calendar_version": "5.6.0",
+  "start": "2021-01",
+  "end": "2026-04",
+  "month_ends": [
+    {
+      "date": "2021-01-29",
+      "membership_snapshot": "2021-01-21",
+      "n_members": 505,
+      "n_with_data": 486,
+      "coverage_pct": 96.23762376237623,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-02-26",
+      "membership_snapshot": "2021-02-12",
+      "n_members": 505,
+      "n_with_data": 486,
+      "coverage_pct": 96.23762376237623,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-03-31",
+      "membership_snapshot": "2021-03-22",
+      "n_members": 505,
+      "n_with_data": 486,
+      "coverage_pct": 96.23762376237623,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-04-30",
+      "membership_snapshot": "2021-04-20",
+      "n_members": 505,
+      "n_with_data": 486,
+      "coverage_pct": 96.23762376237623,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-05-28",
+      "membership_snapshot": "2021-05-14",
+      "n_members": 505,
+      "n_with_data": 486,
+      "coverage_pct": 96.23762376237623,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-06-30",
+      "membership_snapshot": "2021-06-04",
+      "n_members": 505,
+      "n_with_data": 487,
+      "coverage_pct": 96.43564356435644,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-07-30",
+      "membership_snapshot": "2021-07-21",
+      "n_members": 505,
+      "n_with_data": 487,
+      "coverage_pct": 96.43564356435644,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-08-31",
+      "membership_snapshot": "2021-08-30",
+      "n_members": 505,
+      "n_with_data": 488,
+      "coverage_pct": 96.63366336633663,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-09-30",
+      "membership_snapshot": "2021-09-20",
+      "n_members": 505,
+      "n_with_data": 487,
+      "coverage_pct": 96.43564356435644,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-10-29",
+      "membership_snapshot": "2021-10-04",
+      "n_members": 505,
+      "n_with_data": 488,
+      "coverage_pct": 96.63366336633663,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-11-30",
+      "membership_snapshot": "2021-10-04",
+      "n_members": 505,
+      "n_with_data": 488,
+      "coverage_pct": 96.63366336633663,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2021-12-31",
+      "membership_snapshot": "2021-12-20",
+      "n_members": 505,
+      "n_with_data": 488,
+      "coverage_pct": 96.63366336633663,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-01-31",
+      "membership_snapshot": "2022-01-10",
+      "n_members": 505,
+      "n_with_data": 489,
+      "coverage_pct": 96.83168316831683,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-02-28",
+      "membership_snapshot": "2022-02-17",
+      "n_members": 505,
+      "n_with_data": 491,
+      "coverage_pct": 97.22772277227723,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-03-31",
+      "membership_snapshot": "2022-03-02",
+      "n_members": 505,
+      "n_with_data": 492,
+      "coverage_pct": 97.42574257425743,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-04-29",
+      "membership_snapshot": "2022-04-11",
+      "n_members": 504,
+      "n_with_data": 492,
+      "coverage_pct": 97.61904761904762,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-05-31",
+      "membership_snapshot": "2022-05-10",
+      "n_members": 504,
+      "n_with_data": 493,
+      "coverage_pct": 97.81746031746032,
+      "missing": [
+        "ABC",
+        "ANTM",
+        "CDAY",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-06-30",
+      "membership_snapshot": "2022-06-28",
+      "n_members": 503,
+      "n_with_data": 494,
+      "coverage_pct": 98.2107355864811,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-07-29",
+      "membership_snapshot": "2022-06-28",
+      "n_members": 503,
+      "n_with_data": 493,
+      "coverage_pct": 98.01192842942346,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-08-31",
+      "membership_snapshot": "2022-06-28",
+      "n_members": 503,
+      "n_with_data": 493,
+      "coverage_pct": 98.01192842942346,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-09-30",
+      "membership_snapshot": "2022-09-19",
+      "n_members": 503,
+      "n_with_data": 493,
+      "coverage_pct": 98.01192842942346,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-10-31",
+      "membership_snapshot": "2022-10-12",
+      "n_members": 503,
+      "n_with_data": 492,
+      "coverage_pct": 97.8131212723658,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "TWTR",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-11-30",
+      "membership_snapshot": "2022-11-08",
+      "n_members": 503,
+      "n_with_data": 493,
+      "coverage_pct": 98.01192842942346,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2022-12-30",
+      "membership_snapshot": "2022-12-22",
+      "n_members": 503,
+      "n_with_data": 494,
+      "coverage_pct": 98.2107355864811,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-01-31",
+      "membership_snapshot": "2023-01-04",
+      "n_members": 503,
+      "n_with_data": 494,
+      "coverage_pct": 98.2107355864811,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-02-28",
+      "membership_snapshot": "2023-01-04",
+      "n_members": 503,
+      "n_with_data": 494,
+      "coverage_pct": 98.2107355864811,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-03-31",
+      "membership_snapshot": "2023-03-20",
+      "n_members": 503,
+      "n_with_data": 495,
+      "coverage_pct": 98.40954274353876,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-04-28",
+      "membership_snapshot": "2023-03-20",
+      "n_members": 503,
+      "n_with_data": 495,
+      "coverage_pct": 98.40954274353876,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-05-31",
+      "membership_snapshot": "2023-05-16",
+      "n_members": 503,
+      "n_with_data": 497,
+      "coverage_pct": 98.80715705765408,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-06-30",
+      "membership_snapshot": "2023-06-20",
+      "n_members": 503,
+      "n_with_data": 497,
+      "coverage_pct": 98.80715705765408,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "RE",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-07-31",
+      "membership_snapshot": "2023-07-10",
+      "n_members": 503,
+      "n_with_data": 498,
+      "coverage_pct": 99.00596421471172,
+      "missing": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-08-31",
+      "membership_snapshot": "2023-08-30",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-09-29",
+      "membership_snapshot": "2023-09-18",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-10-31",
+      "membership_snapshot": "2023-10-18",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-11-30",
+      "membership_snapshot": "2023-10-18",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2023-12-29",
+      "membership_snapshot": "2023-10-18",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-01-31",
+      "membership_snapshot": "2023-10-18",
+      "n_members": 503,
+      "n_with_data": 499,
+      "coverage_pct": 99.20477137176938,
+      "missing": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-02-29",
+      "membership_snapshot": "2024-02-01",
+      "n_members": 503,
+      "n_with_data": 500,
+      "coverage_pct": 99.40357852882704,
+      "missing": [
+        "MMC",
+        "PEAK",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-03-28",
+      "membership_snapshot": "2024-03-25",
+      "n_members": 503,
+      "n_with_data": 501,
+      "coverage_pct": 99.6023856858847,
+      "missing": [
+        "MMC",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-04-30",
+      "membership_snapshot": "2024-04-03",
+      "n_members": 503,
+      "n_with_data": 501,
+      "coverage_pct": 99.6023856858847,
+      "missing": [
+        "MMC",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-05-31",
+      "membership_snapshot": "2024-05-08",
+      "n_members": 503,
+      "n_with_data": 501,
+      "coverage_pct": 99.6023856858847,
+      "missing": [
+        "MMC",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-06-28",
+      "membership_snapshot": "2024-06-24",
+      "n_members": 503,
+      "n_with_data": 501,
+      "coverage_pct": 99.6023856858847,
+      "missing": [
+        "MMC",
+        "WRK"
+      ]
+    },
+    {
+      "date": "2024-07-31",
+      "membership_snapshot": "2024-07-08",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2024-08-30",
+      "membership_snapshot": "2024-07-08",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2024-09-30",
+      "membership_snapshot": "2024-09-30",
+      "n_members": 504,
+      "n_with_data": 503,
+      "coverage_pct": 99.8015873015873,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2024-10-31",
+      "membership_snapshot": "2024-10-01",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2024-11-29",
+      "membership_snapshot": "2024-11-26",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2024-12-31",
+      "membership_snapshot": "2024-12-23",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-01-31",
+      "membership_snapshot": "2024-12-23",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-02-28",
+      "membership_snapshot": "2024-12-23",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-03-31",
+      "membership_snapshot": "2025-03-24",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-04-30",
+      "membership_snapshot": "2025-03-24",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-05-30",
+      "membership_snapshot": "2025-05-19",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-06-30",
+      "membership_snapshot": "2025-05-19",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-07-31",
+      "membership_snapshot": "2025-07-23",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-08-29",
+      "membership_snapshot": "2025-08-28",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-09-30",
+      "membership_snapshot": "2025-09-22",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-10-31",
+      "membership_snapshot": "2025-10-31",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-11-28",
+      "membership_snapshot": "2025-11-28",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2025-12-31",
+      "membership_snapshot": "2025-12-22",
+      "n_members": 503,
+      "n_with_data": 502,
+      "coverage_pct": 99.80119284294234,
+      "missing": [
+        "MMC"
+      ]
+    },
+    {
+      "date": "2026-01-30",
+      "membership_snapshot": "2026-01-14",
+      "n_members": 503,
+      "n_with_data": 503,
+      "coverage_pct": 100.0,
+      "missing": []
+    },
+    {
+      "date": "2026-02-27",
+      "membership_snapshot": "2026-02-09",
+      "n_members": 503,
+      "n_with_data": 503,
+      "coverage_pct": 100.0,
+      "missing": []
+    },
+    {
+      "date": "2026-03-31",
+      "membership_snapshot": "2026-03-23",
+      "n_members": 503,
+      "n_with_data": 503,
+      "coverage_pct": 100.0,
+      "missing": []
+    },
+    {
+      "date": "2026-04-30",
+      "membership_snapshot": "2026-04-09",
+      "n_members": 503,
+      "n_with_data": 503,
+      "coverage_pct": 100.0,
+      "missing": []
+    }
+  ]
+}

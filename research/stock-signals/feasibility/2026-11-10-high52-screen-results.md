@@ -1,0 +1,19 @@
+# 52-week-high portfolio screen: preliminary result
+
+**2026-11-10 — both specified hurdles not met; independently reviewed.** The owner authorized this separate test while preserving the earlier momentum NO-GO. The [specification](2026-11-10-high52-screen-registration.md) and [driver](code/high52_screen.py) were committed in `2e1017aa` before the published portfolio file was retrieved and the calculation run. An independent external timestamp witness is not established. The data-card preview exposure before specification is documented in the brief.
+
+The tested portfolio is the published, equal-weighted highest 30% of 52-week-high rankings with six-month portfolio assignments, not a list of current picks or the earlier French 12–2 momentum portfolio. The comparator is French broad-market total return, not SPY. Candidate returns include an assumed 1% annual cost haircut; the benchmark has none. The comparison is pretax, and the haircut is not a measured trading cost.
+
+**How winners are held:** the provider's [portfolio code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Portfolios/Code/01_PortfolioFunction.R) carries portfolio assignments between six-month selection dates but uses equal stock weights when aggregating each month's returns, without passive-gain weights in this monthly path. Consequently this screen does not test a strategy that lets individual winners grow unchecked within the portfolio. Nor does it isolate the value of an exit or stop rule. This is a limitation of the tested construction, not evidence that a different holding rule would pass.
+
+| Fixed test | Result | Registered requirement |
+| --- | --- | --- |
+| 1963-07–2025-12, 750 months, paired Newey–West | t = **1.082**, one-sided p = **0.140** | t ≥ 3 and p ≤ 0.00135: **not met** |
+| 1963-07–2025-12, annualized return | Candidate **12.48%**, market **10.80%**; difference **+1.69 percentage points/year** | Descriptive; A1 uses the t-statistic above |
+| 1994-01–2025-12, 384 months, annualized return | Candidate **9.86%**, market **10.81%**; difference **−0.95 percentage points/year** | Difference ≥ +1.00 percentage point/year: **not met** |
+
+The 2% annual cost stress gives a since-1994 difference of **−2.03 points/year**. Month-end maximum drawdowns since 1994 were **−48.60%** for the candidate after the 1% assumption and **−50.31%** for the market; these do not capture intramonth lows or establish how an individual-stock exit would work. The fixed [result JSON](_high52_screen_20261110.json) records the remaining statistics and input/code hashes.
+
+An independent Claude Opus reviewer checked the source mapping, code and files and independently reproduced the statistics; the builder was Codex Terra, so this was a cross-family review. The provider file contained one selected long-only observation per month from July 1926 to December 2025; the pre-specified windows were used unchanged. The code's `Nshort = 0` check alone does not prove portfolio 03 is the high-signal leg; that mapping was checked separately against provider code and the file. The equal-weighted candidate and value-weighted market have different exposures, so the result combines the signal with a weighting difference. The source portfolio and French comparator are different publication vintages. Historical data revisions, survivorship, company identity, unmeasured turnover, costs, taxes and feasible next-session execution remain limitations. The source's data preview and prior momentum research mean the historical record was not wholly unseen.
+
+**Action:** close this exact specification without advancing it as a validated stock strategy. Preserve the original momentum NO-GO separately. A failed hurdle does not prove that no smaller effect exists, and this broad-market portfolio does not test a specific stock-level holding or exit rule. The production freeze remains unchanged.

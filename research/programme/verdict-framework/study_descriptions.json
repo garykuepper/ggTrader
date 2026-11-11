@@ -63,5 +63,8 @@
   "xs-momentum-2026-06": "Ranks stocks by past returns and selects the highest-momentum names.",
   "xs-momentum-corrected-replay": "Replays a cross-sectional stock momentum strategy on the corrected model.",
   "discovery-review-8bb3ce665d093d4e": "Investigates historical 50/50 and 70/30 S&P 500 and MidCap portfolio blends; their separate outcomes are unverified.",
-  "discovery-review-8faf1f5e3f69a7de": "Investigates whether a historical stock-strategy trial used a 10% position size; the trial is not established."
+  "discovery-review-8faf1f5e3f69a7de": "Investigates whether a historical stock-strategy trial used a 10% position size; the trial is not established.",
+  "stocks-low-accruals": "Compares a published large-stock low-accruals portfolio with the broad market and, descriptively, SPY.",
+  "stocks-high52": "Compares a published portfolio of stocks near their 52-week highs with the broad market.",
+  "stocks-rd-exploratory": "Explores a portfolio of companies with high research spending relative to market value."
 }

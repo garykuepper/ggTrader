@@ -4176,6 +4176,83 @@
           "uncertainties": "Rule authority, drawdown definition, which book parity applies to, after-tax implementation and the relationship to the later A23 allocation decision are unresolved. The tracker recomputes and overwrites its CSV; no contemporaneous decision ledger was found. Review identified relevant historical commits 9a79115a, d3da809e, 291e6dd4 and 014dfedc; no shadow return or account data were read."
         }
       ]
+    },
+    {
+      "study_id": "stocks-low-accruals",
+      "specification_id": "french-big-low-accruals-value-weighted",
+      "verdict_id": "stocks-low-accruals-screen-20261110",
+      "inventory_id": "pending-accruals-screen-20261110",
+      "stage_id": "long-history-part-a",
+      "original_verdict": "Both proposed Part A hurdles not met",
+      "source": "research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-low-accruals-screen-20261110-independent-review",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The value-weighted largest-size, lowest-accrual portfolio did not meet the fixed comparison hurdles: full-window Newey–West t 0.916 and p 0.180; since-1994 CAGR advantage +0.61 percentage point/year versus the French broad market after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the source mapping and arithmetic. This closes the tested portfolio specification; it does not establish that no smaller effect exists or validate stock-level selection.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-accruals-screen-registration.md",
+            "research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md",
+            "research/stock-signals/feasibility/_accruals_screen_20261110.json"
+          ],
+          "approval": null,
+          "uncertainties": "The rules were recorded locally before the calculation; an external timestamp and separate owner approval for this exact candidate are not established. The A1 full-window assignment was explicit in the earlier proposal but not directly beside A1 in the registration. The 1% cost is assumed, and a post-hoc zero-cost sensitivity changes A2 but not the A1 failure. Accounting vintages, holdings, taxes, next-session execution and stock-level performance remain unverified. The candidate is large-stock while the market includes small stocks. The result JSON did not pin the parser or environment. Production remains frozen."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-rd-exploratory",
+      "specification_id": "rd-to-market-high-quintile-equal-weight",
+      "verdict_id": "stocks-rd-exploratory-20261110",
+      "inventory_id": "pending-rd-screen-20261110",
+      "stage_id": "exploratory-historical-portfolio",
+      "original_verdict": "Exploratory: annual return gap positive, long-history t below the programme threshold",
+      "source": "research/stock-signals/feasibility/2026-11-10-rd-exploratory-screen.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-rd-exploratory-20261110-independent-review",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The equal-weighted high R&D-to-market portfolio had a full-window t of 2.00 after the assumed cost, below the programme's reference threshold; its since-1994 advantage was +3.24 percentage points/year. In an after-the-fact 2011–2025 comparison it returned 1.83% annually versus 13.83% for the market, and its worst month-end drawdown reached 79.32%. Claude Opus independently reproduced the fixed figures and checked source mapping. This closes the explored specification, not every related question.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-rd-exploratory-screen.md",
+            "research/stock-signals/feasibility/_rd_screen_20261110.json"
+          ],
+          "approval": null,
+          "uncertainties": "This was exploratory, not a confirmatory approved protocol; the data and earlier research were partly seen before selection. Equal versus value weighting, small-company exposure and unsynchronized data vintages confound the comparison. Costs are assumed and tax, next-session fills and individual holdings are unverified. The recent-window and drawdown checks are hindsight-selected. No production or trading action is authorized."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-high52",
+      "specification_id": "high52-published-top-30-percent-equal-weight",
+      "verdict_id": "stocks-high52-screen-20261110",
+      "inventory_id": "pending-high52-screen-20261110",
+      "stage_id": "long-history-part-a",
+      "original_verdict": "Both specified Part A hurdles not met",
+      "source": "research/stock-signals/feasibility/2026-11-10-high52-screen-results.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-high52-screen-20261110-independent-review",
+          "date": "2026-11-10",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The owner authorized a separate 52-week-high test while retaining the earlier momentum NO-GO. The equal-weighted published high-52-week portfolio failed both fixed hurdles: full-period Newey–West t 1.082, and since-1994 CAGR 9.86% versus the value-weighted broad market 10.81% after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the mapping and arithmetic. This closes the tested published-portfolio specification; it does not establish that no smaller effect exists or validate an individual-stock strategy.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-high52-screen-registration.md",
+            "research/stock-signals/feasibility/2026-11-10-high52-screen-results.md",
+            "research/stock-signals/feasibility/_high52_screen_20261110.json"
+          ],
+          "approval": null,
+          "uncertainties": "The equal-weighted stock portfolio and value-weighted market have different exposures; sources have different vintages. Costs are assumed, not measured, and taxes, next-session fills, individual holdings and exits are not tested. Prior related studies and an automatic source preview mean the data were partly seen; there is no cross-study multiplicity guarantee or external registration timestamp. Production remains frozen."
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,113 @@
+{
+  "status": "research calculation; no verdict or authorization implied",
+  "portfolio": "BIG LoAC value-weighted",
+  "comparator": "French broad market (Mkt-RF + RF), not SPY",
+  "limitations": "Revised portfolio history; point-in-time holdings and taxes unverified; SPY daily exchange-calendar completeness and adjusted-close accuracy unverified; 1% annual candidate cost is an assumption, not measured trading cost",
+  "inputs_sha256": {
+    "25_Portfolios_ME_AC_5x5_CSV.zip": "af9ea3f17ce817064775246393f0aa1c93c91d3c5359a9be004c6fba0b0aff8b",
+    "F-F_Research_Data_Factors_CSV.zip": "b03d39e4bb253dda0f14893db3b78e64b40b8d6549a0fc0fd4111dae84c98618",
+    "SPY.csv": "3575a86f0d760a3ab46164ce43aefe792068caec5a265521160d7de998c24a44"
+  },
+  "driver_sha256": "8cf146bb309c6186f64a2d1b5c59c7578f30471b52c872daf7753e54866641db",
+  "calculation_sha256": "270c08779d2a7538ecb045b345c34eceea833782238e1a8b4a59283fbcdc8df2",
+  "results": {
+    "full": {
+      "comparison": {
+        "months": 754,
+        "candidate": {
+          "terminal_wealth_per_1": 881.6792519192073,
+          "annualized_return": 0.11397378328488483,
+          "max_month_end_drawdown": -0.5810257994232383
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 639.3751685176502,
+          "annualized_return": 0.10829133532457424,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 0.9163189029469012,
+      "one_sided_p": 0.17974982816497453,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "full_stress": {
+      "comparison": {
+        "months": 754,
+        "candidate": {
+          "terminal_wealth_per_1": 472.5132406043153,
+          "annualized_return": 0.10296979088678371,
+          "max_month_end_drawdown": -0.6171236865094238
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 639.3751685176502,
+          "annualized_return": 0.10829133532457424,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": -0.1788035819997597,
+      "one_sided_p": 0.5709540337084348,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994": {
+      "comparison": {
+        "months": 388,
+        "candidate": {
+          "terminal_wealth_per_1": 33.563812871134765,
+          "annualized_return": 0.11478700005319409,
+          "max_month_end_drawdown": -0.5810257994232373
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 28.121957590666952,
+          "annualized_return": 0.10870458035924657,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 0.6714566715596494,
+      "one_sided_p": 0.2509648264302171,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994_stress": {
+      "comparison": {
+        "months": 388,
+        "candidate": {
+          "terminal_wealth_per_1": 24.348547845468126,
+          "annualized_return": 0.10377514482934314,
+          "max_month_end_drawdown": -0.6171236865094238
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 28.121957590666952,
+          "annualized_return": 0.10870458035924657,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": -0.0678139830704439,
+      "one_sided_p": 0.5270331437464899,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    }
+  },
+  "spy_overlap": {
+    "window": "2021-05 through 2026-04; previously inspected",
+    "comparison": {
+      "comparison": {
+        "months": 60,
+        "candidate": {
+          "terminal_wealth_per_1": 1.8516969773860816,
+          "annualized_return": 0.13113380929668783,
+          "max_month_end_drawdown": -0.26640777642004665
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 1.8438951981464708,
+          "annualized_return": 0.13017903463958658,
+          "max_month_end_drawdown": -0.23927182827038984
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 0.15585190144137656,
+      "one_sided_p": 0.43807487949837964,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    }
+  }
+}

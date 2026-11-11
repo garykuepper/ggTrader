@@ -2919,6 +2919,33 @@
       "inventory_kind": "reviewed_discovery_candidate",
       "title": "April 2 Kraken snapshot",
       "scope_note": "Source-reviewed historical record; inference remains unresolved."
+    },
+    {
+      "inventory_id": "pending-accruals-screen-20261110",
+      "source": "research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "Low-accruals portfolio screen",
+      "original_audit_verdict": "Both proposed Part A gates not met",
+      "scope_note": "Claude Opus independently checked the source mapping, protocol and arithmetic against the frozen inputs."
+    },
+    {
+      "inventory_id": "pending-high52-screen-20261110",
+      "source": "research/stock-signals/feasibility/2026-11-10-high52-screen-results.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "52-week-high portfolio screen",
+      "original_audit_verdict": "Both specified Part A gates not met",
+      "scope_note": "Claude Opus independently checked the source mapping, protocol and arithmetic against the frozen files."
+    },
+    {
+      "inventory_id": "pending-rd-screen-20261110",
+      "source": "research/stock-signals/feasibility/2026-11-10-rd-exploratory-screen.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "R&D-to-market-value exploratory screen",
+      "original_audit_verdict": "Exploratory: annual return gap positive, long-history t below the programme threshold",
+      "scope_note": "Claude Opus independently checked the source and arithmetic; candidate selection and source preview preclude a clean confirmatory claim."
     }
   ],
   "coverage_complete": false
