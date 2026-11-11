@@ -1,5 +1,7 @@
 # Proposed low-variance stock portfolio screen
 
+**Later status:** the owner-approved screen was run and independently reviewed; see the [result](2026-11-11-low-variance-results.md). The wording below records the state before the calculation.
+
 **Owner-approved for the specified historical screen; no historical return test has been run.** The owner approved this separate screen in the conversation on 2026-11-11 UTC, preserving the earlier `idio_vol` NO-GO. Compare the French `BIG LoVAR` value-weighted portfolio with French market total return (`Mkt-RF + RF`, not SPY). It selects large stocks with low total daily-return variance, a different calculation from the earlier closed `idio_vol` strategy's residual variance; family overlap remains unresolved. The selected portfolio, prior research and overlapping historical windows are not independent unseen evidence.
 
 The owner approved this separately specified test; that does not settle a general boundary for the low-risk family or reopen the earlier study. The candidate shares the low-risk theme, even though its construction and data differ. The earlier feasibility note called for a family-scope decision before a run; this approval is for this specific comparison only, not an approval to reopen related specifications.
