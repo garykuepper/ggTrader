@@ -3890,7 +3890,10 @@ def test_invalid_exit_quantity_blocks_buys_but_allows_other_exits(exit_kind, dry
 
 
 @pytest.mark.parametrize("exit_kind", ["signal", "catastrophe"])
-@pytest.mark.parametrize(("cash", "reserve_sale"), [(5000.0, None), (1000.0, 10.0)])
+# 50,000 of cash is enough for a sweep buy, so this case fails if an invalid exit does not block it.
+@pytest.mark.parametrize(
+    ("cash", "reserve_sale"), [(5000.0, None), (1000.0, 10.0), (50000.0, None)]
+)
 def test_invalid_exit_does_not_sell_sweep_to_fund_blocked_buy(exit_kind, cash, reserve_sale):
     positions = {
         "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
@@ -4133,3 +4136,49 @@ def test_presubmission_failure_notifies_and_submits_nothing(stage):
     assert "client-fixed" in str(notifier.send.call_args)
     assert stage in str(notifier.send.call_args).lower()
     broker.submit_sell.assert_not_called()
+
+
+class TestUnappliedSplitAndDailyLoss:
+    """A split the broker has not applied must not look like a loss (review finding)."""
+
+    @staticmethod
+    def _run(corrections):
+        positions = {
+            "AAPL": {
+                "qty": 100.0,
+                "market_value": 5000.0,  # booked after a 2-for-1 split that is not applied yet
+                "cost_basis": 5000.0,
+                "unrealized_pl": 0.0,
+            }
+        }
+        trader, broker, _ = _make_trader(positions=positions, portfolio_value=95000.0)
+        broker.get_account.return_value["last_equity"] = 100000.0
+        with (
+            patch(
+                "ggTrader.paper.trader.PaperTrader._compute_split_corrections",
+                return_value=corrections,
+            ),
+            patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])),
+            patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
+            patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
+        ):
+            return trader.run()
+
+    def test_a_known_unapplied_split_does_not_trigger_a_daily_loss_halt(self):
+        result = self._run({"AAPL": 2.0})
+        assert not any("daily loss" in error.lower() for error in result["errors"])
+
+    def test_the_same_booked_loss_without_a_known_split_still_halts(self):
+        result = self._run({})
+        assert any("daily loss" in error.lower() for error in result["errors"])
+
+
+def test_split_adjusted_equity_adds_back_only_the_corrected_value():
+    from ggTrader.paper.trader import split_adjusted_equity
+
+    positions = {"AAPL": {"market_value": 5000.0}, "MSFT": {"market_value": 3000.0}}
+    assert split_adjusted_equity(95000.0, positions, {"AAPL": 2.0}) == pytest.approx(100000.0)
+    assert split_adjusted_equity(95000.0, positions, {}) == 95000.0
+    assert split_adjusted_equity(95000.0, positions, {"GONE": 2.0}) == 95000.0  # not held
+    for bad in (None, float("nan"), float("inf")):
+        assert split_adjusted_equity(bad, positions, {"AAPL": 2.0}) is bad or bad != bad

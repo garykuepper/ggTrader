@@ -103,6 +103,30 @@ LIVE_MEMBERSHIP_SPEC = "db"
 _MAX_SIGNAL_AGE_DAYS = 4
 
 
+def split_adjusted_equity(
+    portfolio_value: float, positions: dict[str, dict], corrections: dict[str, float]
+) -> float:
+    """Booked equity plus the value that known unapplied splits add back.
+
+    ``corrections`` maps a symbol to its split factor (see ``split_check``). An invalid
+    ``portfolio_value`` is returned unchanged so the caller's risk check still rejects it.
+    """
+    if (
+        not corrections
+        or isinstance(portfolio_value, bool)
+        or not isinstance(portfolio_value, (int, float))
+        or not math.isfinite(portfolio_value)
+    ):
+        return portfolio_value
+    corrected = apply_corrections_to_positions(positions, corrections)
+    adjustment = sum(
+        corrected[symbol].get("market_value", 0.0) - positions[symbol].get("market_value", 0.0)
+        for symbol in corrections
+        if symbol in positions
+    )
+    return portfolio_value + adjustment if math.isfinite(adjustment) else portfolio_value
+
+
 def _today_et() -> date:
     """Current calendar date in the exchange's timezone (America/New_York)."""
     return datetime.now(_ET).date()
@@ -997,13 +1021,16 @@ class PaperTrader:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
                 return {"buys": [], "sells": [], "errors": [reason]}
 
-        # The broker's previous close and current value use the same booked basis.
+        # The broker's previous close is true economic value. Its current value is booked
+        # value, which understates a holding whose split the broker has not applied yet, so
+        # add back the known split correction before measuring the day's loss.
         last_equity = account.get("last_equity")
         if last_equity is None:
             reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
             self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
             return {"buys": [], "sells": [], "errors": [reason]}
-        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
+        daily_value = split_adjusted_equity(portfolio_value, positions, split_corrections)
+        daily_halted, daily_reason = self._risk.check_daily_loss(daily_value, last_equity)
         if daily_halted:
             if not math.isfinite(last_equity) or last_equity <= 0:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
@@ -1350,7 +1377,8 @@ class PaperTrader:
         if pending_orders and not self._dry_run:
             self._reconcile_order_intents()
 
-        if sweep_on and not loss_halts:
+        # An invalid exit quantity means the account state is not trusted: no sweep buy either.
+        if sweep_on and not loss_halts and not invalid_exit_symbols:
             # Sweep BUY: deploy whatever cash is left over after the strategy's
             # own orders for the day, using the account's REAL post-trade cash
             # (not an estimate) now that strategy sells/buys above have been
