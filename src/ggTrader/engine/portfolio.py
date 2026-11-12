@@ -11,7 +11,8 @@ Memory (spec 5.5): vectorbt OSS has no chunking, so the grid columns are split i
 whose estimated peak stays under ``max_bytes`` (default 5 GiB). A group is never split
 because its columns share one cash pool. Each chunk is reduced to the arrays ``SimResult``
 needs (its equity columns and trade records, copied) and then released, with the allocator
-asked to hand the freed pages back, so the budget bounds the peak instead of the sum.
+asked to hand the freed pages back. Input grids allocated before chunking are outside the
+estimate, so ``max_bytes`` is not a process-wide memory cap.
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ from ggTrader.engine import signals as sig
 #: one raises instead of silently simulating un-scaled sizes (review MINOR-2).
 UNSUPPORTED_LEGACY_KEYS = ("vol_target", "vol_lookback", "vol_cap")
 #: Stop keys that only ``from_signals`` can apply; ``run_weights`` would drop them silently.
-SIGNAL_ONLY_KEYS = ("ts_stop", "atr_mult", "tp_stop")
+SIGNAL_ONLY_KEYS = ("ts_stop", "atr_mult", "tp_stop", "stop_entry_price")
 DEFAULT_MAX_BYTES = 5 * 1024**3
 #: Working arrays vectorbt allocates per column beyond the dense inputs. Measured on the full
 #: ensemble grid (48 x 605 x 1,929 bars, research/programme/vectorbt-engine/p4-evidence/
@@ -47,6 +48,10 @@ BYTES_PER_CELL = 8
 DEFAULT_SIGNAL_POSITION_SIZE = 0.02
 DEFAULT_ATR_PERIOD = 14
 MIN_ATR_STOP = 0.001
+TIME_STOP_WARNING = (
+    "td_stop is based on entry signals, not filled positions; an earlier entry signal "
+    "can close a later trade early, prevent an entry, or cause a hold beyond the limit."
+)
 TRADE_COLUMNS = (
     "id",
     "col",
@@ -127,6 +132,10 @@ def run_signals(
     size: float | pd.DataFrame | None = None,
     high: pd.DataFrame | None = None,
     low: pd.DataFrame | None = None,
+    stop_open: pd.DataFrame | None = None,
+    halt_mask: pd.DataFrame | None = None,
+    order_sequence: str | None = None,
+    stop_exit_price: str | None = None,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> SimResult:
     """Simulate boolean entry/exit signals, one cash pool per group, in one grouped call.
@@ -137,29 +146,115 @@ def run_signals(
         close: float (time x column) closes, same shape; forward-filled here.
         base_config: START_CASH, FEES, SLIPPAGE, FREQ; optional SIGNAL_POSITION_SIZE (default
             0.02), ts_stop (fixed trailing stop fraction), atr_mult (+ atr_period, needs
-            ``high``/``low``), tp_stop (take-profit fraction).
+            ``high``/``low``), tp_stop (take-profit fraction), stop_entry_price (``close``
+            or ``fillprice``; defaults to ``close``).
         groups: group label per column (default one group ``"all"``).
         all_groups: labels that must appear in the output; those with no columns stay flat.
         mask: bool frame ANDed into ``entries`` before the time stop (point-in-time universe).
-        td_stop: force an exit this many bars after each (masked) entry.
+        td_stop: schedule an exit signal this many bars after each masked entry signal.
+            This is not a maximum holding-period guarantee: fills and later positions
+            can differ from entry signals.
         size: per-entry size as a fraction of the group's equity, a float or a per-bar frame
             (conviction or volatility-target sizing); overrides SIGNAL_POSITION_SIZE.
         high: highs for the ATR stop; ``low`` likewise.
+        stop_open: opt into intraday stops; missing bars are forbidden during positions.
+            With grid columns, open/high/low may instead have one column per symbol.
+            Cannot be combined with the unreliable ``td_stop``.
+        halt_mask: verified boolean halt bars, either grid-aligned or one column per symbol.
+            Any simulated position overlapping one is rejected; this is not a halt-fill model.
+            The caller must establish coverage, timing and identity; false is not proof of trading.
+        order_sequence: ``default`` or ``auto``; omitted uses auto only for intraday stops.
+        stop_exit_price: ``stoplimit`` skips slippage on stop exits; ``stopmarket`` applies it.
+            Neither models an unfilled limit order. Omitted preserves mode defaults.
         max_bytes: chunking budget for the estimated peak memory.
     """
     _reject_unsupported(base_config)
+    if order_sequence not in (None, "default", "auto"):
+        raise ValueError("order_sequence must be 'default' or 'auto'")
+    if stop_exit_price not in (None, "stoplimit", "stopmarket"):
+        raise ValueError("stop_exit_price must be 'stoplimit' or 'stopmarket'")
+    stop_entry_price = base_config.get("stop_entry_price", "close")
+    if stop_entry_price is None:
+        stop_entry_price = "close"
+    if stop_entry_price not in ("close", "fillprice"):
+        raise ValueError("stop_entry_price must be 'close' or 'fillprice'")
     _check_shapes(close, entries=entries, exits=exits)
+    halt_positions = {}
+    if halt_mask is not None:
+        if (
+            not isinstance(halt_mask, pd.DataFrame)
+            or not halt_mask.index.equals(close.index)
+            or not halt_mask.columns.is_unique
+            or halt_mask.isna().to_numpy().any()
+            or not all(pd.api.types.is_bool_dtype(dtype) for dtype in halt_mask.dtypes)
+        ):
+            raise ValueError("halt_mask must have matching dates and known boolean states")
+        if halt_mask.columns.equals(close.columns):
+            halt_columns = np.arange(len(close.columns))
+        elif isinstance(close.columns, pd.MultiIndex):
+            halt_columns = halt_mask.columns.get_indexer(close.columns.get_level_values(-1))
+            if (halt_columns < 0).any():
+                raise ValueError("halt_mask must cover every symbol")
+        else:
+            raise ValueError("halt_mask must match close columns")
+        for column in np.unique(halt_columns):
+            positions = np.flatnonzero(halt_mask.iloc[:, column].to_numpy(dtype=bool))
+            if len(positions):
+                halt_positions[int(column)] = positions
     entries = _as_bool(entries)
     exits = _as_bool(exits)
     if mask is not None:
         entries = entries & _as_bool(
             mask.reindex(index=entries.index, columns=entries.columns, fill_value=False)
         )
+    gaps: dict[int, np.ndarray] = {}
+    stop_columns = None
+    if stop_open is not None:
+        if td_stop is not None:
+            raise ValueError("td_stop is unreliable and cannot be combined with intraday stops")
+        if base_config.get("atr_mult") is not None and base_config.get("ts_stop") is None:
+            raise ValueError("ATR stops are not supported with intraday stop prices")
+        if base_config.get("ts_stop") is None and base_config.get("tp_stop") is None:
+            raise ValueError("intraday stop prices require a configured price stop")
+        for key in ("ts_stop", "tp_stop"):
+            value = base_config.get(key)
+            if value is None:
+                continue
+            try:
+                fraction = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"invalid {key}: expected a finite positive fraction") from exc
+            if not np.isfinite(fraction) or fraction <= 0 or (key == "ts_stop" and fraction >= 1):
+                raise ValueError(f"invalid {key}: expected a finite positive fraction")
+        if high is None or low is None:
+            raise ValueError("stop_open requires high and low")
+        if not stop_open.columns.equals(close.columns):
+            if not isinstance(close.columns, pd.MultiIndex) or not stop_open.columns.is_unique:
+                raise ValueError("stop prices must have the same index and columns as close")
+            stop_columns = stop_open.columns.get_indexer(close.columns.get_level_values(-1))
+            if (stop_columns < 0).any():
+                raise ValueError("stop prices must have the same index and columns as close")
+        for frame in (stop_open, high, low):
+            if not frame.index.equals(close.index) or not frame.columns.equals(stop_open.columns):
+                raise ValueError("stop prices must have the same index and columns as close")
     if td_stop is not None:
-        exits = exits | sig.time_stop(entries, int(td_stop))
+        warnings.warn(
+            TIME_STOP_WARNING,
+            UserWarning,
+            stacklevel=2,
+        )
+        exits = exits | sig.time_stop(entries, td_stop)
+    raw_close = close if stop_open is not None else None
     close = close.ffill()
 
     stops, n_dense = _stop_arguments(base_config, close, high, low)
+    stops["stop_entry_price"] = stop_entry_price
+    if stop_exit_price is not None:
+        stops["stop_exit_price"] = stop_exit_price
+    if stop_open is not None:
+        stops.update(open=stop_open, high=high, low=low)
+        stops.setdefault("stop_exit_price", "stopmarket")
+        n_dense += 3
     if size is None:
         size = float(base_config.get("SIGNAL_POSITION_SIZE", DEFAULT_SIGNAL_POSITION_SIZE))
     if isinstance(size, pd.DataFrame):
@@ -169,6 +264,18 @@ def run_signals(
     def simulate(sel: np.ndarray, group_codes: np.ndarray) -> Any:
         def pick(obj: Any) -> Any:
             return obj.iloc[:, sel] if isinstance(obj, pd.DataFrame) else obj
+
+        stop_args = {k: pick(v) for k, v in stops.items() if k not in {"open", "high", "low"}}
+        if stop_open is not None:
+            selected = sel if stop_columns is None else stop_columns[sel]
+            bars = [
+                frame.iloc[:, selected].set_axis(close.columns[sel], axis=1)
+                for frame in (stop_open, high, low)
+            ]
+            missing = _validate_stop_bars(raw_close.iloc[:, sel], entries.iloc[:, sel], *bars)
+            for local in np.flatnonzero(missing.any(axis=0)):
+                gaps[int(sel[local])] = np.flatnonzero(missing[:, local])
+            stop_args.update(open=bars[0], high=bars[1], low=bars[2])
 
         return vbt.Portfolio.from_signals(
             close=close.iloc[:, sel],
@@ -182,12 +289,37 @@ def run_signals(
             freq=base_config["FREQ"],
             cash_sharing=True,
             group_by=group_codes,
-            call_seq="default",
+            call_seq=order_sequence or ("auto" if stop_open is not None else "default"),
             engine=engine_config.active_engine(),
-            **{k: pick(v) for k, v in stops.items()},
+            **stop_args,
         )
 
-    return _run_chunks(simulate, close, groups, all_groups, base_config, n_dense, max_bytes)
+    result = _run_chunks(simulate, close, groups, all_groups, base_config, n_dense, max_bytes)
+    if halt_positions:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = halt_positions.get(int(halt_columns[int(col)]))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"halt during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
+    if gaps:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = gaps.get(int(col))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"missing price bar during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
+    return result
 
 
 def run_weights(
@@ -267,10 +399,41 @@ def _cfg_float(base_config: Mapping[str, Any], key: str) -> float:
 
 
 def _check_shapes(close: pd.DataFrame, **frames: pd.DataFrame) -> None:
-    """All frames must share close's index and columns (vectorbt would broadcast silently)."""
+    """All frames must share close's index and columns (vectorbt uses positions)."""
     for name, frame in frames.items():
-        if frame.shape != close.shape or not frame.index.equals(close.index):
-            raise ValueError(f"{name} must have the same index and shape as close")
+        if (
+            frame.shape != close.shape
+            or not frame.index.equals(close.index)
+            or not frame.columns.equals(close.columns)
+        ):
+            raise ValueError(f"{name} must have the same index, columns and shape as close")
+
+
+def _validate_stop_bars(
+    close: pd.DataFrame,
+    entries: pd.DataFrame,
+    opening: pd.DataFrame,
+    high: pd.DataFrame,
+    low: pd.DataFrame,
+) -> np.ndarray:
+    """Validate one chunk and return its entirely missing price bars."""
+    prices = [frame.to_numpy(dtype=float) for frame in (opening, high, low, close)]
+    missing = np.logical_and.reduce([np.isnan(p) for p in prices])
+    invalid = np.logical_or.reduce([(~np.isfinite(p) | (p <= 0)) & ~missing for p in prices])
+    if invalid.any():
+        row, col = np.argwhere(invalid)[0]
+        raise ValueError(
+            f"stop prices must be finite and positive at {close.index[row]}, {close.columns[col]}"
+        )
+    if (missing & entries.to_numpy()).any():
+        raise ValueError("entry requested on a missing price bar")
+    opening_values, highs, lows, closing = prices
+    min_price, max_price = np.minimum(opening_values, closing), np.maximum(opening_values, closing)
+    invalid = (lows > min_price * (1 + 1e-10)) | (highs < max_price * (1 - 1e-10))
+    if invalid.any():
+        row, col = np.argwhere(invalid)[0]
+        raise ValueError(f"invalid OHLC prices at {close.index[row]}, {close.columns[col]}")
+    return missing
 
 
 def _stop_arguments(

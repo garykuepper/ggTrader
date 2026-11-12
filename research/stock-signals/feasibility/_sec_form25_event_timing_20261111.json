@@ -1,0 +1,23 @@
+{
+  "purpose": "Separate index labels, exhibit contents and retrospective company descriptions of listing-related events",
+  "selection": "The same five preselected 2021 Q1 Nasdaq 25-NSE notices, not a representative sample.",
+  "exhibit_audit": "_sec_form25_nasdaq_exhibits_20261111.json",
+  "exhibit_audit_sha256": "565838c9f456cb66987c8cc1b893845856c7a2cf54fa35f13d3179500cc3fd29",
+  "index_audit": "_sec_form25_nasdaq_index_checks_20261111.json",
+  "index_audit_sha256": "685c7593d88e4ac10142da15a53ebf4a22600dd2d13481196373dd7b213b47a9",
+  "exhibit_observation": "Five retrieved EX-99.25 text documents each contain only their own filename stem within the TEXT wrapper; none contains an event date.",
+  "index_observation": "In all five captured indexes, the field labelled Effectiveness Date equals the displayed Filing Date. This observation does not identify the last tradable session.",
+  "sec_form25_guidance": "https://www.sec.gov/rules-regulations/staff-guidance/corporation-finance-interpretations/exchange-act-forms",
+  "sec_guidance_summary": "SEC staff states a Form 25 effective date for delisting cannot be earlier than ten days after filing. This legal timing is distinct from the execution time of a trade and must not be inferred solely from the index label.",
+  "national_general": {
+    "form25_accession": "0001354457-21-000004",
+    "form25_filing_date": "2021-01-04",
+    "company_annual_report": "https://www.sec.gov/Archives/edgar/data/1578735/000157873521000032/nghc-20201231.htm",
+    "reported_acquisition_and_common_share_delisting_date": "2021-01-04",
+    "annual_report_index": "https://www.sec.gov/Archives/edgar/data/1578735/000157873521000032/0001578735-21-000032-index.html",
+    "index_sha256": "517397ea92a29651369a984a84fa4e7fb65d1b635deb5f2bead9adc4d3137957",
+    "index_bytes_retained": false,
+    "annual_report_filing_date": "2021-02-26"
+  },
+  "limits": "One retrospective annual report and five convenience-selected notices do not establish historical coverage, public dissemination time, last executable session, transaction proceeds or actual broker fills. Acceptance timestamps and legal effectiveness should not be substituted for these facts. No price or return data were examined."
+}

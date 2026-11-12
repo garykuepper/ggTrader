@@ -1,0 +1,27 @@
+{
+  "purpose": "Count structural filing matches to a frozen S&P fixture; no prices, rankings or returns",
+  "fixture": "data/universe/sp500_constituents_history.csv.gz",
+  "fixture_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "fixture_snapshot": "2021-06-04",
+  "fixture_lookup_date": "2021-06-29",
+  "archive": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/2021q2_notes.zip",
+  "archive_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "method": "Normalize labels by trimming, uppercasing and replacing periods with hyphens. Select archive 10-K and 10-Q filings dated April 1 through June 28, 2021. Match a fixture label to a nonempty TradingSymbol fact in txt.tsv. Restrict the following share counts to labels associated with one observed CIK in those selected filings. Require an EntityCommonStockSharesOutstanding fact in the same accession, with qtrs=0, uom=shares and no coregistrant. For dimensional facts also require the exact dimension hash of the matched ticker; unsegmented facts need no hash match. No filter is applied to fact date, version, value, freshness or dissemination time.",
+  "fixture_labels": 505,
+  "eligible_filings": 6424,
+  "labels_with_ticker_fact": 495,
+  "labels_with_one_observed_cik": 495,
+  "labels_with_multiple_observed_ciks": 0,
+  "one_cik_labels_with_unsegmented_count_same_filing": 456,
+  "one_cik_labels_with_exact_dimensional_count_same_filing": 19,
+  "one_cik_labels_with_either_count": 475,
+  "berkshire_b_in_exact_dimensional_matches": true,
+  "verification": "A separate byte-line and set-based pass reproduced the reported filing and label counts. Both calculations used the same archive and were performed by the same analyst, so this is not independent source or identity validation.",
+  "limitations": [
+    "The fixture can use retrospective labels; S&P membership is not the complete NYSE breakpoint universe.",
+    "Ticker equality and one CIK in this selected window do not prove security or company identity. A count of zero ambiguous CIKs applies only to this window and these forms.",
+    "The unsegmented count may describe the issuer rather than the matched share class. A dimensional hash match is structural and does not by itself prove class identity.",
+    "Presence is not validity: some facts may be stale, incorrect, nonpositive, for a different period or not public when needed. The archive rounds fact dates to month-end.",
+    "The source is a retrospective quarterly extract. Missing matches do not prove the absence of a filing or a possible mapping outside the selected scope."
+  ]
+}

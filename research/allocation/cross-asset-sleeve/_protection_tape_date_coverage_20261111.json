@@ -1,0 +1,65 @@
+{
+  "created_utc": "2026-11-12T00:16:58.010693+00:00",
+  "purpose": "symbol and date coverage only; no prices or returns read",
+  "source_path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+  "source_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "columns_read": [
+    "timestamp",
+    "symbol"
+  ],
+  "common_start": "2019-03-01",
+  "common_end": "2026-10-16",
+  "common_dates": 1919,
+  "legs": {
+    "SPY": {
+      "rows": 1929,
+      "first": "2019-03-01",
+      "last": "2026-10-30",
+      "duplicate_timestamps": 0,
+      "missing_timestamps": 0,
+      "missing_spy_dates_in_common_range": 0,
+      "extra_dates_in_common_range": 0
+    },
+    "TLT": {
+      "rows": 1929,
+      "first": "2019-03-01",
+      "last": "2026-10-30",
+      "duplicate_timestamps": 0,
+      "missing_timestamps": 0,
+      "missing_spy_dates_in_common_range": 0,
+      "extra_dates_in_common_range": 0
+    },
+    "GLD": {
+      "rows": 1929,
+      "first": "2019-03-01",
+      "last": "2026-10-30",
+      "duplicate_timestamps": 0,
+      "missing_timestamps": 0,
+      "missing_spy_dates_in_common_range": 0,
+      "extra_dates_in_common_range": 0
+    },
+    "PDBC": {
+      "rows": 1919,
+      "first": "2019-03-01",
+      "last": "2026-10-16",
+      "duplicate_timestamps": 0,
+      "missing_timestamps": 0,
+      "missing_spy_dates_in_common_range": 0,
+      "extra_dates_in_common_range": 0
+    },
+    "BIL": {
+      "rows": 1919,
+      "first": "2019-03-01",
+      "last": "2026-10-16",
+      "duplicate_timestamps": 0,
+      "missing_timestamps": 0,
+      "missing_spy_dates_in_common_range": 0,
+      "extra_dates_in_common_range": 0
+    }
+  },
+  "limitations": [
+    "SPY dates are not an independent exchange calendar",
+    "Price validity, total returns, distributions, rights and original study input provenance not checked",
+    "Local hash and timestamp do not establish independent timestamping"
+  ]
+}

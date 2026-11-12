@@ -1,0 +1,372 @@
+{
+  "purpose": "Compare exact-label adjusted-price vintages; flags are not proof of faults",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "reference_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "code_sha256": "24b00fc849d5c0bc8577f69a4cedb7a6db3e9e6079e4afba034058e22c207b2b",
+  "calendar_version": "5.6.0",
+  "start": "2021-01-04",
+  "end": "2026-10-30",
+  "relative_change_threshold": 0.01,
+  "matched_rows": 829707,
+  "invalid_matched_rows": 0,
+  "matched_labels": 592,
+  "matched_pairs": 828910,
+  "flagged_labels": 59,
+  "flags": [
+    {
+      "symbol": "AES",
+      "date": "2026-08-11",
+      "relative_change": -0.011694382799815273
+    },
+    {
+      "symbol": "AMCR",
+      "date": "2025-09-05",
+      "relative_change": -0.015187453587250599
+    },
+    {
+      "symbol": "AMCR",
+      "date": "2025-11-28",
+      "relative_change": -0.015028870026928542
+    },
+    {
+      "symbol": "AMCR",
+      "date": "2026-07-20",
+      "relative_change": -0.014164324947264717
+    },
+    {
+      "symbol": "AMT",
+      "date": "2026-07-20",
+      "relative_change": -0.0106961317973584
+    },
+    {
+      "symbol": "APTV",
+      "date": "2026-04-01",
+      "relative_change": -0.13006716730609258
+    },
+    {
+      "symbol": "ARE",
+      "date": "2026-07-20",
+      "relative_change": -0.014854530461825388
+    },
+    {
+      "symbol": "AVB",
+      "date": "2026-07-20",
+      "relative_change": -0.6419620650293525
+    },
+    {
+      "symbol": "AVB",
+      "date": "2026-08-14",
+      "relative_change": 1.7930001230798158
+    },
+    {
+      "symbol": "BBWI",
+      "date": "2021-08-03",
+      "relative_change": -0.04411667286171006
+    },
+    {
+      "symbol": "BBY",
+      "date": "2026-07-20",
+      "relative_change": -0.01038397104755362
+    },
+    {
+      "symbol": "BDX",
+      "date": "2026-02-10",
+      "relative_change": 0.011285706700570497
+    },
+    {
+      "symbol": "BEN",
+      "date": "2026-07-20",
+      "relative_change": -0.010101017872028661
+    },
+    {
+      "symbol": "BMY",
+      "date": "2026-07-20",
+      "relative_change": -0.010250540515845175
+    },
+    {
+      "symbol": "BWA",
+      "date": "2023-07-05",
+      "relative_change": -0.029240356719321348
+    },
+    {
+      "symbol": "BXP",
+      "date": "2026-07-20",
+      "relative_change": -0.011343414995569123
+    },
+    {
+      "symbol": "CCI",
+      "date": "2026-07-20",
+      "relative_change": -0.01433190247217575
+    },
+    {
+      "symbol": "CLX",
+      "date": "2026-08-11",
+      "relative_change": -0.014308647572429334
+    },
+    {
+      "symbol": "CMCSA",
+      "date": "2026-07-20",
+      "relative_change": -0.015306111399904898
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-03-30",
+      "relative_change": 0.01043968709208043
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-06-29",
+      "relative_change": 0.011192411072110664
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-09-29",
+      "relative_change": 0.010581707158346276
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-12-01",
+      "relative_change": 0.011093520766926712
+    },
+    {
+      "symbol": "CPB",
+      "date": "2026-07-20",
+      "relative_change": -0.012607151288060336
+    },
+    {
+      "symbol": "CPB",
+      "date": "2026-08-11",
+      "relative_change": 0.012768101174994939
+    },
+    {
+      "symbol": "CPB",
+      "date": "2026-10-01",
+      "relative_change": -0.012664640471058974
+    },
+    {
+      "symbol": "CPT",
+      "date": "2026-07-20",
+      "relative_change": -0.010765788134838084
+    },
+    {
+      "symbol": "CTVA",
+      "date": "2026-07-20",
+      "relative_change": -0.8499624789391786
+    },
+    {
+      "symbol": "CTVA",
+      "date": "2026-10-01",
+      "relative_change": 0.03648457602168742
+    },
+    {
+      "symbol": "D",
+      "date": "2026-07-20",
+      "relative_change": -0.01000148987890781
+    },
+    {
+      "symbol": "DTE",
+      "date": "2021-07-01",
+      "relative_change": -0.010768433921062082
+    },
+    {
+      "symbol": "EIX",
+      "date": "2026-07-20",
+      "relative_change": -0.016184291407514206
+    },
+    {
+      "symbol": "ES",
+      "date": "2026-07-20",
+      "relative_change": -0.011636139817071678
+    },
+    {
+      "symbol": "EXR",
+      "date": "2026-07-20",
+      "relative_change": -0.01162125463964403
+    },
+    {
+      "symbol": "FDX",
+      "date": "2026-06-01",
+      "relative_change": 0.016481562108935144
+    },
+    {
+      "symbol": "FIS",
+      "date": "2026-07-20",
+      "relative_change": -0.011422613131673254
+    },
+    {
+      "symbol": "FRT",
+      "date": "2026-07-20",
+      "relative_change": -0.010711952106913447
+    },
+    {
+      "symbol": "FRT",
+      "date": "2026-08-11",
+      "relative_change": 0.010827950577850798
+    },
+    {
+      "symbol": "FRT",
+      "date": "2026-10-01",
+      "relative_change": -0.010623683606267753
+    },
+    {
+      "symbol": "FTV",
+      "date": "2025-06-30",
+      "relative_change": 0.012932303205658968
+    },
+    {
+      "symbol": "GIS",
+      "date": "2026-07-20",
+      "relative_change": -0.018654355961788882
+    },
+    {
+      "symbol": "HON",
+      "date": "2026-06-29",
+      "relative_change": -0.030302883353881427
+    },
+    {
+      "symbol": "HRL",
+      "date": "2026-07-20",
+      "relative_change": -0.015181378060858619
+    },
+    {
+      "symbol": "J",
+      "date": "2024-09-30",
+      "relative_change": -0.039611970179927236
+    },
+    {
+      "symbol": "K",
+      "date": "2023-10-02",
+      "relative_change": 0.07134184016134149
+    },
+    {
+      "symbol": "KHC",
+      "date": "2026-07-20",
+      "relative_change": -0.015735625849308543
+    },
+    {
+      "symbol": "KIM",
+      "date": "2026-07-20",
+      "relative_change": -0.011705683290593294
+    },
+    {
+      "symbol": "KMB",
+      "date": "2026-07-20",
+      "relative_change": -0.011857350300390035
+    },
+    {
+      "symbol": "LEN",
+      "date": "2025-01-21",
+      "relative_change": -0.061268140133046045
+    },
+    {
+      "symbol": "LH",
+      "date": "2023-07-03",
+      "relative_change": -0.010486303414373066
+    },
+    {
+      "symbol": "LYB",
+      "date": "2026-07-20",
+      "relative_change": -0.010217647544708552
+    },
+    {
+      "symbol": "MAA",
+      "date": "2026-07-20",
+      "relative_change": -0.013232956198227841
+    },
+    {
+      "symbol": "MKC",
+      "date": "2026-07-20",
+      "relative_change": -0.010530944649431162
+    },
+    {
+      "symbol": "MMM",
+      "date": "2024-04-01",
+      "relative_change": 0.010359061170075234
+    },
+    {
+      "symbol": "MO",
+      "date": "2026-07-20",
+      "relative_change": -0.015720169436724607
+    },
+    {
+      "symbol": "NKE",
+      "date": "2026-07-20",
+      "relative_change": -0.010496691647506884
+    },
+    {
+      "symbol": "OKE",
+      "date": "2026-08-11",
+      "relative_change": -0.011023024983350282
+    },
+    {
+      "symbol": "OMC",
+      "date": "2026-07-20",
+      "relative_change": -0.010178113984465553
+    },
+    {
+      "symbol": "PAYX",
+      "date": "2026-08-11",
+      "relative_change": -0.010081367207592562
+    },
+    {
+      "symbol": "PEP",
+      "date": "2026-07-20",
+      "relative_change": -0.010569971952711588
+    },
+    {
+      "symbol": "PRU",
+      "date": "2026-07-20",
+      "relative_change": -0.011412725599712958
+    },
+    {
+      "symbol": "PSA",
+      "date": "2026-07-20",
+      "relative_change": -0.010155729307059547
+    },
+    {
+      "symbol": "REG",
+      "date": "2026-07-20",
+      "relative_change": -0.010025213969501512
+    },
+    {
+      "symbol": "RF",
+      "date": "2026-07-20",
+      "relative_change": -0.010040157934104288
+    },
+    {
+      "symbol": "SPG",
+      "date": "2026-07-20",
+      "relative_change": -0.010619231731112566
+    },
+    {
+      "symbol": "SW",
+      "date": "2025-11-14",
+      "relative_change": -0.012407547568990651
+    },
+    {
+      "symbol": "T",
+      "date": "2022-04-11",
+      "relative_change": 0.014260274751322966
+    },
+    {
+      "symbol": "T",
+      "date": "2026-07-20",
+      "relative_change": -0.011178105341601352
+    },
+    {
+      "symbol": "TAP",
+      "date": "2026-07-20",
+      "relative_change": -0.011521834076348214
+    },
+    {
+      "symbol": "TROW",
+      "date": "2026-07-20",
+      "relative_change": -0.012287327103239543
+    },
+    {
+      "symbol": "VZ",
+      "date": "2026-07-20",
+      "relative_change": -0.015275100181842638
+    }
+  ]
+}

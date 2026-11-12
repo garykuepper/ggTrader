@@ -1,0 +1,31 @@
+{
+  "purpose": "Input feasibility only: compare one NYSE symbol in two post-close snapshots with a later SEC filing; no returns or ranks",
+  "reference_url": "https://www.sec.gov/Archives/edgar/data/764622/000130817923000547/lpnw2023_def14a.pdf",
+  "reference": "Pinnacle West 2023 proxy, closing prices reported for September 30 and December 30, 2022",
+  "symbol": "PNW",
+  "cases": [
+    {
+      "session": "2022-09-30",
+      "snapshot_url": "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/d4ca0628575389015e8d23d05589bf4c84d38404/nyse/nyse_full_tickers.json",
+      "snapshot_sha256": "72b61ce092a66e5b65d29f4a091c18bac59df7f3cf869908753a6b719a8f381c",
+      "matched_symbol_rows": 1,
+      "archive_lastsale_usd": "64.51",
+      "retrospective_filing_close_usd": "64.51"
+    },
+    {
+      "session": "2022-12-30",
+      "snapshot_url": "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/dbfcca4f7db754f3584dc2357bd1979a5e37729d/nyse/nyse_full_tickers.json",
+      "snapshot_sha256": "fb71c615fab3c436c87a8f150bdcd73db8c5ee956730d30f451595be7596ec03",
+      "matched_symbol_rows": 1,
+      "archive_lastsale_usd": "76.04",
+      "retrospective_filing_close_usd": "76.04"
+    }
+  ],
+  "limitations": [
+    "The SEC filing is retrospective and does not establish what was known at the snapshot date.",
+    "One selected security and two dates do not establish freshness or correctness of other fields, stocks or dates.",
+    "The Git commit timestamp does not independently establish source capture or publication time.",
+    "Modeling rights for the upstream archive remain unresolved; raw snapshots were not retained by this probe.",
+    "No return or stock ranking was calculated."
+  ]
+}

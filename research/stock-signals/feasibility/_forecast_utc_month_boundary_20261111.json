@@ -1,0 +1,16 @@
+{
+  "purpose": "Synthetic calendar-boundary check of experimental forecast helper",
+  "fit_months": {"start": "2021-11", "end": "2024-04", "count": 30},
+  "fit_availability": "Each invented fit is available at 00:00 UTC on the first day of its named month.",
+  "coefficients": {"intercept": 1.0, "log_q": 0.0, "cash_flow": 0.0, "roe_change": 0.0},
+  "features": [0.0, 0.0, 0.0],
+  "observations": [
+    {"decision_utc": "2024-04-30T23:59:00Z", "decision_new_york": "2024-04-30T19:59:00-04:00", "result": "At least 30 available monthly fits required"},
+    {"decision_utc": "2024-05-01T00:01:00Z", "decision_new_york": "2024-04-30T20:01:00-04:00", "result": 1.0}
+  ],
+  "limitations": [
+    "The helper documents its UTC calendar; this demonstrates a potential mismatch with a New York calendar, not a violation of that interface.",
+    "All fits and values are invented; no real decision or stock forecast was made.",
+    "This check does not establish the published model's exact month-boundary convention."
+  ]
+}

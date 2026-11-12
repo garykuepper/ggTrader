@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0000876661</cik>
+        <entityName>NEW YORK STOCK EXCHANGE LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0001222840</cik>
+        <entityName>RETAIL PROPERTIES OF AMERICA, INC.</entityName>
+        <fileNumber>001-35481</fileNumber>
+        <address>
+            <street1>2021 Spring Road, Ste. 200</street1>
+            <city>Oak Brook</city>
+            <stateOrCountryCode>IL</stateOrCountryCode>
+            <stateOrCountry>ILLINOIS</stateOrCountry>
+            <zipCode>60523</zipCode>
+        </address>
+        <telephoneNumber>(630) 634-4200</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>Class A Common Stock</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(3)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Jonathan Martin</signatureName>
+        <signatureTitle>Manager, Market Watch and Proxy Compliance</signatureTitle>
+        <signatureDate>2021-10-22</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

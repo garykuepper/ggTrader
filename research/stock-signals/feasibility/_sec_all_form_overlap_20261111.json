@@ -1,0 +1,47 @@
+{
+  "counts": {
+    "total_rough_common_labels": 1752,
+    "one_observed_cik": 1441,
+    "has_complete_context": 1428,
+    "has_nyse_exact": 1427,
+    "nyse_with_multiple_titles": 639,
+    "multiple_observed_ciks": 2,
+    "no_matching_ticker": 309,
+    "no_complete_context": 13,
+    "nyse_and_other_exchange_strings": 21,
+    "no_nyse_exact": 1
+  },
+  "non_nyse_exchange_strings": [
+    [
+      "NASDAQ",
+      1
+    ]
+  ],
+  "archive_sha256": [
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "snapshot_sha256": "81602eac3d5fba68f1cb16c59089502edfa3f381cf97f227f7686b9fa1c205e9",
+  "checked_utc": "2026-11-12T01:46:31.489734+00:00",
+  "scanner_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_all_form_overlap_20261111.py.txt",
+  "scanner_sha256": "9d486d60b7f7c95f6fb1e3c73578dc54f1bfc17f2dd9ea0b938a16ccc8686b5f",
+  "comparison_record": "_sec_exchange_overlap_probe_20261111.json",
+  "filing_scope": "All forms represented in the two 2021 quarterly notes archives with filed dates from January 1 through June 28, 2021.",
+  "limits": [
+    "Retrospective metadata, not independently verified historical public availability.",
+    "A symbol match and a CIK do not verify security identity, primary exchange, eligibility or historical completeness.",
+    "The NYSE screener source and its data-use rights remain unverified.",
+    "Counts are observations in these archives, not a full eligible universe.",
+    "No return data or target calculation was used."
+  ],
+  "additional_labels": 64,
+  "additional_label_form_counts": {
+    "20-F": 52,
+    "40-F": 11,
+    "20-F/A": 1,
+    "10-Q/A": 1
+  },
+  "category_counts_note": "A label may have more than one additional form type; form counts overlap.",
+  "category_scanner_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_all_form_categories_20261111.py.txt",
+  "category_scanner_sha256": "872a366c139d2331873289dc8378710868c2a0503980205aae60f1205252b234"
+}

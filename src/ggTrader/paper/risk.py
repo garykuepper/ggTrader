@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -39,11 +40,15 @@ class RiskGuard:
         return self._peak_value
 
     def update_peak(self, portfolio_value: float) -> None:
+        if portfolio_value is None or not math.isfinite(portfolio_value) or portfolio_value <= 0:
+            raise ValueError("Invalid portfolio value for risk peak")
         if self._peak_value is None or portfolio_value > self._peak_value:
             self._peak_value = portfolio_value
 
     def check_drawdown_halt(self, portfolio_value: float) -> tuple[bool, str]:
-        """Returns (halted, reason). Halted=True means stop all trading."""
+        """Return whether the drawdown limit is breached or the value is invalid."""
+        if portfolio_value is None or not math.isfinite(portfolio_value) or portfolio_value <= 0:
+            return True, "Invalid portfolio value; drawdown cannot be assessed"
         if self._peak_value is None:
             return False, ""
         drawdown = (self._peak_value - portfolio_value) / self._peak_value
@@ -55,9 +60,16 @@ class RiskGuard:
         return False, ""
 
     def check_daily_loss(self, portfolio_value: float, day_start_value: float) -> tuple[bool, str]:
-        """Returns (halted, reason). Halted=True means stop trading for today."""
-        if day_start_value <= 0:
-            return False, ""
+        """Return whether the daily loss limit is breached or inputs are invalid."""
+        if (
+            portfolio_value is None
+            or day_start_value is None
+            or not math.isfinite(portfolio_value)
+            or portfolio_value <= 0
+            or not math.isfinite(day_start_value)
+            or day_start_value <= 0
+        ):
+            return True, "Invalid portfolio value or daily baseline; loss cannot be assessed"
         daily_loss = (day_start_value - portfolio_value) / day_start_value
         if daily_loss >= self.cfg.daily_loss_pct:
             return True, (

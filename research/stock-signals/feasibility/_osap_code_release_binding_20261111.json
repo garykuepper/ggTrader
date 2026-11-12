@@ -1,0 +1,33 @@
+{
+  "purpose": "Document publisher-attested code version for the 2026.10 predictor release; metadata only",
+  "dataset_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "dataset_revision_commit_utc": "2026-10-26T21:12:25Z",
+  "dataset_initial_release_commit": "28f283d24783ac5204608255497afaa3bb68700e",
+  "dataset_initial_release_commit_utc": "2026-10-24T21:45:08Z",
+  "notes_url": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Release%20Notes%202026.10.md",
+  "notes_sha256": "b349234f44b93df298a8f883099a7d9c67bea59a790e1c114741b7be8d663e33",
+  "notes_assertion": "Created with Code Version 2.1.0",
+  "tag_reference_url": "https://api.github.com/repos/OpenSourceAP/CrossSection/git/ref/tags/v2.1.0",
+  "tag_response_sha256": "6b0d46b6e60d3dc0c10dff306aec12c03b3ec1eae1e90c2936ea341a6dc1a720",
+  "observed_tag_target": "9f053398c4995651d822e90d81526d0644c6f3e5",
+  "observed_tag_commit_utc": "2026-10-27T20:27:06Z",
+  "file_sha256": {
+    "Signals/pyCode/Predictors/CBOperProf.py": "857c182d944308ad7a1586b221d335f8b2467f5661278843f8f98215ee096e24",
+    "Signals/pyCode/Predictors/OperProfRD.py": "b68d80ea3cc45b2fa4ce6b842f4a9c4fcbe7a1e9393a4cab456629222cdf4e72",
+    "Signals/pyCode/DataDownloads/CompustatAnnual.py": "231343c3f9d54c88d4fbc303b28556571e07e09f778134519f5d45595b68701d"
+  },
+  "limits": [
+    "Publisher version assertion is not an independently reproduced build or a per-predictor build manifest.",
+    "Observed tag currently resolves to a repository commit dated after the data-release and release-notes commits; the identity of the tag at the original build is not independently established.",
+    "Git and hosting metadata dates are not independent timestamp witnesses.",
+    "Individual IBM source rows, data vintages, field mappings and prior availability remain unverified.",
+    "No security rankings or returns were calculated."
+  ],
+  "pre_release_repository_snapshot": {
+    "commit": "c626bf886f53894e4b7f7dedf2c167d1c84b7801",
+    "committer_date_utc": "2026-10-24T14:54:06Z",
+    "selection": "first GitHub API result for ancestor of 2a5d1e928f048dbcecfa6f8082aa121d78870745 with until=2026-10-24T21:45:08Z",
+    "comparison": "All three paths in file_sha256 have the same SHA-256 in this snapshot and at the current v2.1.0 tag.",
+    "limitation": "GitHub metadata and matching file contents do not prove the exact build inputs, tag identity at build time, or independent timestamp witness."
+  }
+}

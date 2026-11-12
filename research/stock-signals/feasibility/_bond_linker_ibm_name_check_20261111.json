@@ -1,0 +1,30 @@
+{
+  "purpose": "Cross-check a single OSAP identifier against a retrospective dated firm-name release; not a universe or return study",
+  "source_zip": "https://openbondassetpricing.com/wp-content/uploads/2026/09/bond_firm_linker_2026.zip",
+  "zip_length_bytes": 13009433,
+  "zip_last_modified_http": "2026-09-16T03:06:49Z",
+  "read_method": "HTTP range reads of archive metadata and firm_names.parquet; full ZIP was not downloaded",
+  "source_parquet_sha256": "281d3e0cbd2c665a93cdbafb738641cc5f82ddf48d408adfb45f6bdbd2231518",
+  "documentation_sha256": {
+    "README.md": "61c806e00f7aa0a2041b7f079e5f47d297b1a44a861d7670194020114156eae5",
+    "PROVENANCE.md": "8f9e713ceb1cdaefba32b4445720532abe3f5b8b2afab8388a7ace850edcb32e",
+    "SCHEMA.md": "9bcfc8cb99ac9a10d3c7c81be058288ee63c04863bcff3092d70d63063163580"
+  },
+  "permno": 12490,
+  "provider_name_consistent_with": "International Business Machines Corporation",
+  "provider_name_spell_start": "1925-12-31",
+  "provider_name_spell_end": "2025-12-31",
+  "checked_months": [
+    "2024-03",
+    "2024-04"
+  ],
+  "match": "one matching PERMNO row with a name consistent with IBM and a spell covering both months",
+  "limits": [
+    "The release states its firm-name data derives from licensed CRSP data; a separate IBM mapping may share the same upstream source and is not necessarily independent.",
+    "Name consistency does not itself prove SEC CIK or share-class identity; inspect filings and another independent linkage.",
+    "The 2026 release and dates are retrospective, not proof of availability at either 2024 decision time.",
+    "Provider says use requires no entitlement; research-use and redistribution terms and underlying rights were not independently assessed.",
+    "No name-table file, stock rankings or returns were saved.",
+    "Archive components were read in separate HTTP requests; no immutable release hash or atomic snapshot was established."
+  ]
+}

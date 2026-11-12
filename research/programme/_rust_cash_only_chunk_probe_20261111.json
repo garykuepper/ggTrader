@@ -1,0 +1,19 @@
+{
+  "purpose": "Synthetic check of cash-only continuation; no real prices or returns",
+  "engine": "vectorbt 1.2.0 Rust signal simulator",
+  "input": {
+    "close": [100.0, 100.0, 110.0, 110.0],
+    "entries": [true, false, false, false],
+    "exits": [false, false, true, false],
+    "initial_cash": 10000.0,
+    "size": 1.0,
+    "size_type": "amount",
+    "fees": 0.0,
+    "slippage": 0.0,
+    "split_after_index": 1
+  },
+  "full": {"orders": [{"idx": 0, "side": "buy", "size": 1.0, "price": 100.0}, {"idx": 2, "side": "sell", "size": 1.0, "price": 110.0}], "ending_cash": 10010.0, "ending_value": 10010.0},
+  "first_chunk": {"ending_cash": 9900.0, "ending_value": 10000.0},
+  "second_chunk_cash_only": {"initial_cash": 9900.0, "orders": [], "ending_cash": 9900.0, "ending_value": 9900.0},
+  "limitations": ["One simple case with no price stops or shared cash.", "Does not test alternative state-continuation methods."]
+}

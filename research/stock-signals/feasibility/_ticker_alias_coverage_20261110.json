@@ -1,0 +1,53 @@
+{
+  "purpose": "Date presence only; not a price, security identity or adjustment validation",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "coverage_sha256": "94e4eac07f3858b1d177a92479cef104d0573dab195987fe48ca699b4868494c",
+  "code_sha256": "a8147ac5a7a7927c80c4bda7c7774f3567d2575405e5eccfa56975759f33c17b",
+  "candidates": {
+    "MMC": {
+      "successor": "MRSH",
+      "eligible": 60,
+      "present": 60
+    },
+    "ABC": {
+      "successor": "COR",
+      "eligible": 31,
+      "present": 31
+    },
+    "ANTM": {
+      "successor": "ELV",
+      "eligible": 17,
+      "present": 17
+    },
+    "BLL": {
+      "successor": "BALL",
+      "eligible": 16,
+      "present": 16
+    },
+    "RE": {
+      "successor": "EG",
+      "eligible": 30,
+      "present": 30
+    },
+    "PKI": {
+      "successor": "RVTY",
+      "eligible": 28,
+      "present": 28
+    },
+    "CDAY": {
+      "successor": "DAY",
+      "eligible": 29,
+      "present": 29
+    },
+    "WLTW": {
+      "successor": "WTW",
+      "eligible": 12,
+      "present": 12
+    },
+    "FB": {
+      "successor": "META",
+      "eligible": 17,
+      "present": 17
+    }
+  }
+}

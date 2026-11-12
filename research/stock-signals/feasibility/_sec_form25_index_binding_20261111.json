@@ -1,0 +1,11 @@
+{
+  "purpose": "Record offline accession checks for two SEC exchange notices issued for the same company",
+  "retrieval_date_utc": "2026-11-12",
+  "index_fixtures": [
+    {"accession": "0000876661-17-000796", "source": "https://www.sec.gov/Archives/edgar/data/1222840/000087666117000796/0000876661-17-000796-index.html", "sha256": "967fb472b8e9eef54765a081eeac322af053b48695f8d131696e21a3af92ffb6", "document_sha256": "3de92fd39cc666ad67f3b9149e0f1c6c6d97777c6e80493ebd1fac3a6d17d4af", "description": "7.00% Series A Cumulative Redeemable Preferred Stock"},
+    {"accession": "0000876661-21-001526", "source": "https://www.sec.gov/Archives/edgar/data/1222840/000087666121001526/0000876661-21-001526-index.html", "sha256": "fca3c4b8c9183534ab9372bea4d6f49a73312eeadc45f0e455cd42a6a513ed51", "document_sha256": "f16f2bf5d310757c1d2447fbee40d66f68049123c0d8c647a1f08dd96c1f0719", "description": "Class A Common Stock"}
+  ],
+  "fixtures": "../_lib/tests/fixtures/sec_form25/",
+  "check": "The offline helper checks each pinned index and document hash, the unique root-relative XML link's accession, and the issuer in XML. Tests reject swapping the document against the expected hash, a changed index, an ambiguous path and a mismatched issuer.",
+  "limits": "The caller must independently verify the origin of the bytes and that the chosen expected document hash belongs to the chosen accession. The index contains no XML hash and the notice need not contain the accession. This does not prove publication time, effective trading date, security identity beyond the description, or complete event coverage."
+}

@@ -46,13 +46,12 @@ def cross_below(a: Frame, b: Any) -> Frame:
 
 
 def time_stop(entries: Frame, n: int) -> Frame:
-    """Boolean frame true ``n`` bars after each entry (a forced max-hold exit signal).
+    """Boolean frame true ``n`` bars after each entry signal.
 
-    vectorbt's ``from_signals`` has no time-stop argument, so callers OR this into the exits
-    (an exit on a flat position is ignored, so it is a no-op when a normal exit came first).
+    This shifts signals, not filled entries: a stale exit can affect a later trade.
     Legacy equivalent: ``entries.shift(n, fill_value=False)``.
     """
-    if not isinstance(n, int | np.integer) or n < 0:
+    if isinstance(n, (bool, np.bool_)) or not isinstance(n, int | np.integer) or n < 0:
         raise ValueError(f"n must be a non-negative int, got {n!r}")
     shifted = entries.astype("float64").vbt.fshift(int(n), fill_value=0.0)
     return shifted > 0.5

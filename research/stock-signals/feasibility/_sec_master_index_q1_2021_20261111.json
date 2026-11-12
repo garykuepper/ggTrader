@@ -1,0 +1,30 @@
+{
+  "purpose": "Audit listing-form metadata and duplicated accessions in one SEC quarterly master index",
+  "source_url": "https://www.sec.gov/Archives/edgar/full-index/2021/QTR1/master.zip",
+  "archive_path": "/home/flynn/ggTrader-refs/sec-master-index-20261111/2021q1-master.zip",
+  "retrieved_utc": "2026-11-12T02:30:40.787014+00:00",
+  "http_last_modified": "Sat, 07 Nov 2026 08:05:06 GMT",
+  "archive_bytes": 4259871,
+  "archive_sha256": "0ccb50ed8d4d7f980f65e575bec403e4d0c7a135f610bb995bc19df5ff0924c0",
+  "index_member": "master.idx",
+  "index_uncompressed_bytes": 32802646,
+  "parser": "../_lib/sec_master_index.py",
+  "parser_sha256": "421c3898c08c1286be2eabfc3a59513339a3e97a2d80d637431763c3c1dd3f1c",
+  "total_index_rows": 361314,
+  "malformed_row_count": 0,
+  "selected_forms": {
+    "8-A12B": {"rows": 604, "distinct_accessions": 590},
+    "8-A12B/A": {"rows": 28, "distinct_accessions": 28},
+    "25": {"rows": 21, "distinct_accessions": 21},
+    "25/A": {"rows": 0, "distinct_accessions": 0},
+    "25-NSE": {"rows": 450, "distinct_accessions": 225},
+    "25-NSE/A": {"rows": 10, "distinct_accessions": 5}
+  },
+  "form_25_nse_rows_per_accession": {"2": 225},
+  "distinct_selected_accessions": 869,
+  "selected_filing_dates": {"earliest": "2021-01-04", "latest": "2021-03-31", "outside_2021_q1": 0},
+  "example": {"accession": "0001354457-21-000134", "indexed_parties": [{"cik": "0001005409", "name": "DIME COMMUNITY BANCSHARES INC"}, {"cik": "0001354457", "name": "Nasdaq Stock Market LLC"}]},
+  "insteel_accessions": ["0001437749-21-005809", "0001437749-21-006027"],
+  "source_note": "https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data",
+  "limits": "The SEC says quarterly indexes are rebuilt to incorporate later corrections. The 2026 capture and local retrieval timestamp do not prove what was available in 2021. Rows and accession counts are not securities or effective listing changes. CIKs may represent different parties and accession prefixes may identify a filing agent. Forms, classes, issuer identity, timestamps, full history, and event coverage require further verification. No price or return data were examined."
+}

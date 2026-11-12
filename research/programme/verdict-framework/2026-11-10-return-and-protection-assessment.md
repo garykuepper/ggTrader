@@ -1,0 +1,27 @@
+# Return and protection: exploratory assessment
+
+**2026-11-10 — exploratory; no candidate, benchmark, hurdle, test or shadow start approved.** The owner chose to explore return and protection, and to explore all three protection outcomes: deepest loss, bad-year loss, and recovery time. These are research questions, not simultaneous routes to a pass. A later confirmatory study needs a prespecified primary endpoint or an explicit multiple-testing rule, a comparator, horizon, economic trade-off, and governing prospective protocol.
+
+## Return and stock selection
+
+Sonnet's feasibility assessment identifies the previously proposed value-weighted largest-size / lowest-accruals cell of the French 5×5 portfolios as a possible next source investigation, not an established edge. The proposed comparator is the French market, not SPY; SPY can appear only over its available overlap. The [official detail page](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/tw_5_ports_me_AC.html) describes June formation and NYSE quintile breakpoints. On 2026-11-10, an inspection of the [library index](https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library.html) confirmed the CSV link name `25_Portfolios_ME_AC_5x5_CSV.zip`. No ZIP was downloaded or return series evaluated for this check. Exact section and column labels, permission to redistribute, vintages, stock-level reconstruction, costs and tax treatment remain open.
+
+The subsequent [metadata check](2026-11-10-accruals-source-metadata.md) found the value-weighted monthly section and `BIG LoAC` header in an in-memory copy, without evaluating returns. The original [feasibility proposal](../../stock-signals/feasibility/2026-11-02-accruals-feasibility.md) supplies example windows and thresholds, which are not owner selections. The [family review](../../stock-signals/feasibility/2026-11-02-family-scope-review.md) treats accruals as a conditionally distinct sort variable while noting its relationship to the closed investment factor. Preserve all prior verdicts and consult the closure's scope before proposing a study. The published portfolio is a historical proxy, not proof of investable point-in-time holdings or actual execution costs. The SEC's later coverage does not fill the whole proposed long-history interval.
+
+The separate [replica artifact inventory](../benchmark-objectives/2026-11-10-replica-attribution-artifact-inventory.md) found aggregate exposure histories but did not establish a complete historical transaction ledger or exact input binding. An aggregate proxy would be descriptive on already-seen data and would not recover stock-level selection or actual fills. Do not treat accruals portfolio returns and replica attribution as one experiment.
+
+## Protection
+
+Opus recommends a fixed SPY-and-Treasury-bill mix as a candidate comparator, selected before evaluation, with SPY also reported. This is a proposal, not an owner choice. Comparisons with the allocation displaced are a separate whole-account question and need an explicit starting state. A fixed mix is a useful test of whether protection adds value beyond lower equity exposure; a dynamically risk-matched mix answers a different question and must be specified separately.
+
+Explore these outcomes separately: depth of a decline, loss over a defined bad year, and time to recover. The [plain-language examples](2026-11-10-protection-measures-explained.md) show how each differs. Each needs an unambiguous calculation and horizon; maximum drawdown and recovery estimates depend on the chosen sample and may remain unresolved with few independent crises. Retrospective event selection is not prospective evidence. A short forward observation without the relevant adverse period cannot establish protection.
+
+The existing [cross-asset shadow brief](2026-11-10-cross-asset-shadow-decision-brief.md) records unresolved governing rules and missing contemporaneous observation evidence. Its historical shadow-only GO and weak holdout remain distinct from any later outcome. Do not automatically apply the later stock B1 standard to it, infer a clean clock, or start a shadow. Existing exit, trend and allocation verdicts remain in the [register](../../VERDICT_REGISTER.md); prior failures apply to their recorded specifications, not every possible defensive idea.
+
+## Next work and owner choices
+
+1. Continue metadata and rights checks for the named accruals source without inspecting return values. Confirm labels before freezing a source or proposing a candidate; report unresolved licensing and vintage questions rather than assume an answer.
+2. Describe all three protection outcomes with simple examples and identify what data each needs. Choose no numerical tolerances from historical results. A future defense pathway requires the applicable framework approval and a dated prospective amendment.
+3. Before registering a study, the owner still needs to choose its primary question, benchmark, horizon and acceptable wealth sacrifice where relevant. Neither this assessment nor an owner preference alone changes existing gates or authorizes broker paper, capital or production.
+
+Sonnet and Opus made read-only assessments; this synthesis checked the official index and detail-page metadata, but has not independently established source terms or reproduced their full document reviews. No return calculations or account, broker or database access were performed. The production freeze remains in place.

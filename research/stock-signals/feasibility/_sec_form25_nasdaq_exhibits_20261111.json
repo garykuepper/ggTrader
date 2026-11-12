@@ -1,0 +1,62 @@
+{
+  "purpose": "Inspect EX-99.25 documents linked by five preselected SEC filing indexes",
+  "index_checks_sha256": "685c7593d88e4ac10142da15a53ebf4a22600dd2d13481196373dd7b213b47a9",
+  "results": [
+    {
+      "accession": "0001354457-21-000003",
+      "paths_found": 1,
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000003/bmch-form25.txt",
+      "status": 200,
+      "bytes": 103,
+      "sha256": "5b6186d246970c402d8547308497e8e888c5c37d042b1d68795292373a638c6a",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000003_exhibit.txt",
+      "retrieved_utc": "2026-11-12T02:40:58.986003+00:00",
+      "text": "<DOCUMENT>\n<TYPE>EX-99.25\n<SEQUENCE>2\n<FILENAME>bmch-form25.txt\n<TEXT>\nbmch-form25\n</TEXT>\n</DOCUMENT>\n"
+    },
+    {
+      "accession": "0001354457-21-000004",
+      "paths_found": 1,
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000004/nghc-form25.txt",
+      "status": 200,
+      "bytes": 103,
+      "sha256": "e2a97f85a7737292bf8ace36e1cbaaaf7e107e58b3b9c6aca72b2d55a0f7fa6f",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000004_exhibit.txt",
+      "retrieved_utc": "2026-11-12T02:40:59.700478+00:00",
+      "text": "<DOCUMENT>\n<TYPE>EX-99.25\n<SEQUENCE>2\n<FILENAME>nghc-form25.txt\n<TEXT>\nnghc-form25\n</TEXT>\n</DOCUMENT>\n"
+    },
+    {
+      "accession": "0001354457-21-000016",
+      "paths_found": 1,
+      "url": "https://www.sec.gov/Archives/edgar/data/1143513/000135445721000016/gladd-form25.txt",
+      "status": 200,
+      "bytes": 105,
+      "sha256": "0209a671da93809042478d2db0d4c8e6a2ccd42fb96da37c7e2175dc937bd15a",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000016_exhibit.txt",
+      "retrieved_utc": "2026-11-12T02:41:00.351786+00:00",
+      "text": "<DOCUMENT>\n<TYPE>EX-99.25\n<SEQUENCE>2\n<FILENAME>gladd-form25.txt\n<TEXT>\ngladd-form25\n</TEXT>\n</DOCUMENT>\n"
+    },
+    {
+      "accession": "0001354457-21-000027",
+      "paths_found": 1,
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000027/form25.txt",
+      "status": 200,
+      "bytes": 93,
+      "sha256": "2fb8f50fefaf7e24a10f27cac9051cde67f426557db7fb961ae0e1e62298189f",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000027_exhibit.txt",
+      "retrieved_utc": "2026-11-12T02:41:01.046798+00:00",
+      "text": "<DOCUMENT>\n<TYPE>EX-99.25\n<SEQUENCE>2\n<FILENAME>form25.txt\n<TEXT>\nform25\n</TEXT>\n</DOCUMENT>\n"
+    },
+    {
+      "accession": "0001354457-21-000045",
+      "paths_found": 1,
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000045/form25.txt",
+      "status": 200,
+      "bytes": 93,
+      "sha256": "2fb8f50fefaf7e24a10f27cac9051cde67f426557db7fb961ae0e1e62298189f",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000045_exhibit.txt",
+      "retrieved_utc": "2026-11-12T02:41:01.643045+00:00",
+      "text": "<DOCUMENT>\n<TYPE>EX-99.25\n<SEQUENCE>2\n<FILENAME>form25.txt\n<TEXT>\nform25\n</TEXT>\n</DOCUMENT>\n"
+    }
+  ],
+  "limits": "Only five convenience-selected notices; retrieval records are not independently witnessed. Exhibit text has not been validated against actual trading halts, public dissemination or all securities. A date on an exhibit is not automatically an investable execution time. No prices or returns were examined."
+}

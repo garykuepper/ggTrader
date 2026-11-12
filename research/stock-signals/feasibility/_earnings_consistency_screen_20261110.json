@@ -1,0 +1,97 @@
+{
+  "status": "exploratory; historical data and related studies already seen",
+  "candidate": "EarningsConsistency portfolio 05, equal weighted",
+  "benchmark": "French market total return, not SPY",
+  "input_sha256": {
+    "portfolio": "76599d94beab94cc8973d8a126e8efbed98ee79f677738c55b2389f17387ba96",
+    "market": "b03d39e4bb253dda0f14893db3b78e64b40b8d6549a0fc0fd4111dae84c98618"
+  },
+  "driver_sha256": "7401d1630dd91f7e0a7363f4aa39b909ad7e72ef5ac15bfe710076289bd196bc",
+  "results": {
+    "full": {
+      "comparison": {
+        "months": 750,
+        "candidate": {
+          "terminal_wealth_per_1": 1145.012660438756,
+          "annualized_return": 0.1192857241540004,
+          "max_month_end_drawdown": -0.69811843652031
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 607.2043308721973,
+          "annualized_return": 0.1079836653332178,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 1.2263162866075499,
+      "one_sided_p": 0.11003983739369189,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "full_stress": {
+      "comparison": {
+        "months": 750,
+        "candidate": {
+          "terminal_wealth_per_1": 615.5580503664897,
+          "annualized_return": 0.10822592180410417,
+          "max_month_end_drawdown": -0.7162852584758288
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 607.2043308721973,
+          "annualized_return": 0.1079836653332178,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": 0.6549796001311164,
+      "one_sided_p": 0.2562404442070157,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994": {
+      "comparison": {
+        "months": 384,
+        "candidate": {
+          "terminal_wealth_per_1": 26.266222226619956,
+          "annualized_return": 0.10753172526802168,
+          "max_month_end_drawdown": -0.5761774992977334
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 26.706971559821923,
+          "annualized_return": 0.10810782098730765,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 0.3539285792053061,
+      "one_sided_p": 0.36169620421217197,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994_stress": {
+      "comparison": {
+        "months": 384,
+        "candidate": {
+          "terminal_wealth_per_1": 19.112036991478362,
+          "annualized_return": 0.09658131882154763,
+          "max_month_end_drawdown": -0.5834712023352027
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 26.706971559821923,
+          "annualized_return": 0.10810782098730765,
+          "max_month_end_drawdown": -0.5031170717166413
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": -0.1092619811607523,
+      "one_sided_p": 0.5435026496761746,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    }
+  },
+  "retrospective_provenance": {
+    "note": "Hashes recorded after execution; they identify files present at review, not an independent timestamp or proof of code used.",
+    "provider_release": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+    "market_archive": "separate French download 2026-11-10",
+    "dependency_sha256": {
+      "high52_screen.py": "b47122ffb9499fb9fb6ed1241c6d31a7596a4cd2e9c3b98099f3f753d1d80751",
+      "accruals_comparison.py": "270c08779d2a7538ecb045b345c34eceea833782238e1a8b4a59283fbcdc8df2"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "purpose": "Describe selected month-end-rounded extract dates versus filing dates; no stock rankings or returns",
+  "source": "SEC Financial Statement and Notes 2021 Q2 archive, sub.tsv and num.tsv",
+  "source_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "source_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/2021q2_notes.zip",
+  "method": "Select 10-K and 10-Q submissions, then unsegmented EntityCommonStockSharesOutstanding facts with shares units, qtrs=0 and no co-registrant. For each accession, select the latest parseable ddate not later than the filing date; calculate filing date minus ddate in calendar days. Exclude accessions with no such date or a malformed date. The archive's readme defines ddate as rounded to the nearest month end, not the original exact XBRL date.",
+  "eligible_submissions": 6487,
+  "submissions_with_matching_facts": 5541,
+  "submissions_with_selected_dates": 4588,
+  "submissions_without_selected_dates": 953,
+  "excluded_only_rounded_dates_after_filing": 953,
+  "excluded_malformed_dates": 0,
+  "excluded_example": {
+    "issuer": "Advanced Micro Devices, Inc.",
+    "accession": "0000002488-21-000056",
+    "form": "10-Q",
+    "filed": "2021-04-28",
+    "extract_context_date": "2021-04-30",
+    "extract_datp": "7.0",
+    "original_inline_xbrl_context_date": "2021-04-23",
+    "extract_value_shares": 1215020976,
+    "filing_reported_as_of_date": "2021-04-23",
+    "filing_value_shares": 1215020976,
+    "filing": "https://ir.amd.com/financial-information/sec-filings/content/0000002488-21-000056/amd-20210327.htm"
+  },
+  "median_gap_calendar_days": 10.0,
+  "same_day": 180,
+  "positive_gap": 4408,
+  "maximum_gap_calendar_days": 7298,
+  "recomputation": "A separate pandas chunk-and-join calculation on the same archive reproduced all counts, the median and the maximum. This is a second calculation by the same agent, not an independent review or data-source validation.",
+  "limitations": [
+    "One quarterly extract is not a representative or complete historical universe.",
+    "The extracted ddate is month-end-rounded and the median is not the median actual as-of-to-filing delay. The archive describes datp as a proximity in days without specifying direction; verify original XBRL contexts rather than infer exact dates from this summary.",
+    "The same information may have been publicly available before the selected filing; this is not a count of proven lookahead cases.",
+    "Dimensional facts, amendments, and accessions without a selected date are excluded; the unusually large maximum shows the selection is not a freshness guarantee.",
+    "The date comparison does not validate the count, share class, security identity or source vintage."
+  ]
+}

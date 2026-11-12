@@ -1,0 +1,47 @@
+{
+  "checked_utc": "2026-11-12T00:19:47.471980+00:00",
+  "purpose": "Compare four issuer-reported distribution events against saved Yahoo action fields; no returns",
+  "input_hashes": {
+    "TLT": "e7d6048c8c50ca48c871793a8a7b39fef988c642fb3654a421a56d05d2ed3145",
+    "PDBC": "767e1aadd5a4f2c082646f89947123047249df838569be85b50724debe11b427"
+  },
+  "events": [
+    {
+      "symbol": "TLT",
+      "ex_date": "2026-02-02",
+      "issuer_distribution_per_share": "0.331885",
+      "saved_yahoo_dividends": "0.332",
+      "difference_per_share": "0.000115",
+      "issuer_source": "https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf"
+    },
+    {
+      "symbol": "TLT",
+      "ex_date": "2026-03-02",
+      "issuer_distribution_per_share": "0.300633",
+      "saved_yahoo_dividends": "0.301",
+      "difference_per_share": "0.000367",
+      "issuer_source": "https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf"
+    },
+    {
+      "symbol": "TLT",
+      "ex_date": "2026-04-01",
+      "issuer_distribution_per_share": "0.344779",
+      "saved_yahoo_dividends": "0.345",
+      "difference_per_share": "0.000221",
+      "issuer_source": "https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf"
+    },
+    {
+      "symbol": "PDBC",
+      "ex_date": "2024-12-23",
+      "issuer_distribution_per_share": "0.57471",
+      "saved_yahoo_dividends": "0.575",
+      "difference_per_share": "0.00029",
+      "issuer_source": "https://www.invesco.com/us-rest/contentdetail?contentId=30764e28-1344-4e69-9e99-2bad61fa3a53"
+    }
+  ],
+  "limits": [
+    "The four events were chosen from readily visible issuer documents, not a representative sample.",
+    "Issuer web page and manual transcription not separately archived or independently timestamped.",
+    "This does not prove correct adjusted closes, all distributions, tax treatment or data rights."
+  ]
+}

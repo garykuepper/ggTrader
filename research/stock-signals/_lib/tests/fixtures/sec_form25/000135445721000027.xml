@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0001354457</cik>
+        <entityName>Nasdaq Stock Market LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0001721386</cik>
+        <entityName>Landsea Homes Corp</entityName>
+        <fileNumber>001-38545</fileNumber>
+        <address>
+            <street1>600 Madison Avenue</street1>
+            <street2></street2>
+            <city>New YOrk</city>
+            <stateOrCountryCode>NY</stateOrCountryCode>
+            <stateOrCountry>NEW YORK</stateOrCountry>
+            <zipCode>10022</zipCode>
+        </address>
+        <telephoneNumber>2126881005</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>LF Capital Acquistion Corp. Unit</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(3)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Tara Petta</signatureName>
+        <signatureTitle>Director</signatureTitle>
+        <signatureDate>2021-01-07</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

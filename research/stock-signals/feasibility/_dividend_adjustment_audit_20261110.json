@@ -1,0 +1,45 @@
+{
+  "purpose": "Flag unchanged adjustment factors at reference dividend dates, not returns or proof of errors",
+  "prices_sha256": "f67e3972dceefbbdf6c17b84b30957a7b83518401955fff8ae0bc4ae206fa83f",
+  "reference_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "code_sha256": "0d06f9e267e9c8604774df08d3f6d93a1777d99e7c93f0ebdc2149489d031e5e",
+  "calendar_version": "5.6.0",
+  "start": "2021-01-01",
+  "end": "2023-04-28",
+  "factor_tolerance": 1e-06,
+  "requested_symbols": [
+    "FRC",
+    "SBNY",
+    "WRK"
+  ],
+  "candidates": {
+    "FRC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [
+        "2021-01-27",
+        "2021-04-28",
+        "2021-07-28",
+        "2021-10-27",
+        "2022-01-26",
+        "2022-04-27",
+        "2022-07-27",
+        "2022-10-26",
+        "2023-01-25"
+      ],
+      "uncheckable_dates": []
+    },
+    "SBNY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WRK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    }
+  }
+}

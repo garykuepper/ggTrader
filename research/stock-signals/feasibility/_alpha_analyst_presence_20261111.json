@@ -1,0 +1,28 @@
+{
+  "scope": "Public demo field-presence counts only; zero is counted as present, numeric validity not checked.",
+  "retrieved_utc": "2026-11-12T03:25:50.336298+00:00",
+  "function": "EARNINGS_ESTIMATES",
+  "symbol": "IBM",
+  "reference_date": "2026-11-11",
+  "response_sha256": "99417f61f9ab85ed860fc81d3908764abad2d31c7cf6daf175db9bfa9e7c4247",
+  "raw_response_retained": false,
+  "counts": {
+    "period_before_reference": {
+      "rows": 38,
+      "nonempty_by_field": {
+        "eps_estimate_average_30_days_ago": 38,
+        "eps_estimate_revision_up_trailing_30_days": 38,
+        "eps_estimate_revision_down_trailing_30_days": 21
+      }
+    },
+    "period_on_or_after_reference": {
+      "rows": 4,
+      "nonempty_by_field": {
+        "eps_estimate_average_30_days_ago": 4,
+        "eps_estimate_revision_up_trailing_30_days": 4,
+        "eps_estimate_revision_down_trailing_30_days": 4
+      }
+    }
+  },
+  "limitations": "Only one demo symbol; period dates are not verified as-of timestamps. Nonempty does not establish accuracy, comparability, usability, release time or historical vintages."
+}

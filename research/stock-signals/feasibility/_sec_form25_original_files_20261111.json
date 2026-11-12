@@ -1,0 +1,21 @@
+{
+  "purpose": "Check a Form 25-NSE parser against original SEC XML without inferring public availability or trading dates",
+  "retrieval_date_utc": "2026-11-12",
+  "contact": "Owner-supplied contact sent in SEC User-Agent; omitted from this artifact.",
+  "fixtures_dir": "../_lib/tests/fixtures/sec_form25",
+  "files": [
+    {"accession": "000087666125000849", "issuer_cik": "0000051143", "source_url": "https://www.sec.gov/Archives/edgar/data/51143/000087666125000849/primary_doc.xml", "bytes": 1100, "sha256": "97560a300cd5a0757d3af50848d45758016c3159f68c98904826aed8532640f4", "security_description": "2.875% Notes Due November 7, 2025"},
+    {"accession": "000087666117000796", "issuer_cik": "0001222840", "source_url": "https://www.sec.gov/Archives/edgar/data/1222840/000087666117000796/primary_doc.xml", "bytes": 1142, "sha256": "3de92fd39cc666ad67f3b9149e0f1c6c6d97777c6e80493ebd1fac3a6d17d4af", "security_description": "7.00% Series A Cumulative Redeemable Preferred Stock"},
+    {"accession": "000087666121001526", "issuer_cik": "0001222840", "source_url": "https://www.sec.gov/Archives/edgar/data/1222840/000087666121001526/primary_doc.xml", "bytes": 1110, "sha256": "f16f2bf5d310757c1d2447fbee40d66f68049123c0d8c647a1f08dd96c1f0719", "security_description": "Class A Common Stock"}
+  ],
+  "index_check": {
+    "url": "https://www.sec.gov/Archives/edgar/data/1222840/000087666121001526/0000876661-21-001526-index.html",
+    "sha256": "fca3c4b8c9183534ab9372bea4d6f49a73312eeadc45f0e455cd42a6a513ed51",
+    "local_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/retail_000087666121001526_index.html",
+    "reported_acceptance_text": "2021-10-22 13:38:35",
+    "linked_xml_url": "https://www.sec.gov/Archives/edgar/data/876661/000087666121001526/primary_doc.xml",
+    "linked_xml_sha256": "f16f2bf5d310757c1d2447fbee40d66f68049123c0d8c647a1f08dd96c1f0719",
+    "linked_and_issuer_paths_identical": true
+  },
+  "limits": "Only one index and three XML notices were checked. The parser preserves descriptions and does not classify security type or verify a source, accession, effective event date or publication time. The acceptance timestamp is not proof of dissemination. Retrieval records are local, not independently timestamped."
+}

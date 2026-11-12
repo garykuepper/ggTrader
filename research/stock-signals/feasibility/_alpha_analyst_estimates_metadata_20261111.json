@@ -1,0 +1,38 @@
+{
+  "purpose": "Public demo schema and date-label inspection only; no estimates or returns examined.",
+  "retrieved_utc": "2026-11-12T03:24:49.082658+00:00",
+  "documentation": "https://www.alphavantage.co/documentation/",
+  "function": "EARNINGS_ESTIMATES",
+  "symbol": "IBM",
+  "response_sha256": "99417f61f9ab85ed860fc81d3908764abad2d31c7cf6daf175db9bfa9e7c4247",
+  "raw_response_retained": false,
+  "row_count": 42,
+  "earliest_date_label": "2017-06-30",
+  "latest_date_label": "2027-12-31",
+  "horizon_counts": {
+    "fiscal year": 2,
+    "fiscal quarter": 40
+  },
+  "fields": [
+    "date",
+    "eps_estimate_analyst_count",
+    "eps_estimate_average",
+    "eps_estimate_average_30_days_ago",
+    "eps_estimate_average_60_days_ago",
+    "eps_estimate_average_7_days_ago",
+    "eps_estimate_average_90_days_ago",
+    "eps_estimate_high",
+    "eps_estimate_low",
+    "eps_estimate_revision_down_trailing_30_days",
+    "eps_estimate_revision_down_trailing_7_days",
+    "eps_estimate_revision_up_trailing_30_days",
+    "eps_estimate_revision_up_trailing_7_days",
+    "horizon",
+    "revenue_estimate_analyst_count",
+    "revenue_estimate_average",
+    "revenue_estimate_high",
+    "revenue_estimate_low"
+  ],
+  "timestamp_named_fields": [],
+  "limitations": "Date-label semantics, historical estimate vintages, retrieval time versus public availability, paid/free key access and rights unverified; one demo symbol cannot establish coverage."
+}

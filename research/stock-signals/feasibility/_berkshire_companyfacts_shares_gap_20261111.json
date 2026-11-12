@@ -1,0 +1,19 @@
+{
+  "purpose": "Check one issuer's company-facts share-count coverage against its original filing; not a stock selection or return",
+  "source": "/home/flynn/ggTrader-refs/nyse-screener-snapshot-20240131/sec_companyfacts_0001067983.json",
+  "source_sha256": "c2b98d01c3cb02e201c61edc675c8be8ecd11d3c85cc94529e05cbeaab328e9a",
+  "concept": "dei:EntityCommonStockSharesOutstanding",
+  "unit": "shares",
+  "saved_file_observation_count": 7,
+  "latest_filed_in_saved_file": "2011-05-06",
+  "annual_report_fiscal_year": 2023,
+  "report_url": "https://www.berkshirehathaway.com/2023ar/2023ar.pdf",
+  "report_share_count_as_of": "2024-02-12",
+  "reported_class_a_shares": 566618,
+  "reported_class_b_shares": 1310805008,
+  "limitations": [
+    "The saved company-facts file is a retrospective snapshot; this check does not establish what the API served on any past date.",
+    "The missing rows' precise cause and current endpoint behavior were not independently established.",
+    "Issuer disclosure and share counts do not independently establish trading eligibility, mapping, public-availability time or point-in-time market value."
+  ]
+}

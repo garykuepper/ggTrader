@@ -1,0 +1,35 @@
+{
+  "purpose": "Small metadata comparison of exact company-facts dates and notes-archive rounded dates; no returns or stock ranking",
+  "source_directory": "/home/flynn/ggTrader-refs/nyse-screener-snapshot-20240131/",
+  "companyfacts_sha256": {
+    "0000019617": "162ae329aae30c15a681c3c9f98faa3d5d2cb76530636d905ae2c00db483a90d",
+    "0000021344": "87a4173fcd3d662d18d19e0e885095aa5e3812b74c54d1ee55808ff1540a8081",
+    "0000051143": "10fa1fafa25440b2159e2054dfe47628ba4ed353a258f526704cf9beda432bb8",
+    "0000104169": "49330f98609f70fcef4054edc90bc811398a58c4bf26dc0b218d607967a8dbe4",
+    "0001067983": "c2b98d01c3cb02e201c61edc675c8be8ecd11d3c85cc94529e05cbeaab328e9a",
+    "0001853138": "fa14ec1b85a75515a41062b3234466745935c21fb5a3bb34aa741f403c91e6f6"
+  },
+  "notes_archive_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "method": "Select company-facts DEI share counts filed April-June 2021 in 10-K or 10-Q; match accession and integer value to unsegmented notes num.tsv with shares units, qtrs=0 and no co-registrant. Retain keys with one company-facts end date and one notes ddate. Dates are compared as labels only.",
+  "companyfacts_files": 6,
+  "candidate_keys": 4,
+  "uniquely_matched_keys": 4,
+  "different_dates": 2,
+  "same_dates": 2,
+  "filing_context_spotcheck": {
+    "issuer": "The Coca-Cola Company",
+    "accession": "0000021344-21-000014",
+    "value_shares": 4311680667,
+    "companyfacts_end": "2021-04-23",
+    "notes_rounded_ddate": "2021-04-30",
+    "notes_datp": "7.0",
+    "inline_xbrl_context": "2021-04-23",
+    "filing": "https://www.sec.gov/Archives/edgar/data/21344/000002134421000014/ko-20210402.htm"
+  },
+  "limitations": [
+    "Files were selected earlier for other diagnostics; four matched facts do not estimate universe-wide coverage or error rates.",
+    "Accession and value do not by themselves prove that two records are the same XBRL context.",
+    "Current company-facts responses are retrospective and do not establish historical availability or security-class mapping.",
+    "The notes ddate is month-end-rounded; the exact original context and filing remain the authorities for individual facts."
+  ]
+}

@@ -1,6 +1,8 @@
 name: CI
 
-# Two tiers (tests/tiers.py is the one place that says which tests are in which):
+# Test tiers (tests/tiers.py is the one place that says which tests are in which):
+#   verdict-register  Validates PR-head register history and compares the PR base; the test job
+#         separately checks the prospective merge tree. Branch protection is configured outside CI.
 #   test  FAST CORE: lint + engine check + the developer-loop tests (about two minutes). Runs on
 #         every pull request and on every push to main. Its job id stays `test`, so a branch
 #         protection rule that requires the check named "test" keeps working.
@@ -75,6 +77,9 @@ jobs:
           ruff check .
           ruff format --check .
 
+      - name: Check verdict register in merge tree
+        run: python scripts/verdict_register.py check
+
       - name: Test (fast core)
         # Integration tests are deselected by the `-m 'not integration'` default
         # in pyproject.toml -- they need a live TimescaleDB and network access,
@@ -82,6 +87,29 @@ jobs:
         # slow, numba, tripwire, study and tooling tests (tests/tiers.py); the `full`
         # job runs them.
         run: pytest tests -q --tier fast
+
+  verdict-register:
+    name: verdict-register
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull-request head with full history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Check register and committed history
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            python scripts/verdict_register.py check --history --base-ref "$PR_BASE_SHA"
+          else
+            python scripts/verdict_register.py check --history
+          fi
 
   studies:
     name: studies

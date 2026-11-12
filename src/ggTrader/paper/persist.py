@@ -11,6 +11,7 @@ from datetime import date
 from sqlalchemy import text
 
 from ggTrader.lab.persist import get_engine as _get_engine
+from ggTrader.utils.json_safe import json_safe
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS paper_order_intents (
@@ -491,12 +492,21 @@ def mark_pending_order_stale(order_id: str) -> None:
         conn.commit()
 
 
-def get_latest_snapshot() -> float | None:
-    """Return the most recent snapshot's portfolio_value, or None if no snapshots exist."""
+def get_latest_snapshot(*, before: date | None = None) -> float | None:
+    """Return the latest portfolio value, optionally strictly before a date."""
     with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
-        ).first()
+        if before is None:
+            row = conn.execute(
+                text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+            ).first()
+        else:
+            row = conn.execute(
+                text(
+                    "SELECT portfolio_value FROM paper_snapshots "
+                    "WHERE run_date < :before ORDER BY run_date DESC LIMIT 1"
+                ),
+                {"before": before},
+            ).first()
     return float(row[0]) if row else None
 
 
@@ -524,7 +534,7 @@ def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: 
                 "run_date": run_date,
                 "pv": portfolio_value,
                 "cash": cash,
-                "pos": json.dumps(positions),
+                "pos": json.dumps(json_safe(positions), allow_nan=False),
             },
         )
         conn.commit()

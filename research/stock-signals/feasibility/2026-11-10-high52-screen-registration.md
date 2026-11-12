@@ -1,0 +1,25 @@
+# 52-week-high stock ranking: fixed historical screen
+
+**2026-11-10 — research only.** The owner explicitly authorized a separate test of the 52-week-high idea while preserving the prior momentum NO-GO and the production freeze. This is a published-portfolio screen, not a current stock list, broker paper, or authority to change positions or trading infrastructure.
+
+## Question and source
+
+Test one hypothesis: does the **long-only high-52-week-price portfolio** from [Open Source Asset Pricing's 2026.10 release](https://huggingface.co/datasets/OpenSourceAP/CrossSection) beat the French broad market after an assumed cost? Use the provider's original-construction `High52`, portfolio `03`, from `Portfolios/Full Sets OP/PredictorPortsFull.parquet` at dataset revision `dd1054254c4501776432caa6d7ce5ecd9586f6a9`; expected file SHA-256 `76599d94beab94cc8973d8a126e8efbed98ee79f677738c55b2389f17387ba96`. The provider marks the data CC BY 4.0 and requests citation of Chen and Zimmermann (2022).
+
+The [provider's signal code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/High52.py) ranks price divided by the preceding 12-month high, including the current month, with split adjustment. Its signal metadata records sign +1, equal weighting and 30% quantiles. The [portfolio code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Portfolios/Code/01_PortfolioFunction.R) assigns the highest signal to portfolio 03 for that cut. The source describes six-month assignments with June and December formation; this is not necessarily the original paper's overlapping six-month-cohort method. It is not an S&P 500 top-N strategy and it does not hold every winner indefinitely. Do not substitute the `LS` long–short series or select another portfolio after seeing results.
+
+Use French market total return (`Mkt-RF + RF`) from the frozen `F-F_Research_Data_Factors_CSV.zip` with SHA-256 `b03d39e4bb253dda0f14893db3b78e64b40b8d6549a0fc0fd4111dae84c98618`. It is a broad US-market proxy, not SPY. It and the provider portfolio have different publication vintages; their underlying history revisions are not synchronized. Downloaded portfolio bytes stay in a separate local research directory; record their hash and the code hash with the result.
+
+## Fixed rules
+
+- Full window **1963-07 to 2025-12**, 750 months. Since-1994 window **1994-01 to 2025-12**, 384 months. July 1963 follows the original paper's sample start and the prior accruals comparison; December 2025 is the latest month documented by the data release. These are already-known historical markets, not an untouched holdout.
+- Compare matching monthly total returns. Apply an illustrative 1% annual candidate haircut as 0.01/12 each month and report a 2% stress haircut; the benchmark has no haircut. These are assumptions, not measured trading costs or taxes. Equal weighting, broad coverage, turnover, small stocks, delistings, corporate actions and next-session execution require later checks.
+- A1: 12-lag Bartlett Newey–West statistic for the monthly arithmetic excess after the base cost. Require **t ≥ 3 and one-sided p ≤ 0.00135**. The fixed family contains this one hypothesis; this does not control selection across earlier screens.
+- A2: since-1994 candidate CAGR after base cost minus broad-market CAGR must be **at least +1.0 percentage point/year**. Both A1 and A2 must meet their thresholds for the proposed Part A policy result to be met. Missing months, duplicate records, missing inputs or undefined inference mean unresolved, not pass. The tests use the existing evidence standard and are pretax.
+- Report terminal wealth, annualized returns, month-end drawdowns and stress-cost results; these are descriptive, not extra gates. Do not tune the window, portfolio, costs, endpoints or thresholds after seeing results.
+
+## Interpretation and limitations
+
+The earlier 12–2 momentum and dual-momentum results and their NO-GOs remain intact. The new characteristic is related to momentum and shares its historical markets. The decision to explore it was made after other screens; no independence or cross-study multiple-testing control is claimed. A data-card page automatically displayed an unsought historical return preview and the signal documentation displayed a qualitative paper-result note before this specification; neither was analyzed to choose the test. The local specification and code must be saved before downloading or computing the new portfolio results, but an external timestamp witness is not established.
+
+Even a pass is evidence about a published broad-market proxy, not proof of an executable stock picker, a reliable holding or exit rule, or after-tax performance. A miss does not prove no smaller edge. A separate implementation study would need identity-safe point-in-time membership and price history, a specific holding/exit and sizing policy, next-session fills, costs and tax treatment; the recently inventoried tape has missing symbols and known identity faults. No outcome in this screen lifts the production freeze.

@@ -1,0 +1,18 @@
+{
+  "purpose": "Compare the six flagged frozen-tape bars with available bars in a second frozen file; do not calculate returns or repair inputs",
+  "source_audit": "_intraday_stop_ohlc_check_20261111.json",
+  "tape_path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "comparison_path": "/home/flynn/ggTrader-refs/sp500-external-20261103/prices.parquet",
+  "comparison_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "method": "Select exact ticker and date matches. Check finite positive OHLC and high/low ordering with the engine's 1e-10 relative tolerance. Compute each tape field divided by the corresponding comparison field; these are cross-file price-level ratios, not returns. Source labels come from the comparison file.",
+  "results": [
+    {"symbol": "AVB", "date": "2021-05-05", "reference_rows": 1, "source": "tiingo", "reference_ohlc_valid": true, "tape_to_reference": {"open": 0.8351889504896154, "high": 0.8259629526596916, "low": 0.8359273732031307, "close": 0.8351889588168693}},
+    {"symbol": "BK", "date": "2021-05-05", "reference_rows": 0},
+    {"symbol": "HUBB", "date": "2021-05-05", "reference_rows": 1, "source": "yahoo", "reference_ohlc_valid": false, "tape_to_reference": {"open": 0.9200178549314545, "high": 0.9200178549314545, "low": 0.9200178549314545, "close": 0.9200178549314545}},
+    {"symbol": "UA", "date": "2021-05-05", "reference_rows": 1, "source": "yahoo", "reference_ohlc_valid": false, "tape_to_reference": {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}},
+    {"symbol": "CTRA", "date": "2023-06-05", "reference_rows": 1, "source": "tiingo", "reference_ohlc_valid": true, "tape_to_reference": {"open": 0.9149198397672892, "high": 0.9064762148707788, "low": 0.9147268384106432, "close": 0.9149198536123347}},
+    {"symbol": "WBD", "date": "2026-10-05", "reference_rows": 1, "source": "yahoo", "reference_ohlc_valid": true, "tape_to_reference": {"open": 0.0, "high": 1.0, "low": 1.0, "close": 1.0}}
+  ],
+  "limits": "The files' adjustment conventions, historical security identities and independent lineage are not verified. A valid bar need not be an accurate bar, and matching ticker labels need not identify the same security. WBD is outside the fixed replay window. No stock was excluded and no price was replaced."
+}

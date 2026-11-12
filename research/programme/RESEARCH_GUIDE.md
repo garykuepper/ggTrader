@@ -1,0 +1,67 @@
+# ggTrader research guide
+
+Start here for the current questions and the evidence behind them. The [detailed notes](RESEARCH_GUIDE_DETAILS.md) preserve the previous guide's audit findings, examples and source links.
+
+## Contents
+
+- [Where we stand](#where-we-stand)
+- [Stock-selection research](#stock-selection-research)
+- [Managing losses](#managing-losses)
+- [Data and simulation limits](#data-and-simulation-limits)
+- [Research library](#research-library)
+
+## Where we stand
+
+- **Objective:** Find winning stocks programmatically, let gains grow and manage losses. No validated stock picker has been identified yet.
+- **Decisions:** The owner retired new GO/NO-GO determinations. Report evidence, whether preset thresholds were met, uncertainty and any action decision separately. Historical records remain history.
+- **Paper trading:** The trader has been stopped since 2026-11-06. A calendar date or a research result does not lift that.
+- **Category ranges:** No category has proven alpha, meaning return above holding the market, after costs and tax, that is also statistically reliable. Gaps against each benchmark, in bps a year:
+  - Stock-selection screens: -1,810 to +618. Of eight full-window bands, two sit above zero, one below and five cross zero.
+  - Live design and variants: -1,092 to +590, no bands.
+  - Allocation and leverage: -1,280 to +160, no bands.
+  - Event timing: -1,320 to -1,300. Crypto (parked): -2,500 to +6,980, where the high figure is a replay on the data used to pick the settings.
+  - Intraday: no result yet.
+  - Details and caveats are in the [category report](research-summary/2026-11-12-strategy-categories-alpha-range.md).
+- Basis points (bps) measure return differences: 100 bps is one percentage point a year. Many older results use the legacy engine and were not rerun.
+- **What has been tried:** The [verdict register](../VERDICT_REGISTER.md) links studies to their evidence and recorded actions. Its historical coverage is incomplete, and summary rows are not independent tests.
+
+## Stock-selection research
+
+These are published-portfolio screens, not validated lists of stocks to buy. Each link includes its benchmark, costs and limitations.
+
+- **Recent focus:** [Expected investment growth](../stock-signals/feasibility/2026-11-11-expected-growth-results.md) met its recent-return threshold but missed its full-history statistical threshold after an assumed 1% annual cost. The comparator was the provider's broad market, not SPY; independent review reproduced the figures.
+- **Other reviewed screens:**
+  - [Low accruals](../stock-signals/feasibility/2026-11-02-accruals-feasibility.md#first-screen-result--2026-11-10) and [52-week highs](../stock-signals/feasibility/2026-11-10-high52-screen-results.md) did not meet their proposed hurdles.
+  - [Monthly reversal](../stock-signals/feasibility/2026-11-11-short-term-reversal-results.md), [low variance](../stock-signals/feasibility/2026-11-11-low-variance-results.md) and [accounting score](../stock-signals/feasibility/2026-11-11-accounting-score-results.md) did not meet both return hurdles.
+  - [R&D spending](../stock-signals/feasibility/2026-11-10-rd-exploratory-screen.md) showed strong older returns, weak statistical evidence and a deep recent loss. [Earnings consistency](../stock-signals/feasibility/2026-11-10-earnings-consistency-screen.md) identified no reliable winner.
+- **Next research problem:** Reconstruct individual-stock inputs using information available at each decision date. The [input checkpoint](../stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md#decision-checkpoint) identifies the required universe, training history and accounting data; the currently investigated archive alone does not establish them. The [synthetic-tested filing selector](../stock-signals/_lib/filing_vintages.py) also depends on verified availability times and fact keys. Neither establishes a tradable signal.
+  - **Remaining inputs:** Verified availability times, dated stock identities, consistent accounting periods and monthly market values. Alpha Vantage used `META` before the ticker change; SEC filing facts preserve `FB` in the checked example but require issuer, security-class and timing checks. The Nasdaq-derived archive's modeling rights remain unresolved. See the [input pilot](../stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md) for the evidence.
+  - **Universe filter:** Common-stock labels alone do not rule out funds. In a retrospective 2021 check, all 172 ticker labels flagged as possible N-2 funds also appeared as `CommonStock` in a MIAX list. The screener also gives `CMU` a name that conflicts with SEC and MIAX records. These are identity leads, not automatic exclusions; source timing and rights remain unresolved. [Evidence](../stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md).
+  - **Next checkpoint:** The [stock-input pilot](../stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md) defines a dated identity, market-value and filing coverage check before any stock-level return study.
+  - **Calculation prototype:** [Predictors](../stock-signals/_lib/expected_growth_features.py) and [forecasting and stock selection](../stock-signals/_lib/expected_growth_model.py) have synthetic tests; the [original study's](https://theinvestmentcapm.com/uploads/1/2/2/6/122679606/houmoxuezhang2020rf.pdf) forecasting regressions use market-equity weights. Selection needs the full eligible reference universe and a verified primary-exchange flag, not just a trading list or any-exchange listing. Its percentile interpolation, tie rules and share-class treatment are unverified. Accounting definitions, filing alignment and stock-ranking use remain unvalidated.
+
+## Managing losses
+
+- **Next protection proposal:** Compare loss in the same down years as the primary measure, with drawdown and recovery also reported. The owner chose 80% SPY / 20% Treasury bills alongside SPY, a 2027–2029 observation period, and a proposal to model initial purchases at the final 2026 market close. Exact boundaries, bill instrument and acceptable wealth sacrifice remain open. The [draft](verdict-framework/2026-11-10-protection-measures-explained.md) is not approved for a study.
+- **One five-year comparison:** In an already-seen, pretax 2021–2026 period, the cross-asset mix ended at $180,680 per $100,000 versus $170,234 for 80% SPY/20% Treasury bills and $184,371 for SPY. Its worst decline was 21.35%, versus 19.77% and 24.50%, respectively. This single period illustrates the trade-off; it does not establish future protection. [Methods and caveats](verdict-framework/2026-11-10-protection-measures-explained.md#descriptive-historical-comparison--2026-11-10).
+- **Time exits:** `td_stop` uses entry signals rather than filled positions, so it can exit early, skip an entry or hold too long. The engine warns in the existing path and rejects it with intraday stops; this is not a repair. [Reproductions](../../tests/engine/test_time_stop_entry_reuse.py) and the [earlier exit-sweep audit](../audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md) show what is and isn't known.
+- **Price stops:** The research-only intraday mode models stops using daily OHLC, gaps and assumed slippage. An optional caller-supplied halt mask rejects positions overlapping flagged bars; it cannot establish complete halt coverage or model resumption fills. Trigger, fill and cash-ordering assumptions remain important. See [stop-model details](RESEARCH_GUIDE_DETAILS.md#current-research-questions).
+- **Paper exits:** Changes are undeployed. In synthetic tests, a rejected exit, an invalid exit quantity or an unassessable enabled catastrophe stop blocks new strategy buys while other valid exits continue. An invalid quantity is checked before sweep funding; a sweep sale can still restore its separate cash reserve. A submission exception stops later exits because acceptance may be uncertain. An unresolved working order in the order-intent ledger can also stop a later run before exits. Broker behavior still needs verification before any restart.
+  - **Signal dates:** A local, undeployed fix rejects future bars and validates every sleeve's signal date. A date alone cannot prove the bar was complete or available at the decision; the earlier synthetic reproductions do not establish an actual future-dated decision. See the [exit design](../paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md#signal-date-boundary).
+  - **Working-order follow-up:** The owner selected a cautious [exits-only design](../paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md) for preparation. It requires a complete broker open-order check and further safeguards; it is not implemented or approved for trading.
+
+## Data and simulation limits
+
+- **Price history:** Adjustment seams, ticker changes and corporate actions can create misleading prices or false stops. The [tape audit](../audits/root-cause-2026-11-04/lenses/2026-11-04-lens1-backtest-validity.md) and [detailed notes](RESEARCH_GUIDE_DETAILS.md#current-research-questions) include the checks and unresolved cases. Flags are not proof of errors, and unflagged data is not certified clean. Rights to use the Yahoo-derived tape in a new study remain [unresolved](verdict-framework/2026-11-10-protection-measures-explained.md).
+- **Simulation:** Close-only and intraday-stop runs differ in trigger timing, price references, order sequencing and default slippage. Daily bars cannot reveal the order of every intraday move. The position-aware time-exit prototype is synthetic and not integrated into the Rust simulator. Its batch-rerun experiment preserved earlier orders when later bars were added in six small synthetic cases (three seeds and two call sequences, each checked at three cutoffs); this is not a general proof of causality or convergence. A constructed one-symbol case with an entry every bar and a one-bar limit needed 1,200 Rust runs for 1,200 bars, making bounded runtime an unresolved obstacle for wider histories. [Test](../../tests/engine/test_time_stop_position_prototype.py), [probe](_rust_time_exit_rerun_probe_20261111.json).
+- **Time-exit initialization experiment:** An initial per-symbol guess that assumes entries fill matched the position-aware callback after reruns in 50 small synthetic shared-cash cases with a close-only price stop. It also matched in 40 small cases using intraday prices and covering both default and automatic call sequences; the batches included rejected orders and partial exits, and the test checks actual fills and timing. A hand-specified correct alternating guess stabilized the dense 1,200-bar example in one Rust run. These cases do not measure general speedup or establish correctness on realistic grids, convergence or worst-case behavior. The guess must not be treated as filled-position evidence; the result still requires reconciliation against actual simulated fills. [Tests](../../tests/engine/test_time_stop_position_prototype.py).
+- **Larger initialization comparison:** On one synthetic 1,200-bar, five-group, 250-column grid, the initial guess needed 18 simulations against 17 without it; final orders matched to the recorded tolerance. This single run does not establish a speedup or convergence in general. [Raw record](_time_exit_warm_start_grid_20261111.json).
+- **Installed simulator boundary:** In vectorbt 1.2.0, static Rust dispatch exposes price stops but no duration-stop parameter. Synthetic checks show that both a custom signal callback and a custom stop-adjustment callback invoke the Numba signal simulator even when `engine="rust"` is requested. A callback is therefore not evidence of a native Rust time stop. [Tests](../../tests/engine/test_time_stop_position_prototype.py).
+- **Point-in-time data:** Published portfolio returns do not provide historical holdings or executable prices. Company filings, accounting revisions, ticker mappings, delistings and tax lots need explicit treatment before a stock-level replay.
+
+## Research library
+
+- **Current work:** [Next steps](../../docs/next_steps.md) · [return and protection assessment](verdict-framework/2026-11-10-return-and-protection-assessment.md) · [cross-asset shadow brief](verdict-framework/2026-11-10-cross-asset-shadow-decision-brief.md).
+- **Rules and templates:** [Forward-paper standard](evidence-standard/2026-10-23-forward-paper-standard.md) · [proposed verdict framework](../../docs/superpowers/specs/2026-11-10-research-verdict-framework-design.md) · [return brief](verdict-framework/TEMPLATE-return-brief.md) · [defense brief](verdict-framework/TEMPLATE-defense-brief.md). Check approval status and scope before applying a proposal.
+- **Background:** [Audit summary](../audits/root-cause-2026-11-04/2026-11-05-executive-summary.md) · [plain-English findings](../audits/root-cause-2026-11-04/findings/2026-11-05-findings-plain-english.md) · [objectives and benchmarks](benchmark-objectives/2026-11-10-objectives-benchmarks-consolidated.md) · [research home](../README.md) · [research index](../RESEARCH_INDEX.md).
+- **Sources and attribution:** [Source and PDF record](benchmark-objectives/sources/README.md) · [claim verification](benchmark-objectives/2026-11-10-claim-verification.md) · [replica artifact inventory](benchmark-objectives/2026-11-10-replica-attribution-artifact-inventory.md).

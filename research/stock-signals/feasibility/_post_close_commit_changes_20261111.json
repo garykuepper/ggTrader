@@ -1,0 +1,124 @@
+{
+  "purpose": "Metadata-only check of whether selected post-close commits modified the three exchange files; no listing or price rows",
+  "input_file_sha256": "933b94fdc7e4540d4b8b4ae65e5ebcf7821ccd05c4ccfd3cf2d2d2f504e843f6",
+  "results": [
+    {
+      "month": "2021-03",
+      "commit": "220e855d16b060edcf4cc3125c96a1267f12a6c6",
+      "commit_time_utc": "2021-04-01T00:16:48Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/220e855d16b060edcf4cc3125c96a1267f12a6c6?per_page=100",
+      "metadata_sha256": "8626eadf93ba48998530fec6a647f4f51feedd0f1c77f84e5e7cd0f7b55a2ef3",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2021-06",
+      "commit": "bf0f04019c9d177f788b3f57dedac12cbe6148a4",
+      "commit_time_utc": "2021-07-01T00:10:40Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/bf0f04019c9d177f788b3f57dedac12cbe6148a4?per_page=100",
+      "metadata_sha256": "aaddf44060dfbc3eca1373be87155372265a1ff9da73d650236489d97a6c9f93",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2021-09",
+      "commit": "c0dd320f76c0cdccd600f074018dd468cabad712",
+      "commit_time_utc": "2021-10-01T00:09:26Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/c0dd320f76c0cdccd600f074018dd468cabad712?per_page=100",
+      "metadata_sha256": "d0e7bb066521fa1234defa4070a4fc702b66b7e8baddd0676ad32e8afebcff72",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2021-12",
+      "commit": "b02d9d7ace317f861f8a6f59e2cfa88e207f3ce9",
+      "commit_time_utc": "2022-01-01T00:11:00Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/b02d9d7ace317f861f8a6f59e2cfa88e207f3ce9?per_page=100",
+      "metadata_sha256": "f9837312c75625d27f89ddc5c9064620f095b369f996abe5c2eea780d5deb35e",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2022-03",
+      "commit": "1bcc29c4fe0460962d12d28d15150d0bcac4a20d",
+      "commit_time_utc": "2022-04-01T00:17:26Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/1bcc29c4fe0460962d12d28d15150d0bcac4a20d?per_page=100",
+      "metadata_sha256": "534a30a8c815cd9910ef8ecf8e39edfcbc0d45e9c1a914d67d5f9900f91f3e35",
+      "returned_file_count": 8,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2022-06",
+      "commit": "a9dd49b4c711b5a3555af1ce7d8beb5a8dbac080",
+      "commit_time_utc": "2022-07-01T00:20:10Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/a9dd49b4c711b5a3555af1ce7d8beb5a8dbac080?per_page=100",
+      "metadata_sha256": "24f4ece364401208db573e0a1428b2bcb03bd2460b92b8f014c80c2134552989",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2022-09",
+      "commit": "d4ca0628575389015e8d23d05589bf4c84d38404",
+      "commit_time_utc": "2022-10-01T00:30:50Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/d4ca0628575389015e8d23d05589bf4c84d38404?per_page=100",
+      "metadata_sha256": "88871e2d8f1afd962aff54d4e26a71a8e94c992bbfcecd0b51d1f399fba8a543",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    },
+    {
+      "month": "2022-12",
+      "commit": "dbfcca4f7db754f3584dc2357bd1979a5e37729d",
+      "commit_time_utc": "2022-12-31T00:16:13Z",
+      "metadata_url": "https://api.github.com/repos/rreichel3/US-Stock-Symbols/commits/dbfcca4f7db754f3584dc2357bd1979a5e37729d?per_page=100",
+      "metadata_sha256": "d44d17131109b10eb0c45bb6cbd6bdeb5dd37a969d7b4c414eef427799256916",
+      "returned_file_count": 10,
+      "next_page_present": false,
+      "target_files_changed": [
+        "amex/amex_full_tickers.json",
+        "nasdaq/nasdaq_full_tickers.json",
+        "nyse/nyse_full_tickers.json"
+      ]
+    }
+  ],
+  "limits": [
+    "Changed file bytes do not establish source fetch time, quote timestamps, public availability or correctness.",
+    "Git commit timestamps are not independent witnesses of publication.",
+    "The original archive rights and suitability for modeling remain unresolved.",
+    "API response hashes identify retrieved bytes but the full responses are not retained."
+  ]
+}

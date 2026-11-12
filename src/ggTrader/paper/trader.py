@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import time
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -59,6 +60,7 @@ from ggTrader.paper.untradable import (
     is_untradable_error,
     resolve_untradable,
 )
+from ggTrader.utils.json_safe import json_safe
 
 _log = logging.getLogger(__name__)
 
@@ -116,6 +118,16 @@ def _as_date(value) -> date:
     return value.date() if isinstance(value, datetime) else value
 
 
+def _account_read_halt(notifier, exc: Exception) -> None:
+    """Report an unavailable account before any orders are submitted."""
+    _log.error("Account read failed (%s); stopping before orders", type(exc).__name__)
+    reason = "Account data unavailable; no orders submitted"
+    try:
+        notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+    except Exception:
+        _log.exception("Could not send account read failure notice")
+
+
 class PaperTrader:
     """Orchestrates daily paper trading: generate signals, execute, notify."""
 
@@ -171,19 +183,21 @@ class PaperTrader:
         if side not in ("BUY", "SELL"):
             raise ValueError("Invalid order side")
         client_id = str(uuid4())
-        create_order_intent(
-            client_id,
-            _today_et().isoformat(),
-            side,
-            symbol,
-            amount,
-            "notional" if side == "BUY" else "qty",
-            reason,
-        )
-        self._paper_lock.verify()
         submit = self._broker.submit_buy if side == "BUY" else self._broker.submit_sell
-        stage = "submit"
+        stage = "intent"
         try:
+            create_order_intent(
+                client_id,
+                _today_et().isoformat(),
+                side,
+                symbol,
+                amount,
+                "notional" if side == "BUY" else "qty",
+                reason,
+            )
+            stage = "lock"
+            self._paper_lock.verify()
+            stage = "submit"
             order_id = submit(symbol, amount, client_id)
             stage = "attach"
             attach_broker_order(client_id, order_id)
@@ -267,9 +281,13 @@ class PaperTrader:
                 raise RuntimeError("Unresolved working orders block submissions")
             return working
         except Exception as exc:
-            self._notifier.send(
-                f"<b>🛑 Order recovery/pending orders failed — no orders placed:</b> {exc}"
-            )
+            try:
+                self._notifier.send(
+                    f"<b>🛑 Order recovery/pending orders failed:</b> {exc}. "
+                    "Orders may already have been submitted; check their status."
+                )
+            except Exception:
+                _log.exception("Could not send order recovery failure notice")
             raise
 
     def _missed_exits(
@@ -689,17 +707,27 @@ class PaperTrader:
         errors.append(f"{label} {symbol}: {exc}")
 
     def run(self) -> dict:
-        """Hold the live lock throughout the run."""
+        """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
+        threshold = None
+        if catastrophe_stop.catastrophe_stop_enabled():
+            try:
+                threshold = catastrophe_stop.catastrophe_stop_pct()
+            except ValueError as exc:
+                try:
+                    self._notifier.send(f"<b>🛑 HALTED:</b> {exc}")
+                except Exception:
+                    _log.exception("Could not send invalid catastrophe-stop threshold alert")
+                raise
         if self._dry_run:
-            return self._run()
+            return self._run(stop_threshold=threshold)
         with paper_run_lock() as lock:
             self._paper_lock = lock
             try:
-                return self._run()
+                return self._run(stop_threshold=threshold)
             finally:
                 self._paper_lock = None
 
-    def _run(self) -> dict:
+    def _run(self, *, stop_threshold: float | None) -> dict:
         try:
             self._write(init_paper_schema)
         except Exception as exc:
@@ -803,22 +831,44 @@ class PaperTrader:
         # Freshness gate: refuse to trade on data that is stale beyond the
         # normal one-completed-session lag (see _MAX_SIGNAL_AGE_DAYS).
         today_et = _today_et()
-        try:
-            as_of_date = date.fromisoformat(signals["as_of"])
-        except (TypeError, ValueError):
-            as_of_date = None
-        age_days = None if as_of_date is None else (today_et - as_of_date).days
-        if age_days is None or age_days > _MAX_SIGNAL_AGE_DAYS:
-            self._notifier.send(
-                f"<b>⚠️ Stale signal data:</b> as_of={signals['as_of']} is "
-                f"{'unparseable' if age_days is None else f'{age_days}d old'} "
-                f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
-                f"no trades submitted this run."
-            )
-            return {"buys": [], "sells": [], "errors": []}
+        for universe, sleeve in blend["sleeves"].items():
+            as_of = sleeve.get("as_of")
+            try:
+                as_of_date = date.fromisoformat(as_of)
+            except (TypeError, ValueError):
+                as_of_date = None
+            age_days = None if as_of_date is None else (today_et - as_of_date).days
+            if age_days is None or not 0 <= age_days <= _MAX_SIGNAL_AGE_DAYS:
+                if age_days is None:
+                    age_description = "unparseable"
+                elif age_days < 0:
+                    age_description = f"{-age_days}d in the future"
+                else:
+                    age_description = f"{age_days}d old"
+                self._notifier.send(
+                    f"<b>⚠️ Stale signal data:</b> {universe} as_of={as_of} is "
+                    f"{age_description} "
+                    f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
+                    f"no trades submitted this run."
+                )
+                return {"buys": [], "sells": [], "errors": []}
 
-        account = self._broker.get_account()
-        positions = self._broker.get_positions()
+        try:
+            account = self._broker.get_account()
+        except Exception as exc:
+            _account_read_halt(self._notifier, exc)
+            raise
+        try:
+            positions = self._broker.get_positions()
+        except Exception as exc:
+            _log.error("Position read failed (%s); stopping before orders", type(exc).__name__)
+            try:
+                self._notifier.send(
+                    "<b>🛑 HALTED:</b> Position data unavailable; no orders submitted"
+                )
+            except Exception:
+                _log.exception("Could not send position read failure notice")
+            raise
         portfolio_value = account["portfolio_value"]
 
         # Cash sweep (feature-flagged, default OFF -- see cash_sweep.py). The
@@ -909,38 +959,91 @@ class PaperTrader:
         try:
             persisted_peak = get_peak_value()
         except Exception as exc:
-            _log.warning("Could not load persisted peak (non-fatal): %s", exc)
-            persisted_peak = None
+            _log.warning("Could not load persisted peak: %s", exc)
+            reason = "Risk history unavailable: could not read persisted peak"
+            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+            return {"buys": [], "sells": [], "errors": [reason]}
         if persisted_peak is not None:
-            self._risk.update_peak(persisted_peak)
+            try:
+                self._risk.update_peak(persisted_peak)
+            except ValueError as exc:
+                reason = f"Invalid stored risk peak: {exc}"
+                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+                return {"buys": [], "sells": [], "errors": [reason]}
 
         # Check max drawdown halt BEFORE updating the peak with today's
         # value, so a real drawdown against the persisted peak is actually
         # measured (updating first would always show 0% drawdown).
         halted, halt_reason = self._risk.check_drawdown_halt(portfolio_value)
+        loss_halts: list[str] = []
         if halted:
-            self._notifier.send(f"<b>🛑 HALTED:</b> {halt_reason}")
-            return {"buys": [], "sells": [], "errors": [halt_reason]}
+            if (
+                portfolio_value is None
+                or not math.isfinite(portfolio_value)
+                or portfolio_value <= 0
+            ):
+                self._notifier.send(f"<b>🛑 HALTED:</b> {halt_reason}")
+                return {"buys": [], "sells": [], "errors": [halt_reason]}
+            loss_halts.append(halt_reason)
 
-        self._risk.update_peak(portfolio_value)
-        try:
-            if self._risk.peak_value is not None:
-                self._write(save_peak_value, self._risk.peak_value)
-        except Exception as exc:
-            _log.warning("Could not persist peak value (non-fatal): %s", exc)
+        if not loss_halts:
+            self._risk.update_peak(portfolio_value)
+            try:
+                if self._risk.peak_value is not None:
+                    self._write(save_peak_value, self._risk.peak_value)
+            except Exception as exc:
+                _log.warning("Could not persist peak value: %s", exc)
+                reason = "Risk history unavailable: could not persist drawdown peak"
+                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+                return {"buys": [], "sells": [], "errors": [reason]}
 
-        # Check daily loss limit
-        prev_snapshot_value = None
-        try:
-            prev_snapshot_value = get_latest_snapshot()
-        except Exception:
-            pass
-        day_start = prev_snapshot_value or portfolio_value
-
-        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, day_start)
+        # Booked equity can understate a holding whose split the broker has not applied yet,
+        # so a harmless split can look like a loss. That false halt is accepted on purpose: it
+        # only blocks buys and sweeps for the day (exits stay allowed), while adding the
+        # correction back could hide a real loss when the stored correction is stale.
+        last_equity = account.get("last_equity")
+        if last_equity is None:
+            reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
+            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+            return {"buys": [], "sells": [], "errors": [reason]}
+        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
         if daily_halted:
-            self._notifier.send(f"<b>⚠️ Daily limit:</b> {daily_reason}")
-            return {"buys": [], "sells": [], "errors": [daily_reason]}
+            if not math.isfinite(last_equity) or last_equity <= 0:
+                self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
+                return {"buys": [], "sells": [], "errors": [daily_reason]}
+            if split_corrections:
+                symbols = ", ".join(sorted(map(str, split_corrections)))
+                daily_reason += (
+                    f" (split correction on record for {symbols}: it may explain part of the "
+                    "drop, but a real loss cannot be ruled out; buys stay blocked today)"
+                )
+            loss_halts.append(daily_reason)
+
+        if loss_halts:
+            all_buys = []
+            try:
+                self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {'; '.join(loss_halts)}")
+            except Exception:
+                _log.exception("Could not send loss-halt notice")
+            if pending_symbols:
+                try:
+                    self._notifier.send(
+                        "<b>⚠️ Pending orders may still fill:</b> no cancellations were attempted."
+                    )
+                except Exception:
+                    _log.exception("Could not send pending-order notice")
+
+        # Prior reporting snapshot is used only for the daily summary, not the risk check.
+        try:
+            prev_snapshot_value = get_latest_snapshot(before=today_et)
+        except Exception as exc:
+            _log.warning("Could not load prior reporting snapshot: %s", exc)
+            prev_snapshot_value = None
+        if prev_snapshot_value is not None and (
+            not math.isfinite(prev_snapshot_value) or prev_snapshot_value <= 0
+        ):
+            _log.warning("Invalid prior reporting snapshot; daily P&L is unavailable")
+            prev_snapshot_value = None
 
         executed_sells: list[str] = []
         executed_buys: list[str] = []
@@ -965,20 +1068,56 @@ class PaperTrader:
         # Hoisted out of the flag check: the buy loop below consults this set
         # so a just-stopped symbol can never be re-bought in the same run.
         stopped_symbols: set[str] = set()
-        if catastrophe_stop.catastrophe_stop_enabled():
-            threshold = catastrophe_stop.catastrophe_stop_pct()
-            for symbol in catastrophe_stop.find_catastrophe_stops(corrected_positions, threshold):
+        invalid_exit_symbols: set[str] = set()
+        if stop_threshold is not None:
+            unassessable = set()
+            for symbol, position in corrected_positions.items():
+                try:
+                    if catastrophe_stop.unrealized_pct(position) is None:
+                        unassessable.add(symbol)
+                except ValueError:
+                    unassessable.add(symbol)
+            if unassessable:
+                reason = "Cannot assess catastrophe stop for: " + ", ".join(sorted(unassessable))
+                loss_halts.append(reason)
+                all_buys = []
+                _log.warning("%s; new buys and sweeps blocked", reason)
+                try:
+                    self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {reason}")
+                except Exception:
+                    _log.exception("Could not send unassessable catastrophe-stop alert")
+                if pending_symbols:
+                    try:
+                        self._notifier.send(
+                            "<b>⚠️ Pending orders may still fill:</b> "
+                            "no cancellations were attempted."
+                        )
+                    except Exception:
+                        _log.exception("Could not send pending-order notice")
+            assessable = {
+                symbol: position
+                for symbol, position in corrected_positions.items()
+                if symbol not in unassessable
+            }
+            for symbol in catastrophe_stop.find_catastrophe_stops(assessable, stop_threshold):
+                qty = strategy_positions[symbol]["qty"]
+                if qty is None or not math.isfinite(qty) or qty <= 0:
+                    errors.append(
+                        f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
+                        "new strategy buys blocked"
+                    )
+                    invalid_exit_symbols.add(symbol)
+                    continue
                 if symbol in pending_symbols:
                     _log.info("Skipping catastrophe stop %s: order already pending", symbol)
                     continue
-                qty = strategy_positions[symbol]["qty"]
                 pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
                 if self._dry_run:
                     stopped_symbols.add(symbol)
                     executed_sells.append(symbol)
                     self._notifier.send(
                         f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
-                        f"unrealized {pct:.1%} breached {threshold:.1%} floor)"
+                        f"unrealized {pct:.1%} breached {stop_threshold:.1%} floor)"
                     )
                     continue
                 oid = self._submit_order(
@@ -997,7 +1136,7 @@ class PaperTrader:
                 )
                 self._notifier.send(
                     f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
-                    f"breached {threshold:.1%} floor — selling qty {qty}."
+                    f"breached {stop_threshold:.1%} floor — selling qty {qty}."
                 )
             if stopped_symbols:
                 strategy_positions = {
@@ -1005,6 +1144,22 @@ class PaperTrader:
                     for sym, pos in strategy_positions.items()
                     if sym not in stopped_symbols
                 }
+
+        # Check requested strategy exits before estimating sweep funding for buys.
+        for symbol in signals["sells"]:
+            # A pending order does not excuse an invalid quantity: the account state is
+            # still untrusted, so it must still block new buys.
+            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
+                continue
+            qty = strategy_positions[symbol]["qty"]
+            if qty is None or not math.isfinite(qty) or qty <= 0:
+                errors.append(
+                    f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
+                    "new strategy buys blocked"
+                )
+                invalid_exit_symbols.add(symbol)
+        if invalid_exit_symbols:
+            all_buys = []
 
         # Buys — respect global + per-sleeve position limits. Computed here
         # (before the sells loop) rather than just before the buy loop below,
@@ -1027,7 +1182,7 @@ class PaperTrader:
             for universe in buys_by_sleeve
         }
 
-        if sweep_on:
+        if sweep_on and not loss_halts:
             # Sell the sweep position down FIRST (before strategy sells/buys
             # execute) if the day's anticipated strategy buys would need more
             # cash than is currently on hand. `prospective_buy_notional` is a
@@ -1094,7 +1249,7 @@ class PaperTrader:
         # `max_positions`.
         regular_sell_count = 0
         for symbol in signals["sells"]:
-            if symbol not in strategy_positions:
+            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
                 continue
             if symbol in pending_symbols:
                 _log.info("Skipping SELL %s: order already pending", symbol)
@@ -1122,6 +1277,26 @@ class PaperTrader:
 
         if filled_orders and not self._dry_run:
             self._reconcile_order_intents()
+
+        # A submitted exit does not free a position slot unless it fully fills.
+        if not self._dry_run:
+            for oid, side, symbol, _, reason in pending_orders:
+                if side != "SELL" or reason == cash_sweep.SWEEP_TRADE_REASON:
+                    continue
+                info = filled_orders.get(oid, {})
+                qty = info.get("filled_qty")
+                expected = positions[symbol]["qty"]
+                if (
+                    info.get("status") != "filled"
+                    or qty is None
+                    or not math.isfinite(qty)
+                    or not math.isclose(qty, expected, rel_tol=1e-12, abs_tol=1e-9)
+                ):
+                    errors.append(
+                        f"SELL {symbol} not fully filled ({info.get('status', 'unknown')}); "
+                        "new strategy buys blocked"
+                    )
+                    buys_by_sleeve.clear()
 
         slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
         buys_attempted = 0
@@ -1182,7 +1357,8 @@ class PaperTrader:
         if pending_orders and not self._dry_run:
             self._reconcile_order_intents()
 
-        if sweep_on:
+        # An invalid exit quantity means the account state is not trusted: no sweep buy either.
+        if sweep_on and not loss_halts and not invalid_exit_symbols:
             # Sweep BUY: deploy whatever cash is left over after the strategy's
             # own orders for the day, using the account's REAL post-trade cash
             # (not an estimate) now that strategy sells/buys above have been
@@ -1252,9 +1428,28 @@ class PaperTrader:
         if errors:
             self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
 
-        new_account = self._broker.get_account()
+        try:
+            new_account = self._broker.get_account()
+            updated_positions = self._broker.get_positions()
+        except Exception as exc:
+            _log.error(
+                "Post-trade account or positions read failed (%s); snapshot not saved",
+                type(exc).__name__,
+            )
+            try:
+                self._notifier.send(
+                    "<b>⚠️ Account or positions data unavailable after trading:</b> "
+                    + (
+                        "dry run; no orders submitted"
+                        if self._dry_run
+                        else "orders may have been submitted"
+                    )
+                    + "; snapshot not saved."
+                )
+            except Exception:
+                _log.exception("Could not send post-trade data failure notice")
+            raise
         new_value = new_account["portfolio_value"]  # broker's own ("booked") figure, uncorrected
-        updated_positions = self._broker.get_positions()
 
         # Re-apply the same split_corrections computed at the top of this
         # run (the correction factor doesn't change intra-run) to the
@@ -1280,14 +1475,39 @@ class PaperTrader:
         # and never will be, so it must be added back here for every equity
         # figure reported downstream.
         corrected_value = new_value + correction_delta + dividend_info["total"]
+        if not math.isfinite(corrected_value) or corrected_value <= 0:
+            corrected_value = None
+            message = "Invalid post-trade portfolio value; snapshot not saved"
+            _log.warning(message)
+            errors.append(message)
 
-        daily_pnl = corrected_value - day_start
-
-        unrealized_pnl = sum(
-            p.get("unrealized_pl", 0.0) for p in corrected_updated_positions.values()
+        daily_pnl = (
+            corrected_value - prev_snapshot_value
+            if corrected_value is not None and prev_snapshot_value is not None
+            else None
         )
-        starting_capital = get_earliest_snapshot()
-        total_pnl = (corrected_value - starting_capital) if starting_capital else None
+
+        pnl_values = [
+            json_safe(p.get("unrealized_pl")) for p in corrected_updated_positions.values()
+        ]
+        unrealized_pnl = (
+            sum(pnl_values)
+            if all(isinstance(p, (int, float)) and not isinstance(p, bool) for p in pnl_values)
+            else None
+        )
+        if unrealized_pnl is not None and not math.isfinite(unrealized_pnl):
+            unrealized_pnl = None
+        try:
+            starting_capital = get_earliest_snapshot()
+        except Exception as exc:
+            _log.warning("Starting snapshot read failed (%s)", type(exc).__name__)
+            errors.append("Starting snapshot unavailable; total P&L unavailable")
+            starting_capital = None
+        total_pnl = (
+            corrected_value - starting_capital
+            if corrected_value is not None and starting_capital
+            else None
+        )
 
         weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
         risk_line = (
@@ -1304,7 +1524,7 @@ class PaperTrader:
             booked_equity=new_value if split_corrections else None,
             dividend_total=dividend_info["total"],
             new_dividend_accruals=dividend_info["new_accruals"],
-            errors=errors,
+            errors=loss_halts + errors,
         )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
@@ -1312,20 +1532,27 @@ class PaperTrader:
             # Same run_date reasoning as log_trade / log_pending_order above:
             # stamp the actual ET session date of this run, not the lagged
             # signals["as_of"] date.
-            self._write(
-                log_snapshot,
-                today_et.isoformat(),
-                corrected_value,
-                new_account["cash"],
-                corrected_updated_positions,
-            )
+            if corrected_value is not None:
+                self._write(
+                    log_snapshot,
+                    today_et.isoformat(),
+                    corrected_value,
+                    new_account["cash"],
+                    corrected_updated_positions,
+                )
         except Exception as exc:
             _log.warning("DB snapshot failed (non-fatal): %s", exc)
+            message = "Daily snapshot could not be saved"
+            errors.append(message)
+            try:
+                self._notifier.send(f"<b>⚠️ {message}.</b>")
+            except Exception:
+                _log.exception("Could not send snapshot failure notice")
 
         return {
             "buys": executed_buys,
             "sells": executed_sells,
-            "errors": errors,
+            "errors": loss_halts + errors,
             "untradable": sorted(untradable_seen | untradable_hit),
             "skipped_writes": list(self.skipped_writes),
         }
@@ -1359,15 +1586,19 @@ def run_paper_trading(
         raise ValueError("--dry-run-writes/read-only only applies to a dry run, not --live")
     require_live_membership_spec(membership, dry_run=dry_run)  # before any broker call
     broker = AlpacaBroker()
-    account = broker.get_account()
+    notifier = TelegramNotifier()
+    if effective_read_only:
+        notifier = DryRunNotifier(notifier, forward=notify)
+    try:
+        account = broker.get_account()
+    except Exception as exc:
+        _account_read_halt(notifier, exc)
+        raise
     if not dry_run and account["multiplier"] > 1.0:
         raise RuntimeError(
             f"Account multiplier is {account['multiplier']}x (margin-enabled); "
             "the blend overlay assumes an unlevered (1.0x) account."
         )
-    notifier = TelegramNotifier()
-    if effective_read_only:
-        notifier = DryRunNotifier(notifier, forward=notify)
     trader = PaperTrader(
         broker, notifier, dry_run=dry_run, read_only=effective_read_only, membership=membership
     )

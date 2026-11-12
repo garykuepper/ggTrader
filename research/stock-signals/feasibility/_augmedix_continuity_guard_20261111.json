@@ -1,0 +1,47 @@
+{
+  "checked_utc": "2026-11-12T00:44:29.293270+00:00",
+  "purpose": "Check a known continuity break prevents target calculation on a manually transcribed filing example",
+  "issuer": "0001769804",
+  "fit_at": "2021-06-29T20:00:00Z",
+  "assumed_year_ends": [
+    "2018-12-31",
+    "2019-12-31",
+    "2020-12-31"
+  ],
+  "known_continuity_breaks": [
+    "2020-10-05"
+  ],
+  "manually_transcribed_assets_usd": {
+    "older_filing": {
+      "2018-12-31": 25,
+      "2019-12-31": 224
+    },
+    "later_filing": {
+      "2019-12-31": 15739017,
+      "2020-12-31": 27934588
+    }
+  },
+  "acceptance_time_proxies_utc": {
+    "older_filing": "2020-03-30T21:17:05Z",
+    "later_filing": "2021-03-30T23:38:08Z"
+  },
+  "sources": {
+    "older_filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390020008058/f10k2019_maloholdings.htm",
+    "later_filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390021018844/f10k2020_augmedixinc.htm",
+    "older_index": "https://www.sec.gov/Archives/edgar/data/1769804/000121390020008058/0001213900-20-008058-index.htm",
+    "later_index": "https://www.sec.gov/Archives/edgar/data/1769804/000121390021018844/0001213900-21-018844-index.htm"
+  },
+  "code_sha256": {
+    "expected_growth_training.py": "da290a2984cafcee8e89f2f676dd88572913fc265a5ef8f734a46a9e37714ba9",
+    "sec_facts.py": "8cbb579c99a2b740afc73c57a7429cea28b0e9d89c4c07a4e011edeb27784d7c",
+    "filing_vintages.py": "24110431236c8e18a117ac81ebf3a4805509c4aee550c84c90256095eb81cbda"
+  },
+  "result": "blocked before target calculation; calculation function replaced with raising stub",
+  "limitations": [
+    "Manually transcribed selected facts; not a complete filing history.",
+    "Acceptance timestamps are proxies, not independently established dissemination times.",
+    "Fiscal year ends are assumed; earliest period begins during 2018.",
+    "The guard relies on a caller-provided known break and cannot detect missing events.",
+    "This example establishes neither stock eligibility nor predictive performance."
+  ]
+}

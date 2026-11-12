@@ -1,6 +1,6 @@
 # ggTrader
 
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Linter: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Tested with pytest](https://img.shields.io/badge/tested%20with-pytest-white?logo=pytest&logoColor=2f9fe3)](https://docs.pytest.org/en/stable/)
@@ -9,7 +9,18 @@ Welcome to ggTrader! This is a research platform (or "lab") designed to help you
 
 It simulates how a trading strategy would have performed in the past using **Walk-Forward Optimization**—a realistic testing method where strategy parameters are tuned on past data and evaluated on subsequent "unseen" data on a rolling basis.
 
-The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for both research and live paper trading. Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and crypto data ingestion (`ggt ingest`) was removed.
+The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for research and for paper trading (paper trading is currently stopped). Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and crypto data ingestion (`ggt ingest`) was removed.
+
+## Where things stand (2026-11-12)
+
+- ggTrader is a research-first platform.
+- The paper trader has been stopped since 2026-11-06 and has not restarted.
+- No stock picker has been validated. The [category report](research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows benchmark gaps and approximate bands.
+- Basis points (bps) measure return differences: 100 bps is one percentage point a year.
+- The rebuilt engine and versioned membership database provide a reproducible base.
+- Two jobs run on their own: the weekly membership check (enabled, Saturdays at 06:00 Pacific) and the four intraday-observer timers.
+- Development and research are paused. The verdict register, the stock screens and the category report are committed on `feature/verdict-register`, which is neither merged to main nor pushed.
+- Main has one unpushed local commit, `783c7267`, a paper-order recovery fix that is not deployed.
 
 ---
 
@@ -19,7 +30,7 @@ The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) fo
 - **Super-Fast Simulations (Vectorization)**: Traditional backtesters test day-by-day in a slow loop. ggTrader uses the **vectorbt** library to calculate your entire portfolio's performance all at once, letting you run years of history across hundreds of stocks in seconds.
 - **Constituent History (No Survivorship Bias)**: Most people test stock strategies using the current list of S&P 500 stocks. This is a mistake because it ignores companies that went bankrupt or got acquired. ggTrader tracks the historical "point-in-time" list of S&P 500 members to make your tests realistic.
 - **Easy Strategy Customization**: Implement a simple Python blueprint (the `Strategy` protocol) and your new trading rules are immediately usable from the command line.
-- **Database Storage**: Saves all test results directly to **TimescaleDB** (a time-series database) so you never lose your results.
+- **Result Records**: `--wfo` runs save a JSON record with provenance. `--blend` runs are also stored in **TimescaleDB** (a time-series database).
 
 ---
 
@@ -31,7 +42,7 @@ Strategies are split into two kinds:
 
 | Strategy Name | Type | Description |
 |------|------|-------------|
-| `ensemble` | Signal | **The deployed strategy.** Combines five indicators (Bollinger Bands, RSI, EMA cross, MACD divergence, volume-confirmed BB) and only trades when enough of them agree. This is what runs the live paper account. |
+| `ensemble` | Signal | **The strategy the paper trader used.** Combines five indicators (Bollinger Bands, RSI, EMA cross, MACD divergence, volume-confirmed BB) and only trades when enough of them agree. This was used by the paper trader, which is stopped. |
 | `ensemble_conviction` | Signal | As above, but sizes each position by how many indicators agreed. |
 | `bb_reversion` | Signal | Buys when price falls below a lower Bollinger Band and sells when it returns to the middle. |
 | `rsi_reversion` | Signal | Buys when RSI signals oversold, sells on recovery. |
@@ -71,7 +82,7 @@ ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
 ```
 
 ### 4. Diagnostic Run
-Run a small, fast test run on just 10 stocks:
+Run a small, fast test run on 40 stocks:
 ```bash
 ggt lab --strategy ensemble --wfo --eval-end 2022-07-31 --max-stocks 40
 ```
@@ -94,7 +105,7 @@ src/ggTrader/
 │   ├── strategy.py   # LabConfig (shared research settings)
 │   └── strategies/   # The ported strategies and the vote glue
 ├── engine/           # The only code that imports vectorbt (presets, simulation, statistics)
-├── paper/            # Live Paper Trading (Alpaca; stopped by the owner since 2026-11-06, dry-run first, cron only on the owner's say-so)
+├── paper/            # Paper Trading (Alpaca; stopped since 2026-11-06)
 │   ├── trader.py     # Orchestrates one trading cycle
 │   ├── alpaca_broker.py  # Broker API wrapper (paper account)
 │   ├── signal_runner.py  # Generates today's ensemble signals

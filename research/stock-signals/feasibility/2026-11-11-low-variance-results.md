@@ -1,0 +1,9 @@
+# Low-variance portfolio screen: result
+
+**Both specified return hurdles not met; independently reproduced.** A Claude Opus review separately parsed the frozen inputs and reproduced the arithmetic. The owner approved the [fixed screen](2026-11-11-low-variance-proposal.md) before the run, preserving the earlier `idio_vol` NO-GO. The rules and approval were committed locally before calculation; this is not an independent timestamp.
+
+After the assumed 1% annual candidate cost, the French `BIG LoVAR` portfolio returned **8.78% a year** versus **10.83%** for the French broad market over July 1963–April 2026. The 12-lag Newey–West t was **−2.023** (one-sided p **0.978**), below the required t ≥ 3. Since 1994, it returned **8.60% versus 10.87%**, a **−2.27 percentage-point annual gap**, below the required +1 point. Both gates failed. At 2% assumed cost, returns since 1994 were **7.53% versus 10.87%**.
+
+Descriptively, maximum month-end drawdown since 1994 was **−34.04%** for the portfolio after the 1% assumption and **−50.31%** for the market. Their individual worst periods need not coincide. This is not a registered protection test and does not establish that the improvement was worth the return difference. The owner has not chosen an acceptable wealth sacrifice.
+
+The [raw result](_low_variance_screen_20261111.json) records code and input hashes. Its status text and the driver's docstring predate the owner's approval; the approval was recorded before calculation. The data and related research were already known, there is no cross-study multiplicity correction, and the assumed costs are not measured. Results are pretax, use the French market rather than SPY, and do not establish executable stock-level holdings or next-session fills. A miss on raw returns does not disprove a risk-adjusted low-volatility effect. No paper or live trading is authorized; the production freeze remains in force.

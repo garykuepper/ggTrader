@@ -1,0 +1,352 @@
+{
+  "checked_utc": "2026-11-12T01:15:20.715947+00:00",
+  "script_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_exchange_transfer_examples_20261111.py.txt",
+  "script_sha256": "0eceb6a908fa6c02e67404d8b015cf977a15704a4c6419bdcc89fc58aa0abbb3",
+  "archive_sha256": [
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "selection": "All matching contexts from selected 10-K, 10-Q and 8-K filings in the two 2021 archives for two post-hoc examples, filed no later than June 28.",
+  "rows": [
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-000963",
+      "filed": "20210121",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-000976",
+      "filed": "20210121",
+      "form": "10-Q",
+      "context": "d_2020-10-04_2021-01-02",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock (No Par Value)"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-003008",
+      "filed": "20210216",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-003196",
+      "filed": "20210218",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-004779",
+      "filed": "20210303",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-009521",
+      "filed": "20210422",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-009561",
+      "filed": "20210422",
+      "form": "10-Q",
+      "context": "d_2020-10-04_2021-04-03",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock (No Par Value)"
+      ]
+    },
+    {
+      "cik": "764401",
+      "accession": "0001437749-21-012739",
+      "filed": "20210519",
+      "form": "8-K",
+      "context": "d20218K",
+      "tickers": [
+        "IIIN"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-003205",
+      "filed": "20210106",
+      "form": "8-K",
+      "context": "duration_2020-12-31_to_2020-12-31",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-007722",
+      "filed": "20210113",
+      "form": "8-K",
+      "context": "duration_2021-01-12_to_2021-01-12",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common Stock"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-010763",
+      "filed": "20210119",
+      "form": "8-K",
+      "context": "duration_2021-01-18_to_2021-01-18",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NASDAQ"
+      ],
+      "titles": [
+        "Common stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-025279",
+      "filed": "20210202",
+      "form": "8-K",
+      "context": "duration_2021-02-02_to_2021-02-02",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-043495",
+      "filed": "20210216",
+      "form": "8-K",
+      "context": "duration_2021-02-16_to_2021-02-16",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0000892553-21-000022",
+      "filed": "20210218",
+      "form": "8-K",
+      "context": "i1d0234b968a44138b6a013727d51c15d_D20210218-20210218",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0000892553-21-000032",
+      "filed": "20210301",
+      "form": "10-K",
+      "context": "i6b577fc646dc485c9ce8abd85fcbea4a_D20200101-20201231",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-084067",
+      "filed": "20210317",
+      "form": "8-K",
+      "context": "duration_2021-03-16_to_2021-03-16",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-102289",
+      "filed": "20210331",
+      "form": "8-K",
+      "context": "duration_2021-03-31_to_2021-03-31",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0000892553-21-000052",
+      "filed": "20210422",
+      "form": "8-K",
+      "context": "ic0079576830e40789463ca432bb59813_D20210422-20210422",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0000892553-21-000055",
+      "filed": "20210422",
+      "form": "10-Q",
+      "context": "i361ea39030b94420b1c0eb7315cf5b91_D20210101-20210331",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    },
+    {
+      "cik": "892553",
+      "accession": "0001193125-21-160548",
+      "filed": "20210513",
+      "form": "8-K",
+      "context": "duration_2021-05-13_to_2021-05-13",
+      "tickers": [
+        "GTLS"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $0.01"
+      ]
+    }
+  ],
+  "transfer_evidence": [
+    {
+      "symbol": "GTLS",
+      "announced_effective_date": "2021-02-01",
+      "source": "https://www.sec.gov/Archives/edgar/data/892553/000119312521010763/d16168dex991.htm"
+    },
+    {
+      "symbol": "IIIN",
+      "reported_effective_date": "2021-03-17",
+      "source": "https://www.sec.gov/Archives/edgar/data/764401/000143774921024481/iiin20211002_10k.htm",
+      "later_report_warning": "October 2021 filing is retrospective verification, not historical availability evidence."
+    }
+  ],
+  "limitations": [
+    "Only selected forms and archives; other filings or real-time exchange notices may give more timely information.",
+    "Filed date and context date do not establish public availability or exact exchange-effective time.",
+    "The source archives are retrospective; identities, share classes, source completeness and rights are not established.",
+    "Examples were selected after examining results and do not estimate overall error rates.",
+    "No stock returns or investment-growth targets calculated."
+  ]
+}

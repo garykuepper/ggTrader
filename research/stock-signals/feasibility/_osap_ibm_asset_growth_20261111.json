@@ -1,0 +1,23 @@
+{
+  "purpose": "Single-issuer asset-growth input cross-check, not a return or stock selection",
+  "provider_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "provider_file": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "provider_file_sha256_previously_reported": "8ed1aae86e820bfe0233dcc49d8bee057e087c64afabd3a15dbe016d96171edd",
+  "method": "Column-selective fsspec/pyarrow read, filter PERMNO 12490 and 202403; full source not rehashed",
+  "provider_asset_growth": -0.03604518147589791,
+  "candidate_assets_usd_millions": {
+    "2021": 132001,
+    "2022": 127243
+  },
+  "candidate_growth": -0.03604518147589791,
+  "comparison": "equal at displayed Python double precision",
+  "provider_code": "https://github.com/OpenSourceAP/CrossSection/blob/c626bf886f53894e4b7f7dedf2c167d1c84b7801/Signals/pyCode/Predictors/AssetGrowth.py",
+  "sec_filing": "https://www.sec.gov/Archives/edgar/data/51143/000155837023002376/ibm-20221231xex13.htm",
+  "limitations": [
+    "Matching a ratio does not establish absolute provider assets; proportional alternatives produce the same ratio.",
+    "Provider inputs and code build are not independently verified; the provider release is retrospective.",
+    "Name-based identification does not prove security class or SEC CIK mapping.",
+    "The fiscal periods and availability as of March 2024 remain unverified.",
+    "No ranking, return, or trade was calculated."
+  ]
+}

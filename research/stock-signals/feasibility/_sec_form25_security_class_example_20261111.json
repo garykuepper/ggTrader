@@ -1,0 +1,25 @@
+{
+  "checked_utc": "2026-11-12T01:20:32.435622+00:00",
+  "source_file": "/home/flynn/ggTrader-refs/nyse-screener-snapshot-20240131/sec_submissions_0000051143_current.json",
+  "source_sha256": "bb612c776471f79e36c076dac12e56b34a6d427d124d215b06f85614632dde07",
+  "issuer_cik": "0000051143",
+  "recent_filing_rows": 1000,
+  "historical_page_count": 4,
+  "recent_25_nse": 12,
+  "recent_8_a12b": 6,
+  "selected_example": {
+    "accession": "0000876661-25-000849",
+    "filing_date": "2025-11-07",
+    "issuer_submissions_primary_document": "xslF25X02/primary_doc.xml",
+    "class_description": "2.875% Notes Due November 7, 2025",
+    "source_form": "https://www.sec.gov/Archives/edgar/data/51143/000087666125000849/xslF25X02/primary_doc.xml",
+    "source_index": "https://www.sec.gov/Archives/edgar/data/51143/000087666125000849/0000876661-25-000849-index.htm",
+    "source_notice": "https://www.sec.gov/Archives/edgar/data/876661/000087666125000849/ruleprovisionnotice.htm"
+  },
+  "limitations": [
+    "Counts cover only the root recent block, not all pages or the full issuer history.",
+    "The 25-NSE example concerns notes, not evidence that IBM common stock delisted.",
+    "Class identity and event timing require document-level verification, not a form or issuer label.",
+    "Source is a current retrospective copy; exact historical availability and complete event coverage are not established."
+  ]
+}

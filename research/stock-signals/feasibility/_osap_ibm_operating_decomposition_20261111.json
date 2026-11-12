@@ -1,0 +1,40 @@
+{
+  "purpose": "IBM operating-profitability input cross-check, not a stock ranking or return",
+  "provider_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "source_url": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "provider_documented_license": "CC BY 4.0, as stated on provider dataset card",
+  "provider_file_sha256_previously_reported": "8ed1aae86e820bfe0233dcc49d8bee057e087c64afabd3a15dbe016d96171edd",
+  "hash_limitation": "This column-selective read did not recompute a full-file hash.",
+  "method": "fsspec and pyarrow selective read of permno, yyyymm, OperProfRD, CBOperProf; permno 12490, yyyymm 202403. No other row or returns retained.",
+  "provider_ratios": {
+    "operating_profit_rd": 0.1512381820610957,
+    "cash_based_operating_profit": 0.15327365748999944
+  },
+  "conditional_reference_assets_usd_millions": 127243,
+  "sec_candidate_operating_numerator_usd_millions": 20646,
+  "sec_candidate_operating_ratio": 0.16225646990404188,
+  "conditional_provider_implied_operating_numerator_usd_millions": 19244.0,
+  "conditional_operating_numerator_difference_usd_millions": -1402.0,
+  "sec_candidate_adjustment_with_unknown_accrual_zero_usd_millions": 697,
+  "conditional_provider_implied_adjustment_usd_millions": 258.99999999999693,
+  "conditional_total_numerator_difference_usd_millions": -1840.0,
+  "source_code_operating": "https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/OperProfRD.py",
+  "source_code_cash_based": "https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/CBOperProf.py",
+  "sec_input_record": "_ibm_cash_flow_crosscheck_20261111.json",
+  "limits": [
+    "The raw ratios are retrospective provider values; no code-to-release binding is established.",
+    "Implied dollar amounts require the unverified assumption that both provider denominators equal the candidate 2022 SEC asset value.",
+    "Provider fiscal period, entity and security identity, individual accounting inputs and revision vintages are unverified.",
+    "The SEC operating terms are candidate tags; the use of zero for the unknown accrued-expense change is diagnostic only.",
+    "Different provider filters and missing-data treatments can prevent the two measures from being directly decomposed.",
+    "No returns or rankings were calculated."
+  ],
+  "presentation_caveat_20261111": {
+    "ibm_statement": "SG&A and RD&E are separate filing lines",
+    "older_compustat_guide": "https://tevgeniou.github.io/EquityRiskFactors/CompustatManualChpt5.pdf",
+    "guide_summary": "SG&A includes R&D; R&D generally excludes engineering; company-specific and current-vintage mappings are unverified.",
+    "illustrative_assumption": "Entire 6567 million RD&E is in Compustat SG&A and added back as R&D; not verified.",
+    "illustrative_operating_numerator_usd_millions": 14079,
+    "consequence": "The earlier 20646 candidate may overstate an equivalent operating numerator; this arithmetic does not resolve the provider difference."
+  }
+}

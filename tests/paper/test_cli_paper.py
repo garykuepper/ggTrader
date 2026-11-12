@@ -52,6 +52,8 @@ class TestPaperCliFlags:
         assert result.exit_code == 0
         run.assert_called_once_with(dry_run=True, read_only=True, notify=False, membership=LIVE)
         assert "Untradable (skipped): ['AVB']" in result.output
+        assert "Planned buys:" in result.output
+        assert "Planned sells:" in result.output
 
     def test_dry_run_writes_restores_the_old_dry_run(self):
         result, run = self._invoke(["--dry-run-writes"])
@@ -66,6 +68,8 @@ class TestPaperCliFlags:
         result, run = self._invoke(["--live"])
         assert result.exit_code == 0
         run.assert_called_once_with(dry_run=False, read_only=None, notify=False, membership=LIVE)
+        assert "Submitted buys:" in result.output
+        assert "Submitted sells:" in result.output
 
     def test_the_live_membership_is_the_latest_database_vintage_never_a_fixture(self):
         from ggTrader.paper.trader import LIVE_MEMBERSHIP_SPEC

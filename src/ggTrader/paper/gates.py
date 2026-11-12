@@ -126,6 +126,8 @@ def vet_bars(bars: Bars, today_et: date, cfg: SanityConfig | None = None) -> Bar
         raise SignalGateError(
             "weekend_bars", f"{len(weekend)} weekend stamp(s), e.g. {weekend[0].date()}"
         )
+    if index[-1].date() > today_et:
+        raise SignalGateError("future_bar", f"final bar {index[-1].date()} is after {today_et}")
     loaded = close.shape[1]
     asked = max(len(bars.requested), loaded)
     if loaded < cfg.min_universe or loaded / asked < cfg.min_loaded_share:

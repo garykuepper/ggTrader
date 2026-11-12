@@ -1,0 +1,44 @@
+{
+  "purpose": "Spot-check class-specific inline-XBRL contexts in original SEC filings; no prices or returns",
+  "retrieval": "Read original SEC HTML through the document fetcher on 2026-11-11; matched the share facts to their contextRef and inspected the referenced xbrli:context. The 2024 response was truncated after the relevant contexts and facts; no full-file hash is claimed.",
+  "issuer_cik": "0001067983",
+  "concept": "dei:EntityCommonStockSharesOutstanding",
+  "axis": "us-gaap:StatementClassOfStockAxis",
+  "issuer_report_capture": {
+    "url": "https://web.archive.org/web/20240224145337id_/https://berkshirehathaway.com/2023ar/2023ar.pdf",
+    "capture_utc": "2024-02-24T14:53:37Z",
+    "local_copy": "/home/flynn/ggTrader-refs/berkshire-annual-20240224/2023ar-20240224151914.pdf",
+    "bytes": 3003110,
+    "sha256": "2132b85f9c472a6f0b141551adb08d93f88db28e6a3794e7e2b13ca3f8a57b5b",
+    "archive_cdx_sha1_base32": "BGXYPIIUPK4PAOLIAHJUZGYRLSFU5W42",
+    "check": "The 14:53:37 UTC capture and a separately retrieved 15:19:14 UTC capture have identical SHA-256 hashes. pdftotext of the latter shows both February 12 share counts. The local SHA-1 in base32 agrees with the archive CDX digest.",
+    "limitation": "The archive timestamp supports an upper bound, conditional on its accuracy; it does not establish first publication or an independently timestamped hash."
+  },
+  "filings": [
+    {
+      "accession": "0001564590-21-022703",
+      "url": "https://www.sec.gov/Archives/edgar/data/1067983/000156459021022703/brka-10q_20210331.htm",
+      "instant": "2021-04-22",
+      "ticker_context_period": {"start": "2021-01-01", "end": "2021-03-31"},
+      "facts": [
+        {"member": "us-gaap:CommonClassAMember", "ticker": "BRK.A", "ticker_context": "C_0001067983_us-gaapStatementClassOfStockAxis_us-gaapCommonClassAMember_20210101_20210331", "shares": 637990, "context": "C_0001067983_us-gaapStatementClassOfStockAxis_us-gaapCommonClassAMember_20210422"},
+        {"member": "us-gaap:CommonClassBMember", "ticker": "BRK.B", "ticker_context": "C_0001067983_us-gaapStatementClassOfStockAxis_us-gaapCommonClassBMember_20210101_20210331", "shares": 1326572128, "context": "C_0001067983_us-gaapStatementClassOfStockAxis_us-gaapCommonClassBMember_20210422"}
+      ]
+    },
+    {
+      "accession": "0000950170-24-019719",
+      "url": "https://www.sec.gov/Archives/edgar/data/1067983/000095017024019719/brka-20231231.htm",
+      "instant": "2024-02-12",
+      "facts": [
+        {"member": "us-gaap:CommonClassAMember", "shares": 566618, "context": "C_c23fc13a-0161-45af-9b0f-9c1d204df531"},
+        {"member": "us-gaap:CommonClassBMember", "shares": 1310805008, "context": "C_6b97b1ae-a91a-45b9-b6cc-93d87e9a0f16"}
+      ]
+    }
+  ],
+  "limitations": [
+    "Fact instant is not a public-dissemination timestamp or a guarantee that the count remains current at a later decision.",
+    "Ticker facts and share facts have different XBRL period contexts in the 2021 filing despite matching class members; the meaning of each period must be retained.",
+    "Two filings do not establish completeness of any historical source or why the SEC company-facts response omitted these observations.",
+    "These contexts alone do not establish tradable security identity, contemporaneous prices, source-wide mapping or a stock-selection signal."
+  ]
+}

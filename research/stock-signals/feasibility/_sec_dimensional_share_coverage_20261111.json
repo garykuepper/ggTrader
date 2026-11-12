@@ -1,0 +1,28 @@
+{
+  "purpose": "Describe share-count filing metadata; no prices, rankings or returns",
+  "source": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/2021q2_notes.zip",
+  "source_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "method": "Join sub.tsv to num.tsv on accession. Select form exactly 10-K or 10-Q and facts named EntityCommonStockSharesOutstanding with qtrs=0, uom=shares and empty coreg. Count distinct accessions having at least one row with dimn=0 or dimn other than 0. Do not filter by fact date, numeric value, version, freshness or dimension meaning. Overlap is possible.",
+  "eligible_accessions": 6487,
+  "accessions_with_any_selected_fact": 6481,
+  "accessions_with_unsegmented_fact": 5541,
+  "accessions_with_dimensional_fact": 956,
+  "accessions_with_both": 16,
+  "accessions_with_dimensional_only": 940,
+  "ticker_hash_join": {
+    "method": "For the 940 dimensional-only accessions, collect distinct dimh values from selected num.tsv share facts. Match each to nonempty TradingSymbol rows in txt.tsv on exact accession and dimh; ignore fact and symbol dates and versions.",
+    "accessions_with_at_least_one_matching_share_dimension": 288,
+    "accessions_with_every_selected_share_dimension_matched": 35,
+    "accessions_with_no_matching_share_dimension": 652,
+    "berkshire_accession": "0001564590-21-022703",
+    "berkshire_matching_labels": ["BRK.A", "BRK.B"],
+    "limitation": "Exact dimension-hash equality is a structural lead, not proof of share-class identity or public availability. A mismatch does not prove that a correct mapping is impossible or that a ticker is missing."
+  },
+  "verification": "Separate csv.DictReader passes reproduced the accession totals and the ticker-join any/all counts. All passes used the same archive and were performed by the same analyst; this is not independent source validation. The no-match count is 940 minus 288.",
+  "limitations": [
+    "A quarterly filing archive is not a dated, complete stock or listing universe; one issuer can have multiple filings.",
+    "Presence of a fact does not establish the date, availability, freshness, correctness, positivity, class identity or completeness of any share count.",
+    "Dimensional facts may reflect axes other than share class; this count does not establish that all are useful class-specific counts.",
+    "The archive rounds ddate to a month end. Filing date and acceptance do not by themselves establish the timestamp at which a fact became public."
+  ]
+}

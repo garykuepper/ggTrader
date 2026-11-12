@@ -1,0 +1,21 @@
+{
+  "purpose": "Single issuer share-count date and filing comparison, not a stock selection or return",
+  "source": "/home/flynn/ggTrader-refs/nyse-screener-snapshot-20240131/sec_companyfacts_0000051143.json",
+  "source_sha256": "10fa1fafa25440b2159e2054dfe47628ba4ed353a258f526704cf9beda432bb8",
+  "tag": "dei:EntityCommonStockSharesOutstanding",
+  "unit": "shares",
+  "accession": "0001558370-21-001489",
+  "companyfacts_end": "2021-02-10",
+  "companyfacts_filed": "2021-02-23",
+  "companyfacts_value": 893594090,
+  "companyfacts_frame": "CY2020Q4I",
+  "filing": "https://www.sec.gov/Archives/edgar/data/51143/000155837021001489/ibm-20201231x10k.htm",
+  "filing_reported_as_of": "2021-02-10",
+  "filing_reported_value": 893594090,
+  "limitations": [
+    "One fact does not establish universal companyfacts accuracy, completeness, or historical vintages.",
+    "Filing date alone does not establish public dissemination time or first availability.",
+    "The frame label must not substitute for the exact end date, and the security class mapping remains unverified.",
+    "A disclosed share count does not establish a contemporaneous market cap or complete NYSE universe."
+  ]
+}

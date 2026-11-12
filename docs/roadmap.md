@@ -34,7 +34,7 @@ This document outlines the goals, ongoing work, and research direction for ggTra
 >    add/delete, and short-volume. Their NO-GO verdicts are **not
 >    trustworthy** and should be re-run before being cited as closed.
 >
-> Nothing below has been re-measured yet except the anchor-fix reproduction.
+> As of August 2026 nothing below had been re-measured except the anchor-fix reproduction. Later work is in the 2026-11 timeline entry.
 > See `docs/next_steps.md` for the queue.
 >
 > 4. **The strategy-side headline figures are stale too.** Any bare citation
@@ -70,24 +70,19 @@ If you are new to the terminology, here is a quick guide to terms used in this r
 
 ## Roadmap at a Glance
 
-This table shows the current status of the main project components.
+Basis points (bps) measure return differences: 100 bps is one percentage point a year.
 
-| Component | Status | Description (Plain English) |
+| Component | Status | Evidence |
 |---|---|---|
-| **Simulation Lab Shipped** | ✅ Done | Built the core research harness (June 15, 2026) containing 10 strategies, parameter sweeps, and rolling test windows. |
-| **5-Indicator Voting Default** | ✅ Done | Deployed the 5-indicator voting system (`bb+rsi+ema+macd+vbb`) as the default. It uses a majority vote of 5 indicators and filters out a harmful weekly indicator (MTF). |
-| **3% Trade Size (Position Sizing)** | ✅ Done | Increased trade size per signal from 2% to 3% of cash. This utilizes idle cash and allows us to beat the market index (SPY) on a risk-adjusted basis. |
-| **Gate Safety Adjustment** | ✅ Done | Modified our safety gates to prevent them from rejecting strategy settings that are consistently profitable. This improved overall test outcomes. |
-| **Stable Settings Selection** | ✅ Done | Made the system select parameters that have a history of working consistently over many past months rather than just the most recent month. |
-| **Machine Learning Filter** | ❌ Rejected | The LightGBM entry filter is off and stays off. A June-28 bake-off falsified it three ways: the win-probability model is anti-predictive, an expected-value redesign is *worse*, and the only robust-looking axis (volatility) is a 2020 artifact that adds nothing out-of-sample. These 10 daily features hold no stable entry-selection signal. |
-| **Live Paper Trading** | ⏸ Stopped by the owner 2026-11-06 (cron lines commented out; rebuilt on the vectorbt engine, dry-run first, cron only on the owner's say-so) | Ran our 5-indicator strategy with 3% trade size on virtual money with automated safety limits. Logs only real, completed fills to avoid accounting errors. (June 27: verified live fills reconcile exactly against the broker; redeployed the trader so the honest-fill-logging code is actually running; moved the daily run 30 min earlier so orders fill before the close instead of queuing overnight.) |
-| **Next Steps** | 🔵 Next | Monitor virtual trading for 5–10 days → fund a live $1,000 account → go live. Start research on blending S&P 500 and MidCap 400 stocks. |
-| **Kelly-Criterion Sizing** | ❌ Rejected | Sizing trades by a pooled, causal Kelly fraction (instead of flat 3%) was tested July 6 in honest walk-forward across 3 multipliers × 17 SP500 folds. OOS Sharpe 0.98 fell short of the 1.12 baseline, drawdown widened to -17.0% (vs -11%), and no multiplier won a majority of folds (best was 7/17). Position sizing is now closed as a lever; remaining directions are weighted voting (already closed) and genuinely orthogonal ones (new asset class). ⚠️ *The 1.12 baseline is superseded — see the note at the top of this file.* |
-| **Future Research** | 🧪 Research | Eight distinct equity-side hypotheses now tested and rejected in honest walk-forward on this daily-bar SP500 universe (ML gate, exit rules, weighted voting, Kelly sizing, cross/dual momentum, overnight-gap reversion, idiosyncratic volatility). This isn't bad luck — it's evidence the daily-bar equity research book is close to exhausted for this system. New equity-family variants (sector-neutral reversion, calendar effects) need a stronger prior before funding more research time. The parked crypto-carry sleeve remains the clearest structurally-different lever (gated on >$10k capital + funding-data backfill). |
-| **3-Sleeve Blend (leverage-realistic)** | ⚠️ **claim superseded**; not the deployed book (the trader reverted to the SP500 core on 2026-09-22) | July 13: capped at 1.0x leverage, the SP500+MidCap400+Nasdaq100 blend was measured at Sharpe 1.14 / MaxDD −5.39% vs. an SP500-core of 0.97 / −11.0%, and on that basis was wired into the live `PaperTrader` July 14 (sleeve-aware sizing, margin pre-flight, `--live`). **Neither headline reproduces.** A pinned-window 17-fold re-run on 2026-08-19 measures the blend at **Sharpe 0.68** — below SPY's 0.78 *and* below its own SP500 core sleeve (0.97) — while barely improving drawdown (−6.70% vs −7.6%). The 2026-06-27 diversification work independently reached the same conclusion (blend 1.05 < core 1.12). Two measurements two months apart both say the overlay subtracts value. The blend is **still the deployed config**; the revert decision is open and queued in `docs/next_steps.md`. See `research/audits/rebaseline/2026-08-19-anchor-fix-reproduction.md`. |
-| **Leveraged/Inverse ETF Rotation & Trend Following** | ❌ Rejected | July 16: two independent attempts to time 2x/3x leveraged ETFs (UPRO/TQQQ/TNA and inverse pairs) both closed NO-GO. Breadth-driven long/inverse/cash rotation: Sharpe −0.14 to −0.37 vs SPY, drawdowns −80% to −89%, defensive-halt active almost every fold. A simpler long-only trend filter + volatility-targeting overlay was structurally healthier (no persistent halt) but still lost to just buying and holding the same ETF in every universe tested. See §3 and `research/allocation/leveraged-index-rotation/2026-07-16-leveraged-index-rotation-nogo.md` / `research/allocation/leveraged-trend/2026-07-16-leveraged-trend-following-nogo.md`. |
+| Research | Paused | No validated stock picker; see the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md). |
+| Paper trader | Stopped since 2026-11-06 | The trader has not restarted. |
+| Engine | Rebuilt | vectorbt 1.2.0 and the Rust simulator provide the research base. |
+| Membership | Running | The versioned database and live gate are merged. The weekly check is enabled and runs Saturdays at 06:00 Pacific. |
+| Study code | Isolated | Study code lives under `research/`; test tiers separate the developer loop from broader checks. |
+| Branch | Committed | `feature/verdict-register` is not merged to main or pushed. |
+| Register | Incomplete | The [register](../research/VERDICT_REGISTER.md) identifies 269 records: 139 included, 2 pending, 128 excluded (cutoff 2026-11-10). Included rows contain summary records, so they are not independent tests. |
 
-> **Status Legend:** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
+> **Status Legend (older sections):** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
 
 ---
 
@@ -95,7 +90,7 @@ This table shows the current status of the main project components.
 
 Our primary objective is to build a **flexible multi-strategy research lab** that performs honest, realistic walk-forward testing. We will only invest real capital in trading systems that survive strict out-of-sample tests. 
 
-**Current Thesis (June 2026):** Combining multiple trading indicators (Bollinger Bands, RSI, EMA, MACD, and Volume Bollinger Bands) works because their failures are independent. When one indicator is wrong, the others usually don't vote, preventing bad trades. We closed our performance gap against the S&P 500 index not by trying to find a "magic" new signal, but by **adjusting our trade sizes** to 3% so our money doesn't sit idle in cash. This is the core lesson: our edge comes from **trade sizing and the structure of the ensemble itself, not from second-guessing individual trades** — both entry-side machine-learning filtering and exit-rule changes (take-profit / time-stop) were tested exhaustively in honest walk-forward and **rejected** (June 28). The current RSI-based exit and flat 3% sizing are, as far as we can measure, already the right choices. The nearest goal is going live with this validated config. Weighted voting was the final equity lever and was **tested & rejected (June 28)** — IC-weighting the voters lowered risk-adjusted return (Sharpe 1.01 < 1.12), closing the equity selection book. **State of the research program (July 7):** two more independently-motivated hypotheses — overnight-gap reversion (a session-structure anomaly) and cross-sectional idiosyncratic volatility (a genuinely different, defensive-premium risk factor, not another price-derivative signal) — were built, gated, and honestly WFO'd; both closed NO-GO against the 1.12 baseline. That brings the count to eight distinct equity-side hypotheses tested and rejected. The consistent shape across all eight — plausible economic premise, correctly caught by the NDH/DSR gates once tested at full scale, not a bug in the gates — is itself the finding: **daily-bar, large-cap equity research is close to arbitraged out for this system.** Further equity-family proposals (sector-neutral reversion, calendar effects) should clear a higher bar before consuming research time; the two directions with a genuinely different premise are a new asset class (the parked delta-neutral crypto-carry sleeve, gated on >$10k capital + a funding-data backfill) and, if its own correlation-vs-core study supports it, idio_vol as a blended diversification sleeve rather than a standalone strategy.
+**Current Thesis (June 2026, historical: later fixes overturned the numbers behind it, and no stock picker is validated today):** Combining multiple trading indicators (Bollinger Bands, RSI, EMA, MACD, and Volume Bollinger Bands) works because their failures are independent. When one indicator is wrong, the others usually don't vote, preventing bad trades. We closed our performance gap against the S&P 500 index not by trying to find a "magic" new signal, but by **adjusting our trade sizes** to 3% so our money doesn't sit idle in cash. This is the core lesson: our edge comes from **trade sizing and the structure of the ensemble itself, not from second-guessing individual trades** — both entry-side machine-learning filtering and exit-rule changes (take-profit / time-stop) were tested exhaustively in honest walk-forward and **rejected** (June 28). The current RSI-based exit and flat 3% sizing are, as far as we can measure, already the right choices. The nearest goal is going live with this validated config. Weighted voting was the final equity lever and was **tested & rejected (June 28)** — IC-weighting the voters lowered risk-adjusted return (Sharpe 1.01 < 1.12), closing the equity selection book. **State of the research program (July 7):** two more independently-motivated hypotheses — overnight-gap reversion (a session-structure anomaly) and cross-sectional idiosyncratic volatility (a genuinely different, defensive-premium risk factor, not another price-derivative signal) — were built, gated, and honestly WFO'd; both closed NO-GO against the 1.12 baseline. That brings the count to eight distinct equity-side hypotheses tested and rejected. The consistent shape across all eight — plausible economic premise, correctly caught by the NDH/DSR gates once tested at full scale, not a bug in the gates — is itself the finding: **daily-bar, large-cap equity research is close to arbitraged out for this system.** Further equity-family proposals (sector-neutral reversion, calendar effects) should clear a higher bar before consuming research time; the two directions with a genuinely different premise are a new asset class (the parked delta-neutral crypto-carry sleeve, gated on >$10k capital + a funding-data backfill) and, if its own correlation-vs-core study supports it, idio_vol as a blended diversification sleeve rather than a standalone strategy.
 
 **State of the research program (July 16):** the leverage-realistic 3-sleeve blend (§below) was wired into live paper trading, and two independent attempts to find a genuinely orthogonal lever in **leveraged/inverse ETFs** — a new instrument class, not another equity signal — were built, gated, and honestly WFO'd against all three universes; both closed NO-GO (see the Glance table above). That brings the count to ten distinct hypotheses tested and rejected across two asset-class attempts. Going forward, `research/RESEARCH_SNAPSHOT.md` (the auto-regenerated roster, via the `research-snapshot` skill) and `research/WEB_RESEARCH_CANDIDATES.md` (the accumulating backlog of untried ideas) are the living source of truth for the full roster and ranked next-edge candidates — check there first rather than relying on this section, which is hand-maintained and can drift between updates. The two research prompt templates live at `research/prompts/web-strategy-research-prompt.md` and `research/prompts/local-implementation-prompt-TEMPLATE.md`.
 
@@ -201,11 +196,11 @@ This table tracks the technical foundation that supports our research and tradin
 
 | Feature | Status | Description (Plain English) |
 |---|---|---|
-| **Database Storage** | ✅ Done | Saves simulation logs to `lab_runs` and `lab_periods` tables in our TimescaleDB database. |
+| **Database Storage** | ✅ Done | `--blend` runs are saved to the `lab_*` tables in TimescaleDB. `--wfo` writes a JSON record. |
 | **Price Data Backfill** | ✅ Done | Loaded 4 million rows of S&P 500 history into the local database so simulations run offline without downloading files. |
 | **Tiingo Data Backup** | ✅ Done | Connects to Tiingo API to download data for companies that went bankrupt or got acquired, which Yahoo Finance misses. |
 | **Multi-Index Support** | ✅ Done | Supports running tests on different stock lists (S&P 500, Nasdaq 100, Russell 2000) using simple flags. |
-| **Parameter Sweeps** | ✅ Done | Command-line tool (`--sweep`) that automatically tests a grid of strategy settings. |
+| **Parameter Sweeps** | Removed | The `--sweep` tool was removed in the 2026-11-06 engine rebuild. The walk-forward run scores a grid of settings itself. |
 | **Walk-Forward Engine** | ✅ Done | Runs rolling tests (`--wfo`) that simulate periodic strategy adjustments. |
 | **Circuit Breakers** | ✅ Done | Automatically stops simulation tests if the strategy's testing efficiency falls below safety levels. |
 | **Speed Optimization** | ✅ Done | Improved simulation speed by 2.07x through code profiling, reducing runtimes. |
@@ -219,21 +214,18 @@ This table tracks the technical foundation that supports our research and tradin
 
 ## 5. Summary of Research Findings
 
-### What Worked
-* **5-Indicator Voting (BB+RSI+EMA+MACD+VolBB)**: Our best strategy config. Combining these 5 indicators beats the S&P 500 index on a risk-adjusted basis (Sharpe ratio of 1.12 vs 0.58). ⚠️ *Superseded — see the note at the top of this file; corrected re-run measures core 0.99 vs SPY 0.78.*
-* **Negatively Correlated Indicators**: Combining trend and reversion indicators cancels out false alarms.
-* **Point-in-Time Universes**: Using actual historical index lists prevents our backtests from inflating returns by 1% to 3% per year.
-* **Robustness Gates**: Safely filtered out overfitted parameters during testing.
+### Strongest evidence so far
 
-### What Failed
-* **Trailing Stops**: Exited trades too early during normal fluctuations, ruining reversion strategies.
-* **Momentum Strategies**: Ranks stocks by momentum. Performed poorly over the last 5 years in large-cap stocks.
-* **Weekly Indicators (MTF)**: Harmed overall performance because weekly signals were too slow for daily trading.
-* **Conviction-Based Position Sizing**: Sizing trades based on indicator strength did not add extra profits compared to flat trade sizing.
-* **ML / Feature Entry Gate (falsified three ways, June 28)**: We tried to pick *better* entries with a machine-learning filter on 10 daily features. (1) The original win-probability model is anti-predictive — the entries it blocks out-earn the ones it keeps. (2) Rebuilding it to predict expected return (magnitude) instead of direction is *worse*, not better — its scores are even more inversely correlated with realized return out-of-sample. (3) The one robust-looking axis, a volatility-expansion filter ("skip falling-knife dips"), turned out to be entirely a March-2020 effect: in 2024–2025 the high-volatility entries actually did *better*, and an honest split (set the threshold on the first half of history, apply to the second) showed zero benefit. Conclusion: these features carry no stable cross-sectional entry-selection signal. Our edge has always come from exposure/sizing and exits, never from filtering which name to buy.
-* **Exit-Rule Changes — Take-Profit & Time-Stop (rejected, June 28)**: We swept fixed profit targets and time-based ("max-hold") exits against the current RSI exit, both layered on top and as a full replacement, in honest SP500 walk-forward. None improved on the baseline: the walk-forward recommended the *unmodified* config, the best exit setting changed every fold (a tell-tale sign of fitting noise, which the robustness gates correctly rejected), and dropping the indicator exit to rely on a profit target produced a −39.7% drawdown. The current RSI exit is, as far as we can measure, already the right rule. Together with the entry-gate result, this closes the entire "second-guess each trade" family — what's left to improve is sizing and the ensemble's structure, not per-trade entry/exit selection.
-* **Weighted Voting — IC-Weighted Ensemble (`ensemble_ic`, rejected, June 28)**: We built a strategy that weights each indicator's vote by its trailing cross-sectional Information Coefficient (how well the indicator ranked the next 3 days' returns), recomputed quarterly and proven leak-free. In honest SP500 walk-forward it scored OOS **Sharpe 1.01 vs the 1.12 equal-weight baseline**, with a deeper drawdown (−17.3% vs −11%) and a worse gate pass rate (14/17 vs 16/17). The best weight configuration was chosen in only 3 of 17 folds — it changed fold-to-fold, the same noise signature as the exit sweep. Re-weighting the voters bought more raw return by leaning into higher-conviction entries, but the extra drawdown meant *risk-adjusted* return fell. This was the last untested equity lever; with it rejected, the **equity selection book is closed** and research turns to a different asset class. (Code kept as a non-default research strategy; not deployed.) ⚠️ *The 1.12 baseline is superseded — see the note at the top of this file.*
-* **Leveraged/Inverse ETF Timing — both mechanisms (rejected, July 16)**: The first attempt at a genuinely new instrument class (2x/3x leveraged ETFs) rather than another equity signal. A breadth-driven long/inverse/cash rotation collapsed to −80% to −89% drawdowns and spent almost the whole backtest on its defensive fallback. A simpler long-only trend filter with a volatility-targeting overlay avoided that collapse (no persistent halt) but still lost badly to just buying and holding the same leveraged ETF — the timing signal gave up far more upside than it saved in downside. Both closed; see §3.
+- The rebuilt engine and versioned membership database support reproducible research.
+- Expected investment growth had positive approximate bands in both reported windows, but its inputs and statistical evidence remain insufficient.
+- The allocation studies found higher after-tax returns with leveraged exposure, alongside deeper drawdowns. Both test the same 30% SSO mix, so they are not independent. The static result falls to +0.80 percentage points a year once funding costs are included. The gains reflect market exposure, not stock-picking skill.
+
+### Limits and open questions
+
+- No stock picker or category has proven alpha (return above holding the market, after costs and tax, that is also statistically reliable); the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows the gaps and limitations.
+- The production replica lagged SPY by 64 bps a year; its result was inconclusive against its research bar.
+- Many older results use the legacy engine and were not rerun. The [snapshot](../research/RESEARCH_SNAPSHOT.md) and [register](../research/VERDICT_REGISTER.md) preserve evidence and historical decisions.
+- The cross-asset sleeve is in shadow: a paper-only copy that places no orders. It has no rating yet for its forward record.
 
 ---
 
@@ -653,6 +645,20 @@ Deployed the timestamp fix to the live container (it had been running
 pre-fix code, which would have re-poisoned the migrated table on the next
 cron run). Audited and corrected the documentation set against the actual
 code — see the changelog for detail.
+
+---
+
+### 2026-11 — November 5–11
+
+- The owner accepted the root-cause investigation.
+- The paper trader stopped on November 6.
+- The lab moved to vectorbt 1.2.0 and the Rust simulator.
+- Study code moved under `research/`, and test tiers separated the fast core from broader checks.
+- The versioned membership database and the live gate (the check that stops the trader if the membership list is unverified) were built.
+- The weekly membership check was enabled, with official press releases as a second source.
+- The price table was backfilled for 13 current members.
+- Branch only, not merged: research added safeguards for how stop orders treat halted stocks and missing bars, and warnings about limits of the sell-after-N-days rule.
+- Branch only, not merged: paper-trader changes added signal-date and exit-quantity safeguards, and a proposed halt policy. None of it is deployed.
 
 ---
 

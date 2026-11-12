@@ -1,0 +1,49 @@
+{
+  "checked_utc": "2026-11-12T00:51:19.941509+00:00",
+  "purpose": "Inspect the two selected filing-pair asset differences of at least 1%; no growth targets or returns",
+  "aggregate_artifact": "_sp500_asset_revision_overlap_20261111.json",
+  "fixture_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "archive_sha256": [
+    "662b783905eab0618e8a81398f560f92289f835d293c7d7239fed7ad34d700fc",
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "scanner_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sp500_asset_revision_examples_code_20261111.py.txt",
+  "scanner_sha256": "d70750a26f3f5fd9304fb732b0fd052acb93afb8ec55df4fec73c9cfa7c8d5e5",
+  "examples": [
+    {
+      "observed_label": "GD",
+      "observed_cik": "40533",
+      "period_end": "2019-12-31",
+      "earlier_accession": "0000040533-20-000015",
+      "later_accession": "0000040533-21-000010",
+      "earlier_assets_usd": 48841000000,
+      "later_assets_usd": 49349000000,
+      "change_usd": 508000000,
+      "change_percent_of_earlier": 1.0401097438627382,
+      "interpretation": "The later filing attributes a $508 million increase in 2019 other current assets to a change in accounting principle.",
+      "later_filing": "https://www.sec.gov/Archives/edgar/data/40533/000004053321000010/gd-20201231.htm"
+    },
+    {
+      "observed_label": "OXY",
+      "observed_cik": "797468",
+      "period_end": "2019-12-31",
+      "earlier_accession": "0000797468-20-000004",
+      "later_accession": "0000797468-21-000009",
+      "earlier_assets_usd": 109330000000,
+      "later_assets_usd": 107190000000,
+      "change_usd": -2140000000,
+      "change_percent_of_earlier": -1.957376749291137,
+      "interpretation": "Cause of the difference not established.",
+      "later_filing": "https://www.sec.gov/Archives/edgar/data/797468/000079746821000009/oxy-20201231.htm"
+    }
+  ],
+  "limitations": [
+    "Exact ticker to observed filing CIK is not verified identity or membership; labels may be retrospective and several share a CIK.",
+    "Only selected 10-K pairs in three archives, not a complete filing history; amendments and 10-Q revisions omitted.",
+    "This is not a validated universe, fiscal-year mapping, security eligibility, point-in-time availability or accounting comparability.",
+    "Current consolidated archives are retrospective and historical publication is unverified.",
+    "Examples are selected from retrospective archives; labels do not establish historical membership or a complete issuer history.",
+    "The General Dynamics accounting-method change is not itself an identified corporate-identity break."
+  ]
+}

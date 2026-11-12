@@ -1,0 +1,17 @@
+{
+  "purpose": "Inspect the installed Rust simulator's public call signatures; no performance or trading result",
+  "method": "inspect.signature on vectorbt_rust.portfolio functions and state classes in the repository virtual environment",
+  "version": "1.2.0",
+  "signal_simulator": "simulate_from_signals_rs",
+  "signal_initialization_parameters": ["init_cash", "init_temp_records"],
+  "signal_has_initial_position_parameter": false,
+  "signal_has_initial_entry_time_or_stop_state_parameter": false,
+  "low_level_order_execution": "execute_order_rs(state, order)",
+  "execute_order_state": ["cash", "position", "debt", "free_cash"],
+  "process_order_state": ["cash", "position", "debt", "free_cash", "val_price", "value", "oidx", "lidx"],
+  "limitations": [
+    "Signature inspection does not test state continuation or establish all possible APIs.",
+    "Low-level execution is not a validated equivalent to the grouped signal simulator.",
+    "No production code, broker orders or strategy returns were changed."
+  ]
+}

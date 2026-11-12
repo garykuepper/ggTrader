@@ -1,0 +1,28 @@
+{
+  "purpose": "Single-security accounting input cross-check, not a stock ranking or return",
+  "provider": "Open Source Asset Pricing 2026.10",
+  "provider_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "provider_file": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "provider_file_sha256_previously_reported": "8ed1aae86e820bfe0233dcc49d8bee057e087c64afabd3a15dbe016d96171edd",
+  "method": "Selective pyarrow and fsspec read: permno, yyyymm, DelDRC; filter PERMNO 12490 and 202403; whole-file hash not recomputed.",
+  "provider_value": -0.003749363533967999,
+  "candidate_sec_inputs_usd_millions": {
+    "current_deferred_income_2022": 12032,
+    "current_deferred_income_2021": 12518,
+    "assets_2022": 127243,
+    "assets_2021": 132001
+  },
+  "candidate_formula": "(12032 - 12518) / ((127243 + 132001) / 2)",
+  "candidate_value": -0.003749363533967999,
+  "comparison": "equal as Python double at shown precision",
+  "provider_code_url": "https://raw.githubusercontent.com/OpenSourceAP/CrossSection/c626bf886f53894e4b7f7dedf2c167d1c84b7801/Signals/pyCode/Predictors/DelDRC.py",
+  "provider_code_sha256": "f47541fd240d4485bd12e2be97f308c8db673aeb13769550cddc85e7816a59d2",
+  "sec_filing": "https://www.sec.gov/Archives/edgar/data/51143/000155837023002376/ibm-20221231xex13.htm",
+  "limits": [
+    "One ratio can match under more than one set of inputs; source values, mapped fiscal periods and exact build are not independently verified.",
+    "SEC comparative values and provider data are retrospective, not proof of what was available in March 2024.",
+    "PERMNO-to-IBM name is corroborated but SEC CIK and share-class linkage are not independently proven.",
+    "DelDRC covers current deferred revenue scaled by average assets; CBOperProf also uses noncurrent deferred revenue and other components, so this does not establish its overall numerator or denominator.",
+    "No securities ranking, returns or trading actions were calculated."
+  ]
+}

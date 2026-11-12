@@ -1,0 +1,77 @@
+{
+  "created_utc": "2026-11-12T00:18:57.025075+00:00",
+  "scope": "Compare frozen ETF close levels to later Yahoo adjusted closes; diagnostic only, no portfolio or strategy returns",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "reference_hashes": {
+    "SPY": "3575a86f0d760a3ab46164ce43aefe792068caec5a265521160d7de998c24a44",
+    "BIL": "9a6b73e32b3880c8b187be48874eabd61458f9335fc6d2b0fdb9bd2b10f2dd0f",
+    "TLT": "e7d6048c8c50ca48c871793a8a7b39fef988c642fb3654a421a56d05d2ed3145",
+    "GLD": "e1b5be0e15437e46f87ac24ffe0d148f4bbd7d1641432079e5bd0273f5e9a654",
+    "PDBC": "767e1aadd5a4f2c082646f89947123047249df838569be85b50724debe11b427"
+  },
+  "columns": [
+    "timestamp",
+    "symbol",
+    "close",
+    "date",
+    "Adj Close"
+  ],
+  "date_join": "local date prefix of reference matched to tape naive date",
+  "results": {
+    "SPY": {
+      "matched_dates": 1337,
+      "first": "2021-01-04",
+      "last": "2026-04-30",
+      "min_tape_to_reference_ratio": 1.0024828050203238,
+      "max_tape_to_reference_ratio": 1.0024836090741485,
+      "consecutive_ratio_changes_over_0_5_percent": 0,
+      "max_consecutive_ratio_change_percent": 6.82162886289639e-05,
+      "date_of_max_change": "2022-01-11"
+    },
+    "TLT": {
+      "matched_dates": 1337,
+      "first": "2021-01-04",
+      "last": "2026-04-30",
+      "min_tape_to_reference_ratio": 1.01193402442907,
+      "max_tape_to_reference_ratio": 1.0119358217202221,
+      "consecutive_ratio_changes_over_0_5_percent": 0,
+      "max_consecutive_ratio_change_percent": 0.00013136439688254953,
+      "date_of_max_change": "2021-08-27"
+    },
+    "GLD": {
+      "matched_dates": 1337,
+      "first": "2021-01-04",
+      "last": "2026-04-30",
+      "min_tape_to_reference_ratio": 1.0,
+      "max_tape_to_reference_ratio": 1.0,
+      "consecutive_ratio_changes_over_0_5_percent": 0,
+      "max_consecutive_ratio_change_percent": 0.0,
+      "date_of_max_change": "2021-01-05"
+    },
+    "PDBC": {
+      "matched_dates": 1337,
+      "first": "2021-01-04",
+      "last": "2026-04-30",
+      "min_tape_to_reference_ratio": 0.9999997663178494,
+      "max_tape_to_reference_ratio": 1.0000002370667915,
+      "consecutive_ratio_changes_over_0_5_percent": 0,
+      "max_consecutive_ratio_change_percent": 4.7074905218380536e-05,
+      "date_of_max_change": "2021-01-15"
+    },
+    "BIL": {
+      "matched_dates": 1337,
+      "first": "2021-01-04",
+      "last": "2026-04-30",
+      "min_tape_to_reference_ratio": 1.0028774500468804,
+      "max_tape_to_reference_ratio": 1.0028789414548709,
+      "consecutive_ratio_changes_over_0_5_percent": 0,
+      "max_consecutive_ratio_change_percent": 0.00010580546035976468,
+      "date_of_max_change": "2022-08-18"
+    }
+  },
+  "limitations": [
+    "Both inputs derive from Yahoo and are not independent source verification.",
+    "Adjusted close levels can change after later distributions; constant offsets and seams have multiple possible causes.",
+    "This is not a complete corporate-action audit and does not establish suitability, rights or executable prices."
+  ]
+}

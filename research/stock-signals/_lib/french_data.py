@@ -1,5 +1,6 @@
 """Load frozen, checksummed monthly returns from the Ken French Data Library."""
 
+import csv
 import io
 import json
 import urllib.request
@@ -133,6 +134,10 @@ def parse_french_monthly(text: str, section_title: str | None) -> pd.DataFrame:
     header = next((i for i, line in enumerate(lines) if line.lstrip().startswith(",")), None)
     if header is None:
         raise ValueError(f"French monthly table not found after {section_title!r}")
+    labels = next(csv.reader([lines[header]]))[1:]
+    normalized = ["".join(label.casefold().split()) for label in labels]
+    if len(normalized) != len(set(normalized)):
+        raise ValueError("French monthly table has duplicate portfolio headers")
     table = [lines[header]]
     for line in lines[header + 1 :]:
         if not line.strip() or "annual" in line.casefold():
@@ -143,6 +148,8 @@ def parse_french_monthly(text: str, section_title: str | None) -> pd.DataFrame:
     if frame.empty or not months.str.fullmatch(r"\d{6}").all():
         raise ValueError(f"Missing or invalid monthly dates after {section_title!r}")
     frame.index = pd.to_datetime(months, format="%Y%m") + pd.offsets.MonthEnd(0)
+    if frame.index.has_duplicates or not frame.index.is_monotonic_increasing:
+        raise ValueError("French monthly dates must be unique and ordered")
     frame.columns = frame.columns.str.strip()
     return frame.astype(float).replace([-99.99, -999], float("nan")) / 100
 

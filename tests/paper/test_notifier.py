@@ -97,6 +97,76 @@ class TestTradeAlert:
 
 
 class TestDailySummary:
+    def test_dry_run_summary_logs_unavailable_value(self, caplog):
+        import logging
+
+        from ggTrader.paper.notifier import DryRunNotifier
+
+        with caplog.at_level(logging.INFO, logger="ggTrader.paper.notifier"):
+            assert DryRunNotifier(object()).daily_summary(None, None, {}) is False
+        assert "value=unavailable" in caplog.text
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_invalid_value_reports_total_unavailable(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        assert n.daily_summary(None, None, {})
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Value: unavailable" in body
+        assert "Total P&L: unavailable" in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_invalid_portfolio_and_daily_totals_are_unavailable(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        assert n.daily_summary(float("nan"), float("nan"), {}, total_pnl=float("inf"))
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Value: unavailable" in body
+        assert "Change since prior snapshot: unavailable" in body
+        assert "Total P&L: unavailable" in body
+        assert "nan" not in body.lower() and "+inf" not in body.lower()
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_invalid_position_pnl_is_reported_as_unavailable(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        positions = {
+            "AAPL": {
+                "qty": 10.0,
+                "current_price": 10.0,
+                "unrealized_pl": float("nan"),
+                "unrealized_plpc": float("nan"),
+            },
+            "MSFT": {
+                "qty": 2.0,
+                "current_price": 20.0,
+                "unrealized_pl": None,
+                "unrealized_plpc": None,
+            },
+            "BAD": {
+                "qty": 1.0,
+                "current_price": 20.0,
+                "unrealized_pl": "bad",
+                "unrealized_plpc": True,
+            },
+        }
+        assert n.daily_summary(100000.0, 0.0, positions, total_pnl=200.0, unrealized_pnl=None)
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Total P&L: $+200.00" in body
+        assert "unrealized: unavailable" in body
+        assert "AAPL" in body and "MSFT" in body
+        assert body.count("unavailable") >= 3
+        assert "$nan" not in body and "nan%" not in body
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_missing_daily_pnl_is_shown_as_unavailable(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        assert n.daily_summary(100000.0, None, {}, total_pnl=2000.0, unrealized_pnl=500.0)
+        body = mock_post.call_args[1]["json"]["text"]
+        assert "Change since prior snapshot: unavailable" in body
+        assert "Total P&L:" in body
+
     @patch("ggTrader.paper.notifier.requests.post")
     def test_daily_summary_formats_message(self, mock_post):
         mock_post.return_value = MagicMock(status_code=200)
@@ -107,6 +177,7 @@ class TestDailySummary:
         body = mock_post.call_args[1]["json"]["text"]
         assert "102,000" in body or "102000" in body
         assert "AAPL" in body
+        assert "Change since prior snapshot:" in body
 
     @patch("ggTrader.paper.notifier.requests.post")
     def test_daily_summary_sorts_positions_by_gain_descending(self, mock_post):

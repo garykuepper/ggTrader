@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0001354457</cik>
+        <entityName>The Nasdaq Stock Market LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0001574815</cik>
+        <entityName>BMC STOCK HOLDINGS, INC.</entityName>
+        <fileNumber>001-36050</fileNumber>
+        <address>
+            <street1>4800 Falls of Neuse Rd.</street1>
+            <street2>Suite 400</street2>
+            <city>Raleigh</city>
+            <stateOrCountryCode>NC</stateOrCountryCode>
+            <stateOrCountry>NORTH CAROLINA</stateOrCountry>
+            <zipCode>27609</zipCode>
+        </address>
+        <telephoneNumber>(919) 431-1152</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>Common Stock</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(3)</ruleProvision>
+
+    <signatureData>
+        <signatureName>O'Neil Blake</signatureName>
+        <signatureTitle>Senior Specialist</signatureTitle>
+        <signatureDate>2021-01-04</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

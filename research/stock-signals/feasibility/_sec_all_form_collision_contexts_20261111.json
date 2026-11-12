@@ -1,0 +1,168 @@
+{
+  "scanner_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_all_form_collision_contexts_20261111.py.txt",
+  "scanner_sha256": "4556ce680bc8753ad8aa161d196d4ec50ef68f454165ed305155326c8e8ffb14",
+  "rows": [
+    {
+      "cik": "1333172",
+      "accession": "0001193125-21-140923",
+      "filed": "20210429",
+      "form": "20-F",
+      "context": "FYp0YTD_ScheduleOfEquityMethodInvestmentEquityMethodInvesteeNameAxis_NaviosAcquisitionMember",
+      "tickers": [
+        "NNA"
+      ],
+      "exchanges": [],
+      "titles": []
+    },
+    {
+      "cik": "1437260",
+      "accession": "0001193125-21-134842",
+      "filed": "20210428",
+      "form": "20-F",
+      "context": "From2020-01-01to2020-12-31",
+      "tickers": [
+        "NNA"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Common Stock, par value $.0001 per share"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0000887921-21-000003",
+      "filed": "20210311",
+      "form": "10-K",
+      "context": "i49a4d27f994145e0bb7efdceecdb1e2c_D20200101-20201231",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0001140361-21-008128",
+      "filed": "20210311",
+      "form": "8-K",
+      "context": "c20210311to20210311",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0000887921-21-000007",
+      "filed": "20210510",
+      "form": "10-Q",
+      "context": "i8a3c0dea0182401c9cfd7f3c61c842af_D20210101-20210331",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0001157523-21-000633",
+      "filed": "20210510",
+      "form": "8-K",
+      "context": "c20210510to20210510",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0001157523-21-000743",
+      "filed": "20210604",
+      "form": "8-K",
+      "context": "c20210604to20210604",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "887921",
+      "accession": "0001157523-21-000779",
+      "filed": "20210614",
+      "form": "8-K",
+      "context": "c20210608to20210608",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    },
+    {
+      "cik": "890547",
+      "accession": "0000890547-21-000003",
+      "filed": "20210311",
+      "form": "10-K",
+      "context": "id4a428506df44cac878a338c6b361c1d_D20200101-20201231",
+      "tickers": [
+        "REV"
+      ],
+      "exchanges": [
+        "NYSE"
+      ],
+      "titles": [
+        "Class A Common Stock"
+      ]
+    }
+  ],
+  "limitations": [
+    "Retrospective filings and contexts; not independent verification of listing, class, issuer identity or availability time.",
+    "CIK collisions can reflect issuer relationships or context details and must not be resolved by ticker alone.",
+    "No returns or stock-selection outcomes were computed."
+  ],
+  "archive_sha256": [
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "selection": "All filing forms for four CIKs, filed January 1 through June 28, 2021, and TradingSymbol contexts containing NNA or REV.",
+  "source_notes": [
+    {
+      "symbol": "REV",
+      "url": "https://www.sec.gov/Archives/edgar/data/887921/000088792121000003/rev-20201231.htm",
+      "description": "Joint annual report names Revlon Inc. and Revlon Consumer Products Corporation and says the parent owns all shares of the subsidiary."
+    },
+    {
+      "symbol": "NNA",
+      "url": "https://www.sec.gov/Archives/edgar/data/1437260/000119312521134842/d131813d20f.htm",
+      "description": "Acquisition issuer annual report; the other issuer filing has an equity-method-investee context, not a complete listing context."
+    }
+  ]
+}

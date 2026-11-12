@@ -1,0 +1,19 @@
+{
+  "purpose": "Check whether one publicly posted WIKI ticker-coverage index can establish a complete historical universe",
+  "gist": "https://gist.github.com/aaronhoffman/9ef359cbf39f2eefdf50fbd82f5d368a/2e4b5cfc9b74e6264d8344359f74d8ba283d9d5e",
+  "raw_url": "https://gist.githubusercontent.com/aaronhoffman/9ef359cbf39f2eefdf50fbd82f5d368a/raw/quandl-eod-stock-price-meta-data.csv",
+  "metadata_file_sha256": "ccc1e153bd79b54327bab20bb180493c26c1f799c1dc39e41d5118856868e382",
+  "metadata_file_bytes": 84629,
+  "gist_created_utc_as_reported_by_github": "2017-11-07T19:04:20Z",
+  "gist_revision": "2e4b5cfc9b74e6264d8344359f74d8ba283d9d5e",
+  "columns": ["ticker", "min_date", "max_date"],
+  "row_count": 3194,
+  "examples": {
+    "HNZ": [],
+    "AGP": [],
+    "DELL": [{"ticker": "DELL", "min_date": "1988-08-17", "max_date": "2015-03-04"}],
+    "TWTR": [{"ticker": "TWTR", "min_date": "2013-11-07", "max_date": "2017-11-06"}]
+  },
+  "heinz_source": "https://www.sec.gov/Archives/edgar/data/46640/000119312513258009/d555504dex991.htm",
+  "limitations": "The gist is an unverified third-party metadata copy, not authoritative evidence of the contents of every WIKI vintage. First and last observation dates are not listing dates and do not identify issuers or security classes. No conclusion about ticker reuse follows from the DELL row. The gist's origin, coverage and usage rights were not established. No price rows or returns were examined."
+}

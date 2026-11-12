@@ -1,0 +1,59 @@
+{
+  "checked_utc": "2026-11-12T01:25:41.746918+00:00",
+  "issuer_cik": 2012383,
+  "filing_date_cutoff": "2025-12-31",
+  "inputs": [
+    {
+      "name": "CIK0002012383.json",
+      "sha256": "ac620b9327534f0db629d67d1f89d5b7b9d44d0afcd040199e931beef740368a",
+      "url": "https://data.sec.gov/submissions/CIK0002012383.json"
+    },
+    {
+      "name": "CIK0002012383-submissions-001.json",
+      "sha256": "692034c89e871eef42746f1f0248634949267c1daefa36cf137033e33dfccab3",
+      "url": "https://data.sec.gov/submissions/CIK0002012383-submissions-001.json"
+    },
+    {
+      "name": "CIK0002012383-submissions-002.json",
+      "sha256": "1eb552b3458289ddda2aa1ebe926e851265c558bea31ec77ea8da7a2bd1b9512",
+      "url": "https://data.sec.gov/submissions/CIK0002012383-submissions-002.json"
+    },
+    {
+      "name": "CIK0002012383-submissions-003.json",
+      "sha256": "8c7218592ed5d205c68e75d24e2852eafcd1c222b5eb1eaaae5ae5c294845adc",
+      "url": "https://data.sec.gov/submissions/CIK0002012383-submissions-003.json"
+    }
+  ],
+  "code_sha256": "e69a8bb247f99663afc92cf41d42164fcc2b9575e9c004124b7cd345c6dd612d",
+  "strict_mode": "refused earlier page-range discrepancies",
+  "result_for_review": {
+    "filings": [
+      {
+        "filing_date": "2025-04-03",
+        "form": "8-A12B",
+        "accession": "0001193125-25-072466",
+        "document": "d899867d8a12b.htm"
+      }
+    ],
+    "range_discrepancies": [
+      {
+        "page": "CIK0002012383-submissions-001.json",
+        "filing_date": "2025-11-05",
+        "accession": "0001193125-25-267043"
+      },
+      {
+        "page": "CIK0002012383-submissions-002.json",
+        "filing_date": "2025-03-03",
+        "accession": "0001193125-25-044184"
+      }
+    ],
+    "earliest_observed_filing_date": "2024-02-20"
+  },
+  "limitations": [
+    "Allowing range discrepancies is for inspection, not validation; both must be resolved before relying on the result.",
+    "Filing dates do not establish public availability or event-effective time.",
+    "Documents and security classes were not verified in this check.",
+    "Supplied pages derive from a current retrospective snapshot; completeness and source publication at historical decisions remain unverified.",
+    "No stock returns or investment-growth targets were calculated."
+  ]
+}

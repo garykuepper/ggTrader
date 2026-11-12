@@ -2,6 +2,12 @@
 
 **Status:** approved by the owner 2026-10-23 ("execute"), before any candidate was run under it. It replaces Part B for future stock candidates; changing it needs a new dated brief.
 
+**2026-11-11 clarification:** The draft-language passages below preserve the
+original proposal and do not override the approval recorded above or the approved
+resolutions in §8. The §5 formula has been corrected from `< −0.15` to `≤ −0.15`
+to match the expressly inclusive R5 boundary. This is a transcription correction,
+not a new gate or authorization to run a candidate study.
+
 **Terms used below:**
 
 - *Part A* asks whether the underlying idea survives a long-history test. *Part B*
@@ -146,7 +152,7 @@ The following proposed controls make those fixed terms auditable:
   Fix the annualization convention before day 1.
 - **Quarterly check.** Check on the last trading day of each calendar quarter,
   from inception, using the same starting notional. Cumulative relative wealth
-  is `shadow_after_tax_wealth / SPY_after_tax_wealth - 1`. A value **< −0.15**
+  is `shadow_after_tax_wealth / SPY_after_tax_wealth - 1`. A value **≤ −0.15**
   means 15% or more behind: **stop this candidate's shadow, NO-GO**. It is not
   a 15 percentage-point return difference or an absolute-drawdown stop. A
   quarterly breach cannot be cured by a later recovery or a new inception date.

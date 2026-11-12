@@ -1,0 +1,39 @@
+{
+  "counts": {
+    "total_rough_common_labels": 1752,
+    "no_matching_ticker": 373,
+    "one_observed_cik": 1378,
+    "has_complete_context": 1371,
+    "has_nyse_exact": 1370,
+    "nyse_with_multiple_titles": 631,
+    "no_complete_context": 7,
+    "nyse_and_other_exchange_strings": 21,
+    "multiple_observed_ciks": 1,
+    "no_nyse_exact": 1
+  },
+  "non_nyse_exchange_strings": [
+    [
+      "NASDAQ",
+      1
+    ]
+  ],
+  "archive_sha256": [
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "snapshot_sha256": "81602eac3d5fba68f1cb16c59089502edfa3f381cf97f227f7686b9fa1c205e9",
+  "checked_utc": "2026-11-12T01:13:20.992471+00:00",
+  "script_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_exchange_overlap_probe_20261111.py.txt",
+  "script_sha256": "bd6a4ded414e3ba107ba0b8387f22b768a47bfd63fdb5967cbb7c226f2235ab0",
+  "comparison_date": "2021-06-29",
+  "rough_filter": "snapshot names containing common stock, case insensitive",
+  "matching": "uppercase symbol with dot changed to hyphen; exact accession/context matching",
+  "limitations": [
+    "This is a rough name filter and is not a verified common-stock universe.",
+    "A ticker match and a single observed CIK do not establish identity, listing eligibility, class, or continuous ticker validity.",
+    "Exchange and title are as reported in selected 2021 filings, not independently confirmed as of the comparison date.",
+    "Multiple strings can reflect spelling differences, distinct classes, stale filings or changed listings.",
+    "The SEC archives are retrospective; snapshot source timing and data-use rights remain unverified.",
+    "No return or investment-growth target was computed."
+  ]
+}

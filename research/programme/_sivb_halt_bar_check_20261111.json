@@ -1,0 +1,22 @@
+{
+  "purpose": "Check whether stored SIVB bars in the period of a documented halt can be treated as evidence of an executable exit",
+  "tape_path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "reference_path": "/home/flynn/ggTrader-refs/sp500-external-20261103/prices.parquet",
+  "reference_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "sources": [
+    {"url": "https://ir.nasdaq.com/news-releases/news-release-details/nasdaq-halts-svb-financial-group", "fact": "Nasdaq announced a halt at 08:35:18 Eastern on March 10, 2023."},
+    {"url": "https://www.sec.gov/Archives/edgar/data/719739/000119312523073665/d485308d8k.htm", "fact": "The company reports the March 10 halt and scheduled suspension on March 28."}
+  ],
+  "method": "Match the literal SIVB label and dates. Compare each OHLC field with that file's March 9 close using absolute tolerance 1e-8; check whether volume is positive. Do not compute returns or simulate trades.",
+  "tape_observations": [
+    {"date": "2023-03-10", "ohlc_equal_prior_close": true, "volume_positive": true},
+    {"date": "2023-03-13", "ohlc_equal_prior_close": true, "volume_positive": true},
+    {"date": "2023-03-14", "ohlc_equal_prior_close": true, "volume_positive": true},
+    {"date": "2023-03-15", "ohlc_equal_prior_close": true, "volume_positive": false},
+    {"date": "2023-03-21", "ohlc_equal_prior_close": true, "volume_positive": true}
+  ],
+  "reference_observations": "The reference has SIVB rows on March 10, 13, 14 and 21; each is labelled tiingo, has a close equal to its March 9 close and has positive volume. Its OHLC fields were not checked in this comparison.",
+  "synthetic_test": "tests/engine/test_intraday_stop_inputs.py::test_daily_bar_alone_cannot_block_signal_exit_during_a_halt",
+  "limitations": "A company filing and exchange announcement do not independently establish every intermediate day's detailed trading status. Positive volume may include activity outside the modeled session or other vendor conventions. Identical ticker labels do not independently establish the identity or provenance of every row. The tape contains additional dates not itemized above. This retrospective evidence must not be used to exclude securities based on future events. No actual fills, strategy returns or data repairs were calculated."
+}

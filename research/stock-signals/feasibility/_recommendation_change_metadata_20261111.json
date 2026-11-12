@@ -1,0 +1,35 @@
+{
+  "purpose": "Inspect an analyst-recommendation portfolio's metadata only; no return values read or calculated",
+  "source_file": "/home/flynn/ggTrader-refs/high52-20261110/PredictorPortsFull.parquet",
+  "source_sha256": "76599d94beab94cc8973d8a126e8efbed98ee79f677738c55b2389f17387ba96",
+  "signal": "ChangeInRecommendation",
+  "columns_read": ["signalname", "port", "date", "Nlong", "Nshort", "signallag"],
+  "portfolio_05": {"months": 385, "first_month": "1993-12", "last_month": "2025-12", "duplicate_months": 0, "missing_months": 0, "minimum_Nlong": 17, "median_Nlong": 306, "maximum_Nlong": 534, "nonfinite_signallag_months": 0},
+  "portfolio_01": {"months": 385, "first_month": "1993-12", "last_month": "2025-12", "duplicate_months": 0, "missing_months": 0, "minimum_Nlong": 15, "median_Nlong": 320, "maximum_Nlong": 688, "nonfinite_signallag_months": 0},
+  "ls_stock_counts_match_05_and_01": true,
+  "provider_code_revision": "9f053398c4995651d822e90d81526d0644c6f3e5",
+  "provider_code": "https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/ChangeInRecommendation.py",
+  "provider_preparation_code": "https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/DataDownloads/IBESRecommendations.py",
+  "release_binding": {
+    "record": "_osap_code_release_binding_20261111.json",
+    "publisher_claim": "2026.10 release created with code version 2.1.0",
+    "pre_release_commit": "c626bf886f53894e4b7f7dedf2c167d1c84b7801",
+    "observed_tag_commit": "9f053398c4995651d822e90d81526d0644c6f3e5",
+    "matching_file_sha256": {
+      "Signals/pyCode/Predictors/ChangeInRecommendation.py": "0b76d3d5d8d13f3080d28efb63ff4db84feb252bde6bf340cc6df3f0ec7be0da",
+      "Signals/pyCode/DataDownloads/IBESRecommendations.py": "ed77a17b0271cbaa3327d2960b5040f5d92e820f4493f3096f3ae9c083c039da",
+      "Portfolios/Code/01_PortfolioFunction.R": "6286d071f6c6aea8071b8eb8f012c70ae3170212a911f4308916988f2ec14b5f"
+    },
+    "limitation": "Matching public files and publisher version statement are not a per-signal build manifest or independently reproduced build; observed tag commit is later than initial release."
+  },
+  "signal_documentation": "https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/SignalDoc.csv",
+  "signal_doc_sha256": "0ceb11020c2138c2477b732948beaac2e67ccaad8428753e3a79af2bb5ea0178",
+  "provider_metadata": {"replication_quality": "4_lack_data", "weight": "EW", "long_short_quantile": "0.2", "holding_period_months": "1.0", "sign": "1.0"},
+  "limitations": [
+    "The publisher identifies a code version and relevant files match a pre-release repository snapshot, but exact per-signal build inputs remain unverified.",
+    "Finite portfolio average signal values do not prove all individual signals are valid or point-in-time.",
+    "The provider documentation flags lack of data. Underlying I/B/E/S inputs, identities, revisions, costs, rights, benchmark and tradable holdings are unverified.",
+    "The inspected preparation SQL has no ORDER BY and does not sort by announcement date before writing the input; the predictor groups and takes the last row. Input order is unverified. It labels records with the start of the announcement month and the predictor does not read activation dates; downstream lag and release binding are unverified.",
+    "Counts are metadata, not evidence of an edge. No portfolio returns were read or calculated."
+  ]
+}

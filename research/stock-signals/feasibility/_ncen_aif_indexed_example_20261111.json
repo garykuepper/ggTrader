@@ -1,0 +1,19 @@
+{
+  "checked_utc": "2026-11-12T01:54:55.664463+00:00",
+  "source": "https://www.sec.gov/Archives/edgar/data/1526697/000114554921010989/primary_doc.xml",
+  "accession": "0001145549-21-010989",
+  "issuer_cik": "0001526697",
+  "registrant": "Apollo Tactical Income Fund Inc.",
+  "form": "N-CEN",
+  "report_period_end": "2020-12-31",
+  "signature_date": "2021-02-25",
+  "reported_ticker": "AIF",
+  "reported_exchange": "XNYS",
+  "source_description": "Manually checked SEC-indexed XML search result; original XML bytes were not downloaded or hashed.",
+  "limitations": [
+    "Signature date is not a verified filing or public-availability timestamp.",
+    "A historical filing does not establish status on a later date or a complete fund universe.",
+    "This one example is not evidence of archive coverage or an automatic exclusion."
+  ],
+  "reported_investment_company_type": "N-2"
+}

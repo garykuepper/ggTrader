@@ -1,0 +1,38 @@
+{
+  "purpose": "Offline synthetic SDK quantity serialization; no network or broker order",
+  "alpaca_py_version": "0.45.0",
+  "requests_version": "2.34.2",
+  "method": "MarketOrderRequest(qty=decimal string).to_request_fields(), then requests.Request(json=...).prepare(); JSON numbers parsed as Decimal",
+  "cases": [
+    {
+      "input_decimal": "0.000000001",
+      "json_quantity": "1E-9",
+      "comparison": "equal"
+    },
+    {
+      "input_decimal": "1.123456789",
+      "json_quantity": "1.123456789",
+      "comparison": "equal"
+    },
+    {
+      "input_decimal": "123456789.123456789",
+      "json_quantity": "123456789.12345679",
+      "comparison": "greater"
+    },
+    {
+      "input_decimal": "100000000.000000009",
+      "json_quantity": "100000000.00000001",
+      "comparison": "greater"
+    },
+    {
+      "input_decimal": "0.1234567899",
+      "json_quantity": "0.1234567899",
+      "comparison": "equal"
+    }
+  ],
+  "limits": [
+    "Examples do not establish typical account sizes, broker acceptance, fills, or all representable quantities.",
+    "The 10-decimal example does not model broker-side truncation.",
+    "No request was sent."
+  ]
+}

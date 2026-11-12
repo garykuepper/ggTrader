@@ -105,6 +105,140 @@ work: fundamentals-expectations signal, orthogonal to the
 Bollinger/RSI/EMA/MACD ensemble and to the already-rejected price-momentum
 test.
 
+**2026-11-11 data lead, not a test:** [Alpha Vantage](https://www.alphavantage.co/documentation/)
+describes an earnings-estimates endpoint with revision history. Its public IBM demo
+returned 42 rows with fiscal-period date labels from 2017 to 2027 and fields for
+trailing revision counts and prior estimates. The [metadata check](stock-signals/feasibility/_alpha_analyst_estimates_metadata_20261111.json)
+found no field named as an as-of or revision timestamp. The dates' meaning, vintage
+history, historical availability, wider coverage, access on the owner's key and
+usage rights remain unverified. Period labels do not establish what an investor
+could have known at that time; retain dated snapshots before considering a forward
+study. No estimate values or returns were examined, and no study was started.
+For the 38 demo rows with period labels before November 11, 2026, a later
+[presence check](stock-signals/feasibility/_alpha_analyst_presence_20261111.json)
+found the 30-day prior-estimate and upward-revision fields nonempty in all 38,
+but the downward-revision field in only 21. Zero counted as present. This is
+one current response, not evidence of historical availability or data validity;
+missing is not evidence of zero revisions.
+
+**Published-portfolio lead, metadata only:** The already frozen Open Source Asset
+Pricing portfolio archive contains an `AnalystRevision` long leg (`05`) for each
+month from March 1976 through December 2025. Its long–short record has the same
+long and short stock counts as portfolios `05` and `01`, respectively. The provider's
+[signal documentation](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/SignalDoc.csv)
+describes equal weighting and monthly rebalancing; its separately inspected
+[signal code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/AnalystRevision.py)
+uses the ratio of current to prior one-year-ahead mean EPS estimates from I/B/E/S.
+That is a possible **portfolio-level** historical proxy, not a free source of the
+underlying point-in-time analyst inputs or current stock picks. The downloaded
+release has not been tied independently to the inspected code revision.
+
+The ratio needs particular care: with a negative prior EPS estimate, a larger ratio
+can reflect a worsening rather than an improvement, and a zero denominator can
+produce infinity. The archive's `signallag` field is positive infinity in 465 of
+the 598 long-leg months. That metadata does not reveal how many stocks had infinite
+scores or whether the portfolio returns are valid. The [metadata record](stock-signals/feasibility/_analyst_revision_metadata_20261111.json)
+pins the file and checks; no return values were read. Equal weighting, provider
+history and revisions, costs, taxes, implementation and data rights remain unverified.
+Any historical return calculation requires a separate dated specification and owner
+approval.
+
+The separately inspected [portfolio-construction code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Portfolios/Code/01_PortfolioFunction.R)
+calculates `signallag` as a weighted mean and excludes rows with missing returns
+before averaging the remaining stocks. This explains the field's intended meaning
+in that code, but does not establish how many observations were omitted, whether
+missing delisting returns affected results, or that the downloaded release used
+this exact revision. A positive-infinite mean also does not by itself determine
+the number of affected stocks. These limits apply before interpreting any screen.
+
+A further [metadata-only breakdown](stock-signals/feasibility/_analyst_revision_nonfinite_bins_20261111.json)
+finds negative-infinite `signallag` in 479 of 598 months in the low-ranked
+portfolio `01`. Positive infinity in the high-ranked portfolio `05` appears in
+each decade from the 1970s through the 2020s, so it is not confined to one era.
+These are portfolio-level aggregates, not counts of affected stocks or evidence
+of a return effect; the inspected code has not been tied to the frozen release.
+
+**Alternative with a different limitation:** The same archive contains
+`ChForecastAccrual`. In the separately inspected [provider code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/ChForecastAccrual.py),
+the forecast change is a direct comparison, but the signal also targets the upper
+half of the accrual distribution. A synthetic reproduction shows that a row with
+missing accrual classification and a valid forecast increase remains in the signal:
+the code removes the lower bucket but does not remove missing buckets. This is not
+evidence of how many such rows occur in the release, nor that the release used this
+code revision. It also overlaps the project's earlier accrual research, so it is
+not a clean standalone analyst-revision substitute. No portfolio returns were read.
+
+The published firm-level schema lacks the underlying accounting inputs needed to
+reconstruct that classification. Its separate [Accruals predictor](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/Accruals.py)
+is not an equivalent proxy: it subtracts depreciation and fills missing taxes
+payable with zero, unlike the accrual calculation above. Its missing values cannot
+establish how often the classification issue occurs in the released signal.
+
+**Recommendation-change lead, metadata only:** A different analyst signal in the
+same frozen portfolio archive, `ChangeInRecommendation`, has 385 consecutive monthly
+records in each extreme portfolio from December 1993 through December 2025; their
+aggregate signal fields are finite. The [metadata record](stock-signals/feasibility/_recommendation_change_metadata_20261111.json)
+pins the source and counts. The provider labels the signal `4_lack_data`, uses
+equal weighting and describes a one-month holding period; the portfolio is not a
+source of current stock picks. No portfolio returns were read or calculated.
+
+The separately inspected [provider code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/Predictors/ChangeInRecommendation.py)
+groups recommendations by analyst, firm and month and takes the last input row
+without first sorting by announcement date. The input's preexisting order is not
+verified, so that operation alone does not establish that the latest recommendation
+was chosen. Its `shift(1)` uses the previous observed firm-month, which need not be
+the immediately preceding calendar month if there are gaps. The released archive
+has no independently verified per-signal build binding, and finite aggregate scores do not
+validate individual observations. I/B/E/S access, data vintage and timing,
+identity, data rights, costs and a SPY comparison remain open. Any new return
+study needs its own registered brief and owner approval.
+
+**Release-binding check:** The provider's [2026.10 release notes](https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Release%20Notes%202026.10.md)
+state that it used code version 2.1.0. The relevant recommendation predictor,
+download script and portfolio-construction function have identical hashes in the
+inspected version tag and a repository snapshot dated before the initial release;
+the [metadata record](stock-signals/feasibility/_recommendation_change_metadata_20261111.json)
+lists the hashes. This makes the code review more relevant than an arbitrary
+revision, but the observed tag commit is dated after the initial release, and the
+publisher statement is not an independently reproduced build or per-signal
+manifest. The exact build inputs and whether the ordering issue affected results
+remain unverified.
+
+The corresponding [download/preparation code](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Signals/pyCode/DataDownloads/IBESRecommendations.py)
+strengthens those concerns: its SQL has no `ORDER BY`, and the subsequent
+preparation does not sort the saved recommendations by announcement date before
+the predictor takes the last row in each group. An observed database or file
+order could happen to be chronological; the code does not guarantee it. The
+preparation maps an announcement date to the **start** of its calendar month and
+saves the vendor activation date, but the predictor reads no activation date.
+That month label is not a precise dissemination timestamp; whether later
+portfolio construction applies a sufficient lag must be established separately.
+These are properties of the inspected revision, not proof that the frozen
+release used that revision or that any specific portfolio return is affected.
+
+An invented one-analyst example confirms the ordering risk in the inspected
+grouping operation: a January recommendation of 3 followed by February
+recommendations of 5 on February 2 and 1 on February 25 produces a +2 change when
+the February rows are chronological, but a −2 change when those two input rows
+are reversed. No actual I/B/E/S records were examined, and this does not establish
+whether the released file contains any such out-of-order group or affected returns.
+
+The [firm-level predictors file](https://huggingface.co/datasets/OpenSourceAP/CrossSection/blob/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet)
+has a `ChangeInRecommendation` column, but its previously captured 211-column
+schema contains no plainly named analyst-level recommendations, announcement
+dates or activation dates. Column names alone cannot rule out an indirect source,
+but this released monthly signal is not enough to reconstruct the row ordering
+or measure the defect. That requires suitably licensed underlying event records
+with their original ordering, dates and build provenance; none was inspected here.
+
+The inspected [portfolio-construction function](https://github.com/OpenSourceAP/CrossSection/blob/9f053398c4995651d822e90d81526d0644c6f3e5/Portfolios/Code/01_PortfolioFunction.R)
+does shift the signal's month label forward one calendar month before joining
+returns. That limits the concern about using a late-month announcement in the
+*same* month's return, but it does not establish that a recommendation was
+available in time for an executable prior-close fill, or resolve a vendor
+activation date after month-end. Exact per-signal build inputs remain unverified.
+This is a code-path observation, not a return validation.
+
 ### 3. Hard-to-borrow / short-interest signal — RESOLVED, NO-GO (2026-07-17, free-data cut)
 `research/stock-signals/short-interest/2026-07-17-short-interest-nogo.md`. Built as `short_interest`
 strategy on a new FINRA consolidated-short-interest data pipeline

@@ -1,0 +1,89 @@
+{
+  "purpose": "Coverage and elementary bar checks only; not identity or return validation",
+  "prices_sha256": "f67e3972dceefbbdf6c17b84b30957a7b83518401955fff8ae0bc4ae206fa83f",
+  "coverage_sha256": "94e4eac07f3858b1d177a92479cef104d0573dab195987fe48ca699b4868494c",
+  "code_sha256": "acde6399d21e8f6190b27d4436ccfa46beaff3e4a815076d02d70011257e9471",
+  "alias_code_sha256": "a8147ac5a7a7927c80c4bda7c7774f3567d2575405e5eccfa56975759f33c17b",
+  "calendar_version": "5.6.0",
+  "window_sessions": 252,
+  "candidates": {
+    "COG": {
+      "missing_months": 9,
+      "same_day": 9,
+      "complete_dates": 9,
+      "complete_valid_bars": 9
+    },
+    "DISCA": {
+      "missing_months": 15,
+      "same_day": 15,
+      "complete_dates": 15,
+      "complete_valid_bars": 15
+    },
+    "FBHS": {
+      "missing_months": 23,
+      "same_day": 23,
+      "complete_dates": 23,
+      "complete_valid_bars": 23
+    },
+    "FRC": {
+      "missing_months": 28,
+      "same_day": 28,
+      "complete_dates": 28,
+      "complete_valid_bars": 28
+    },
+    "GPS": {
+      "missing_months": 13,
+      "same_day": 13,
+      "complete_dates": 13,
+      "complete_valid_bars": 13
+    },
+    "HFC": {
+      "missing_months": 5,
+      "same_day": 5,
+      "complete_dates": 5,
+      "complete_valid_bars": 5
+    },
+    "INFO": {
+      "missing_months": 14,
+      "same_day": 0,
+      "complete_dates": 0,
+      "complete_valid_bars": 0
+    },
+    "LB": {
+      "missing_months": 7,
+      "same_day": 0,
+      "complete_dates": 0,
+      "complete_valid_bars": 0
+    },
+    "PEAK": {
+      "missing_months": 38,
+      "same_day": 0,
+      "complete_dates": 0,
+      "complete_valid_bars": 0
+    },
+    "SBNY": {
+      "missing_months": 8,
+      "same_day": 8,
+      "complete_dates": 8,
+      "complete_valid_bars": 8
+    },
+    "TWTR": {
+      "missing_months": 1,
+      "same_day": 0,
+      "complete_dates": 0,
+      "complete_valid_bars": 0
+    },
+    "VIAC": {
+      "missing_months": 13,
+      "same_day": 13,
+      "complete_dates": 13,
+      "complete_valid_bars": 13
+    },
+    "WRK": {
+      "missing_months": 42,
+      "same_day": 42,
+      "complete_dates": 42,
+      "complete_valid_bars": 42
+    }
+  }
+}

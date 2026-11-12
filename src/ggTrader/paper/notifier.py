@@ -8,9 +8,16 @@ import os
 import requests
 
 from ggTrader.utils.config import _load_env
+from ggTrader.utils.json_safe import json_safe
 
 _API_URL = "https://api.telegram.org/bot{token}/sendMessage"
 _log = logging.getLogger(__name__)
+
+
+def _pnl_number(value: object) -> int | float | None:
+    """Return a finite P&L value, or None when it cannot be reported."""
+    value = json_safe(value)
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
 class TelegramNotifier:
@@ -60,8 +67,8 @@ class TelegramNotifier:
 
     def daily_summary(
         self,
-        portfolio_value: float,
-        daily_pnl: float,
+        portfolio_value: float | None,
+        daily_pnl: float | None,
         positions: dict[str, dict],
         total_pnl: float | None = None,
         unrealized_pnl: float | None = None,
@@ -79,8 +86,7 @@ class TelegramNotifier:
         (uncorrected) equity figure is supplied via `booked_equity`, both
         numbers side by side so a reader can see exactly what changed and
         why. Unlike the old "exclude flagged from unrealized" behavior, no
-        position's P&L is ever hidden -- the corrected figures are real
-        numbers to show, not an unknown to hide.
+        position's valid P&L is hidden; invalid values are shown as unavailable.
 
         `dividend_total` is the cumulative dividend accrual (an all-time
         reporting correction, not real cash -- see `dividend_check.py`);
@@ -89,9 +95,21 @@ class TelegramNotifier:
         exactly what changed and why it's not reflected in Alpaca's own
         balance.
         """
-        arrow = "🟢" if daily_pnl >= 0 else "🔴"
-        day_start = portfolio_value - daily_pnl
-        pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0.0
+        portfolio_value = _pnl_number(portfolio_value)
+        daily_pnl = _pnl_number(daily_pnl)
+        total_was_supplied = total_pnl is not None
+        total_pnl = _pnl_number(total_pnl)
+        if portfolio_value is None:
+            daily_pnl = None
+        day_start = portfolio_value - daily_pnl if daily_pnl is not None else None
+        if daily_pnl is None:
+            daily_line = "Change since prior snapshot: unavailable"
+        else:
+            arrow = "🟢" if daily_pnl >= 0 else "🔴"
+            pnl_pct = (daily_pnl / day_start * 100) if day_start > 0 else 0.0
+            daily_line = (
+                f"Change since prior snapshot: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)"
+            )
         lines = ["<b>📈 Paper Portfolio Summary</b>"]
         if split_corrections:
             corr_str = ", ".join(f"{sym} {factor:g}x" for sym, factor in split_corrections.items())
@@ -101,9 +119,14 @@ class TelegramNotifier:
                 f"split-adjusted."
             )
             if booked_equity is not None:
+                booked_equity = _pnl_number(booked_equity)
+                booked = f"${booked_equity:,.2f}" if booked_equity is not None else "unavailable"
+                adjusted = (
+                    f"${portfolio_value:,.2f}" if portfolio_value is not None else "unavailable"
+                )
                 lines.append(
-                    f"Booked equity (broker, uncorrected): ${booked_equity:,.2f} | "
-                    f"Split-adjusted equity: ${portfolio_value:,.2f}"
+                    f"Booked equity (broker, uncorrected): {booked} | "
+                    f"Split-adjusted equity: {adjusted}"
                 )
         if dividend_total:
             lines.append(
@@ -118,37 +141,45 @@ class TelegramNotifier:
                     for a in new_dividend_accruals
                 )
                 lines.append(f"New this run: {new_str}")
-        lines += [
-            f"Value: <b>${portfolio_value:,.2f}</b>",
-            f"Daily P&L: {arrow} ${daily_pnl:+,.2f} ({pnl_pct:+.2f}%)",
-        ]
-        if total_pnl is not None and unrealized_pnl is not None:
-            realized_pnl = total_pnl - unrealized_pnl
-            total_pct = (total_pnl / day_start * 100) if day_start > 0 else 0.0
-            rlz_arrow = "+" if realized_pnl >= 0 else ""
-            unrlz_arrow = "+" if unrealized_pnl >= 0 else ""
-            lines.append(
-                f"Total P&L: ${total_pnl:+,.2f} ({total_pct:+.2f}%) — "
-                f"realized: ${rlz_arrow}{realized_pnl:,.2f}, "
-                f"unrealized: ${unrlz_arrow}{unrealized_pnl:,.2f}"
-            )
+        value_line = (
+            f"Value: <b>${portfolio_value:,.2f}</b>"
+            if portfolio_value is not None
+            else "Value: unavailable"
+        )
+        lines += [value_line, daily_line]
+        if total_pnl is not None:
+            total_pct = (total_pnl / day_start * 100) if day_start and day_start > 0 else 0.0
+            total_pct_text = f" ({total_pct:+.2f}%)" if day_start is not None else ""
+            unrealized_pnl = _pnl_number(unrealized_pnl)
+            if unrealized_pnl is None:
+                detail = "realized: unavailable, unrealized: unavailable"
+            else:
+                realized_pnl = total_pnl - unrealized_pnl
+                detail = f"realized: ${realized_pnl:+,.2f}, unrealized: ${unrealized_pnl:+,.2f}"
+            lines.append(f"Total P&L: ${total_pnl:+,.2f}{total_pct_text} — {detail}")
+        elif total_was_supplied or portfolio_value is None:
+            lines.append("Total P&L: unavailable")
         lines.append(f"Positions: {len(positions)}")
         if positions:
             lines.append("")
             ranked = sorted(
-                positions.items(), key=lambda kv: kv[1].get("unrealized_plpc", 0.0), reverse=True
+                positions.items(),
+                key=lambda kv: (
+                    _pnl_number(kv[1].get("unrealized_plpc"))
+                    if _pnl_number(kv[1].get("unrealized_plpc")) is not None
+                    else float("-inf")
+                ),
+                reverse=True,
             )
             for sym, info in ranked:
                 qty = info.get("qty", 0.0)
                 price = info.get("current_price", 0.0)
                 qty_str = f"{qty:.0f}" if float(qty).is_integer() else f"{qty:.4f}"
-                pl = info.get("unrealized_pl", 0.0)
-                plpc = info.get("unrealized_plpc", 0.0) * 100
-                pl_arrow = "+" if pl >= 0 else ""
-                lines.append(
-                    f"  {sym}: {qty_str} @ ${price:.2f} — "
-                    f"${pl_arrow}{pl:,.2f} ({pl_arrow}{plpc:.2f}%)"
-                )
+                pl = _pnl_number(info.get("unrealized_pl"))
+                plpc = _pnl_number(info.get("unrealized_plpc"))
+                pnl_text = "P&L unavailable" if pl is None else f"${pl:+,.2f}"
+                pct_text = "return unavailable" if plpc is None else f"{plpc * 100:+.2f}%"
+                lines.append(f"  {sym}: {qty_str} @ ${price:.2f} — {pnl_text} ({pct_text})")
         if errors:
             lines.append("")
             lines.append(f"<b>❌ Errors ({len(errors)})</b>")
@@ -188,10 +219,15 @@ class DryRunNotifier:
         return False
 
     def daily_summary(
-        self, portfolio_value: float, daily_pnl: float, *_: object, **__: object
+        self, portfolio_value: float | None, daily_pnl: float | None, *_: object, **__: object
     ) -> bool:
         """Log the summary headline; never forwarded."""
+        value = _pnl_number(portfolio_value)
+        daily = _pnl_number(daily_pnl)
+        value_text = f"{value:.2f}" if value is not None else "unavailable"
         _log.info(
-            "dry-run summary suppressed: value=%.2f daily_pnl=%.2f", portfolio_value, daily_pnl
+            "dry-run summary suppressed: value=%s daily_pnl=%s",
+            value_text,
+            daily if daily is not None else "unavailable",
         )
         return False

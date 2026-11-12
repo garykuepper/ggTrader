@@ -1,0 +1,20 @@
+{
+  "purpose": "Single-security predictor coverage check; no returns or ranking",
+  "provider_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "provider_file": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "method": "Column-selective fsspec and pyarrow read filtered to PERMNO 12490 and yyyymm >= 202510; full file not rehashed",
+  "permno": 12490,
+  "column": "CBOperProf",
+  "observed_non_null": {
+    "202510": 0.14686349553490066,
+    "202511": 0.14686349553490066,
+    "202512": 0.14686349553490066
+  },
+  "observed_null_months_inclusive": ["202601", "202706"],
+  "observed_null_month_count": 18,
+  "limitations": [
+    "One security and one predictor do not establish overall coverage.",
+    "A row label is not evidence of predictor availability or contemporaneous publication.",
+    "Identity, input vintage, source rights and exact build binding are unverified."
+  ]
+}

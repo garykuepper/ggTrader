@@ -3,26 +3,12 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import tempfile
 from pathlib import Path
 from typing import Any
 
-
-def json_safe(obj: Any) -> Any:
-    """JSON-safe copy: NaN/inf to None, numpy/pandas scalars to Python, timestamps to ISO."""
-    if isinstance(obj, dict):
-        return {str(k): json_safe(v) for k, v in obj.items()}
-    if isinstance(obj, list | tuple):
-        return [json_safe(v) for v in obj]
-    if hasattr(obj, "item") and getattr(obj, "shape", None) == ():
-        return json_safe(obj.item())
-    if hasattr(obj, "isoformat"):
-        return obj.isoformat()
-    if isinstance(obj, float) and not math.isfinite(obj):
-        return None
-    return obj
+from ggTrader.utils.json_safe import json_safe
 
 
 def atomic_write_bytes(path: str | Path, data: bytes) -> Path:

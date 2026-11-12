@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-11-12T00:26:19.622988+00:00",
+  "purpose": "Retry remaining ETF monthly availability; date labels only, no values retained or returns calculated",
+  "endpoint": "TIME_SERIES_MONTHLY_ADJUSTED",
+  "results": {
+    "PDBC": {
+      "status": "available",
+      "months": 144,
+      "first": "2014-12-31",
+      "last": "2026-11-11",
+      "missing_month_labels": []
+    },
+    "BIL": {
+      "status": "unavailable",
+      "http_status": 200,
+      "reason": "rate_limit"
+    }
+  },
+  "limitations": [
+    "Response values received transiently; raw data and independent timestamp not retained.",
+    "Label continuity does not verify correct dates, values, returns, licensing or daily data."
+  ]
+}

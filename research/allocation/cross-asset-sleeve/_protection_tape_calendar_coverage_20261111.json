@@ -1,0 +1,58 @@
+{
+  "created_utc": "2026-11-12T00:17:32.799361+00:00",
+  "purpose": "Compare tape dates against an independently generated NYSE calendar; no price columns read",
+  "input_path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+  "input_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "calendar": "pandas_market_calendars NYSE",
+  "calendar_version": "5.6.0",
+  "exchange_calendars_version": "4.13.2",
+  "start": "2019-03-01",
+  "end": "2026-10-16",
+  "expected_sessions": 1919,
+  "legs": {
+    "SPY": {
+      "rows": 1919,
+      "unique_dates": 1919,
+      "missing_sessions": [],
+      "extra_dates": [],
+      "non_midnight": 0,
+      "missing_timestamps": 0
+    },
+    "TLT": {
+      "rows": 1919,
+      "unique_dates": 1919,
+      "missing_sessions": [],
+      "extra_dates": [],
+      "non_midnight": 0,
+      "missing_timestamps": 0
+    },
+    "GLD": {
+      "rows": 1919,
+      "unique_dates": 1919,
+      "missing_sessions": [],
+      "extra_dates": [],
+      "non_midnight": 0,
+      "missing_timestamps": 0
+    },
+    "PDBC": {
+      "rows": 1919,
+      "unique_dates": 1919,
+      "missing_sessions": [],
+      "extra_dates": [],
+      "non_midnight": 0,
+      "missing_timestamps": 0
+    },
+    "BIL": {
+      "rows": 1919,
+      "unique_dates": 1919,
+      "missing_sessions": [],
+      "extra_dates": [],
+      "non_midnight": 0,
+      "missing_timestamps": 0
+    }
+  },
+  "limitations": [
+    "Calendar is a software-generated reference, not an independent exchange-issued record.",
+    "Does not establish price quality, adjustment, rights, historical availability, fund-specific suspensions, or suitability for a study."
+  ]
+}

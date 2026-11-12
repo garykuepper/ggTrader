@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from ggTrader.utils.io import json_safe
+from ggTrader.utils.json_safe import canonical_hash as canonical_hash
 
 
 class FrozenInputError(ValueError):
@@ -25,15 +24,6 @@ def file_record(path: str | Path) -> dict[str, Any]:
     """Describe one file as ``{"path", "sha256", "bytes"}`` for a manifest."""
     p = Path(path)
     return {"path": str(p), "sha256": sha256_file(p), "bytes": p.stat().st_size}
-
-
-def canonical_hash(value: Any) -> str:
-    """SHA-256 of a value's canonical JSON (JSON-safe, sorted keys, no whitespace).
-
-    Two values that mean the same thing hash the same whatever their key order.
-    """
-    text = json.dumps(json_safe(value), sort_keys=True, separators=(",", ":"), allow_nan=False)
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def verify_frozen(expected: Mapping[str, str], root: str | Path) -> None:

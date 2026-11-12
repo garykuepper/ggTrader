@@ -1,0 +1,107 @@
+{
+  "status": "proposed historical screen; output does not establish approval",
+  "candidate": "Global-q size 2 / expected-growth 3, value-weighted total return",
+  "benchmark": "Global-q broad market (R_MKT + R_F), not SPY",
+  "limitations": "Published and previously examined research; costs assumed; pretax",
+  "input_sha256": {
+    "benportf_me_eg_monthly_2025.csv": "932ff7d3ec330fc8dcb22f81f40a9bc98ed02ade4a53adb3c08b2baa559386b4",
+    "q5_factors_monthly_2025.csv": "8b2e2f1364890f8f5876da20e6bfad0acd8d272425de3b65c725f54b51128f6a"
+  },
+  "code_sha256": {
+    "driver": "0ab5da5c538b81846f92fe323a5acf950349da17aba128401cfb0636f5815cd7",
+    "selector": "e2e602cca4a74a3f97511ce1bbcac2ddb616651ebcc0e23543bc8f9b19b50f22",
+    "calculator": "270c08779d2a7538ecb045b345c34eceea833782238e1a8b4a59283fbcdc8df2",
+    "significance": "5a10d10a3ea5449a677de89ac87d09e9db589e6c14499931bacccb96764e5198",
+    "lockfile": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "brief": "299d6aef81526c52cdde914d55a1dfdadc582e38cdfc3547373907d6e949bb15"
+  },
+  "git": {
+    "commit": "73d4a4f45d34d66fac18102cc95692cdcf36efbf",
+    "dirty": true
+  },
+  "created_utc": "2026-11-11T17:11:25.996765+00:00",
+  "proposed_hurdles": {
+    "full_pass": false,
+    "since_1994_growth_gap": 0.026348610397813887,
+    "since_1994_pass": true,
+    "overall_pass": false
+  },
+  "results": {
+    "full": {
+      "comparison": {
+        "months": 708,
+        "candidate": {
+          "terminal_wealth_per_1": 1366.619420707883,
+          "annualized_return": 0.1301772718799099,
+          "max_month_end_drawdown": -0.444339688838852
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 456.12076417430103,
+          "annualized_return": 0.10935143601496078,
+          "max_month_end_drawdown": -0.5030410131378762
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 2.728206284776023,
+      "one_sided_p": 0.0031839885873772423,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "full_stress": {
+      "comparison": {
+        "months": 708,
+        "candidate": {
+          "terminal_wealth_per_1": 761.4487815687178,
+          "annualized_return": 0.11902906743983399,
+          "max_month_end_drawdown": -0.4560859520066586
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 456.12076417430103,
+          "annualized_return": 0.10935143601496078,
+          "max_month_end_drawdown": -0.5030410131378762
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": 1.286496387323356,
+      "one_sided_p": 0.09913493941547619,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994": {
+      "comparison": {
+        "months": 384,
+        "candidate": {
+          "terminal_wealth_per_1": 56.16295325996187,
+          "annualized_return": 0.13414951269783693,
+          "max_month_end_drawdown": -0.4443396888388519
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 26.471275339472697,
+          "annualized_return": 0.10780090230002304,
+          "max_month_end_drawdown": -0.5030410131378762
+        }
+      },
+      "annual_cost_assumption": 0.01,
+      "mean_excess_t": 2.5594567230880156,
+      "one_sided_p": 0.00524179539704419,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    },
+    "since_1994_stress": {
+      "comparison": {
+        "months": 384,
+        "candidate": {
+          "terminal_wealth_per_1": 40.90051810039636,
+          "annualized_return": 0.12296578784389123,
+          "max_month_end_drawdown": -0.4560859520066588
+        },
+        "benchmark": {
+          "terminal_wealth_per_1": 26.471275339472697,
+          "annualized_return": 0.10780090230002304,
+          "max_month_end_drawdown": -0.5030410131378762
+        }
+      },
+      "annual_cost_assumption": 0.02,
+      "mean_excess_t": 1.4882756085090867,
+      "one_sided_p": 0.06833911238451741,
+      "inference_note": "12-lag Newey\u2013West; undefined when excess returns have zero variance"
+    }
+  }
+}

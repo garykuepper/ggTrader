@@ -186,3 +186,17 @@ def test_parse_rejects_missing_table(text: str, title: str | None) -> None:
     """Missing sections or monthly rows must not yield plausible empty data."""
     with pytest.raises(ValueError):
         parse_french_monthly(text, title)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        ",BIG LoPRIOR,BIG LoPRIOR\n200001,1,2\n",
+        ",BIG LoPRIOR, big  loprior \n200001,1,2\n",
+        ",BIG LoPRIOR\n200001,1\n200001,2\n",
+        ",BIG LoPRIOR\n200002,1\n200001,2\n",
+    ],
+)
+def test_parse_rejects_ambiguous_headers_and_month_order(text: str) -> None:
+    with pytest.raises(ValueError, match="duplicate|ordered"):
+        parse_french_monthly(text, None)

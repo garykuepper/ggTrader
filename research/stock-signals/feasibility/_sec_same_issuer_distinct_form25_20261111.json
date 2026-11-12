@@ -1,0 +1,26 @@
+{
+  "checked_utc": "2026-11-12T01:32:21.773164+00:00",
+  "issuer_cik": "0001222840",
+  "issuer_name": "Retail Properties of America, Inc.",
+  "examples": [
+    {
+      "accession": "0000876661-17-000796",
+      "signature_date": "2017-12-21",
+      "security_description": "7.00% Series A Cumulative Redeemable Preferred Stock",
+      "sec_url": "https://www.sec.gov/Archives/edgar/data/1222840/000087666117000796/xslF25X02/primary_doc.xml"
+    },
+    {
+      "accession": "0000876661-21-001526",
+      "signature_date": "2021-10-22",
+      "security_description": "Class A Common Stock",
+      "sec_url": "https://www.sec.gov/Archives/edgar/data/1222840/000087666121001526/xslF25X02/primary_doc.xml"
+    }
+  ],
+  "finding": "CIK match alone cannot bind document bytes to the selected accession or security class.",
+  "limitations": [
+    "Data manually transcribed from SEC-rendered documents; original XML bytes were not downloaded or hashed.",
+    "Signature date is neither verified filing-publication time nor effective trading date.",
+    "A description is not a verified security identifier or permission to update a historical universe.",
+    "Two post-hoc examples do not establish error frequency."
+  ]
+}

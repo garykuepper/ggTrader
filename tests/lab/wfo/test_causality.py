@@ -29,7 +29,7 @@ VARIANTS = {
 }
 
 
-def _scorer(bars, mask, extra, td_stop) -> SignalScorer:
+def _scorer(bars, mask, extra, td_stop, intraday_stops=False) -> SignalScorer:
     cls = Ensemble
     combos = cls.grid.combos()
     names = [inputs.combo_name("ensemble", c) for c in combos]
@@ -42,17 +42,18 @@ def _scorer(bars, mask, extra, td_stop) -> SignalScorer:
         mask,
         {**h.BASE, **extra},
         1 << 30,
+        intraday_stops=intraday_stops,
     )
     scorer.prepare([])
     return scorer
 
 
-def _check(bars, make_mask, ends, extra, td_stop) -> None:
-    full = _scorer(bars, make_mask(bars), extra, td_stop)
+def _check(bars, make_mask, ends, extra, td_stop, intraday_stops=False) -> None:
+    full = _scorer(bars, make_mask(bars), extra, td_stop, intraday_stops)
     assert int(full._trades.shape[0]) > 0, "the scenario must trade or the test proves nothing"
     for end in ends:
         cut = truncate_bars(bars, end)
-        part = _scorer(cut, make_mask(cut), extra, td_stop)
+        part = _scorer(cut, make_mask(cut), extra, td_stop, intraday_stops)
         n = len(cut.close)
         # equity: bit for bit, every combination, from the first loaded bar
         assert np.array_equal(full._val[:n], part._val), f"equity differs at {end.date()}"
@@ -79,6 +80,25 @@ def test_single_pass_equals_truncated_simulations_on_a_synthetic_panel(variant: 
     index = bars.close.index
     ends = [index[600], index[800], index[1100]]
     _check(bars, h.open_mask, ends, extra, td_stop)
+
+
+@pytest.mark.slow
+def test_intraday_stops_match_truncated_simulations_on_synthetic_panel() -> None:
+    from dataclasses import replace
+
+    from tests.lab.strategies.helpers import make_bars
+
+    bars = make_bars(seed=17, n_bars=1300, n_syms=6, holes=False)
+    bars = replace(
+        bars,
+        high=bars.high.where(bars.high >= bars.open, bars.open),
+        low=bars.low.where(bars.low <= bars.open, bars.open),
+    )
+    extra = {"ts_stop": 0.05}
+    intraday = _scorer(bars, h.open_mask(bars), extra, None, True)
+    default = _scorer(bars, h.open_mask(bars), extra, None)
+    assert not np.array_equal(intraday._val, default._val)
+    _check(bars, h.open_mask, [bars.close.index[i] for i in (600, 800, 1100)], extra, None, True)
 
 
 @h.needs_real
@@ -128,3 +148,43 @@ def test_the_check_has_teeth_a_forward_looking_signal_is_caught() -> None:
     end = bars.close.index[800]
     full, part = run(bars), run(truncate_bars(bars, end))
     assert not np.array_equal(full[: len(part)], part)
+
+
+def test_intraday_gap_after_exit_does_not_change_prior_windows() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.strategies.contract import ParamGrid
+
+    class ExitToy(h.ToyHold):
+        def build(self, bars, grid=None):
+            result = super().build(bars, grid)
+            exits = result.exits.copy()
+            if len(exits) > 6:
+                exits.iloc[6] = True
+            return replace(result, exits=exits)
+
+    original = h.toy_bars(n_bars=20)
+    close = original.close * 0 + 100.0
+    close.iloc[8, 0] = np.nan
+    bars = replace(original, close=close, open=close.copy(), high=close.copy(), low=close.copy())
+    grid = ParamGrid.single({"delay": 3})
+
+    def score(data):
+        scorer = SignalScorer(
+            ExitToy(),
+            data,
+            grid,
+            ["toy"],
+            grid.combos(),
+            None,
+            {**h.TOY_CONFIG, "ts_stop": 0.1},
+            1 << 30,
+            intraday_stops=True,
+        )
+        scorer.prepare([])
+        return scorer._val
+
+    full = score(bars)
+    for i in (5, 7, 10):
+        cut = score(truncate_bars(bars, bars.close.index[i]))
+        np.testing.assert_array_equal(full[: len(cut)], cut)

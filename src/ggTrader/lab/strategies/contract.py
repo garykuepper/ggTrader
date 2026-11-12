@@ -137,8 +137,8 @@ class SignalOut:
             ``SIGNAL_POSITION_SIZE`` (lab default 0.03). A frame holds per-bar sizes, NaN
             where the base size applies (conviction sizing).
         sl_stop, sl_trail, tp_stop: stop metadata, applied by the caller through the engine.
-        td_stop: forced exit this many bars after each (masked) entry; ggTrader glue, the
-            engine applies it after the PIT mask.
+        td_stop: schedule an exit signal this many bars after each entry signal surviving
+            the PIT mask. This does not guarantee a maximum holding period for fills.
         meta: free-form diagnostics (voters used, notes) for run JSON.
     """
 
@@ -252,6 +252,10 @@ def simulate_signal_out(
     mask: pd.DataFrame | None = None,
     high: pd.DataFrame | None = None,
     low: pd.DataFrame | None = None,
+    stop_open: pd.DataFrame | None = None,
+    halt_mask: pd.DataFrame | None = None,
+    order_sequence: str | None = None,
+    stop_exit_price: str | None = None,
     max_bytes: int = engine_portfolio.DEFAULT_MAX_BYTES,
 ) -> engine_portfolio.SimResult:
     """Run a :class:`SignalOut` through ``engine.run_signals`` (mask tiled, one group per combo).
@@ -276,7 +280,11 @@ def simulate_signal_out(
         mask=None if mask is None else tile_columns(mask, cols),
         td_stop=out.td_stop,
         size=size,
-        high=None if high is None else tile_columns(high, cols),
-        low=None if low is None else tile_columns(low, cols),
+        high=high if stop_open is not None or high is None else tile_columns(high, cols),
+        low=low if stop_open is not None or low is None else tile_columns(low, cols),
+        stop_open=stop_open,
+        halt_mask=halt_mask,
+        order_sequence=order_sequence,
+        stop_exit_price=stop_exit_price,
         max_bytes=max_bytes,
     )

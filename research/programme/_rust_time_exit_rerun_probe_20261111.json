@@ -1,0 +1,218 @@
+{
+  "purpose": "Throwaway synthetic test of a naive repeated-Rust time-exit idea; not strategy evidence",
+  "engine": "vectorbt 1.2.0 Rust, Portfolio.from_signals",
+  "inputs": {
+    "bars": 6,
+    "symbols": [
+      "A",
+      "B"
+    ],
+    "close_all": 100.0,
+    "entry_bars": {
+      "A": [
+        0
+      ],
+      "B": [
+        0,
+        2
+      ]
+    },
+    "start_cash": 10000.0,
+    "cash_sharing": true,
+    "size_percent": 1.0,
+    "fees": 0.0,
+    "slippage": 0.0,
+    "time_limit_bars": 2
+  },
+  "method": "Simulate, inspect filled trade entry bars, add the earliest missing timed exit to a static exit frame, and resimulate until no new exit is added, with a hard iteration cap. Default vectorbt signal conflict behavior is unchanged.",
+  "first_case": {
+    "simulation_calls": 3,
+    "orders": [
+      [
+        "A",
+        0,
+        "buy"
+      ],
+      [
+        "A",
+        2,
+        "sell"
+      ],
+      [
+        "B",
+        2,
+        "buy"
+      ],
+      [
+        "B",
+        4,
+        "sell"
+      ]
+    ]
+  },
+  "conflict_case": {
+    "change": "Add another A entry signal at bar 2, when its timed exit is due.",
+    "forced_exit_present": true,
+    "orders": [
+      [
+        "A",
+        0,
+        "buy"
+      ]
+    ],
+    "result": "A remains open; the naive termination check incorrectly sees no new exit to add."
+  },
+  "bounded_scaling_probe": {
+    "scope": "Synthetic input, revised retry method, not a trading or performance study",
+    "seed": 42,
+    "bars": 120,
+    "groups": 3,
+    "symbols_per_group": 20,
+    "price_generation": "100 * exp(cumulative independent normal(0, 0.02) shocks)",
+    "entry_probability": 0.08,
+    "exit_probability": 0.03,
+    "time_limit_bars": 10,
+    "stop_loss": 0.05,
+    "size_type": "percent",
+    "size": 0.05,
+    "starting_cash_per_group": 10000.0,
+    "fees": 0.001,
+    "slippage": 0.001,
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "simulation_calls": 151,
+    "elapsed_seconds": 0.743,
+    "status": "converged",
+    "limits": "Single short run on this host; capped at 250 simulations or 12 seconds. No reference comparison, long-window or realistic-grid benchmark; elapsed time is not a performance guarantee."
+  },
+  "longer_scaling_probe": {
+    "scope": "Synthetic input, revised retry method, not a trading or performance study",
+    "seed": 42,
+    "bars": 1200,
+    "groups": 5,
+    "symbols_per_group": 50,
+    "price_generation": "100 * exp(cumulative independent normal(0, 0.02) shocks)",
+    "entry_probability": 0.08,
+    "exit_probability": 0.03,
+    "time_limit_bars": 10,
+    "stop_loss": 0.05,
+    "size_type": "percent",
+    "size": 0.02,
+    "starting_cash_per_group": 10000.0,
+    "fees": 0.001,
+    "slippage": 0.001,
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "simulation_calls": 276,
+    "elapsed_seconds": 12.02,
+    "status": "time_cap",
+    "unapplied_candidate_bar_column_pairs": 101989,
+    "limits": "Stopped after 12 seconds without convergence. Candidate bar-column pairs are not a count of trades or independent orders. Single run; no reference comparison or valid timing extrapolation to a real walk-forward grid."
+  },
+  "group_batched_scaling_probe": {
+    "scope": "Same synthetic setup as longer_scaling_probe, but add the earliest candidate per independent cash group on each rerun",
+    "simulation_calls": 427,
+    "elapsed_seconds": 12.006,
+    "status": "time_cap",
+    "groups_with_pending": 5,
+    "limits": "Stopped without convergence. The two capped probes did not reach final results and are not an end-to-end speedup comparison. Group-batching correctness was tested only on small synthetic examples against the Numba callback."
+  },
+  "all_candidates_recomputed_probe": {
+    "scope": "Same synthetic setup as longer_scaling_probe, but recompute all currently overdue exit signals each iteration and stop at a stable signal frame",
+    "simulation_calls": 17,
+    "elapsed_seconds": 0.661,
+    "status": "stable",
+    "callback_order_count": 29268,
+    "callback_order_comparison": "idx, col, side, size, price and fees matched within 1e-10 relative and absolute tolerance",
+    "limits": "Single synthetic run; timer excludes the subsequent Numba callback comparison. The earlier capped method did not converge, so this is not an end-to-end speedup measurement. Iteration cycles, behavior outside the tested cases and realistic-grid performance remain unresolved."
+  },
+  "all_candidates_larger_grid_probe": {
+    "scope": "Synthetic setup as longer_scaling_probe with 20 independent groups instead of five; recompute all candidate exits each iteration",
+    "bars": 1200,
+    "groups": 20,
+    "symbols_per_group": 50,
+    "seed": 42,
+    "simulation_calls": 24,
+    "elapsed_seconds": 3.558,
+    "status": "stable",
+    "callback_order_count": 116350,
+    "callback_order_comparison": "idx, col, side, size, price and fees matched within 1e-10 relative and absolute tolerance",
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "limits": "Single synthetic run; timer excludes data generation and Numba callback comparison. No measured peak memory, multiple-seed performance distribution, intraday OHLC, partial fill or realistic strategy grid. Stability is not guaranteed."
+  },
+  "all_candidates_48_group_probe": {
+    "scope": "Synthetic setup as longer_scaling_probe with 48 independent groups instead of five; recompute all candidate exits each iteration",
+    "bars": 1200,
+    "groups": 48,
+    "symbols_per_group": 50,
+    "seed": 42,
+    "simulation_calls": 23,
+    "elapsed_seconds": 7.602,
+    "peak_rss_mib_after_rust": 1476.6,
+    "peak_rss_mib_after_reference_comparison": 1476.6,
+    "status": "stable",
+    "callback_order_count": 280071,
+    "callback_order_comparison": "idx, col, side, size, price and fees matched within 1e-10 relative and absolute tolerance",
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "limits": "Single synthetic run; timer excludes data generation and Numba callback comparison. RSS includes Python baseline and earlier allocations. No multiple-seed performance distribution, intraday OHLC, partial fills or full historical-symbol strategy grid. Stability is not guaranteed."
+  },
+  "all_candidates_wide_group_probe": {
+    "scope": "Synthetic setup as longer_scaling_probe, but use 500 columns per group and a 0.002 cash fraction for sizing",
+    "bars": 1200,
+    "groups": 5,
+    "symbols_per_group": 500,
+    "seed": 42,
+    "simulation_calls": 23,
+    "elapsed_seconds": 7.715,
+    "peak_rss_mib_after_rust": 1566.8,
+    "peak_rss_mib_after_reference_comparison": 1567.0,
+    "status": "stable",
+    "callback_order_count": 291475,
+    "callback_order_comparison": "idx, col, side, size, price and fees matched within 1e-10 relative and absolute tolerance",
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "limits": "Single synthetic run; 0.002 is the fraction passed to percent sizing, not a percentage point. Timer excludes data generation and Numba callback comparison. RSS includes Python baseline. No multiple-seed performance distribution, intraday OHLC, partial fills or 48-group 500-symbol strategy grid. Stability is not guaranteed."
+  },
+  "limitations": [
+    "These are two invented cases, not a general correctness or performance test.",
+    "Price stops, fills with slippage, missing bars, partial fills, retries, many groups and same-bar ordering are untested.",
+    "Suppressing a conflicting entry might address this specific example but needs independent testing and does not prove a viable engine implementation.",
+    "The current ggTrader time-stop implementation is unchanged."
+  ],
+  "all_candidates_dense_entry_probe": {
+    "scope": "Synthetic fixed-point Rust reruns, one symbol, no market data; not a strategy test",
+    "setup": "Constant close 100; entry true on every bar; no ordinary exit or price stop; one shared cash pool; percent size 1.0; zero fees and slippage; time limit one bar. Recompute the full forced-exit mask from each run until unchanged.",
+    "runs": [
+      {
+        "bars": 20,
+        "simulation_calls": 20,
+        "closed_trades": 10,
+        "elapsed_seconds": 0.063
+      },
+      {
+        "bars": 100,
+        "simulation_calls": 100,
+        "closed_trades": 50,
+        "elapsed_seconds": 0.276
+      },
+      {
+        "bars": 300,
+        "simulation_calls": 300,
+        "closed_trades": 150,
+        "elapsed_seconds": 0.911
+      },
+      {
+        "bars": 1200,
+        "simulation_calls": 1200,
+        "closed_trades": 600,
+        "elapsed_seconds": 3.897
+      }
+    ],
+    "memory_cap_bytes": 8589934592,
+    "swap_cap_bytes": 0,
+    "interpretation": "In this constructed case, required reruns grew with bar count. An arbitrary small fixed cap would refuse a valid-looking case; a large cap may be expensive on wider grouped histories.",
+    "limitations": "One symbol and one constructed signal pattern; no callback comparison in this probe, no peak-memory measurement, no real-history estimate, no proof of general convergence or complexity. Timing is host-specific."
+  }
+}
