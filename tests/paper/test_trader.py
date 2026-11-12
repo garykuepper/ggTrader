@@ -4139,7 +4139,7 @@ def test_presubmission_failure_notifies_and_submits_nothing(stage):
 
 
 class TestUnappliedSplitAndDailyLoss:
-    """A split the broker has not applied must not look like a loss (review finding)."""
+    """A known unapplied split keeps the conservative halt but explains it (review finding)."""
 
     @staticmethod
     def _run(corrections):
@@ -4162,23 +4162,52 @@ class TestUnappliedSplitAndDailyLoss:
             patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
             patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
         ):
-            return trader.run()
+            return trader.run(), broker
 
-    def test_a_known_unapplied_split_does_not_trigger_a_daily_loss_halt(self):
-        result = self._run({"AAPL": 2.0})
-        assert not any("daily loss" in error.lower() for error in result["errors"])
+    def test_a_known_unapplied_split_still_halts_buys_and_says_why(self):
+        result, broker = self._run({"AAPL": 2.0})
+        errors = " ".join(result["errors"]).lower()
+        assert "daily loss" in errors and "unapplied split correction for aapl" in errors
+        broker.submit_buy.assert_not_called()
 
-    def test_the_same_booked_loss_without_a_known_split_still_halts(self):
-        result = self._run({})
+    def test_a_stale_correction_cannot_hide_a_real_loss(self):
+        # The broker applied the split long ago, the stored correction is stale, and the 5% fall
+        # is real. The loss must still halt: nothing is added back to the booked equity.
+        result, _ = self._run({"AAPL": 2.0})
         assert any("daily loss" in error.lower() for error in result["errors"])
 
+    def test_the_same_loss_without_a_known_split_halts_without_the_note(self):
+        result, _ = self._run({})
+        errors = " ".join(result["errors"]).lower()
+        assert "daily loss" in errors and "unapplied split" not in errors
 
-def test_split_adjusted_equity_adds_back_only_the_corrected_value():
-    from ggTrader.paper.trader import split_adjusted_equity
 
-    positions = {"AAPL": {"market_value": 5000.0}, "MSFT": {"market_value": 3000.0}}
-    assert split_adjusted_equity(95000.0, positions, {"AAPL": 2.0}) == pytest.approx(100000.0)
-    assert split_adjusted_equity(95000.0, positions, {}) == 95000.0
-    assert split_adjusted_equity(95000.0, positions, {"GONE": 2.0}) == 95000.0  # not held
-    for bad in (None, float("nan"), float("inf")):
-        assert split_adjusted_equity(bad, positions, {"AAPL": 2.0}) is bad or bad != bad
+@pytest.mark.parametrize("exit_kind", ["signal", "catastrophe"])
+def test_a_pending_order_does_not_excuse_an_invalid_exit_quantity(exit_kind):
+    positions = {
+        "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
+        "SPY": _spy_position(qty=50.0, price=400.0),
+    }
+    trader, broker, _ = _make_trader(positions=positions, cash=50000.0)
+    trader._reconcile_pending_orders = MagicMock(return_value={"AAPL"})
+    with (
+        patch(
+            "ggTrader.paper.trader.generate_core_signals",
+            return_value=_blend(["MSFT"], ["AAPL"] if exit_kind == "signal" else []),
+        ),
+        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
+        patch.dict(
+            os.environ,
+            {
+                "CASH_SWEEP_ENABLED": "true",
+                "CATASTROPHE_STOP_ENABLED": str(exit_kind == "catastrophe").lower(),
+            },
+        ),
+        patch(
+            "ggTrader.paper.trader.catastrophe_stop.find_catastrophe_stops", return_value=["AAPL"]
+        ),
+        patch("ggTrader.paper.trader.catastrophe_stop.unrealized_pct", return_value=-0.4),
+    ):
+        result = trader.run()
+    broker.submit_buy.assert_not_called()
+    assert any("invalid long quantity" in error for error in result["errors"])

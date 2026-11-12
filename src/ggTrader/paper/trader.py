@@ -103,30 +103,6 @@ LIVE_MEMBERSHIP_SPEC = "db"
 _MAX_SIGNAL_AGE_DAYS = 4
 
 
-def split_adjusted_equity(
-    portfolio_value: float, positions: dict[str, dict], corrections: dict[str, float]
-) -> float:
-    """Booked equity plus the value that known unapplied splits add back.
-
-    ``corrections`` maps a symbol to its split factor (see ``split_check``). An invalid
-    ``portfolio_value`` is returned unchanged so the caller's risk check still rejects it.
-    """
-    if (
-        not corrections
-        or isinstance(portfolio_value, bool)
-        or not isinstance(portfolio_value, (int, float))
-        or not math.isfinite(portfolio_value)
-    ):
-        return portfolio_value
-    corrected = apply_corrections_to_positions(positions, corrections)
-    adjustment = sum(
-        corrected[symbol].get("market_value", 0.0) - positions[symbol].get("market_value", 0.0)
-        for symbol in corrections
-        if symbol in positions
-    )
-    return portfolio_value + adjustment if math.isfinite(adjustment) else portfolio_value
-
-
 def _today_et() -> date:
     """Current calendar date in the exchange's timezone (America/New_York)."""
     return datetime.now(_ET).date()
@@ -1021,20 +997,26 @@ class PaperTrader:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
                 return {"buys": [], "sells": [], "errors": [reason]}
 
-        # The broker's previous close is true economic value. Its current value is booked
-        # value, which understates a holding whose split the broker has not applied yet, so
-        # add back the known split correction before measuring the day's loss.
+        # Booked equity can understate a holding whose split the broker has not applied yet,
+        # so a harmless split can look like a loss. That false halt is accepted on purpose: it
+        # only blocks buys and sweeps for the day (exits stay allowed), while adding the
+        # correction back could hide a real loss when the stored correction is stale.
         last_equity = account.get("last_equity")
         if last_equity is None:
             reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
             self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
             return {"buys": [], "sells": [], "errors": [reason]}
-        daily_value = split_adjusted_equity(portfolio_value, positions, split_corrections)
-        daily_halted, daily_reason = self._risk.check_daily_loss(daily_value, last_equity)
+        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
         if daily_halted:
             if not math.isfinite(last_equity) or last_equity <= 0:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
                 return {"buys": [], "sells": [], "errors": [daily_reason]}
+            if split_corrections:
+                daily_reason += (
+                    " (known unapplied split correction for "
+                    f"{', '.join(sorted(split_corrections))}: booked equity may understate the "
+                    "true value; buys stay blocked today)"
+                )
             loss_halts.append(daily_reason)
 
         if loss_halts:
@@ -1118,9 +1100,6 @@ class PaperTrader:
                 if symbol not in unassessable
             }
             for symbol in catastrophe_stop.find_catastrophe_stops(assessable, stop_threshold):
-                if symbol in pending_symbols:
-                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
-                    continue
                 qty = strategy_positions[symbol]["qty"]
                 if qty is None or not math.isfinite(qty) or qty <= 0:
                     errors.append(
@@ -1128,6 +1107,9 @@ class PaperTrader:
                         "new strategy buys blocked"
                     )
                     invalid_exit_symbols.add(symbol)
+                    continue
+                if symbol in pending_symbols:
+                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
                     continue
                 pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
                 if self._dry_run:
@@ -1165,11 +1147,9 @@ class PaperTrader:
 
         # Check requested strategy exits before estimating sweep funding for buys.
         for symbol in signals["sells"]:
-            if (
-                symbol not in strategy_positions
-                or symbol in invalid_exit_symbols
-                or symbol in pending_symbols
-            ):
+            # A pending order does not excuse an invalid quantity: the account state is
+            # still untrusted, so it must still block new buys.
+            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
                 continue
             qty = strategy_positions[symbol]["qty"]
             if qty is None or not math.isfinite(qty) or qty <= 0:
