@@ -1,3 +1,8 @@
-# Raw SEC downloads are a local cache (about 350 MB, one file is 160 MB, over the GitHub limit).
-# Their names carry the SHA-256, so they can be fetched again. Only the manifest and claim files are tracked.
-*/
+# Raw SEC downloads (about 350 MB; one file is 160 MB, over the GitHub limit) live on /media/thesix.
+# These symlinks point there. File names carry the SHA-256, so the files can also be fetched again.
+# Only the manifest and claim files are tracked.
+/cost-charters-h1kbl362
+/identity-inventory-we_55vr8
+/insider-predecessor-bnz1mn22
+/network-smoke-5b1q16b6
+/three-document-restart-sc5zqn6c
