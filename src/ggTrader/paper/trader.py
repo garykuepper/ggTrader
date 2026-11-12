@@ -1012,10 +1012,10 @@ class PaperTrader:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
                 return {"buys": [], "sells": [], "errors": [daily_reason]}
             if split_corrections:
+                symbols = ", ".join(sorted(map(str, split_corrections)))
                 daily_reason += (
-                    " (known unapplied split correction for "
-                    f"{', '.join(sorted(split_corrections))}: booked equity may understate the "
-                    "true value; buys stay blocked today)"
+                    f" (known unapplied split correction for {symbols}: booked equity may "
+                    "understate the true value; buys stay blocked today)"
                 )
             loss_halts.append(daily_reason)
 

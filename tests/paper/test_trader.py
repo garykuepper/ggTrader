@@ -4158,7 +4158,8 @@ class TestUnappliedSplitAndDailyLoss:
                 "ggTrader.paper.trader.PaperTrader._compute_split_corrections",
                 return_value=corrections,
             ),
-            patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])),
+            # A buy signal makes "no buy submitted" a real assertion, not an empty one.
+            patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], [])),
             patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
             patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
         ):
@@ -4211,3 +4212,8 @@ def test_a_pending_order_does_not_excuse_an_invalid_exit_quantity(exit_kind):
         result = trader.run()
     broker.submit_buy.assert_not_called()
     assert any("invalid long quantity" in error for error in result["errors"])
+
+
+def test_the_split_note_does_not_break_the_halt_when_a_key_is_not_a_string():
+    result, _ = TestUnappliedSplitAndDailyLoss._run({1: 2.0})
+    assert any("daily loss" in error.lower() for error in result["errors"])
