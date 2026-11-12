@@ -1014,8 +1014,8 @@ class PaperTrader:
             if split_corrections:
                 symbols = ", ".join(sorted(map(str, split_corrections)))
                 daily_reason += (
-                    f" (known unapplied split correction for {symbols}: booked equity may "
-                    "understate the true value; buys stay blocked today)"
+                    f" (split correction on record for {symbols}: it may explain part of the "
+                    "drop, but a real loss cannot be ruled out; buys stay blocked today)"
                 )
             loss_halts.append(daily_reason)
 

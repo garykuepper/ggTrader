@@ -12,7 +12,7 @@ Development and research are paused as of 2026-11-12 with a clean slate. Nothing
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
 | Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits your approval of the halt policy. |
-| Waiting on review | Sol's two blocking issues in the paper commit are fixed, and Sol's final re-check is clean ([details](where-we-left-it-2026-11-12.md)). Opus has not seen the fixes. Main holds one unpushed, undeployed commit, `783c7267`. |
+| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). Main holds one unpushed, undeployed commit, `783c7267`. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -32,7 +32,7 @@ Terms:
 
 ### To resume
 
-1. Merge branch `feature/verdict-register` only with the owner's explicit approval of the halt policy. Sol's blocking findings are fixed and re-checked. Optionally have Opus look at the fixes first.
+1. Merge branch `feature/verdict-register` only with the owner's explicit approval of the halt policy. Sol's blocking findings are fixed, and both Sol and Opus have re-checked the fixes. The plain-words policy summary is in the where-we-left-it note.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.

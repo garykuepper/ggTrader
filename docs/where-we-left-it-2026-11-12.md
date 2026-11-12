@@ -37,13 +37,28 @@ Development and research are paused. Everything is committed. Nothing was merged
 - **Mutation checks:** each new test fails when its fix is removed.
 - **Still open before any merge:** your explicit approval of the halt policy.
 - **Accepted trade-off:** an unapplied split can still cause a false one-day halt of buys and sweeps.
+
+## The halt policy in plain words
+
+This is what you are asked to approve. It changes nothing today, because the trader is stopped.
+
+- **When it starts:** if the account falls too far below its best value so far, or loses too much in one day, the trader stops opening new stock positions on that run. It also stops moving spare cash into SPY. It is checked again on every run.
+- **What still works:** selling stocks already owned when the strategy or the emergency stop-loss says to sell. Selling stays allowed because it reduces risk.
+- **Bad data stops everything:** if the account numbers look broken (missing, zero or impossible), no orders are placed that day, not even sales.
+- **Strange share count:** if a stock to be sold shows an impossible share count (missing, zero, or negative, meaning borrowed shares), that sale is refused and all buying stops.
+- **No duplicates:** a stock with an order already waiting at the broker gets no second order. The waiting order is not cancelled, so it may still go through.
+- **False alarms:** if a stock splits and the broker is slow to record it, the account can look 5% poorer than it is, and buying halts for that day. The alert names the split stock and says a real loss cannot be ruled out. An unrecorded split can also trip the "below its best value" limit early.
+- **What it cannot do:** it does not sell everything in a crash, cancel waiting orders, or protect against losses on positions it is not asked to sell.
+- **What approving means:** the rule only takes effect once the code is deployed and the trader is restarted. That is a separate decision.
 - **Minor items not fixed:**
   - A failed Telegram send can hide a rejected buy in routine output (already so before these commits).
   - A slow-filling exit aborts the run and leaves no snapshot.
   - The paper commit message overstates "durable order intents".
   - One mutation script targets code that no longer exists.
   - No test pins the engine's default stop settings, and one stop-chunking test would pass without intraday stops.
-- **Same-family note:** Sol is from the same family as the original author (Codex). The fixes were written by Claude, so Sol's re-checks were cross-family. Opus has not seen the fixes.
+- **Opus review of the fixes (2026-11-12):** no blocking findings. Opus ran 7 mutations and every one broke a test. It found no path to a strategy or sweep buy while a halt is active, a risk input is invalid, or an exit quantity is invalid.
+- **Opus minor findings:** the split note could be read as dismissing a real loss (the wording is now neutral: it says a split correction is on record, it may explain part of the drop, and a real loss cannot be ruled out). An unapplied split can also make the drawdown limit trip early, with no note. An invalid quantity on a held stock only counts when an exit was requested for it. The sweep buy is not stopped by an exit that only partly filled.
+- **Same-family note:** Sol is from the same family as the original author (Codex). The fixes were written by Claude, so both re-checks (Sol and Opus) were by a different author than the fixes.
 - **Not caused by these commits:** `tests/lab/test_data.py::test_cached_loader_interval_to_timedelta` fails when run together with the paper, engine, lab and utils test folders. It fails the same way on `main`, and it passes alone and in the full tier.
 
 ## Things to know
@@ -63,5 +78,5 @@ Development and research are paused. Everything is committed. Nothing was merged
 ## First three things to do on return
 
 1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
-2. Decide on the halt policy. The review fixes are done and Sol's final re-check is clean. Optionally have Opus look at the fixes before a merge.
+2. Decide on the halt policy (a plain-words summary is above). The review fixes are done, and Sol and Opus have both re-checked them.
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.

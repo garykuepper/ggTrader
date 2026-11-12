@@ -4168,7 +4168,8 @@ class TestUnappliedSplitAndDailyLoss:
     def test_a_known_unapplied_split_still_halts_buys_and_says_why(self):
         result, broker = self._run({"AAPL": 2.0})
         errors = " ".join(result["errors"]).lower()
-        assert "daily loss" in errors and "unapplied split correction for aapl" in errors
+        assert "daily loss" in errors and "split correction on record for aapl" in errors
+        assert "real loss cannot be ruled out" in errors
         broker.submit_buy.assert_not_called()
 
     def test_a_stale_correction_cannot_hide_a_real_loss(self):
@@ -4180,7 +4181,7 @@ class TestUnappliedSplitAndDailyLoss:
     def test_the_same_loss_without_a_known_split_halts_without_the_note(self):
         result, _ = self._run({})
         errors = " ".join(result["errors"]).lower()
-        assert "daily loss" in errors and "unapplied split" not in errors
+        assert "daily loss" in errors and "split correction on record" not in errors
 
 
 @pytest.mark.parametrize("exit_kind", ["signal", "catastrophe"])
