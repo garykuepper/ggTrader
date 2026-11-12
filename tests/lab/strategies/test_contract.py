@@ -174,3 +174,24 @@ def test_simulate_signal_out_fills_nan_sizes_with_the_base_size() -> None:
         SignalOut(entries=out.entries, exits=out.exits, combos=out.combos, size=big), close, CFG
     )
     assert not np.array_equal(c.value.to_numpy(), b.value.to_numpy())
+
+
+def test_signal_out_can_opt_into_intraday_stops_for_each_grid_group() -> None:
+    index = pd.date_range("2024-01-01", periods=3)
+    close = pd.DataFrame({"X": [100.0] * 3, "Y": [100.0] * 3}, index=index)
+    high = close.copy()
+    low = close.copy()
+    low.loc[index[1], "X"] = 80.0
+    columns = group_columns([{"a": 1}, {"a": 2}], ["a"], ["X", "Y"])
+    entries = pd.DataFrame(False, index=index, columns=columns)
+    entries.iloc[0] = True
+    out = SignalOut(entries, entries & False, ({"a": 1}, {"a": 2}), sl_stop=0.1)
+    result = simulate_signal_out(out, close, CFG, stop_open=close, high=high, low=low)
+    trades = result.trades
+    x = trades[trades.symbol == "X"]
+    y = trades[trades.symbol == "Y"]
+    assert len(x) == len(y) == 2
+    assert x.status.tolist() == [1, 1]
+    assert x.exit_idx.tolist() == [1, 1]
+    assert x.exit_price.tolist() == [90.0, 90.0]
+    assert y.status.tolist() == [0, 0]

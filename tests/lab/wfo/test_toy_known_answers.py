@@ -80,6 +80,8 @@ def test_engine_equity_equals_the_closed_form(toy) -> None:
     from ggTrader.lab.wfo.scorers import SignalScorer
 
     bars, _ = toy
+    assert toy[1].diagnostics["intraday_stops"] is False
+    assert toy[1].diagnostics["halt_mask_sha256"] is None
     combos = h.ToyHold.grid.combos()
     names = [inputs.combo_name("toy", c) for c in combos]
     scorer = SignalScorer(
@@ -279,3 +281,463 @@ def test_legacy_strategy_classes_are_refused_with_a_pointer() -> None:
             verbose=False,
             allow_unmasked=True,
         )
+
+
+def test_signal_scorer_can_opt_into_intraday_stops() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    original = h.toy_bars(n_bars=20)
+    close = original.close * 0 + 100.0
+    low = close.copy()
+    low.iloc[4, 0] = 80.0
+    bars = replace(original, close=close, open=close.copy(), high=close.copy(), low=low)
+    grid = ParamGrid.single({"delay": 3})
+    args = (
+        h.ToyHold(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "ts_stop": 0.1},
+        1 << 30,
+    )
+    baseline = SignalScorer(*args)
+    baseline.prepare([])
+    intraday = SignalScorer(*args, intraday_stops=True)
+    intraday.prepare([])
+    assert baseline._val[4, 0] == 10000.0
+    assert intraday._val[4, 0] == 9500.0
+
+
+def test_signal_scorer_applies_explicit_close_stop_fill() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    original = h.toy_bars(n_bars=20)
+    close = original.close * 0 + 100.0
+    close.iloc[4:, :] = 85.0
+    bars = replace(original, close=close, open=close, high=close, low=close)
+    grid = ParamGrid.single({"delay": 3})
+    args = (
+        h.ToyHold(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "ts_stop": 0.1, "SLIPPAGE": 0.01},
+        1 << 30,
+    )
+    default = SignalScorer(*args, order_sequence="auto")
+    market = SignalScorer(*args, order_sequence="auto", stop_exit_price="stopmarket")
+    default.prepare([])
+    market.prepare([])
+    assert market._val[4, 0] < default._val[4, 0]
+
+
+def test_signal_scorer_applies_explicit_order_sequence() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.strategies.contract import SignalOut, group_columns
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    original = h.toy_bars(n_bars=3)
+    close = pd.DataFrame({"A": [100.0, 100.0, 110.0], "B": [100.0] * 3}, index=original.close.index)
+    bars = replace(original, close=close, open=close, high=close, low=close)
+    grid = ParamGrid.single({"delay": 1})
+
+    class Swap:
+        def build(self, bars, grid):
+            columns = group_columns(grid.combos(), [], ["A", "B"])
+            entries = pd.DataFrame(
+                [[False, True], [True, False], [False, False]],
+                index=bars.close.index,
+                columns=columns,
+            )
+            exits = pd.DataFrame(
+                [[False, False], [False, True], [False, False]],
+                index=bars.close.index,
+                columns=columns,
+            )
+            return SignalOut(entries=entries, exits=exits, combos=tuple(grid.combos()))
+
+    args = (
+        Swap(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "SIGNAL_POSITION_SIZE": 1.0},
+        1 << 30,
+    )
+    default = SignalScorer(*args, order_sequence="default")
+    automatic = SignalScorer(*args, order_sequence="auto")
+    default.prepare([])
+    automatic.prepare([])
+    assert default._val[-1, 0] == pytest.approx(10000.0)
+    assert automatic._val[-1, 0] == pytest.approx(11000.0)
+
+
+@pytest.mark.parametrize("setting", [{}, {"stop_entry_price": None}])
+def test_wfo_records_and_uses_intraday_stop_mode(monkeypatch, tmp_path, setting) -> None:
+    import json
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.cli_support import write_wfo_json
+    from ggTrader.lab.wfo.report import result_payload
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    original = h.toy_bars()
+    low = original.low.copy()
+    low.iloc[4, 0] = original.close.iloc[3, 0] * 0.5
+    bars = replace(original, low=low)
+    observed = []
+    prepare = SignalScorer.prepare
+
+    def capture(scorer, requests):
+        prepare(scorer, requests)
+        observed.append(scorer._val[4, 0])
+
+    monkeypatch.setattr(SignalScorer, "prepare", capture)
+    result = run_wfo(
+        "toy",
+        h.ToyHold,
+        LabConfig(),
+        bars,
+        bars.close["X"],
+        ES,
+        EE,
+        "test",
+        {**h.TOY_CONFIG, "ts_stop": 0.1, **setting},
+        h.ToyHold.grid,
+        verbose=False,
+        allow_unmasked=True,
+        intraday_stops=True,
+    )
+    assert result.diagnostics["intraday_stops"] is True
+    assert result.diagnostics["order_sequence"] == "auto"
+    assert result.diagnostics["stop_exit_price"] == "stopmarket"
+    assert result.diagnostics["stop_entry_price"] == "close"
+    assert result.diagnostics["stop_settings"] == {
+        "trailing_fraction": 0.1,
+        "take_profit_fraction": None,
+        "atr_multiplier": None,
+        "atr_period": None,
+        "time_stop_bars": None,
+    }
+    assert result_payload(result)["diagnostics"]["intraday_stops"] is True
+    assert observed == pytest.approx([9500.0])
+    result_file = tmp_path / "synthetic_wfo.json"
+    write_wfo_json(result, bars, str(result_file), strategy="toy")
+    assert json.loads(result_file.read_text())["diagnostics"]["intraday_stops"] is True
+    assert (
+        json.loads(result_file.read_text())["diagnostics"]["stop_settings"]["trailing_fraction"]
+        == 0.1
+    )
+
+
+def test_wfo_reports_no_stop_fill_when_no_price_stop_is_used() -> None:
+    bars = h.toy_bars()
+    result = run_wfo(
+        "toy",
+        h.ToyHold,
+        LabConfig(),
+        bars,
+        bars.close["X"],
+        ES,
+        EE,
+        "test",
+        dict(h.TOY_CONFIG),
+        h.ToyHold.grid,
+        verbose=False,
+        allow_unmasked=True,
+        stop_exit_price="stopmarket",
+    )
+    assert result.diagnostics["stop_exit_price"] is None
+    assert result.diagnostics["stop_entry_price"] is None
+    assert result.diagnostics["time_stop_warning"] is None
+
+
+@pytest.mark.parametrize("intraday", [False, True])
+def test_wfo_halt_mask_reaches_simulation_and_is_recorded(intraday, tmp_path) -> None:
+    import json
+
+    from ggTrader.lab.wfo.cli_support import write_wfo_json
+
+    bars = h.toy_bars()
+    halt_mask = pd.DataFrame(False, index=bars.close.index, columns=bars.close.columns)
+    args = (
+        "toy",
+        h.ToyHold,
+        LabConfig(),
+        bars,
+        bars.close["X"],
+        ES,
+        EE,
+        "test",
+        {**h.TOY_CONFIG, **({"ts_stop": 0.9} if intraday else {})},
+        h.ToyHold.grid,
+    )
+    result = run_wfo(
+        *args, verbose=False, allow_unmasked=True, halt_mask=halt_mask, intraday_stops=intraday
+    )
+    assert result.diagnostics["halt_mask_supplied"] is True
+    original_hash = result.diagnostics["halt_mask_sha256"]
+    assert isinstance(original_hash, str) and len(original_hash) == 64
+    output = tmp_path / "result.json"
+    write_wfo_json(result, bars, str(output), strategy="toy")
+    assert json.loads(output.read_text())["diagnostics"]["halt_mask_sha256"] == original_hash
+    halt_mask.iloc[0, 0] = True  # Earlier than every synthetic entry.
+    changed = run_wfo(
+        *args, verbose=False, allow_unmasked=True, halt_mask=halt_mask, intraday_stops=intraday
+    )
+    assert changed.diagnostics["halt_mask_sha256"] != original_hash
+    halt_mask.iloc[0, 0] = False
+    halt_mask.iloc[5, 0] = True
+    with pytest.raises(ValueError, match="halt during an open position"):
+        run_wfo(
+            *args,
+            verbose=False,
+            allow_unmasked=True,
+            halt_mask=halt_mask,
+            intraday_stops=intraday,
+            max_bytes=1,
+        )
+
+
+def test_halt_mask_hash_includes_dates_and_symbol_labels() -> None:
+    from ggTrader.lab.wfo.run import _halt_mask_hash
+
+    bars = h.toy_bars(n_bars=4)
+    mask = pd.DataFrame(False, index=bars.close.index, columns=bars.close.columns)
+    assert _halt_mask_hash(mask) == _halt_mask_hash(mask.copy())
+    assert _halt_mask_hash(mask) != _halt_mask_hash(mask.rename(columns={"X": "Y"}))
+    changed_dates = mask.copy()
+    changed_dates.index = changed_dates.index + pd.Timedelta(days=1)
+    assert _halt_mask_hash(mask) != _halt_mask_hash(changed_dates)
+
+
+def test_halt_mask_hash_preserves_recorded_format() -> None:
+    from ggTrader.lab.wfo.run import _halt_mask_hash
+
+    mask = pd.DataFrame({"X": [True, False]}, index=pd.date_range("2024-01-01", periods=2))
+    assert _halt_mask_hash(mask) == (
+        "05338c5ca3cd00131015282333301f5f742bfaee86cfc23c965a083ea9b18d77"
+    )
+
+
+def test_wfo_persists_time_stop_warning(tmp_path) -> None:
+    import json
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.cli_support import write_wfo_json
+
+    class TimeStop(h.ToyHold):
+        def build(self, bars, grid=None):
+            return replace(super().build(bars, grid), td_stop=5)
+
+    bars = h.toy_bars()
+    with pytest.warns(UserWarning, match="td_stop"):
+        result = run_wfo(
+            "toy",
+            TimeStop,
+            LabConfig(),
+            bars,
+            bars.close["X"],
+            ES,
+            EE,
+            "test",
+            dict(h.TOY_CONFIG),
+            h.ToyHold.grid,
+            verbose=False,
+            allow_unmasked=True,
+        )
+    path = tmp_path / "time_stop.json"
+    write_wfo_json(result, bars, str(path), strategy="toy")
+    warning = json.loads(path.read_text())["diagnostics"]["time_stop_warning"]
+    assert "entry signals" in warning
+    assert "filled positions" in warning
+
+
+def test_wfo_records_explicit_close_only_sequence(monkeypatch) -> None:
+    from ggTrader.engine import portfolio
+
+    captured = []
+    original = portfolio.run_signals
+
+    def capture(*args, **kwargs):
+        captured.append(args[3].get("stop_entry_price"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(portfolio, "run_signals", capture)
+    bars = h.toy_bars()
+    result = run_wfo(
+        "toy",
+        h.ToyHold,
+        LabConfig(),
+        bars,
+        bars.close["X"],
+        ES,
+        EE,
+        "test",
+        {**h.TOY_CONFIG, "ts_stop": 0.1, "stop_entry_price": "fillprice"},
+        h.ToyHold.grid,
+        verbose=False,
+        allow_unmasked=True,
+        order_sequence="auto",
+        stop_exit_price="stopmarket",
+    )
+    assert result.diagnostics["intraday_stops"] is False
+    assert result.diagnostics["order_sequence"] == "auto"
+    assert result.diagnostics["stop_entry_price"] == "fillprice"
+    assert result.diagnostics["stop_exit_price"] == "stopmarket"
+    assert captured == ["fillprice"]
+
+
+def test_wfo_rejects_invalid_stop_fill_rule() -> None:
+    bars = h.toy_bars()
+    with pytest.raises(ValueError, match="stop_exit_price"):
+        run_wfo(
+            "toy",
+            h.ToyHold,
+            LabConfig(),
+            bars,
+            bars.close["X"],
+            ES,
+            EE,
+            "test",
+            dict(h.TOY_CONFIG),
+            h.ToyHold.grid,
+            verbose=False,
+            allow_unmasked=True,
+            stop_exit_price="invalid",
+        )
+
+
+def test_intraday_stop_mode_rejects_weight_strategies() -> None:
+    from types import SimpleNamespace
+
+    from ggTrader.lab.wfo.run import _make_scorer
+
+    with pytest.raises(ValueError, match="signal strategy"):
+        _make_scorer(
+            SimpleNamespace(kind="weights"),
+            h.toy_bars(n_bars=20),
+            h.ToyHold.grid,
+            [],
+            [],
+            None,
+            h.TOY_CONFIG,
+            1 << 30,
+            0,
+            True,
+        )
+
+
+@pytest.mark.parametrize(
+    "option",
+    [{"order_sequence": "auto"}, {"stop_exit_price": "stopmarket"}, {"halt_mask": pd.DataFrame()}],
+)
+def test_signal_execution_options_reject_weight_strategies(option) -> None:
+    from types import SimpleNamespace
+
+    from ggTrader.lab.wfo.run import _make_scorer
+
+    with pytest.raises(ValueError, match="signal strategy"):
+        _make_scorer(
+            SimpleNamespace(kind="weights"),
+            h.toy_bars(n_bars=20),
+            h.ToyHold.grid,
+            [],
+            [],
+            None,
+            h.TOY_CONFIG,
+            1 << 30,
+            0,
+            False,
+            **option,
+        )
+
+
+def test_intraday_scorer_allows_late_listing_before_first_entry() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    original = h.toy_bars(n_bars=20)
+    close = original.close * 0 + 100.0
+    close.iloc[:2, 0] = float("nan")
+    low = close.copy()
+    low.iloc[4, 0] = 80.0
+    bars = replace(original, close=close, open=close.copy(), high=close.copy(), low=low)
+    grid = ParamGrid.single({"delay": 3})
+    scorer = SignalScorer(
+        h.ToyHold(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "ts_stop": 0.1},
+        1 << 30,
+        intraday_stops=True,
+    )
+    scorer.prepare([])
+    assert scorer._val[4, 0] == 9500.0
+
+
+def test_scorer_records_actual_strategy_stop_overrides() -> None:
+    from dataclasses import replace
+
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    class WithStops(h.ToyHold):
+        def build(self, bars, grid=None):
+            return replace(super().build(bars, grid), sl_stop=0.2, tp_stop=0.3, td_stop=5)
+
+    bars = h.toy_bars(n_bars=20)
+    grid = ParamGrid.single({"delay": 3})
+    scorer = SignalScorer(
+        WithStops(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "ts_stop": 0.1, "tp_stop": 0.05, "atr_mult": 2.0},
+        1 << 30,
+    )
+    with pytest.warns(UserWarning, match="td_stop"):
+        scorer.prepare([])
+    assert scorer.stop_settings == {
+        "trailing_fraction": 0.2,
+        "take_profit_fraction": 0.3,
+        "atr_multiplier": None,
+        "atr_period": None,
+        "time_stop_bars": 5,
+    }
+
+
+def test_scorer_records_atr_stop_period() -> None:
+    from ggTrader.lab.wfo.scorers import SignalScorer
+
+    bars = h.toy_bars(n_bars=20)
+    grid = ParamGrid.single({"delay": 3})
+    scorer = SignalScorer(
+        h.ToyHold(),
+        bars,
+        grid,
+        ["toy"],
+        grid.combos(),
+        None,
+        {**h.TOY_CONFIG, "atr_mult": 2.0, "atr_period": 5},
+        1 << 30,
+    )
+    scorer.prepare([])
+    assert scorer.stop_settings["atr_multiplier"] == 2.0
+    assert scorer.stop_settings["atr_period"] == 5

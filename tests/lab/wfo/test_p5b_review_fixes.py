@@ -441,3 +441,23 @@ def test_a_signal_run_without_a_mask_raises_unless_allowed() -> None:
         run_wfo(*args, dict(h.TOY_CONFIG), h.ToyHold.grid, verbose=False)
     res = run_wfo(*args, dict(h.TOY_CONFIG), h.ToyHold.grid, verbose=False, allow_unmasked=True)
     assert res.fold_results
+
+
+def test_signal_scorer_rejects_columns_that_disagree_with_reported_combinations() -> None:
+    class ReorderedColumns(h.ToyHold):
+        def build(self, bars, grid=None) -> SignalOut:
+            out = super().build(bars, grid)
+            return SignalOut(
+                entries=out.entries.iloc[:, ::-1],
+                exits=out.exits.iloc[:, ::-1],
+                combos=out.combos,
+            )
+
+    bars = h.toy_bars()
+    combos = h.ToyHold.grid.combos()
+    names = [inputs.combo_name("toy", c) for c in combos]
+    scorer = SignalScorer(
+        ReorderedColumns(), bars, h.ToyHold.grid, names, combos, None, dict(h.TOY_CONFIG), 1 << 30
+    )
+    with pytest.raises(ValueError, match="signal.*columns"):
+        scorer.prepare([])

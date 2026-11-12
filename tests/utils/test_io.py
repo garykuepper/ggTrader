@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from ggTrader.utils import io, results
+from ggTrader.utils.json_safe import json_safe
 
 
 def test_atomic_write_bytes_creates_parents_and_leaves_no_temp_file(tmp_path: Path) -> None:
@@ -66,7 +67,7 @@ def test_json_safe_converts_numpy_pandas_and_non_finite_values() -> None:
 
 
 def test_results_keeps_clean_as_an_alias_of_json_safe() -> None:
-    assert results._clean is io.json_safe
+    assert results._clean is io.json_safe is json_safe
 
 
 def test_write_json_sanitizes_by_default(tmp_path: Path) -> None:

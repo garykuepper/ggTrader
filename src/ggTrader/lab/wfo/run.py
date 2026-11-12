@@ -39,9 +39,22 @@ from ggTrader.lab.wfo.gates import run_dsr, run_ndh
 from ggTrader.lab.wfo.report import WfoResult, anchor_history, curve_summary, format_wfo_table
 from ggTrader.lab.wfo.scorers import Scorer, SignalScorer, WeightScorer, WindowReq
 from ggTrader.lab.wfo.select import best_index, composite_score, pick_live_winner
+from ggTrader.utils.json_safe import canonical_hash
 
 #: Config keys of ``LabConfig`` a strategy may take as defaults (the legacy merged config).
 CFG_DEFAULT_KEYS = ("top_n", "lookback", "skip")
+
+
+def _halt_mask_hash(mask: pd.DataFrame) -> str:
+    """Hash mask dates, ordered columns and row-major boolean states."""
+    return canonical_hash(
+        {
+            "format": "halt-mask-v1",
+            "dates": [timestamp.isoformat() for timestamp in mask.index],
+            "columns": list(mask.columns),
+            "flags": np.packbits(mask.to_numpy(dtype=np.uint8).ravel()).tobytes().hex(),
+        }
+    )
 
 
 def _peak_rss_mb() -> float:
@@ -128,9 +141,29 @@ def _make_scorer(
     base_config: Mapping[str, Any],
     max_bytes: int,
     min_losing_days: int,
+    intraday_stops: bool,
+    order_sequence: str | None = None,
+    stop_exit_price: str | None = None,
+    halt_mask: pd.DataFrame | None = None,
 ) -> Scorer:
-    cls = SignalScorer if strategy.kind == "signals" else WeightScorer
-    return cls(strategy, bars, grid, names, combos, mask, base_config, max_bytes, min_losing_days)
+    args = (strategy, bars, grid, names, combos, mask, base_config, max_bytes, min_losing_days)
+    if strategy.kind == "signals":
+        return SignalScorer(
+            *args,
+            intraday_stops=intraday_stops,
+            halt_mask=halt_mask,
+            order_sequence=order_sequence,
+            stop_exit_price=stop_exit_price,
+        )
+    if intraday_stops:
+        raise ValueError("intraday stops require a signal strategy")
+    if halt_mask is not None:
+        raise ValueError("halt_mask requires a signal strategy")
+    if order_sequence is not None:
+        raise ValueError("order_sequence requires a signal strategy")
+    if stop_exit_price is not None:
+        raise ValueError("stop_exit_price requires a signal strategy")
+    return WeightScorer(*args)
 
 
 def run_wfo(
@@ -153,6 +186,10 @@ def run_wfo(
     allow_unmasked: bool = False,
     max_bytes: int = engine_portfolio.DEFAULT_MAX_BYTES,
     min_losing_days: int = engine_config.MIN_LOSING_DAYS,
+    intraday_stops: bool = False,
+    halt_mask: pd.DataFrame | None = None,
+    order_sequence: str | None = None,
+    stop_exit_price: str | None = None,
     verbose: bool = True,
 ) -> WfoResult | str:
     """Main WFO entry point: fold, train, test, concatenate, report.
@@ -177,6 +214,13 @@ def run_wfo(
             synthetic data or a fixed single-symbol tape). Without it such a run raises; a weight
             strategy always needs a mask.
         max_bytes: engine chunking budget.
+        intraday_stops: simulate signal-strategy stops using complete OHLC bars; opt-in only.
+        halt_mask: verified boolean halt bars; reject positions overlapping flagged bars.
+            Coverage, identity and timing are caller responsibilities; no fills are modeled.
+        order_sequence: ``default`` or ``auto`` for signal strategies; omitted selects the
+            existing mode-specific default.
+        stop_exit_price: ``stoplimit`` or ``stopmarket`` for signal strategies; omitted uses
+            the existing mode-specific default.
         min_losing_days: a selection window needs this many losing days for its Sortino to
             count (degeneracy guard, ``engine.config.MIN_LOSING_DAYS``; 0 turns it off).
             Selection windows also blank Sharpe and Sortino of a combination with no entry
@@ -210,7 +254,19 @@ def run_wfo(
     )
 
     scorer = _make_scorer(
-        strategy, bars, param_grid, names, combos, pit, base, max_bytes, min_losing_days
+        strategy,
+        bars,
+        param_grid,
+        names,
+        combos,
+        pit,
+        base,
+        max_bytes,
+        min_losing_days,
+        intraday_stops,
+        order_sequence,
+        stop_exit_price,
+        halt_mask,
     )
     live_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     live_req = WindowReq("live", 0, live_start, eval_end_ts)
@@ -404,10 +460,37 @@ def run_wfo(
         print(table)
 
     n_folds = len(folds)
+    stop_settings = getattr(scorer, "stop_settings", None)
+    price_stop_active = stop_settings is not None and any(
+        stop_settings[key] is not None
+        for key in ("trailing_fraction", "take_profit_fraction", "atr_multiplier")
+    )
     diagnostics = {
         "engine": engine_config.active_engine(),
         "definitions": "vbt",
         "strategy_kind": strategy.kind,
+        "intraday_stops": intraday_stops,
+        "halt_mask_supplied": halt_mask is not None,
+        "halt_mask_sha256": _halt_mask_hash(halt_mask) if halt_mask is not None else None,
+        "order_sequence": (
+            order_sequence or ("auto" if intraday_stops else "default")
+            if strategy.kind == "signals"
+            else "auto"
+        ),
+        "stop_exit_price": (
+            stop_exit_price or ("stopmarket" if intraday_stops else "stoplimit")
+            if price_stop_active
+            else None
+        ),
+        "stop_entry_price": (base_config.get("stop_entry_price") or "close")
+        if price_stop_active
+        else None,
+        "stop_settings": stop_settings,
+        "time_stop_warning": (
+            engine_portfolio.TIME_STOP_WARNING
+            if stop_settings is not None and stop_settings["time_stop_bars"] is not None
+            else None
+        ),
         "n_combos": len(combos),
         "n_symbols": len(bars.symbols),
         "n_bars": len(bars.close),

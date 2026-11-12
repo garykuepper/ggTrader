@@ -90,6 +90,13 @@ def test_time_stop_rejects_negative_n() -> None:
         sig.time_stop(_frame([1.0, 2.0]).astype(bool), -1)
 
 
+def test_time_stop_accepts_numpy_integer_but_not_boolean() -> None:
+    entries = _frame([1.0, 0.0, 0.0]).astype(bool)
+    assert sig.time_stop(entries, np.int64(2))["x"].tolist() == [False, False, True]
+    with pytest.raises(ValueError):
+        sig.time_stop(entries, np.bool_(True))
+
+
 def test_time_stop_does_not_use_the_bool_dtype_that_rust_rejects() -> None:
     """vectorbt's fshift on a bool frame raises on Rust; the wrapper must work around it."""
     config.set_engine("rust")

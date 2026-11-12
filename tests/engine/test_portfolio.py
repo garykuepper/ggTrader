@@ -282,7 +282,7 @@ def test_legacy_vol_targeting_keys_raise_instead_of_being_ignored(key: str) -> N
     pfm.run_signals(entries, exits, close, {**STOCK, key: None}, groups=groups)
 
 
-@pytest.mark.parametrize("key", ["ts_stop", "atr_mult", "tp_stop"])
+@pytest.mark.parametrize("key", ["ts_stop", "atr_mult", "tp_stop", "stop_entry_price"])
 def test_run_weights_rejects_stop_keys_it_cannot_apply(key: str) -> None:
     panel, _, entries, _, close, groups = _two_strategy_inputs()
     with pytest.raises(ValueError, match=key):
@@ -404,3 +404,25 @@ def test_trade_records_carry_group_symbol_and_global_columns() -> None:
     assert set(t["group"]) == {"alpha", "beta"}
     cols = close.columns
     assert all(cols[r.col] == (r.group, r.symbol) for r in t.itertuples())
+
+
+@pytest.mark.parametrize("field", ["entries", "exits", "size", "high", "low", "weights"])
+def test_rejects_same_shape_with_reordered_stock_columns(field: str) -> None:
+    close = pd.DataFrame({"A": [100.0, 100.0], "B": [100.0, 100.0]})
+    entries = pd.DataFrame({"A": [False, False], "B": [True, False]})
+    exits = entries & False
+    reversed_columns = ["B", "A"]
+    config = {**STOCK, "atr_mult": 2.0, "atr_period": 1}
+    if field == "weights":
+        with pytest.raises(ValueError, match="columns"):
+            pfm.run_weights(close[reversed_columns] * 0.0, close, STOCK)
+        return
+    args = {"high": close, "low": close, "size": close * 0.0 + 0.1}
+    if field == "entries":
+        entries = entries[reversed_columns]
+    elif field == "exits":
+        exits = exits[reversed_columns]
+    else:
+        args[field] = args[field][reversed_columns]
+    with pytest.raises(ValueError, match="columns"):
+        pfm.run_signals(entries, exits, close, config, **args)

@@ -35,7 +35,13 @@ from ggTrader.engine import config as engine_config
 from ggTrader.engine import portfolio as engine_portfolio
 from ggTrader.engine import stats, windows
 from ggTrader.lab.data import rebalance_dates
-from ggTrader.lab.strategies.contract import ParamGrid, simulate_signal_out
+from ggTrader.lab.strategies.contract import (
+    COMBO_LEVEL,
+    SYMBOL_LEVEL,
+    ParamGrid,
+    group_columns,
+    simulate_signal_out,
+)
 
 KINDS = ("anchor", "train", "test", "live")
 #: Windows whose statistics feed a selection (winner, anchor, live pick) carry the degeneracy
@@ -183,11 +189,20 @@ class SignalScorer:
         base_config: Mapping[str, Any],
         max_bytes: int,
         min_losing_days: int = engine_config.MIN_LOSING_DAYS,
+        *,
+        intraday_stops: bool = False,
+        halt_mask: pd.DataFrame | None = None,
+        order_sequence: str | None = None,
+        stop_exit_price: str | None = None,
     ) -> None:
         self.strategy, self.bars, self.grid = strategy, bars, grid
         self.names, self.params, self.mask = list(names), list(params), mask
         self.base_config, self.max_bytes = dict(base_config), max_bytes
         self.min_losing_days = min_losing_days
+        self.intraday_stops = intraday_stops
+        self.halt_mask = halt_mask
+        self.order_sequence = order_sequence
+        self.stop_exit_price = stop_exit_price
         self.n_simulations = 0
         self.n_chunks = 0
         self.timings: Dict[str, float] = {}
@@ -205,6 +220,11 @@ class SignalScorer:
         swept = self.grid.swept()
         built = [tuple(c[k] for k in swept) for c in out.combos]
         check_combination_order(built, self.params, swept)
+        if not isinstance(out.entries.columns, pd.MultiIndex):
+            raise ValueError("signal columns must identify combinations and symbols")
+        expected = group_columns(out.combos, swept, out.symbols)
+        if not out.entries.columns.equals(expected) or out.entries.columns.names != expected.names:
+            raise ValueError("signal columns do not match combination and symbol order")
         self.timings["build_s"] = time.time() - t0
         t1 = time.time()
         use_atr = self.base_config.get("atr_mult") is not None
@@ -213,10 +233,28 @@ class SignalScorer:
             self.bars.close,
             self.base_config,
             mask=self.mask,
-            high=self.bars.high if use_atr else None,
-            low=self.bars.low if use_atr else None,
+            high=self.bars.high if use_atr or self.intraday_stops else None,
+            low=self.bars.low if use_atr or self.intraday_stops else None,
+            stop_open=self.bars.open if self.intraday_stops else None,
+            halt_mask=self.halt_mask,
+            order_sequence=self.order_sequence,
+            stop_exit_price=self.stop_exit_price,
             max_bytes=self.max_bytes,
         )
+        trailing = out.sl_stop if out.sl_stop is not None else self.base_config.get("ts_stop")
+        profit = out.tp_stop if out.tp_stop is not None else self.base_config.get("tp_stop")
+        atr = self.base_config.get("atr_mult") if trailing is None else None
+        self.stop_settings = {
+            "trailing_fraction": None if trailing is None else float(trailing),
+            "take_profit_fraction": None if profit is None else float(profit),
+            "atr_multiplier": None if atr is None else float(atr),
+            "atr_period": (
+                None
+                if atr is None
+                else int(self.base_config.get("atr_period", engine_portfolio.DEFAULT_ATR_PERIOD))
+            ),
+            "time_stop_bars": None if out.td_stop is None else int(out.td_stop),
+        }
         self.timings["simulate_s"] = time.time() - t1
         self.n_simulations, self.n_chunks = 1, sim.n_chunks
         if sim.value.shape[1] != n_groups:
@@ -341,13 +379,29 @@ class WeightScorer:
                 self._simulate(wanted[kind])
 
     def _check_weight_order(self, w: pd.DataFrame, n_sym: int, n_combos: int) -> None:
-        """Refuse a weight frame whose combination blocks are not in grid order."""
+        """Refuse ambiguous combination blocks or differing symbol orders."""
         swept = self.grid.swept()
         cols = w.columns
-        if not n_sym or not isinstance(cols, pd.MultiIndex) or list(cols.names[:-1]) != swept:
+        if not len(cols):
             return
+        if not n_sym or len(cols) != n_sym * n_combos or not isinstance(cols, pd.MultiIndex):
+            raise ValueError("weight columns must contain complete combination blocks")
+        symbols = cols.get_level_values(-1)[:n_sym]
+        if not symbols.is_unique:
+            raise ValueError("weight symbol order contains duplicates")
+        for group in range(n_combos):
+            block = cols[group * n_sym : (group + 1) * n_sym]
+            if not block.get_level_values(-1).equals(symbols):
+                raise ValueError("weight symbol order differs between combination blocks")
+            if len({tuple(col[:-1]) for col in block}) != 1:
+                raise ValueError("weight combination block contains mixed labels")
+        if list(cols.names) != [*(swept or [COMBO_LEVEL]), SYMBOL_LEVEL]:
+            raise ValueError("weight combination column levels do not match the grid")
         labels = [tuple(cols[g * n_sym][:-1]) for g in range(n_combos)]
-        check_combination_order(labels, self.params, swept)
+        if swept:
+            check_combination_order(labels, self.params, swept)
+        elif labels != [(g,) for g in range(n_combos)]:
+            raise ValueError("weight combination order does not match the grid")
 
     def _simulate(self, keys: List[tuple]) -> None:
         t0 = time.time()

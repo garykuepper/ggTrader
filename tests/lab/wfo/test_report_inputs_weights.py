@@ -233,6 +233,61 @@ def test_a_weight_wfo_runs_end_to_end_and_needs_an_eligibility_mask() -> None:
     )
     result = run_wfo(*args, mask=mask, verbose=False)
     assert len(result.fold_results) >= 1 and result.diagnostics["strategy_kind"] == "weights"
+    assert result.diagnostics["order_sequence"] == "auto"
+    assert result.diagnostics["stop_exit_price"] is None
     assert result.diagnostics["n_simulations"] <= 4  # anchor, train, test, live
     with pytest.raises(ValueError, match="weight strategies require"):
         run_wfo(*args, verbose=False)
+
+
+def test_weight_scorer_refuses_reordered_symbols_within_one_group() -> None:
+    class ReorderedSymbols(XsMomentum):
+        def build(self, bars, grid=None, rebal=None, eligible=None):
+            result = super().build(bars, grid, rebal, eligible)
+            n = len(bars.symbols)
+            order = list(range(n)) + list(reversed(range(n, 2 * n)))
+            order += list(range(2 * n, len(result.columns)))
+            return result.iloc[:, order]
+
+    bars = h.make_bars(seed=8, n_bars=400, n_syms=4)
+    scorer = _weight_scorer(bars, bars.close.notna())
+    scorer.strategy = ReorderedSymbols()
+    req = WindowReq("train", 0, bars.close.index[20], bars.close.index[300])
+    with pytest.raises(ValueError, match="symbol.*order"):
+        scorer.prepare([req])
+
+
+def test_weight_scorer_refuses_unrecognized_combination_level() -> None:
+    class WrongLevel(XsMomentum):
+        def build(self, bars, grid=None, rebal=None, eligible=None):
+            result = super().build(bars, grid, rebal, eligible)
+            names = list(result.columns.names)
+            names[0] = "unrecognized"
+            return result.rename_axis(columns=names)
+
+    bars = h.make_bars(seed=8, n_bars=400, n_syms=4)
+    scorer = _weight_scorer(bars, bars.close.notna())
+    scorer.strategy = WrongLevel()
+    req = WindowReq("train", 0, bars.close.index[20], bars.close.index[300])
+    with pytest.raises(ValueError, match="combination.*levels"):
+        scorer.prepare([req])
+
+
+@pytest.mark.parametrize("damage", ["incomplete", "mixed_labels", "duplicate_symbol"])
+def test_weight_scorer_rejects_ambiguous_group_blocks(damage: str) -> None:
+    from ggTrader.lab.strategies.contract import group_columns
+
+    bars = h.make_bars(seed=8, n_bars=20, n_syms=4)
+    scorer = _weight_scorer(bars, bars.close.notna())
+    columns = group_columns(scorer.grid.combos(), scorer.grid.swept(), bars.symbols)
+    labels = columns.to_list()
+    n = len(bars.symbols)
+    if damage == "incomplete":
+        labels.pop()
+    elif damage == "mixed_labels":
+        labels[1] = (*labels[n][:-1], labels[1][-1])
+    else:
+        labels[1] = labels[0]
+    frame = pd.DataFrame(columns=pd.MultiIndex.from_tuples(labels, names=columns.names))
+    with pytest.raises(ValueError, match="weight"):
+        scorer._check_weight_order(frame, len(labels) // len(scorer.names), len(scorer.names))
