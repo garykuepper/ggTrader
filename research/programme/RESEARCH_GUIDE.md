@@ -14,7 +14,15 @@ Start here for the current questions and the evidence behind them. The [detailed
 
 - **Objective:** Find winning stocks programmatically, let gains grow and manage losses. No validated stock picker has been identified yet.
 - **Decisions:** The owner retired new GO/NO-GO determinations. Report evidence, whether preset thresholds were met, uncertainty and any action decision separately. Historical records remain history.
-- **Paper trading:** The trader remains stopped; the owner decides when it resumes. A calendar date or research result does not lift the freeze.
+- **Paper trading:** The trader has been stopped since 2026-11-06. A calendar date or a research result does not lift that.
+- **Category ranges:** No category has proven alpha, meaning return above holding the market, after costs and tax, that is also statistically reliable. Gaps against each benchmark, in bps a year:
+  - Stock-selection screens: -1,810 to +618. Of eight full-window bands, two sit above zero, one below and five cross zero.
+  - Live design and variants: -1,092 to +590, no bands.
+  - Allocation and leverage: -1,280 to +160, no bands.
+  - Event timing: -1,320 to -1,300. Crypto (parked): -2,500 to +6,980, where the high figure is a replay on the data used to pick the settings.
+  - Intraday: no result yet.
+  - Details and caveats are in the [category report](research-summary/2026-11-12-strategy-categories-alpha-range.md).
+- Basis points (bps) measure return differences: 100 bps is one percentage point a year. Many older results use the legacy engine and were not rerun.
 - **What has been tried:** The [verdict register](../VERDICT_REGISTER.md) links studies to their evidence and recorded actions. Its historical coverage is incomplete, and summary rows are not independent tests.
 
 ## Stock-selection research
