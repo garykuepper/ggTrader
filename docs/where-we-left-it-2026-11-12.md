@@ -25,12 +25,19 @@ Development and research are paused. Everything is committed. Nothing was merged
 - Approve or decline the proposed paper-trader halt policy.
 - Decide whether to send the two drafts: a Nasdaq data-permission request and an AVB broker inquiry. Neither was sent.
 - Rule on the factor-scope wording.
-- Say which old branches to delete (list below).
 
-## Waiting on review
+## Review results for the engine and paper commits
 
-- A Sol review of the engine and paper commits, before any merge.
-- Minor Opus findings to fix before merging: a phantom daily-loss halt can follow an unapplied split, a slow-filling exit aborts the run and leaves no snapshot, the paper commit message overstates "durable order intents", one mutation script targets code that no longer exists, and no test pins the engine's default stop settings.
+- **Opus (2026-11-12):** no blocking findings.
+- **Sol (2026-11-12, merge-gate review):** the engine commit has no blocking findings. The paper commit has two.
+  - **Blocking 1:** a requested exit with an invalid broker quantity (for example negative) blocks the strategy's buys but not the cash-sweep buy. The sweep guard at `src/ggTrader/paper/trader.py:1353` only checks loss halts.
+  - **Blocking 2:** a split the broker has not applied can make booked equity look 5% lower than the previous close, which triggers a false daily-loss halt (`trader.py:1011`). Opus raised the same scenario as medium.
+  - **Minor:** a failed Telegram send can hide a rejected buy in routine output. This was already the case before these commits.
+  - **Weak tests:** one invalid-exit test uses cash too small to trigger the sweep buy, and one stop-chunking test would still pass without intraday stops.
+- **Opus minor items still open:** a slow-filling exit aborts the run and leaves no snapshot, the paper commit message overstates "durable order intents", one mutation script targets code that no longer exists, and no test pins the engine's default stop settings.
+- **What it means:** do not merge the paper commit. Fix the two blocking findings, add tests that fail without the fixes, and get a re-review. The halt policy also needs your explicit approval.
+- **Same-family note:** Sol is from the same model family as the author of this code. Opus is the independent check.
+- **Not caused by these commits:** the test `tests/lab/test_data.py::test_cached_loader_interval_to_timedelta` fails when run together with the paper, engine, lab and utils test folders. It fails the same way on `main`, and it passes alone and in the full tier.
 
 ## Things to know
 
@@ -40,14 +47,14 @@ Development and research are paused. Everything is committed. Nothing was merged
 - **Data caveats:** FERG has zero volume before March 2021. SKYD and VMRK carry other tickers' price history on a different adjustment basis.
 - **Weekly check:** it runs from the main checkout, so keep that checkout on `main`.
 
-## Old branches (not removed)
+## Old branches
 
-- **No worktree, fully merged (safe to delete):** `deps/drop-ccxt`, `deps/update-all`, `refactor/study-isolation`, `refactor/study-moves-1`, `refresh/sp500-membership`, `vbt12/engine`.
+- **Deleted on 2026-11-12 (fully merged, no worktree):** `deps/drop-ccxt`, `deps/update-all`, `refactor/study-isolation`, `refactor/study-moves-1`, `refresh/sp500-membership`, `vbt12/engine`.
 - **Kept:** the `backup/*` branches and `research/momentum-retest`, which is unmerged.
 - **Worktrees kept:** four old worktrees hold untracked work, a virtual environment or intraday data. The vbt12 worktree holds the only copy of the frozen price tape. One agent worktree has uncommitted edits.
 
 ## First three things to do on return
 
 1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
-2. Start the Sol review of the engine and paper commits, then decide on the halt policy.
+2. Fix Sol's two blocking findings in the paper commit, get a re-review, then decide on the halt policy.
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.
