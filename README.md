@@ -20,7 +20,7 @@ The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) fo
 - The rebuilt engine and versioned membership database provide a reproducible base.
 - Two jobs run on their own: the weekly membership check (enabled, Saturdays at 06:00 Pacific) and the four intraday-observer timers.
 - Development and research are paused. The verdict register, the stock screens and the category report are committed on `feature/verdict-register`, which is neither merged to main nor pushed.
-- Main has one unpushed local commit, `783c7267`, a paper-order recovery fix that is not deployed.
+- The paper-trader changes, including the order-recovery fix `783c7267`, are on `main` but not deployed.
 
 ---
 

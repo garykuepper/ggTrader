@@ -79,7 +79,7 @@ Basis points (bps) measure return differences: 100 bps is one percentage point a
 | Engine | Rebuilt | vectorbt 1.2.0 and the Rust simulator provide the research base. |
 | Membership | Running | The versioned database and live gate are merged. The weekly check is enabled and runs Saturdays at 06:00 Pacific. |
 | Study code | Isolated | Study code lives under `research/`; test tiers separate the developer loop from broader checks. |
-| Branch | Committed | `feature/verdict-register` is not merged to main or pushed. |
+| Branch | Merged | `feature/verdict-register` was merged to main and pushed on 2026-11-12. |
 | Register | Incomplete | The [register](../research/VERDICT_REGISTER.md) identifies 269 records: 139 included, 2 pending, 128 excluded (cutoff 2026-11-10). Included rows contain summary records, so they are not independent tests. |
 
 > **Status Legend (older sections):** ✅ Done · 🟢 Live · 🔵 Next · 🧪 Research · ❌ Rejected · ⏸ Deferred
@@ -657,8 +657,8 @@ code — see the changelog for detail.
 - The versioned membership database and the live gate (the check that stops the trader if the membership list is unverified) were built.
 - The weekly membership check was enabled, with official press releases as a second source.
 - The price table was backfilled for 13 current members.
-- Branch only, not merged: research added safeguards for how stop orders treat halted stocks and missing bars, and warnings about limits of the sell-after-N-days rule.
-- Branch only, not merged: paper-trader changes added signal-date and exit-quantity safeguards, and a proposed halt policy. None of it is deployed.
+- Merged 2026-11-12: research added safeguards for how stop orders treat halted stocks and missing bars, and warnings about limits of the sell-after-N-days rule.
+- Merged 2026-11-12: paper-trader changes added signal-date and exit-quantity safeguards, and an exits-only halt policy the owner approved. None of it is deployed.
 
 ---
 

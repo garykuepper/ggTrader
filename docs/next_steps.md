@@ -7,12 +7,11 @@ Development and research are paused as of 2026-11-12 with a clean slate. Nothing
 | Status | What |
 |---|---|
 | Done | Membership database, weekly check, press-release source and price backfill are merged on main. All 503 members have bars. |
-| Done | Eight stock screens, the verdict register and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) are committed on the branch. |
-| Waiting on you | Say whether to merge the branch into `main`. The halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). Merging does not deploy or restart the trader. |
+| Done | Eight stock screens, the verdict register and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) are merged on main (2026-11-12). |
+| Done | The exits-only halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). The branch `feature/verdict-register` was merged and pushed to `main` the same day. The code is not deployed and the trader stays stopped. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
-| Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits your go to merge. |
-| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). Main holds one unpushed, undeployed commit, `783c7267`. |
+| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -32,7 +31,7 @@ Terms:
 
 ### To resume
 
-1. The halt policy is approved (2026-11-12) and the reviews are clean. Merge branch `feature/verdict-register` only on the owner's go, after a full test run. Expect conflicts in `docs/next_steps.md` and the untracked `research/programme/benchmark-objectives/` folder.
+1. Merged and pushed on 2026-11-12 after a clean full test run. Deploying the paper changes and restarting the trader are separate owner decisions.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.

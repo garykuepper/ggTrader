@@ -1,18 +1,18 @@
 # Where we left it (2026-11-12)
 
-Development and research are paused. Everything is committed. Nothing was merged, pushed or deployed during the pause.
+Development and research are paused. Everything is committed. The branch was merged to `main` and pushed on 2026-11-12 (merge `efa1aea1`) after a clean full test run: 2,794 passed in the core half and 1,144 in the study half. Nothing is deployed.
 
 ## What is where
 
 | Work | Where it lives | Status |
 |---|---|---|
 | Membership database, weekly check, press-release source, price backfill | `main` | Merged, CI green, running |
-| Engine changes (intraday and time-stop inputs, safe hashing) | Branch `feature/verdict-register`, commit `acb4eac5` | Committed, not merged |
-| Paper-trader changes and the proposed halt policy | Same branch, commit `47d8a3c9`, plus review fixes `f3d39310`, `c66b18e0`, `b41cf239` | Committed, not merged, not deployed |
-| Verdict register, eight stock screens, input pilot, drafts | Same branch, commit `51b55492` | Committed, not merged |
-| [Strategy category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) | Same branch, commit `0ae8739f` | Committed |
-| Refreshed documents and this note | Same branch | Committed |
-| Paper-order recovery fix | `main`, commit `783c7267` | Local only, not pushed, not deployed |
+| Engine changes (intraday and time-stop inputs, safe hashing) | Branch `feature/verdict-register`, commit `acb4eac5` | Merged |
+| Paper-trader changes and the proposed halt policy | Same branch, commit `47d8a3c9`, plus review fixes `f3d39310`, `c66b18e0`, `b41cf239` | Merged, not deployed |
+| Verdict register, eight stock screens, input pilot, drafts | Same branch, commit `51b55492` | Merged |
+| [Strategy category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) | Same branch, commit `0ae8739f` | Merged |
+| Refreshed documents and this note | Same branch | Merged |
+| Paper-order recovery fix | `main`, commit `783c7267` | Pushed with the merge, not deployed |
 
 ## Checks done during the pause
 
@@ -22,7 +22,7 @@ Development and research are paused. Everything is committed. Nothing was merged
 
 ## Waiting on you
 
-- Say whether to merge the branch into `main` now. The merge gates are met: Sol and Opus reviews and your policy approval. It needs a full test run first and has two known conflicts.
+- Nothing on the merge. Deploying the paper changes and restarting the trader are separate decisions, and the trader stays off.
 - Decide whether to send the two drafts: a Nasdaq data-permission request and an AVB broker inquiry. Neither was sent.
 - Rule on the factor-scope wording.
 
@@ -63,8 +63,8 @@ This is what you are asked to approve. It changes nothing today, because the tra
 
 ## Things to know
 
-- **Merge conflicts later:** `docs/next_steps.md` differs between this branch and `main`, so merging will conflict there. The main checkout also holds an untracked `research/programme/benchmark-objectives/` folder that this branch tracks. Move it aside before merging.
-- **Large file:** the branch includes a 2.4 MB IRS PDF source document.
+- **Merge notes:** the only real conflict was `docs/next_steps.md`. Replaced local copies are in `/home/flynn/ggTrader-premerge-backup-2026-11-12/`. Uncommitted work from another session is still in the main checkout: a link in `research/README.md`, the `research/programme/reference-library/` folder and `data/external/event_timing_audit/`.
+- **Large file:** `main` now includes a 2.4 MB IRS PDF source document.
 - **Intraday supervision:** the Hermes job has been paused since 2026-11-06 09:18 Pacific. The reason is unknown and there is no alert. Manual checks are allowed until it is restored. The observer's four timers still record.
 - **Data caveats:** FERG has zero volume before March 2021. SKYD and VMRK carry other tickers' price history on a different adjustment basis.
 - **Weekly check:** it runs from the main checkout, so keep that checkout on `main`.
@@ -78,5 +78,5 @@ This is what you are asked to approve. It changes nothing today, because the tra
 ## First three things to do on return
 
 1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
-2. Decide whether to merge the branch (the halt policy is approved).
+2. Nothing to decide on the merge; it is done.
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.
