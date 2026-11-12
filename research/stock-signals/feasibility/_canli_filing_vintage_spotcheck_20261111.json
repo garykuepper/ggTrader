@@ -1,0 +1,53 @@
+{
+  "checked_utc": "2026-11-12T01:02:42.359577+00:00",
+  "endpoint": "https://canlicapital.com/mcp/fundamentals",
+  "server_version": "0.10.0",
+  "operation": "history",
+  "shared_arguments": {
+    "concept": "us-gaap:Assets",
+    "periods": "annual",
+    "unit": "USD",
+    "limit": 5
+  },
+  "period_end": "2019-12-31",
+  "checks": [
+    {
+      "cik": "0000040533",
+      "snapshot_sha256": "7fff513c1ae0c64ca16a673a15823a850bcb4d097506eaea38c8b540fa4708ff",
+      "snapshot_fetched_at": "2026-09-19T14:47:18.518Z",
+      "before": {
+        "as_of": "2021-02-08",
+        "value_usd": 48841000000,
+        "accession": "0000040533-20-000063"
+      },
+      "filing_date": {
+        "as_of": "2021-02-09",
+        "value_usd": 49349000000,
+        "accession": "0000040533-21-000010"
+      }
+    },
+    {
+      "cik": "0000797468",
+      "snapshot_sha256": "4b911cbb64fe1b78f022a147470bd4376ebf25ec71897240d6ed85654d8bd410",
+      "snapshot_fetched_at": "2026-09-19T15:04:51.286Z",
+      "before": {
+        "as_of": "2021-02-25",
+        "value_usd": 109330000000,
+        "accession": "0000797468-20-000033"
+      },
+      "filing_date": {
+        "as_of": "2021-02-26",
+        "value_usd": 107190000000,
+        "accession": "0000797468-21-000009"
+      }
+    }
+  ],
+  "limitations": [
+    "Each result is reconstructed from a 2026 snapshot, not an archived historical snapshot.",
+    "Date-only cutoff includes filings made on that date; it does not prove public availability at a decision time.",
+    "Provider suggests next trading day after filing; that is a modeling rule, not independent proof of publication.",
+    "The provider is a secondary interface over SEC companyfacts, not independent source data or a historical security universe.",
+    "The endpoint generated accounting change percentages in its response; no stock returns or expected-growth targets were computed.",
+    "Raw responses were not retained; source rights, reproducibility, and vendor-side history completeness are unverified."
+  ]
+}

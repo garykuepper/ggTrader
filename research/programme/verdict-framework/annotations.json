@@ -1942,6 +1942,24 @@
           ],
           "approval": null,
           "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework."
+        },
+        {
+          "annotation_revision_id": "exit-rule-sweep-time-stop-limitation-2026-11-11",
+          "date": "2026-11-11",
+          "evidence": "UNRESOLVED",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The historical NO-GO is preserved. Lens 2 found no raw artifact, no study-specific pre-registered bar, contaminated inputs (duplicate SPY rows, anchor leak, PIT universe and DSR units), partial code verification, and prose-only recomputation. These faults prevent treating the recorded drawdown or fold instability as a verified protocol result. The cited historical source closes this bounded tested specification; any unresolved inference remains unresolved. Further work requires a materially distinct question or informative new evidence, a dated brief disclosing inspected data, and applicable approval; none is granted here. The documented signal-shift time stop can time later filled trades incorrectly; the sweep mixed time-stop and other variants, so selection may also be affected.",
+          "sources": [
+            "research/audits/comprehensive-review/2026-09-10-comprehensive-strategy-audit-and-retry-recommendations.md",
+            "research/audits/root-cause-2026-11-04/lenses/2026-11-04-lens2-verdict-audit.md",
+            "research/audits/root-cause-2026-11-04/lenses/_lens2_sensitivity.json",
+            "research/audits/root-cause-2026-11-04/lenses/_lens7_recompute.json",
+            "docs/superpowers/specs/2026-06-28-exit-rule-sweep-design.md",
+            "docs/roadmap.md",
+            "research/programme/RESEARCH_GUIDE.md"
+          ],
+          "approval": null,
+          "uncertainties": "Lens 2 is a retrospective trust audit, not a new run. No missing artifact was reconstructed and no result was recalculated. The historical decision text is retained; UNRESOLVED describes evidence validity under this framework. The effect on this historical sweep is unknown: its raw artifact was not recovered and no result was recalculated. Baseline and take-profit-only variants did not use the timer. This does not establish that correctly timed exits cannot help."
         }
       ]
     },
@@ -4192,7 +4210,7 @@
           "date": "2026-11-10",
           "evidence": "INCONCLUSIVE",
           "action": "CLOSE THIS SPECIFICATION",
-          "rationale": "The value-weighted largest-size, lowest-accrual portfolio did not meet the fixed comparison hurdles: full-window Newey–West t 0.916 and p 0.180; since-1994 CAGR advantage +0.61 percentage point/year versus the French broad market after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the source mapping and arithmetic. This closes the tested portfolio specification; it does not establish that no smaller effect exists or validate stock-level selection.",
+          "rationale": "The value-weighted largest-size, lowest-accrual portfolio did not meet the fixed comparison hurdles: full-window Newey\u2013West t 0.916 and p 0.180; since-1994 CAGR advantage +0.61 percentage point/year versus the French broad market after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the source mapping and arithmetic. This closes the tested portfolio specification; it does not establish that no smaller effect exists or validate stock-level selection.",
           "sources": [
             "research/stock-signals/feasibility/2026-11-10-accruals-screen-registration.md",
             "research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md",
@@ -4218,7 +4236,7 @@
           "date": "2026-11-10",
           "evidence": "INCONCLUSIVE",
           "action": "CLOSE THIS SPECIFICATION",
-          "rationale": "The equal-weighted high R&D-to-market portfolio had a full-window t of 2.00 after the assumed cost, below the programme's reference threshold; its since-1994 advantage was +3.24 percentage points/year. In an after-the-fact 2011–2025 comparison it returned 1.83% annually versus 13.83% for the market, and its worst month-end drawdown reached 79.32%. Claude Opus independently reproduced the fixed figures and checked source mapping. This closes the explored specification, not every related question.",
+          "rationale": "The equal-weighted high R&D-to-market portfolio had a full-window t of 2.00 after the assumed cost, below the programme's reference threshold; its since-1994 advantage was +3.24 percentage points/year. In an after-the-fact 2011\u20132025 comparison it returned 1.83% annually versus 13.83% for the market, and its worst month-end drawdown reached 79.32%. Claude Opus independently reproduced the fixed figures and checked source mapping. This closes the explored specification, not every related question.",
           "sources": [
             "research/stock-signals/feasibility/2026-11-10-rd-exploratory-screen.md",
             "research/stock-signals/feasibility/_rd_screen_20261110.json"
@@ -4243,7 +4261,7 @@
           "date": "2026-11-10",
           "evidence": "INCONCLUSIVE",
           "action": "CLOSE THIS SPECIFICATION",
-          "rationale": "The owner authorized a separate 52-week-high test while retaining the earlier momentum NO-GO. The equal-weighted published high-52-week portfolio failed both fixed hurdles: full-period Newey–West t 1.082, and since-1994 CAGR 9.86% versus the value-weighted broad market 10.81% after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the mapping and arithmetic. This closes the tested published-portfolio specification; it does not establish that no smaller effect exists or validate an individual-stock strategy.",
+          "rationale": "The owner authorized a separate 52-week-high test while retaining the earlier momentum NO-GO. The equal-weighted published high-52-week portfolio failed both fixed hurdles: full-period Newey\u2013West t 1.082, and since-1994 CAGR 9.86% versus the value-weighted broad market 10.81% after the candidate's assumed 1% annual cost. An independent Claude Opus review reproduced the mapping and arithmetic. This closes the tested published-portfolio specification; it does not establish that no smaller effect exists or validate an individual-stock strategy.",
           "sources": [
             "research/stock-signals/feasibility/2026-11-10-high52-screen-registration.md",
             "research/stock-signals/feasibility/2026-11-10-high52-screen-results.md",
@@ -4251,6 +4269,149 @@
           ],
           "approval": null,
           "uncertainties": "The equal-weighted stock portfolio and value-weighted market have different exposures; sources have different vintages. Costs are assumed, not measured, and taxes, next-session fills, individual holdings and exits are not tested. Prior related studies and an automatic source preview mean the data were partly seen; there is no cross-study multiplicity guarantee or external registration timestamp. Production remains frozen."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-monthly-reversal",
+      "specification_id": "french-big-low-prior-value-weighted",
+      "verdict_id": "stocks-monthly-reversal-20261111",
+      "inventory_id": "reversal-screen-20261111",
+      "stage_id": "long-history-part-a",
+      "original_verdict": "Both specified hurdles not met",
+      "source": "research/stock-signals/feasibility/2026-11-11-short-term-reversal-results.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-monthly-reversal-20261111-independent-review",
+          "date": "2026-11-11",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The owner-approved large-stock monthly reversal portfolio failed both fixed hurdles: full-window Newey\u2013West t \u22120.646 and since-1994 annualized return 7.76% versus 10.87% for the French broad market after the assumed 1% candidate cost. Claude Opus independently reproduced the mapping and arithmetic. This closes the tested published portfolio specification, not all reversal ideas.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-short-term-reversal-proposal.md",
+            "research/stock-signals/feasibility/2026-11-11-short-term-reversal-results.md",
+            "research/stock-signals/feasibility/_short_term_reversal_20261111.json"
+          ],
+          "approval": null,
+          "uncertainties": "The published history and related studies were already seen; no external timestamp or cross-study multiplicity control is established. Costs are assumed, not measured, and tax, individual holdings and executable fills are not tested. This is a long-only portfolio comparison against the French market, not SPY. Production remains frozen."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-low-variance",
+      "specification_id": "french-big-low-variance-value-weighted",
+      "verdict_id": "stocks-low-variance-20261111",
+      "inventory_id": "low-variance-screen-20261111",
+      "stage_id": "long-history-part-a",
+      "original_verdict": "Both specified return hurdles not met",
+      "source": "research/stock-signals/feasibility/2026-11-11-low-variance-results.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-low-variance-20261111-independent-review",
+          "date": "2026-11-11",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The owner-approved large-stock low-variance portfolio failed both return hurdles: full-window Newey–West t −2.023 and since-1994 annualized return 8.60% versus 10.87% for the French market after the assumed 1% candidate cost. An independent Claude Opus review reproduced the figures. The shallower maximum drawdown is descriptive, not a protection verdict. This closes the tested portfolio specification, not the low-risk family.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-11-low-variance-proposal.md",
+            "research/stock-signals/feasibility/2026-11-11-low-variance-results.md",
+            "research/stock-signals/feasibility/_low_variance_screen_20261111.json"
+          ],
+          "approval": null,
+          "uncertainties": "Published history and related work were already seen; no independent timestamp or cross-study multiplicity control is established. Costs are assumed, not measured. Taxes, next-session fills and executable stock-level holdings are untested. The comparison is against the French market, not SPY; a raw-return miss does not disprove a risk-adjusted effect. No protection threshold was approved. Production remains frozen."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-accounting-score",
+      "specification_id": "provider-ps-portfolio-10",
+      "verdict_id": "stocks-accounting-score-20261111",
+      "inventory_id": "accounting-score-screen-20261111",
+      "stage_id": "long-history-part-a",
+      "original_verdict": "Both specified return hurdles not met",
+      "source": "research/stock-signals/feasibility/2026-11-11-accounting-score-results.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-accounting-score-20261111-independent-review",
+          "date": "2026-11-11",
+          "evidence": "INCONCLUSIVE",
+          "action": "CLOSE THIS SPECIFICATION",
+          "rationale": "The owner-approved published accounting-score portfolio failed both fixed return hurdles: full-period Newey–West t 2.262 and since-1994 annualized growth 9.72% versus 10.81% for the French market after the assumed 1% candidate cost. Its maximum month-end drawdown was 74.09%, versus 50.31% for the market. Claude Opus independently reproduced the results. This closes the tested specification, not all quality or value questions.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-11-accounting-score-proposal.md",
+            "research/stock-signals/feasibility/2026-11-11-accounting-score-results.md",
+            "research/stock-signals/feasibility/_accounting_score_screen_20261111.json"
+          ],
+          "approval": null,
+          "uncertainties": "The provider score can award points on missing accounting inputs; the effect on this portfolio is unknown. Previously published data and related studies were already seen, and approval and output timestamps have the same local-clock second. Costs are assumed, not measured; tax, stock-level execution and next-session fills are untested. The French large-value comparator differs in universe, breakpoint and vintage and cannot isolate the score's contribution. No trading action is authorized."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-earnings-consistency",
+      "specification_id": "published-earnings-consistency-high-group",
+      "verdict_id": "stocks-earnings-consistency-20261110",
+      "inventory_id": "earnings-consistency-screen-20261110",
+      "stage_id": "exploratory-historical-portfolio",
+      "original_verdict": "No reliable winner identified; independently recomputed",
+      "source": "research/stock-signals/feasibility/2026-11-10-earnings-consistency-screen.md",
+      "protocol_result": "UNRESOLVED",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-earnings-consistency-20261110-review",
+          "date": "2026-11-10",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The exploratory high earnings-consistency portfolio returned 11.93% annually versus 10.80% for the French market over 1963–2025 after an assumed 1% cost; its Newey–West t was 1.23. Since 1994 it returned 10.75% versus 10.81%. An independent reviewer reproduced the arithmetic. The source records no reliable winner and no trading authorization; the proposed action is to hold this version.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-earnings-consistency-screen.md",
+            "research/stock-signals/feasibility/_earnings_consistency_screen_20261110.json"
+          ],
+          "approval": null,
+          "uncertainties": "This is exploratory, not a registered confirmatory test: no record establishes that its specification preceded the result. The published portfolio and market differ in weighting and exposure, provider price-filter details and delisting handling are unverified, and accounting data may be revised or backfilled. Costs are assumed; taxes, stock-level holdings and executable fills are untested. The comparator is the French market, not SPY. The action is an annotation proposal, not an owner decision; prior verdicts and the production freeze remain unchanged."
+        },
+        {
+          "annotation_revision_id": "stocks-earnings-consistency-20261111-source-clarification",
+          "date": "2026-11-11",
+          "evidence": "UNRESOLVED",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The exploratory high earnings-consistency portfolio returned 11.93% annually versus 10.80% for the French market over 1963–2025 after an assumed 1% cost; its Newey–West t was 1.23. Since 1994 it returned 10.75% versus 10.81%. An independent reviewer reproduced the arithmetic. Historical stock-level information availability and restatement handling at portfolio formation cannot be verified, preventing a valid inference about an executable strategy. The source reports no reliable winner and no authorization; HOLD is proposed because it does not document closure of this version.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-10-earnings-consistency-screen.md",
+            "research/stock-signals/feasibility/2026-11-02-free-data-stock-feasibility.md",
+            "research/stock-signals/feasibility/_earnings_consistency_screen_20261110.json"
+          ],
+          "approval": null,
+          "uncertainties": "The related firm-level release contains future-labelled signal rows, some differing from the latest earlier value; the origin is unverified and this does not establish that the separate portfolio file has lookahead. The screen was exploratory, not a registered confirmatory test, and has no independently recorded pre-result specification or review artifact. Weighting and exposures differ from the French market, not SPY; price filters, delisting treatment, stock-level holdings and executable fills are unverified. Costs are assumed and taxes untested. A new question would need an independently verified source and availability rule, a fixed prospective specification and owner approval; none is granted here. Prior verdicts and the production freeze remain unchanged."
+        }
+      ]
+    },
+    {
+      "study_id": "stocks-expected-growth",
+      "specification_id": "global-q-big-high-expected-growth",
+      "verdict_id": "stocks-expected-growth-20261111",
+      "inventory_id": "expected-growth-screen-20261111",
+      "stage_id": "long-history-portfolio-screen",
+      "original_verdict": "Overall hurdle not met",
+      "source": "research/stock-signals/feasibility/2026-11-11-expected-growth-results.md",
+      "protocol_result": "NOT MET",
+      "revisions": [
+        {
+          "annotation_revision_id": "stocks-expected-growth-20261111-independent-review",
+          "date": "2026-11-11",
+          "evidence": "INCONCLUSIVE",
+          "action": "HOLD / PARK THIS VERSION",
+          "rationale": "The owner-approved portfolio met the recent growth hurdle (+2.63 percentage points per year) but missed the full-history hurdle (Newey–West t 2.728 against 3), after the assumed 1% cost. Claude Opus independently reproduced the figures. HOLD records that no next-stage action has been decided; it is not a GO/NO-GO determination.",
+          "sources": [
+            "research/stock-signals/feasibility/2026-11-11-expected-growth-proposal.md",
+            "research/stock-signals/feasibility/2026-11-11-expected-growth-results.md",
+            "research/stock-signals/feasibility/_expected_growth_screen_20261111.json"
+          ],
+          "approval": null,
+          "uncertainties": "The result depends on an unmeasured cost assumption; a post-hoc zero-cost calculation passed the statistical threshold. The comparator is the Global-q broad market, not SPY, and has a different universe. History is reconstructed and already published; no cross-study Holm correction is claimed. Stock-level holdings, accounting vintages, execution and tax are unverified. No paper or live trading is authorized."
         }
       ]
     }

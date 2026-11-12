@@ -1,0 +1,28 @@
+{
+  "created_utc": "2026-11-12T00:40:12.300285+00:00",
+  "purpose": "Magnitude of differences for same-period asset facts across selected annual filings; no targets or returns",
+  "input_sha256": [
+    "662b783905eab0618e8a81398f560f92289f835d293c7d7239fed7ad34d700fc",
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "source_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/assets_revision_magnitudes_code_20261111.py.txt",
+  "source_sha256": "d870aab473b3dbe9bfded0b01ac9126e144742438efbe5d9d841ee5546f041ae",
+  "comparison": "absolute relative difference using the earlier filing value as denominator",
+  "selected_pairs": 3731,
+  "same": 3446,
+  "different": 196,
+  "missing_or_ambiguous": 89,
+  "different_pairs_at_least_0_1_percent": 125,
+  "different_pairs_at_least_1_percent": 88,
+  "different_pairs_at_least_5_percent": 61,
+  "different_pairs_at_least_10_percent": 57,
+  "median_relative_difference_among_differing_pairs": 0.005127907295582859,
+  "max_relative_difference_among_differing_pairs": 70262.46875,
+  "limitations": [
+    "Filing selection, fiscal period, positive finite values and archive restrictions as in original count.",
+    "Large differences may reflect errors, units, issuer identity, corporate actions or revisions; no causes verified.",
+    "Selected filings only, not a representative stock universe, training targets or return tests.",
+    "Retrospective archives and recorded filing dates do not establish public availability."
+  ]
+}

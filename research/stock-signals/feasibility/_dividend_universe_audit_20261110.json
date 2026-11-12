@@ -1,0 +1,2842 @@
+{
+  "purpose": "Exact ticker overlap; flags do not establish identity or price errors",
+  "prices_sha256": "f67e3972dceefbbdf6c17b84b30957a7b83518401955fff8ae0bc4ae206fa83f",
+  "reference_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "code_sha256": "4a0aa63f16b03b9331a6f590c380fedf8a5c3033e1107cbc3f1bda8159fc2fa2",
+  "diagnostic_sha256": "0d06f9e267e9c8604774df08d3f6d93a1777d99e7c93f0ebdc2149489d031e5e",
+  "calendar_version": "5.6.0",
+  "start": "2021-01-01",
+  "end": "2023-04-28",
+  "factor_tolerance": 1e-06,
+  "overlapping_labels": 631,
+  "summary": {
+    "symbols_with_events": 465,
+    "events": 4117,
+    "checked_events": 4108,
+    "flagged_events": 14,
+    "uncheckable_events": 9,
+    "symbols_flagged": 6
+  },
+  "candidates": {
+    "A": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AAP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AAPL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ABBV": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ABT": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ACN": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ADI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ADM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ADP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AEE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AEP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AES": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AFL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AIG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AIV": {
+      "reference_events": 1,
+      "checked": 1,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AIZ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AJG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ALB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ALL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ALLE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AMAT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AMCR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AME": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AMG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AMGN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [
+        "2021-02-11"
+      ],
+      "uncheckable_dates": []
+    },
+    "AMP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AMT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AON": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AOS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "APA": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "APD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "APH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ARE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ASH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ATO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ATVI": {
+      "reference_events": 2,
+      "checked": 2,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AVB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AVGO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AVY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AWK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AXP": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "AYI": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BAC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BALL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BAX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BBWI": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BBY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BDX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BEN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BKR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BLK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BMY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BRO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BWA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BX": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "BXP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "C": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CAG": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CAH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CARR": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CAT": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CBOE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CCI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CCK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CDW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CE": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CEG": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CERN": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CFG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CHD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CHRW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CINF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CL": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CLX": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CMA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CMCSA": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CME": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CMI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CMS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CNP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "COF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "COO": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "COP": {
+      "reference_events": 15,
+      "checked": 15,
+      "unchanged_factor_dates": [
+        "2022-09-28"
+      ],
+      "uncheckable_dates": []
+    },
+    "COR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "COST": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CPB": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CPT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CSCO": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CSX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTAS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTB": {
+      "reference_events": 2,
+      "checked": 2,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTRA": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTSH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTVA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CTXS": {
+      "reference_events": 4,
+      "checked": 4,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CVS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "CVX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "D": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DDS": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DELL": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DFS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DG": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DGX": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DHI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DHR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DLR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DLX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DOV": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DOW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DPZ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DRE": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DRI": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DTE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DUK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "DVN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EBAY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ECL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ED": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EFX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EHC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EIX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ELV": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EMN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EMR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EOG": {
+      "reference_events": 16,
+      "checked": 16,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EQIX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EQT": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ES": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ESS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ETN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ETR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EVRG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EXC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EXPD": {
+      "reference_events": 4,
+      "checked": 4,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "EXR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "F": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FANG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FAST": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FCX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FDS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FDX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FHN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FIS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FITB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FL": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FLIR": {
+      "reference_events": 1,
+      "checked": 1,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FLS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FMC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FOX": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FOXA": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FRC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [
+        "2021-01-27",
+        "2021-04-28",
+        "2021-07-28",
+        "2021-10-27",
+        "2022-01-26",
+        "2022-04-27",
+        "2022-07-27",
+        "2022-10-26",
+        "2023-01-25"
+      ],
+      "uncheckable_dates": []
+    },
+    "FRT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "FTV": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GD": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GEN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GHC": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GILD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GIS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GL": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GLW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GM": {
+      "reference_events": 3,
+      "checked": 3,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GPC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GPN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GRA": {
+      "reference_events": 1,
+      "checked": 1,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GRMN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [
+        "2022-06-16"
+      ],
+      "uncheckable_dates": []
+    },
+    "GS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "GWW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HAL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HAS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HBAN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HBI": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HCA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HES": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HIG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HII": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HLT": {
+      "reference_events": 4,
+      "checked": 4,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HOG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HON": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HPE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HPQ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HRB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HRL": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HST": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HSY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HUBB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HUM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "HWM": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IBM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ICE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IEX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IFF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "INTC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "INTU": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "INVH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IPG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IR": {
+      "reference_events": 6,
+      "checked": 6,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IRM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ITT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ITW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "IVZ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "J": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JBHT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JBL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JCI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JEF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JKHY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JNJ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JNPR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JPM": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "JWN": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "K": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KBH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KDP": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KEY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KHC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KIM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KLAC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KMB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KMI": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KSS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "KSU": {
+      "reference_events": 3,
+      "checked": 3,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "L": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LDOS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LEG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LEN": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LH": {
+      "reference_events": 4,
+      "checked": 4,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LHX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LIN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LKQ": {
+      "reference_events": 6,
+      "checked": 6,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LLY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LMT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LNC": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LNT": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LOW": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LPX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LRCX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LUMN": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LUV": {
+      "reference_events": 2,
+      "checked": 2,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "LYB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "M": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MA": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MAA": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [
+        "2021-09-14"
+      ],
+      "uncheckable_dates": []
+    },
+    "MAC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MAR": {
+      "reference_events": 4,
+      "checked": 4,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MAS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MCD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MCHP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MCK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MCO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MDLZ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MDT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MET": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MGM": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MKC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MKTX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MLM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MMM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MOS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MPC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MPWR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MRK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MRO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MSCI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MSFT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MSI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MTB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MTG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MU": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "MUR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NAVI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NDAQ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NDSN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NEE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NEM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NI": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NKE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NLSN": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NOC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NOV": {
+      "reference_events": 6,
+      "checked": 6,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NRG": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NSC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NTAP": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NTRS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NUE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NVDA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NWL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NWS": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NWSA": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NXPI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "NYT": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "O": {
+      "reference_events": 28,
+      "checked": 28,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ODFL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "OGN": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "OKE": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "OMC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ORCL": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "OTIS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "OXY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PAYX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PBCT": {
+      "reference_events": 5,
+      "checked": 5,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PBI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PCAR": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PCH": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PDCO": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PEG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PEP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PFE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PFG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PG": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PGR": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PHM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PKG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PLD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PNC": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PNR": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PNW": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "POOL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PPG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PPL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PRGO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PRU": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PSA": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PSX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PVH": {
+      "reference_events": 6,
+      "checked": 6,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PWR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "PXD": {
+      "reference_events": 11,
+      "checked": 11,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "QCOM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "R": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "REG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RHI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RJF": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RL": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RMD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ROK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ROL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ROP": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ROST": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RRC": {
+      "reference_events": 3,
+      "checked": 3,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RSG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RTX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "RVTY": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SBAC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SBNY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SBUX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SCHW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SCI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SEE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SHW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SIG": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SJM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SLB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SLG": {
+      "reference_events": 28,
+      "checked": 28,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SLM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SNA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SNV": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SPG": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SPGI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SRE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "STE": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "STLD": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [
+        "2022-12-29"
+      ],
+      "uncheckable_dates": []
+    },
+    "STT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "STX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "STZ": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SWK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SWKS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SYF": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SYK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "SYY": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "T": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TAP": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TDG": {
+      "reference_events": 1,
+      "checked": 1,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TECH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TEL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TER": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TEX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TFC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TFX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TGNA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TGT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TJX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TKR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TMO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TPR": {
+      "reference_events": 7,
+      "checked": 7,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TRGP": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TROW": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TRV": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TSCO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TSN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TXN": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "TXT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UDR": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UHS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UNH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UNM": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UNP": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "UPS": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "URI": {
+      "reference_events": 1,
+      "checked": 1,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "USB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "V": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VFC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VICI": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VLO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VMC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VNO": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VNT": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VRSK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VTR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VTRS": {
+      "reference_events": 8,
+      "checked": 8,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "VZ": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WAB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WBA": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WEC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WELL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WFC": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WHR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WMB": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WMT": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WOR": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WRB": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WRK": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WST": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WTW": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WU": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WY": {
+      "reference_events": 12,
+      "checked": 12,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "WYND": {
+      "reference_events": 9,
+      "checked": 0,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": [
+        "2021-03-12",
+        "2021-06-14",
+        "2021-09-14",
+        "2021-12-14",
+        "2022-03-14",
+        "2022-06-14",
+        "2022-09-14",
+        "2022-12-14",
+        "2023-03-14"
+      ]
+    },
+    "X": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XEC": {
+      "reference_events": 3,
+      "checked": 3,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XEL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XLNX": {
+      "reference_events": 2,
+      "checked": 2,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XOM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XRAY": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XRX": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "XYL": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "YUM": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ZBH": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ZION": {
+      "reference_events": 9,
+      "checked": 9,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    },
+    "ZTS": {
+      "reference_events": 10,
+      "checked": 10,
+      "unchanged_factor_dates": [],
+      "uncheckable_dates": []
+    }
+  }
+}

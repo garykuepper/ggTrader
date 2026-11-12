@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0000876661</cik>
+        <entityName>NEW YORK STOCK EXCHANGE LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0000051143</cik>
+        <entityName>INTERNATIONAL BUSINESS MACHINES CORP</entityName>
+        <fileNumber>001-02360</fileNumber>
+        <address>
+            <street1>1 New Orchard Road</street1>
+            <city>Armonk</city>
+            <stateOrCountryCode>NY</stateOrCountryCode>
+            <stateOrCountry>NEW YORK</stateOrCountry>
+            <zipCode>10504-1722</zipCode>
+        </address>
+        <telephoneNumber>(914) 499-1900</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>2.875% Notes Due November 7, 2025</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(2)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Tyler Mastronardi</signatureName>
+        <signatureTitle>Analyst, Market Watch</signatureTitle>
+        <signatureDate>2025-11-07</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

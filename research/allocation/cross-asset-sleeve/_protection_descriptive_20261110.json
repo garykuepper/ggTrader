@@ -1,0 +1,72 @@
+{
+  "status": "descriptive; seen data; no pass/fail",
+  "window": [
+    "2021-04-30",
+    "2026-04-30"
+  ],
+  "input_sha256": {
+    "SPY": "3575a86f0d760a3ab46164ce43aefe792068caec5a265521160d7de998c24a44",
+    "BIL": "9a6b73e32b3880c8b187be48874eabd61458f9335fc6d2b0fdb9bd2b10f2dd0f",
+    "TLT": "e7d6048c8c50ca48c871793a8a7b39fef988c642fb3654a421a56d05d2ed3145",
+    "GLD": "e1b5be0e15437e46f87ac24ffe0d148f4bbd7d1641432079e5bd0273f5e9a654",
+    "PDBC": "767e1aadd5a4f2c082646f89947123047249df838569be85b50724debe11b427"
+  },
+  "source": "Yahoo Finance through yfinance Ticker.history(auto_adjust=False, actions=True)",
+  "yfinance_version": "1.8.0",
+  "driver_sha256": "859ceea156dba4a99fc4801d67132c4ad792553f46cab5d6f4d89b059f1e6a79",
+  "assumptions": "Yahoo adjusted closes; monthly close rebalance; 1bp per dollar traded including initial purchases; no tax or terminal liquidation cost",
+  "portfolios": {
+    "cross_asset": {
+      "terminal_wealth_per_1": 1.8068026560270254,
+      "cagr": 0.12561320376995289,
+      "max_drawdown": -0.21353847470653042,
+      "peak": "2021-12-27",
+      "trough": "2022-09-30",
+      "recovered": true,
+      "recovery_or_observed_end": "2023-12-13",
+      "underwater_sessions": 494
+    },
+    "spy_bil": {
+      "terminal_wealth_per_1": 1.7023404397133641,
+      "cagr": 0.11228379452043802,
+      "max_drawdown": -0.19773820863172586,
+      "peak": "2022-01-03",
+      "trough": "2022-10-12",
+      "recovered": true,
+      "recovery_or_observed_end": "2023-11-22",
+      "underwater_sessions": 475
+    },
+    "spy": {
+      "terminal_wealth_per_1": 1.843710808626655,
+      "cagr": 0.13017536260852025,
+      "max_drawdown": -0.24496370102217457,
+      "peak": "2022-01-03",
+      "trough": "2022-10-12",
+      "recovered": true,
+      "recovery_or_observed_end": "2023-12-13",
+      "underwater_sessions": 489
+    }
+  },
+  "calendar_year_returns": {
+    "2022": {
+      "cross_asset": -0.1558508582026119,
+      "spy_bil": -0.1422526056498017,
+      "spy": -0.18175363308192993
+    },
+    "2023": {
+      "cross_asset": 0.21373670093044517,
+      "spy_bil": 0.21821805531391725,
+      "spy": 0.26175817622522946
+    },
+    "2024": {
+      "cross_asset": 0.210722289098481,
+      "spy_bil": 0.2079344988783942,
+      "spy": 0.24886459645516124
+    },
+    "2025": {
+      "cross_asset": 0.18811649257068308,
+      "spy_bil": 0.14980290776269034,
+      "spy": 0.17719051276439646
+    }
+  }
+}

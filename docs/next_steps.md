@@ -6,18 +6,22 @@ and the calendar.
 
 ## Intraday: verify first actual recordings (activated 2026-10-27)
 
-Hermes agent supervision (DeepSeek Flash, job `39172df68638`) is scheduled weekdays
-at 14:00 Pacific, saving local reports: first recordings, daily health, weekly calendar, checkpoint and final review.
-See [schedule record](../research/intraday/spy-momentum-prospective-observer/_intraday_observer_agent_schedule.json). The T3 schedule is disabled to avoid duplicate runs. Scheduling did not execute
-the checks; the host and Hermes gateway must be available.
+Hermes agent supervision (DeepSeek Flash, job `39172df68638`) is **paused** as of
+the 2026-11-11 local check; its last recorded run was November 5. The reason for
+the pause is unknown. Its configured weekday 14:00 Pacific schedule is not running.
+The [schedule record](../research/intraday/spy-momentum-prospective-observer/_intraday_observer_agent_schedule.json)
+is an activation-time record; the T3 schedule is disabled. The observer's four
+recording timers are separate from the paused supervisor. Until supervision is
+restored, the operator must perform the checks described below.
 
 The automatic hypothetical journal is activated. All four standalone timers are
 enabled/active; installed-service no-op checks and ledger integrity pass. See
 [activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
 
-1. Verify the October 29 anchor archive and October 30 first inputs, decision and
-   archive. Check durable timestamps, source references and integrity; preserve
-   faults and never backfill a missed decision. Perform the daily local health check.
+1. Continue the daily local health check and weekly/notice-driven calendar review;
+   preserve faults and never backfill a missed decision. The October 29 anchor and
+   October 30 first stages passed a local record, source-hash and integrity check on
+   November 11; details and limitations are in the activation record.
 2. At slot 20, November 30, 2026, review operational reliability under the frozen
    checkpoint rules. The final slot is November 3, 2027; no performance pass is implied.
 
@@ -25,17 +29,25 @@ The journal uses an isolated fixed release and dedicated runtime, not the paper
 account. No production cron, Docker, DB, account positions or broker orders changed.
 Historical r8 remains UNRESOLVED (data). The dividend comparison stays provisional.
 
-## Current research decision (2026-10-23)
+## Current research work
 
-1. **Plan paper parity and forward evidence.** Resolve how to treat the persistent
-   untradable AVB holding, which shadow book is in scope, and what starts or resets
-   a clean observation window. Define daily evidence and a way to preserve future
-   decision inputs and outcomes. The review date is unknown. A calendar date alone
-   does not lift the production freeze. See the [readiness review](../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md).
-2. **Plan accruals feasibility in parallel.** Resolve source usage, accounting
-   revisions, portfolio metadata, benchmark, and costs. Register a candidate brief
-   only if the screen is feasible. Do not examine returns before registration. See
-   the [feasibility review](../research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md).
+1. **Plan paper parity and forward evidence.** The owner chose to keep the persistent
+   untradable AVB holding blocking a clean future observation start until resolved.
+   The owner selected the original 80/20 cross-asset shadow for future parity and
+   chose to prepare a three-month mechanics review plus a 12-month performance
+   review. Resolve the detailed governing rule and what starts or resets a clean
+   observation window. Define daily evidence and a way to preserve future
+   decision inputs and outcomes. A proposed [session reconciliation](../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md#proposed-session-by-session-reconciliation)
+   distinguishes missing evidence, blocked exits and unresolved fills. The review
+   date is unknown. A calendar date alone does not lift the production freeze.
+2. **Check whether expected-growth inputs can support individual-stock research.**
+   The reviewed portfolio screens did not establish a validated stock picker. The
+   [research guide](../research/programme/RESEARCH_GUIDE.md#stock-selection-research)
+   summarizes their results; the [input pilot](../research/stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md)
+   records the current identity, timing, accounting and market-value gaps. Verify
+   those inputs across a sufficiently complete dated universe and enough history for
+   the forecasting model. A new return study needs its own registered question and
+   owner approval. Report evidence and uncertainty without new GO/NO-GO labels.
 
 Plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md)
 after the parity work clarifies the paper environment. Implementation requires a

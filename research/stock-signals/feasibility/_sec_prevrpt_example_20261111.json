@@ -1,0 +1,14 @@
+{
+  "purpose": "Illustrate possible lookahead in a filing amendment indicator; no returns or rankings",
+  "source": "SEC Financial Statement and Notes 2021 Q2 archive, sub.tsv",
+  "source_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "source_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/2021q2_notes.zip",
+  "method": "Inspect rows with matching CIK, period and 10-K/10-K-A form, an original prevrpt value of 1 and a later amendment acceptance time; select first example in archive order.",
+  "issuer": "ITERIS, INC.",
+  "cik": "350868",
+  "period": "20210331",
+  "original": {"form": "10-K", "accession": "0000350868-21-000015", "filed": "20210601", "accepted": "2021-06-01 16:32:00.0", "prevrpt": "1"},
+  "candidate_amendment": {"form": "10-K/A", "accession": "0001628280-21-011762", "filed": "20210607", "accepted": "2021-06-07 17:30:00.0", "prevrpt": "0"},
+  "assets_spot_check": {"tag": "Assets", "version": "us-gaap/2020", "period": "20210331", "qtrs": "0", "uom": "USD", "dimh": "0x00000000", "coreg": "", "original": "126869000.0000", "candidate_amendment": "126869000.0000"},
+  "limitations": ["Matching issuer and period does not independently establish the relationship between filings.", "Acceptance time does not prove public availability at an intraday cutoff.", "One equal accounting fact does not establish equality of all facts or population-wide behavior."]
+}

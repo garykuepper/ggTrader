@@ -1,6 +1,6 @@
 # Working Task List
 
-**Updated:** 2026-11-03 · **Status:** active worklist
+**Updated:** 2026-11-11 · **Status:** active worklist
 
 The immediate actions are in [next steps](next_steps.md). This page explains the priorities, dependencies and calendar. Detailed evidence stays in the linked reports.
 
@@ -15,12 +15,14 @@ The immediate actions are in [next steps](next_steps.md). This page explains the
 
 ## Current priorities
 
-Three **separate plans are proposed but not yet written**. Start the paper-parity plan and prepare the accruals plan in parallel. Prepare the sweep plan after the parity work clarifies the paper environment.
+The current priorities are paper parity, stock-input feasibility and the later
+cash-sweep design. Existing drafts are evidence and planning work, not approval to
+run a new study or change production.
 
-| Priority | Plan to write | Current position | Next planning outcome |
+| Priority | Work | Current position | Next outcome |
 |---|---|---|---|
-| 1 | **Paper parity and forward evidence** | A clean window and review date are **not established**: AVB remains untradable, and historical decision-time inputs are incomplete. | Address AVB, the relevant shadow book, incident/reset rules and ongoing observation; then design a separately reviewable way to preserve future signals, inputs, configuration and outcomes. [Readiness review](../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md) |
-| 2 | **Accruals feasibility and potential screen** | **Unresolved:** source usage, accounting revisions and exact portfolio metadata need work. No returns have been examined. | Define how to settle the feasibility questions; only then prepare a registered brief and consider a test under the existing standard. [Feasibility review](../research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md) |
+| 1 | **Paper parity and forward evidence** | A clean window and review date are **not established**: untradable AVB blocks a future clean start until resolved, and historical decision-time inputs are incomplete. The owner selected the original 80/20 cross-asset shadow for future parity. | Address AVB, the shadow's governing rule, incident/reset rules and ongoing observation; then design a separately reviewable way to preserve future signals, inputs, configuration and outcomes. [Readiness review](../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md) |
+| 2 | **Expected-growth stock-input feasibility** | The published-portfolio screen missed its full-history statistical hurdle; it does not identify current stocks. Historical identity, market equity, filing availability and sufficient training history remain unverified. | Resolve source rights and verify dated input panels before proposing a separately approved stock-level return study. [Input pilot](../research/stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md); [screen results](../research/stock-signals/feasibility/2026-11-11-expected-growth-results.md). The earlier [accruals screen](../research/stock-signals/feasibility/2026-11-02-accruals-feasibility.md#first-screen-result--2026-11-10) has already been run and reviewed. |
 | 3 | **Two-symbol paper-sweep design** | A preliminary design exists; funding and order-handling policies remain proposals. | After parity clarifies the paper environment, plan the account boundaries, daily cash needs, partial fills, position controls and tax-lot scenarios. [Sweep design](../research/paper-system/cash-sweep/2026-11-02-two-symbol-sweep-design.md) |
 
 The production paper trader remains frozen. A plan or design does not authorize a return test, installation, scheduling, container change or order. A parity incident resets the window; elapsed calendar time does not establish readiness.
@@ -29,7 +31,7 @@ The production paper trader remains frozen. A plan or design does not authorize 
 
 ## Open decisions
 
-- **Factor-scope wording (A1):** The previous report did not define “alternate factor definitions.” The [recommendation](../research/stock-signals/feasibility/2026-11-02-family-scope-review.md#7-wording-only-recommendation-2026-11-02) favors a narrow reading; the owner ruling remains open. It affects valuation, quality and q-factor variants, not the accruals task or the separate momentum closure. Even under a narrow reading, the variants are not yet defined or test-ready.
+- **Factor-scope wording (A1):** The previous report did not define “alternate factor definitions.” The [recommendation](../research/stock-signals/feasibility/2026-11-02-family-scope-review.md#7-wording-only-recommendation-2026-11-02) favors a narrow reading; the owner ruling remains open. It affects valuation, quality and q-factor variants, not the separate momentum closure. Even under a narrow reading, the variants are not yet defined or test-ready.
 - **Insider timestamp amendment (A1):** The [amendment](../research/audits/event-timing/2026-10-23-insider-acceptance-time-amendment.md) remains a draft. PEAD and insider research are parked; leaving the amendment unapproved is valid and blocks neither priority plan.
 
 These are decision records, not additional full plans. Neither changes a historical NO-GO.
@@ -37,7 +39,7 @@ These are decision records, not additional full plans. Neither changes a histori
 ## Conditional and later work
 
 - **Tax-lot validation and integration (A6):** After a candidate passes Part A, validate the standalone `TaxLotBook` against a hand-checked year of lots, then scope the candidate's B0/B1 integration, point-in-time fundamentals, tax funding and audit requirements. It is not yet wired into a strategy or verified against a broker ledger. [Requirements](../research/paper-system/tax-lots/2026-11-02-after-tax-lot-engine-requirements.md)
-- **Walk-forward policy (A7):** Keep existing defaults until a study proposes using WFO. At that point review the [fallback semantics](../research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md) and [synthetic evidence](../research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md); some proposed options would need code. The proposed accruals Part A screen does not use WFO.
+- **Walk-forward policy (A7):** Keep existing defaults until a study proposes using WFO. At that point review the [fallback semantics](../research/programme/wfo-methods/2026-11-02-wfo-fallback-semantics.md) and [synthetic evidence](../research/programme/wfo-methods/2026-11-02-wfo-policy-synthetic.md); some proposed options would need code. The completed accruals screen did not use WFO.
 - **Optional repository housekeeping (A8):** Inspect old branches and the stash before any cleanup; some branches are unmerged or attached to worktrees. Never delete `data/`, including the local event-timing cache. The earlier [task list history](superpowers/plans/2026-11-02-research-reliability-next-steps.md) and Git history retain prior context.
 
 ## Calendar

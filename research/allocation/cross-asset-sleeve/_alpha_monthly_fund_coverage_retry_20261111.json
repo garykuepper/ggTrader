@@ -1,0 +1,30 @@
+{
+  "checked_utc": "2026-11-12T00:22:46.181111+00:00",
+  "purpose": "Retry and additional fund date coverage; no values retained or returns calculated",
+  "endpoint": "TIME_SERIES_MONTHLY_ADJUSTED",
+  "earlier_retry": {
+    "TLT": {
+      "status": "available",
+      "months": 292,
+      "first": "2002-08-30",
+      "last": "2026-11-11"
+    }
+  },
+  "results": {
+    "GLD": {
+      "status": "available",
+      "months": 264,
+      "first": "2004-12-31",
+      "last": "2026-11-11"
+    },
+    "PDBC": {
+      "status": "unavailable",
+      "http_status": 200,
+      "reason": "rate_limit"
+    }
+  },
+  "limitations": [
+    "Response values received transiently; raw data and independent timestamp not retained.",
+    "Date gaps, correctness, data-use rights, and daily drawdowns not checked."
+  ]
+}

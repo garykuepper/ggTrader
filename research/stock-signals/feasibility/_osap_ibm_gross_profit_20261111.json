@@ -1,0 +1,45 @@
+{
+  "purpose": "Compare published IBM gross profitability and operating profitability with candidate SEC inputs; no stock ranking or return",
+  "provider_revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "provider_file": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "file_sha256_previously_reported": "8ed1aae86e820bfe0233dcc49d8bee057e087c64afabd3a15dbe016d96171edd",
+  "method": "Column-selective fsspec and pyarrow read of permno, yyyymm, GP and OperProfRD, filtered to 12490 and 202403; full file not rehashed.",
+  "provider_values": {
+    "GP": 0.28900607499037273,
+    "OperProfRD": 0.1512381820610957
+  },
+  "candidate_sec_usd_millions": {
+    "revenue": 60530,
+    "cost_of_revenue": 27842,
+    "assets": 127243,
+    "selling_admin": 18609,
+    "research_development_engineering": 6567
+  },
+  "candidate_gross_ratio": 0.25689428888033133,
+  "conditional_provider_implied_gross_profit_usd_millions": 36774.0,
+  "conditional_gross_difference_usd_millions": 4086.0,
+  "conditional_provider_implied_sga_less_rd_usd_millions": 17529.999999999996,
+  "candidate_separate_lines_sga_less_rde_usd_millions": 12042,
+  "conditional_expense_difference_usd_millions": 5487.999999999996,
+  "code": "https://github.com/OpenSourceAP/CrossSection/blob/c626bf886f53894e4b7f7dedf2c167d1c84b7801/Signals/pyCode/Predictors/GP.py",
+  "sec_filing": "https://www.sec.gov/Archives/edgar/data/51143/000155837023002376/ibm-20221231xex13.htm",
+  "limits": [
+    "Implied dollar figures assume both provider predictors use the same 2022 SEC asset denominator and matching fiscal year; neither is verified.",
+    "Revenue and cost SEC tags and SG&A/RD&E are candidate inputs, not proven equivalent to provider fields.",
+    "The provider values are retrospective; release-code binding is publisher-attested, not independently reproduced.",
+    "Name-based security identity, accounting revisions, missing-data treatment and availability in 2024 remain unverified.",
+    "No returns or stock rankings were computed."
+  ],
+  "depreciation_followup": {
+    "sec_companyfacts_sha256": "10fa1fafa25440b2159e2054dfe47628ba4ed353a258f526704cf9beda432bb8",
+    "accession": "0001558370-23-002376",
+    "period_start": "2022-01-01",
+    "period_end": "2022-12-31",
+    "selected_tags_usd_millions": {
+      "Depreciation": 2407,
+      "AmortizationOfIntangibleAssets": 2395
+    },
+    "definition_reference": "https://tevgeniou.github.io/EquityRiskFactors/CompustatManualChpt5.pdf",
+    "interpretation": "Companywide facts are not a cost-of-goods allocation or verified provider adjustment; the older guide describes depreciation exclusions and exceptions, so the $4086 million difference is not reconciled."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-11-12T01:23:16.265183+00:00",
+  "source_file": "/home/flynn/ggTrader-refs/nyse-screener-snapshot-20240131/sec_submissions_0000051143_current.json",
+  "source_sha256": "bb612c776471f79e36c076dac12e56b34a6d427d124d215b06f85614632dde07",
+  "code_sha256": "6ad31e61eed0df4696cbaf4afd8de0bfa72e44db0a242d8649b9a384f784979a",
+  "filing_date_cutoff": "2025-11-07",
+  "expected_cik": 51143,
+  "candidate_count": 16,
+  "example": {
+    "filing_date": "2025-11-07",
+    "form": "25-NSE",
+    "accession": "0000876661-25-000849",
+    "document": "xslF25X02/primary_doc.xml"
+  },
+  "has_older_pages": true,
+  "earliest_recent_filing_date": "2020-02-06",
+  "limitations": [
+    "Only the current recent block was read; older pages were not read.",
+    "An inclusive filing date does not prove public availability at a decision time.",
+    "Forms identify candidates only, not security class, effective date, eligibility or completed delisting.",
+    "This is a retrospective source snapshot and does not establish a point-in-time universe."
+  ]
+}

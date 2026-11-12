@@ -1,0 +1,1259 @@
+{
+  "purpose": "Session dates only; not prices, identity or point-in-time verification",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "membership_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "coverage_sha256": "94e4eac07f3858b1d177a92479cef104d0573dab195987fe48ca699b4868494c",
+  "code_sha256": "9b6c9775cf93a3e3fca37582bace2e9632a55a753333afedeeab03842e9e5d18",
+  "calendar_version": "5.6.0",
+  "window_sessions": 252,
+  "month_ends": [
+    {
+      "date": "2021-01-29",
+      "membership_snapshot": "2021-01-21",
+      "members": 505,
+      "same_day": 486,
+      "complete_lookback": 483,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CARR",
+        "OTIS",
+        "VNT"
+      ]
+    },
+    {
+      "date": "2021-02-26",
+      "membership_snapshot": "2021-02-12",
+      "members": 505,
+      "same_day": 486,
+      "complete_lookback": 483,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CARR",
+        "OTIS",
+        "VNT"
+      ]
+    },
+    {
+      "date": "2021-03-31",
+      "membership_snapshot": "2021-03-22",
+      "members": 505,
+      "same_day": 486,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2021-04-30",
+      "membership_snapshot": "2021-04-20",
+      "members": 505,
+      "same_day": 486,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2021-05-28",
+      "membership_snapshot": "2021-05-14",
+      "members": 505,
+      "same_day": 486,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "HFC",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2021-06-30",
+      "membership_snapshot": "2021-06-04",
+      "members": 505,
+      "same_day": 487,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-07-30",
+      "membership_snapshot": "2021-07-21",
+      "members": 505,
+      "same_day": 487,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "LB",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-08-31",
+      "membership_snapshot": "2021-08-30",
+      "members": 505,
+      "same_day": 488,
+      "complete_lookback": 487,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-09-30",
+      "membership_snapshot": "2021-09-20",
+      "members": 505,
+      "same_day": 487,
+      "complete_lookback": 486,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "COG",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-10-29",
+      "membership_snapshot": "2021-10-04",
+      "members": 505,
+      "same_day": 488,
+      "complete_lookback": 487,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-11-30",
+      "membership_snapshot": "2021-10-04",
+      "members": 505,
+      "same_day": 488,
+      "complete_lookback": 487,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2021-12-31",
+      "membership_snapshot": "2021-12-20",
+      "members": 505,
+      "same_day": 488,
+      "complete_lookback": 487,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WLTW",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2022-01-31",
+      "membership_snapshot": "2022-01-10",
+      "members": 505,
+      "same_day": 489,
+      "complete_lookback": 488,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "GPS",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "VIAC",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "OGN"
+      ]
+    },
+    {
+      "date": "2022-02-28",
+      "membership_snapshot": "2022-02-17",
+      "members": 505,
+      "same_day": 491,
+      "complete_lookback": 489,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "INFO",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG",
+        "OGN"
+      ]
+    },
+    {
+      "date": "2022-03-31",
+      "membership_snapshot": "2022-03-02",
+      "members": 505,
+      "same_day": 492,
+      "complete_lookback": 490,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "DISCA",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG",
+        "OGN"
+      ]
+    },
+    {
+      "date": "2022-04-29",
+      "membership_snapshot": "2022-04-11",
+      "members": 504,
+      "same_day": 492,
+      "complete_lookback": 490,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "BLL",
+        "CDAY",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG",
+        "OGN"
+      ]
+    },
+    {
+      "date": "2022-05-31",
+      "membership_snapshot": "2022-05-10",
+      "members": 504,
+      "same_day": 493,
+      "complete_lookback": 492,
+      "missing_same_day": [
+        "ABC",
+        "ANTM",
+        "CDAY",
+        "FB",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-06-30",
+      "membership_snapshot": "2022-06-28",
+      "members": 503,
+      "same_day": 494,
+      "complete_lookback": 493,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-07-29",
+      "membership_snapshot": "2022-06-28",
+      "members": 503,
+      "same_day": 493,
+      "complete_lookback": 492,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-08-31",
+      "membership_snapshot": "2022-06-28",
+      "members": 503,
+      "same_day": 493,
+      "complete_lookback": 492,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-09-30",
+      "membership_snapshot": "2022-09-19",
+      "members": 503,
+      "same_day": 493,
+      "complete_lookback": 492,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-10-31",
+      "membership_snapshot": "2022-10-12",
+      "members": 503,
+      "same_day": 492,
+      "complete_lookback": 491,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "TWTR",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-11-30",
+      "membership_snapshot": "2022-11-08",
+      "members": 503,
+      "same_day": 493,
+      "complete_lookback": 492,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FBHS",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2022-12-30",
+      "membership_snapshot": "2022-12-22",
+      "members": 503,
+      "same_day": 494,
+      "complete_lookback": 493,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "CEG"
+      ]
+    },
+    {
+      "date": "2023-01-31",
+      "membership_snapshot": "2023-01-04",
+      "members": 503,
+      "same_day": 494,
+      "complete_lookback": 493,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-02-28",
+      "membership_snapshot": "2023-01-04",
+      "members": 503,
+      "same_day": 494,
+      "complete_lookback": 493,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "SBNY",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-03-31",
+      "membership_snapshot": "2023-03-20",
+      "members": 503,
+      "same_day": 495,
+      "complete_lookback": 494,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-04-28",
+      "membership_snapshot": "2023-03-20",
+      "members": 503,
+      "same_day": 495,
+      "complete_lookback": 494,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "FRC",
+        "MMC",
+        "PEAK",
+        "PKI",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-05-31",
+      "membership_snapshot": "2023-05-16",
+      "members": 503,
+      "same_day": 497,
+      "complete_lookback": 496,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-06-30",
+      "membership_snapshot": "2023-06-20",
+      "members": 503,
+      "same_day": 497,
+      "complete_lookback": 496,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "RE",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-07-31",
+      "membership_snapshot": "2023-07-10",
+      "members": 503,
+      "same_day": 498,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "ABC",
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC"
+      ]
+    },
+    {
+      "date": "2023-08-31",
+      "membership_snapshot": "2023-08-30",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC",
+        "KVUE"
+      ]
+    },
+    {
+      "date": "2023-09-29",
+      "membership_snapshot": "2023-09-18",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC",
+        "KVUE"
+      ]
+    },
+    {
+      "date": "2023-10-31",
+      "membership_snapshot": "2023-10-18",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 496,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC",
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2023-11-30",
+      "membership_snapshot": "2023-10-18",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 496,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEHC",
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2023-12-29",
+      "membership_snapshot": "2023-10-18",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-01-31",
+      "membership_snapshot": "2023-10-18",
+      "members": 503,
+      "same_day": 499,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "CDAY",
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-02-29",
+      "membership_snapshot": "2024-02-01",
+      "members": 503,
+      "same_day": 500,
+      "complete_lookback": 498,
+      "missing_same_day": [
+        "MMC",
+        "PEAK",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-03-28",
+      "membership_snapshot": "2024-03-25",
+      "members": 503,
+      "same_day": 501,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "KVUE",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-04-30",
+      "membership_snapshot": "2024-04-03",
+      "members": 503,
+      "same_day": 501,
+      "complete_lookback": 497,
+      "missing_same_day": [
+        "MMC",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "KVUE",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-05-31",
+      "membership_snapshot": "2024-05-08",
+      "members": 503,
+      "same_day": 501,
+      "complete_lookback": 498,
+      "missing_same_day": [
+        "MMC",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-06-28",
+      "membership_snapshot": "2024-06-24",
+      "members": 503,
+      "same_day": 501,
+      "complete_lookback": 498,
+      "missing_same_day": [
+        "MMC",
+        "WRK"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-07-31",
+      "membership_snapshot": "2024-07-08",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-08-30",
+      "membership_snapshot": "2024-07-08",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-09-30",
+      "membership_snapshot": "2024-09-30",
+      "members": 504,
+      "same_day": 503,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "AMTM",
+        "GEV",
+        "SOLV",
+        "VLTO"
+      ]
+    },
+    {
+      "date": "2024-10-31",
+      "membership_snapshot": "2024-10-01",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "AMTM",
+        "GEV",
+        "SOLV"
+      ]
+    },
+    {
+      "date": "2024-11-29",
+      "membership_snapshot": "2024-11-26",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "AMTM",
+        "GEV",
+        "SOLV"
+      ]
+    },
+    {
+      "date": "2024-12-31",
+      "membership_snapshot": "2024-12-23",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 500,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV"
+      ]
+    },
+    {
+      "date": "2025-01-31",
+      "membership_snapshot": "2024-12-23",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 500,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV"
+      ]
+    },
+    {
+      "date": "2025-02-28",
+      "membership_snapshot": "2024-12-23",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 500,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "GEV",
+        "SOLV"
+      ]
+    },
+    {
+      "date": "2025-03-31",
+      "membership_snapshot": "2025-03-24",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-04-30",
+      "membership_snapshot": "2025-03-24",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-05-30",
+      "membership_snapshot": "2025-05-19",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-06-30",
+      "membership_snapshot": "2025-05-19",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-07-31",
+      "membership_snapshot": "2025-07-23",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-08-29",
+      "membership_snapshot": "2025-08-28",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-09-30",
+      "membership_snapshot": "2025-09-22",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 502,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": []
+    },
+    {
+      "date": "2025-10-31",
+      "membership_snapshot": "2025-10-31",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 501,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "SOLS"
+      ]
+    },
+    {
+      "date": "2025-11-28",
+      "membership_snapshot": "2025-11-28",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 498,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "FISV",
+        "Q",
+        "SNDK",
+        "SOLS"
+      ]
+    },
+    {
+      "date": "2025-12-31",
+      "membership_snapshot": "2025-12-22",
+      "members": 503,
+      "same_day": 502,
+      "complete_lookback": 499,
+      "missing_same_day": [
+        "MMC"
+      ],
+      "insufficient_lookback": [
+        "FISV",
+        "Q",
+        "SNDK"
+      ]
+    },
+    {
+      "date": "2026-01-30",
+      "membership_snapshot": "2026-01-14",
+      "members": 503,
+      "same_day": 503,
+      "complete_lookback": 500,
+      "missing_same_day": [],
+      "insufficient_lookback": [
+        "FISV",
+        "Q",
+        "SNDK"
+      ]
+    },
+    {
+      "date": "2026-02-27",
+      "membership_snapshot": "2026-02-09",
+      "members": 503,
+      "same_day": 503,
+      "complete_lookback": 501,
+      "missing_same_day": [],
+      "insufficient_lookback": [
+        "FISV",
+        "Q"
+      ]
+    },
+    {
+      "date": "2026-03-31",
+      "membership_snapshot": "2026-03-23",
+      "members": 503,
+      "same_day": 503,
+      "complete_lookback": 501,
+      "missing_same_day": [],
+      "insufficient_lookback": [
+        "FISV",
+        "Q"
+      ]
+    },
+    {
+      "date": "2026-04-30",
+      "membership_snapshot": "2026-04-09",
+      "members": 503,
+      "same_day": 503,
+      "complete_lookback": 501,
+      "missing_same_day": [],
+      "insufficient_lookback": [
+        "FISV",
+        "Q"
+      ]
+    }
+  ]
+}

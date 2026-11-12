@@ -1,0 +1,183 @@
+{
+  "counts": {
+    "total_rough_common_labels": 1752,
+    "one_observed_cik": 1378,
+    "has_complete_context": 1371,
+    "has_nyse_exact": 1370,
+    "nyse_with_multiple_titles": 631,
+    "no_matching_ticker": 373,
+    "nyse_and_other_exchange_strings": 21,
+    "no_complete_context": 7,
+    "no_nyse_exact": 1,
+    "multiple_observed_ciks": 1
+  },
+  "non_nyse_exchange_strings": [
+    [
+      "NASDAQ",
+      1
+    ]
+  ],
+  "archive_sha256": [
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "snapshot_sha256": "81602eac3d5fba68f1cb16c59089502edfa3f381cf97f227f7686b9fa1c205e9",
+  "variations": [
+    {
+      "symbol": "ABBV",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "ABT",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "AIR",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "ALL",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "ATGE",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "BC",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "CNP",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "EIX",
+      "exchanges": [
+        "NYSE",
+        "NYSEARCA"
+      ]
+    },
+    {
+      "symbol": "EMR",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "ETR",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "GATX",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "GNW",
+      "exchanges": [
+        "NYSE",
+        "NYSEARCA"
+      ]
+    },
+    {
+      "symbol": "GTLS",
+      "exchanges": [
+        "NASDAQ",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "IBM",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "IIIN",
+      "exchanges": [
+        "NASDAQ",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "MMC",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "MMM",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "NXU",
+      "exchanges": [
+        "NASDAQ",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "SFBS",
+      "exchanges": [
+        "NASDAQ",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "WHR",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    },
+    {
+      "symbol": "X",
+      "exchanges": [
+        "CHX",
+        "NYSE"
+      ]
+    }
+  ],
+  "checked_utc": "2026-11-12T01:39:23.665155+00:00",
+  "scanner_path": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_exchange_variations_20261111.py.txt",
+  "scanner_sha256": "0edc5efeae3065c96d954dd6a24582c89bb3b0afa5b6855f87bbfcd7d6e557f9",
+  "scope": "Exact exchange strings in complete ticker/exchange/title contexts for rough NYSE common-stock-name sample, selected Q1/Q2 2021 filings through June 28.",
+  "limits": [
+    "Retrospective filing contexts; not proof of listing status, primary venue, availability time, class identity, or actual transfers.",
+    "The existing snapshot was read only for symbols and names; no prices or returns were examined.",
+    "IBM dual-listing example is corroborated separately, not generalized to other labels."
+  ]
+}

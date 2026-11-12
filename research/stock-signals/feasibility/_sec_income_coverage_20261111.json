@@ -1,0 +1,117 @@
+{
+  "purpose": "Period coverage only; not availability or identity verification",
+  "manifest_sha256": "cf68eb6d088a33f315657ad4d17915761d772ce6090dd8e9b83bc909750812e2",
+  "code_sha256": "5b98163931278a1f740ba7eceda73c004b0ae6df3455b1f52153fc3f741cd41b",
+  "periods": {
+    "annual": [
+      "2023-01-01",
+      "2023-12-31"
+    ],
+    "nine_month": [
+      "2023-01-01",
+      "2023-09-30"
+    ]
+  },
+  "filing_cutoff": "2024-05-01",
+  "issuers": [
+    {
+      "cik": 877212,
+      "issuer": "Zebra Technologies Corporation",
+      "sha256": "7df193dd4b4e7ebc5fc8cfc4288a2608e04f08d83b5e43f600c21343bf95d1ac",
+      "observations": {
+        "annual": [
+          {
+            "accession": "0000877212-24-000029",
+            "filed": "2024-02-15"
+          }
+        ],
+        "nine_month": [
+          {
+            "accession": "0000877212-23-000143",
+            "filed": "2023-10-31"
+          }
+        ]
+      }
+    },
+    {
+      "cik": 51253,
+      "issuer": "INTERNATIONAL FLAVORS\u00a0& FRAGRANCES INC",
+      "sha256": "b851711cffac9c08bab1fb59d51f7185f6cd4a1f466a4b9cc78defad6bf00efa",
+      "observations": {
+        "annual": [],
+        "nine_month": [
+          {
+            "accession": "0000051253-23-000036",
+            "filed": "2023-11-08"
+          }
+        ]
+      }
+    },
+    {
+      "cik": 914208,
+      "issuer": "Invesco Ltd.",
+      "sha256": "06dd4ca1c1902fb2f53b4f427e0968e63c1d68728cbe8cd57fc76033f0d17933",
+      "observations": {
+        "annual": [
+          {
+            "accession": "0000914208-24-000219",
+            "filed": "2024-02-21"
+          }
+        ],
+        "nine_month": [
+          {
+            "accession": "0000914208-23-000479",
+            "filed": "2023-10-31"
+          }
+        ]
+      }
+    },
+    {
+      "cik": 352541,
+      "issuer": "ALLIANT ENERGY CORPORATION",
+      "sha256": "2eee728dad8e851ef616fdf1c725bc0a0002cbc44ce1c7e50c184f5fa1ca69de",
+      "observations": {
+        "annual": [
+          {
+            "accession": "0000352541-24-000014",
+            "filed": "2024-02-16"
+          }
+        ],
+        "nine_month": [
+          {
+            "accession": "0000352541-23-000108",
+            "filed": "2023-11-03"
+          }
+        ]
+      }
+    },
+    {
+      "cik": 1478242,
+      "issuer": "IQVIA HOLDINGS INC.",
+      "sha256": "3b9e8281bf95caea639823eb1308ea0eaffa9262b5b0a1ddb2efd4824830bdb1",
+      "observations": {
+        "annual": [
+          {
+            "accession": "0001478242-24-000038",
+            "filed": "2024-02-15"
+          }
+        ],
+        "nine_month": [
+          {
+            "accession": "0001478242-23-000101",
+            "filed": "2023-11-01"
+          }
+        ]
+      }
+    },
+    {
+      "cik": "0002012383",
+      "issuer": "BlackRock, Inc.",
+      "sha256": "433252efcac82512f7ddea1f332d5ad9f8946a6cca98c85c2db11fc6c3caff94",
+      "observations": {
+        "annual": [],
+        "nine_month": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "checked_utc": "2026-11-12T00:22:06.171137+00:00",
+  "purpose": "Monthly adjusted ETF endpoint date metadata only; no prices retained and no returns calculated",
+  "endpoint": "TIME_SERIES_MONTHLY_ADJUSTED",
+  "results": {
+    "SPY": {
+      "status": "available",
+      "months": 324,
+      "first": "1999-12-31",
+      "last": "2026-11-11"
+    },
+    "TLT": {
+      "status": "unavailable",
+      "http_status": 200,
+      "response_fields": [
+        "Information"
+      ]
+    }
+  },
+  "limitations": [
+    "The response values were received transiently but not retained or evaluated.",
+    "No completeness, values, adjustment accuracy, permitted retention, or historical availability checked.",
+    "A month-end series cannot establish daily drawdowns or intramonth stops."
+  ]
+}

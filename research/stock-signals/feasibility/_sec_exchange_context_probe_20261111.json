@@ -1,0 +1,59 @@
+{
+  "archive_sha256": "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22",
+  "qualifying_submissions": 18660,
+  "counts": {
+    "ticker_contexts": 23888,
+    "exchange_one": 23482,
+    "title_one": 23771,
+    "all_three_unique": 23421,
+    "exchange_none": 406,
+    "title_none": 117
+  },
+  "examples": {
+    "KSU": {
+      "cik": "54480",
+      "accession": "0000054480-21-000113",
+      "context": "ie6f9788c37274eb39be6c8ffb15d6053_D20210416-20210416",
+      "title": "Common Stock, $.01 Per Share Par Value",
+      "exchange": "NYSE"
+    },
+    "ABC": {
+      "cik": "1140859",
+      "accession": "0000950157-21-000585",
+      "context": "c20210601to20210601",
+      "title": "Common stock",
+      "exchange": "NYSE"
+    },
+    "COR": {
+      "cik": "1490892",
+      "accession": "0001104659-21-071804",
+      "context": "From2021-05-19to2021-05-19",
+      "title": "Common Stock, $0.01 par value per share",
+      "exchange": "NYSE"
+    },
+    "APA": {
+      "cik": "1841666",
+      "accession": "0001193125-21-152738",
+      "context": "duration_2021-05-05_to_2021-05-05",
+      "title": "Common Stock, $0.625 par value",
+      "exchange": "NASDAQ"
+    }
+  },
+  "checked_utc": "2026-11-12T01:11:20.528948+00:00",
+  "source_script": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sec_exchange_context_probe_20261111.py.txt",
+  "source_script_sha256": "96cb54478496e7a775d7dd5e2925b5e5145c1218620ef5c3f2bd9a70866dfc1a",
+  "period": "2021-04-01 through 2021-06-28 by SEC filing date",
+  "forms": [
+    "10-K",
+    "10-Q",
+    "8-K"
+  ],
+  "scope": "Distinct accession and context with a nonempty TradingSymbol; exact context joins to nonempty title and exchange facts.",
+  "limitations": [
+    "Counts are filing contexts, not distinct securities, companies, a coverage percentage or a validated universe.",
+    "An exact context join does not prove that a title, ticker and exchange are correct or describe one security.",
+    "Some filers report several classes for the same symbol; ticker changes and effective dates require separate verification.",
+    "Filing date is not a public-availability timestamp; this retrospective SEC archive may have been revised.",
+    "No stock returns or investment-growth targets were calculated."
+  ]
+}

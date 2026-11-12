@@ -1,0 +1,23 @@
+{
+  "purpose": "Descriptive differences in reconstructed NYSE medians, not stock returns",
+  "older_sha256": "28c63ea5f6c1bdc1dd617ccffc763fbedd0b75b482718a97cb190895fff25909",
+  "newer_sha256": "c7b37fc827b3924493abc21378c3a59fbc63a27a79de92f912c7b21e9e6abab6",
+  "driver_sha256": "9b4fa9842507ada597ba6a9546edfd829236448561fb496e3acc45af6a0522e9",
+  "parser_sha256": "25f3692caf2aad51785afae8b6cd5a4a8bdf1de10cd7bd30fdac43a68a9ceb94",
+  "full_overlap": {
+    "months": 1183,
+    "first_month": "1925-12-31",
+    "last_month": "2024-06-30",
+    "different_medians": 792,
+    "max_absolute_relative_difference": 0.03833865814696491,
+    "max_difference_month": "1929-11-30"
+  },
+  "2021_2023": {
+    "months": 36,
+    "first_month": "2021-01-31",
+    "last_month": "2023-12-31",
+    "different_medians": 29,
+    "max_absolute_relative_difference": 0.021978772940211666,
+    "max_difference_month": "2021-04-30"
+  }
+}

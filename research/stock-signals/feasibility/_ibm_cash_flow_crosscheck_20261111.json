@@ -1,0 +1,50 @@
+{
+  "purpose": "Compare a provider predictor with a diagnostic SEC-tag calculation; not a stock signal or return",
+  "provider_probe": "_osap_ibm_cboperprof_probe_20261111.json",
+  "provider_month": 202403,
+  "provider_permno": 12490,
+  "provider_value": 0.153273657489999,
+  "issuer_cik": "0000051143",
+  "filing_accession": "0001558370-23-002376",
+  "filing_url": "https://www.sec.gov/Archives/edgar/data/51143/000155837023002376/ibm-20221231xex13.htm",
+  "companyfacts_sha256": "10fa1fafa25440b2159e2054dfe47628ba4ed353a258f526704cf9beda432bb8",
+  "units": "USD millions",
+  "candidate_inputs": {
+    "revenue_2022": 60530,
+    "cost_of_revenue_2022": 27842,
+    "sga_2022": 18609,
+    "research_development_2022": 6567,
+    "receivables_change_2022": -213,
+    "inventory_change_2022": -97,
+    "prepaid_and_other_current_assets_change_2022": -855,
+    "combined_deferred_revenue_change_2022": -564,
+    "accounts_payable_change_2022": 96,
+    "assets_2022": 127243
+  },
+  "omitted_accrued_expense_change": "Unknown; zero used only for diagnostic arithmetic, not as a verified missing Compustat value",
+  "diagnostic_numerator": 21343,
+  "diagnostic_ratio": 0.16773417791155507,
+  "residual_to_provider_numerator": -1840.0000000000582,
+  "prior_period_comparative_check": {
+    "original_accession": "0001558370-22-001584",
+    "later_accession": "0001558370-23-002376",
+    "period_end": "2021-12-31",
+    "identical_in_both_usd_millions": {
+      "Assets": 132001,
+      "AccountsReceivableNetCurrent": 6754,
+      "InventoryNet": 1649,
+      "PrepaidExpenseAndOtherAssetsCurrent": 3466,
+      "DeferredRevenueCurrent": 12518,
+      "DeferredRevenueNoncurrent": 3577,
+      "AccountsPayableCurrent": 3955
+    },
+    "scope": "Selected period-end tags in these two filings only; no intervening filing or Compustat comparison."
+  },
+  "limitations": [
+    "The SEC tags are candidate mappings; their equivalence to Compustat fields is unverified.",
+    "The provider's calculation inputs, fiscal period, identity mapping and point-in-time vintage are unverified.",
+    "The arithmetic residual is not proof of a particular accrued-liability amount or cause; multiple mismatched components can offset.",
+    "The later 2022 annual filing supplies comparative figures and cannot establish complete revision history or public availability timing.",
+    "No security ranking or return is calculated."
+  ]
+}

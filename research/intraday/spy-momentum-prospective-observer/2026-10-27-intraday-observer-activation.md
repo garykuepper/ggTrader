@@ -46,11 +46,36 @@ under the source artifact folder. Preparation evidence remains in the
 
 ## What remains to check
 
-Verify the October 29 anchor archive and October 30 inputs, decision and archive
-from actual scheduled jobs. Check their source references, durable completion
-and integrity; retain any faults and never backfill a decision. Perform the
-runbook's daily local health check and weekly/notice-driven calendar comparison.
+On November 11, a read-only check of the live local state found the October 29
+anchor archive and October 30 inputs, decision and archive completion records
+(sequences 3, 5, 7 and 9). Their recorded publication completions were 16:20:01,
+15:20:01, 15:25:00 and 16:20:01 New York time respectively; each reported `ok`
+with no faults. The three fetched raw bodies matched their recorded SHA-256 hashes;
+the first input referenced the anchor completion, and the decision referenced the
+input completion. The installed verifier found 57 records, no integrity problems
+and no stray raw files. These are local-clock and source-record checks, not independent
+proof of source timeliness or a strategy performance result.
+
+The November 11 scheduled inputs, decision and archive also recorded `ok`; all four
+timers were active and the user manager showed no failed units at inspection. Hermes
+supervision remains paused. Continue the runbook's daily local health check and
+weekly/notice-driven calendar comparison; retain faults and never backfill a decision.
 No external notification or automatic health monitor is installed.
+
+On November 12, a read-only check of the Hermes job record confirmed that
+supervision remains disabled and paused. The record says it was paused on
+November 6 at 09:18 Pacific; it provides no pause reason, and its last recorded
+status was `ok` with zero consecutive failures. That does not establish who
+paused it or why. The four observer timers were still scheduled for November 12,
+and the user service manager reported no failed units. The day's recording
+window had not yet begun, so this is not the required after-close health check.
+The Hermes user journal contains 30 gateway entries between 09:15 and 09:22
+Pacific on November 6, but a bounded search for the job ID, `intraday`, or
+`paus` found no matching entry. This search cannot determine who paused the
+job or why; other records were not ruled out.
+The installed verifier was also run locally before the November 12 session: it
+reported 57 ledger records, no integrity problems and no stray raw files. That
+does not verify a later recording or replace the after-close health check.
 
 Local timestamps and hypothetical bar fills remain limited evidence. The dividend
 comparison remains provisional. There is no profitability pass or automatic move

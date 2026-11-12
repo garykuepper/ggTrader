@@ -1,0 +1,21 @@
+{
+  "scope": "One public demo response and SEC filing comparison; not a historical availability or vendor-wide validation.",
+  "retrieved_utc": "2026-11-12T03:11:21.147054+00:00",
+  "demo_function": "SHARES_OUTSTANDING",
+  "symbol": "MSFT",
+  "response_sha256": "5decb214f56767093d579db18abe47e4ad80ba4df58906d9cbec90a77a857d13",
+  "response_retained": false,
+  "row": {
+    "date": "2024-03-31",
+    "shares_outstanding_diluted": "7472000000",
+    "shares_outstanding_basic": "7431000000"
+  },
+  "sec_filing": "https://www.sec.gov/Archives/edgar/data/789019/000095017024048288/msft-20240331.htm",
+  "sec_index": "https://www.sec.gov/Archives/edgar/data/789019/000095017024048288/0000950170-24-048288-index.htm",
+  "filing_date": "2024-04-25",
+  "filing_three_month_weighted_average_basic": 7431000000,
+  "filing_three_month_weighted_average_diluted": 7472000000,
+  "filing_cover_shares_as_of": "2024-04-22",
+  "filing_cover_shares": 7432305794,
+  "limitations": "Numerical match does not prove source or semantics for other securities or periods. Filing accepted after market close; exact dissemination is unverified. Period date is not an availability timestamp."
+}

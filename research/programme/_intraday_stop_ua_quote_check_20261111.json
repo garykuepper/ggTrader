@@ -1,0 +1,21 @@
+{
+  "purpose": "Investigate whether clipping an inconsistent low to the open would establish the true intraday range",
+  "symbol": "UA",
+  "date": "2021-05-05",
+  "source_audit": "_intraday_stop_ohlc_comparison_20261111.json",
+  "frozen_tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "comparison_file_sha256": "7b58eeafc855a502469fc5090eb703f76516172deebe13d51609fd6eb2c5f3f5",
+  "frozen_tape": {"open": 20.870001, "low": 21.0, "close": 21.129999},
+  "comparison_file": {"source_label": "yahoo", "same_ohlc_as_tape": true},
+  "indexed_quote": {
+    "url": "https://stockspricehistory.com/quotes/UA/history/2021-05-05",
+    "accessed_utc": "2026-11-12T02:05:16Z",
+    "company_label": "Under Armour Inc. Class C",
+    "open": 20.87,
+    "low": 20.57,
+    "close": 21.13,
+    "access_method": "Search-engine indexed text; direct page open returned HTTP 403. Original page bytes were not captured."
+  },
+  "interpretation": "The quoted low is below both the tape low and the tape open. If it is correct and on the same basis, replacing the tape low with its open would still omit a portion of the day's range, which may change whether a stop is touched. No fill or trading result is inferred.",
+  "limitations": "The indexed quote's underlying vendor, data lineage, price adjustment and accuracy are unknown. The search result is not independently timestamped or a frozen primary-market record. Identical ticker text does not establish historical security identity. These observations do not justify replacing data, excluding a security, or selecting a stop level. No stock returns or simulations were calculated."
+}

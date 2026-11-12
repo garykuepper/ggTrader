@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-path = Path(__file__).resolve().parents[1] / "stock_tape_coverage.py"
+path = Path(__file__).resolve().parents[1] / "stock_tape_coverage.py"  # root-ok: sibling code
 spec = importlib.util.spec_from_file_location("stock_tape_coverage", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)

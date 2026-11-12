@@ -1,0 +1,35 @@
+{
+  "checked_utc": "2026-11-12T00:45:56.832218+00:00",
+  "purpose": "Check timestamp-aware continuity guard with manually transcribed public facts; no target or returns",
+  "prior_record": "_augmedix_continuity_guard_20261111.json",
+  "issuer": "0001769804",
+  "fit_at": "2021-06-29T20:00:00Z",
+  "assumed_year_ends": [
+    "2018-12-31",
+    "2019-12-31",
+    "2020-12-31"
+  ],
+  "event_effective_date": "2020-10-05",
+  "event_availability_proxy_utc": "2021-03-30T23:38:08Z",
+  "availability_proxy_basis": "Acceptance time for 2020 annual filing describing the merger; not independently verified dissemination time",
+  "fact_sources": {
+    "older_filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390020008058/f10k2019_maloholdings.htm",
+    "later_filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390021018844/f10k2020_augmedixinc.htm",
+    "older_index": "https://www.sec.gov/Archives/edgar/data/1769804/000121390020008058/0001213900-20-008058-index.htm",
+    "later_index": "https://www.sec.gov/Archives/edgar/data/1769804/000121390021018844/0001213900-21-018844-index.htm"
+  },
+  "code_sha256": {
+    "expected_growth_training.py": "a68e16516b6c20b99dff8c90a0b039be656a0946c46dcbbc8ab9cd135ccb466d",
+    "sec_facts.py": "8cbb579c99a2b740afc73c57a7429cea28b0e9d89c4c07a4e011edeb27784d7c",
+    "filing_vintages.py": "24110431236c8e18a117ac81ebf3a4805509c4aee550c84c90256095eb81cbda"
+  },
+  "result": "blocked before target calculation; calculation function replaced with raising stub",
+  "limitations": [
+    "Manually transcribed selected facts; not a complete filing history.",
+    "Acceptance timestamps are proxies, not independently established dissemination times.",
+    "Fiscal year ends are assumed; earliest period begins during 2018.",
+    "The guard relies on a caller-provided known break and cannot detect missing events.",
+    "This example establishes neither stock eligibility nor predictive performance.",
+    "Event was supplied manually; guard cannot discover omitted events."
+  ]
+}

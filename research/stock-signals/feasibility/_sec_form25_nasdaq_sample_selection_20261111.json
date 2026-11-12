@@ -1,0 +1,94 @@
+{
+  "purpose": "Preselect a five-filing metadata integration check before retrieving notice XML",
+  "selection": "First five sorted accessions among 2021 Q1 25-NSE records with exactly two indexed parties, one Nasdaq CIK 0001354457.",
+  "source_archive_sha256": "0ccb50ed8d4d7f980f65e575bec403e4d0c7a135f610bb995bc19df5ff0924c0",
+  "eligible_accessions": 74,
+  "selected": [
+    {
+      "accession": "0001354457-21-000003",
+      "form": "25-NSE",
+      "filing_date": "2021-01-04",
+      "parties": [
+        {
+          "cik": "0001354457",
+          "name": "The Nasdaq Stock Market LLC",
+          "filename": "edgar/data/1354457/0001354457-21-000003.txt"
+        },
+        {
+          "cik": "0001574815",
+          "name": "BMC STOCK HOLDINGS, INC.",
+          "filename": "edgar/data/1574815/0001354457-21-000003.txt"
+        }
+      ]
+    },
+    {
+      "accession": "0001354457-21-000004",
+      "form": "25-NSE",
+      "filing_date": "2021-01-04",
+      "parties": [
+        {
+          "cik": "0001354457",
+          "name": "The Nasdaq Stock Market LLC",
+          "filename": "edgar/data/1354457/0001354457-21-000004.txt"
+        },
+        {
+          "cik": "0001578735",
+          "name": "National General Holdings Corp.",
+          "filename": "edgar/data/1578735/0001354457-21-000004.txt"
+        }
+      ]
+    },
+    {
+      "accession": "0001354457-21-000016",
+      "form": "25-NSE",
+      "filing_date": "2021-01-06",
+      "parties": [
+        {
+          "cik": "0001143513",
+          "name": "GLADSTONE CAPITAL CORP",
+          "filename": "edgar/data/1143513/0001354457-21-000016.txt"
+        },
+        {
+          "cik": "0001354457",
+          "name": "The Nasdaq Stock Market LLC",
+          "filename": "edgar/data/1354457/0001354457-21-000016.txt"
+        }
+      ]
+    },
+    {
+      "accession": "0001354457-21-000027",
+      "form": "25-NSE",
+      "filing_date": "2021-01-07",
+      "parties": [
+        {
+          "cik": "0001354457",
+          "name": "Nasdaq Stock Market LLC",
+          "filename": "edgar/data/1354457/0001354457-21-000027.txt"
+        },
+        {
+          "cik": "0001721386",
+          "name": "Landsea Homes Corp",
+          "filename": "edgar/data/1721386/0001354457-21-000027.txt"
+        }
+      ]
+    },
+    {
+      "accession": "0001354457-21-000045",
+      "form": "25-NSE",
+      "filing_date": "2021-01-12",
+      "parties": [
+        {
+          "cik": "0001354457",
+          "name": "Nasdaq Stock Market LLC",
+          "filename": "edgar/data/1354457/0001354457-21-000045.txt"
+        },
+        {
+          "cik": "0001774155",
+          "name": "South Mountain Merger Corp.",
+          "filename": "edgar/data/1774155/0001354457-21-000045.txt"
+        }
+      ]
+    }
+  ],
+  "limits": "Selection is an accession-order convenience sample, not representative and not a listing universe. The non-Nasdaq indexed party is a candidate issuer, not verified until the document is read. The local record is not independently timestamped."
+}

@@ -1,0 +1,21 @@
+{
+  "purpose": "Assess whether the six previously flagged stop-input bars intersect the fixed replay universe, without running a strategy or calculating returns",
+  "source_audit": "_intraday_stop_ohlc_check_20261111.json",
+  "replay_window": ["2021-01-31", "2026-04-30"],
+  "membership_fixture": "fixture:sp500_v1_2026-06-02",
+  "membership_content_sha256": "256e022dc1580a82aaef38d303a772611469bc6a705374704a79333eefcef71c",
+  "membership_raw_sha256": "bc9c2aaed27e70406a247cd3f75513e786b0f173c70c3e05c1e243bf25498787",
+  "membership_coverage": ["1996-01-02", "2026-06-02"],
+  "method": "Use the hash-checked fixture, select the latest membership snapshot on or before each bar date, and normalize fixture tickers with the research loader's normalization. Also compare each label with the union of fixture members across the replay window. Exact ticker matches do not prove issuer identity.",
+  "normalized_replay_union_count": 612,
+  "results": [
+    {"symbol": "AVB", "date": "2021-05-05", "snapshot_date": "2021-04-20", "exact_member": true, "in_replay_union": true},
+    {"symbol": "BK", "date": "2021-05-05", "snapshot_date": "2021-04-20", "exact_member": true, "in_replay_union": true},
+    {"symbol": "CTRA", "date": "2023-06-05", "snapshot_date": "2023-05-16", "exact_member": true, "in_replay_union": true},
+    {"symbol": "HUBB", "date": "2021-05-05", "snapshot_date": "2021-04-20", "exact_member": false, "in_replay_union": true},
+    {"symbol": "UA", "date": "2021-05-05", "snapshot_date": "2021-04-20", "exact_member": true, "in_replay_union": true},
+    {"symbol": "WBD", "date": "2026-10-05", "exact_member": null, "reason": "after fixture coverage", "in_replay_union": true}
+  ],
+  "loader_probe": "load_bars with the named fixture and replay-window union, restricted to 2021-05-05, loaded 579 symbols with data. _validate_stop_bars with no entries raised invalid OHLC prices for AVB on that date. The probe validates input only and makes no portfolio simulation.",
+  "limitations": "The fixture is retrospective and snapshot-based; exact symbols do not establish identity or membership between snapshots. The replay union alone does not establish that a particular strategy includes a symbol or holds it. WBD's bar falls outside both the replay window and fixture coverage. Do not use this retrospective list to exclude stocks from a backtest. Causes, source truth and corrections are unverified."
+}

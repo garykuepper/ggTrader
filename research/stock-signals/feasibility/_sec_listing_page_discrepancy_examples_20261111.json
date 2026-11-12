@@ -1,0 +1,38 @@
+{
+  "checked_utc": "2026-11-12T01:27:13.465313+00:00",
+  "input_artifact": "_sec_listing_all_pages_probe_20261111_v2.json",
+  "input_sha256": "d9c41fdec45c11c460cd86e624034540f5171168758774cfe7bde1ccbfcdcd2d",
+  "discrepancies": [
+    {
+      "page": "CIK0002012383-submissions-001.json",
+      "filing_date": "2025-11-05",
+      "accession": "0001193125-25-267043",
+      "page_filing_from": "2025-03-04",
+      "page_filing_to": "2025-11-04",
+      "sec_filing_index": "https://www.sec.gov/Archives/edgar/data/2012383/000119312525267043/0001193125-25-267043-index.htm",
+      "sec_filing_date": "2025-11-05"
+    },
+    {
+      "page": "CIK0002012383-submissions-002.json",
+      "filing_date": "2025-03-03",
+      "accession": "0001193125-25-044184",
+      "page_filing_from": "2024-10-21",
+      "page_filing_to": "2025-03-02",
+      "sec_filing_index": "https://www.sec.gov/Archives/edgar/data/2012383/000119312525044184/0001193125-25-044184-index.htm",
+      "sec_filing_date": "2025-03-03"
+    }
+  ],
+  "candidate": {
+    "accession": "0001193125-25-072466",
+    "form": "8-A12B",
+    "security_description": "3.750% Notes due 2035",
+    "issuer_note": "BlackRock, Inc. and BlackRock Finance, Inc. appear as filers",
+    "source": "https://www.sec.gov/Archives/edgar/data/2012383/000119312525072466/d899867d8a12b.htm"
+  },
+  "limitations": [
+    "Official indexes corroborate these filing dates and identities, not archive-page completeness or validity of all records.",
+    "Acceptance and filing dates do not independently prove public availability at a historical decision time.",
+    "The candidate concerns notes, not evidence of a common-stock listing event.",
+    "No stock returns or targets were calculated."
+  ]
+}

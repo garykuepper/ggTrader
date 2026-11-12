@@ -1,0 +1,16 @@
+{
+  "purpose": "Check whether an exchange-labelled file tree alone establishes a historical listing",
+  "repository": "https://github.com/Stonks/tickers",
+  "commit": "50c5e4a0d0c3943d663d40f3963ae2f345a67c69",
+  "commit_time_utc_as_reported_by_git": "2023-10-11T02:30:54Z",
+  "root_tree_sha": "dc3eace884c53fc5323061bb021f93fb0b227191",
+  "tree_query": "https://api.github.com/repos/Stonks/tickers/git/trees/50c5e4a0d0c3943d663d40f3963ae2f345a67c69?recursive=1",
+  "tree_query_truncated": false,
+  "tree_entry_count": 9816,
+  "matching_paths": ["tickers/nyse/NLSN.csv", "tickers/nyse/TWTR.csv"],
+  "twitter_evidence": {
+    "source": "https://www.sec.gov/Archives/edgar/data/876661/000087666122000890/ruleprovisionnotice.htm",
+    "statement": "The exchange reported trading suspended before the market open on 2022-10-28 following the merger."
+  },
+  "limitations": "Only repository metadata and an SEC-indexed filing were inspected. A file path is not evidence that its contents were updated on the commit date, that the ticker was then listed, or that the repository is complete. The reported commit time is not an independent timestamp. The NLSN path has not been independently investigated. Source rights and price data were not checked; no stock returns were calculated."
+}

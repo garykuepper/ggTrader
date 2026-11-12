@@ -1,5 +1,10 @@
 # Proposed expected-investment-growth stock screen
 
+**Status update:** The approved portfolio calculation has since been run and
+independently recomputed; see the [results](2026-11-11-expected-growth-results.md).
+The approval and pre-run statements below describe the proposal at the time of
+approval. They do not authorize a new stock-level return study.
+
 **Owner approved this historical screen in conversation on 2026-11-11; no historical return calculation has yet been run.** The approval covers the specification pinned in commit `9c808486`. This investigates whether a published large-stock portfolio sorted by forecast investment growth outperformed a broad market after an assumed cost. It is a separate question from earlier screens, not a reversal of their NO-GO results.
 
 - **Candidate:** Global-q monthly value-weighted total-return portfolio with `rank_ME=2` and `rank_EG=3` (large stocks, highest forecast investment-growth group). Its expected-growth forecast uses valuation, cash flow and return-on-equity information; profitability overlap with earlier work remains unresolved.

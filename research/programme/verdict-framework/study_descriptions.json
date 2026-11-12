@@ -66,5 +66,10 @@
   "discovery-review-8faf1f5e3f69a7de": "Investigates whether a historical stock-strategy trial used a 10% position size; the trial is not established.",
   "stocks-low-accruals": "Compares a published large-stock low-accruals portfolio with the broad market and, descriptively, SPY.",
   "stocks-high52": "Compares a published portfolio of stocks near their 52-week highs with the broad market.",
-  "stocks-rd-exploratory": "Explores a portfolio of companies with high research spending relative to market value."
+  "stocks-rd-exploratory": "Explores a portfolio of companies with high research spending relative to market value.",
+  "stocks-monthly-reversal": "Compares large stocks that fell in the prior month with the broad market.",
+  "stocks-low-variance": "Compares a published portfolio of relatively low-volatility large stocks with the broad market.",
+  "stocks-accounting-score": "Compares a high accounting-score portfolio of value stocks with the broad market.",
+  "stocks-earnings-consistency": "Compares a published portfolio of stocks with consistent earnings growth against the broad market.",
+  "stocks-expected-growth": "Compares a published large-stock portfolio ranked by expected investment growth with the broad market."
 }

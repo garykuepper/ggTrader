@@ -1,0 +1,57 @@
+{
+  "purpose": "Session presence only; not a price, identity or strategy validation",
+  "tape_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "coverage_sha256": "94e4eac07f3858b1d177a92479cef104d0573dab195987fe48ca699b4868494c",
+  "code_sha256": "af5efa15bf82452fcafcb2448fac0f6b86cb2959243da79b6f44362f00ec4673",
+  "alias_code_sha256": "a8147ac5a7a7927c80c4bda7c7774f3567d2575405e5eccfa56975759f33c17b",
+  "calendar": "NYSE, pandas-market-calendars",
+  "calendar_version": "5.6.0",
+  "window_sessions_including_decision_day": 252,
+  "candidates": {
+    "MMC": {
+      "eligible": 60,
+      "same_day": 60,
+      "complete_lookback": 60
+    },
+    "ABC": {
+      "eligible": 31,
+      "same_day": 31,
+      "complete_lookback": 31
+    },
+    "ANTM": {
+      "eligible": 17,
+      "same_day": 17,
+      "complete_lookback": 17
+    },
+    "BLL": {
+      "eligible": 16,
+      "same_day": 16,
+      "complete_lookback": 16
+    },
+    "RE": {
+      "eligible": 30,
+      "same_day": 30,
+      "complete_lookback": 30
+    },
+    "PKI": {
+      "eligible": 28,
+      "same_day": 28,
+      "complete_lookback": 28
+    },
+    "CDAY": {
+      "eligible": 29,
+      "same_day": 29,
+      "complete_lookback": 29
+    },
+    "WLTW": {
+      "eligible": 12,
+      "same_day": 12,
+      "complete_lookback": 12
+    },
+    "FB": {
+      "eligible": 17,
+      "same_day": 17,
+      "complete_lookback": 17
+    }
+  }
+}

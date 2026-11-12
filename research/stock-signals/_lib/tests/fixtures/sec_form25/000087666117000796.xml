@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0000876661</cik>
+        <entityName>NEW YORK STOCK EXCHANGE LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>1222840</cik>
+        <entityName>RETAIL PROPERTIES OF AMERICA, INC.</entityName>
+        <fileNumber>001-35481</fileNumber>
+        <address>
+            <street1>2021 Spring Road, Ste. 200</street1>
+            <street2></street2>
+            <city>Oak Brook</city>
+            <stateOrCountryCode>IL</stateOrCountryCode>
+            <stateOrCountry>ILLINOIS</stateOrCountry>
+            <zipCode>60523</zipCode>
+        </address>
+        <telephoneNumber>(630) 634-4200</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>7.00% Series A Cumulative Redeemable Preferred Stock</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(1)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Victoria Paper</signatureName>
+        <signatureTitle>Senior Analyst</signatureTitle>
+        <signatureDate>2017-12-21</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

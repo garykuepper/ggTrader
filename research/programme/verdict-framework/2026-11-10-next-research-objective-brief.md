@@ -1,6 +1,14 @@
 # Next research objective: decision brief
 
-**2026-11-10 — PROPOSAL, UNAPPROVED; no return test authorized.** This is an objective and data-access discussion, not a candidate registration or a change to existing gates. No owner choice beyond exploring both objectives is implied. All previously inspected periods remain seen. Sources: [benchmark synthesis](../benchmark-objectives/2026-11-10-objectives-benchmarks-consolidated.md), [framework design](../../../docs/superpowers/specs/2026-11-10-research-verdict-framework-design.md), [verdict register](../../VERDICT_REGISTER.md), and [current next steps](../../../docs/next_steps.md). The register's historical coverage is incomplete. The synthesis itself approves no benchmark, hurdle, test or production change.
+**2026-11-11 update:** For the next downside-protection proposal, the owner chose
+80% SPY / 20% Treasury bills alongside SPY. The comparison's instrument and
+rebalancing still need specification; this choice does not authorize a study.
+The SEC's [dataset documentation](https://www.sec.gov/files/financial-statement-data-sets.pdf)
+also clarifies that its 2009 Q1 file contains headers only and submissions start
+April 15, 2009; the date range in the historical discussion below is a listing
+range, not evidence of January 2009 observations.
+
+**2026-11-10 — PROPOSAL, UNAPPROVED; no return test authorized.** This is an objective and data-access discussion, not a candidate registration or a change to existing gates. At that date, no owner choice beyond exploring both objectives was recorded. All previously inspected periods remain seen. Sources: [benchmark synthesis](../benchmark-objectives/2026-11-10-objectives-benchmarks-consolidated.md), [framework design](../../../docs/superpowers/specs/2026-11-10-research-verdict-framework-design.md), [verdict register](../../VERDICT_REGISTER.md), and [current next steps](../../../docs/next_steps.md). The register's historical coverage is incomplete. The synthesis itself approves no benchmark, hurdle, test or production change.
 
 ## What is the question?
 
@@ -19,6 +27,8 @@ These are possible research questions, **not established feasible studies**. Eac
 
 2. **Exit rules and downside: not yet a distinct test.** The [exit sweep design](../../../docs/superpowers/specs/2026-06-28-exit-rule-sweep-design.md) already fixed entry and 3% sizing, compared RSI with take-profit, time-stop and replacement exits, and used drawdown among its conditions. The [trailing-stop result](../../VERDICT_REGISTER.md#trailing-stops-historical) is also a historical NO-GO. Recasting a previously seen result as a downside objective does not make it new. The available 2021–2026 point-in-time stock tape was used in those studies; any historical reuse is seen data. Do not offer an exit test for registration unless a materially different question and informative evidence can be specified beforehand. Daily bars cannot establish all intraday stop ordering or fills.
 
+**Loss-control implementation constraint:** The [replica audit](../../audits/production-replica/2026-10-19-production-replica-audit-nogo.md) records an all-trading halt before normal and catastrophe exits, with a limited forced-delisting exception. Subsequent **undeployed** [local changes](../../../src/ggTrader/paper/trader.py) instead permit eligible exits under valid loss halts; invalid risk state and unresolved orders can still prevent exits. The [catastrophe stop](../../../src/ggTrader/paper/catastrophe_stop.py) is disabled by default. A halt is not a guarantee that losing positions will be exited, and a candidate's loss plan must specify the intended behavior. Neither version establishes that enabling a stop improves returns or authorizes restarting the frozen trader.
+
 **Replica artifact inventory.** The [read-only inventory](../benchmark-objectives/2026-11-10-replica-attribution-artifact-inventory.md) found daily aggregate weights but did not locate a full position and fill ledger or establish an exact original input-tape binding. A transaction-level attribution remains unresolved; an aggregate proxy would need a separately specified proposal. Previously inspected history remains descriptive.
 
 No defensive hypothesis is ready to register under an approved defense path. The cheapest next step is to choose a fixed passive comparator and clarify the [existing cross-asset shadow](2026-11-10-cross-asset-shadow-decision-brief.md), before specifying a new claim.
@@ -35,11 +45,11 @@ The existing [forward-paper standard](../evidence-standard/2026-10-23-forward-pa
 
 ## Owner decisions before registration
 
-You chose to explore both return and protection first. In plain terms:
+You chose to explore both return and protection first, gave 1–5 years as a planning horizon, and do not want to set a wealth-sacrifice limit yet. A [concrete protection comparison](2026-11-10-protection-measures-explained.md#proposed-first-comparison-15-year-horizon) is drafted as a proposal, with benchmark and sacrifice choices still open. In plain terms:
 
 - **How should we explore both?** Compare separate return and protection tracks, or specify a joint test; choose which to investigate first.
 - **What should we compare against?** SPY alone; SPY plus Treasury bills for a lower-risk alternative; the historical 80/20 cross-asset proposal; or the owner-adopted 70/30 SPY/SSO policy, with funding unverified. Recommendation: keep SPY visible in every study, and choose a fixed, investable policy appropriate to the question before evaluation; use the actual displaced allocation only when its starting state is established.
-- **What trade-off feels worthwhile?** Choose a horizon and, for a defensive claim, a specific measure of losses and the most after-tax wealth or annual return you would give up for an improvement. For example, would 0.3 percentage points a year be acceptable for a specified reduction in a severe decline? This is an illustration, not a suggested target.
+- **What trade-off feels worthwhile?** Choose a specific fixed horizon within the 1–5 year planning range and, for a defensive claim, a measure of losses and the most after-tax wealth or annual return you would give up for an improvement. For example, would 0.3 percentage points a year be acceptable for a specified reduction in a severe decline? This is an illustration, not a suggested target.
 - **What history counts?** Decide whether historical market declines identified after they occurred can support inference or are descriptive only; record that those periods have already been inspected.
 - **What happens after a test?** Decide which stages a defensive candidate may enter and what operational and evidence checks apply. This needs a dated amendment before the defense path can replace an existing gate.
 

@@ -1,0 +1,147 @@
+{
+  "purpose": "Retrospective discrepancy triage; does not select or exclude stocks",
+  "flags_sha256": "c874b3faa347b166f3b5501f6903dee31d16f75caa16b648d8b93938bd23ccea",
+  "membership_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "code_sha256": "73468b8296789fa1071a329ed3f7b10d83124af01687a0c0cba9354f4f327837",
+  "start": "2021-01-31",
+  "end": "2026-04-30",
+  "counts": {
+    "member": 15,
+    "nonmember": 4
+  },
+  "flags": [
+    {
+      "symbol": "AMCR",
+      "date": "2025-09-05",
+      "relative_change": -0.015187453587250599,
+      "membership": "member",
+      "membership_snapshot": "2025-08-28"
+    },
+    {
+      "symbol": "AMCR",
+      "date": "2025-11-28",
+      "relative_change": -0.015028870026928542,
+      "membership": "member",
+      "membership_snapshot": "2025-11-28"
+    },
+    {
+      "symbol": "APTV",
+      "date": "2026-04-01",
+      "relative_change": -0.13006716730609258,
+      "membership": "member",
+      "membership_snapshot": "2026-03-23"
+    },
+    {
+      "symbol": "BBWI",
+      "date": "2021-08-03",
+      "relative_change": -0.04411667286171006,
+      "membership": "member",
+      "membership_snapshot": "2021-08-03"
+    },
+    {
+      "symbol": "BDX",
+      "date": "2026-02-10",
+      "relative_change": 0.011285706700570497,
+      "membership": "member",
+      "membership_snapshot": "2026-02-09"
+    },
+    {
+      "symbol": "BWA",
+      "date": "2023-07-05",
+      "relative_change": -0.029240356719321348,
+      "membership": "member",
+      "membership_snapshot": "2023-06-20"
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-03-30",
+      "relative_change": 0.01043968709208043,
+      "membership": "nonmember",
+      "membership_snapshot": "2021-03-22"
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-06-29",
+      "relative_change": 0.011192411072110664,
+      "membership": "nonmember",
+      "membership_snapshot": "2021-06-04"
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-09-29",
+      "relative_change": 0.010581707158346276,
+      "membership": "nonmember",
+      "membership_snapshot": "2021-09-20"
+    },
+    {
+      "symbol": "COR",
+      "date": "2021-12-01",
+      "relative_change": 0.011093520766926712,
+      "membership": "nonmember",
+      "membership_snapshot": "2021-10-04"
+    },
+    {
+      "symbol": "DTE",
+      "date": "2021-07-01",
+      "relative_change": -0.010768433921062082,
+      "membership": "member",
+      "membership_snapshot": "2021-06-04"
+    },
+    {
+      "symbol": "FTV",
+      "date": "2025-06-30",
+      "relative_change": 0.012932303205658968,
+      "membership": "member",
+      "membership_snapshot": "2025-05-19"
+    },
+    {
+      "symbol": "J",
+      "date": "2024-09-30",
+      "relative_change": -0.039611970179927236,
+      "membership": "member",
+      "membership_snapshot": "2024-09-30"
+    },
+    {
+      "symbol": "K",
+      "date": "2023-10-02",
+      "relative_change": 0.07134184016134149,
+      "membership": "member",
+      "membership_snapshot": "2023-10-02"
+    },
+    {
+      "symbol": "LEN",
+      "date": "2025-01-21",
+      "relative_change": -0.061268140133046045,
+      "membership": "member",
+      "membership_snapshot": "2024-12-23"
+    },
+    {
+      "symbol": "LH",
+      "date": "2023-07-03",
+      "relative_change": -0.010486303414373066,
+      "membership": "member",
+      "membership_snapshot": "2023-06-20"
+    },
+    {
+      "symbol": "MMM",
+      "date": "2024-04-01",
+      "relative_change": 0.010359061170075234,
+      "membership": "member",
+      "membership_snapshot": "2024-03-25"
+    },
+    {
+      "symbol": "SW",
+      "date": "2025-11-14",
+      "relative_change": -0.012407547568990651,
+      "membership": "member",
+      "membership_snapshot": "2025-11-11"
+    },
+    {
+      "symbol": "T",
+      "date": "2022-04-11",
+      "relative_change": 0.014260274751322966,
+      "membership": "member",
+      "membership_snapshot": "2022-04-11"
+    }
+  ]
+}

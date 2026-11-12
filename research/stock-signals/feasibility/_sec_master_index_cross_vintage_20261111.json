@@ -1,0 +1,46 @@
+{
+  "purpose": "Check one older and one newer SEC master index against the experimental listing-form parser",
+  "retrieval_date_utc": "2026-11-12",
+  "parser": "../_lib/sec_master_index.py",
+  "parser_sha256": "421c3898c08c1286be2eabfc3a59513339a3e97a2d80d637431763c3c1dd3f1c",
+  "archives": [
+    {
+      "quarter": "2010-Q1",
+      "url": "https://www.sec.gov/Archives/edgar/full-index/2010/QTR1/master.zip",
+      "path": "/home/flynn/ggTrader-refs/sec-master-index-20261111/2010q1-master.zip",
+      "retrieved_utc": "2026-11-12T02:35:23.007986+00:00",
+      "last_modified": "Sat, 07 Nov 2026 06:58:43 GMT",
+      "bytes": 3729148,
+      "sha256": "a09876dedf5bd8448740195fc80d657b6988c93506f7bca2d492d8f863b4a04c",
+      "index_uncompressed_bytes": 27083681,
+      "total_rows": 300561,
+      "selected_accessions": 375,
+      "form_25_nse_rows": 270,
+      "form_25_nse_accessions": 135,
+      "form_8_a12g_rows_not_selected": 33,
+      "form_8_a12g_amendment_rows_not_selected": 13,
+      "selected_filing_dates": ["2010-01-04", "2010-03-31"],
+      "selected_dates_outside_quarter": 0
+    },
+    {
+      "quarter": "2024-Q1",
+      "url": "https://www.sec.gov/Archives/edgar/full-index/2024/QTR1/master.zip",
+      "path": "/home/flynn/ggTrader-refs/sec-master-index-20261111/2024q1-master.zip",
+      "retrieved_utc": "2026-11-12T02:35:23.846341+00:00",
+      "last_modified": "Sat, 07 Nov 2026 08:28:28 GMT",
+      "bytes": 4262851,
+      "sha256": "014185be2ec3289fafa235dbced1c9ff285eae86ef6cc504097322617cbf214a",
+      "index_uncompressed_bytes": 33578826,
+      "total_rows": 370324,
+      "selected_accessions": 553,
+      "form_25_nse_rows": 424,
+      "form_25_nse_accessions": 212,
+      "form_8_a12g_rows_not_selected": 11,
+      "form_8_a12g_amendment_rows_not_selected": 0,
+      "selected_filing_dates": ["2024-01-02", "2024-03-29"],
+      "selected_dates_outside_quarter": 0
+    }
+  ],
+  "method": "Run the parser on each pinned archive and independently count selected form rows and accession filenames with a separate CSV reader. Count unselected 8-A12G forms separately. Read filing-index metadata only.",
+  "limits": "The SEC rebuilds quarterly indexes for later corrections, and these files were captured in 2026. Counts are filings or index rows, not verified securities or event dates. Three tested quarters do not establish long-history completeness, identity, source availability at a decision time, or which other forms matter. No prices or returns were examined."
+}

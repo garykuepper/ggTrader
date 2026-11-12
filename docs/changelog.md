@@ -1,5 +1,154 @@
 # Changelog
 
+## 2026-11-11 (paper signal dates)
+
+- Reject future-dated bars before signal generation and reject future, stale or
+  unparseable dates from every supplied signal sleeve. Today's bar retains its
+  existing coverage handling. The fix is local and has not been deployed.
+- The full test runner passed: 2,786 core and 1,144 study tests; 18 core tests
+  skipped, including frozen-tape and live-golden checks unavailable here.
+
+## 2026-11-11 (walk-forward import boundary)
+
+- Moved canonical JSON hashing into the shared JSON utility so halt-mask provenance
+  no longer imports study-side manifest plumbing. Existing hash bytes and the
+  manifest import remain compatible; the change is local and undeployed.
+
+## 2026-11-11 (experimental annual-report timing)
+
+- Added a synthetic-tested helper that lists period ends from annual reports
+  available by a supplied cutoff. A separate verified fiscal calendar is needed
+  for late or missing filings; no stock ranking or return study was run.
+
+## 2026-11-11 (paper order recovery notice)
+
+- Preserve the original order-reconciliation error if sending its notice also
+  raises. Submissions remain blocked; this change has not been deployed.
+
+## 2026-11-11 (fund-lead name review)
+
+- Added a pinned comparison of screener and SEC registrant names to prioritize
+  identity review; name similarity is not treated as proof of a security match.
+
+## 2026-11-11 (historical MIAX metadata scan)
+
+- Added a pinned, metadata-only scan comparing an SEC-hosted MIAX symbol list
+  with the screener and N-CEN fund leads. Exact labels are not verified identities.
+
+## 2026-11-11 (SEC fund metadata feasibility)
+
+- Added a reproducible, metadata-only cross-check of a historical screener against
+  the SEC's retrospective 2021 Q1 N-CEN archive. Exact ticker matches are leads,
+  not verified security classifications or automatic universe exclusions.
+
+## 2026-11-11 (research SEC master index)
+
+- Added an experimental offline reader for a frozen SEC master-index ZIP. It
+  groups selected listing-form rows by accession while retaining every indexed
+  party, and refuses malformed or conflicting records. One 2021 quarter was
+  checked against the SEC file; this does not establish point-in-time event
+  availability, security class, complete coverage or a tradable universe.
+
+## 2026-11-11 (research SEC notice provenance)
+
+- An experimental SEC Form 25-NSE helper verifies a frozen index hash, its unique
+  accession-specific XML path, and a separately supplied document hash before
+  parsing the reported issuer and security description. Original SEC examples and
+  synthetic tamper tests are offline fixtures. The index does not itself authenticate
+  the XML hash; callers must verify source provenance and availability separately.
+
+## 2026-11-11 (research halt guard)
+
+- Signal simulations and walk-forward research accept an optional boolean halt
+  mask and reject results when a position overlaps a flagged bar. The mask must
+  cover the supplied dates and symbols without unknown values. Its provenance,
+  availability and completeness are the researcher's responsibility; it does
+  not model post-halt fills or certify unflagged bars. Omitted masks preserve the
+  existing simulation behavior. Walk-forward output fingerprints the supplied
+  dates, ordered labels and boolean values; source evidence must be pinned
+  separately. This has not been deployed.
+- A research-only helper maps supplied halt and resumption intervals onto
+  caller-supplied market sessions, including early closes and unresolved halts.
+  It does not source or verify halt history and has only synthetic coverage.
+
+## 2026-11-11 (time-stop result warning)
+
+- Walk-forward result diagnostics now retain the existing `td_stop` warning when
+  the signal-based time stop is active, so a saved result records its timing
+  limitation. This does not repair the timer or re-evaluate past studies.
+
+## 2026-11-11 (paper exit quantity)
+
+- An intended strategy or catastrophe-stop exit with an invalid long quantity now
+  blocks new strategy buys for that run while other eligible exits continue. Exit
+  quantities are checked before sweep funding is estimated, so blocked buys do
+  not cause a sweep funding sale. The sweep can still sell to restore its cash
+  reserve; its separate policy is unchanged. Synthetic and mocked tests cover
+  live-order and dry-run paths. This change is not deployed.
+
+## 2026-11-11 (paper P&L summary)
+
+- Invalid or non-finite position P&L is shown as unavailable in the daily summary.
+  The trader no longer adds an unreadable value into aggregate unrealized P&L or
+  derives a realized figure from it. Valid total P&L remains visible. Synthetic
+  checks cover NaN, infinity, missing values and malformed P&L. Non-finite summary
+  totals are also shown as unavailable; a non-finite or non-positive post-trade
+  portfolio value is reported and not saved as a snapshot. These checks occur after
+  any order submissions. Dry-run summaries log an unavailable value without a
+  formatting error. The broker adapter preserves missing position P&L and daily-change
+  fields as unavailable so downstream safeguards can assess them.
+  A failed post-trade account or positions read now warns that orders may have been submitted
+  and the snapshot was not saved, then propagates the original failure.
+  A failed starting-snapshot read leaves total P&L unavailable while still
+  attempting the daily summary and snapshot. A failed snapshot write is reported
+  in the run result and a separate notification.
+  An initial position-read failure now attempts a halt notice before propagating;
+  no orders are submitted on that path. Account-read halt notices also preserve
+  the original read error if notification fails.
+  During a valid loss halt, failures to send either halt or pending-order notices
+  no longer prevent otherwise eligible exits; new buys remain blocked.
+  An unassessable catastrophe stop now attempts its pending-order warning even
+  if its separate halt notice fails.
+  JSON sanitization is shared through a neutral utility so paper code no longer
+  imports the study-output module; its previous import remains an alias.
+  The trader remains stopped; this change is not deployed.
+
+## 2026-11-10 (research engine column alignment)
+
+- Signal, exit, weight, position-size and ATR price frames must now match the close frame’s column labels and order as well as its dates and shape. Previously, same-shaped reordered columns could apply a signal to the wrong stock. Synthetic tests cover each input. The weight-based walk-forward scorer also rejects inconsistent symbol order, malformed blocks and unrecognized combination levels before converting labels to arrays. The signal scorer verifies that signal columns actually match the reported combinations, preventing the selected parameter name from silently referring to another group. Current built-in weight strategies construct their columns through the same ordered helper; older studies have not been exhaustively audited or recalculated. This change is not deployed.
+
+## 2026-11-10 (research data parser validation)
+
+- The shared French monthly-data parser now rejects duplicate or ambiguous portfolio headers and duplicate or unordered months. Synthetic checks cover each case; this prevents ambiguous inputs from being silently used in future research. Existing pinned archives’ first headers were checked for collisions. Historical studies were not rerun or reclassified.
+
+## 2026-11-10 (research intraday stop inputs)
+
+- Intraday stop simulations reject `td_stop`, whose signal-based timer can produce incorrect trades. The existing close-only path still warns; the timer itself is not repaired.
+- Research simulations can choose `stop_entry_price="fillprice"` in the base configuration to set initial stops from the simulated fill; the default remains the entry bar's close. Walk-forward diagnostics record the choice for active stops, and synthetic tests cover the difference in both engines. This does not validate actual executions.
+- In the opt-in intraday mode, stop and gap exits now pay configured slippage. Price validation tolerates rounding-scale OHLC differences and identifies the first invalid bar; held-position gaps still fail rather than assuming a sale before an unknown halt or delisting. The simulator does not tighten a trailing stop from the current bar's opening price before checking that bar. These are research-only changes, not deployed.
+- A fixed trailing stop takes precedence over an unused ATR setting, as it does in the default simulator. Intraday mode uses automatic order sequencing: a synthetic stop sale can fund a close-time entry in either column order. This also reorders ordinary signal trades and unequal-sized buys even when no stop fires, so comparing with default close-only mode confounds sequencing and stop behavior. Competing buys can still depend on cash and ordering. Stop-market slippage applies to targets as well as loss stops and can place a simulated fill outside the recorded day's range.
+- The signal and walk-forward Python APIs accept an explicit `order_sequence` and `stop_exit_price` for either stop mode and record both in walk-forward diagnostics, allowing research comparisons to hold those choices fixed. Weight-strategy diagnostics record their existing automatic sequence. Defaults are unchanged; matching these settings does not align stop trigger timing or price references. Automatic sequencing with percent sizing is approximate.
+- A stop-fill rule is recorded only when a price stop is active. In this simulator `stoplimit` means no stop-exit slippage; it does not model a limit order that fails to fill. `stopmarket` applies the configured slippage to both loss stops and profit targets.
+- `run_signals` accepts an optional `stop_open` frame to simulate price stops using complete open, high, low and close bars. It permits fully missing bars only while no position is held, rejects entry requests on missing bars, and refuses results if any filled position spans one. It also rejects partial gaps, misaligned, non-finite, non-positive or inconsistent bars; the previous close-only behavior remains the default. Synthetic tests cover intraday breaches, opening gaps and chunking. The strategy simulation helper keeps open, high and low by symbol and expands stop prices per chunk; close and signal grids remain allocated outside the chunk estimate. The WFO Python API offers explicit `intraday_stops=True` for signal strategies and records the mode and effective stop settings in diagnostics; the CLI does not expose it. The intraday option requires an actual price stop and rejects non-finite, zero or negative stop fractions and trailing stops of 100% or more. No existing caller opts in. The option rejects ATR stops because their same-bar inputs require a separate timing review. Daily bars cannot reveal intraday ordering, actual liquidity or fills, and the separate `td_stop` defect remains. No past result was recalculated, and the paper trader remains stopped.
+
+## 2026-11-10 (paper risk input validation)
+
+- Invalid, non-finite or non-positive equity and daily baselines now halt the paper run instead of bypassing loss checks. Invalid persisted drawdown peaks and failed peak reads or writes also halt all orders. The daily risk check now compares booked equity with the broker's previous-close `last_equity`, rather than a reporting-adjusted snapshot. The prior-day snapshot remains the reporting baseline; when it is missing, invalid or unreadable, the summary shows the change as unavailable without blocking exits. Because that snapshot may be several days old, the summary labels the figure as change since the prior snapshot. This follows [Alpaca's account-field definition](https://docs.alpaca.markets/us/reference/getaccount-1); cash transfers and the paper account's actual field behavior are not validated.
+- **Proposed, undeployed halt-policy change:** a valid drawdown or daily-loss breach blocks new buys and cash sweeps while allowing signal or enabled catastrophe exits for held positive-quantity long positions. Invalid risk state still blocks all orders. Existing pending orders are not canceled and may fill. An unresolved working order recorded as an order intent stops the run before exits; legacy pending orders are handled separately. An exception during submission stops later exits because order acceptance can be uncertain. A rejection reported after submission does not stop other exits, but blocks new strategy buys. The trader remains stopped.
+- Order-intent persistence and run-lock verification failures now alert with the client order ID and failed stage before aborting; neither failure submits an order.
+- An initial broker account-read failure now sends a halt notice and raises before any orders, preserving the scheduler's failure alert. This is undeployed; a failed read still blocks protective exits.
+- When the optional catastrophe stop is enabled, it rejects non-finite thresholds and values outside the long-loss range [-100%, 0%) instead of silently disabling the stop or treating a gain as a loss. The trader sends a halt notice and raises before taking its run lock or submitting any order, including protective exits. The top-level CLI path may first read the broker account; notification delivery is not verified. Synthetic paper tests cover the behavior; the change is not deployed.
+- When an enabled catastrophe stop cannot assess a held position because its cost basis is non-positive or its cost basis or unrealized P&L is missing, invalid or non-finite, the trader blocks new buys and cash sweeps for the run, identifies the affected symbols, and continues independently signaled exits and assessable catastrophe stops. Pending orders are not canceled. Snapshot serialization now stores non-finite position values as null, and a missing snapshot quantity leaves split evidence unresolved. Other snapshot write failures were log-only at this point; the November 11 entry describes the later notification attempt. This is a synthetic-tested policy change, not deployed; notification delivery and broker fills remain unverified.
+- The experimental filing-vintage helper can retain all validated versions available at a cutoff for research comparisons; the existing latest-only selector is unchanged. Shared filing provenance does not itself establish accounting comparability.
+- The experimental SEC fact normalizer accepts a ten-digit zero-padded CIK string as well as a numeric CIK, while still requiring it to match the expected issuer. A real current SEC response used the string form; historical identity still requires separate verification.
+- A reconciliation failure now warns that orders may already have been submitted, since the same check also runs after submissions. It still stops the run when an order is unresolved.
+- A stock exit that is rejected, canceled, expired or marked filled for a different quantity now blocks new strategy buys and reports why. An order still working when polling ends stops the run as before. The paper CLI labels order lists as submitted or planned, not filled. This is undeployed and does not change the separate cash-sweep policy; a sweep funding sale can be followed by a sweep buy if the strategy buys are blocked.
+
+## 2026-11-10 (research time-stop warning)
+
+- The research engine warns when the optional `td_stop` is used: shifted entry signals can close trades early, skip entries or hold trades beyond the limit. Expected-failure tests record the unresolved defect; this warning does not correct its timing. Old-engine studies used the same signal-shift logic. No default or production deployment changed.
+- Time limits of non-integer type, including whole-number floats, strings and booleans, now raise instead of being coerced. This does not repair the signal-based timer.
+
 ## 2026-11-09 (paper pending-order safety)
 
 - Live paper runs now stop before submitting orders if pending-order state cannot be read; dry runs warn that their intended orders may conflict. This avoids treating unknown working orders as absent. The trader remains stopped.
@@ -3082,3 +3231,4 @@ settlement. Ambiguous or working orders block new submissions for investigation;
 orders remain supported and conflicting representations fail closed. Session and per-order
 advisory locks coordinate compliant runners but cannot perfectly fence an already issued broker
 call. The paper trader remains stopped pending owner authorization to resume cron.
+

@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-path = Path(__file__).resolve().parents[1] / "accruals_comparison.py"
+path = Path(__file__).resolve().parents[1] / "accruals_comparison.py"  # root-ok: sibling code
 spec = importlib.util.spec_from_file_location("accruals_comparison", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -74,7 +74,7 @@ def test_driver_writes_synthetic_results_once_and_checks_spy_hash(tmp_path, monk
     import json
     import sys
 
-    code = Path(__file__).resolve().parents[1]
+    code = Path(__file__).resolve().parents[1]  # root-ok: sibling code
     monkeypatch.syspath_prepend(str(code))
     spec = importlib.util.spec_from_file_location("screen_driver", code / "run_accruals_screen.py")
     driver = importlib.util.module_from_spec(spec)

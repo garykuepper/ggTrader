@@ -1,0 +1,107 @@
+{
+  "purpose": "Check five preselected SEC index entries against their original exchange-notice XML",
+  "selection_sha256": "e76a1d8e5dbbadec15f9067d421a2d10936e5ceb1156844dd710de1dc9efb5b1",
+  "results": [
+    {
+      "accession": "0001354457-21-000003",
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000003/primary_doc.xml",
+      "expected_index_party_cik": "0001574815",
+      "status": 200,
+      "bytes": 1106,
+      "sha256": "81e2b6a2010928679aa5044c3f4d993a40ff07bca98399cca4a585512bc54c04",
+      "last_modified": "Mon, 04 Jan 2021 13:47:22 GMT",
+      "retrieved_utc": "2026-11-12T02:37:34.786350+00:00",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000003.xml",
+      "notice": {
+        "issuer_cik": "0001574815",
+        "issuer_name": "BMC STOCK HOLDINGS, INC.",
+        "exchange_cik": "0001354457",
+        "exchange_name": "The Nasdaq Stock Market LLC",
+        "security_description": "Common Stock",
+        "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+        "signature_date": "2021-01-04"
+      }
+    },
+    {
+      "accession": "0001354457-21-000004",
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000004/primary_doc.xml",
+      "expected_index_party_cik": "0001578735",
+      "status": 200,
+      "bytes": 1087,
+      "sha256": "5eec4c6edc1a1c4eae267e255f257eda213c21b47670d6f7b8c0f2ebdfb32929",
+      "last_modified": "Mon, 04 Jan 2021 14:13:43 GMT",
+      "retrieved_utc": "2026-11-12T02:37:35.394000+00:00",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000004.xml",
+      "notice": {
+        "issuer_cik": "0001578735",
+        "issuer_name": "National General Holdings Corp.",
+        "exchange_cik": "0001354457",
+        "exchange_name": "The Nasdaq Stock Market LLC",
+        "security_description": "Common Stock",
+        "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+        "signature_date": "2021-01-04"
+      }
+    },
+    {
+      "accession": "0001354457-21-000016",
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000016/primary_doc.xml",
+      "expected_index_party_cik": "0001143513",
+      "status": 200,
+      "bytes": 1105,
+      "sha256": "b7b3807d2485777e7514a0e22f37d4378f2f88367009fc0f1309f96baca5c904",
+      "last_modified": "Wed, 06 Jan 2021 21:47:03 GMT",
+      "retrieved_utc": "2026-11-12T02:37:35.966408+00:00",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000016.xml",
+      "notice": {
+        "issuer_cik": "0001143513",
+        "issuer_name": "GLADSTONE CAPITAL CORP",
+        "exchange_cik": "0001354457",
+        "exchange_name": "The Nasdaq Stock Market LLC",
+        "security_description": "6.125% Notes due 2023",
+        "rule_provision": "17 CFR 240.12d2-2(a)(2)",
+        "signature_date": "2021-01-06"
+      }
+    },
+    {
+      "accession": "0001354457-21-000027",
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000027/primary_doc.xml",
+      "expected_index_party_cik": "0001721386",
+      "status": 200,
+      "bytes": 1082,
+      "sha256": "d740c63f85582cf877539a539612fc530928df4b3994dee5f1f37d2857edc20d",
+      "last_modified": "Thu, 07 Jan 2021 21:08:31 GMT",
+      "retrieved_utc": "2026-11-12T02:37:36.513119+00:00",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000027.xml",
+      "notice": {
+        "issuer_cik": "0001721386",
+        "issuer_name": "Landsea Homes Corp",
+        "exchange_cik": "0001354457",
+        "exchange_name": "Nasdaq Stock Market LLC",
+        "security_description": "LF Capital Acquistion Corp. Unit",
+        "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+        "signature_date": "2021-01-07"
+      }
+    },
+    {
+      "accession": "0001354457-21-000045",
+      "url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000045/primary_doc.xml",
+      "expected_index_party_cik": "0001774155",
+      "status": 200,
+      "bytes": 1104,
+      "sha256": "9c6df75c9baf0fce90d5cd25853996d7b96b3844c2bac59bf46116e29c1cb86a",
+      "last_modified": "Tue, 12 Jan 2021 21:48:33 GMT",
+      "retrieved_utc": "2026-11-12T02:37:37.030824+00:00",
+      "path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000045.xml",
+      "notice": {
+        "issuer_cik": "0001774155",
+        "issuer_name": "South Mountain Merger Corp.",
+        "exchange_cik": "0001354457",
+        "exchange_name": "Nasdaq Stock Market LLC",
+        "security_description": "South Mountain Merger Corp. Unit",
+        "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+        "signature_date": "2021-01-12"
+      }
+    }
+  ],
+  "limits": "Selection is nonrepresentative and index-party CIK is a hypothesis until XML comparison. The constructed URLs have not been checked against individual filing indexes. Notice text does not independently establish event effective date, publication time, security identity, full listing coverage or source availability as of 2021. No return or price data were examined."
+}

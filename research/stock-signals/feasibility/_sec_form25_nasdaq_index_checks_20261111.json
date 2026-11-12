@@ -1,0 +1,85 @@
+{
+  "purpose": "Compare five preselected notice XML URLs with the SEC filing indexes",
+  "sample_sha256": "6e3070915c2ed50da08c624e7a248d8c63d5307519b3cd694829f124724a2098",
+  "results": [
+    {
+      "accession": "0001354457-21-000003",
+      "index_url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000003/0001354457-21-000003-index.html",
+      "status": 200,
+      "index_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000003_index.html",
+      "index_sha256": "6429ea21fa1a43d4214581959d185aaeeb436aace7575839600ade5384c1797e",
+      "bytes": 8800,
+      "last_modified": "Mon, 04 Jan 2021 13:46:47 GMT",
+      "retrieved_utc": "2026-11-12T02:39:01.028469+00:00",
+      "binding": "passed",
+      "document_path": "/Archives/edgar/data/1354457/000135445721000003/primary_doc.xml",
+      "description": "Common Stock",
+      "matches_previously_retrieved_xml_url": true
+    },
+    {
+      "accession": "0001354457-21-000004",
+      "index_url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000004/0001354457-21-000004-index.html",
+      "status": 200,
+      "index_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000004_index.html",
+      "index_sha256": "8efa01281edc54e0f948652acf9946442ae3f59d85379a712df6e45e1dea4b04",
+      "bytes": 8780,
+      "last_modified": "Mon, 04 Jan 2021 14:13:16 GMT",
+      "retrieved_utc": "2026-11-12T02:39:01.651054+00:00",
+      "binding": "passed",
+      "document_path": "/Archives/edgar/data/1354457/000135445721000004/primary_doc.xml",
+      "description": "Common Stock",
+      "matches_previously_retrieved_xml_url": true
+    },
+    {
+      "accession": "0001354457-21-000016",
+      "index_url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000016/0001354457-21-000016-index.html",
+      "status": 200,
+      "index_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000016_index.html",
+      "index_sha256": "3ab87cd807b77a6821a8f083bf00dd53204110345e0e75f36eef1572a03442ba",
+      "bytes": 8664,
+      "last_modified": "Wed, 06 Jan 2021 21:46:37 GMT",
+      "retrieved_utc": "2026-11-12T02:39:02.225411+00:00",
+      "binding": "passed",
+      "document_path": "/Archives/edgar/data/1143513/000135445721000016/primary_doc.xml",
+      "description": "6.125% Notes due 2023",
+      "matches_previously_retrieved_xml_url": false,
+      "indexed_path_followup": {
+        "url": "https://www.sec.gov/Archives/edgar/data/1143513/000135445721000016/primary_doc.xml",
+        "status": 200,
+        "bytes": 1105,
+        "sha256": "b7b3807d2485777e7514a0e22f37d4378f2f88367009fc0f1309f96baca5c904",
+        "matches_previous_xml_bytes": true,
+        "recorded_utc": "2026-11-12T02:39:36.521990+00:00"
+      }
+    },
+    {
+      "accession": "0001354457-21-000027",
+      "index_url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000027/0001354457-21-000027-index.html",
+      "status": 200,
+      "index_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000027_index.html",
+      "index_sha256": "6ed2f9327aa9a1d12ad1158426350ae7e1d3c8ee6914b52f18f9bdaa5080899e",
+      "bytes": 8817,
+      "last_modified": "Thu, 07 Jan 2021 21:07:38 GMT",
+      "retrieved_utc": "2026-11-12T02:39:02.802259+00:00",
+      "binding": "passed",
+      "document_path": "/Archives/edgar/data/1354457/000135445721000027/primary_doc.xml",
+      "description": "LF Capital Acquistion Corp. Unit",
+      "matches_previously_retrieved_xml_url": true
+    },
+    {
+      "accession": "0001354457-21-000045",
+      "index_url": "https://www.sec.gov/Archives/edgar/data/1354457/000135445721000045/0001354457-21-000045-index.html",
+      "status": 200,
+      "index_path": "/home/flynn/ggTrader-refs/sec-form25-20261111/nasdaq-q1-sample/000135445721000045_index.html",
+      "index_sha256": "116cd2faf2ac9ad81c0f930034065b5ceabecd90d8d2ffafff02227b00bfc4a9",
+      "bytes": 8766,
+      "last_modified": "Tue, 12 Jan 2021 21:47:57 GMT",
+      "retrieved_utc": "2026-11-12T02:39:03.384247+00:00",
+      "binding": "passed",
+      "document_path": "/Archives/edgar/data/1354457/000135445721000045/primary_doc.xml",
+      "description": "South Mountain Merger Corp. Unit",
+      "matches_previously_retrieved_xml_url": true
+    }
+  ],
+  "limits": "Index and XML hashes were recorded from local retrieval, not independently witnessed. The index lists a path but not an XML hash; binding requires trusting the retrieval record. Acceptance is not proof of dissemination; the sample is not representative or a complete listing universe. No return or price data were examined."
+}

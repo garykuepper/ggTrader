@@ -1,0 +1,22 @@
+{
+  "purpose": "Input feasibility only; no stock rankings or returns",
+  "retrieved_date_pacific": "2026-11-11",
+  "provider": "Open Source Asset Pricing, Chen and Zimmermann (2022), Critical Finance Review 11(2), 207–264",
+  "data_license": "CC BY 4.0, as stated by the provider's dataset card",
+  "source_url": "https://huggingface.co/datasets/OpenSourceAP/CrossSection/resolve/dd1054254c4501776432caa6d7ce5ecd9586f6a9/Firm%20Level%20Characteristics/Predictors.parquet",
+  "revision": "dd1054254c4501776432caa6d7ce5ecd9586f6a9",
+  "source_sha256_as_previously_recorded": "8ed1aae86e820bfe0233dcc49d8bee057e087c64afabd3a15dbe016d96171edd",
+  "source_hash_note": "Provider-file hash from earlier metadata record; this column-selective read did not recompute a full-file hash.",
+  "method": "Read unsigned permno, yyyymm and CBOperProf columns with fsspec and pyarrow from the pinned Parquet revision; select permno 12490 and months 202403 and 202404. Floats printed to 15 decimal places.",
+  "runtime": {"python": "3.12.13", "fsspec": "2026.9.0", "aiohttp": "3.14.5", "pyarrow": "26.0.1", "pandas": "3.1.1"},
+  "rows": [
+    {"permno": 12490, "yyyymm": 202403, "CBOperProf": 0.153273657489999},
+    {"permno": 12490, "yyyymm": 202404, "CBOperProf": 0.153273657489999}
+  ],
+  "limitations": [
+    "The IBM identifier is a historical lead; security identity for these months is not independently established.",
+    "Provider states signals are usable at month-end; actual availability, filing revisions, calculation semantics and code-to-release binding are not independently established.",
+    "The April month-end observation follows the April 29 pilot cutoff and is not eligible for that cutoff.",
+    "No comparison against SEC inputs, price, market equity, NYSE universe, signal ranks or returns was performed."
+  ]
+}

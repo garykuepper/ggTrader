@@ -2946,6 +2946,51 @@
       "title": "R&D-to-market-value exploratory screen",
       "original_audit_verdict": "Exploratory: annual return gap positive, long-history t below the programme threshold",
       "scope_note": "Claude Opus independently checked the source and arithmetic; candidate selection and source preview preclude a clean confirmatory claim."
+    },
+    {
+      "inventory_id": "reversal-screen-20261111",
+      "source": "research/stock-signals/feasibility/2026-11-11-short-term-reversal-results.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "Monthly reversal portfolio screen",
+      "original_audit_verdict": "Both specified hurdles not met",
+      "scope_note": "Claude Opus independently checked the source mapping and calculations against the frozen files."
+    },
+    {
+      "inventory_id": "low-variance-screen-20261111",
+      "source": "research/stock-signals/feasibility/2026-11-11-low-variance-results.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "Low-variance portfolio screen",
+      "original_audit_verdict": "Both specified return hurdles not met",
+      "scope_note": "Claude Opus independently reproduced the source mapping and arithmetic."
+    },
+    {
+      "inventory_id": "accounting-score-screen-20261111",
+      "source": "research/stock-signals/feasibility/2026-11-11-accounting-score-results.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "Accounting-score portfolio screen",
+      "original_audit_verdict": "Both specified return hurdles not met",
+      "scope_note": "Claude Opus independently reproduced the arithmetic and checked the available portfolio metadata."
+    },
+    {
+      "inventory_id": "earnings-consistency-screen-20261110",
+      "source": "research/stock-signals/feasibility/2026-11-10-earnings-consistency-screen.md",
+      "disposition": "included",
+      "inventory_kind": "exploratory_screen_independently_recomputed",
+      "title": "Earnings-consistency exploratory portfolio screen",
+      "original_audit_verdict": "No reliable winner identified; independently recomputed",
+      "scope_note": "Exploratory published-portfolio comparison; the specification and results share an uncommitted file and no earlier registration is established."
+    },
+    {
+      "inventory_id": "expected-growth-screen-20261111",
+      "source": "research/stock-signals/feasibility/2026-11-11-expected-growth-results.md",
+      "disposition": "included",
+      "inventory_kind": "new_screen_independently_reviewed",
+      "title": "Expected-investment-growth portfolio screen",
+      "original_audit_verdict": "Full-history hurdle not met; recent hurdle met",
+      "scope_note": "Claude Opus independently reproduced the arithmetic and portfolio mapping."
     }
   ],
   "coverage_complete": false

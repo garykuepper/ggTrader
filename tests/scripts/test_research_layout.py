@@ -11,6 +11,7 @@ tested on synthetic input as well as on the real tree.
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.metadata
 import re
 import shutil
@@ -44,6 +45,9 @@ PAPER_IMPORT_ALLOWED = {"research/audits/production-replica/code"}
 ROOT_LINE = re.compile(
     r"parents\[[0-9]+\]|\.parent\.parent|find_project_root|sys\.path\.(insert|append)|sys\.path\["
 )
+# This historical driver hashes a sibling parser; its original bytes are pinned by its result.
+PINNED_BREAKPOINT_DRIVER = "research/stock-signals/feasibility/code/size_breakpoint_vintages.py"
+PINNED_BREAKPOINT_HASH = "9b4fa9842507ada597ba6a9546edfd829236448561fb496e3acc45af6a0522e9"
 RUFF_BAD_SOURCE = "import os\nx=1\n"  # unused import (F401) and unformatted
 
 
@@ -167,8 +171,16 @@ def hand_rolled_roots(sources: dict[str, str]) -> list[str]:
     for rel, source in sorted(sources.items()):
         if not _is_study_code(rel):
             continue
+        pinned_breakpoint = (
+            rel == PINNED_BREAKPOINT_DRIVER
+            and hashlib.sha256(source.encode()).hexdigest() == PINNED_BREAKPOINT_HASH
+        )
         for number, line in enumerate(source.splitlines(), start=1):
             if ROOT_LINE.search(line) and "# root-ok" not in line:
+                if pinned_breakpoint and line.strip() == (
+                    'Path(__file__).resolve().parents[2] / "_lib/nyse_size_breakpoints.py"'
+                ):
+                    continue
                 bad.append(f"{rel}:{number}: {line.strip()}")
     return bad
 
@@ -297,6 +309,13 @@ def test_hand_rolled_roots_need_a_root_ok_comment() -> None:
     }
     found = hand_rolled_roots(sources)
     assert [f.split(":")[1] for f in found] == ["2", "4"]
+
+
+def test_pinned_breakpoint_driver_exception_requires_exact_bytes() -> None:
+    path = "research/stock-signals/feasibility/code/size_breakpoint_vintages.py"
+    source = (ROOT / path).read_text()
+    assert hand_rolled_roots({path: source}) == []
+    assert hand_rolled_roots({path: source + "\n"})
 
 
 # --- ruff lints study code and skips frozen artifacts --------------------------------------

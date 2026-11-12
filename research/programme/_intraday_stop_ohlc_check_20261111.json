@@ -1,0 +1,24 @@
+{
+  "purpose": "Assess whether the intraday-stop engine's existing bar validation accepts the frozen tape, without simulating trades or calculating returns",
+  "input_path": "/home/flynn/ggTrader-vbt12/data/snapshots/ohlcv_20261106.parquet",
+  "input_sha256": "6573e84065d54796a6240051c3d83a68b32a079241665fb44001ec0cbc789b2e",
+  "validator_file": "src/ggTrader/engine/portfolio.py",
+  "validator_file_sha256": "8752366263d4ac7cb06375105f9391d48877294dffd9614ccabb0f86a3ff16d9",
+  "validator_cross_check": "The six flagged bars were each passed to _validate_stop_bars; each raised the expected error.",
+  "scope": "All source rows, not an instantiated strategy universe or a calendar-complete panel. Only timestamp, symbol, open, high, low and close were read. Absent symbol-date rows are not counted.",
+  "method": "Count rows where all four fields are NaN; among remaining rows count any nonfinite or nonpositive field. For fully finite positive rows, flag low > min(open, close) * (1 + 1e-10) or high < max(open, close) * (1 - 1e-10), matching _validate_stop_bars. Percent discrepancies are computed against the smaller or larger endpoint respectively.",
+  "rows": 1110874,
+  "symbols": 605,
+  "first_date": "2019-03-01",
+  "last_date": "2026-10-30",
+  "all_four_fields_missing_rows": 0,
+  "nonfinite_or_nonpositive_rows": [{"symbol": "WBD", "date": "2026-10-05", "fields": ["open"]}],
+  "invalid_order_rows": [
+    {"symbol": "AVB", "date": "2021-05-05", "high_below_endpoint_pct": 0.384965969272244},
+    {"symbol": "BK", "date": "2021-05-05", "low_above_endpoint_pct": 0.760715899802733},
+    {"symbol": "CTRA", "date": "2023-06-05", "high_below_endpoint_pct": 0.9228813858335516},
+    {"symbol": "HUBB", "date": "2021-05-05", "low_above_endpoint_pct": 0.11736452257500307},
+    {"symbol": "UA", "date": "2021-05-05", "low_above_endpoint_pct": 0.6228996432152467}
+  ],
+  "limits": "Labels are tape labels, not verified security identities. The method does not test source accuracy, market halts, corporate actions, missing symbol-date rows, or actual fills. It does not establish whether a particular run includes these bars. No rows were repaired or discarded."
+}

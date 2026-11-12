@@ -1,0 +1,64 @@
+{
+  "purpose": "Portfolio signal metadata only; no returns opened.",
+  "source_sha256": "76599d94beab94cc8973d8a126e8efbed98ee79f677738c55b2389f17387ba96",
+  "signal": "AnalystRevision",
+  "ports": {
+    "01": {
+      "months": 598,
+      "positive_infinity_months": 3,
+      "negative_infinity_months": 479
+    },
+    "02": {
+      "months": 565,
+      "positive_infinity_months": 0,
+      "negative_infinity_months": 0
+    },
+    "03": {
+      "months": 185,
+      "positive_infinity_months": 0,
+      "negative_infinity_months": 1
+    },
+    "04": {
+      "months": 533,
+      "positive_infinity_months": 1,
+      "negative_infinity_months": 1
+    },
+    "05": {
+      "months": 598,
+      "positive_infinity_months": 465,
+      "negative_infinity_months": 0
+    },
+    "LS": {
+      "months": 598,
+      "positive_infinity_months": 0,
+      "negative_infinity_months": 0
+    }
+  },
+  "long_by_decade": {
+    "1970": {
+      "months": 46,
+      "positive_infinity_months": 6
+    },
+    "1980": {
+      "months": 120,
+      "positive_infinity_months": 91
+    },
+    "1990": {
+      "months": 120,
+      "positive_infinity_months": 106
+    },
+    "2000": {
+      "months": 120,
+      "positive_infinity_months": 102
+    },
+    "2010": {
+      "months": 120,
+      "positive_infinity_months": 103
+    },
+    "2020": {
+      "months": 72,
+      "positive_infinity_months": 57
+    }
+  },
+  "limitations": "Aggregates do not determine stock counts, root cause or effect on returns. Code-to-release mapping remains unverified."
+}

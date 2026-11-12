@@ -1,0 +1,534 @@
+{
+  "purpose": "Retrospective name review; neither outcome proves identity.",
+  "method": "Remove exact ' Common Stock' suffix, NFKD-normalize, lowercase, retain ASCII letters and digits; no alias guessing.",
+  "source_sha256": "dd747545d899cfebc897e837d985387558bcbf4d682b1ad9e59385680a1acad8",
+  "driver_sha256": "02fe5c31feba0db3e4e66c9ca936559d353c1e708c7fececeebab49edd90fe1e",
+  "matching_labels": [
+    "AFT",
+    "AIF",
+    "AOD",
+    "BTO",
+    "CAF",
+    "CIF",
+    "CXE",
+    "CXH",
+    "DDF",
+    "DHF",
+    "DMB",
+    "DMO",
+    "DNP",
+    "DSM",
+    "DSU",
+    "DTF",
+    "EGF",
+    "EHI",
+    "EMD",
+    "EMF",
+    "EMO",
+    "EVF",
+    "EVN",
+    "FLC",
+    "FOF",
+    "FRA",
+    "FT",
+    "HGLB",
+    "HIO",
+    "HIX",
+    "HQH",
+    "HQL",
+    "HYI",
+    "HYT",
+    "IGI",
+    "IGR",
+    "IIF",
+    "IIM",
+    "IQI",
+    "JEQ",
+    "JFR",
+    "JHI",
+    "JHS",
+    "JOF",
+    "LEO",
+    "MCA",
+    "MCI",
+    "MCN",
+    "MCR",
+    "MFM",
+    "MFV",
+    "MGF",
+    "MGU",
+    "MHD",
+    "MHF",
+    "MHN",
+    "MIN",
+    "MIY",
+    "MMT",
+    "MMU",
+    "MNP",
+    "MPA",
+    "MPV",
+    "MQT",
+    "MQY",
+    "MSD",
+    "MUA",
+    "MUC",
+    "MUE",
+    "MUI",
+    "MUJ",
+    "MVF",
+    "MVT",
+    "MYC",
+    "MYD",
+    "MYI",
+    "MYJ",
+    "NAD",
+    "NAN",
+    "NAZ",
+    "NDP",
+    "NIM",
+    "NMI",
+    "NMT",
+    "NPV",
+    "NQP",
+    "NSL",
+    "NTG",
+    "NUO",
+    "NUV",
+    "NXC",
+    "NXN",
+    "NXP",
+    "OIA",
+    "OPP",
+    "PCF",
+    "PCM",
+    "PCN",
+    "PCQ",
+    "PDI",
+    "PEO",
+    "PIM",
+    "PMF",
+    "PMM",
+    "PMO",
+    "PNF",
+    "PPT",
+    "RA",
+    "RFI",
+    "RFM",
+    "RGT",
+    "RIV",
+    "RMI",
+    "RMM",
+    "RMT",
+    "RVT",
+    "SBI",
+    "SPE",
+    "TDF",
+    "TSI",
+    "TTP",
+    "USA",
+    "UTF",
+    "VBF",
+    "VCV",
+    "VKQ",
+    "VMO",
+    "VTN"
+  ],
+  "review": [
+    {
+      "symbol": "CEE",
+      "screener": [
+        "The Central and Eastern Europe Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "CENTRAL & EASTERN EUROPE FUND, INC."
+      ]
+    },
+    {
+      "symbol": "CEM",
+      "screener": [
+        "ClearBridge MLP and Midstream Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "ClearBridge MLP & Midstream Fund Inc."
+      ]
+    },
+    {
+      "symbol": "CHN",
+      "screener": [
+        "China Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "China Fund Inc"
+      ]
+    },
+    {
+      "symbol": "CMU",
+      "screener": [
+        "MFS Municipal Income Trust Common Stock"
+      ],
+      "registrant": [
+        "MFS HIGH YIELD MUNICIPAL TRUST"
+      ]
+    },
+    {
+      "symbol": "CTR",
+      "screener": [
+        "ClearBridge MLP and Midstream Total Return Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "ClearBridge MLP & Midstream Total Return Fund Inc."
+      ]
+    },
+    {
+      "symbol": "DFP",
+      "screener": [
+        "Flaherty & Crumrine Dynamic Preferred and Income Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Flaherty & Crumrine Dynamic Preferred & Income Fund Inc"
+      ]
+    },
+    {
+      "symbol": "EDD",
+      "screener": [
+        "Morgan Stanley Emerging Markets Domestic Debt Fund Inc. Morgan Stanley Emerging Markets Domestic Debt Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Morgan Stanley Emerging Markets Domestic Debt Fund, Inc."
+      ]
+    },
+    {
+      "symbol": "EEA",
+      "screener": [
+        "The European Equity Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "European Equity Fund, Inc / MD"
+      ]
+    },
+    {
+      "symbol": "EIC",
+      "screener": [
+        "Eagle Point Income Company Inc. Common Stock"
+      ],
+      "registrant": [
+        "Eagle Point Income Co Inc."
+      ]
+    },
+    {
+      "symbol": "EOS",
+      "screener": [
+        "Eaton Vance Enhance Equity Income Fund II Common Stock"
+      ],
+      "registrant": [
+        "Eaton Vance Enhanced Equity Income Fund II"
+      ]
+    },
+    {
+      "symbol": "ETO",
+      "screener": [
+        "Eaton Vance Tax-Advantage Global Dividend Opp Common Stock"
+      ],
+      "registrant": [
+        "Eaton Vance Tax-Advantaged Global Dividend Opportunities Fund"
+      ]
+    },
+    {
+      "symbol": "GAB",
+      "screener": [
+        "Gabelli Equity Trust Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "Gabelli Equity Trust Inc"
+      ]
+    },
+    {
+      "symbol": "GAM",
+      "screener": [
+        "General American Investors Inc. Common Stock"
+      ],
+      "registrant": [
+        "GENERAL AMERICAN INVESTORS CO INC"
+      ]
+    },
+    {
+      "symbol": "GCV",
+      "screener": [
+        "Gabelli Convertible and Income Securities Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "Gabelli Convertible & Income Securities Fund Inc"
+      ]
+    },
+    {
+      "symbol": "GF",
+      "screener": [
+        "New Germany Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "New Germany Fund Inc"
+      ]
+    },
+    {
+      "symbol": "GGT",
+      "screener": [
+        "Gabelli Multi-Media Trust Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "Gabelli Multimedia Trust Inc."
+      ]
+    },
+    {
+      "symbol": "GIM",
+      "screener": [
+        "Templeton Global Income Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Templeton Global Income Fund"
+      ]
+    },
+    {
+      "symbol": "GUT",
+      "screener": [
+        "Gabelli Utility Trust (The) Common Stock"
+      ],
+      "registrant": [
+        "Gabelli Utility Trust"
+      ]
+    },
+    {
+      "symbol": "HYB",
+      "screener": [
+        "New America High Income Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "The New America High Income Fund, Inc."
+      ]
+    },
+    {
+      "symbol": "IFN",
+      "screener": [
+        "India Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "INDIA FUND INC"
+      ]
+    },
+    {
+      "symbol": "IRL",
+      "screener": [
+        "New Ireland Fund Inc (The) Common Stock"
+      ],
+      "registrant": [
+        "New Ireland Fund Inc"
+      ]
+    },
+    {
+      "symbol": "KF",
+      "screener": [
+        "Korea Fund Inc. (The) New Common Stock"
+      ],
+      "registrant": [
+        "KOREA FUND INC"
+      ]
+    },
+    {
+      "symbol": "LGI",
+      "screener": [
+        "Lazard Global Total Return and Income Fund Common Stock"
+      ],
+      "registrant": [
+        "LAZARD GLOBAL TOTAL RETURN AND INCOME FUND, INC."
+      ]
+    },
+    {
+      "symbol": "MFD",
+      "screener": [
+        "Macquarie First Trust Global Common Stock"
+      ],
+      "registrant": [
+        "Macquarie/First Trust Global Infrastr/Util Div & Inc Fund"
+      ]
+    },
+    {
+      "symbol": "MIE",
+      "screener": [
+        "Cohen & Steers MLP Income and Energy Opportunity Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Cohen & Steers MLP Income & Energy Opportunity Fund"
+      ]
+    },
+    {
+      "symbol": "MXE",
+      "screener": [
+        "Mexico Equity and Income Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "Mexico Equity & Income Fund Inc"
+      ]
+    },
+    {
+      "symbol": "MXF",
+      "screener": [
+        "Mexico Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "MEXICO FUND INC"
+      ]
+    },
+    {
+      "symbol": "MYN",
+      "screener": [
+        "Blackrock MuniYield New York Quality Fund Inc.Common Stock"
+      ],
+      "registrant": [
+        "BlackRock MuniYield New York Quality Fund, Inc."
+      ]
+    },
+    {
+      "symbol": "NMZ",
+      "screener": [
+        "Nuveen Municipal High Income Opportunity Fund Common Stock $0.01 par value per share"
+      ],
+      "registrant": [
+        "NUVEEN MUNICIPAL HIGH INCOME OPPORTUNITY FUND"
+      ]
+    },
+    {
+      "symbol": "NNY",
+      "screener": [
+        "Nuveen New York Municipal Value Fund Common Stock"
+      ],
+      "registrant": [
+        "NUVEEN NEW YORK MUNICIPAL VALUE FUND INC"
+      ]
+    },
+    {
+      "symbol": "NXQ",
+      "screener": [
+        "Nuveen Select Tax Free Income Portfolio II Common Stock"
+      ],
+      "registrant": [
+        "NUVEEN SELECT TAX FREE INCOME PORTFOLIO 2"
+      ]
+    },
+    {
+      "symbol": "NXR",
+      "screener": [
+        "Nuveen Select Tax Free Income Portfolio III Common Stock"
+      ],
+      "registrant": [
+        "NUVEEN SELECT TAX FREE INCOME PORTFOLIO 3"
+      ]
+    },
+    {
+      "symbol": "PSF",
+      "screener": [
+        "Cohen & Steers Select Preferred and Income Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Cohen & Steers Select Preferred & Income Fund, Inc."
+      ]
+    },
+    {
+      "symbol": "SCD",
+      "screener": [
+        "LMP Capital and Income Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "LMP Capital & Income Fund Inc."
+      ]
+    },
+    {
+      "symbol": "SOR",
+      "screener": [
+        "Source Capital Inc. Common Stock"
+      ],
+      "registrant": [
+        "SOURCE CAPITAL INC /DE/"
+      ]
+    },
+    {
+      "symbol": "SWZ",
+      "screener": [
+        "Swiss Helvetia Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "Swiss Helvetia Fund, Inc."
+      ]
+    },
+    {
+      "symbol": "TEI",
+      "screener": [
+        "Templeton Emerging Markets Income Fund Inc. Common Stock"
+      ],
+      "registrant": [
+        "Templeton Emerging Markets Income Fund"
+      ]
+    },
+    {
+      "symbol": "TPZ",
+      "screener": [
+        "Tortoise Power and Energy Infrastructure Fund Inc Common Stock"
+      ],
+      "registrant": [
+        "Tortoise Power & Energy Infrastructure Fund Inc"
+      ]
+    },
+    {
+      "symbol": "TWN",
+      "screener": [
+        "Taiwan Fund Inc. (The) Common Stock"
+      ],
+      "registrant": [
+        "TAIWAN FUND INC"
+      ]
+    },
+    {
+      "symbol": "TY",
+      "screener": [
+        "Tri Continental Corporation Common Stock"
+      ],
+      "registrant": [
+        "Tri-Continental Corp"
+      ]
+    },
+    {
+      "symbol": "TYG",
+      "screener": [
+        "Tortoise Energy Infrastructure Corporation Common Stock"
+      ],
+      "registrant": [
+        "Tortoise Energy Infrastructure Corp"
+      ]
+    },
+    {
+      "symbol": "VGM",
+      "screener": [
+        "Invesco Trust for Investment Grade Municipals Common Stock (DE)"
+      ],
+      "registrant": [
+        "Invesco Trust for Investment Grade Municipals"
+      ]
+    },
+    {
+      "symbol": "VPV",
+      "screener": [
+        "Invesco Pennsylvania Value Municipal Income Trust Common Stock (DE)"
+      ],
+      "registrant": [
+        "Invesco Pennsylvania Value Municipal Income Trust"
+      ]
+    },
+    {
+      "symbol": "VVR",
+      "screener": [
+        "Invesco Senior Income Trust Common Stock (DE)"
+      ],
+      "registrant": [
+        "Invesco Senior Income Trust"
+      ]
+    }
+  ]
+}

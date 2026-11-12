@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-11-12T00:41:56.646446+00:00",
+  "purpose": "Highest absolute relative difference among earlier selected same-period assets; no investment targets or returns",
+  "issuer_cik": "0001769804",
+  "period_end": "2019-12-31",
+  "older": {
+    "accession": "0001213900-20-008058",
+    "issuer_name": "Malo Holdings Corporation",
+    "assets_usd": 224,
+    "filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390020008058/f10k2019_maloholdings.htm"
+  },
+  "newer": {
+    "accession": "0001213900-21-018844",
+    "issuer_name": "Augmedix, Inc.",
+    "assets_usd": 15739017,
+    "filing": "https://www.sec.gov/Archives/edgar/data/1769804/000121390021018844/f10k2020_augmedixinc.htm"
+  },
+  "event": "October 2020 reverse acquisition; later filing identifies private Augmedix as accounting acquirer and its financial statements as historical",
+  "scope_limit": "Selected retrospectively as largest ratio; no claim about other discrepancies, eligibility, or actual public availability",
+  "script_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/assets_revision_examples_code_20261111.py.txt",
+  "script_sha256": "6ef430b117598d657990728ebb395784da9d75c61b22da4d540c7433a7ac4d1c",
+  "aggregate_record": "_asset_revision_magnitudes_20261111.json"
+}

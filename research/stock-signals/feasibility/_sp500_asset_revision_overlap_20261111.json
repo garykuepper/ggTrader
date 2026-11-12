@@ -1,0 +1,32 @@
+{
+  "checked_utc": "2026-11-12T00:48:04.022941+00:00",
+  "purpose": "Aggregate overlap of observed S&P ticker labels and selected same-period SEC Assets comparisons; no growth targets or returns",
+  "fixture_snapshot_date": "2021-06-04",
+  "fixture_sha256": "b30739a3baba60de0f472404c5b653514e140ace8d4b89c3875d5bf1e184a472",
+  "archive_sha256": [
+    "662b783905eab0618e8a81398f560f92289f835d293c7d7239fed7ad34d700fc",
+    "f078ddcbc25594bafb4eba0110d834587e3ba315f236a54c5b928bc29fd99276",
+    "fbbc99dff34cdd1b898a7e5b34b66b89fcf313bc4a620b2248a9ae663cb97d22"
+  ],
+  "counts": {
+    "fixture_labels": 505,
+    "single_observed_cik_labels": 501,
+    "distinct_observed_ciks": 496,
+    "no_exact_or_multiple_ciks": 4,
+    "no_selected_annual_pair": 100,
+    "pair_missing_or_ambiguous_values": 10,
+    "pair_equal_values": 372,
+    "pair_differ_lt_1_percent": 17,
+    "pair_differ_ge_1_percent": 2,
+    "pair_differ_ge_10_percent": 0
+  },
+  "threshold_basis": "absolute difference divided by earlier filing value",
+  "script_file": "/home/flynn/ggTrader-refs/sec-fsnds-2021q2/sp500_asset_revision_overlap_code_20261111.py.txt",
+  "script_sha256": "0d2d499fb9d08e35a3406b4dc407d964713114dcd5b653955c9021031c469276",
+  "limitations": [
+    "Exact ticker to observed filing CIK is not verified identity or membership; labels may be retrospective and several share a CIK.",
+    "Only selected 10-K pairs in three archives, not a complete filing history; amendments and 10-Q revisions omitted.",
+    "This is not a validated universe, fiscal-year mapping, security eligibility, point-in-time availability or accounting comparability.",
+    "Current consolidated archives are retrospective and historical publication is unverified."
+  ]
+}

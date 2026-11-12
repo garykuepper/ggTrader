@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0001354457</cik>
+        <entityName>The Nasdaq Stock Market LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0001578735</cik>
+        <entityName>National General Holdings Corp.</entityName>
+        <fileNumber>001-36311</fileNumber>
+        <address>
+            <street1>59 Maiden Lane</street1>
+            <street2>38th Floor</street2>
+            <city>New York</city>
+            <stateOrCountryCode>NY</stateOrCountryCode>
+            <stateOrCountry>NEW YORK</stateOrCountry>
+            <zipCode>10038</zipCode>
+        </address>
+        <telephoneNumber>212-380-9479</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>Common Stock</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(3)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Tara Petta</signatureName>
+        <signatureTitle>Director</signatureTitle>
+        <signatureDate>2021-01-04</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<notificationOfRemoval>
+
+    <schemaVersion>X0203</schemaVersion>
+
+    <exchange>
+        <cik>0001354457</cik>
+        <entityName>Nasdaq Stock Market LLC</entityName>
+    </exchange>
+
+    <issuer>
+        <cik>0001774155</cik>
+        <entityName>South Mountain Merger Corp.</entityName>
+        <fileNumber>001-38947</fileNumber>
+        <address>
+            <street1>767 Fifth Avenue, 9th Floor</street1>
+            <street2></street2>
+            <city>New York</city>
+            <stateOrCountryCode>NY</stateOrCountryCode>
+            <stateOrCountry>NEW YORK</stateOrCountry>
+            <zipCode>10153</zipCode>
+        </address>
+        <telephoneNumber>(646) 446-2700</telephoneNumber>
+    </issuer>
+
+    <descriptionClassSecurity>South Mountain Merger Corp. Unit</descriptionClassSecurity>
+
+    <ruleProvision>17 CFR 240.12d2-2(a)(3)</ruleProvision>
+
+    <signatureData>
+        <signatureName>Tara Petta</signatureName>
+        <signatureTitle>Director</signatureTitle>
+        <signatureDate>2021-01-12</signatureDate>
+    </signatureData>
+</notificationOfRemoval>

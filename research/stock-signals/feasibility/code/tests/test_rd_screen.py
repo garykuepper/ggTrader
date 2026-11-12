@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-path = Path(__file__).resolve().parents[1] / "rd_screen.py"
+path = Path(__file__).resolve().parents[1] / "rd_screen.py"  # root-ok: sibling code
 spec = importlib.util.spec_from_file_location("rd_screen", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
