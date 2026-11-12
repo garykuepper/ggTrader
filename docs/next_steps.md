@@ -37,7 +37,7 @@ Terms:
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
 
-Detail behind each item is in the sections below and in the [working task list](working_task_list.md).
+Full state: [where we left it](where-we-left-it-2026-11-12.md). Detail is in the sections below and in the [working task list](working_task_list.md).
 
 ## Intraday observer: checkpoint on 2026-11-30 (activated 2026-10-27)
 

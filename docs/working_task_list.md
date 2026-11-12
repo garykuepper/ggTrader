@@ -37,7 +37,7 @@ Terms:
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
 
-Detail is in the sections below and in [next steps](next_steps.md).
+Full state: [where we left it](where-we-left-it-2026-11-12.md). Detail is in the sections below and in [next steps](next_steps.md).
 
 **Updated:** 2026-11-12 · **Status:** paused, clean slate. The immediate actions are in [next steps](next_steps.md); evidence stays in the linked reports.
 
