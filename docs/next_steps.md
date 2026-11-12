@@ -1,5 +1,11 @@
 # Next Steps
 
+> **Paused on 2026-11-12.** Development and research are paused with everything committed.
+> The latest status, worklist and notes are on the unmerged branch `feature/verdict-register`:
+> read `docs/where-we-left-it-2026-11-12.md` and `docs/next_steps.md` there.
+> Nothing from that branch was merged or pushed. This branch also holds one unpushed local
+> commit, `783c7267` (paper-order recovery fix, not deployed). The trader stays stopped.
+
 The next two tasks are plans. Neither authorizes a return test or a production change.
 The [working task list](working_task_list.md) contains dependencies, open decisions,
 and the calendar.
