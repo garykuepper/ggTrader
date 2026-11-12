@@ -8,10 +8,10 @@ Development and research are paused as of 2026-11-12 with a clean slate.
 |---|---|
 | Done | Membership database, weekly check, press-release source and price backfill are merged on main. All 503 members have bars. |
 | Done | Eight stock screens, the verdict register and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) are committed on the branch. |
-| Waiting on you | Approve or decline the proposed paper-trader halt policy ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). |
+| Waiting on you | Say whether to merge the branch into `main`. The halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). Merging does not deploy or restart the trader. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](#open-decisions)). |
-| Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits your approval of the halt policy. |
+| Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits your go to merge. |
 | Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). Main holds one unpushed, undeployed commit, `783c7267`. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
@@ -32,7 +32,7 @@ Terms:
 
 ### To resume
 
-1. Merge branch `feature/verdict-register` only with the owner's explicit approval of the halt policy. Sol's blocking findings are fixed, and both Sol and Opus have re-checked the fixes. The plain-words policy summary is in the where-we-left-it note.
+1. The halt policy is approved (2026-11-12) and the reviews are clean. Merge branch `feature/verdict-register` only on the owner's go, after a full test run. Expect conflicts in `docs/next_steps.md` and the untracked `research/programme/benchmark-objectives/` folder.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
@@ -71,7 +71,7 @@ These are evidence and planning drafts. None approves a new study or a productio
   - The [recommendation](../research/stock-signals/feasibility/2026-11-02-family-scope-review.md#7-wording-only-recommendation-2026-11-02) favors a narrow reading; the owner ruling is open.
   - It touches valuation, quality and q-factor variants, not the separate momentum closure; the variants are not yet defined or test-ready.
 - **Insider timestamp amendment (A1):** still a [draft](../research/audits/event-timing/2026-10-23-insider-acceptance-time-amendment.md). Leaving it unapproved blocks neither priority plan.
-- **Paper halt policy:** owner chose the cautious exits-only design for preparation on 2026-11-11; it is not approved for trading. See the [design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md).
+- **Paper halt policy:** owner chose the cautious exits-only design on 2026-11-11 and approved it on 2026-11-12. It takes effect only after merge, deploy and a trader restart, each a separate owner decision. See the [design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md).
 - **Unsent drafts:** an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [listing-data permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md).
 - These are decision records, not full plans. None changes a historical closure.
 

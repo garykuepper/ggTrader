@@ -22,7 +22,7 @@ Development and research are paused. Everything is committed. Nothing was merged
 
 ## Waiting on you
 
-- Approve or decline the proposed paper-trader halt policy.
+- Say whether to merge the branch into `main` now. The merge gates are met: Sol and Opus reviews and your policy approval. It needs a full test run first and has two known conflicts.
 - Decide whether to send the two drafts: a Nasdaq data-permission request and an AVB broker inquiry. Neither was sent.
 - Rule on the factor-scope wording.
 
@@ -35,7 +35,7 @@ Development and research are paused. Everything is committed. Nothing was merged
   - **Pending exits:** a requested exit that was still pending skipped the quantity check, so an invalid quantity there did not block buys. Both exit loops now check the quantity first.
 - **Sol final re-check (2026-11-12):** no blocking findings. Sol tried 40 combinations of exit type, live or dry run, pending or not, and bad quantities. None produced a buy.
 - **Mutation checks:** each new test fails when its fix is removed.
-- **Still open before any merge:** your explicit approval of the halt policy.
+- **Halt policy approved by the owner (2026-11-12):** the exits-only policy described below. This approves the code to be merged. It does not deploy anything or restart the trader.
 - **Accepted trade-off:** an unapplied split can still cause a false one-day halt of buys and sweeps.
 
 ## The halt policy in plain words
@@ -78,5 +78,5 @@ This is what you are asked to approve. It changes nothing today, because the tra
 ## First three things to do on return
 
 1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
-2. Decide on the halt policy (a plain-words summary is above). The review fixes are done, and Sol and Opus have both re-checked them.
+2. Decide whether to merge the branch (the halt policy is approved).
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.
