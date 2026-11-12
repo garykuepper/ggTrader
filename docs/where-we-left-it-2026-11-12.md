@@ -8,7 +8,7 @@ Development and research are paused. Everything is committed. Nothing was merged
 |---|---|---|
 | Membership database, weekly check, press-release source, price backfill | `main` | Merged, CI green, running |
 | Engine changes (intraday and time-stop inputs, safe hashing) | Branch `feature/verdict-register`, commit `acb4eac5` | Committed, not merged |
-| Paper-trader changes and the proposed halt policy | Same branch, commit `47d8a3c9` | Committed, not merged, not deployed |
+| Paper-trader changes and the proposed halt policy | Same branch, commit `47d8a3c9`, plus review fixes `f3d39310`, `c66b18e0`, `b41cf239` | Committed, not merged, not deployed |
 | Verdict register, eight stock screens, input pilot, drafts | Same branch, commit `51b55492` | Committed, not merged |
 | [Strategy category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) | Same branch, commit `0ae8739f` | Committed |
 | Refreshed documents and this note | Same branch | Committed |
@@ -28,16 +28,23 @@ Development and research are paused. Everything is committed. Nothing was merged
 
 ## Review results for the engine and paper commits
 
-- **Opus (2026-11-12):** no blocking findings.
-- **Sol (2026-11-12, merge-gate review):** the engine commit has no blocking findings. The paper commit has two.
-  - **Blocking 1:** a requested exit with an invalid broker quantity (for example negative) blocks the strategy's buys but not the cash-sweep buy. The sweep guard at `src/ggTrader/paper/trader.py:1353` only checks loss halts.
-  - **Blocking 2:** a split the broker has not applied can make booked equity look 5% lower than the previous close, which triggers a false daily-loss halt (`trader.py:1011`). Opus raised the same scenario as medium.
-  - **Minor:** a failed Telegram send can hide a rejected buy in routine output. This was already the case before these commits.
-  - **Weak tests:** one invalid-exit test uses cash too small to trigger the sweep buy, and one stop-chunking test would still pass without intraday stops.
-- **Opus minor items still open:** a slow-filling exit aborts the run and leaves no snapshot, the paper commit message overstates "durable order intents", one mutation script targets code that no longer exists, and no test pins the engine's default stop settings.
-- **What it means:** do not merge the paper commit. Fix the two blocking findings, add tests that fail without the fixes, and get a re-review. The halt policy also needs your explicit approval.
-- **Same-family note:** Sol is from the same model family as the author of this code. Opus is the independent check.
-- **Not caused by these commits:** the test `tests/lab/test_data.py::test_cached_loader_interval_to_timedelta` fails when run together with the paper, engine, lab and utils test folders. It fails the same way on `main`, and it passes alone and in the full tier.
+- **Opus (2026-11-12):** no blocking findings in either commit.
+- **Sol, merge-gate review (2026-11-12):** the engine commit has no blocking findings. The paper commit had two, both now fixed (commits `f3d39310`, `c66b18e0`, `b41cf239`):
+  - **Sweep buy hole:** an invalid exit quantity (for example negative) blocked the strategy's buys but not the cash-sweep buy. The sweep buy is now blocked too. The reserve-restoring sweep sell is unchanged on purpose.
+  - **Split halt:** an unapplied broker split can look like a 5% daily loss and halt buys. A first fix added the split value back to equity, but Sol showed that a stale stored correction could then hide a real loss. That fix was removed. The conservative halt stays, the message now says a known unapplied split may be the cause, and exits remain allowed.
+  - **Pending exits:** a requested exit that was still pending skipped the quantity check, so an invalid quantity there did not block buys. Both exit loops now check the quantity first.
+- **Sol final re-check (2026-11-12):** no blocking findings. Sol tried 40 combinations of exit type, live or dry run, pending or not, and bad quantities. None produced a buy.
+- **Mutation checks:** each new test fails when its fix is removed.
+- **Still open before any merge:** your explicit approval of the halt policy.
+- **Accepted trade-off:** an unapplied split can still cause a false one-day halt of buys and sweeps.
+- **Minor items not fixed:**
+  - A failed Telegram send can hide a rejected buy in routine output (already so before these commits).
+  - A slow-filling exit aborts the run and leaves no snapshot.
+  - The paper commit message overstates "durable order intents".
+  - One mutation script targets code that no longer exists.
+  - No test pins the engine's default stop settings, and one stop-chunking test would pass without intraday stops.
+- **Same-family note:** Sol is from the same family as the original author (Codex). The fixes were written by Claude, so Sol's re-checks were cross-family. Opus has not seen the fixes.
+- **Not caused by these commits:** `tests/lab/test_data.py::test_cached_loader_interval_to_timedelta` fails when run together with the paper, engine, lab and utils test folders. It fails the same way on `main`, and it passes alone and in the full tier.
 
 ## Things to know
 
@@ -56,5 +63,5 @@ Development and research are paused. Everything is committed. Nothing was merged
 ## First three things to do on return
 
 1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
-2. Fix Sol's two blocking findings in the paper commit, get a re-review, then decide on the halt policy.
+2. Decide on the halt policy. The review fixes are done and Sol's final re-check is clean. Optionally have Opus look at the fixes before a merge.
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.

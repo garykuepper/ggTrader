@@ -11,8 +11,8 @@ Development and research are paused as of 2026-11-12 with a clean slate. Nothing
 | Waiting on you | Approve or decline the proposed paper-trader halt policy ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
-| Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits a re-review. |
-| Waiting on review | Sol found two blocking issues in the paper commit (details in [where we left it](where-we-left-it-2026-11-12.md)). The engine commit has none. Main holds one unpushed, undeployed commit, `783c7267`. |
+| Waiting on review | Branch `feature/verdict-register` (four commits: engine, paper trader, research, category report) is not merged or pushed. It awaits your approval of the halt policy. |
+| Waiting on review | Sol's two blocking issues in the paper commit are fixed, and Sol's final re-check is clean ([details](where-we-left-it-2026-11-12.md)). Opus has not seen the fixes. Main holds one unpushed, undeployed commit, `783c7267`. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -32,7 +32,7 @@ Terms:
 
 ### To resume
 
-1. Fix Sol's two blocking findings in the paper commit and get a re-review. Merge branch `feature/verdict-register` only after that, with no unresolved blocking findings and the owner's explicit approval of the halt policy.
+1. Merge branch `feature/verdict-register` only with the owner's explicit approval of the halt policy. Sol's blocking findings are fixed and re-checked. Optionally have Opus look at the fixes first.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
