@@ -81,8 +81,9 @@ def paper(
         membership=LIVE_MEMBERSHIP_SPEC,
     )
     print("Paper trading complete:")
-    print(f"  Buys:   {result['buys']}")
-    print(f"  Sells:  {result['sells']}")
+    label = "Submitted" if live else "Planned"
+    print(f"  {label} buys: {result['buys']}")
+    print(f"  {label} sells: {result['sells']}")
     if result.get("untradable"):
         print(f"  Untradable (skipped): {result['untradable']}")
     if result.get("skipped_writes"):

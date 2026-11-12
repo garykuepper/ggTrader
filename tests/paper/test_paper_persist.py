@@ -42,6 +42,35 @@ class TestLogTrade:
 
 @patch("ggTrader.paper.persist._get_engine")
 class TestLogSnapshot:
+    def test_snapshot_saves_nonfinite_position_values_as_missing(self, mock_engine):
+        from sqlalchemy import create_engine, text
+
+        from ggTrader.paper.persist import get_latest_snapshot_positions, log_snapshot
+
+        engine = create_engine("sqlite:///:memory:")
+        mock_engine.return_value = engine
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE TABLE paper_snapshots (run_date TEXT PRIMARY KEY, "
+                    "portfolio_value REAL, cash REAL, "
+                    "positions TEXT CHECK (json_valid(positions)))"
+                )
+            )
+        log_snapshot(
+            "2026-06-20",
+            102000.0,
+            50000.0,
+            {
+                "AAPL": {"qty": 10.0, "unrealized_pl": float("nan")},
+                "MSFT": {"qty": float("inf"), "unrealized_pl": -2.0},
+            },
+        )
+        assert get_latest_snapshot_positions() == {
+            "AAPL": {"qty": 10.0, "unrealized_pl": None},
+            "MSFT": {"qty": None, "unrealized_pl": -2.0},
+        }
+
     def test_inserts_snapshot_row(self, mock_engine):
         mock_conn = MagicMock()
         mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
@@ -58,6 +87,45 @@ class TestLogSnapshot:
 
 @patch("ggTrader.paper.persist._get_engine")
 class TestGetLatestSnapshot:
+    @pytest.mark.filterwarnings("ignore:The default date adapter is deprecated:DeprecationWarning")
+    def test_before_date_selects_prior_snapshot_from_database(self, mock_engine):
+        from datetime import date
+
+        from sqlalchemy import create_engine, text
+
+        from ggTrader.paper.persist import get_latest_snapshot
+
+        engine = create_engine("sqlite:///:memory:")
+        mock_engine.return_value = engine
+        with engine.begin() as conn:
+            conn.execute(
+                text("CREATE TABLE paper_snapshots (run_date DATE, portfolio_value FLOAT)")
+            )
+            conn.execute(
+                text("INSERT INTO paper_snapshots VALUES (:day, :value)"),
+                [
+                    {"day": "2026-06-19", "value": 100000.0},
+                    {"day": "2026-06-20", "value": 97000.0},
+                    {"day": "2026-06-21", "value": 99000.0},
+                ],
+            )
+        assert get_latest_snapshot(before=date(2026, 6, 20)) == 100000.0
+        assert get_latest_snapshot() == 99000.0
+
+    def test_before_date_excludes_current_and_future_snapshots(self, mock_engine):
+        mock_conn = MagicMock()
+        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_conn.execute.return_value.first.return_value = (100000.0,)
+        from datetime import date
+
+        from ggTrader.paper.persist import get_latest_snapshot
+
+        assert get_latest_snapshot(before=date(2026, 6, 20)) == 100000.0
+        sql, params = mock_conn.execute.call_args.args
+        assert "run_date < :before" in str(sql)
+        assert params == {"before": date(2026, 6, 20)}
+
     def test_returns_value_when_snapshot_exists(self, mock_engine):
         mock_conn = MagicMock()
         mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn

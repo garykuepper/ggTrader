@@ -35,9 +35,14 @@ class AlpacaBroker:
 
     def get_account(self) -> dict:
         acct = self._client.get_account()
+        try:
+            last_equity = float(getattr(acct, "last_equity", None))
+        except (TypeError, ValueError):
+            last_equity = None
         return {
             "cash": float(acct.cash),
             "portfolio_value": float(acct.portfolio_value),
+            "last_equity": last_equity,
             "buying_power": float(acct.buying_power),
             "multiplier": float(acct.multiplier),
         }
@@ -50,9 +55,11 @@ class AlpacaBroker:
                 "market_value": float(p.market_value),
                 "current_price": float(p.current_price),
                 "avg_entry": float(p.avg_entry_price),
-                "unrealized_pl": float(p.unrealized_pl),
-                "unrealized_plpc": float(p.unrealized_plpc),
-                "change_today": float(p.change_today),
+                "unrealized_pl": float(p.unrealized_pl) if p.unrealized_pl is not None else None,
+                "unrealized_plpc": float(p.unrealized_plpc)
+                if p.unrealized_plpc is not None
+                else None,
+                "change_today": float(p.change_today) if p.change_today is not None else None,
                 "cost_basis": float(p.cost_basis),
             }
             for p in positions

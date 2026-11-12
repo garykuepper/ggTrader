@@ -56,6 +56,17 @@ class TestVetBars:
         assert verdict.last_bar_coverage == 1.0
         assert len(verdict.bars.close) == 80
 
+    def test_full_coverage_today_remains_unchanged(self):
+        verdict = vet_bars(_bars(_frame(end="2026-06-19")), TODAY, SMALL)
+        assert verdict.bars.close.index[-1].date() == TODAY
+        assert not verdict.trimmed_partial_bar
+
+    @pytest.mark.parametrize("nan_last", [0, 39])
+    def test_future_bar_is_rejected_even_when_coverage_is_thin(self, nan_last):
+        bars = _bars(_frame(end="2026-06-22", nan_last=nan_last))
+        with pytest.raises(SignalGateError, match="future"):
+            vet_bars(bars, TODAY, SMALL)
+
     def test_empty_frame_fails(self):
         with pytest.raises(SignalGateError, match="empty_frame"):
             vet_bars(bars_from_legacy_frame(pd.DataFrame(), ["A"]), TODAY, SMALL)

@@ -29,6 +29,16 @@ class TestFlagDefaults:
     def test_threshold_overridable_via_env(self):
         assert catastrophe_stop.catastrophe_stop_pct() == pytest.approx(-0.30)
 
+    @pytest.mark.parametrize("threshold", ["nan", "inf", "-inf", "0", "0.1", "-1.1", "abc"])
+    def test_invalid_loss_threshold_is_rejected(self, monkeypatch, threshold):
+        monkeypatch.setenv("CATASTROPHE_STOP_PCT", threshold)
+        with pytest.raises(ValueError, match="CATASTROPHE_STOP_PCT"):
+            catastrophe_stop.catastrophe_stop_pct()
+
+    def test_total_loss_threshold_is_valid(self, monkeypatch):
+        monkeypatch.setenv("CATASTROPHE_STOP_PCT", "-1")
+        assert catastrophe_stop.catastrophe_stop_pct() == -1
+
 
 class TestUnrealizedPct:
     def test_computed_from_cost_basis_not_broker_plpc(self):
@@ -43,8 +53,26 @@ class TestUnrealizedPct:
     def test_missing_cost_basis_returns_none(self):
         assert catastrophe_stop.unrealized_pct({"unrealized_pl": -100.0}) is None
 
+    @pytest.mark.parametrize(
+        "position",
+        [
+            {"cost_basis": 1000.0, "unrealized_pl": float("nan")},
+            {"cost_basis": float("inf"), "unrealized_pl": -400.0},
+            {"cost_basis": 1000.0, "unrealized_pl": float("-inf")},
+            {"cost_basis": 1000.0},
+        ],
+    )
+    def test_invalid_values_raise_instead_of_silently_skipping(self, position):
+        with pytest.raises(ValueError, match="position"):
+            catastrophe_stop.unrealized_pct(position)
+
 
 class TestFindCatastropheStops:
+    @pytest.mark.parametrize("threshold", [float("nan"), float("inf"), 0.1, -1.1])
+    def test_rejects_invalid_threshold_on_direct_call(self, threshold):
+        with pytest.raises(ValueError, match="threshold"):
+            catastrophe_stop.find_catastrophe_stops({}, threshold)
+
     def test_fires_at_exactly_threshold(self):
         positions = {"NXPI": {"unrealized_pl": -2500.0, "cost_basis": 10000.0}}
         assert catastrophe_stop.find_catastrophe_stops(positions, -0.25) == ["NXPI"]

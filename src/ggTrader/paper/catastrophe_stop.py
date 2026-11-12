@@ -17,7 +17,9 @@ responsible for calling the broker, logging the trade, and notifying.
 
 from __future__ import annotations
 
+import math
 import os
+from numbers import Real
 
 #: Reason tag written to `paper_trades.reason` / `paper_pending_orders.reason`
 #: for a catastrophe-stop sell, mirroring `cash_sweep.SWEEP_TRADE_REASON` --
@@ -41,7 +43,22 @@ def catastrophe_stop_enabled() -> bool:
 def catastrophe_stop_pct() -> float:
     """Unrealized-loss floor (negative fraction) that triggers a force-sell."""
     raw = os.environ.get(_PCT_ENV_VAR, "").strip()
-    return float(raw) if raw else DEFAULT_CATASTROPHE_STOP_PCT
+    try:
+        threshold = float(raw) if raw else DEFAULT_CATASTROPHE_STOP_PCT
+        _validate_threshold(threshold)
+    except ValueError as exc:
+        raise ValueError("Invalid CATASTROPHE_STOP_PCT; expected a loss in [-1, 0)") from exc
+    return threshold
+
+
+def _validate_threshold(threshold: float) -> None:
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, Real)
+        or not math.isfinite(threshold)
+        or not -1 <= threshold < 0
+    ):
+        raise ValueError("Invalid catastrophe-stop threshold; expected a loss in [-1, 0)")
 
 
 def unrealized_pct(position: dict) -> float | None:
@@ -58,9 +75,33 @@ def unrealized_pct(position: dict) -> float | None:
     computation instead.
     """
     cost_basis = position.get("cost_basis", 0.0)
+    try:
+        valid_basis = (
+            not isinstance(cost_basis, bool)
+            and isinstance(cost_basis, Real)
+            and math.isfinite(cost_basis)
+        )
+    except OverflowError as exc:
+        raise ValueError("Invalid position cost basis") from exc
+    if not valid_basis:
+        raise ValueError("Invalid position cost basis")
     if cost_basis <= 0:
         return None
-    return position.get("unrealized_pl", 0.0) / cost_basis
+    unrealized_pl = position.get("unrealized_pl")
+    try:
+        valid_pl = (
+            not isinstance(unrealized_pl, bool)
+            and isinstance(unrealized_pl, Real)
+            and math.isfinite(unrealized_pl)
+        )
+    except OverflowError as exc:
+        raise ValueError("Invalid position unrealized P&L") from exc
+    if not valid_pl:
+        raise ValueError("Invalid position unrealized P&L")
+    pct = unrealized_pl / cost_basis
+    if not math.isfinite(pct):
+        raise ValueError("Invalid position unrealized P&L ratio")
+    return pct
 
 
 def find_catastrophe_stops(positions: dict[str, dict], threshold_pct: float) -> list[str]:
@@ -73,6 +114,7 @@ def find_catastrophe_stops(positions: dict[str, dict], threshold_pct: float) -> 
     opinion on either; it just evaluates whatever's handed to it. Sorted for
     deterministic ordering (dict iteration order is otherwise incidental).
     """
+    _validate_threshold(threshold_pct)
     return sorted(
         symbol
         for symbol, position in positions.items()

@@ -183,6 +183,17 @@ class TestFindSplitAppliedSymbols:
     _TODAY = date(2026, 8, 22)
     _CORP_SPLITS = {"MNST": [(_EX_DATE, 2.0)]}
 
+    def test_missing_snapshot_quantity_makes_split_unresolved(self):
+        history = [
+            (date(2026, 8, 8), {"MNST": {"qty": 20.0}}),
+            (date(2026, 8, 12), {"MNST": {"qty": None}}),
+        ]
+        applied, unresolved = find_split_applied_symbols(
+            self._CORP_SPLITS, history, {}, self._TODAY
+        )
+        assert applied == set()
+        assert unresolved == {"MNST"}
+
     def test_qty_doubling_across_ex_date_is_applied(self):
         # Broker correctly booked the split: qty on the books doubles
         # between the last pre-ex-date snapshot and the first post-ex-date

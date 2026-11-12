@@ -50,11 +50,24 @@ class TestAlpacaBrokerInit:
 
 
 class TestGetAccount:
+    @pytest.mark.parametrize("value", [None, "", "not-a-number"])
+    def test_unavailable_previous_equity_is_exposed_as_none(self, value):
+        broker = _make_broker()
+        mock_acct = MagicMock()
+        mock_acct.cash = "50000.00"
+        mock_acct.portfolio_value = "52000.00"
+        mock_acct.last_equity = value
+        mock_acct.buying_power = "100000.00"
+        mock_acct.multiplier = "1"
+        broker._client.get_account.return_value = mock_acct
+        assert broker.get_account()["last_equity"] is None
+
     def test_returns_account_dict(self):
         broker = _make_broker()
         mock_acct = MagicMock()
         mock_acct.cash = "50000.00"
         mock_acct.portfolio_value = "52000.00"
+        mock_acct.last_equity = "51000.00"
         mock_acct.buying_power = "100000.00"
         mock_acct.multiplier = "1"
         broker._client.get_account.return_value = mock_acct
@@ -62,6 +75,7 @@ class TestGetAccount:
         assert result == {
             "cash": 50000.0,
             "portfolio_value": 52000.0,
+            "last_equity": 51000.0,
             "buying_power": 100000.0,
             "multiplier": 1.0,
         }
@@ -71,6 +85,7 @@ class TestGetAccount:
         mock_acct = MagicMock()
         mock_acct.cash = "50000.00"
         mock_acct.portfolio_value = "52000.00"
+        mock_acct.last_equity = "51000.00"
         mock_acct.buying_power = "100000.00"
         mock_acct.multiplier = "1"
         broker._client.get_account.return_value = mock_acct
@@ -79,6 +94,24 @@ class TestGetAccount:
 
 
 class TestGetPositions:
+    @pytest.mark.parametrize("field", ["unrealized_pl", "unrealized_plpc", "change_today"])
+    def test_missing_optional_reporting_field_is_preserved(self, field):
+        broker = _make_broker()
+        position = MagicMock(
+            symbol="AAPL",
+            qty="10",
+            market_value="1500",
+            current_price="150",
+            avg_entry_price="145",
+            unrealized_pl="50",
+            unrealized_plpc="0.0345",
+            change_today="0.012",
+            cost_basis="1450",
+        )
+        setattr(position, field, None)
+        broker._client.get_all_positions.return_value = [position]
+        assert broker.get_positions()["AAPL"][field] is None
+
     def test_returns_position_dict(self):
         broker = _make_broker()
         mock_pos = MagicMock()

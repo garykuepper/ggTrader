@@ -82,7 +82,7 @@ def _qty_around_ex_date(
     before_date = qty_before = after_date = qty_after = None
     for run_date, positions in snapshot_history:
         info = positions.get(symbol)
-        qty = float(info["qty"]) if info else None
+        qty = float(info["qty"]) if info and info.get("qty") is not None else None
         if run_date < ex_date:
             before_date, qty_before = run_date, qty
         elif after_date is None:
