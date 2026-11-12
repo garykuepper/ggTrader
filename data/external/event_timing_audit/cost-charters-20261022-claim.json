@@ -1,0 +1,14 @@
+{
+  "state": "claimed",
+  "child": "/home/flynn/ggTrader/data/external/event_timing_audit/cost-charters-h1kbl362",
+  "scope": "Two COST charter exhibits only; not population, vendor search or return work",
+  "urls_in_order": [
+    "https://www.sec.gov/Archives/edgar/data/909832/000090983222000021/costex3110k082822.htm",
+    "https://www.sec.gov/Archives/edgar/data/909832/000090983215000003/costex3110q21515.htm"
+  ],
+  "inherited_sec_attempts": 79,
+  "maximum_new_attempts": 8,
+  "cumulative_sec_ceiling": 87,
+  "inherited_elapsed_seconds": 104.3013715306297,
+  "spec_sha256": "899841d95c04e2e4033687f3d98dae4c5efc06409f13af93239a5ed9c1d49482"
+}

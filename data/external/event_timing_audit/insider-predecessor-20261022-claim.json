@@ -1,0 +1,13 @@
+{
+  "state": "claimed",
+  "child": "/home/flynn/ggTrader/data/external/event_timing_audit/insider-predecessor-bnz1mn22",
+  "scope": "One NOC predecessor candidate raw submission only; no population or return work",
+  "urls_in_order": [
+    "https://www.sec.gov/Archives/edgar/data/1133421/000122520818003052/0001225208-18-003052.txt"
+  ],
+  "inherited_sec_attempts": 81,
+  "maximum_new_attempts": 4,
+  "cumulative_sec_ceiling": 85,
+  "inherited_elapsed_seconds": 105.01228246744722,
+  "spec_sha256": "3e0bb9fe726e3dc59ee5be971ce6a0b8e81ec5e55869f0d50d777917772fc584"
+}

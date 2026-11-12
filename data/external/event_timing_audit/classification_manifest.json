@@ -1,0 +1,4899 @@
+{
+  "built_at": "2026-10-21T19:11:46.208015+00:00",
+  "total_removed_symbols": 699,
+  "entries": {
+    "AABA": {
+      "symbol": "AABA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AAL": {
+      "symbol": "AAL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AAMRQ": {
+      "symbol": "AAMRQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AAP": {
+      "symbol": "AAP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABC": {
+      "symbol": "ABC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABI": {
+      "symbol": "ABI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABKFQ": {
+      "symbol": "ABKFQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABMD": {
+      "symbol": "ABMD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABS": {
+      "symbol": "ABS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ABX": {
+      "symbol": "ABX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ACAS": {
+      "symbol": "ACAS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ACKH": {
+      "symbol": "ACKH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ACS": {
+      "symbol": "ACS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ACV": {
+      "symbol": "ACV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ADCT": {
+      "symbol": "ADCT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ADS": {
+      "symbol": "ADS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ADT": {
+      "symbol": "ADT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AET": {
+      "symbol": "AET",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AFS.A": {
+      "symbol": "AFS.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AGC": {
+      "symbol": "AGC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AGN": {
+      "symbol": "AGN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AHM": {
+      "symbol": "AHM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AIT": {
+      "symbol": "AIT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AIV": {
+      "symbol": "AIV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AKS": {
+      "symbol": "AKS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AL": {
+      "symbol": "AL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ALK": {
+      "symbol": "ALK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ALTR": {
+      "symbol": "ALTR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ALXN": {
+      "symbol": "ALXN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AM": {
+      "symbol": "AM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AMCC": {
+      "symbol": "AMCC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AMG": {
+      "symbol": "AMG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AMH": {
+      "symbol": "AMH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AMTM": {
+      "symbol": "AMTM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AN": {
+      "symbol": "AN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANDV": {
+      "symbol": "ANDV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANDW": {
+      "symbol": "ANDW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANF": {
+      "symbol": "ANF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANRZQ": {
+      "symbol": "ANRZQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANSS": {
+      "symbol": "ANSS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANTM": {
+      "symbol": "ANTM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ANV": {
+      "symbol": "ANV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "APC": {
+      "symbol": "APC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "APCC": {
+      "symbol": "APCC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "APOL": {
+      "symbol": "APOL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AR": {
+      "symbol": "AR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ARC": {
+      "symbol": "ARC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ARG": {
+      "symbol": "ARG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ARNC": {
+      "symbol": "ARNC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AS": {
+      "symbol": "AS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ASC": {
+      "symbol": "ASC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ASH": {
+      "symbol": "ASH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ASN": {
+      "symbol": "ASN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ASND": {
+      "symbol": "ASND",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ASO": {
+      "symbol": "ASO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AT": {
+      "symbol": "AT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ATGE": {
+      "symbol": "ATGE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ATI": {
+      "symbol": "ATI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ATVI": {
+      "symbol": "ATVI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AV": {
+      "symbol": "AV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AVP": {
+      "symbol": "AVP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AW": {
+      "symbol": "AW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AWE": {
+      "symbol": "AWE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AYE": {
+      "symbol": "AYE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AYI": {
+      "symbol": "AYI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "AZA.A": {
+      "symbol": "AZA.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BAY": {
+      "symbol": "BAY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BBBY": {
+      "symbol": "BBBY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BBI": {
+      "symbol": "BBI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BBT": {
+      "symbol": "BBT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BBWI": {
+      "symbol": "BBWI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BC": {
+      "symbol": "BC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BCO": {
+      "symbol": "BCO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BCR": {
+      "symbol": "BCR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BDK": {
+      "symbol": "BDK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BEAM": {
+      "symbol": "BEAM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BEV": {
+      "symbol": "BEV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BFI": {
+      "symbol": "BFI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BFO": {
+      "symbol": "BFO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BGEN": {
+      "symbol": "BGEN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BGG": {
+      "symbol": "BGG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BHF": {
+      "symbol": "BHF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BHGE": {
+      "symbol": "BHGE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BHMSQ": {
+      "symbol": "BHMSQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BIG": {
+      "symbol": "BIG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BIO": {
+      "symbol": "BIO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BJS": {
+      "symbol": "BJS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BK": {
+      "symbol": "BK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BKB": {
+      "symbol": "BKB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BLL": {
+      "symbol": "BLL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BLS": {
+      "symbol": "BLS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BLY": {
+      "symbol": "BLY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BMC": {
+      "symbol": "BMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BMET": {
+      "symbol": "BMET",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BMGCA": {
+      "symbol": "BMGCA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BMS": {
+      "symbol": "BMS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BNI": {
+      "symbol": "BNI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BNL": {
+      "symbol": "BNL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BOAT": {
+      "symbol": "BOAT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BOL": {
+      "symbol": "BOL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BRCM": {
+      "symbol": "BRCM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BRL": {
+      "symbol": "BRL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BSC": {
+      "symbol": "BSC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BT": {
+      "symbol": "BT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BTUUQ": {
+      "symbol": "BTUUQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BUD": {
+      "symbol": "BUD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BVSN": {
+      "symbol": "BVSN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BWA": {
+      "symbol": "BWA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "BXLT": {
+      "symbol": "BXLT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CA": {
+      "symbol": "CA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CAL": {
+      "symbol": "CAL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CAM": {
+      "symbol": "CAM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CAR": {
+      "symbol": "CAR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CBB": {
+      "symbol": "CBB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CBE": {
+      "symbol": "CBE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CBH": {
+      "symbol": "CBH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CBS": {
+      "symbol": "CBS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CBSS": {
+      "symbol": "CBSS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCB": {
+      "symbol": "CCB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCE": {
+      "symbol": "CCE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCEP": {
+      "symbol": "CCEP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCK": {
+      "symbol": "CCK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCTYQ": {
+      "symbol": "CCTYQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CCU": {
+      "symbol": "CCU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CDAY": {
+      "symbol": "CDAY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CE": {
+      "symbol": "CE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CELG": {
+      "symbol": "CELG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CEN": {
+      "symbol": "CEN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CEPH": {
+      "symbol": "CEPH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CERN": {
+      "symbol": "CERN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CFC": {
+      "symbol": "CFC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CFL": {
+      "symbol": "CFL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CFN": {
+      "symbol": "CFN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CG": {
+      "symbol": "CG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CGP": {
+      "symbol": "CGP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CHA": {
+      "symbol": "CHA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CHIR": {
+      "symbol": "CHIR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CHK": {
+      "symbol": "CHK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CHRS": {
+      "symbol": "CHRS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CIN": {
+      "symbol": "CIN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CIT.A": {
+      "symbol": "CIT.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CITGQ": {
+      "symbol": "CITGQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CLF": {
+      "symbol": "CLF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CMA": {
+      "symbol": "CMA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CMB": {
+      "symbol": "CMB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CMCSK": {
+      "symbol": "CMCSK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CMVT": {
+      "symbol": "CMVT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CMX": {
+      "symbol": "CMX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CNG": {
+      "symbol": "CNG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CNW": {
+      "symbol": "CNW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CNX": {
+      "symbol": "CNX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CNXT": {
+      "symbol": "CNXT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COC.B": {
+      "symbol": "COC.B",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COG": {
+      "symbol": "COG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COL": {
+      "symbol": "COL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COMS": {
+      "symbol": "COMS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COTY": {
+      "symbol": "COTY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "COV": {
+      "symbol": "COV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CPGX": {
+      "symbol": "CPGX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CPNLQ": {
+      "symbol": "CPNLQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CPQ": {
+      "symbol": "CPQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CPRI": {
+      "symbol": "CPRI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CPWR": {
+      "symbol": "CPWR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CR": {
+      "symbol": "CR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CRR": {
+      "symbol": "CRR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CSE": {
+      "symbol": "CSE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CSR": {
+      "symbol": "CSR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CSRA": {
+      "symbol": "CSRA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTB": {
+      "symbol": "CTB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTL": {
+      "symbol": "CTL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTLT": {
+      "symbol": "CTLT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTRA": {
+      "symbol": "CTRA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTX": {
+      "symbol": "CTX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CTXS": {
+      "symbol": "CTXS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CVC": {
+      "symbol": "CVC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CVG": {
+      "symbol": "CVG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CVH": {
+      "symbol": "CVH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CXO": {
+      "symbol": "CXO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CYM": {
+      "symbol": "CYM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CYR": {
+      "symbol": "CYR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "CZR": {
+      "symbol": "CZR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DALRQ": {
+      "symbol": "DALRQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DAY": {
+      "symbol": "DAY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DCNAQ": {
+      "symbol": "DCNAQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DDR": {
+      "symbol": "DDR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DDS": {
+      "symbol": "DDS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DEC": {
+      "symbol": "DEC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DF": {
+      "symbol": "DF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DFS": {
+      "symbol": "DFS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DGN": {
+      "symbol": "DGN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DI": {
+      "symbol": "DI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DIGI": {
+      "symbol": "DIGI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DISCA": {
+      "symbol": "DISCA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DISCK": {
+      "symbol": "DISCK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DISH": {
+      "symbol": "DISH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DJ": {
+      "symbol": "DJ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DLX": {
+      "symbol": "DLX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DNB": {
+      "symbol": "DNB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DNR": {
+      "symbol": "DNR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DO": {
+      "symbol": "DO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DPHIQ": {
+      "symbol": "DPHIQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DRE": {
+      "symbol": "DRE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DTV": {
+      "symbol": "DTV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DWD": {
+      "symbol": "DWD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DWDP": {
+      "symbol": "DWDP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DXC": {
+      "symbol": "DXC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "DYN": {
+      "symbol": "DYN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EC": {
+      "symbol": "EC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ECH": {
+      "symbol": "ECH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ECO": {
+      "symbol": "ECO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EDS": {
+      "symbol": "EDS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EFU": {
+      "symbol": "EFU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EHC": {
+      "symbol": "EHC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EKDKQ": {
+      "symbol": "EKDKQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EMC": {
+      "symbol": "EMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EMN": {
+      "symbol": "EMN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ENDP": {
+      "symbol": "ENDP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ENPH": {
+      "symbol": "ENPH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ENRNQ": {
+      "symbol": "ENRNQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ENS": {
+      "symbol": "ENS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EOP": {
+      "symbol": "EOP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EP": {
+      "symbol": "EP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EPAM": {
+      "symbol": "EPAM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EQ": {
+      "symbol": "EQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ESRX": {
+      "symbol": "ESRX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ESV": {
+      "symbol": "ESV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ETFC": {
+      "symbol": "ETFC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ETS": {
+      "symbol": "ETS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ETSY": {
+      "symbol": "ETSY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "EVHC": {
+      "symbol": "EVHC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FB": {
+      "symbol": "FB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FBF": {
+      "symbol": "FBF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FBHS": {
+      "symbol": "FBHS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FBO": {
+      "symbol": "FBO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FCN": {
+      "symbol": "FCN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FCPT": {
+      "symbol": "FCPT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FDC": {
+      "symbol": "FDC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FDO": {
+      "symbol": "FDO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FG": {
+      "symbol": "FG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FHN": {
+      "symbol": "FHN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FI": {
+      "symbol": "FI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FII": {
+      "symbol": "FII",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FJ": {
+      "symbol": "FJ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FL": {
+      "symbol": "FL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLIR": {
+      "symbol": "FLIR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLMIQ": {
+      "symbol": "FLMIQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLR": {
+      "symbol": "FLR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLS": {
+      "symbol": "FLS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLT": {
+      "symbol": "FLT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FLTWQ": {
+      "symbol": "FLTWQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FMC": {
+      "symbol": "FMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FMCC": {
+      "symbol": "FMCC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FMY": {
+      "symbol": "FMY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FNMA": {
+      "symbol": "FNMA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FOSL": {
+      "symbol": "FOSL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FPC": {
+      "symbol": "FPC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FRC": {
+      "symbol": "FRC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FRO": {
+      "symbol": "FRO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FRX": {
+      "symbol": "FRX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FSH": {
+      "symbol": "FSH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FSL": {
+      "symbol": "FSL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FTI": {
+      "symbol": "FTI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FTL.A": {
+      "symbol": "FTL.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FTR": {
+      "symbol": "FTR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "FWLT": {
+      "symbol": "FWLT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "G": {
+      "symbol": "G",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GAPTQ": {
+      "symbol": "GAPTQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GAS": {
+      "symbol": "GAS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GDT": {
+      "symbol": "GDT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GDW": {
+      "symbol": "GDW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GENZ": {
+      "symbol": "GENZ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GFS.A": {
+      "symbol": "GFS.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GGP": {
+      "symbol": "GGP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GHC": {
+      "symbol": "GHC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GIDL": {
+      "symbol": "GIDL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GLD": {
+      "symbol": "GLD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GLK": {
+      "symbol": "GLK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GMCR": {
+      "symbol": "GMCR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GME": {
+      "symbol": "GME",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GNT": {
+      "symbol": "GNT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GNW": {
+      "symbol": "GNW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GP": {
+      "symbol": "GP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GPS": {
+      "symbol": "GPS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GPU": {
+      "symbol": "GPU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GR": {
+      "symbol": "GR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GRA": {
+      "symbol": "GRA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GRN": {
+      "symbol": "GRN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GSX": {
+      "symbol": "GSX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GT": {
+      "symbol": "GT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GTE": {
+      "symbol": "GTE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GTW": {
+      "symbol": "GTW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GWF": {
+      "symbol": "GWF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "GX": {
+      "symbol": "GX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "H": {
+      "symbol": "H",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HAR": {
+      "symbol": "HAR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HBI": {
+      "symbol": "HBI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HBOC": {
+      "symbol": "HBOC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HCBK": {
+      "symbol": "HCBK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HCP": {
+      "symbol": "HCP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HCR": {
+      "symbol": "HCR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HDLM": {
+      "symbol": "HDLM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HES": {
+      "symbol": "HES",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HET": {
+      "symbol": "HET",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HFC": {
+      "symbol": "HFC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HFS": {
+      "symbol": "HFS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HI": {
+      "symbol": "HI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HM": {
+      "symbol": "HM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HMA": {
+      "symbol": "HMA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HNZ": {
+      "symbol": "HNZ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HOG": {
+      "symbol": "HOG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HOLX": {
+      "symbol": "HOLX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HOT": {
+      "symbol": "HOT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HP": {
+      "symbol": "HP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HPC": {
+      "symbol": "HPC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HPH": {
+      "symbol": "HPH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HRB": {
+      "symbol": "HRB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HRS": {
+      "symbol": "HRS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HSH": {
+      "symbol": "HSH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "HSP": {
+      "symbol": "HSP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "I": {
+      "symbol": "I",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IAC": {
+      "symbol": "IAC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IGT": {
+      "symbol": "IGT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IKN": {
+      "symbol": "IKN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ILMN": {
+      "symbol": "ILMN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IMNX": {
+      "symbol": "IMNX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "INCLF": {
+      "symbol": "INCLF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "INFO": {
+      "symbol": "INFO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "INGR": {
+      "symbol": "INGR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IPG": {
+      "symbol": "IPG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "IPGP": {
+      "symbol": "IPGP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ITT": {
+      "symbol": "ITT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JAVA": {
+      "symbol": "JAVA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JCP": {
+      "symbol": "JCP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JEC": {
+      "symbol": "JEC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JEF": {
+      "symbol": "JEF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JH": {
+      "symbol": "JH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JHF": {
+      "symbol": "JHF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JNPR": {
+      "symbol": "JNPR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JNS": {
+      "symbol": "JNS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JNY": {
+      "symbol": "JNY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JOS": {
+      "symbol": "JOS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JOY": {
+      "symbol": "JOY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JP": {
+      "symbol": "JP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "JWN": {
+      "symbol": "JWN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "K": {
+      "symbol": "K",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KATE": {
+      "symbol": "KATE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KBH": {
+      "symbol": "KBH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KG": {
+      "symbol": "KG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KM": {
+      "symbol": "KM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KMG": {
+      "symbol": "KMG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KMX": {
+      "symbol": "KMX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KORS": {
+      "symbol": "KORS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KRB": {
+      "symbol": "KRB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KRFT": {
+      "symbol": "KRFT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KRI": {
+      "symbol": "KRI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KSE": {
+      "symbol": "KSE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KSS": {
+      "symbol": "KSS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KSU": {
+      "symbol": "KSU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "KWP": {
+      "symbol": "KWP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LB": {
+      "symbol": "LB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LDG": {
+      "symbol": "LDG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LDW.B": {
+      "symbol": "LDW.B",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LEG": {
+      "symbol": "LEG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LEHMQ": {
+      "symbol": "LEHMQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LIFE": {
+      "symbol": "LIFE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LKQ": {
+      "symbol": "LKQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LLL": {
+      "symbol": "LLL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LLTC": {
+      "symbol": "LLTC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LLX": {
+      "symbol": "LLX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LM": {
+      "symbol": "LM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LNC": {
+      "symbol": "LNC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LO": {
+      "symbol": "LO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LOR": {
+      "symbol": "LOR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LPX": {
+      "symbol": "LPX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LSI": {
+      "symbol": "LSI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LU": {
+      "symbol": "LU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LUB": {
+      "symbol": "LUB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LUMN": {
+      "symbol": "LUMN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LVLT": {
+      "symbol": "LVLT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LW": {
+      "symbol": "LW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "LXK": {
+      "symbol": "LXK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "M": {
+      "symbol": "M",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MAC": {
+      "symbol": "MAC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MAT": {
+      "symbol": "MAT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MAY": {
+      "symbol": "MAY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MBI": {
+      "symbol": "MBI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MCIC": {
+      "symbol": "MCIC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MD": {
+      "symbol": "MD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MDP": {
+      "symbol": "MDP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MDR": {
+      "symbol": "MDR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MEA": {
+      "symbol": "MEA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MEDI": {
+      "symbol": "MEDI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MEE": {
+      "symbol": "MEE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MEL": {
+      "symbol": "MEL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MER": {
+      "symbol": "MER",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MERQ": {
+      "symbol": "MERQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MFE": {
+      "symbol": "MFE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MHK": {
+      "symbol": "MHK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MHS": {
+      "symbol": "MHS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MI": {
+      "symbol": "MI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MII": {
+      "symbol": "MII",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MIL": {
+      "symbol": "MIL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MIR": {
+      "symbol": "MIR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MJN": {
+      "symbol": "MJN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MKG": {
+      "symbol": "MKG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MKTX": {
+      "symbol": "MKTX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MMC": {
+      "symbol": "MMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MMI": {
+      "symbol": "MMI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MNK": {
+      "symbol": "MNK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MNR": {
+      "symbol": "MNR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MOB": {
+      "symbol": "MOB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MOH": {
+      "symbol": "MOH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MOLX": {
+      "symbol": "MOLX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MON": {
+      "symbol": "MON",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MRO": {
+      "symbol": "MRO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MST": {
+      "symbol": "MST",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MTCH": {
+      "symbol": "MTCH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MTG": {
+      "symbol": "MTG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MTL": {
+      "symbol": "MTL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MTLQQ": {
+      "symbol": "MTLQQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MTW": {
+      "symbol": "MTW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MUR": {
+      "symbol": "MUR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MWI": {
+      "symbol": "MWI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MWV": {
+      "symbol": "MWV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MWW": {
+      "symbol": "MWW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MXIM": {
+      "symbol": "MXIM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MYG": {
+      "symbol": "MYG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MYL": {
+      "symbol": "MYL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "MZIAQ": {
+      "symbol": "MZIAQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NAE": {
+      "symbol": "NAE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NAV": {
+      "symbol": "NAV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NAVI": {
+      "symbol": "NAVI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NBL": {
+      "symbol": "NBL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NBR": {
+      "symbol": "NBR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NC": {
+      "symbol": "NC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NCC": {
+      "symbol": "NCC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NCE": {
+      "symbol": "NCE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NCR": {
+      "symbol": "NCR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NE": {
+      "symbol": "NE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NFB": {
+      "symbol": "NFB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NFX": {
+      "symbol": "NFX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NGH": {
+      "symbol": "NGH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NKTR": {
+      "symbol": "NKTR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NLC": {
+      "symbol": "NLC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NLOK": {
+      "symbol": "NLOK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NLSN": {
+      "symbol": "NLSN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NLV": {
+      "symbol": "NLV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NMK": {
+      "symbol": "NMK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NOV": {
+      "symbol": "NOV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NOVL": {
+      "symbol": "NOVL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NRTLQ": {
+      "symbol": "NRTLQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NSI": {
+      "symbol": "NSI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NSM": {
+      "symbol": "NSM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NVLS": {
+      "symbol": "NVLS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NWL": {
+      "symbol": "NWL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NXTL": {
+      "symbol": "NXTL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NYN": {
+      "symbol": "NYN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NYT": {
+      "symbol": "NYT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "NYX": {
+      "symbol": "NYX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OAT": {
+      "symbol": "OAT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ODP": {
+      "symbol": "ODP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OGN": {
+      "symbol": "OGN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OI": {
+      "symbol": "OI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OK": {
+      "symbol": "OK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OM": {
+      "symbol": "OM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OMX": {
+      "symbol": "OMX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ONE": {
+      "symbol": "ONE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ORX": {
+      "symbol": "ORX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "OWENQ": {
+      "symbol": "OWENQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PAC": {
+      "symbol": "PAC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PALM": {
+      "symbol": "PALM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PARA": {
+      "symbol": "PARA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PAS": {
+      "symbol": "PAS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PAYC": {
+      "symbol": "PAYC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PBCT": {
+      "symbol": "PBCT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PBG": {
+      "symbol": "PBG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PBI": {
+      "symbol": "PBI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PBY": {
+      "symbol": "PBY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PCH": {
+      "symbol": "PCH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PCL": {
+      "symbol": "PCL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PCP": {
+      "symbol": "PCP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PCS": {
+      "symbol": "PCS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PD": {
+      "symbol": "PD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PDCO": {
+      "symbol": "PDCO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PDG": {
+      "symbol": "PDG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PEAK": {
+      "symbol": "PEAK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PEL": {
+      "symbol": "PEL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PENN": {
+      "symbol": "PENN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PET": {
+      "symbol": "PET",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PETM": {
+      "symbol": "PETM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PGL": {
+      "symbol": "PGL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PGN": {
+      "symbol": "PGN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PHA": {
+      "symbol": "PHA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PHB": {
+      "symbol": "PHB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PKI": {
+      "symbol": "PKI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PLL": {
+      "symbol": "PLL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PMCS": {
+      "symbol": "PMCS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PMI": {
+      "symbol": "PMI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PNU": {
+      "symbol": "PNU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "POM": {
+      "symbol": "POM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PPW": {
+      "symbol": "PPW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PRD": {
+      "symbol": "PRD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PRGO": {
+      "symbol": "PRGO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PSFT": {
+      "symbol": "PSFT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PTV": {
+      "symbol": "PTV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PVH": {
+      "symbol": "PVH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PVN": {
+      "symbol": "PVN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PVT": {
+      "symbol": "PVT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PWER": {
+      "symbol": "PWER",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PWJ": {
+      "symbol": "PWJ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PX": {
+      "symbol": "PX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PXD": {
+      "symbol": "PXD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "PZE": {
+      "symbol": "PZE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "QEP": {
+      "symbol": "QEP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "QLGC": {
+      "symbol": "QLGC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "QRVO": {
+      "symbol": "QRVO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "QTRN": {
+      "symbol": "QTRN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "R": {
+      "symbol": "R",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RAD": {
+      "symbol": "RAD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RAI": {
+      "symbol": "RAI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RAL": {
+      "symbol": "RAL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RATL": {
+      "symbol": "RATL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RBD": {
+      "symbol": "RBD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RBK": {
+      "symbol": "RBK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RDC": {
+      "symbol": "RDC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RDS.A": {
+      "symbol": "RDS.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RE": {
+      "symbol": "RE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RHI": {
+      "symbol": "RHI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RHT": {
+      "symbol": "RHT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RIG": {
+      "symbol": "RIG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RLM": {
+      "symbol": "RLM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RML": {
+      "symbol": "RML",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RNB": {
+      "symbol": "RNB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ROH": {
+      "symbol": "ROH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RRC": {
+      "symbol": "RRC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RRD": {
+      "symbol": "RRD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RSHCQ": {
+      "symbol": "RSHCQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RTN": {
+      "symbol": "RTN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RX": {
+      "symbol": "RX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RYAN": {
+      "symbol": "RYAN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RYC": {
+      "symbol": "RYC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "RYI": {
+      "symbol": "RYI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "S": {
+      "symbol": "S",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SAF": {
+      "symbol": "SAF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SAI": {
+      "symbol": "SAI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SANM": {
+      "symbol": "SANM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SAPE": {
+      "symbol": "SAPE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SB": {
+      "symbol": "SB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SBL": {
+      "symbol": "SBL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SBNY": {
+      "symbol": "SBNY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SCG": {
+      "symbol": "SCG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SCI": {
+      "symbol": "SCI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SDS": {
+      "symbol": "SDS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SE": {
+      "symbol": "SE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SEBL": {
+      "symbol": "SEBL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SEDG": {
+      "symbol": "SEDG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SEE": {
+      "symbol": "SEE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SEG": {
+      "symbol": "SEG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SFA": {
+      "symbol": "SFA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SFS": {
+      "symbol": "SFS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SGID": {
+      "symbol": "SGID",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SGP": {
+      "symbol": "SGP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SHLD": {
+      "symbol": "SHLD",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SHN": {
+      "symbol": "SHN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SIAL": {
+      "symbol": "SIAL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SIG": {
+      "symbol": "SIG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SII": {
+      "symbol": "SII",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SIVB": {
+      "symbol": "SIVB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SK": {
+      "symbol": "SK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SLG": {
+      "symbol": "SLG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SLM": {
+      "symbol": "SLM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SLR": {
+      "symbol": "SLR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SMI": {
+      "symbol": "SMI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SMS": {
+      "symbol": "SMS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SNI": {
+      "symbol": "SNI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SNT": {
+      "symbol": "SNT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SNV": {
+      "symbol": "SNV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SOLS": {
+      "symbol": "SOLS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SOTR": {
+      "symbol": "SOTR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SOV": {
+      "symbol": "SOV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SPLS": {
+      "symbol": "SPLS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SRCL": {
+      "symbol": "SRCL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SRR": {
+      "symbol": "SRR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SSP": {
+      "symbol": "SSP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "STI": {
+      "symbol": "STI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "STJ": {
+      "symbol": "STJ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "STO": {
+      "symbol": "STO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "STR": {
+      "symbol": "STR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SUB": {
+      "symbol": "SUB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SUN": {
+      "symbol": "SUN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SUNEQ": {
+      "symbol": "SUNEQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SVU": {
+      "symbol": "SVU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SWN": {
+      "symbol": "SWN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SWY": {
+      "symbol": "SWY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SXCL": {
+      "symbol": "SXCL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "SYMC": {
+      "symbol": "SYMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TA": {
+      "symbol": "TA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TCOMA": {
+      "symbol": "TCOMA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TDC": {
+      "symbol": "TDC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TDM": {
+      "symbol": "TDM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TE": {
+      "symbol": "TE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TEG": {
+      "symbol": "TEG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TEK": {
+      "symbol": "TEK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TEN": {
+      "symbol": "TEN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TEX": {
+      "symbol": "TEX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TFX": {
+      "symbol": "TFX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TGNA": {
+      "symbol": "TGNA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "THC": {
+      "symbol": "THC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "THY": {
+      "symbol": "THY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TIE": {
+      "symbol": "TIE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TIF": {
+      "symbol": "TIF",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TIN": {
+      "symbol": "TIN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TKR": {
+      "symbol": "TKR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TLAB": {
+      "symbol": "TLAB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TMC": {
+      "symbol": "TMC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TMC.A": {
+      "symbol": "TMC.A",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TMK": {
+      "symbol": "TMK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TNB": {
+      "symbol": "TNB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TOS": {
+      "symbol": "TOS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TOY": {
+      "symbol": "TOY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TRB": {
+      "symbol": "TRB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TRIP": {
+      "symbol": "TRIP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TRW": {
+      "symbol": "TRW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TSG": {
+      "symbol": "TSG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TSS": {
+      "symbol": "TSS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TUP": {
+      "symbol": "TUP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TWC": {
+      "symbol": "TWC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TWTR": {
+      "symbol": "TWTR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TWX": {
+      "symbol": "TWX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TX": {
+      "symbol": "TX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "TXU": {
+      "symbol": "TXU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UA": {
+      "symbol": "UA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UAA": {
+      "symbol": "UAA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UAWGQ": {
+      "symbol": "UAWGQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UCC": {
+      "symbol": "UCC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UCL": {
+      "symbol": "UCL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UCM": {
+      "symbol": "UCM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UIS": {
+      "symbol": "UIS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UK": {
+      "symbol": "UK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UMG": {
+      "symbol": "UMG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UN": {
+      "symbol": "UN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UNM": {
+      "symbol": "UNM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UPC": {
+      "symbol": "UPC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UPR": {
+      "symbol": "UPR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "URBN": {
+      "symbol": "URBN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "USBC": {
+      "symbol": "USBC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "USH": {
+      "symbol": "USH",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "USHC": {
+      "symbol": "USHC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "USS": {
+      "symbol": "USS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UST": {
+      "symbol": "UST",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "USW": {
+      "symbol": "USW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UTX": {
+      "symbol": "UTX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "UVN": {
+      "symbol": "UVN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VAR": {
+      "symbol": "VAR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VAT": {
+      "symbol": "VAT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VFC": {
+      "symbol": "VFC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VIAB": {
+      "symbol": "VIAB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VIAC": {
+      "symbol": "VIAC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VIAV": {
+      "symbol": "VIAV",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VNO": {
+      "symbol": "VNO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VNT": {
+      "symbol": "VNT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VO": {
+      "symbol": "VO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VRTS": {
+      "symbol": "VRTS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VSTNQ": {
+      "symbol": "VSTNQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "VTSS": {
+      "symbol": "VTSS",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WAI": {
+      "symbol": "WAI",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WAMUQ": {
+      "symbol": "WAMUQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WB": {
+      "symbol": "WB",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WBA": {
+      "symbol": "WBA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WCG": {
+      "symbol": "WCG",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WCOEQ": {
+      "symbol": "WCOEQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WEN": {
+      "symbol": "WEN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WFM": {
+      "symbol": "WFM",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WFT": {
+      "symbol": "WFT",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WHR": {
+      "symbol": "WHR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WIN": {
+      "symbol": "WIN",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WLA": {
+      "symbol": "WLA",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WLL": {
+      "symbol": "WLL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WLP": {
+      "symbol": "WLP",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WLTW": {
+      "symbol": "WLTW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WMX": {
+      "symbol": "WMX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WNDXQ": {
+      "symbol": "WNDXQ",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WOR": {
+      "symbol": "WOR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WPX": {
+      "symbol": "WPX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WRK": {
+      "symbol": "WRK",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WU": {
+      "symbol": "WU",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WWY": {
+      "symbol": "WWY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WYE": {
+      "symbol": "WYE",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "WYND": {
+      "symbol": "WYND",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "X": {
+      "symbol": "X",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XEC": {
+      "symbol": "XEC",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XL": {
+      "symbol": "XL",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XLNX": {
+      "symbol": "XLNX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XRAY": {
+      "symbol": "XRAY",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XRX": {
+      "symbol": "XRX",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "XTO": {
+      "symbol": "XTO",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "YNR": {
+      "symbol": "YNR",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "YRCW": {
+      "symbol": "YRCW",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    },
+    "ZION": {
+      "symbol": "ZION",
+      "status": "UNKNOWN",
+      "reason": "SEC_CONTACT_EMAIL is unset; network requests halted per Fair Access rules.",
+      "effective_date": null,
+      "evidence_link": null
+    }
+  }
+}
