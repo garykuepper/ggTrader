@@ -13,8 +13,8 @@ dependencies = [
     # Engine stack: `vectorbt[rust]==X` pulls the matching vectorbt-rust==X. The pair is
     # atomic; bump it by editing this one line and re-locking. vectorbt-rust is also listed
     # explicitly so a lock that drops the extra fails loudly.
-    "vectorbt[rust]==1.2.0",
-    "vectorbt-rust==1.2.0",
+    "vectorbt[rust]==1.2.1",
+    "vectorbt-rust==1.2.1",
     "numpy>=2.4.6,<2.6",
     "pandas>=3.0.3,<3.2",
     "numba>=0.66,<0.69",
