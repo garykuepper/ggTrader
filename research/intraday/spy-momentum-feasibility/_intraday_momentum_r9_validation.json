@@ -1,0 +1,122 @@
+{
+  "alpaca_dividend_cross_check": {
+    "alpaca_ex_dates": 41,
+    "alpaca_record_issues": [],
+    "decimals": 6,
+    "gating": false,
+    "issuer_ex_dates": 43,
+    "matches": 41,
+    "mismatches": [],
+    "missing_from_alpaca": [
+      "2016-03-18",
+      "2018-06-15"
+    ],
+    "missing_from_issuer": [],
+    "shared_ex_dates": 41
+  },
+  "ancillary_coverage": {
+    "alpaca_cross_check": "Alpaca cash-dividend amounts are compared with the issuer's on shared ex-dates at 6 decimal places; matches, mismatches and ex-dates missing from either side are recorded and never gate.",
+    "corporate_actions": "One all-types SPY request, process_date filtered from anchor-31d to last+31d (default data_quality=complete). Actions are placed by their documented ex_date or effective_date, never by process_date. r9 keeps the r8 automatic stop on an in-window SPY split and the unsupported-valuation stop for other non-cash SPY actions. The whole response must still pass the schema, because the same pages carry the split stop: a malformed record of any group (for example a dividend with a null rate) ends the study UNRESOLVED (data). Only Alpaca cash-distribution values are non-gating: they feed no valuation and are compared with the issuer schedule as a cross-check. A same-ticker name change (old and new symbol both SPY) changes no valuation and is counted as non-gating metadata.",
+    "dividend_quarter_presence": "Every window quarter must show an issuer cash-dividend ex-date (SPY pays quarterly per its issuer). This is a conservative coverage sanity check on the issuer schedule only.",
+    "exclusions": "R1 (r9 protocol section 3): 2019-08-12 and 2019-08-13 are removed from the scored series, not counted as flat days, because their required price bars do not exist in the data (2019-08-12 lacks the 15:30 entry bar and the 15:59 exit bar; 2019-08-13 consequently lacks its prior-close anchor). The list was chosen after the missing timestamps were known but before any price, signal or return was seen. Losing a day for a reason linked to how the market moved that day could bias the result; that effect cannot be measured without prices, so it is a named limitation.",
+    "issuer_distribution_schedule": "Every SPY cash distribution comes from State Street's SPDR historical-distribution workbook, refused unless its SHA256 equals ISSUER_WORKBOOK_SHA256. Rows are identified by ticker SPY and CUSIP 78462F103; each needs one parseable ex-date (an official calendar session inside the window), a positive per-share dividend and, when a capital-gain field is filled, a non-negative finite value; a blank capital-gain field is no data, never zero, and a filled 0.000000 capital-gain leg is accepted (the workbook has such legs in window; r9's positive-amount check is read as applying to the dividend). Row checks run on every SPY row in the pinned workbook, including rows before the window. Per-ex-date payouts feed only the SPY total-return comparison and the ex-dividend-flat sensitivity; the rule's returns use raw prices.",
+    "limitations": [
+      "Alpaca documents no guarantee on corporate-action creation or processing delay, so the 31-day process_date margin is not a completeness bound.",
+      "Quarter presence cannot prove that every historical action was returned; an absent split in the response is not certified absence.",
+      "Vendor adjustment changes have no machine-readable feed. The review record is a bounded human documentation review; it does not prove that no undocumented change exists.",
+      "The issuer workbook is a hash-pinned copy of one published file; it is not an audit of the issuer's records. Its amounts are assumed USD per share (the column is labelled DIVIDEND ($))."
+    ],
+    "vendor_adjustment_review": "Collection, PASS and scoring require the hash-bound local r9 review record at VENDOR_REVIEW_PATH (status reviewed, SPY, window and r9 protocol hash bound, no known unresolved changes); its SHA256 is in the manifest and the validation identities."
+  },
+  "counts": {
+    "alpaca_capital_gains_distributions_in_window": 0,
+    "alpaca_cash_dividends_in_window": 41,
+    "alpaca_cash_payouts_currency_assumed_usd": 41,
+    "calendar_sessions": 2701,
+    "chunks_complete": 132,
+    "chunks_expected": 132,
+    "daily_bars": 2701,
+    "excluded_sessions": 2,
+    "half_day_sessions": 21,
+    "issuer_capital_gain_legs_blank": 260,
+    "issuer_capital_gain_legs_present": 12,
+    "issuer_ex_dates_in_window": 43,
+    "issuer_expected_ex_dates_in_window": 43,
+    "issuer_spy_rows": 136,
+    "issuer_window_count_matches_expected": true,
+    "minute_bars": 2155686,
+    "same_ticker_name_changes_non_gating": 0,
+    "scored_sessions": 2677
+  },
+  "defects": [],
+  "diagnostics": {
+    "interior_gaps_by_session": {
+      "2016-02-02": 9,
+      "2019-08-12": 30,
+      "2020-03-09": 14,
+      "2020-03-12": 14,
+      "2020-03-16": 14,
+      "2020-03-18": 14,
+      "2021-05-05": 5,
+      "2023-06-05": 4
+    },
+    "interior_missing_minutes_total": 104,
+    "misaligned_bars": 0,
+    "sessions_with_interior_gaps": 8
+  },
+  "exclusions": {
+    "disclosure": "R1 (r9 protocol section 3): 2019-08-12 and 2019-08-13 are removed from the scored series, not counted as flat days, because their required price bars do not exist in the data (2019-08-12 lacks the 15:30 entry bar and the 15:59 exit bar; 2019-08-13 consequently lacks its prior-close anchor). The list was chosen after the missing timestamps were known but before any price, signal or return was seen. Losing a day for a reason linked to how the market moved that day could bias the result; that effect cannot be measured without prices, so it is a named limitation.",
+    "protocol": "r9 R1",
+    "scored_sessions_after_exclusion": 2677,
+    "scored_sessions_before_exclusion": 2679,
+    "sessions": [
+      "2019-08-12",
+      "2019-08-13"
+    ],
+    "tolerated_defects": [
+      {
+        "endpoint": "close",
+        "session": "2019-08-12",
+        "status": "absent"
+      },
+      {
+        "endpoint": "entry_1530",
+        "session": "2019-08-12",
+        "status": "absent"
+      },
+      {
+        "endpoint": "prior_close",
+        "session": "2019-08-13",
+        "status": "absent"
+      }
+    ]
+  },
+  "identities": {
+    "code_sha256": "ebef81e13777e295474247c57e50fb094d374ab059d4f8cc9af0db4245f70612",
+    "data_manifest_sha256": "fec4cce762c65795c27d271974a552f690ff028da713cee764ff8bfd43d1359a",
+    "issuer_workbook_sha256": "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320",
+    "manifest_sha256": "cbdd63c82eb25d43b2c113c2309fcfbb9dc228ae5ffa77758626af570c08422a",
+    "protocol_sha256": "222521cebe23aed66f9a44672dd1645a210f0c545a7cfbd30482496922593ed3",
+    "runtime": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "pandas_market_calendars": "5.6.0",
+      "python": "3.12.13",
+      "requests": "2.34.2",
+      "statsmodels": "0.15.0"
+    },
+    "vendor_review_sha256": "30924032071c6a51cfd87a3e119671b1993bfb54c70bc966cef5d098083fcfbb"
+  },
+  "label": "PASS",
+  "offline_calendar": {
+    "calendar": "NYSE",
+    "library": "pandas_market_calendars",
+    "schedule_sha256": "b008e2291715ac730b6f69b8c4543c635eb5a53c77048876ad04679419e9a82c",
+    "sessions": 2701,
+    "version": "5.6.0"
+  },
+  "run_utc": "2026-11-16T07:40:48.869215+00:00",
+  "schema": "intraday_momentum_r9_validation",
+  "status": "PASS",
+  "version": 1
+}

@@ -1,10 +1,11 @@
-"""Mocked collector, resume and CLI safety tests for the r8 pipeline; no network or credentials."""
+"""Mocked collector, resume and CLI safety tests for the r9 pipeline; no network or credentials."""
 
 from __future__ import annotations
 
 import json
 import socket
 from pathlib import Path
+from types import SimpleNamespace
 
 import intraday_momentum as core
 import intraday_momentum_data as data
@@ -96,10 +97,18 @@ def review(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFac
     return write_review(path)
 
 
+@pytest.fixture(autouse=True)
+def issuer(issuer_tools: SimpleNamespace) -> SimpleNamespace:
+    """Synthetic issuer schedule matching the vendor-shaped dividend on the last session."""
+    issuer_tools.install([issuer_tools.row("12/03/2024", "0.500000")])
+    return issuer_tools
+
+
 @pytest.fixture
 def window(monkeypatch: pytest.MonkeyPatch, review: Path) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-12-02")
     monkeypatch.setattr(core, "LAST", "2024-12-03")
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", ())  # R1 sessions are not in this window
     write_review(review)
 
 
@@ -320,6 +329,8 @@ UNSAFE = "UNSAFE <provider> string"
         {"mystery_actions": []},  # unknown group names fail even when empty
         {"cash_dividends": [{**CASH_DIVIDEND, "rate": "1.7"}]},  # SSE-style string, not REST
         {"cash_dividends": [{**CASH_DIVIDEND, "rate": True}]},
+        # r9: a schema-invalid dividend still fails the page that carries the split stop.
+        {"cash_dividends": [{**CASH_DIVIDEND, "rate": None}]},
         {"cash_dividends": [{k: v for k, v in CASH_DIVIDEND.items() if k != "rate"}]},
         {"cash_dividends": [{**CASH_DIVIDEND, "currency": "usd"}]},
         {"cash_dividends": [{**CASH_DIVIDEND, "currency": UNSAFE}]},
@@ -387,6 +398,9 @@ def test_collect_validate_and_score_end_to_end(window: None, tmp_path: Path) -> 
     for path in (tmp_path / "c").rglob("*.json"):
         text = path.read_text()
         assert SECRET not in text and "KEY-123" not in text and '"next"' not in text
+    # R3: the fresh pull still requests Alpaca corporate actions.
+    assert any(url == core.ENDPOINTS["corporate_actions"] for url, _ in session.calls)
+    assert report["alpaca_dividend_cross_check"]["matches"] == 1
 
 
 def test_resume_after_deferral_refetches_only_missing_chunks(window: None, tmp_path: Path) -> None:
@@ -563,6 +577,16 @@ def test_bad_review_refuses_collection_before_any_request_or_write(
         write_review(review, **content)
     session = Session([])
     with pytest.raises(ValueError, match=f"^{reason}$"):
+        data.run_collection(tmp_path / "c", session=session)
+    assert session.calls == [] and not (tmp_path / "c").exists()
+
+
+def test_issuer_workbook_mismatch_refuses_collection_before_any_request_or_write(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    issuer.install([issuer.row("12/03/2024", "0.600000")], pin=False)  # tampered bytes
+    session = Session([])
+    with pytest.raises(ValueError, match="^issuer_workbook_hash_mismatch$"):
         data.run_collection(tmp_path / "c", session=session)
     assert session.calls == [] and not (tmp_path / "c").exists()
 
