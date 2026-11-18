@@ -1,4 +1,4 @@
-"""Golden transcripts of `PaperTrader.run` over 38 scenarios: the refactor's safety net.
+"""Golden transcripts of `PaperTrader.run` over every scenario: the refactor's safety net.
 
 Every later change to the live paper trader must reproduce `golden/trader_transcripts/*.json`
 byte for byte. To record a deliberate change, run the tests once with
@@ -164,7 +164,7 @@ def test_transcripts_stable_across_hash_seeds() -> None:
 
 
 def test_every_scenario_has_a_golden() -> None:
-    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 86
+    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 95
     missing = sorted(name for name in SCENARIOS if not _golden_path(name).exists())
     assert not missing, f"scenarios without a golden: {missing}"
 
@@ -208,11 +208,15 @@ def _submits(t: dict) -> list[tuple[str, str, float]]:
     return out
 
 
-def _intent_rows(t: dict) -> tuple[list[str], list[str]]:
-    """(settled, unresolved) client ids, derived from the recorded intent-ledger calls."""
+def _intent_rows(t: dict, seeded: tuple[str, ...] = ()) -> tuple[list[str], list[str]]:
+    """(settled, unresolved) client ids at the end of the run.
+
+    Derived from the recorded ledger calls: the rows the run created plus the `seeded` ones the
+    scenario started with, minus those a ``settle_order_intent`` call settled.
+    """
     created = [c["args"][0] for c in _calls(t, "persist.create_order_intent") if not c["raised"]]
     settled = [c["args"][0] for c in _calls(t, "persist.settle_order_intent") if not c["raised"]]
-    return settled, [cid for cid in created if cid not in settled]
+    return settled, [cid for cid in [*seeded, *created] if cid not in settled]
 
 
 def _no_orders(t: dict) -> None:
@@ -679,6 +683,8 @@ def _recovery_stops(error: str) -> Callable[[dict], None]:
         assert _calls(t, "persist.settle_order_intent") == []
         assert _calls(t, "broker.get_clock") == [] and _submits(t) == []
         assert any("Order recovery/pending orders failed" in s for s in _sends(t))
+        settled, unresolved = _intent_rows(t, ("prev-1",))
+        assert settled == [] and unresolved == ["prev-1"]  # the seeded row is still open
 
     return check
 
@@ -930,6 +936,67 @@ def _read_failure_check(call: str, notice: str) -> Callable[[dict], None]:
     return check
 
 
+def _legacy_dropped(status: str) -> Callable[[dict], None]:
+    def check(t: dict) -> None:
+        settle = _calls(t, "persist.settle_legacy_pending_order")
+        assert [c["args"] for c in settle] == [["pend-1", 0.0, None, status]]
+        assert [c["args"][3] for c in _calls(t, "notifier.trade_alert")] == ["ord-1"]
+        assert _submits(t) == [("BUY", "KO", 3300.0)] and t["result"]["buys"] == ["KO"]
+
+    return check
+
+
+def _check_poll_order_expired(t: dict) -> None:
+    assert len(_calls(t, "broker.get_order")) == 2 and len(_calls(t, "clock.sleep")) == 1
+    settle = _calls(t, "persist.settle_order_intent")[0]["args"]
+    assert settle[2:] == [0.0, None, "expired"]
+    assert _calls(t, "notifier.trade_alert")[0]["kwargs"]["status"] == "expired"
+    assert [s for s in _submits(t) if s[0] == "BUY"] == []
+    assert t["result"]["errors"] == [
+        "SELL AAPL not fully filled (expired); new strategy buys blocked"
+    ]
+
+
+def _undelivered_check(method: str, text: str) -> Callable[[dict], None]:
+    """The scripted ``False`` is invisible to the trader: it ignores the return value."""
+
+    def check(t: dict) -> None:
+        name = [n for n, s in SCENARIOS.items() if s.notifier == {method: False}]
+        assert name, "no scenario scripts this notifier outcome"
+        assert (
+            t["raised"] is None and t["result"]["buys"] == ["MSFT"] and t["result"]["errors"] == []
+        )
+        assert len(_calls(t, f"notifier.{method}")) == 1
+        assert any(text in s for s in _sends(t))  # the rendered text is recorded anyway
+        assert "persist.log_snapshot" in _targets(t)  # the run goes on to the snapshot
+
+    return check
+
+
+def _check_intent_settle_failure(t: dict) -> None:
+    assert t["raised"] == "RuntimeError: ledger write failed"
+    assert _calls(t, "persist.settle_order_intent")[0]["raised"] == t["raised"]
+    assert any("Order recovery/pending orders failed" in s for s in _sends(t))
+    assert _submits(t) == [("SELL", "AAPL", 10.0)]
+    settled, unresolved = _intent_rows(t)
+    assert settled == [] and len(unresolved) == 1
+
+
+def _check_unresolved_intents_read_failure(t: dict) -> None:
+    assert t["raised"] == "RuntimeError: ledger offline"
+    assert _calls(t, "persist.get_unresolved_order_intents")[0]["raised"] == t["raised"]
+    assert any("Order recovery/pending orders failed" in s for s in _sends(t))
+    assert _calls(t, "broker.get_clock") == [] and _submits(t) == []
+
+
+def _check_recovery_notice_fails(t: dict) -> None:
+    assert t["raised"] == "RuntimeError: Unresolved working orders block submissions"
+    notices = _calls(t, "notifier.send")
+    assert len(notices) == 1 and notices[0]["raised"] == "RuntimeError: telegram down"
+    settled, unresolved = _intent_rows(t, ("prev-1",))
+    assert settled == [] and unresolved == ["prev-1"]
+
+
 BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
     "plain_buys_and_sells": _both(_check_plain_buys_and_sells, _check_plain_reporting),
     "market_closed": _check_market_closed,
@@ -1035,6 +1102,15 @@ BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
     "positions_read_failure": _read_failure_check(
         "get_positions", "Position data unavailable; no orders submitted"
     ),
+    "legacy_pending_expired": _legacy_dropped("expired"),
+    "legacy_pending_rejected": _legacy_dropped("rejected"),
+    "poll_order_expired": _check_poll_order_expired,
+    "trade_alert_returns_false": _undelivered_check("trade_alert", "Paper Trade"),
+    "daily_summary_returns_false": _undelivered_check("daily_summary", "Paper Portfolio Summary"),
+    "intent_settle_failure": _check_intent_settle_failure,
+    "unresolved_intents_read_failure": _check_unresolved_intents_read_failure,
+    "recovery_notice_fails": _check_recovery_notice_fails,
+    "recovery_filled_zero_quantity": _recovery_stops("ValueError: Filled order has no fill"),
 }
 
 
@@ -1085,12 +1161,30 @@ EXPECTED_INTENT_ROWS: dict[str, tuple[int, int]] = {
     "schema_init_failure": (1, 0),
     "split_correction_held": (1, 0),
     "sweep_buy_after_strategy_orders": (2, 0),
+    # seeded rows that startup recovery leaves unresolved
+    "recovery_intent_working": (0, 1),
+    "recovery_identity_mismatch": (0, 1),
+    "recovery_symbol_mismatch": (0, 1),
+    "recovery_amount_mismatch": (0, 1),
+    "recovery_missing_broker_order": (0, 1),
+    "recovery_invalid_fill": (0, 1),
+    "recovery_unknown_status": (0, 1),
+    "recovery_notice_fails": (0, 1),
+    "recovery_filled_zero_quantity": (0, 1),
+    # second follow-up
+    "legacy_pending_expired": (1, 0),
+    "legacy_pending_rejected": (1, 0),
+    "poll_order_expired": (1, 0),
+    "trade_alert_returns_false": (1, 0),
+    "daily_summary_returns_false": (1, 0),
+    "intent_settle_failure": (0, 1),
 }
 
 
 @pytest.mark.parametrize("name", sorted(SCENARIOS))
 def test_golden_final_intent_rows(name: str) -> None:
-    settled, unresolved = _intent_rows(_load(name))
+    seeded = tuple(row["client_order_id"] for row in SCENARIOS[name].intents)
+    settled, unresolved = _intent_rows(_load(name), seeded)
     assert (len(settled), len(unresolved)) == EXPECTED_INTENT_ROWS.get(name, (0, 0))
 
 
@@ -1218,8 +1312,9 @@ def test_unpinned_pending_order_timestamp_is_a_harness_error() -> None:
         run_scenario(_base_scenario(persist={"get_pending_orders": [row]}))
 
 
-def test_runaway_poll_loop_is_a_harness_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(harness, "MAX_POLLS", 3)
+def test_removed_sleep_is_a_harness_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A poll loop that never sleeps never advances the fake clock: it must not hang."""
+    monkeypatch.setattr(harness.FakeTime, "sleep", lambda self, seconds: None)
     probe = _base_scenario(
         signals=_blend([], ["AAPL"]),
         replies=_replies(_acct(), {"AAPL": _pos(10.0, 150.0)}),
@@ -1260,8 +1355,52 @@ def test_fake_clock_records_every_read_and_sleep_and_enforces_its_budget(
         ("clock.monotonic", [], {"returned": harness.CLOCK_START + 2.5}),
     ]
     monkeypatch.setattr(harness, "MAX_POLLS", 2)
+    clock.time()  # the second event at this instant (the monotonic read was the first)
     with pytest.raises(HarnessError, match="runaway"):
-        clock.time()  # the third read, with the budget at 2
+        clock.time()  # the third at one instant: no sleep moved the clock
+    clock.sleep(1.0)  # a sleep advances the clock and resets the count
+    clock.time()
+
+
+def test_long_legitimate_poll_of_many_orders_is_not_a_runaway() -> None:
+    """14 working orders polled for 15 iterations make over 200 lookups: that is allowed."""
+    symbols = [f"S{i:02d}" for i in range(14)]
+    probe = _base_scenario(
+        signals=_blend([], symbols),
+        replies=_replies(_acct(), {s: _pos(10.0, 50.0) for s in symbols}),
+        fills={
+            s: [{"status": "partially_filled", "filled_qty": 1.0, "filled_avg_price": 50.0}]
+            for s in symbols
+        },
+    )
+    transcript = run_scenario(probe)
+    assert len(_calls(transcript, "broker.get_order")) > harness.MAX_POLLS
+    assert transcript["raised"] == "RuntimeError: Unresolved working orders block submissions"
+
+
+def test_scripted_false_is_returned_by_every_notifier_method() -> None:
+    recorder = Recorder()
+    notifier = harness.RecordingNotifier(
+        recorder, {"trade_alert": False, "daily_summary": False, "quiet": False}
+    )
+    assert notifier.trade_alert("BUY", "MSFT", 10.0, "ord-1", qty=1.0, price=10.0) is False
+    assert notifier.daily_summary(1000.0, 5.0, {}) is False
+    assert notifier.send("be quiet") is False
+    assert notifier.send("hello") is True
+    # The rendered text is still recorded for the formatted methods.
+    texts = [c["args"][0] for c in recorder.calls if c["target"] == "notifier.send"]
+    assert any("Paper Trade" in s for s in texts)
+    assert any("Paper Portfolio Summary" in s for s in texts)
+
+
+def test_signal_gate_error_copy_registration_is_scoped() -> None:
+    import copyreg
+
+    from ggTrader.paper.gates import SignalGateError
+
+    assert SignalGateError not in copyreg.dispatch_table
+    run_scenario(_base_scenario(signals=SignalGateError("empty_frame", "no bars")))
+    assert SignalGateError not in copyreg.dispatch_table  # restored after the run
 
 
 def test_scripted_notifier_outcomes_are_recorded() -> None:

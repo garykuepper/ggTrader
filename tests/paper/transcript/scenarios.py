@@ -1,10 +1,12 @@
-"""The 38 recorded paper-trader scenarios; each docstring says what its golden must show.
+"""The recorded paper-trader scenarios; each docstring says what its golden must show.
 
-Every scenario is built from inputs of an existing test in ``tests/paper/test_trader.py`` (cited
-in its docstring). The goldens record what the trader does today: a scenario's docstring is the
-reviewer's expectation, ``test_golden_shows_scenario_behavior`` is what pins it. Client order ids
+Most scenarios are adapted from an existing test in ``tests/paper/test_trader.py`` (cited in
+the docstring). Those marked "Newly derived" have no run-level test there: they come from
+reading ``trader.py`` (the polling, startup-recovery and some failure paths). Client order ids
 are pinned (``00000000-0000-0000-0000-00000000000n``, n counting from 1 in submission order)
-and broker order ids are ``ord-n`` in the same order.
+and broker order ids are ``ord-n`` in the same order. The goldens record what the trader does
+today: a scenario's docstring is the reviewer's expectation and
+``test_golden_shows_scenario_behavior`` is what pins it.
 """
 
 from __future__ import annotations
@@ -18,8 +20,8 @@ from tests.paper.transcript.harness import PT, Scenario, Seq
 #: The membership spec the root conftest selects: dry runs may rehearse any source.
 FIXTURE_SPEC = "fixture:sp500_v1_2026-06-02"
 
-#: How many scenarios the suite records (the plan's 34 base ones plus four splits and additions).
-EXPECTED_SCENARIO_COUNT = 86
+#: How many scenarios the suite records: the 38 of the first plan, then the follow-up rounds.
+EXPECTED_SCENARIO_COUNT = 95
 
 SCENARIOS: dict[str, Scenario] = {}
 
@@ -117,7 +119,7 @@ def _replies(account: object, positions: object, clock: object = _CLOCK_OPEN) ->
 
 
 def _pending(order_id: str, symbol: str, side: str) -> dict:
-    """A legacy pending-order row (``created_at=None``: the trader's `now` is not pinned)."""
+    """A legacy pending-order row (``created_at=None``: never old enough to be flagged stale)."""
     return {
         "order_id": order_id,
         "symbol": symbol,
@@ -870,6 +872,8 @@ def _two_sleeves(
 def sleeve_slot_cap() -> dict:
     """A sleeve's own slot cap refuses a candidate while the global cap would allow it.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Adapted from the sleeve-cap math in `risk.sleeve_slot_caps` (no `run`-level test exists).
     MAX_POSITIONS is 4 with two 50% sleeves, so each sleeve gets 2 slots; the sp500 sleeve
     offers three candidates. Terminal outcome: success, ``buys == ["MSFT", "NVDA", "AMZN"]``.
@@ -906,6 +910,8 @@ def sleeve_slot_cap() -> dict:
 @scenario
 def concentration_limit() -> dict:
     """The 5% concentration limit refuses one candidate that would otherwise trade.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     Synthetic (no `run`-level test): with one sleeve at scale 1.0 a new position is 3.3% and
     can never reach 5%, so the scenario uses a sp500 sleeve at weight 1.0 and scale 1.6 (a
@@ -1130,9 +1136,12 @@ def _prior_intent(client_id: str, symbol: str = "MSFT", amount: float = 3300.0) 
     }
 
 
-def _recovery(statuses: list[dict], replies_extra: dict | None = None) -> dict:
+def _recovery(
+    statuses: list[dict], replies_extra: dict | None = None, notifier: dict | None = None
+) -> dict:
     """A live run that starts with one unresolved prior-run BUY MSFT intent in `statuses`."""
     return dict(
+        notifier=notifier or {},
         env=_LIVE_ENV,
         signals=_blend([], []),
         intents=[_prior_intent("prev-1")],
@@ -1315,6 +1324,8 @@ def recovery_intent_canceled() -> dict:
 def recovery_intent_rejected() -> dict:
     """A seeded intent whose order the broker rejected settles with no fill.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Terminal outcome: success. Discriminating call: ``settle_order_intent("prev-1",
     "ord-prev-1", 0.0, None, "rejected")``. Intents: the seeded row settles, none unresolved.
     """
@@ -1325,6 +1336,8 @@ def recovery_intent_rejected() -> dict:
 def recovery_intent_expired() -> dict:
     """A seeded intent whose order expired settles with no fill.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Terminal outcome: success. Discriminating call: ``settle_order_intent("prev-1",
     "ord-prev-1", 0.0, None, "expired")``. Intents: the seeded row settles, none unresolved.
     """
@@ -1333,11 +1346,14 @@ def recovery_intent_expired() -> dict:
 
 @scenario
 def recovery_intent_working() -> dict:
-    """A seeded intent whose order is still working stops the run before any other call.
+    """A seeded intent whose order is still working stops the run once recovery has read it.
 
-    Terminal outcome: the run raises ``RuntimeError: Unresolved working orders block
-    submissions`` after "Order recovery/pending orders failed" is sent. Discriminating calls:
-    ``attach_broker_order`` but no ``settle_order_intent``; no market-clock call, no signals.
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
+    The lock, the schema call and the recovery reads happen first. Terminal outcome: the run
+    raises ``RuntimeError: Unresolved working orders block submissions`` after "Order
+    recovery/pending orders failed" is sent. Discriminating calls: ``attach_broker_order`` but
+    no ``settle_order_intent``; no market-clock call, no signals.
     Intents: the seeded row stays unresolved.
     """
     return _recovery([{"status": "new"}])
@@ -1346,6 +1362,8 @@ def recovery_intent_working() -> dict:
 @scenario
 def recovery_identity_mismatch() -> dict:
     """A lookup reply with a blank order id is an identity mismatch: the run stops.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     The reply is scripted (a malformed broker answer). Terminal outcome: the run raises
     ``ValueError: Order identity mismatch or duplicate legacy order`` after the recovery
@@ -1370,6 +1388,8 @@ def recovery_identity_mismatch() -> dict:
 def recovery_symbol_mismatch() -> dict:
     """The broker's order for a client id is for another symbol: the run stops.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Terminal outcome: the run raises ``ValueError: Order identity mismatch or duplicate legacy
     order``. Discriminating calls: ``get_order_by_client_id("prev-1")``, no settle, no attach.
     Intents: the seeded row stays unresolved.
@@ -1383,6 +1403,8 @@ def recovery_symbol_mismatch() -> dict:
 def recovery_amount_mismatch() -> dict:
     """The broker's order amount differs from the intent by more than a cent: the run stops.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     The intent says 3,300.0 notional; the broker holds 3,500.0. Terminal outcome: the run raises
     ``ValueError: Order amount mismatch``. Discriminating calls: no attach, no settle.
     Intents: the seeded row stays unresolved.
@@ -1395,6 +1417,8 @@ def recovery_amount_mismatch() -> dict:
 @scenario
 def recovery_missing_broker_order() -> dict:
     """The broker has no order for a seeded intent (the lookup fails): the run stops.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     The lookup reply is a scripted ``RuntimeError: order not found``. Terminal outcome: the run
     raises it after "Order recovery/pending orders failed: order not found" is sent.
@@ -1411,6 +1435,8 @@ def recovery_missing_broker_order() -> dict:
 def recovery_invalid_fill() -> dict:
     """A canceled order with filled shares but no fill price is an invalid fill: the run stops.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Terminal outcome: the run raises ``ValueError: Invalid order fill``. Discriminating calls:
     no attach, no settle. Intents: the seeded row stays unresolved.
     """
@@ -1420,6 +1446,8 @@ def recovery_invalid_fill() -> dict:
 @scenario
 def recovery_unknown_status() -> dict:
     """An order status the trader does not know stops the run.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     Terminal outcome: the run raises ``ValueError: Unknown order status``. Discriminating
     calls: no attach, no settle. Intents: the seeded row stays unresolved.
@@ -1486,6 +1514,8 @@ def legacy_pending_stale_mark_fails() -> dict:
 @scenario
 def legacy_pending_lookup_failure() -> dict:
     """The broker lookup of a legacy pending order fails: the run stops.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     Terminal outcome: the run raises ``RuntimeError: lookup failed`` (no notice is sent).
     Discriminating calls: ``get_order("pend-1")`` raised; no signals call, no order.
@@ -1654,6 +1684,8 @@ def catastrophe_stop_unassessable_notice_fails_with_pending() -> dict:
 def poll_clock_failure() -> dict:
     """A failing clock read while polling is ignored and the poll still completes.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Adapted from `_poll_orders` (no `run`-level test). The sell of AAPL is ``new`` twice, then
     ``filled``; the broker clock raises on the poll's read (so the market is assumed open and
     the wait budget is 15 seconds). Terminal outcome: success, ``sells == ["AAPL"]``.
@@ -1681,6 +1713,8 @@ def poll_clock_failure() -> dict:
 def poll_transient_lookup_error() -> dict:
     """A failed lookup in the middle of polling is logged and the next poll succeeds.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Adapted from `_poll_orders`. The first ``get_order`` raises ``RuntimeError: blip``; the second
     returns the order, filled. Terminal outcome: success, ``sells == ["AAPL"]``. Discriminating
     calls: two ``get_order("ord-1")`` calls (the first raised) with one one-second sleep between
@@ -1696,6 +1730,8 @@ def poll_transient_lookup_error() -> dict:
 @scenario
 def poll_final_lookup_fails() -> dict:
     """When every poll and the final lookup fail, the order is reported as pending.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     Adapted from `_poll_orders` (the fallback record). Every ``get_order`` raises; the order
     itself is ``filled`` at the broker, so the client-id lookup during recovery settles it.
@@ -1716,6 +1752,8 @@ def poll_final_lookup_fails() -> dict:
 @scenario
 def poll_market_closed_short_wait() -> dict:
     """With the market closed during polling the wait budget is 2 seconds, not 15.
+
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
 
     Adapted from `_poll_orders`. The first clock read (the run gate) says open, the poll's read
     says closed. The AAPL sell stays ``partially_filled``. Terminal outcome: the run raises
@@ -1920,6 +1958,8 @@ def held_buy_candidate_skipped() -> dict:
 def sweep_sizing_failure() -> dict:
     """If the sweep sizing account read fails, no sweep buy is placed and the run goes on.
 
+    Newly derived from reading `trader.py`; no existing run-level test covers it.
+
     Adapted from the sweep-buy block of `_run`. Cash is 50,000, so a sweep buy would fire; the
     sizing read raises ``RuntimeError: sizing read``. Terminal outcome: success with no orders.
     Discriminating calls: three ``get_account`` calls (the second raised), no ``submit_buy``.
@@ -2059,3 +2099,174 @@ def positions_read_failure() -> dict:
         signals=_blend(["MSFT"], ["AAPL"]),
         replies=_replies(_acct(), RuntimeError("positions down")),
     )
+
+
+# =========================================================================== second follow-up
+# Terminal-status sites, notifier return values, ledger failures and recovery edge cases.
+
+
+def _expired_or_rejected_legacy(status: str) -> dict:
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["KO"], []),
+        persist={"get_pending_orders": [_pending("pend-1", "KO", "BUY")]},
+        existing_orders=[
+            _held_order(
+                "pend-1",
+                "legacy-1",
+                "KO",
+                "BUY",
+                600.0,
+                [{"status": status, "filled_qty": 0.0, "filled_avg_price": None}],
+            )
+        ],
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def legacy_pending_expired() -> dict:
+    """An expired legacy pending order is dropped without a trade alert and frees its symbol.
+
+    Newly derived from reading `trader.py` (the legacy terminal-status tuple); the sibling of
+    `legacy_pending_canceled`. Terminal outcome: success, ``buys == ["KO"]``. Discriminating
+    calls: ``settle_legacy_pending_order("pend-1", 0.0, None, "expired")`` with no trade alert
+    for it, then BUY KO 3300.0. Removing "expired" from the legacy terminal statuses would leave
+    KO blocked and nothing settled. Intents: 1 settled (the KO buy).
+    """
+    return _expired_or_rejected_legacy("expired")
+
+
+@scenario
+def legacy_pending_rejected() -> dict:
+    """A rejected legacy pending order is dropped without a trade alert and frees its symbol.
+
+    Newly derived from reading `trader.py`; the sibling of `legacy_pending_canceled`. Terminal
+    outcome: success, ``buys == ["KO"]``. Discriminating calls:
+    ``settle_legacy_pending_order("pend-1", 0.0, None, "rejected")`` with no trade alert for it,
+    then BUY KO 3300.0. Removing "rejected" from the legacy terminal statuses would leave KO
+    blocked and nothing settled. Intents: 1 settled (the KO buy).
+    """
+    return _expired_or_rejected_legacy("rejected")
+
+
+@scenario
+def poll_order_expired() -> dict:
+    """A sell that goes ``expired`` while polled ends the poll at once and blocks the buys.
+
+    Newly derived from reading `_poll_orders`. The AAPL sell is ``new``, then ``expired`` with no
+    fill. Terminal outcome: success, ``sells == ["AAPL"]``, ``buys == []``, errors ==
+    ["SELL AAPL not fully filled (expired); new strategy buys blocked"]. Discriminating calls: 2
+    ``get_order`` polls and 1 sleep (not the 16 polls of a never-terminal order),
+    ``settle_order_intent(.., 0.0, None, "expired")``, a trade alert with status ``expired``, no
+    BUY MSFT. Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        fills={
+            "AAPL": [
+                {"status": "new"},
+                {"status": "expired", "filled_qty": 0.0, "filled_avg_price": None},
+            ]
+        },
+        replies=_replies(_acct(), _AAPL_ONE),
+    )
+
+
+@scenario
+def trade_alert_returns_false() -> dict:
+    """A trade alert that Telegram does not deliver (returns ``False``) changes nothing.
+
+    Newly derived from reading `trader.py` (it ignores the return value of `trade_alert`). The
+    notifier is scripted to return ``False`` for the alert of the MSFT buy. Terminal outcome:
+    success, ``buys == ["MSFT"]``. Discriminating calls: BUY MSFT 3300.0, the ``trade_alert``
+    call with its rendered text still recorded, and the run carrying on to the daily summary
+    and the snapshot. Intents: 1 settled (the MSFT buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        notifier={"trade_alert": False},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def daily_summary_returns_false() -> dict:
+    """A daily summary that Telegram does not deliver (returns ``False``) changes nothing.
+
+    Newly derived from reading `trader.py` (it ignores the return value of `daily_summary`).
+    The notifier is scripted to return ``False`` for the summary. Terminal outcome: success,
+    ``buys == ["MSFT"]``, no errors. Discriminating calls: the ``daily_summary`` call with its
+    rendered text recorded, then the "Risk" line and ``log_snapshot`` as usual.
+    Intents: 1 settled (the MSFT buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        notifier={"daily_summary": False},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def intent_settle_failure() -> dict:
+    """The ledger cannot settle a filled order: the run stops with the recovery notice.
+
+    Newly derived from reading `_reconcile_order_intents`. The AAPL sell fills, then
+    ``settle_order_intent`` raises ``RuntimeError: ledger write failed``. Terminal outcome: the
+    run raises that error after "Order recovery/pending orders failed: ledger write failed" is
+    sent. Discriminating calls: SELL AAPL qty 10.0, ``settle_order_intent`` (raised), no BUY.
+    Intents: 1 unresolved (the AAPL sell), none settled.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        persist={"settle_order_intent": RuntimeError("ledger write failed")},
+        replies=_replies(_acct(), _AAPL_ONE),
+    )
+
+
+@scenario
+def unresolved_intents_read_failure() -> dict:
+    """The ledger cannot be read for unresolved intents at startup: the run stops.
+
+    Newly derived from reading `_reconcile_order_intents`. Terminal outcome: the run raises
+    ``RuntimeError: ledger offline`` after "Order recovery/pending orders failed: ledger
+    offline" is sent. Discriminating calls: ``get_unresolved_order_intents`` (raised), no
+    market-clock call, no signals, no order. Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"get_unresolved_order_intents": RuntimeError("ledger offline")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def recovery_notice_fails() -> dict:
+    """A failing recovery notice does not hide the recovery error.
+
+    Newly derived from reading `_reconcile_order_intents` (the nested ``except`` that logs a
+    failed notice). A seeded intent is still working; the "Order recovery" notice raises
+    ``RuntimeError: telegram down``. Terminal outcome: the run raises the recovery error
+    ``RuntimeError: Unresolved working orders block submissions``, not the notifier's.
+    Discriminating calls: the notice ``send`` (raised) and nothing else sent. Intents: the
+    seeded row stays unresolved.
+    """
+    return _recovery(
+        [{"status": "new"}], notifier={"Order recovery": RuntimeError("telegram down")}
+    )
+
+
+@scenario
+def recovery_filled_zero_quantity() -> dict:
+    """A seeded order the broker calls ``filled`` with no shares is refused.
+
+    Newly derived from reading `_reconcile_order_intents`. Terminal outcome: the run raises
+    ``ValueError: Filled order has no fill``. Discriminating calls: no attach, no settle, no
+    market-clock call. Intents: the seeded row stays unresolved.
+    """
+    return _recovery([{"status": "filled", "filled_qty": 0.0, "filled_avg_price": None}])

@@ -75,7 +75,18 @@ def _reduce_gate_error(exc: SignalGateError) -> tuple:
     return SignalGateError, (exc.code, str(exc.args[0]).split("] ", 1)[1])
 
 
-copyreg.pickle(SignalGateError, _reduce_gate_error)
+@contextmanager
+def _gate_error_copy() -> Iterator[None]:
+    """Make `SignalGateError` deep-copyable for one run, then restore the global registry."""
+    previous = copyreg.dispatch_table.get(SignalGateError)
+    copyreg.pickle(SignalGateError, _reduce_gate_error)
+    try:
+        yield
+    finally:
+        if previous is None:
+            copyreg.dispatch_table.pop(SignalGateError, None)
+        else:
+            copyreg.dispatch_table[SignalGateError] = previous
 
 
 class HarnessError(BaseException):
@@ -226,19 +237,29 @@ class FakeTime:
     """The trader's ``time`` module: one fake clock that only moves when the trader sleeps.
 
     Every read and every sleep is recorded, so the poll deadline and interval are part of the
-    transcript. More than `MAX_POLLS` reads or sleeps in one run is a runaway loop.
+    transcript. The runaway guard counts what happens at one instant of the fake clock (clock
+    reads plus broker order polls) and resets whenever the trader sleeps: a loop that never
+    sleeps never lets the clock advance, so it exceeds `MAX_POLLS` at one instant, while a long
+    legitimate poll of many orders advances the clock every iteration. Sleeps are also capped.
     """
 
     def __init__(self, recorder: Recorder) -> None:
         self._now = CLOCK_START
         self._recorder = recorder
         self.sleeps = 0
-        self.reads = 0
+        self.events_at_instant = 0
+
+    def note_event(self, what: str) -> None:
+        """Count a clock read or a broker poll at the current instant; raise on a runaway."""
+        self.events_at_instant += 1
+        if self.events_at_instant > MAX_POLLS:
+            raise HarnessError(
+                f"more than {MAX_POLLS} {what} events at one instant of the fake clock: "
+                "runaway loop (a sleep is missing?)"
+            )
 
     def _read(self, name: str) -> float:
-        self.reads += 1
-        if self.reads > MAX_POLLS:
-            raise HarnessError(f"the run read the clock more than {MAX_POLLS} times: runaway loop")
+        self.note_event("clock")
         self._recorder.begin(f"clock.{name}", [], {"returned": self._now})
         return self._now
 
@@ -254,6 +275,7 @@ class FakeTime:
             raise HarnessError(f"the run slept more than {MAX_POLLS} times: runaway poll loop")
         self._recorder.begin("clock.sleep", [seconds], {})
         self._now += seconds
+        self.events_at_instant = 0
 
 
 class FakeRunLock:
@@ -374,13 +396,14 @@ class RecordingNotifier(TelegramNotifier):
 
     def trade_alert(self, *args: Any, **kwargs: Any) -> bool:
         entry = self._recorder.begin("notifier.trade_alert", args, kwargs)
-        self._outcome(entry, lambda key: key == "trade_alert")
-        return super().trade_alert(*args, **kwargs)
+        outcome = self._outcome(entry, lambda key: key == "trade_alert")
+        # The real formatting still runs (and its `send` is recorded); a scripted False wins.
+        return super().trade_alert(*args, **kwargs) and outcome
 
     def daily_summary(self, *args: Any, **kwargs: Any) -> bool:
         entry = self._recorder.begin("notifier.daily_summary", args, kwargs)
-        self._outcome(entry, lambda key: key == "daily_summary")
-        return super().daily_summary(*args, **kwargs)
+        outcome = self._outcome(entry, lambda key: key == "daily_summary")
+        return super().daily_summary(*args, **kwargs) and outcome
 
 
 # --------------------------------------------------------------------------- the broker
@@ -440,14 +463,14 @@ class _Order:
 class FakeBroker:
     """Implements every public method of ``AlpacaBroker`` and answers from a scenario."""
 
-    def __init__(self, scenario: Scenario, recorder: Recorder) -> None:
+    def __init__(self, scenario: Scenario, recorder: Recorder, clock: FakeTime) -> None:
+        self._clock = clock
         self._s = scenario
         self._recorder = recorder
         self._cursor: dict[str, int] = {}
         self._orders: dict[str, _Order] = {}
         self._by_client: dict[str, _Order] = {}
         self._submitted = 0
-        self._polls = 0
         for raw in scenario.existing_orders:
             kind = "qty" if raw.get("qty") is not None else "notional"
             order = _Order(
@@ -565,9 +588,7 @@ class FakeBroker:
 
     def get_order(self, order_id: str) -> dict:
         def produce() -> object:
-            self._polls += 1
-            if self._polls > MAX_POLLS:
-                raise HarnessError(f"more than {MAX_POLLS} get_order polls: runaway poll loop")
+            self._clock.note_event("get_order")
             scripted, reply = self._lookup("get_order")
             if scripted:
                 return reply
@@ -611,7 +632,7 @@ class _Run:
         self.recorder = Recorder()
         self.clock = FakeTime(self.recorder)
         self.store = IntentStore(scenario.intents)
-        self.broker = FakeBroker(scenario, self.recorder)
+        self.broker = FakeBroker(scenario, self.recorder, self.clock)
         self.notifier = RecordingNotifier(self.recorder, scenario.notifier)
         self.lock = FakeRunLock(self.recorder, scenario.persist.get("lock.verify"))
         self._persist_calls: dict[str, int] = {}
@@ -707,6 +728,12 @@ def _pinned_datetime(pinned: datetime) -> type:
 
 
 def run_scenario(scenario: Scenario) -> dict:
+    """Run one scenario and return its normalized transcript (see `_run_scenario`)."""
+    with _gate_error_copy():
+        return _run_scenario(scenario)
+
+
+def _run_scenario(scenario: Scenario) -> dict:
     """Run one scenario and return its normalized transcript.
 
     Returns:
