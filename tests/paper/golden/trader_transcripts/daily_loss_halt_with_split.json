@@ -1,0 +1,288 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "db"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "db"
+        },
+        "persist_tape": true
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "tape.refresh_benchmark_tape"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "AAPL",
+          "MSFT"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [
+        "AAPL"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_trade_history_dates"
+    },
+    {
+      "args": [
+        "AAPL",
+        "2026-06-15",
+        2.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.save_split_correction"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-05-15"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_dividend_corrections"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [
+        100000.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.save_peak_value"
+    },
+    {
+      "args": [
+        "<b>🛑 HALTED buys; exits only:</b> Daily loss limit: 5.0% ($100,000.00 → $95,000.00) (split correction on record for AAPL: it may explain part of the drop, but a real loss cannot be ruled out; buys stay blocked today)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "before": "2026-06-19"
+      },
+      "raised": null,
+      "target": "persist.get_latest_snapshot"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_earliest_snapshot"
+    },
+    {
+      "args": [
+        100000.0,
+        null,
+        {
+          "AAPL": {
+            "avg_entry": 50.0,
+            "change_today": 0.0,
+            "cost_basis": 5000.0,
+            "current_price": 50.0,
+            "market_value": 10000.0,
+            "qty": 100.0,
+            "unrealized_pl": 5000.0,
+            "unrealized_plpc": 1.0
+          }
+        }
+      ],
+      "kwargs": {
+        "booked_equity": 95000.0,
+        "dividend_total": 0.0,
+        "errors": [
+          "Daily loss limit: 5.0% ($100,000.00 → $95,000.00) (split correction on record for AAPL: it may explain part of the drop, but a real loss cannot be ruled out; buys stay blocked today)"
+        ],
+        "new_dividend_accruals": [],
+        "split_corrections": {
+          "AAPL": 2.0
+        },
+        "total_pnl": null,
+        "unrealized_pnl": 5000.0
+      },
+      "raised": null,
+      "target": "notifier.daily_summary"
+    },
+    {
+      "args": [
+        "<b>📈 Paper Portfolio Summary</b>\n<b>⚠️ Split correction applied:</b> AAPL 2x — the broker never applied this split to the account; figures below are split-adjusted.\nBooked equity (broker, uncorrected): $95,000.00 | Split-adjusted equity: $100,000.00\nValue: <b>$100,000.00</b>\nChange since prior snapshot: unavailable\nPositions: 1\n\n  AAPL: 100 @ $50.00 — $+5,000.00 (+100.00%)\n\n<b>❌ Errors (1)</b>\n  Daily loss limit: 5.0% ($100,000.00 → $95,000.00) (split correction on record for AAPL: it may explain part of the drop, but a real loss cannot be ruled out; buys stay blocked today)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "<b>📊 Risk:</b> Positions: 1/3 | Scale: 1.00x | Weights: sp500=100%"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "2026-06-19",
+        100000.0,
+        50000.0,
+        {
+          "AAPL": {
+            "avg_entry": 50.0,
+            "change_today": 0.0,
+            "cost_basis": 5000.0,
+            "current_price": 50.0,
+            "market_value": 10000.0,
+            "qty": 100.0,
+            "unrealized_pl": 5000.0,
+            "unrealized_plpc": 1.0
+          }
+        }
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.log_snapshot"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": null,
+  "result": {
+    "buys": [],
+    "errors": [
+      "Daily loss limit: 5.0% ($100,000.00 → $95,000.00) (split correction on record for AAPL: it may explain part of the drop, but a real loss cannot be ruled out; buys stay blocked today)"
+    ],
+    "sells": [],
+    "skipped_writes": [],
+    "untradable": []
+  },
+  "skipped_writes": []
+}
