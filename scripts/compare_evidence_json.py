@@ -10,7 +10,7 @@ VOLATILE = {("provenance", "created_utc"), ("provenance", "git_sha"), ("provenan
 # scripts/p5_wfo_validation.py:322
 VOLATILE |= {("wall_seconds",), ("diagnostics", "peak_rss_mb"), ("diagnostics", "timings_s")}
 # scripts/p7_live_golden.py:127 (elapsed seconds of the run)
-VOLATILE.add(("seconds",))
+VOLATILE |= {("seconds",)}
 # scripts/p5_wfo_validation.py:322
 P5_VOLATILE = ("peak_rss_mb", "new")
 
