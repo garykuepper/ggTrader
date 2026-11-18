@@ -1,4 +1,4 @@
-"""``ggt`` CLI — lab-first research toolkit."""
+"""``ggt`` CLI — research lab, database administration, and paper trader."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import typer
 
 app = typer.Typer(
     name="ggt",
-    help="ggTrader — vectorbt research lab",
+    help="ggTrader — research lab, database administration, and paper trader",
     no_args_is_help=True,
     add_completion=False,
 )

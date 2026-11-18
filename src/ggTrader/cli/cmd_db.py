@@ -27,10 +27,12 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     db_subs.add_parser("diag", help="Check database and table sizes/stats")
 
     # Subcommand: ggt db clean
-    db_subs.add_parser("clean", help="Remove old or malformed OHLCV data")
+    clean = db_subs.add_parser("clean", help="Remove old or malformed OHLCV data")
+    clean.add_argument("--yes", action="store_true", help="Confirm deletion")
 
     # Subcommand: ggt db truncate
-    db_subs.add_parser("truncate", help="WIPE ALL OHLCV DATA (Fast)")
+    truncate = db_subs.add_parser("truncate", help="WIPE ALL OHLCV DATA (Fast)")
+    truncate.add_argument("--yes-wipe-ohlcv", action="store_true", help="Confirm deletion")
 
     # Subcommand: ggt db compression
     comp = db_subs.add_parser("compression", help="Manage TimescaleDB compression")
@@ -51,8 +53,17 @@ def run_db(args: argparse.Namespace):
     if args.db_command == "diag":
         _db_diag()
     elif args.db_command == "clean":
+        if not args.yes:
+            print(
+                "Would delete ohlcv rows where timestamp < '2010-01-01' or "
+                "symbol ~ '_[0-9]+$'; pass --yes to proceed."
+            )
+            sys.exit(2)
         _db_clean()
     elif args.db_command == "truncate":
+        if not args.yes_wipe_ohlcv:
+            print("Would delete all rows of ohlcv; pass --yes-wipe-ohlcv to proceed.")
+            sys.exit(2)
         _db_truncate()
     elif args.db_command == "compression":
         if args.enable:
