@@ -443,7 +443,7 @@ def run_wfo(
         oos_metrics = dict(nan_metrics)
         spy_metrics = dict(nan_metrics)
 
-    live = _select_live_params(scorer, live_req, live_start, eval_end_ts, fold_winners, names)
+    live = _select_live_params(scorer, live_req, live_start, eval_end_ts, fold_winners)
     table = format_wfo_table(
         fold_results,
         oos_metrics,
@@ -530,7 +530,6 @@ def _select_live_params(
     live_start: pd.Timestamp,
     eval_end_ts: pd.Timestamp,
     fold_winners: List[Dict[str, Any]],
-    names: Sequence[str],  # noqa: ARG001
 ) -> Dict[str, Any]:
     """Score the most recent ``TRAIN_MONTHS`` window and pick the durable winner."""
     train_metrics = scorer.metrics(live_req)

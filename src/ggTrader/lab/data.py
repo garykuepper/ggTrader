@@ -15,6 +15,10 @@ from ggTrader.data.core.index_constituents import (
 from ggTrader.data.membership import MembershipSource
 from ggTrader.lab.strategy import LabConfig
 
+# PORTFOLIO_SHARE, TRAIN_METRIC, MIN_CLOSED_TRADES_TRAIN,
+# MIN_TRADES_PER_TRAIN_FOLD, MAX_TRAIN_DRAWDOWN_PCT, and BENCHMARK_SYMBOL
+# are not read in src/. Keep them because lab/cli.py copies this dict into
+# run records and scripts/legacy_reference_runs.py uses the legacy config.
 #: Default research config for daily-bar US equities.
 STOCK_BASE_CONFIG: dict[str, Any] = {
     "START_CASH": 10000.0,
@@ -22,7 +26,8 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "FEES": 0.0,
     "SLIPPAGE": 0.0005,
     "FREQ": "1D",
-    # 3% per entry: the 2026-06-24 lever diagnostic (scripts/lever_diagnostic.py)
+    # 3% per entry: the 2026-06-24 lever diagnostic
+    # (research/programme/vectorbt-engine/legacy-scripts/lever_diagnostic.py)
     # showed the 5-voter book sits ~61% in cash at the old 0.02 default. Raising
     # to 0.03 deploys that idle cash (no leverage) and beats SPY outright in the
     # 17-fold WFO: OOS CAGR 16.2% / Sharpe 1.09 / DD -11% (vs 0.02: 10.5% / 0.89).
@@ -36,6 +41,10 @@ STOCK_BASE_CONFIG: dict[str, Any] = {
     "BENCHMARK_SYMBOL": "SPY",
 }
 
+# PORTFOLIO_SHARE, TRAIN_METRIC, MIN_CLOSED_TRADES_TRAIN,
+# MIN_TRADES_PER_TRAIN_FOLD, MAX_TRAIN_DRAWDOWN_PCT, and BENCHMARK_SYMBOL
+# are not read in src/. Keep them because lab/cli.py copies this dict into
+# run records and scripts/legacy_reference_runs.py uses the legacy config.
 #: Default research config for daily-bar cryptocurrencies (low-volume baseline).
 CRYPTO_BASE_CONFIG: dict[str, Any] = {
     "START_CASH": 10000.0,
