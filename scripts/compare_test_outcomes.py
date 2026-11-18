@@ -6,6 +6,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
+def _normalize(reason: str) -> str:
+    """Strip line numbers and the checkout's absolute path, which differ between worktrees."""
+    reason = re.sub(r"(?<![\w.])/[^\s:]*?/(?=(?:tests|research|src)/)", "", reason.strip())
+    return re.sub(r":\d+(?=[:\s])", "", reason)
+
+
 def outcomes(path: Path) -> dict[str, tuple[str, str]]:
     """Read test outcomes keyed by pytest node ID."""
     result = {}
@@ -26,11 +32,7 @@ def outcomes(path: Path) -> dict[str, tuple[str, str]]:
         status = next(
             (child for child in case if child.tag in {"failure", "error", "skipped"}), None
         )
-        reason = (
-            ""
-            if status is None
-            else re.sub(r":\d+(?=[:\s])", "", (status.text or status.get("message", "")).strip())
-        )
+        reason = "" if status is None else _normalize(status.text or status.get("message", ""))
         if node in result:
             raise ValueError(f"duplicate node: {node}")
         result[node] = ("passed" if status is None else status.tag, reason)

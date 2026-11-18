@@ -56,3 +56,25 @@ def test_several_files_per_side_are_merged(tmp_path: Path) -> None:
     lost = run(str(core))
     assert lost.returncode == 1
     assert "test_b" in lost.stdout
+
+
+def test_skip_reason_ignores_checkout_path_and_line(tmp_path: Path) -> None:
+    def suite(root: str, line: int) -> str:
+        return (
+            '<testsuite><testcase classname="tests.test_a" name="test_a">'
+            f'<skipped message="{root}/tests/test_a.py:{line}: no database"/>'
+            "</testcase></testsuite>"
+        )
+
+    baseline, new = tmp_path / "b.xml", tmp_path / "n.xml"
+    baseline.write_text(suite("/home/x/ggTrader-baseline", 10))
+    new.write_text(suite("/home/x/ggTrader-refactor", 12))
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), str(baseline), str(new)], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stdout
+    new.write_text(suite("/home/x/ggTrader-refactor", 12).replace("no database", "other"))
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), str(baseline), str(new)], capture_output=True, text=True
+    )
+    assert result.returncode == 1
