@@ -9,7 +9,8 @@ from pathlib import Path
 def _normalize(reason: str) -> str:
     """Strip line numbers and the checkout's absolute path, which differ between worktrees."""
     reason = re.sub(r"(?<![\w.])/[^\s:]*?/(?=(?:tests|research|src)/)", "", reason.strip())
-    return re.sub(r":\d+(?=[:\s])", "", reason)
+    # Only a leading "file.py:LINE" is a line number; other numbers (such as "12:30") are content.
+    return re.sub(r"^(\S+\.py):\d+(?=:)", r"\1", reason)
 
 
 def outcomes(path: Path) -> dict[str, tuple[str, str]]:
@@ -75,8 +76,12 @@ def main() -> int:
         elif status == "passed" and new[node][0] != "passed":
             breaches.append(f"{node}: baseline pass no longer passes")
     for node, (status, reason) in new.items():
-        if status == "skipped" and baseline.get(node) != ("skipped", reason):
-            breaches.append(f"{node}: new or changed skip")
+        old = baseline.get(node)
+        # Anything but a pass must be exactly what the baseline had: a new skip, a new test that
+        # fails, and an xfail that now fails (XPASS strict) are all breaches. A node that passed
+        # in the baseline is already reported above.
+        if status != "passed" and old != (status, reason) and not (old and old[0] == "passed"):
+            breaches.append(f"{node}: new or changed {status}")
     for node in args.must_pass:
         if new.get(node, ("missing", ""))[0] != "passed":
             breaches.append(f"{node}: must pass")

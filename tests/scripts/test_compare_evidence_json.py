@@ -21,7 +21,8 @@ def run(a: Path, b: Path) -> subprocess.CompletedProcess:
     [
         ({"provenance": {"git_sha": "a"}}, {"provenance": {"git_sha": "b"}}, True),
         ({"provenance": {"tape_sha": "a"}}, {"provenance": {"tape_sha": "b"}}, False),
-        ({"seconds": 1.5}, {"seconds": 2.5}, True),
+        ({"seconds": 1.5}, {"seconds": 2.5}, False),
+        ({"a": 0.0}, {"a": -0.0}, False),
         ({"other": {"seconds": 1.5}}, {"other": {"seconds": 2.5}}, False),
         ({"other": {"wall_seconds": 1}}, {"other": {"wall_seconds": 2}}, False),
         ({"a": True}, {"a": 1}, False),
@@ -63,3 +64,24 @@ def test_compare_peak(tmp_path: Path) -> None:
     (a / "_p5_compare_x.json").write_text('{"peak_rss_mb":{"new":1}}')
     (b / "_p5_compare_x.json").write_text('{"peak_rss_mb":{"new":2}}')
     assert run(a, b).returncode == 0
+
+
+def test_seconds_ignored_in_p7_json_only(tmp_path: Path) -> None:
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    (a / "p7.json").write_text('{"seconds": 1.5}')
+    (b / "p7.json").write_text('{"seconds": 2.5}')
+    assert run(a, b).returncode == 0
+
+
+def test_nan_equals_nan_and_duplicate_keys_differ(tmp_path: Path) -> None:
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    (a / "x.json").write_text('{"a": NaN}')
+    (b / "x.json").write_text('{"a": NaN}')
+    assert run(a, b).returncode == 0
+    (a / "x.json").write_text('{"a": 1, "a": 2}')
+    (b / "x.json").write_text('{"a": 2}')
+    assert run(a, b).returncode == 1

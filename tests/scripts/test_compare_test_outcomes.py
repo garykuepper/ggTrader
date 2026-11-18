@@ -78,3 +78,43 @@ def test_skip_reason_ignores_checkout_path_and_line(tmp_path: Path) -> None:
         [sys.executable, str(SCRIPT), str(baseline), str(new)], capture_output=True, text=True
     )
     assert result.returncode == 1
+
+
+def _suite(*cases: str) -> str:
+    return "<testsuite>" + "".join(cases) + "</testsuite>"
+
+
+def _case(name: str, outcome: str = "") -> str:
+    return f'<testcase classname="tests.test_a" name="{name}">{outcome}</testcase>'
+
+
+def _run(tmp_path: Path, base: str, new: str) -> subprocess.CompletedProcess:
+    (tmp_path / "b.xml").write_text(base)
+    (tmp_path / "n.xml").write_text(new)
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), str(tmp_path / "b.xml"), str(tmp_path / "n.xml")],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_new_failing_test_is_a_breach(tmp_path: Path) -> None:
+    base = _suite(_case("test_a"))
+    assert _run(tmp_path, base, _suite(_case("test_a"), _case("test_b"))).returncode == 0
+    new = _suite(_case("test_a"), _case("test_b", '<error message="collect"/>'))
+    assert _run(tmp_path, base, new).returncode == 1
+
+
+def test_baseline_xfail_that_now_fails_is_a_breach(tmp_path: Path) -> None:
+    skipped = '<skipped type="pytest.xfail" message="known"/>'
+    base = _suite(_case("test_a", skipped))
+    assert _run(tmp_path, base, base).returncode == 0
+    xpass = '<failure message="[XPASS(strict)] known"/>'
+    assert _run(tmp_path, base, _suite(_case("test_a", xpass))).returncode == 1
+
+
+def test_numbers_inside_a_skip_reason_are_content(tmp_path: Path) -> None:
+    def skip(text: str) -> str:
+        return _suite(_case("test_a", f'<skipped message="{text}"/>'))
+
+    assert _run(tmp_path, skip("needs 12:30 window"), skip("needs 12:45 window")).returncode == 1
