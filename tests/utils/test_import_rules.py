@@ -98,6 +98,42 @@ def test_moved_utils_modules_import_lab_only_inside_functions() -> None:
         assert top_level == []
 
 
+def _layer_imports(relative: str, tree: ast.AST) -> list[tuple[int, str]]:
+    """Return (line, dotted module) for every ggTrader import form in one source file.
+
+    Covers `import a.b`, `from a.b import x`, `from ggTrader import lab` (the module is then
+    `ggTrader.lab`), relative imports resolved against the file's package, and
+    `importlib.import_module("ggTrader....")` string literals.
+    """
+    parts = relative.removesuffix(".py").split("/")
+    package = parts[:-1] if parts[-1] != "__init__" else parts[:-1]
+    found: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            found.extend((node.lineno, alias.name) for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                base = ["ggTrader", *package[: len(package) - (node.level - 1)]]
+            else:
+                base = []
+            module = [*base, *(node.module.split(".") if node.module else [])]
+            if not module:
+                continue
+            found.append((node.lineno, ".".join(module)))
+            if module == ["ggTrader"] or (node.level and not node.module):
+                found.extend((node.lineno, ".".join([*module, a.name])) for a in node.names)
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, (ast.Attribute, ast.Name))
+            and getattr(node.func, "attr", getattr(node.func, "id", "")) == "import_module"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            found.append((node.lineno, node.args[0].value))
+    return found
+
+
 def test_layer_rules() -> None:
     hits: set[tuple[str, int, str]] = set()
     for path in sorted(SRC.rglob("*.py")):
@@ -106,18 +142,7 @@ def test_layer_rules() -> None:
         if package not in LAYER_RULES:
             continue
         tree = ast.parse(path.read_text(), filename=str(path))
-        imports = (
-            (node.lineno, alias.name)
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Import)
-            for alias in node.names
-        )
-        from_imports = (
-            (node.lineno, node.module)
-            for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
-        )
-        for line, name in (*imports, *from_imports):
+        for line, name in _layer_imports(relative, tree):
             for target in LAYER_RULES[package]:
                 prefix = f"ggTrader.{target}"
                 if name == prefix or name.startswith(f"{prefix}."):
@@ -131,3 +156,24 @@ def test_layer_rules() -> None:
         f"stale exceptions: {sorted(stale)}; "
         f"exceptions found: {sorted(exceptions)}"
     )
+
+
+def test_layer_scan_sees_every_import_form() -> None:
+    source = (
+        "import ggTrader.lab.persist\n"
+        "from ggTrader import lab, paper\n"
+        "from ggTrader.lab import data\n"
+        "from ..lab import wfo\n"
+        "from .. import lab as l2\n"
+        "import importlib\n"
+        "importlib.import_module('ggTrader.paper.trader')\n"
+    )
+    modules = {m for _, m in _layer_imports("utils/sample.py", ast.parse(source))}
+    assert {
+        "ggTrader.lab.persist",
+        "ggTrader.lab",
+        "ggTrader.paper",
+        "ggTrader.paper.trader",
+    } <= modules
+    # `from a.b import x` yields the module `a.b`; `from ..lab import x` resolves to ggTrader.lab.
+    assert len([m for _, m in _layer_imports("utils/sample.py", ast.parse(source))]) >= 8
