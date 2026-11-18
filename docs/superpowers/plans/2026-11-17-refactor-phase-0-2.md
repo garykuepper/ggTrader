@@ -10,7 +10,7 @@ may change what the trader trades or what any research number comes out as.
 - a fail-closed guard against real database and network connections;
 - a check that every `ggTrader` name a study imports still resolves;
 - an import-direction check between packages;
-- a transcript test that records every outside call the paper trader makes over 38 scenarios;
+- a transcript test that records every outside call the paper trader makes over 86 scenarios;
 - a characterization test of the price-loader chain.
 
 Phases 1 and 2 then change code. After each change, the transcripts and the oracle results must
@@ -33,7 +33,8 @@ Each item was checked against the code before it was applied. The changes:
 - **Guard:** it fails on attempts that the code swallows.
 - **Test outcomes:** a node-by-node check replaces skip-list matching.
 - **Transcript harness:** per-call broker replies, orders that already exist before the run,
-  expected-outcome docstrings, and four new scenarios (38 in all).
+  expected-outcome docstrings, and four new scenarios (38 in all). After the Sol review of the built harness, 48 more were
+  added (86 in all; see the review note under Task 4 Step 1).
 - **Narrowed tasks:**
   - Task 7 keeps both config dicts.
   - Task 10 moves only the engine cache, because the URL helpers differ: first match against
@@ -194,7 +195,10 @@ plan runs until the owner says so.
   `compare_test_outcomes.py baseline-core.xml,baseline-studies.xml <label>-core.xml,<label>-studies.xml`.
   It compares the two sets as follows:
   - every node that passed in the baseline still passes;
-  - every skip is in the baseline with the same reason, with line numbers stripped;
+  - every non-pass in the new run (a skip, an xfail, a failure or an error) is exactly what the
+    baseline had for that node, so a new failing test, a collection error, or a strict xfail
+    that now passes is a breach;
+  - skip reasons are compared with the checkout path and the `file.py:LINE` prefix removed;
   - the named real-tape cases pass rather than skip (`tests/paper/test_live_golden.py` and
     the tests marked by `tests/lab/wfo/helpers.py:110-116`);
   - the tests each task adds appear and pass.
@@ -505,7 +509,7 @@ plan runs until the owner says so.
   - **Recording rules.** Each run starts from `copy.deepcopy` of the scenario. Each recorded
     call snapshots its arguments with `copy.deepcopy` at call time, because the trader mutates
     some persist replies. Finite floats stay JSON numbers. Special values are encoded as
-    `{"float": "NaN"}` (and likewise for the infinities), so they cannot collide with a real
+    `{"float": "NaN"}`-style tagged objects (and likewise for the infinities), so they cannot collide with a real
     string. A harness error (a missing reply, an unserializable value) raises
     `HarnessError` and fails the test outright. It is never recorded as a trading outcome.
   - **`IntentStore`**, an in-memory stand-in for the intent ledger. It implements
@@ -537,11 +541,18 @@ plan runs until the owner says so.
   - **Environment:** clear every variable read by `src/ggTrader/paper/*.py` (find them by
     grepping `os.environ` and `getenv`), then apply `env`.
 - **Determinism rules:**
-  - Scenarios with pending orders set `created_at=None`, because `trader.py:379` reads
-    `datetime.now(timezone.utc)` unpinned.
+  - The trader module's `datetime` is pinned to the scenario clock, so the stale-order ages
+    read at `trader.py:379` are deterministic; the harness accepts a `created_at` that is a
+    datetime or `None`.
   - Split scenarios use one applied symbol, because `trader.py:576` iterates a set.
 
-- [ ] **Step 1: Write `scenarios.py`** with these 34 scenarios (38 after the additions below):
+- [ ] **Step 1: Write `scenarios.py`** with these 34 scenarios (38 after the additions below;
+  **as built, 86**: a review of the 38 found regressions that would pass, so 48 were added for
+  the catastrophe-stop slot count at the cap, distinct post-trade equity, sweep-buy ordering
+  after strategy orders, coherent funding fills, intent-ledger and lock failures, startup
+  intent recovery, stale legacy pending orders, scripted notifier failures, recorded clock and
+  sleeps, poll failures, and the unexercised read, write and signal-error branches; the
+  scenario module's docstrings are the list):
   - **Ordinary runs:** `plain_buys_and_sells`, `market_closed`, `late_run_live`, `late_run_dry`.
   - **Signal timestamps:** `stale_as_of`, `future_as_of`, `unparseable_as_of`.
   - **Untradable names:** `untradable_holding`, `untradable_candidate`.
@@ -588,18 +599,22 @@ plan runs until the owner says so.
     The seven rules in design section 5.1 each need a scenario whose golden shows the rule, and
   a `test_golden_shows_scenario_behavior` assertion for it:
   - stopped symbol not sold twice or re-bought: `catastrophe_stop`;
-  - slot arithmetic counts regular sells only: `sweep_sell_and_strategy_sell`, with a buy that
-    fits only when the sweep sell is not counted;
+  - slot arithmetic counts regular sells only: `sweep_sell_and_strategy_sell`, whose golden
+    shows a candidate buy refused; it would go through only if the sweep sell were wrongly
+    counted as a regular sell (built 2026-11-18; the first wording of this line was backwards);
   - a sell that does not fully fill blocks all buys: `sell_partial_fill_working`;
   - an invalid exit quantity blocks buys and the sweep buy: `strategy_exit_invalid_qty` and
     `catastrophe_stop_invalid_qty`;
-  - orders use the broker's uncorrected quantity: `split_correction`, where the golden's sell
-    quantity equals the broker's held quantity and differs from the corrected one;
+  - orders use the broker's quantity: `split_correction`, where the golden's sell quantity
+    equals the broker's held quantity. (`apply_corrections_to_positions` deliberately keeps
+    `qty` unchanged and corrects the market value, so the quantity itself is the same in the
+    raw and corrected positions; `split_correction_held` pins the corrected value in the
+    report);
   - a read-only run writes nothing: `dry_run_read_only`;
   - a submit exception ends the run, a `rejected` status settles: `submit_error` and
     `sell_rejected_by_broker`.
 
-  The scenario count elsewhere in this task is 38.
+  The scenario count elsewhere in this task is 38 as first planned and 86 as built.
 - [ ] **Step 2: Write `test_trader_transcripts.py`** with these tests:
   - `test_transcript_matches_golden[<scenario>]`, which shows a unified diff on failure;
   - `test_transcript_is_deterministic[<scenario>]`;
@@ -628,7 +643,7 @@ plan runs until the owner says so.
   Afterwards, `git status` must show both files clean.
 - [ ] **Step 5:** Run `scripts/run_tests.sh tests/paper/`. Expected: PASS, with no
   `RealConnectionAttempted`.
-- [ ] **Step 6:** Commit: `test: transcript goldens for the paper trader over 38 scenarios`.
+- [ ] **Step 6:** Commit: `test: transcript goldens for the paper trader over 86 scenarios`.
 
 ### Task 5: Price-loader chain characterization test (spec 0.5)
 
@@ -701,7 +716,7 @@ that each golden shows what its scenario claims.
 - [ ] **Step 2:** Run `scripts/run_tests.sh tests/paper/ tests/utils/test_study_surface.py`.
   Expected: PASS, with the goldens unchanged and not regenerated.
 - [ ] **Step 3:** Oracles identical (label `t6`).
-- [ ] **Step 4:** Commit: `refactor(paper): drop the never-called untradable-skip branch; a rejected order still aborts the run`.
+- [ ] **Step 4:** Commit: `refactor(paper): drop the never-called untradable-skip branch; an exception on submit still ends the run`.
 
 ### Task 7: The unused `names` parameter, and documenting unread config keys (spec 1.2, narrowed)
 
@@ -825,6 +840,12 @@ own behavior. Only the engine cache moves.
 - [ ] **Step 1:** Write `tests/paper/test_constants.py::test_terminal_statuses_equal_each_legacy_set`
   and `test_time_zones_match_legacy`, with today's literals copied in and their source lines
   cited. The review found the four status sets equal as sets.
+  The transcripts replace `trader._today_et` and `trader._now_pt`, so they cannot see a wrong
+  time zone (found by the second Sol review: setting both zones to UTC left all 86 goldens
+  green). Add `test_trader_date_helpers_use_new_york_and_pacific`, which leaves those two
+  helpers unpatched and checks them against fixed instants, e.g. 2026-01-02 03:30 UTC is
+  2026-01-01 in New York and 2026-01-01 19:30 in Los Angeles, and 2026-07-01 03:30 UTC is
+  2026-06-30 in New York (daylight time). It must pass before and after the change.
 - [ ] **Step 2:** Make the replacements. `TERMINAL_STATUSES` is a `tuple` in today's order,
   not a `frozenset`, so a non-hashable status value from a broker still compares the way it
   does today. `ET` and `PT` stay bound at their existing module names (`trader._ET`,

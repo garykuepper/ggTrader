@@ -283,7 +283,10 @@ global constraints implement them.
 2. **An in-process guard as a second layer.** It blocks Python socket connects, hostname
    lookups, `psycopg2.connect` and curl_cffi's `Curl.perform`. It records each attempt and
    fails the test on exit, so a caller that swallows the error still fails.
-3. **Trader transcripts: 38 scenarios recorded before any trader code moves.** Every later
+3. **Trader transcripts: 86 scenarios recorded before any trader code moves.** (The first 38
+   were extended after an independent review found that regressions could pass; the added
+   scenarios cover startup recovery, legacy pending orders, polling time, notifier failures,
+   and the branches that phases 1 and 2 edit.) Every later
    trader slice must reproduce them byte for byte.
    - Patches go only on the `trader` module's names. The harness never patches the global
      `time.time`, the pattern behind the 2026-09-22 hang.
