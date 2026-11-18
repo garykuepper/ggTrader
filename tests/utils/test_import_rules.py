@@ -18,6 +18,20 @@ STUDY_SIDE = (
 )
 #: Packages (relative to src/ggTrader) that must stay free of the study-side helpers.
 BASE_PACKAGES = ("engine", "lab/wfo", "lab/strategies", "paper", "cli")
+LAYER_RULES = {
+    "utils": ("lab", "paper", "cli"),
+    "data": ("lab", "paper", "cli"),
+    "engine": ("lab", "paper", "cli"),
+    "lab": ("paper", "cli"),
+}
+LAYER_EXCEPTIONS: frozenset[tuple[str, int, str]] = frozenset(
+    {
+        ("utils/fred_data.py", 92, "ggTrader.lab.persist"),
+        ("utils/fred_data.py", 118, "ggTrader.lab.persist"),
+        ("utils/fred_data.py", 136, "ggTrader.lab.persist"),
+        ("utils/significance.py", 49, "ggTrader.lab.wfo.report"),
+    }
+)
 
 
 def _imported_modules(path: Path) -> list[tuple[int, str]]:
@@ -82,3 +96,38 @@ def test_moved_utils_modules_import_lab_only_inside_functions() -> None:
             )
         ]
         assert top_level == []
+
+
+def test_layer_rules() -> None:
+    hits: set[tuple[str, int, str]] = set()
+    for path in sorted(SRC.rglob("*.py")):
+        relative = path.relative_to(SRC).as_posix()
+        package = relative.split("/", maxsplit=1)[0]
+        if package not in LAYER_RULES:
+            continue
+        tree = ast.parse(path.read_text(), filename=str(path))
+        imports = (
+            (node.lineno, alias.name)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        )
+        from_imports = (
+            (node.lineno, node.module)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module
+        )
+        for line, name in (*imports, *from_imports):
+            for target in LAYER_RULES[package]:
+                prefix = f"ggTrader.{target}"
+                if name == prefix or name.startswith(f"{prefix}."):
+                    hits.add((relative, line, name))
+
+    exceptions = hits & LAYER_EXCEPTIONS
+    unexpected = hits - LAYER_EXCEPTIONS
+    stale = LAYER_EXCEPTIONS - hits
+    assert not unexpected and not stale, (
+        f"Unexpected layer imports: {sorted(unexpected)}; "
+        f"stale exceptions: {sorted(stale)}; "
+        f"exceptions found: {sorted(exceptions)}"
+    )
