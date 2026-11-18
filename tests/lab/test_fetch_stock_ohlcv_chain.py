@@ -290,3 +290,136 @@ def test_window_trimmed_to_start_and_end(seams, capsys):
     check(
         seams, capsys, run(), [A, B], [START, END], [], [], [], ["  [data] 2 rows x 2 symbols (1d)"]
     )
+
+
+def rich_frame(symbol, days, base):
+    """Build distinguishable OHLCV values for every field and row."""
+    fields = ["open", "high", "low", "close", "volume"]
+    return pd.DataFrame(
+        [[base + row * 10 + col for col in range(5)] for row in range(len(days))],
+        index=pd.to_datetime(days, utc=True),
+        columns=pd.MultiIndex.from_product([[symbol], fields]),
+        dtype=float,
+    )
+
+
+@pytest.mark.parametrize("source", ["yf", "tiingo"])
+def test_full_frame_cache_and_gap_values(seams, source):
+    cache = rich_frame(A, [START, END], 10)
+    gap = rich_frame(B, [START, END], 100 if source == "yf" else 200)
+    seams.cache.fetch_ohlcv.return_value = cache
+    getattr(seams, source).fetch_ohlcv.return_value = gap
+    result = run()
+    expected = pd.concat([cache, gap], axis=1).sort_index(axis=1)
+    expected.columns.names = ["symbol", "field"]
+    pd.testing.assert_frame_equal(result, expected)
+    assert result.columns.names == ["symbol", "field"]
+
+
+def test_no_end_passes_none_and_keeps_later_rows(seams):
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START, "2025-01-01"])
+    seams.yf.fetch_ohlcv.return_value = frame([B], ["2025-01-01"])
+    result = fetch_stock_ohlcv([A, B], START)
+    assert list(result.index) == list(pd.to_datetime([START, "2025-01-01"], utc=True))
+    assert seams.cache.fetch_ohlcv.call_args.kwargs["end_date"] is None
+    assert seams.yf.fetch_ohlcv.call_args.kwargs["end_date"] is None
+
+
+def test_cache_disabled_uses_plain_without_persisting(seams):
+    seams.yf.fetch_ohlcv.side_effect = [frame([A], [START]), frame([B], [END])]
+    run(use_db_cache=False)
+    seams.cache_cls.assert_not_called()
+    assert seams.yf.fetch_ohlcv.call_args_list == [request([A, B]), request([B])]
+    seams.cache._cache_to_db.assert_not_called()
+
+
+def test_normalizes_and_deduplicates_for_all_providers(seams):
+    seams.cache.fetch_ohlcv.return_value = frame(["BRK-B"], [START])
+    fetch_stock_ohlcv([" brk.b ", "BRK.B", " aapl ", "AAPL"], START, END)
+    assert seams.cache.fetch_ohlcv.call_args == request(["AAPL", "BRK-B"], True)
+    assert seams.yf.fetch_ohlcv.call_args == request(["AAPL"])
+    assert seams.tiingo.fetch_ohlcv.call_args == request(["AAPL"])
+
+
+def test_negative_cache_default_never_reads_or_writes(seams):
+    seams.skip.return_value = {B}
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START])
+    run()
+    seams.skip.assert_not_called()
+    seams.record.assert_not_called()
+    seams.yf.fetch_ohlcv.assert_called_once_with(*request([B])[0], **request([B])[1])
+
+
+def test_negative_cache_read_failure_fetches_all(seams, capsys):
+    seams.skip.side_effect = RuntimeError("read")
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START])
+    run(use_negative_cache=True)
+    assert "negative cache unavailable (RuntimeError('read')); fetching all" in (
+        capsys.readouterr().out
+    )
+    assert seams.yf.fetch_ohlcv.call_args == request([B])
+    assert seams.tiingo.fetch_ohlcv.call_args == request([B])
+
+
+def test_negative_cache_write_failure_continues(seams, capsys):
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START])
+    seams.record.side_effect = RuntimeError("write")
+    result = run(use_negative_cache=True)
+    assert list(result.columns.get_level_values(0).unique()) == [A]
+    assert "negative cache write failed (RuntimeError('write'))" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("empty_cache", [True, False])
+def test_yfinance_fetch_errors_propagate(seams, empty_cache):
+    seams.cache.fetch_ohlcv.return_value = pd.DataFrame() if empty_cache else frame([A], [START])
+    seams.yf.fetch_ohlcv.side_effect = RuntimeError("yf failure")
+    with pytest.raises(RuntimeError, match="yf failure"):
+        run()
+
+
+def test_tiingo_fetch_error_is_caught(seams, capsys):
+    """Observed behavior: Tiingo fetch errors are caught, unlike yfinance errors."""
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START])
+    seams.tiingo.fetch_ohlcv.side_effect = RuntimeError("tiingo failure")
+    assert list(run().columns.get_level_values(0).unique()) == [A]
+    assert "Tiingo fallback unavailable: RuntimeError('tiingo failure')" in capsys.readouterr().out
+
+
+def test_tiingo_persist_error_continues(seams, capsys):
+    seams.cache.fetch_ohlcv.return_value = frame([A], [START])
+    seams.tiingo.fetch_ohlcv.return_value = frame([B], [END])
+    seams.cache._cache_to_db.side_effect = RuntimeError("write")
+    assert list(run().columns.get_level_values(0).unique()) == [A, B]
+    assert "failed to persist Tiingo data: RuntimeError('write')" in capsys.readouterr().out
+
+
+def test_tiingo_without_writer_is_not_persisted(seams):
+    seams.yf.fetch_ohlcv.side_effect = [frame([A], [START]), pd.DataFrame()]
+    seams.tiingo.fetch_ohlcv.return_value = frame([B], [END])
+    assert list(run(use_db_cache=False).columns.get_level_values(0).unique()) == [A, B]
+    seams.cache_cls.assert_not_called()
+    seams.cache._cache_to_db.assert_not_called()
+
+
+def test_provider_constructor_counts_and_arguments(seams):
+    seams.cache.fetch_ohlcv.return_value = pd.DataFrame()
+    seams.yf.fetch_ohlcv.side_effect = [frame([A], [START]), pd.DataFrame()]
+    run()
+    seams.cache_cls.assert_called_once_with()
+    seams.yf_cls.assert_called_once_with()
+    seams.tiingo_cls.assert_called_once_with()
+
+
+def test_coverage_threshold_applies_after_window_trim(seams):
+    data = frame([A, B], ["2023-12-31", START, END, "2024-01-04"])
+    data.loc[pd.Timestamp(END, tz="UTC"), (B, "close")] = float("nan")
+    data.loc[pd.Timestamp("2023-12-31", tz="UTC"), (B, "close")] = float("nan")
+    data.loc[pd.Timestamp("2024-01-04", tz="UTC"), (B, "close")] = float("nan")
+    seams.cache.fetch_ohlcv.return_value = data
+    assert list(run(min_coverage=0.5).columns.get_level_values(0).unique()) == [A, B]
+
+
+def test_gap_earlier_dates_are_sorted_in_result(seams):
+    seams.cache.fetch_ohlcv.return_value = frame([A], [END])
+    seams.yf.fetch_ohlcv.return_value = frame([B], [START])
+    assert list(run().index) == list(pd.to_datetime([START, END], utc=True))
