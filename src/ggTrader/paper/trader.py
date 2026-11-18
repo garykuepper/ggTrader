@@ -57,7 +57,6 @@ from ggTrader.paper.split_check import (
 )
 from ggTrader.paper.untradable import (
     configured_untradable,
-    is_untradable_error,
     resolve_untradable,
 )
 from ggTrader.utils.json_safe import json_safe
@@ -349,10 +348,9 @@ class PaperTrader:
     def _reconcile_pending_orders(self) -> set[str]:
         """Settle orders that were still working at the end of a prior run.
 
-        Orders queued after the close (the 21:30 stocks cron submits ~30 min
-        post-close) fill at the next session, long after that run exited. Each
-        run re-checks them: a completed fill is booked at its real executed
-        value under the original order date; a terminally-failed order is
+        Orders queued after the close may fill at the next session, long after
+        that run exited. Each run re-checks them: a completed fill is booked at
+        its real executed value under the original order date; a terminally-failed order is
         dropped; anything still working is left for a later run.
 
         Returns the set of symbols that remain pending after this pass, so
@@ -694,18 +692,6 @@ class PaperTrader:
         result["skipped"] = skipped
         return result
 
-    @staticmethod
-    def _order_failed(
-        errors: list[str], untradable_hit: set[str], label: str, symbol: str, exc: Exception
-    ) -> None:
-        """Record a rejected order: an inactive/untradable asset is skipped and alerted once
-        per run (OD17); any other failure is a real error."""
-        if is_untradable_error(exc):
-            untradable_hit.add(symbol)
-            _log.warning("%s %s skipped, broker will not trade the asset: %s", label, symbol, exc)
-            return
-        errors.append(f"{label} {symbol}: {exc}")
-
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
         threshold = None
@@ -917,7 +903,6 @@ class PaperTrader:
         # Also drops a held-but-frozen name's own buy signal: it is no longer in
         # `strategy_positions`, so the buy loop's "already held" check would not catch it.
         all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
-        untradable_hit: set[str] = set()
 
         # Determine unapplied-split corrections for currently-held symbols.
         # Primary evidence is paper_snapshots/paper_trades history (see
@@ -1419,12 +1404,6 @@ class PaperTrader:
             # Leave durable intents for the next reconciliation pass; do not
             # create a second legacy representation or book a separate trade.
 
-        if untradable_hit:
-            self._notifier.send(
-                "<b>⚠️ Untradable (order skipped):</b> "
-                f"{', '.join(sorted(untradable_hit))} — the broker says the asset is not "
-                "active/tradable; excluded, not an error — resolve manually"
-            )
         if errors:
             self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
 
@@ -1529,7 +1508,6 @@ class PaperTrader:
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
         try:
-            # Same run_date reasoning as log_trade / log_pending_order above:
             # stamp the actual ET session date of this run, not the lagged
             # signals["as_of"] date.
             if corrected_value is not None:
@@ -1553,7 +1531,7 @@ class PaperTrader:
             "buys": executed_buys,
             "sells": executed_sells,
             "errors": loss_halts + errors,
-            "untradable": sorted(untradable_seen | untradable_hit),
+            "untradable": sorted(untradable_seen),
             "skipped_writes": list(self.skipped_writes),
         }
 
