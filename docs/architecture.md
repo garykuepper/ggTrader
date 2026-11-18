@@ -239,67 +239,19 @@ their code is not in the main tree and they run at tag `legacy-engine-vbt0285` (
 
 ---
 
-## Strategy Classification
+## Strategy contract and registry
 
-Strategies in ggTrader belong to one of two categories:
+Strategies in `src/ggTrader/lab/strategies/` declare `name`, `kind` (`"signals"` or
+`"weights"`), a `ParamGrid` named `grid`, and `build(bars, grid)`; weight strategies also
+receive rebalance dates and eligibility. The contract and output types are defined in
+[`strategies/contract.py`](../src/ggTrader/lab/strategies/contract.py), and the registry scans
+strategy modules on package import ([`strategies/registry.py`](../src/ggTrader/lab/strategies/registry.py)).
+See [Adding a Strategy](adding_a_strategy.md) for the full contract and worked example.
 
-### 1. Weight-Based Strategies (`target_kind="weights"`)
-These strategies return a target percentage for each asset. For example, "allocate 5% of money to Apple, and 10% to Tesla." The simulator automatically generates buy/sell orders to match these weights at every rebalance.
-
-| Strategy | Plain English Description |
-|---|---|
-| `xs_momentum` | **Cross-Sectional Momentum:** Ranks stocks by their past 12-month returns and divides portfolio money equally among the top N stocks. |
-| `dual_momentum` | **Dual Momentum:** Same as above, but if the overall market trend is negative, it drops underperforming stocks and moves the money into cash for safety. |
-
-### 2. Signal-Based Strategies (`target_kind="signals"`)
-These strategies return binary flags: `True` for buy (entry) and `True` for sell (exit). The simulator executes trades based on these flags, allocating a fixed position size (default is 2% of cash) to each trade.
-
-| Strategy | Plain English Description |
-|---|---|
-| `ema_cross` | **EMA Crossover:** Buys when a fast average price crosses above a slow average price (uptrend), and exits when it crosses below. |
-| `wfo_tournament` | **Tournament:** Automatically selects the best performing EMA configuration from a list of combinations on recent past data. |
-| `bb_reversion` | **Bollinger Band Reversion:** Buys when the price dips below the lower Bollinger Band (cheap) and sells when it returns to the middle average band. |
-| `rsi_reversion` | **RSI Reversion:** Buys when the Relative Strength Index falls below 30 (oversold) and sells when it rebounds. |
-| `macd_divergence` | **MACD Divergence:** Buys when price is falling but selling momentum is weakening (divergence). |
-| `volume_bb_reversion` | **Volume Bollinger Band:** Reversion buy confirmed by a massive surge in volume (high activity at the bottom). |
-| `mtf_reversion` | **Multi-Timeframe Reversion:** Buys only when the asset is oversold on both weekly (long-term) and daily (short-term) charts. |
-| `ensemble` | **Voting Ensemble:** Combines multiple strategies and enters a trade only if a majority of them agree. |
-| `ensemble_conviction` | **Conviction Voting:** Voting strategy that buys larger position sizes when more indicators agree. |
-| `conviction_bb` | **Conviction Bollinger Band:** Buys larger positions the further the price plunges below the lower band. |
-
----
-
-## Code Interfaces (Developer Reference)
-
-All strategies must implement the `Strategy` protocol defined in [strategy.py](file:///home/flynn/ggTrader/src/ggTrader/lab/strategy.py):
-
-```python
-class Strategy(Protocol):
-    name: str
-    target_kind: str  # Must be "weights" or "signals"
-
-    def select(self, asof, data, eligible) -> Plan:
-        """
-        Point-in-time selection.
-        Must use only data available on or before the 'asof' date (no future peeking).
-        """
-
-    def to_targets(self, plans, data) -> DataFrame | SignalTargets:
-        """
-        Converts the plans generated during rebalancing into a target matrix
-        (either weights or buy/sell signal matrices).
-        """
-```
-
-Signal-based strategies also support parameter sweeps and walk-forward parameter updates:
-
-```python
-    def sweep_params(self) -> Dict[str, List[Any]]:
-        """Returns the grid of settings to test (e.g. fast/slow EMA lengths)."""
-
-    def sweep_signals(self, ohlcv, symbols) -> Tuple[entries, exits]:
-        """Generates entry and exit signals for a specific parameter combination."""
-```
+The current registry contains `bb_reversion`, `conviction_bb`, `cross_asset_sleeve`,
+`ema_cross`, `ensemble`, `macd_divergence`, `retail_attention`, `rsi_reversion`,
+`volume_bb_reversion`, and `xs_momentum`. The registry is the source of truth for these names;
+legacy strategies that were not ported are listed separately as legacy-only.
 
 ---
 

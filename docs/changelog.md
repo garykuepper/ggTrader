@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-18 (refactor phases 0-1: safety nets, dead code, wipe flags)
+
+- Added the safety nets a code refactor depends on, all as tests and tools with no change to
+  trading or research behavior: an oracle and test-outcome comparer
+  (`scripts/compare_evidence_json.py`, `scripts/compare_test_outcomes.py`), a connection guard that
+  fails any paper test attempting a real network or database call, a check that every
+  `ggTrader` name a study imports still resolves, import-direction rules between packages, a
+  recorded transcript of every outside call the paper trader makes over 95 scenarios, and a
+  characterization test of the price-loader fallback chain.
+- Removed the never-called untradable-skip branch from `paper/trader.py`. An exception raised
+  by the broker on submit still ends the run; behavior is unchanged and the transcripts did not
+  change.
+- Removed an unused parameter of `lab/wfo/run.py::_select_live_params`, documented the config
+  keys nothing in `src/` reads, and corrected stale architecture, help and comment text.
+- Behavior change (owner-approved): `ggt db truncate` now requires `--yes-wipe-ohlcv` and
+  `ggt db clean` requires `--yes`. Without the flag the command prints what it would delete and
+  exits with code 2 before any database connection.
+- Not deployed; nothing here touches the stopped trader or its container.
+
 ## 2026-11-11 (paper signal dates)
 
 - Reject future-dated bars before signal generation and reject future, stale or
