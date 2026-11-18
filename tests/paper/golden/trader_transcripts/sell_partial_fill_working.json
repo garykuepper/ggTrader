@@ -187,17 +187,25 @@
     },
     {
       "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
       "kwargs": {},
       "raised": null,
       "target": "broker.get_clock"
     },
     {
-      "args": [
-        "ord-1"
-      ],
-      "kwargs": {},
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.time"
     },
     {
       "args": [
@@ -209,11 +217,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000001.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -225,11 +241,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000002.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -241,11 +265,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000003.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -257,11 +289,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000004.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -273,11 +313,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000005.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -289,11 +337,19 @@
     },
     {
       "args": [
-        "ord-1"
+        1.0
       ],
       "kwargs": {},
       "raised": null,
-      "target": "broker.get_order"
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000006.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -305,11 +361,211 @@
     },
     {
       "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000007.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
         "ord-1"
       ],
       "kwargs": {},
       "raised": null,
       "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000008.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000009.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000010.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000011.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000012.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000013.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000014.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000015.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [

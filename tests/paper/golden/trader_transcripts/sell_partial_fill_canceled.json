@@ -187,9 +187,25 @@
     },
     {
       "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
       "kwargs": {},
       "raised": null,
       "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -198,6 +214,22 @@
       "kwargs": {},
       "raised": null,
       "target": "broker.get_order"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "clock.sleep"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000001.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [

@@ -1,0 +1,225 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "fixture:sp500_v1_2026-06-02"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "fixture:sp500_v1_2026-06-02"
+        },
+        "persist_tape": false
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "MSFT"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [
+          "SPY"
+        ],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [
+        [
+          "SPY"
+        ],
+        "2026-05-15"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_dividend_corrections"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "before": "2026-06-19"
+      },
+      "raised": null,
+      "target": "persist.get_latest_snapshot"
+    },
+    {
+      "args": [
+        "<b>🔍 DRY RUN sweep sell:</b> SPY ($7300, funding strategy buys)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "<b>🔍 DRY RUN buy:</b> MSFT ($3300, sleeve=sp500)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [
+        "<b>🔍 DRY RUN sweep buy:</b> SPY ($45000)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_earliest_snapshot"
+    },
+    {
+      "args": [
+        100000.0,
+        null,
+        {
+          "SPY": {
+            "avg_entry": 400.0,
+            "change_today": 0.0,
+            "cost_basis": 99000.0,
+            "current_price": 400.0,
+            "market_value": 99000.0,
+            "qty": 247.5,
+            "unrealized_pl": 0.0,
+            "unrealized_plpc": 0.0
+          }
+        }
+      ],
+      "kwargs": {
+        "booked_equity": null,
+        "dividend_total": 0.0,
+        "errors": [],
+        "new_dividend_accruals": [],
+        "split_corrections": {},
+        "total_pnl": null,
+        "unrealized_pnl": 0.0
+      },
+      "raised": null,
+      "target": "notifier.daily_summary"
+    },
+    {
+      "args": [
+        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,000.00</b>\nChange since prior snapshot: unavailable\nPositions: 1\n\n  SPY: 247.5000 @ $400.00 — $+0.00 (+0.00%)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "<b>📊 Risk:</b> Positions: 1/3 | Scale: 1.00x | Weights: sp500=100%"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    }
+  ],
+  "raised": null,
+  "result": {
+    "buys": [
+      "MSFT"
+    ],
+    "errors": [],
+    "sells": [],
+    "skipped_writes": [
+      "init_paper_schema",
+      "refresh_benchmark_tape",
+      "save_peak_value",
+      "log_snapshot"
+    ],
+    "untradable": []
+  },
+  "skipped_writes": [
+    "init_paper_schema",
+    "refresh_benchmark_tape",
+    "save_peak_value",
+    "log_snapshot"
+  ]
+}

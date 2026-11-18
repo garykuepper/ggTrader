@@ -11,6 +11,7 @@ non-finite numbers are tagged and an unknown type raises instead of printing a m
 from __future__ import annotations
 
 import copy
+import copyreg
 import json
 import math
 import os
@@ -24,7 +25,7 @@ from unittest.mock import patch
 from uuid import UUID
 
 from ggTrader.paper import trader as trader_module
-from ggTrader.paper.gates import PT
+from ggTrader.paper.gates import PT, SignalGateError
 from ggTrader.paper.notifier import TelegramNotifier
 from ggTrader.paper.split_check import compute_split_corrections
 
@@ -69,6 +70,14 @@ _MISSING = object()
 _TERMINAL = ("filled", "canceled", "rejected", "expired")
 
 
+def _reduce_gate_error(exc: SignalGateError) -> tuple:
+    """Let `copy.deepcopy` rebuild a `SignalGateError` (its two-argument constructor defeats it)."""
+    return SignalGateError, (exc.code, str(exc.args[0]).split("] ", 1)[1])
+
+
+copyreg.pickle(SignalGateError, _reduce_gate_error)
+
+
 class HarnessError(BaseException):
     """The harness itself failed (a missing reply, an unserializable value, a runaway loop).
 
@@ -106,7 +115,9 @@ class Scenario:
     today_et: date = date(2026, 6, 19)
     now_pt: datetime = datetime(2026, 6, 19, 12, 46, tzinfo=PT)
     #: Ordered replies (or exceptions) per broker method; the last repeats. For the submit
-    #: methods an entry is an exception (raised) or ``None`` (the next ``ord-n`` id).
+    #: methods an entry is an exception (raised) or ``None`` (the next ``ord-n`` id). For
+    #: ``get_order`` and ``get_order_by_client_id`` an entry is an exception, a (possibly
+    #: malformed) reply dict, or ``None`` to fall through to the order the broker holds.
     replies: dict[str, list[object]] = field(default_factory=dict)
     #: Orders the broker holds before the run: id, client_order_id, symbol, side, qty|notional,
     #: and ``statuses`` (the status sequence, each ``{status, filled_qty, filled_avg_price}``).
@@ -121,6 +132,9 @@ class Scenario:
     untradable: set[str] = field(default_factory=set)
     splits: dict = field(default_factory=lambda: {"corp_splits": {}, "activity_applied": set()})
     dividends: dict = field(default_factory=lambda: {"corp_dividends": {}, "credited_keys": set()})
+    #: Scripted notifier outcomes. A key is a substring of a `send` message, or the method name
+    #: ``trade_alert`` / ``daily_summary``; the value is an exception (raised) or ``False``.
+    notifier: dict[str, object] = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- serialization
@@ -209,33 +223,51 @@ class Recorder:
 
 
 class FakeTime:
-    """The trader's ``time`` module: one fake clock that only moves when the trader sleeps."""
+    """The trader's ``time`` module: one fake clock that only moves when the trader sleeps.
 
-    def __init__(self) -> None:
+    Every read and every sleep is recorded, so the poll deadline and interval are part of the
+    transcript. More than `MAX_POLLS` reads or sleeps in one run is a runaway loop.
+    """
+
+    def __init__(self, recorder: Recorder) -> None:
         self._now = CLOCK_START
+        self._recorder = recorder
         self.sleeps = 0
+        self.reads = 0
+
+    def _read(self, name: str) -> float:
+        self.reads += 1
+        if self.reads > MAX_POLLS:
+            raise HarnessError(f"the run read the clock more than {MAX_POLLS} times: runaway loop")
+        self._recorder.begin(f"clock.{name}", [], {"returned": self._now})
+        return self._now
 
     def time(self) -> float:
-        return self._now
+        return self._read("time")
 
     def monotonic(self) -> float:
-        return self._now
+        return self._read("monotonic")
 
     def sleep(self, seconds: float) -> None:
         self.sleeps += 1
         if self.sleeps > MAX_POLLS:
             raise HarnessError(f"the run slept more than {MAX_POLLS} times: runaway poll loop")
+        self._recorder.begin("clock.sleep", [seconds], {})
         self._now += seconds
 
 
 class FakeRunLock:
-    """Stand-in for the advisory run lock: `verify` is recorded, never fails."""
+    """Stand-in for the advisory run lock: `verify` is recorded and fails only when scripted."""
 
-    def __init__(self, recorder: Recorder) -> None:
+    def __init__(self, recorder: Recorder, failure: object = None) -> None:
         self._recorder = recorder
+        self._failure = failure
 
     def verify(self) -> None:
-        self._recorder.begin("lock.verify", [], {})
+        entry = self._recorder.begin("lock.verify", [], {})
+        if isinstance(self._failure, BaseException):
+            entry["raised"] = _error_text(self._failure)
+            raise self._failure
 
 
 class IntentStore:
@@ -313,23 +345,41 @@ class IntentStore:
 
 
 class RecordingNotifier(TelegramNotifier):
-    """The real message formatting of `TelegramNotifier`, with `send` recorded, never sent."""
+    """The real message formatting of `TelegramNotifier`, with `send` recorded, never sent.
 
-    def __init__(self, recorder: Recorder) -> None:
+    Outcomes can be scripted (`Scenario.notifier`): a matching call returns ``False`` or raises.
+    """
+
+    def __init__(self, recorder: Recorder, outcomes: dict[str, object] | None = None) -> None:
         super().__init__()
         self._enabled = True  # formatting is never skipped for lack of credentials
         self._recorder = recorder
+        self._outcomes = outcomes or {}
 
-    def send(self, message: str) -> bool:
-        self._recorder.begin("notifier.send", [message], {})
+    def _outcome(self, entry: dict, key_matches: Callable[[str], bool]) -> bool:
+        for key, outcome in self._outcomes.items():
+            if not key_matches(key):
+                continue
+            if isinstance(outcome, BaseException):
+                entry["raised"] = _error_text(outcome)
+                raise outcome
+            return bool(outcome)
         return True
 
+    def send(self, message: str) -> bool:
+        entry = self._recorder.begin("notifier.send", [message], {})
+        return self._outcome(
+            entry, lambda key: key not in ("trade_alert", "daily_summary") and key in message
+        )
+
     def trade_alert(self, *args: Any, **kwargs: Any) -> bool:
-        self._recorder.begin("notifier.trade_alert", args, kwargs)
+        entry = self._recorder.begin("notifier.trade_alert", args, kwargs)
+        self._outcome(entry, lambda key: key == "trade_alert")
         return super().trade_alert(*args, **kwargs)
 
     def daily_summary(self, *args: Any, **kwargs: Any) -> bool:
-        self._recorder.begin("notifier.daily_summary", args, kwargs)
+        entry = self._recorder.begin("notifier.daily_summary", args, kwargs)
+        self._outcome(entry, lambda key: key == "daily_summary")
         return super().daily_summary(*args, **kwargs)
 
 
@@ -397,6 +447,7 @@ class FakeBroker:
         self._orders: dict[str, _Order] = {}
         self._by_client: dict[str, _Order] = {}
         self._submitted = 0
+        self._polls = 0
         for raw in scenario.existing_orders:
             kind = "qty" if raw.get("qty") is not None else "notional"
             order = _Order(
@@ -498,8 +549,28 @@ class FakeBroker:
     def submit_sell(self, symbol: str, qty: float, client_order_id: str) -> str:
         return self._submit("submit_sell", "SELL", symbol, qty, client_order_id)
 
+    def _lookup(self, name: str) -> tuple[bool, object]:
+        """The scripted reply for a lookup, or ``(False, None)`` to use the broker's own order."""
+        replies = self._s.replies.get(name)
+        if not replies:
+            return False, None
+        index = self._cursor.get(name, 0)
+        self._cursor[name] = index + 1
+        entry = replies[min(index, len(replies) - 1)]
+        if entry is None:
+            return False, None
+        if isinstance(entry, BaseException):
+            raise entry
+        return True, copy.deepcopy(entry)
+
     def get_order(self, order_id: str) -> dict:
         def produce() -> object:
+            self._polls += 1
+            if self._polls > MAX_POLLS:
+                raise HarnessError(f"more than {MAX_POLLS} get_order polls: runaway poll loop")
+            scripted, reply = self._lookup("get_order")
+            if scripted:
+                return reply
             order = self._orders.get(order_id)
             if order is None:
                 raise HarnessError(f"get_order for an order the scenario never created: {order_id}")
@@ -509,6 +580,9 @@ class FakeBroker:
 
     def get_order_by_client_id(self, client_order_id: str) -> dict:
         def produce() -> object:
+            scripted, reply = self._lookup("get_order_by_client_id")
+            if scripted:
+                return reply
             order = self._by_client.get(client_order_id)
             if order is None:
                 raise HarnessError(f"no order with client id {client_order_id}")
@@ -535,11 +609,11 @@ class _Run:
     def __init__(self, scenario: Scenario) -> None:
         self.s = scenario
         self.recorder = Recorder()
-        self.clock = FakeTime()
+        self.clock = FakeTime(self.recorder)
         self.store = IntentStore(scenario.intents)
         self.broker = FakeBroker(scenario, self.recorder)
-        self.notifier = RecordingNotifier(self.recorder)
-        self.lock = FakeRunLock(self.recorder)
+        self.notifier = RecordingNotifier(self.recorder, scenario.notifier)
+        self.lock = FakeRunLock(self.recorder, scenario.persist.get("lock.verify"))
         self._persist_calls: dict[str, int] = {}
         self._uuid_counter = 0
 
@@ -563,6 +637,8 @@ class _Run:
         def wrapper(*args: object, **kwargs: object) -> object:
             entry = self.recorder.begin(f"persist.{name}", args, kwargs)
             try:
+                if name in self.s.persist:
+                    return self._scripted(name)
                 if name in INTENT_FUNCTIONS:
                     return getattr(self.store, name)(*args, **kwargs)
                 return self._scripted(name)
@@ -610,10 +686,24 @@ def _check_scenario(s: Scenario) -> None:
     values = pending.values if isinstance(pending, Seq) else (pending,)
     for value in values:
         for row in value if isinstance(value, list) else []:
-            if row.get("created_at") is not None:
-                raise HarnessError(
-                    "a pending order needs created_at=None: trader.py reads datetime.now unpinned"
-                )
+            created = row.get("created_at")
+            if created is not None and not isinstance(created, datetime):
+                raise HarnessError("a pending order's created_at must be a datetime or None")
+
+
+def _pinned_datetime(pinned: datetime) -> type:
+    """A ``datetime`` for the trader's namespace whose ``now`` returns the scenario's instant."""
+
+    class _Meta(type):
+        def __instancecheck__(cls, obj: object) -> bool:
+            return isinstance(obj, datetime)
+
+    class PinnedDatetime(datetime, metaclass=_Meta):
+        @classmethod
+        def now(cls, tz: Any = None) -> datetime:  # type: ignore[override]
+            return pinned.astimezone(tz) if tz is not None else pinned.replace(tzinfo=None)
+
+    return PinnedDatetime
 
 
 def run_scenario(scenario: Scenario) -> dict:
@@ -648,6 +738,7 @@ def run_scenario(scenario: Scenario) -> dict:
             "_now_pt": lambda: s.now_pt,
             "uuid4": run.uuid4,
             "time": run.clock,
+            "datetime": _pinned_datetime(s.now_pt),
         }
         for name, replacement in replacements.items():
             stack.enter_context(patch.object(trader_module, name, replacement))

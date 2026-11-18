@@ -1,0 +1,53 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "prev-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "<b>🛑 Order recovery/pending orders failed:</b> Invalid order fill. Orders may already have been submitted; check their status."
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": "ValueError: Invalid order fill",
+  "result": null,
+  "skipped_writes": []
+}

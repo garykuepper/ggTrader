@@ -254,9 +254,25 @@
     },
     {
       "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
       "kwargs": {},
       "raised": null,
       "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [
@@ -470,9 +486,40 @@
     },
     {
       "args": [
-        100000.0,
-        null,
-        {}
+        100033.0,
+        233.0,
+        {
+          "AMZN": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 99.0,
+            "market_value": 1633.5,
+            "qty": 16.5,
+            "unrealized_pl": -16.5,
+            "unrealized_plpc": -0.01
+          },
+          "MSFT": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 101.0,
+            "market_value": 1666.5,
+            "qty": 16.5,
+            "unrealized_pl": 16.5,
+            "unrealized_plpc": 0.01
+          },
+          "NVDA": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 102.0,
+            "market_value": 1683.0,
+            "qty": 16.5,
+            "unrealized_pl": 33.0,
+            "unrealized_plpc": 0.02
+          }
+        }
       ],
       "kwargs": {
         "booked_equity": null,
@@ -481,14 +528,14 @@
         "new_dividend_accruals": [],
         "split_corrections": {},
         "total_pnl": null,
-        "unrealized_pnl": 0
+        "unrealized_pnl": 33.0
       },
       "raised": null,
       "target": "notifier.daily_summary"
     },
     {
       "args": [
-        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,000.00</b>\nChange since prior snapshot: unavailable\nPositions: 0"
+        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,033.00</b>\nChange since prior snapshot: 🟢 $+233.00 (+0.23%)\nPositions: 3\n\n  NVDA: 16.5000 @ $102.00 — $+33.00 (+2.00%)\n  MSFT: 16.5000 @ $101.00 — $+16.50 (+1.00%)\n  AMZN: 16.5000 @ $99.00 — $-16.50 (-1.00%)"
       ],
       "kwargs": {},
       "raised": null,
@@ -496,7 +543,7 @@
     },
     {
       "args": [
-        "<b>📊 Risk:</b> Positions: 0/4 | Scale: 1.00x | Weights: sp500=50%, nasdaq100=50%"
+        "<b>📊 Risk:</b> Positions: 3/4 | Scale: 1.00x | Weights: sp500=50%, nasdaq100=50%"
       ],
       "kwargs": {},
       "raised": null,
@@ -505,9 +552,40 @@
     {
       "args": [
         "2026-06-19",
-        100000.0,
-        50000.0,
-        {}
+        100033.0,
+        95050.0,
+        {
+          "AMZN": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 99.0,
+            "market_value": 1633.5,
+            "qty": 16.5,
+            "unrealized_pl": -16.5,
+            "unrealized_plpc": -0.01
+          },
+          "MSFT": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 101.0,
+            "market_value": 1666.5,
+            "qty": 16.5,
+            "unrealized_pl": 16.5,
+            "unrealized_plpc": 0.01
+          },
+          "NVDA": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 102.0,
+            "market_value": 1683.0,
+            "qty": 16.5,
+            "unrealized_pl": 33.0,
+            "unrealized_plpc": 0.02
+          }
+        }
       ],
       "kwargs": {},
       "raised": null,

@@ -169,9 +169,25 @@
     },
     {
       "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
       "kwargs": {},
       "raised": null,
       "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
     },
     {
       "args": [

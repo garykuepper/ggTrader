@@ -1,0 +1,349 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": "RuntimeError: ddl failed",
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "db"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "db"
+        },
+        "persist_tape": true
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "tape.refresh_benchmark_tape"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "MSFT"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [
+        100000.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.save_peak_value"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "before": "2026-06-19"
+      },
+      "raised": null,
+      "target": "persist.get_latest_snapshot"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "2026-06-19",
+        "BUY",
+        "MSFT",
+        3300.0,
+        "notional",
+        null
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.create_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.verify"
+    },
+    {
+      "args": [
+        "MSFT",
+        3300.0,
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.submit_buy"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1",
+        33.0,
+        100.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.settle_order_intent"
+    },
+    {
+      "args": [
+        "BUY",
+        "MSFT",
+        3300.0,
+        "ord-1"
+      ],
+      "kwargs": {
+        "price": 100.0,
+        "qty": 33.0,
+        "status": "filled"
+      },
+      "raised": null,
+      "target": "notifier.trade_alert"
+    },
+    {
+      "args": [
+        "<b>📊 Paper Trade</b>\nBUY <b>MSFT</b>\nShares: 33.0000 @ $100.00\nTotal Value: $3300.00\nOrder: <code>ord-1</code>"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_earliest_snapshot"
+    },
+    {
+      "args": [
+        100000.0,
+        null,
+        {}
+      ],
+      "kwargs": {
+        "booked_equity": null,
+        "dividend_total": 0.0,
+        "errors": [],
+        "new_dividend_accruals": [],
+        "split_corrections": {},
+        "total_pnl": null,
+        "unrealized_pnl": 0
+      },
+      "raised": null,
+      "target": "notifier.daily_summary"
+    },
+    {
+      "args": [
+        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,000.00</b>\nChange since prior snapshot: unavailable\nPositions: 0"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "<b>📊 Risk:</b> Positions: 0/3 | Scale: 1.00x | Weights: sp500=100%"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "2026-06-19",
+        100000.0,
+        50000.0,
+        {}
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.log_snapshot"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": null,
+  "result": {
+    "buys": [
+      "MSFT"
+    ],
+    "errors": [],
+    "sells": [],
+    "skipped_writes": [],
+    "untradable": []
+  },
+  "skipped_writes": []
+}

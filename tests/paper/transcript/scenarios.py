@@ -10,15 +10,16 @@ and broker order ids are ``ord-n`` in the same order.
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
+from ggTrader.paper.gates import SignalGateError
 from tests.paper.transcript.harness import PT, Scenario, Seq
 
 #: The membership spec the root conftest selects: dry runs may rehearse any source.
 FIXTURE_SPEC = "fixture:sp500_v1_2026-06-02"
 
 #: How many scenarios the suite records (the plan's 34 base ones plus four splits and additions).
-EXPECTED_SCENARIO_COUNT = 38
+EXPECTED_SCENARIO_COUNT = 86
 
 SCENARIOS: dict[str, Scenario] = {}
 
@@ -150,16 +151,36 @@ def plain_buys_and_sells() -> dict:
     (the held quantity), then BUY NVDA and BUY GOOGL, each notional 3300.0 (3.3% of 100,000).
     Intents: each order goes create -> attach -> settle once, so no intent is left unresolved;
     the sell settles before the buys are created, the buys settle after the buy poll.
+    Reporting: the sell fills at 150.0; the account is read twice with different equity
+    (100,000.0 then 100,053.0) and the final positions are KO, NVDA, GOOGL. The daily summary
+    value, the daily P&L (+553.0 against the 99,500.0 snapshot), the total P&L (+53.0) and the
+    ``log_snapshot`` payload (value 100053.0, cash 92200.0, the three final positions) all come
+    from the final read.
     """
     return dict(
         env=_LIVE_ENV,
         signals=_blend(["NVDA", "GOOGL"], ["AAPL"]),
+        # The AAPL sale brings 1,500 and the two buys cost 6,600: cash 97,300 -> 92,200. The
+        # final account and positions differ from the first read, so the summary, the P&L
+        # and the snapshot payload must be built from the final read.
+        fills={"AAPL": [{"status": "filled", "filled_qty": 10.0, "filled_avg_price": 150.0}]},
+        persist={"get_latest_snapshot": 99_500.0, "get_earliest_snapshot": 100_000.0},
         replies=_replies(
-            _acct(),
-            {
-                "AAPL": _pos(10.0, 150.0, cost_basis=1450.0),
-                "KO": _pos(20.0, 60.0),
-            },
+            [
+                _acct(100_000.0, 97_300.0),
+                _acct(100_053.0, 92_200.0, last_equity=100_000.0),
+            ],
+            [
+                {
+                    "AAPL": _pos(10.0, 150.0, cost_basis=1450.0),
+                    "KO": _pos(20.0, 60.0),
+                },
+                {
+                    "KO": _pos(20.0, 61.0, cost_basis=1200.0),
+                    "NVDA": _pos(33.0, 102.0, cost_basis=3300.0),
+                    "GOOGL": _pos(33.0, 99.0, cost_basis=3300.0),
+                },
+            ],
         ),
     )
 
@@ -308,6 +329,7 @@ def untradable_candidate() -> dict:
 # --------------------------------------------------------------------------- corporate actions
 
 _MNST_QTY = 20.80410098
+_MNST_PL = _MNST_QTY * 47.77 - 1887.11  # the broker's phantom loss, -893.30
 
 
 @scenario
@@ -619,15 +641,26 @@ def sweep_funding_sell() -> dict:
     5,000 reserve: shortfall 7,300. Terminal outcome: success, ``buys == ["MSFT"]``, ``sells ==
     []`` (the sweep sell is not a strategy sell). Discriminating calls in order: SELL SPY qty
     18.25 (reason ``cash_sweep``), its ``get_order`` poll, then BUY MSFT notional 3300.0; no
-    sweep buy afterwards (cash 5,000 is under the 8% trigger).
-    Intents: 2 settled (the SPY sell, the MSFT buy), none unresolved.
+    sweep buy afterwards (cash 5,000 is under the 8% trigger). The SPY sell fills at 400.0
+    (not the harness default 100.0), the mid-run read shows the cash that implies (5,000.0).
+    Intents: 2 settled (the SPY sell at 400.0, the MSFT buy), none unresolved.
     """
     return dict(
         env={**_LIVE_ENV, **_SWEEP_ENV},
         signals=_blend(["MSFT"], []),
+        # SPY is sold at 400: 18.25 shares raise 7,300, so cash goes 1,000 -> 8,300 -> 5,000
+        # after the 3,300 MSFT buy (the mid-run read), under the 8% sweep trigger.
+        fills={"SPY:SELL": [{"status": "filled", "filled_qty": 18.25, "filled_avg_price": 400.0}]},
         replies=_replies(
-            [_acct(cash=1_000.0), _acct(cash=5_000.0)],
-            {"SPY": _pos(50.0, 400.0)},
+            [
+                _acct(100_000.0, 1_000.0),
+                _acct(100_000.0, 5_000.0),
+                _acct(100_033.0, 5_000.0),
+            ],
+            [
+                {"SPY": _pos(247.5, 400.0)},
+                {"SPY": _pos(229.25, 400.0), "MSFT": _pos(33.0, 101.0, cost_basis=3300.0)},
+            ],
         ),
     )
 
@@ -660,18 +693,35 @@ def sweep_sell_and_strategy_sell() -> dict:
     Discriminating calls in order: SELL SPY qty 18.25 (``cash_sweep``) before SELL AAPL qty 10.0;
     then exactly one BUY (MSFT 3300.0). NVDA, the second candidate, is refused because only the
     regular sell frees a slot: counting the sweep sell too would let NVDA through.
+    The SPY sell fills at 400.0 and the AAPL sell at 150.0, so the mid-run cash read is 6,500.0
+    (1,000 + 7,300 + 1,500 - 3,300), under the 8% sweep trigger.
     Intents: 3 settled (SPY sell, AAPL sell, MSFT buy), none unresolved.
     """
     return dict(
         env={"MAX_POSITIONS": "2", **_SWEEP_ENV},
         signals=_blend(["MSFT", "NVDA"], ["AAPL"]),
+        fills={
+            "SPY:SELL": [{"status": "filled", "filled_qty": 18.25, "filled_avg_price": 400.0}],
+            "AAPL": [{"status": "filled", "filled_qty": 10.0, "filled_avg_price": 150.0}],
+        },
         replies=_replies(
-            [_acct(cash=1_000.0), _acct(cash=5_000.0)],
-            {
-                "SPY": _pos(50.0, 400.0),
-                "AAPL": _pos(10.0, 150.0),
-                "KO": _pos(20.0, 60.0),
-            },
+            [
+                _acct(100_000.0, 1_000.0),
+                _acct(100_000.0, 6_500.0),
+                _acct(100_033.0, 6_500.0),
+            ],
+            [
+                {
+                    "SPY": _pos(240.75, 400.0),
+                    "AAPL": _pos(10.0, 150.0),
+                    "KO": _pos(20.0, 60.0),
+                },
+                {
+                    "SPY": _pos(222.5, 400.0),
+                    "KO": _pos(20.0, 60.0),
+                    "MSFT": _pos(33.0, 101.0, cost_basis=3300.0),
+                },
+            ],
         ),
     )
 
@@ -679,6 +729,7 @@ def sweep_sell_and_strategy_sell() -> dict:
 # --------------------------------------------------------------------------- fills and pending
 
 _AAPL_ONE = {"AAPL": _pos(10.0, 150.0)}
+_PARTIAL = {"status": "partially_filled", "filled_qty": 4.0, "filled_avg_price": 150.0}
 
 
 @scenario
@@ -825,13 +876,30 @@ def sleeve_slot_cap() -> dict:
     Discriminating calls: BUY MSFT and BUY NVDA at 1650.0 each, no BUY GOOGL (it would trade if
     the sleeve cap alone were lifted: 3 of 4 global slots), BUY AMZN 1650.0 from the other sleeve.
     Intents: 3 settled, none unresolved.
+    Reporting: the first account read is 100,000.0 with no positions; the final read is
+    100,033.0 (cash 95,050.0) with the three bought positions, so the summary value, the P&L
+    (+233.0 against the 99,800.0 snapshot) and the snapshot payload follow the final read.
     """
     return dict(
         env={"MAX_POSITIONS": "4"},
         signals=_two_sleeves(
             ["MSFT", "NVDA", "GOOGL"], ["AMZN"], {"sp500": 0.5, "nasdaq100": 0.5}, 1.0
         ),
-        replies=_replies(_acct(), {}),
+        persist={"get_latest_snapshot": 99_800.0},
+        replies=_replies(
+            [
+                _acct(100_000.0, 100_000.0),
+                _acct(100_033.0, 95_050.0, last_equity=100_000.0),
+            ],
+            [
+                {},
+                {
+                    "MSFT": _pos(16.5, 101.0, cost_basis=1650.0),
+                    "NVDA": _pos(16.5, 102.0, cost_basis=1650.0),
+                    "AMZN": _pos(16.5, 99.0, cost_basis=1650.0),
+                },
+            ],
+        ),
     )
 
 
@@ -1017,4 +1085,977 @@ def sell_rejected_by_broker() -> dict:
             _acct(),
             {"AAPL": _pos(10.0, 100.0), "MSFT": _pos(5.0, 200.0)},
         ),
+    )
+
+
+# =========================================================================== follow-up scenarios
+# Added after review: the branches the later refactor tasks edit, and the cases where the first
+# 38 transcripts would have stayed green after a behavior change.
+
+_STALE_NOW = datetime(2026, 6, 10, 15, 0, tzinfo=timezone.utc)
+_FRESH = datetime(2026, 6, 18, 15, 0, tzinfo=timezone.utc)
+
+
+def _held_order(
+    order_id: str,
+    client_id: str,
+    symbol: str,
+    side: str,
+    amount: float,
+    statuses: list[dict],
+) -> dict:
+    """An order the broker already holds before the run (a BUY by notional, a SELL by qty)."""
+    kind = "notional" if side == "BUY" else "qty"
+    return {
+        "id": order_id,
+        "client_order_id": client_id,
+        "symbol": symbol,
+        "side": side,
+        kind: amount,
+        "statuses": statuses,
+    }
+
+
+def _prior_intent(client_id: str, symbol: str = "MSFT", amount: float = 3300.0) -> dict:
+    """An unresolved BUY intent from an earlier run (the startup recovery input)."""
+    return {
+        "client_order_id": client_id,
+        "run_date": "2026-06-18",
+        "side": "BUY",
+        "symbol": symbol,
+        "amount": amount,
+        "amount_kind": "notional",
+        "reason": None,
+        "broker_order_id": None,
+    }
+
+
+def _recovery(statuses: list[dict], replies_extra: dict | None = None) -> dict:
+    """A live run that starts with one unresolved prior-run BUY MSFT intent in `statuses`."""
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], []),
+        intents=[_prior_intent("prev-1")],
+        existing_orders=[_held_order("ord-prev-1", "prev-1", "MSFT", "BUY", 3300.0, statuses)],
+        replies={**_replies(_acct(), {}), **(replies_extra or {})},
+    )
+
+
+# --------------------------------------------------------------------------- finding 1
+
+
+@scenario
+def catastrophe_stop_at_position_cap() -> dict:
+    """The freed slot of a stopped holding is counted once, with the book at the cap.
+
+    From `TestCatastropheStopEnabled.test_slot_math_counts_stop_exactly_once_at_position_cap`.
+    MAX_POSITIONS is 3 and the book holds FILL1, FILL2 and NXPI (-30%, stopped out); MSFT, GOOGL
+    and NVDA all want in. Terminal outcome: success, ``sells == ["NXPI"]``,
+    ``buys == ["MSFT"]``. Discriminating calls in order: SELL NXPI qty 100.0 (reason
+    ``catastrophe_stop``) and then exactly one BUY (MSFT 3300.0). The stop already removed NXPI
+    from the strategy positions, so only one slot is free; counting the stop again (as a regular
+    sell) would free a second slot and submit BUY GOOGL as well.
+    Intents: 2 settled (NXPI stop sell, MSFT buy), none unresolved.
+    """
+    return dict(
+        env=_STOP_ENV,
+        signals=_blend(["MSFT", "GOOGL", "NVDA"], []),
+        replies=_replies(
+            _acct(),
+            {
+                "FILL1": _pos(1.0, 100.0),
+                "FILL2": _pos(1.0, 100.0),
+                "NXPI": _pos(100.0, 70.0, cost_basis=10_000.0, unrealized_pl=-3000.0),
+            },
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- finding 3
+
+
+@scenario
+def sweep_buy_after_strategy_orders() -> dict:
+    """The sweep buy is sized from the cash left after the strategy buy, and goes after it.
+
+    From `TestCashSweepEnabled.test_sweep_buy_deploys_leftover_cash_after_strategy_orders`.
+    SPY (the sweep) is held at 50,000 with 50,000 cash; MSFT is a strategy buy. The MSFT buy
+    leaves 46,700 cash, so the sweep target is 46,700 - 5,000 reserve = 41,700. Terminal
+    outcome: success, ``buys == ["MSFT"]``. Discriminating calls in order: BUY MSFT 3300.0, its
+    ``get_order`` poll and settlement, a second ``get_account`` read (the sweep sizing), then
+    BUY SPY notional 41700.0 (reason ``cash_sweep``, filled at 400.0). A sweep buy placed before
+    the strategy orders would be sized from 50,000 cash instead (45,000).
+    Intents: 2 settled (MSFT buy, SPY sweep buy), none unresolved.
+    """
+    return dict(
+        env={**_LIVE_ENV, **_SWEEP_ENV},
+        signals=_blend(["MSFT"], []),
+        fills={"SPY:BUY": [{"status": "filled", "filled_qty": 104.25, "filled_avg_price": 400.0}]},
+        replies=_replies(
+            [
+                _acct(100_000.0, 50_000.0),
+                _acct(100_000.0, 46_700.0),
+                _acct(100_033.0, 5_000.0),
+            ],
+            [
+                {"SPY": _pos(125.0, 400.0)},
+                {
+                    "SPY": _pos(229.25, 400.0),
+                    "MSFT": _pos(33.0, 101.0, cost_basis=3300.0),
+                },
+            ],
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- finding 5
+
+
+@scenario
+def intent_create_failure() -> dict:
+    """The ledger cannot save the intent: the run stops before the lock check and the broker.
+
+    From `test_submit_failure_notifies_client_id_and_stage[intent]`. Terminal outcome: the run
+    raises ``RuntimeError: ledger down`` and sends "Order 00000000-0000-0000-0000-000000000001
+    failed at intent; investigation required". Discriminating calls: ``create_order_intent``
+    (BUY MSFT 3300.0, raised) and nothing after it: no ``lock.verify``, no ``submit_buy``.
+    Intents: none created (the one attempt failed).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT", "NVDA"], []),
+        persist={"create_order_intent": RuntimeError("ledger down")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def lock_verify_failure() -> dict:
+    """The run lock is lost when the order is about to be submitted: nothing reaches the broker.
+
+    From `test_submit_failure_notifies_client_id_and_stage[lock]`. Terminal outcome: the run
+    raises ``RuntimeError: lock lost`` after "failed at lock; investigation required" is sent.
+    Discriminating calls in order: ``create_order_intent`` (BUY MSFT 3300.0), ``lock.verify``
+    (raised), no ``submit_buy``. Intents: 1 unresolved (created, never attached), none settled.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT", "NVDA"], []),
+        persist={"lock.verify": RuntimeError("lock lost")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def attach_failure() -> dict:
+    """The broker took the order but the ledger cannot attach its id: the run stops.
+
+    From `test_submit_failure_notifies_client_id_and_stage[attach]`. Terminal outcome: the run
+    raises ``RuntimeError: attach failed`` after "failed at attach; investigation required" is
+    sent. Discriminating calls in order: ``create_order_intent``, ``lock.verify``,
+    ``submit_buy`` (BUY MSFT 3300.0, accepted as ``ord-1``), ``attach_broker_order`` (raised);
+    NVDA is never attempted. Intents: 1 unresolved, none settled.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT", "NVDA"], []),
+        persist={"attach_broker_order": RuntimeError("attach failed")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def failure_notice_fails() -> dict:
+    """A failing submit whose failure notice also fails still ends with the original error.
+
+    From `test_submit_failure_notifies_client_id_and_stage` and
+    `test_post_trade_account_error_survives_notification_failure`. The broker rejects the BUY
+    and the "failed at submit" notice raises ``RuntimeError: telegram down``. Terminal outcome:
+    the run raises the broker's ``RuntimeError: rejected``, not the notifier's. Discriminating
+    calls: ``submit_buy`` (raised), then the notice ``send`` (raised); nothing else is sent.
+    Intents: 1 unresolved, none settled.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        notifier={"failed at submit": RuntimeError("telegram down")},
+        replies={**_replies(_acct(), {}), "submit_buy": [RuntimeError("rejected")]},
+    )
+
+
+# --------------------------------------------------------------------------- finding 6: recovery
+
+
+@scenario
+def recovery_intent_filled() -> dict:
+    """A prior run's intent whose order has filled is settled at startup.
+
+    From `test_recovery_settles_partial_cancellation` and `test_submit_order_persists_intent...`.
+    Terminal outcome: success with no new orders. Discriminating calls: ``get_order_by_client_id``
+    for ``prev-1``, ``attach_broker_order("prev-1", "ord-prev-1")``, then
+    ``settle_order_intent("prev-1", "ord-prev-1", 33.0, 100.0, "filled")`` before the
+    market-clock call. Intents: the seeded row settles, none unresolved.
+    """
+    return _recovery([{"status": "filled", "filled_qty": 33.0, "filled_avg_price": 100.0}])
+
+
+@scenario
+def recovery_intent_canceled() -> dict:
+    """A seeded intent whose order was canceled after a partial fill settles as canceled.
+
+    From `test_recovery_settles_partial_cancellation`. Terminal outcome: success.
+    Discriminating call: ``settle_order_intent("prev-1", "ord-prev-1", 2.0, 100.0, "canceled")``.
+    Removing "canceled" from the terminal statuses would instead stop the run with
+    "Unknown order status". Intents: the seeded row settles, none unresolved.
+    """
+    return _recovery([{"status": "canceled", "filled_qty": 2.0, "filled_avg_price": 100.0}])
+
+
+@scenario
+def recovery_intent_rejected() -> dict:
+    """A seeded intent whose order the broker rejected settles with no fill.
+
+    Terminal outcome: success. Discriminating call: ``settle_order_intent("prev-1",
+    "ord-prev-1", 0.0, None, "rejected")``. Intents: the seeded row settles, none unresolved.
+    """
+    return _recovery([{"status": "rejected", "filled_qty": 0.0, "filled_avg_price": None}])
+
+
+@scenario
+def recovery_intent_expired() -> dict:
+    """A seeded intent whose order expired settles with no fill.
+
+    Terminal outcome: success. Discriminating call: ``settle_order_intent("prev-1",
+    "ord-prev-1", 0.0, None, "expired")``. Intents: the seeded row settles, none unresolved.
+    """
+    return _recovery([{"status": "expired", "filled_qty": 0.0, "filled_avg_price": None}])
+
+
+@scenario
+def recovery_intent_working() -> dict:
+    """A seeded intent whose order is still working stops the run before any other call.
+
+    Terminal outcome: the run raises ``RuntimeError: Unresolved working orders block
+    submissions`` after "Order recovery/pending orders failed" is sent. Discriminating calls:
+    ``attach_broker_order`` but no ``settle_order_intent``; no market-clock call, no signals.
+    Intents: the seeded row stays unresolved.
+    """
+    return _recovery([{"status": "new"}])
+
+
+@scenario
+def recovery_identity_mismatch() -> dict:
+    """A lookup reply with a blank order id is an identity mismatch: the run stops.
+
+    The reply is scripted (a malformed broker answer). Terminal outcome: the run raises
+    ``ValueError: Order identity mismatch or duplicate legacy order`` after the recovery
+    notice is sent. Discriminating calls: no ``attach_broker_order``, no
+    ``settle_order_intent``. Intents: the seeded row stays unresolved.
+    """
+    bad = {
+        "id": "",
+        "client_order_id": "prev-1",
+        "symbol": "MSFT",
+        "side": "buy",
+        "qty": None,
+        "notional": 3300.0,
+        "filled_qty": 0.0,
+        "filled_avg_price": None,
+        "status": "new",
+    }
+    return _recovery([{"status": "new"}], replies_extra={"get_order_by_client_id": [bad]})
+
+
+@scenario
+def recovery_symbol_mismatch() -> dict:
+    """The broker's order for a client id is for another symbol: the run stops.
+
+    Terminal outcome: the run raises ``ValueError: Order identity mismatch or duplicate legacy
+    order``. Discriminating calls: ``get_order_by_client_id("prev-1")``, no settle, no attach.
+    Intents: the seeded row stays unresolved.
+    """
+    fields = _recovery([{"status": "filled", "filled_qty": 33.0, "filled_avg_price": 100.0}])
+    fields["existing_orders"][0]["symbol"] = "NVDA"
+    return fields
+
+
+@scenario
+def recovery_amount_mismatch() -> dict:
+    """The broker's order amount differs from the intent by more than a cent: the run stops.
+
+    The intent says 3,300.0 notional; the broker holds 3,500.0. Terminal outcome: the run raises
+    ``ValueError: Order amount mismatch``. Discriminating calls: no attach, no settle.
+    Intents: the seeded row stays unresolved.
+    """
+    fields = _recovery([{"status": "filled", "filled_qty": 35.0, "filled_avg_price": 100.0}])
+    fields["existing_orders"][0]["notional"] = 3500.0
+    return fields
+
+
+@scenario
+def recovery_missing_broker_order() -> dict:
+    """The broker has no order for a seeded intent (the lookup fails): the run stops.
+
+    The lookup reply is a scripted ``RuntimeError: order not found``. Terminal outcome: the run
+    raises it after "Order recovery/pending orders failed: order not found" is sent.
+    Discriminating calls: ``get_order_by_client_id`` (raised), no attach, no settle.
+    Intents: the seeded row stays unresolved.
+    """
+    return _recovery(
+        [{"status": "new"}],
+        replies_extra={"get_order_by_client_id": [RuntimeError("order not found")]},
+    )
+
+
+@scenario
+def recovery_invalid_fill() -> dict:
+    """A canceled order with filled shares but no fill price is an invalid fill: the run stops.
+
+    Terminal outcome: the run raises ``ValueError: Invalid order fill``. Discriminating calls:
+    no attach, no settle. Intents: the seeded row stays unresolved.
+    """
+    return _recovery([{"status": "canceled", "filled_qty": 2.0, "filled_avg_price": None}])
+
+
+@scenario
+def recovery_unknown_status() -> dict:
+    """An order status the trader does not know stops the run.
+
+    Terminal outcome: the run raises ``ValueError: Unknown order status``. Discriminating
+    calls: no attach, no settle. Intents: the seeded row stays unresolved.
+    """
+    return _recovery([{"status": "mystery"}])
+
+
+# --------------------------------------------------------------------------- finding 6: legacy
+
+
+@scenario
+def legacy_pending_stale() -> dict:
+    """Only a legacy pending order open 5+ days and not yet flagged gets a stale alert.
+
+    From `TestStalePendingOrders`. Three working legacy BUY orders: KO (created 9.2 days before
+    the pinned clock, not flagged), XOM (same age, already flagged) and CVX (1.2 days old).
+    Terminal outcome: success. Discriminating calls: one "Stale pending order" alert naming KO
+    ("open 9.2 days") and one ``mark_pending_order_stale("stale-ko")``; nothing for XOM or CVX.
+    Intents: none created.
+    """
+    old = {"created_at": _STALE_NOW}
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], []),
+        persist={
+            "get_pending_orders": [
+                {**_pending("stale-ko", "KO", "BUY"), **old},
+                {**_pending("stale-xom", "XOM", "BUY"), **old, "flagged_stale": True},
+                {**_pending("fresh-cvx", "CVX", "BUY"), "created_at": _FRESH},
+            ]
+        },
+        existing_orders=[
+            _held_order("stale-ko", "legacy-ko", "KO", "BUY", 600.0, [{"status": "new"}]),
+            _held_order("stale-xom", "legacy-xom", "XOM", "BUY", 600.0, [{"status": "new"}]),
+            _held_order("fresh-cvx", "legacy-cvx", "CVX", "BUY", 600.0, [{"status": "new"}]),
+        ],
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def legacy_pending_stale_mark_fails() -> dict:
+    """The stale alert is sent even when marking the order stale fails.
+
+    From `TestStalePendingOrders.test_stale_pending_order_flagged_once`. Terminal outcome:
+    success. Discriminating calls: the "Stale pending order" alert, then
+    ``mark_pending_order_stale`` (raised ``RuntimeError: db busy``); the run goes on.
+    Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], []),
+        persist={
+            "get_pending_orders": [{**_pending("stale-ko", "KO", "BUY"), "created_at": _STALE_NOW}],
+            "mark_pending_order_stale": RuntimeError("db busy"),
+        },
+        existing_orders=[
+            _held_order("stale-ko", "legacy-ko", "KO", "BUY", 600.0, [{"status": "new"}])
+        ],
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def legacy_pending_lookup_failure() -> dict:
+    """The broker lookup of a legacy pending order fails: the run stops.
+
+    Terminal outcome: the run raises ``RuntimeError: lookup failed`` (no notice is sent).
+    Discriminating calls: ``get_order("pend-1")`` raised; no signals call, no order.
+    Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"get_pending_orders": [_pending("pend-1", "KO", "BUY")]},
+        replies={**_replies(_acct(), {}), "get_order": [RuntimeError("lookup failed")]},
+    )
+
+
+@scenario
+def legacy_pending_settlement_failure() -> dict:
+    """A filled legacy pending order that cannot be settled stops the run with a notice.
+
+    From `TestReconciliation.test_filled_pending_order_booked_and_cleared`. Terminal outcome:
+    the run raises ``RuntimeError: ledger locked`` after "Could not settle pending order pend-1
+    — no orders placed: ledger locked" is sent. Discriminating calls:
+    ``settle_legacy_pending_order`` (raised), no trade alert, no signals call.
+    Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={
+            "get_pending_orders": [_pending("pend-1", "KO", "BUY")],
+            "settle_legacy_pending_order": RuntimeError("ledger locked"),
+        },
+        existing_orders=[
+            _held_order(
+                "pend-1",
+                "legacy-1",
+                "KO",
+                "BUY",
+                600.0,
+                [{"status": "filled", "filled_qty": 10.0, "filled_avg_price": 60.0}],
+            )
+        ],
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def legacy_pending_canceled() -> dict:
+    """A canceled legacy pending order is dropped without a trade alert and frees its symbol.
+
+    From `TestReconciliation.test_canceled_pending_order_dropped_without_booking` and
+    `TestPendingOrderDedup.test_terminal_pending_order_does_not_block_new_order`. Terminal
+    outcome: success, ``buys == ["KO"]``. Discriminating calls:
+    ``settle_legacy_pending_order("pend-1", 0.0, None, "canceled")`` with no trade alert for it,
+    then BUY KO 3300.0 (the symbol is no longer pending). Removing "canceled" from the legacy
+    terminal statuses would leave KO blocked. Intents: 1 settled (the KO buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["KO"], []),
+        persist={"get_pending_orders": [_pending("pend-1", "KO", "BUY")]},
+        existing_orders=[
+            _held_order(
+                "pend-1",
+                "legacy-1",
+                "KO",
+                "BUY",
+                600.0,
+                [{"status": "canceled", "filled_qty": 0.0, "filled_avg_price": None}],
+            )
+        ],
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def pending_orders_read_failure_live() -> dict:
+    """The legacy pending-order list cannot be read in a live run: no orders.
+
+    From `test_pending_order_read_failure_stops_live_run`. The first read (the intent recovery)
+    works; the second fails. Terminal outcome: the run raises ``RuntimeError: ledger offline``
+    after "Could not load pending orders — no orders placed" is sent. Discriminating calls: two
+    ``get_pending_orders`` reads, no signals call, no order. Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"get_pending_orders": Seq([], RuntimeError("ledger offline"))},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def pending_orders_read_failure_dry() -> dict:
+    """A dry run whose pending-order list cannot be read still rehearses its orders.
+
+    From `test_pending_order_read_failure_dry_run_still_rehearses`. Terminal outcome: success,
+    ``buys == ["MSFT"]`` (planned only). Discriminating calls: ``get_pending_orders`` raised,
+    "DRY RUN buy: MSFT" sent, no submit call.
+    """
+    return dict(
+        dry_run=True,
+        membership=FIXTURE_SPEC,
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"get_pending_orders": RuntimeError("ledger offline")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+# --------------------------------------------------------------------------- finding 7
+
+
+@scenario
+def loss_halt_notice_fails_with_pending() -> dict:
+    """A failed halt notice does not suppress the separate pending-order warning.
+
+    From `test_loss_halt_notice_failure_does_not_block_exit` and
+    `test_loss_halt_skips_pending_exit_and_cash_sweep`. A drawdown halt (peak 120,000) with a
+    working legacy BUY for MSFT; the "HALTED buys" notice raises ``RuntimeError: telegram down``.
+    Terminal outcome: success, ``sells == ["AAPL"]``, ``buys == []``. Discriminating calls in
+    order: the "HALTED buys; exits only" send (raised), then the "Pending orders may still fill"
+    send (delivered), then SELL AAPL qty 10.0. Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["NVDA"], ["AAPL"]),
+        persist={
+            "get_peak_value": 120_000.0,
+            "get_pending_orders": [_pending("pend-1", "MSFT", "BUY")],
+        },
+        existing_orders=[
+            _held_order("pend-1", "legacy-1", "MSFT", "BUY", 3300.0, [{"status": "new"}])
+        ],
+        notifier={"HALTED buys": RuntimeError("telegram down")},
+        replies=_replies(_acct(), _AAPL_ONE),
+    )
+
+
+@scenario
+def catastrophe_stop_unassessable_notice_fails_with_pending() -> dict:
+    """A failed unassessable-stop notice does not suppress the pending-order warning.
+
+    From `test_unassessable_stop_still_attempts_pending_warning_when_halt_notice_fails`. ZZZ has
+    a NaN cost basis and a working legacy BUY exists; the "HALTED buys" notice raises. Terminal
+    outcome: success, ``buys == []``, errors[0] == "Cannot assess catastrophe stop for: ZZZ".
+    Discriminating calls: the "HALTED buys; exits only" send (raised) followed by the "Pending
+    orders may still fill" send (delivered); no ``submit_buy``. Intents: none created.
+    """
+    zzz = _pos(5.0, 20.0, unrealized_pl=0.0)
+    zzz["cost_basis"] = float("nan")
+    return dict(
+        env=_STOP_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"get_pending_orders": [_pending("pend-1", "NVDA", "BUY")]},
+        existing_orders=[
+            _held_order("pend-1", "legacy-1", "NVDA", "BUY", 3300.0, [{"status": "new"}])
+        ],
+        notifier={"HALTED buys": RuntimeError("telegram down")},
+        replies=_replies(_acct(), {"ZZZ": zzz}),
+    )
+
+
+# --------------------------------------------------------------------------- finding 8
+
+
+@scenario
+def poll_clock_failure() -> dict:
+    """A failing clock read while polling is ignored and the poll still completes.
+
+    Adapted from `_poll_orders` (no `run`-level test). The sell of AAPL is ``new`` twice, then
+    ``filled``; the broker clock raises on the poll's read (so the market is assumed open and
+    the wait budget is 15 seconds). Terminal outcome: success, ``sells == ["AAPL"]``.
+    Discriminating calls: ``get_clock`` raised after the order was submitted, then three
+    ``get_order`` polls with two one-second sleeps (the fake clock moves 1.0 each), then settle.
+    Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], ["AAPL"]),
+        fills={
+            "AAPL": [
+                {"status": "new"},
+                {"status": "new"},
+                {"status": "filled", "filled_qty": 10.0, "filled_avg_price": 150.0},
+            ]
+        },
+        replies=_replies(
+            _acct(), _AAPL_ONE, [_CLOCK_OPEN, RuntimeError("clock down"), _CLOCK_OPEN]
+        ),
+    )
+
+
+@scenario
+def poll_transient_lookup_error() -> dict:
+    """A failed lookup in the middle of polling is logged and the next poll succeeds.
+
+    Adapted from `_poll_orders`. The first ``get_order`` raises ``RuntimeError: blip``; the second
+    returns the order, filled. Terminal outcome: success, ``sells == ["AAPL"]``. Discriminating
+    calls: two ``get_order("ord-1")`` calls (the first raised) with one one-second sleep between
+    them. Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], ["AAPL"]),
+        replies={**_replies(_acct(), _AAPL_ONE), "get_order": [RuntimeError("blip"), None]},
+    )
+
+
+@scenario
+def poll_final_lookup_fails() -> dict:
+    """When every poll and the final lookup fail, the order is reported as pending.
+
+    Adapted from `_poll_orders` (the fallback record). Every ``get_order`` raises; the order
+    itself is ``filled`` at the broker, so the client-id lookup during recovery settles it.
+    Terminal outcome: success, ``sells == ["AAPL"]``, ``buys == []``, errors ==
+    ["SELL AAPL not fully filled (pending); new strategy buys blocked"]. Discriminating calls:
+    16 failed ``get_order`` polls (15 in the loop, 1 final), 15 sleeps, a trade alert with
+    status ``pending`` and amount 1500.0 (the fallback record has no fill), no BUY MSFT.
+    Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        fills={"AAPL": [{"status": "filled", "filled_qty": 10.0, "filled_avg_price": 150.0}]},
+        replies={**_replies(_acct(), _AAPL_ONE), "get_order": [RuntimeError("poll down")]},
+    )
+
+
+@scenario
+def poll_market_closed_short_wait() -> dict:
+    """With the market closed during polling the wait budget is 2 seconds, not 15.
+
+    Adapted from `_poll_orders`. The first clock read (the run gate) says open, the poll's read
+    says closed. The AAPL sell stays ``partially_filled``. Terminal outcome: the run raises
+    ``RuntimeError: Unresolved working orders block submissions``. Discriminating calls: 3
+    ``get_order`` calls (2 in the loop under the 2.0 second budget, 1 final lookup), 2 sleeps.
+    Intents: 1 unresolved (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], ["AAPL"]),
+        fills={"AAPL": [_PARTIAL]},
+        replies=_replies(
+            _acct(),
+            _AAPL_ONE,
+            [_CLOCK_OPEN, {"is_open": False, "next_close": "2026-06-22 09:30:00-04:00"}],
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- finding 9
+
+
+@scenario
+def split_correction_held() -> dict:
+    """A held, unapplied-split name stays in the final report at its corrected value.
+
+    From `TestDailyPnl.test_unapplied_split_corrects_the_daily_summary`. MNST (broker qty
+    20.80410098, never doubled) is held and not sold; NVDA is bought. Terminal outcome: success,
+    ``buys == ["NVDA"]``. Discriminating calls: ``save_split_correction("MNST", "2026-06-10",
+    2.0)``; BUY NVDA 3300.0; the daily summary's value is the booked 100,500.0 plus MNST's
+    market value again (993.81...), MNST's reported market value is doubled to 1,987.6..., and
+    ``booked_equity`` is 100500.0; the ``log_snapshot`` payload carries the corrected value
+    and the corrected MNST position. Intents: 1 settled (the NVDA buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["NVDA"], []),
+        splits={
+            "corp_splits": {"MNST": [(date(2026, 6, 10), 2.0)]},
+            "activity_applied": set(),
+        },
+        persist={"get_latest_snapshot": 99_000.0},
+        replies=_replies(
+            [_acct(100_000.0, 97_000.0), _acct(100_500.0, 93_700.0, last_equity=100_000.0)],
+            [
+                {"MNST": _pos(_MNST_QTY, 47.77, cost_basis=1887.11, unrealized_pl=_MNST_PL)},
+                {
+                    "MNST": _pos(_MNST_QTY, 47.77, cost_basis=1887.11, unrealized_pl=_MNST_PL),
+                    "NVDA": _pos(33.0, 101.0, cost_basis=3300.0),
+                },
+            ],
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- finding 10
+
+
+@scenario
+def post_trade_positions_read_failure() -> dict:
+    """The positions read after trading fails: the run says orders may have been submitted.
+
+    From `test_post_trade_read_failure_reports_orders_may_have_been_submitted`. Terminal
+    outcome: the run raises ``RuntimeError: positions down`` after the "Account or positions
+    data unavailable after trading: orders may have been submitted" notice. Discriminating
+    calls: SELL AAPL qty 10.0, then ``get_account`` (works), ``get_positions`` (raised);
+    no ``log_snapshot``, no daily summary. Intents: 1 settled (the AAPL sell).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend([], ["AAPL"]),
+        replies=_replies(_acct(), [_AAPL_ONE, RuntimeError("positions down")]),
+    )
+
+
+@scenario
+def dry_run_catastrophe_stop() -> dict:
+    """A dry run reports a catastrophe stop and submits nothing.
+
+    From `test_loss_halt_dry_run_reports_exit_without_submitting_orders`. NXPI is at -40% with
+    the stop enabled. Terminal outcome: success, ``sells == ["NXPI"]``, ``buys == ["MSFT"]``
+    (planned). Discriminating calls: "DRY RUN catastrophe stop: NXPI (qty 100.0, unrealized
+    -40.0% breached -25.0% floor)", "DRY RUN buy: MSFT ($3300 ...)", no submit call and no intent.
+    """
+    return dict(
+        dry_run=True,
+        membership=FIXTURE_SPEC,
+        env=_STOP_ENV,
+        signals=_blend(["MSFT"], []),
+        replies=_replies(
+            _acct(), {"NXPI": _pos(100.0, 60.0, cost_basis=10_000.0, unrealized_pl=-4000.0)}
+        ),
+    )
+
+
+@scenario
+def dry_run_sweep_sell_and_buy() -> dict:
+    """A dry run announces the sweep funding sell and the sweep buy without ordering.
+
+    From `TestCashSweepEnabled`. The account replies are scripted: cash 1,000 at the start (so a
+    funding sell is needed for the MSFT buy) and 50,000 at the sizing read (so a sweep buy fires).
+    Terminal outcome: success, ``buys == ["MSFT"]``. Discriminating calls in order: "DRY RUN
+    sweep sell: SPY ($7300, funding strategy buys)", "DRY RUN buy: MSFT", "DRY RUN sweep buy: SPY
+    ($45000)"; no submit call and no intent.
+    """
+    return dict(
+        dry_run=True,
+        membership=FIXTURE_SPEC,
+        env={**_LIVE_ENV, **_SWEEP_ENV},
+        signals=_blend(["MSFT"], []),
+        replies=_replies(
+            [_acct(100_000.0, 1_000.0), _acct(100_000.0, 50_000.0)],
+            {"SPY": _pos(247.5, 400.0)},
+        ),
+    )
+
+
+@scenario
+def invalid_equity_halt() -> dict:
+    """A NaN portfolio value halts before any order.
+
+    From `test_invalid_equity_halts_before_orders`. Terminal outcome: success with
+    ``errors == ["Invalid portfolio value; drawdown cannot be assessed"]``. Discriminating
+    calls: "HALTED:" notice, no ``save_peak_value``, no order. Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        replies=_replies(_acct(float("nan"), 50_000.0, last_equity=100_000.0), _AAPL_ONE),
+    )
+
+
+@scenario
+def peak_save_failure() -> dict:
+    """The new drawdown peak cannot be saved: halt before any order.
+
+    From `TestPersistedDrawdown.test_failed_peak_save_halts_before_orders`. Terminal outcome:
+    success with ``errors == ["Risk history unavailable: could not persist drawdown peak"]``.
+    Discriminating calls: ``save_peak_value(100000.0)`` raised, "HALTED:" notice, no order.
+    Intents: none created.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        persist={"save_peak_value": RuntimeError("write failed")},
+        replies=_replies(_acct(), _AAPL_ONE),
+    )
+
+
+def _acct_without_previous_close(last_equity: float | None) -> dict:
+    account = _acct()
+    account["last_equity"] = last_equity
+    return account
+
+
+@scenario
+def last_equity_missing_halt() -> dict:
+    """A missing previous-close equity halts before any order.
+
+    From `test_missing_broker_equity_halts_with_notice_before_orders`. Terminal outcome:
+    success with ``errors == ["Invalid broker previous-close equity; daily loss cannot be
+    assessed"]``. Discriminating calls: ``save_peak_value`` happened, "HALTED:" notice, no order.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        replies=_replies(_acct_without_previous_close(None), _AAPL_ONE),
+    )
+
+
+@scenario
+def last_equity_invalid_halt() -> dict:
+    """A zero previous-close equity halts before any order.
+
+    From `TestPersistedDrawdown.test_invalid_broker_previous_close_halts`. Terminal outcome:
+    success with ``errors == ["Invalid portfolio value or daily baseline; loss cannot be
+    assessed"]``. Discriminating calls: "HALTED:" notice, no order.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        replies=_replies(_acct_without_previous_close(0.0), _AAPL_ONE),
+    )
+
+
+@scenario
+def held_buy_candidate_skipped() -> dict:
+    """A buy candidate that is already held is skipped.
+
+    From `TestBuyEntries.test_skips_buy_if_already_holding`. Terminal outcome: success,
+    ``buys == ["NVDA"]``. Discriminating calls: one BUY NVDA 3300.0 and no BUY AAPL.
+    Intents: 1 settled (the NVDA buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["AAPL", "NVDA"], []),
+        replies=_replies(_acct(), _AAPL_ONE),
+    )
+
+
+@scenario
+def sweep_sizing_failure() -> dict:
+    """If the sweep sizing account read fails, no sweep buy is placed and the run goes on.
+
+    Adapted from the sweep-buy block of `_run`. Cash is 50,000, so a sweep buy would fire; the
+    sizing read raises ``RuntimeError: sizing read``. Terminal outcome: success with no orders.
+    Discriminating calls: three ``get_account`` calls (the second raised), no ``submit_buy``.
+    Intents: none created.
+    """
+    return dict(
+        env={**_LIVE_ENV, **_SWEEP_ENV},
+        signals=_blend([], []),
+        replies=_replies([_acct(), RuntimeError("sizing read"), _acct()], {}),
+    )
+
+
+@scenario
+def invalid_catastrophe_threshold() -> dict:
+    """An invalid stop threshold stops the run before the lock, schema or signals.
+
+    From `test_invalid_catastrophe_threshold_stops_before_orders`. ``CATASTROPHE_STOP_PCT`` is
+    ``5`` (a gain, not a loss). Terminal outcome: the run raises ``ValueError: Invalid
+    CATASTROPHE_STOP_PCT; expected a loss in [-1, 0)`` after a "HALTED:" notice with that text.
+    Discriminating calls: only that one ``send``; no ``lock.enter``, no schema init.
+    """
+    return dict(
+        env={**_STOP_ENV, "CATASTROPHE_STOP_PCT": "5"},
+        signals=_blend(["MSFT"], []),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def market_clock_failure_fail_open() -> dict:
+    """If the market clock cannot be read the run assumes the market is open and trades.
+
+    From `TestMarketGates.test_market_open_get_clock_failure_fails_open`. Every ``get_clock``
+    raises (the poll's read is swallowed as well). Terminal outcome: success,
+    ``buys == ["MSFT"]``. Discriminating calls: ``get_clock`` raised at the gate and again in the
+    poll, BUY MSFT 3300.0 still submitted. Intents: 1 settled (the MSFT buy).
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        replies=_replies(_acct(), {}, [RuntimeError("clock down")]),
+    )
+
+
+@scenario
+def schema_init_failure() -> dict:
+    """A failing schema initialisation is logged and trading goes on.
+
+    From `TestErrorHandling.test_db_schema_failure_does_not_block_trading`. Terminal outcome:
+    success, ``buys == ["MSFT"]``. Discriminating calls: ``init_paper_schema`` raised
+    (``RuntimeError: ddl failed``) and BUY MSFT 3300.0 afterwards. Intents: 1 settled.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], []),
+        persist={"init_paper_schema": RuntimeError("ddl failed")},
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def signal_gate_error() -> dict:
+    """A signal gate failure sends the gate notice and raises: no orders.
+
+    From `TestFailClosed.test_every_gate_failure_places_no_order_and_alerts`. Terminal outcome:
+    the run raises ``SignalGateError: [empty_frame] no bars``; "Signal gate — no orders placed:"
+    carries that text. Discriminating calls: ``generate_core_signals`` (raised), one ``send``,
+    no account read, no tape refresh.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=SignalGateError("empty_frame", "no bars"),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def signal_generation_error() -> dict:
+    """Any other signal error sends the failure notice and raises: no orders.
+
+    From `TestFailClosed.test_unexpected_signal_exception_also_fails_closed`. Terminal outcome:
+    the run raises ``RuntimeError: yfinance down``; "Paper trading failed: signal generation
+    error" carries that text. Discriminating calls: ``generate_core_signals`` (raised), one
+    ``send``, no account read.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=RuntimeError("yfinance down"),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def overlay_fallback_and_membership_warning() -> dict:
+    """An overlay fallback and a membership-list warning are announced and trading goes on.
+
+    From `TestLiveMembershipGate.test_a_warning_reaches_the_notifier_and_trading_goes_on`. The
+    signals say the overlay reused last month's weights and the sleeve carries a membership
+    ``warn``. Terminal outcome: success, ``buys == ["MSFT"]``. Discriminating calls in order:
+    the "Membership list" warning, the "Overlay fallback" warning, then BUY MSFT 3300.0.
+    Intents: 1 settled (the MSFT buy).
+    """
+    blend = _blend(["MSFT"], [])
+    blend["fallback_used"] = True
+    blend["sleeves"]["sp500"]["membership_gate"] = {
+        "level": "warn",
+        "message": "the S&P 500 list was verified 40 days ago",
+    }
+    return dict(env=_LIVE_ENV, signals=blend, replies=_replies(_acct(), {}))
+
+
+@scenario
+def account_read_failure() -> dict:
+    """The first account read fails: halt with a notice, no orders.
+
+    From `test_account_read_failure_halts_with_notice_before_orders`. Terminal outcome: the run
+    raises ``RuntimeError: account down`` after "HALTED: Account data unavailable; no orders
+    submitted". Discriminating calls: ``get_account`` (raised), no ``get_positions``, no order.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        replies=_replies(RuntimeError("account down"), _AAPL_ONE),
+    )
+
+
+@scenario
+def positions_read_failure() -> dict:
+    """The first positions read fails: halt with a notice, no orders.
+
+    From `test_position_read_failure_halts_with_notice_before_orders`. Terminal outcome: the run
+    raises ``RuntimeError: positions down`` after "HALTED: Position data unavailable; no orders
+    submitted". Discriminating calls: ``get_positions`` (raised), no order.
+    """
+    return dict(
+        env=_LIVE_ENV,
+        signals=_blend(["MSFT"], ["AAPL"]),
+        replies=_replies(_acct(), RuntimeError("positions down")),
     )

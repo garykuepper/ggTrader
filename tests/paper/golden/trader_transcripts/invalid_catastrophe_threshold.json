@@ -1,0 +1,15 @@
+{
+  "calls": [
+    {
+      "args": [
+        "<b>🛑 HALTED:</b> Invalid CATASTROPHE_STOP_PCT; expected a loss in [-1, 0)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    }
+  ],
+  "raised": "ValueError: Invalid CATASTROPHE_STOP_PCT; expected a loss in [-1, 0)",
+  "result": null,
+  "skipped_writes": []
+}
