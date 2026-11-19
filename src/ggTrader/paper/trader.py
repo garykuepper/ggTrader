@@ -16,6 +16,7 @@ from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
+from ggTrader.paper.models import SubmittedOrder
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
     attach_broker_order,
@@ -412,9 +413,7 @@ class PaperTrader:
                 )
         return still_pending
 
-    def _poll_orders(
-        self, orders: list[tuple[str, str, str, float, str | None]]
-    ) -> dict[str, dict]:
+    def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, dict]:
         """Poll submitted orders until they reach a terminal status (or a
         wait budget expires), returning `{order_id: order_info}`.
 
@@ -435,7 +434,7 @@ class PaperTrader:
             _log.debug("Broker clock lookup skipped: %s", type(exc).__name__)
 
         max_wait = 15.0 if is_open else 2.0
-        remaining = {item[0]: item for item in orders}
+        remaining = {item.order_id: item for item in orders}
 
         while remaining and (time.time() - start_time) < max_wait:
             for oid in list(remaining.keys()):
@@ -459,10 +458,10 @@ class PaperTrader:
             except Exception:
                 filled_orders[oid] = {
                     "id": oid,
-                    "symbol": item[2],
-                    "side": item[1],
+                    "symbol": item.symbol,
+                    "side": item.side,
                     "qty": None,
-                    "notional": item[3] if item[1] == "BUY" else None,
+                    "notional": item.amount if item.side == "BUY" else None,
                     "filled_qty": 0.0,
                     "filled_avg_price": 0.0,
                     "status": "pending",
@@ -1033,9 +1032,7 @@ class PaperTrader:
         executed_sells: list[str] = []
         executed_buys: list[str] = []
         errors: list[str] = []
-        # 5th element is the ledger `reason` tag: None for an ordinary
-        # strategy order, cash_sweep.SWEEP_TRADE_REASON for a sweep order.
-        pending_orders: list[tuple[str, str, str, float, str | None]] = []
+        pending_orders: list[SubmittedOrder] = []
 
         # Catastrophe stop (feature-flagged, default OFF -- see
         # catastrophe_stop.py). A position the strategy's own RSI exit never
@@ -1111,7 +1108,7 @@ class PaperTrader:
                 stopped_symbols.add(symbol)
                 executed_sells.append(symbol)
                 pending_orders.append(
-                    (
+                    SubmittedOrder(
                         oid,
                         "SELL",
                         symbol,
@@ -1213,7 +1210,7 @@ class PaperTrader:
                             "SELL", sweep_sym, sell_qty, cash_sweep.SWEEP_TRADE_REASON
                         )
                         pending_orders.append(
-                            (
+                            SubmittedOrder(
                                 oid,
                                 "SELL",
                                 sweep_sym,
@@ -1249,7 +1246,9 @@ class PaperTrader:
             executed_sells.append(symbol)
             regular_sell_count += 1
             pending_orders.append(
-                (oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None)
+                SubmittedOrder(
+                    oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None
+                )
             )
 
         # Wait for every sell submitted so far (catastrophe stop, sweep funding,
@@ -1257,7 +1256,7 @@ class PaperTrader:
         # fill, and on 2026-09-25 buys sent while the funding sell was still
         # working were rejected for insufficient buying power (6 of 8).
         filled_orders: dict[str, dict] = self._poll_orders(
-            [o for o in pending_orders if o[1] == "SELL"]
+            [o for o in pending_orders if o.side == "SELL"]
         )
 
         if filled_orders and not self._dry_run:
@@ -1265,7 +1264,8 @@ class PaperTrader:
 
         # A submitted exit does not free a position slot unless it fully fills.
         if not self._dry_run:
-            for oid, side, symbol, _, reason in pending_orders:
+            for order in pending_orders:
+                oid, side, symbol, reason = order.order_id, order.side, order.symbol, order.reason
                 if side != "SELL" or reason == cash_sweep.SWEEP_TRADE_REASON:
                     continue
                 info = filled_orders.get(oid, {})
@@ -1332,11 +1332,11 @@ class PaperTrader:
                 executed_buys.append(symbol)
                 buys_attempted += 1
                 sleeve_open_count[universe] += 1
-                pending_orders.append((oid, "BUY", symbol, sleeve_notional, None))
+                pending_orders.append(SubmittedOrder(oid, "BUY", symbol, sleeve_notional, None))
 
         # Poll the remaining (buy) orders until they fill (or timeout)
         filled_orders.update(
-            self._poll_orders([o for o in pending_orders if o[0] not in filled_orders])
+            self._poll_orders([o for o in pending_orders if o.order_id not in filled_orders])
         )
 
         if pending_orders and not self._dry_run:
@@ -1369,7 +1369,7 @@ class PaperTrader:
                     oid = self._submit_order(
                         "BUY", sweep_sym, buy_action.notional, cash_sweep.SWEEP_TRADE_REASON
                     )
-                    sweep_buy_order = (
+                    sweep_buy_order = SubmittedOrder(
                         oid,
                         "BUY",
                         sweep_sym,
@@ -1385,7 +1385,8 @@ class PaperTrader:
         # working at run end (queued after the close, or a partial fill not yet
         # complete) are persisted so the next run reconciles their final fill;
         # terminally-failed orders are simply dropped.
-        for oid, side, symbol, amount, _reason in pending_orders:
+        for order in pending_orders:
+            oid, side, symbol, amount = order.order_id, order.side, order.symbol, order.amount
             info = filled_orders.get(oid, {})
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty") or 0.0

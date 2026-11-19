@@ -18,6 +18,7 @@ import pytest
 
 from ggTrader.paper import persist
 from ggTrader.paper import trader as trader_module
+from ggTrader.paper.models import SubmittedOrder
 from ggTrader.paper.trader import PaperTrader
 from tests.paper.transcript import harness
 from tests.paper.transcript.harness import persist_function_names, run_scenario
@@ -198,14 +199,14 @@ def _broker(get_order: Callable[[str], dict]) -> MagicMock:
 
 
 def test_poll_fallback_record_is_built_from_the_order_tuple() -> None:
-    """Every field of the fallback, for a SELL (no notional) and a BUY (notional from field 3)."""
+    """Every field of the fallback, for a SELL (no notional) and a BUY (notional = the amount)."""
 
     def get_order(oid: str) -> dict:
         raise RuntimeError("down")
 
     orders = [
-        ("ord-1", "SELL", "SPY", 7300.0, "cash_sweep"),
-        ("ord-2", "BUY", "MSFT", 3300.0, None),
+        SubmittedOrder("ord-1", "SELL", "SPY", 7300.0, "cash_sweep"),
+        SubmittedOrder("ord-2", "BUY", "MSFT", 3300.0, None),
     ]
     with _trader(_broker(get_order)) as trader:
         filled = trader._poll_orders(orders)
@@ -234,7 +235,10 @@ def test_poll_looks_orders_up_by_the_first_tuple_field() -> None:
         asked.append(oid)
         return {"id": oid, "status": "filled", "filled_qty": 1.0, "filled_avg_price": 2.0}
 
-    orders = [("ord-1", "SELL", "AAA", 1.0, None), ("ord-2", "BUY", "BBB", 2.0, None)]
+    orders = [
+        SubmittedOrder("ord-1", "SELL", "AAA", 1.0, None),
+        SubmittedOrder("ord-2", "BUY", "BBB", 2.0, None),
+    ]
     with _trader(_broker(get_order)) as trader:
         filled = trader._poll_orders(orders)
 
@@ -246,3 +250,44 @@ def test_poll_of_no_orders_returns_an_empty_dict_without_a_broker_call() -> None
     with _trader(broker) as trader:
         assert trader._poll_orders([]) == {}
     broker.get_clock.assert_not_called()
+
+
+# --------------------------------------------------------------------------- the order records
+
+
+def _submitted_orders(name: str) -> list[SubmittedOrder]:
+    """Every distinct order record `run` hands to `_poll_orders`, in first-seen order."""
+    seen: dict[str, SubmittedOrder] = {}
+    real = PaperTrader._poll_orders
+
+    def spy(self: PaperTrader, orders: list[SubmittedOrder]) -> dict[str, dict]:
+        for order in orders:
+            seen.setdefault(order.order_id, order)
+        return real(self, orders)
+
+    with patch.object(PaperTrader, "_poll_orders", spy):
+        run_scenario(SCENARIOS[name])
+    return list(seen.values())
+
+
+def test_pending_order_records_carry_every_field_including_the_reason() -> None:
+    """No transcript shows the ledger tag of a pending order (the alert and the slot check read
+    only the sweep tag), so this pins the record each submit site builds."""
+    orders = _submitted_orders("pending_order_all_five_fields")
+    assert [(o.side, o.symbol, o.reason) for o in orders] == [
+        ("SELL", "NXPI", "catastrophe_stop"),
+        ("SELL", "SPY", "cash_sweep"),
+        ("SELL", "AAPL", None),
+        ("BUY", "MSFT", None),
+    ]
+    assert [o.amount for o in orders] == [6000.0, 7300.0, 1500.0, 3300.0]
+    assert all(o.order_id for o in orders) and len({o.order_id for o in orders}) == 4
+
+
+def test_sweep_buy_record_carries_the_sweep_reason() -> None:
+    orders = _submitted_orders("sweep_buy_after_strategy_orders")
+    sweep = [o for o in orders if o.reason is not None]
+    assert [(o.side, o.symbol, o.amount, o.reason) for o in sweep] == [
+        ("BUY", "SPY", 41700.0, "cash_sweep")
+    ]
+    assert all(o.reason is None for o in orders if o not in sweep)
