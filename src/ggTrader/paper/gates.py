@@ -30,13 +30,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 
 from ggTrader.data.bars import Bars
+from ggTrader.paper.constants import PT
 
-PT = ZoneInfo("America/Los_Angeles")
 #: Signals ready after this Pacific time place no orders: the market closes at 13:00 PT, and a
 #: DAY order sent after the close queues to the next open (the slippage the 12:45 cron avoids).
 LATE_RUN_CUTOFF = time(12, 55)

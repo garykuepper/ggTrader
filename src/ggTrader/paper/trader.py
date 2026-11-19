@@ -8,10 +8,12 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
+from ggTrader.paper.constants import ET as _ET
+from ggTrader.paper.constants import PT as _PT
+from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
@@ -75,8 +77,6 @@ _SPLIT_LOOKBACK_DAYS = 14
 # point -- only the repeated Telegram noise is capped.
 _STALE_PENDING_DAYS = 5
 
-_ET = ZoneInfo("America/New_York")
-_PT = ZoneInfo("America/Los_Angeles")
 
 #: The S&P 500 list `ggt paper` reads: the latest database vintage, behind the freshness gate of
 #: `ggTrader.data.membership_gate` (slice M4). If the database cannot be read, or the list is too
@@ -248,7 +248,7 @@ class PaperTrader:
                 ):
                     raise ValueError("Invalid order fill")
                 status = info.get("status")
-                terminal = {"filled", "canceled", "rejected", "expired"}
+                terminal = set(TERMINAL_STATUSES)
                 active = {
                     "new",
                     "accepted",
@@ -386,7 +386,7 @@ class PaperTrader:
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty")
             filled_price = info.get("filled_avg_price")
-            terminal = status in ("filled", "canceled", "rejected", "expired")
+            terminal = status in TERMINAL_STATUSES
             if not terminal:
                 still_pending.add(po["symbol"])
                 self._flag_if_stale(po, now)
@@ -444,7 +444,7 @@ class PaperTrader:
                     status = order_info["status"]
                     # A partial fill is NOT terminal: keep polling so it can
                     # complete (or time out) rather than booking the partial.
-                    if status in ("filled", "canceled", "rejected", "expired"):
+                    if status in TERMINAL_STATUSES:
                         filled_orders[oid] = order_info
                         remaining.pop(oid)
                 except Exception as e:
