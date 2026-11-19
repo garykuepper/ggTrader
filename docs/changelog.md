@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-19 (whole-job broker candidate: fixes from an independent Sol review)
+
+- `scripts/run_tests.sh` has a new switch, `GGT_TEST_NO_SCOPE=1`. It skips only the nested
+  `systemd-run` scope; the heavy-job lock and the `MemAvailable` check still apply. In this mode
+  `scripts/_heavy_job.sh` exits 75 rather than run when it cannot find the shared lock in the git
+  directory (it does not fall back to a lock in the checkout), cannot open the lock, or cannot
+  read `MemAvailable`. It also cancels an inherited `GGT_TEST_NO_CGROUP=1`. The broker's driver
+  (`scripts/whole_job_driver.py`) now uses it instead of `GGT_TEST_NO_CGROUP=1`, which had
+  switched off the lock and the check for broker jobs. CI behaviour is unchanged.
+- `scripts/whole_job_broker.py`: when a registration fails before admission, the broker now
+  forgets the invocation only after it has verified both the cgroup and the descriptor store
+  are empty. On a kill error, a cgroup that does not empty, or an unverified drain, it records
+  the identity as held (new `AdmissionState.retain`) and keeps the pinned handles. Before this
+  fix it reported "stopped" and went idle.
+- `deploy/whole_job/guest/harness.sh`: `s1-outcome` was always true; it now checks the reported
+  outcome. The 2026-11-19 guest run's `s1-outcome` PASS was vacuous. The corrected harness and
+  these fixes have not been run in a guest, and nothing is installed on Encom.
+
 ## 2026-11-18 (test-run safety after the out-of-memory incident)
 
 - Encom ran out of memory at about 13:53 and thrashed until it was power-cycled at 17:58. Two

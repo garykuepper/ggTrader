@@ -77,7 +77,7 @@ SH
     check s1-order sh -c "grep -n start $M | head -1 | grep -q tier"
     check s1-no-escape sh -c "! grep -q escape $M"
     echo "status: $(op status)"
-    check s1-outcome sh -c "op() { :; }; true"
+    check s1-outcome test "$(op status | field outcome)" = "job ended; driver reported status 0"
     check s1-reported test "$(op status | field reported)" = 0
     check s1-cleared test "$(state)" = "True False"
     check s1-store-empty test "$(nstore)" = 0

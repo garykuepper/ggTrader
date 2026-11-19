@@ -214,6 +214,21 @@ class AdmissionState:
             state.update(held=False, job=job, boot=boot)
             self._write(state)
 
+    def retain(self, job: str, boot: str) -> None:
+        """Record an identity that stays held, without ever releasing admission.
+
+        For a job that was never admitted but could not be shown stopped: the identity must
+        survive a broker restart so that only a verified stop or explicit cleanup can clear it.
+        """
+        if not all(isinstance(value, str) and 0 < len(value) <= 512 for value in (job, boot)):
+            raise ValueError("invalid job or boot identifier")
+        with self._lock():
+            state = self._current()
+            if not state["held"] or state["job"]:
+                raise PermissionError("admission must be held and clear to retain a job")
+            state.update(job=job, boot=boot)
+            self._write(state)
+
     def snapshot(self) -> dict[str, Any]:
         """Read this epoch's held state and retained identity under the lock."""
         with self._lock():

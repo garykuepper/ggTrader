@@ -1,7 +1,9 @@
 """Driver behaviour with real short-lived child processes and a local socket pair only."""
 
+import json
 import socket
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -74,3 +76,20 @@ def test_terminal_first_phase_skips_second(monkeypatch) -> None:
 
 def test_no_registration_means_no_work() -> None:
     assert driver.drive(None) == 75
+
+
+def test_phase_keeps_the_heavy_job_lock_and_memory_preflight(tmp_path: Path) -> None:
+    """The unit cannot nest a scope, but the runner's shared lock and preflight must still run."""
+    out = tmp_path / "env.json"
+    command = (
+        sys.executable,
+        "-c",
+        f"import json, os; open({str(out)!r}, 'w').write(json.dumps(dict(os.environ)))",
+    )
+    left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    with left, right:
+        assert driver.run_child(command, 20, left) == PhaseResult(0)
+    env = json.loads(out.read_text())
+    assert env.get("GGT_TEST_NO_SCOPE") == "1"
+    for bypass in ("GGT_TEST_NO_CGROUP", "GGT_HEAVY_LOCK_HELD", "GGT_TEST_DRY_RUN"):
+        assert bypass not in env

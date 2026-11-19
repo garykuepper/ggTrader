@@ -400,6 +400,7 @@ class Broker:
             raise Refused("registration window expired")
         peer = authenticate(self.system, pidfd, TEST_UNIT, TEST_CGROUP)
         handles = self.system.open_job_cgroup(peer.control_group_id)
+        record: JobRecord | None = None
         try:
             kill_id, events_id = handles.ids()
             record = JobRecord(attempt, peer.invocation, peer.control_group_id, kill_id, events_id)
@@ -414,7 +415,7 @@ class Broker:
                 raise Refused("descriptor store does not hold exactly the pinned pair")
             self.state.release(record.encode(), self.boot)
         except BaseException:
-            self._abort_unadmitted(handles)
+            self._abort_unadmitted(handles, record)
             raise
         self.record, self.record_boot, self.handles, self.driver = record, self.boot, handles, peer
         self.pending, self.mode = None, "running"
@@ -545,20 +546,55 @@ class Broker:
         except BaseException as exc:  # noqa: BLE001 - the record is already clear
             self.log(f"descriptor store cleanup failed: {exc!r}; next start will refuse")
 
-    def _abort_unadmitted(self, handles: Handles) -> None:
-        """A registration failed before admission: kill that exact cgroup and forget it."""
-        self.pending, self.mode = None, "idle"
-        self.outcome = "registration refused; unadmitted invocation stopped"
+    def _abort_unadmitted(self, handles: Handles, record: JobRecord | None) -> None:
+        """A registration failed before admission: kill that exact cgroup, then forget it.
+
+        The handles are closed and the identity dropped only after the cgroup is verified empty
+        and the descriptor store verified empty. Otherwise the job stays held: its identity is
+        persisted (held) and the pinned handles kept, so ``@stop:<attempt>``, the cgroup
+        emptying, or a broker restart (which restores the stored pair) can still clear it.
+        """
+        self.pending = None
         try:
             self.system.kill(handles)
-            self.system.wait_empty(handles, STOP_SECONDS)
-        except BaseException as exc:  # noqa: BLE001 - the driver also times out without go
-            self.log(f"stopping unadmitted invocation failed: {exc!r}")
-        handles.close()
-        try:
+            if not self.system.wait_empty(handles, STOP_SECONDS):
+                raise TimeoutError("unadmitted cgroup did not empty")
             self._drain_store(self.system.fdstore_dump(), (KILL_NAME, EVENTS_NAME))
-        except BaseException as exc:  # noqa: BLE001 - start refuses a non-empty store
-            self.log(f"descriptor store cleanup failed: {exc!r}")
+            if self.system.fdstore_dump():
+                raise RuntimeError("descriptor store not empty after removal")
+        except BaseException as exc:  # noqa: BLE001 - fail closed: keep the job held
+            self._hold_unadmitted(handles, record, exc)
+            return
+        handles.close()
+        self.mode = "idle"
+        self.outcome = "registration refused; unadmitted invocation stopped"
+        self.log(self.outcome)
+
+    def _hold_unadmitted(
+        self, handles: Handles, record: JobRecord | None, exc: BaseException
+    ) -> None:
+        """Keep an unadmitted job that was not shown stopped as held, never as idle."""
+        self.handles, self.driver = handles, None
+        if record is not None:
+            try:
+                self.state.retain(record.encode(), self.boot)
+                self.record, self.record_boot = record, self.boot
+                self.mode = "held"
+                self.outcome = (
+                    f"registration refused; unadmitted invocation stop not verified ({exc!r}); "
+                    "held until a verified stop"
+                )
+                self.log(f"attempt {record.attempt}: {self.outcome}")
+                return
+            except BaseException as hold_exc:  # noqa: BLE001 - falls through to unverifiable
+                exc = hold_exc
+        self.record = record
+        self.mode = "unverifiable"
+        self.outcome = (
+            f"registration refused; unadmitted invocation stop not verified and not recorded "
+            f"({exc!r}); manual investigation needed"
+        )
+        self.log(self.outcome)
 
 
 def store_matches(entries: list[StoreEntry], record: JobRecord) -> bool:

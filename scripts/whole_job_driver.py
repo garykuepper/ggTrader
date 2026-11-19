@@ -3,8 +3,11 @@
 It is started by the broker as ``ggtrader-whole-job.service`` (see deploy/whole_job/). It takes
 no paths or PIDs: the broker socket and the phase commands are constants, and the commands run
 relative to the unit's fixed ``WorkingDirectory``. Each phase is an ordinary child process in
-the unit's own cgroup; it never starts a scope or service (``GGT_TEST_NO_CGROUP=1``), and an
-unprivileged system user without a user manager cannot start one. The broker answers ``go``
+the unit's own cgroup; it never starts a scope or service (``GGT_TEST_NO_SCOPE=1``), and an
+unprivileged system user without a user manager cannot start one. ``GGT_TEST_NO_SCOPE`` skips
+only the nested scope: ``scripts/run_tests.sh`` still takes the shared heavy-job lock and runs
+the free-memory preflight, and refuses (exit 75) when either cannot be done. It is not CI's
+``GGT_TEST_NO_CGROUP``, which skips both. The broker answers ``go``
 once the job is bound, and ``ok`` before each phase. A refusal, a lost broker connection or a
 deadline ends the job: the driver kills its phase's process group and exits non-zero. This is
 cooperative cleanup only; the broker's pinned ``cgroup.kill`` is the authoritative stop.
@@ -65,7 +68,7 @@ def run_child(command: Sequence[str], seconds: float, sock: socket.socket) -> Ph
     env = {
         "PATH": "/usr/bin:/bin",
         "LC_ALL": "C.UTF-8",
-        "GGT_TEST_NO_CGROUP": "1",
+        "GGT_TEST_NO_SCOPE": "1",
         "GGT_TEST_MAX_SECONDS": str(int(seconds)),
     }
     child = subprocess.Popen(list(command), env=env, start_new_session=True, close_fds=True)

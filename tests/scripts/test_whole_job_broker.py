@@ -637,3 +637,115 @@ def test_go_send_failure_holds_and_stops(env) -> None:
         broker.register(DRIVER_PIDFD, broken)
     assert len(system.kills) == 1 and system.kills[0]["held"]
     assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+# A registration that fails before admission must not forget a job it could not stop.
+
+
+def _refused_registration(env, monkeypatch) -> Broker:
+    """Start, then fail the record write after the pinned pair is stored exactly."""
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+
+    def fail(job: str, boot: str) -> None:
+        raise OSError("disk")
+
+    monkeypatch.setattr(broker.state, "release", fail)
+    with pytest.raises(OSError):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    return broker
+
+
+def _assert_held_with_handles(broker: Broker, system: FakeSystem, directory: Path) -> str:
+    assert broker.mode == "held"
+    assert broker.handles is not None and broker.record is not None
+    assert broker.handles.ids() == (broker.record.kill, broker.record.events)  # still open
+    state = persisted(directory)
+    assert state["held"] and JobRecord.parse(state["job"]) == broker.record
+    assert "invocation stopped" not in broker.outcome and "held until" in broker.outcome
+    assert broker.status()["attempt"] == broker.record.attempt
+    with pytest.raises(Refused):
+        broker.start()
+    return broker.record.attempt
+
+
+@pytest.mark.parametrize("failure", ["kill-raises", "never-empties"])
+def test_unadmitted_invocation_that_does_not_stop_stays_held(env, monkeypatch, failure) -> None:
+    system, _, directory, _ = env
+    if failure == "kill-raises":
+
+        def broken_kill(handles: Handles) -> None:
+            raise OSError("EBUSY")
+
+        monkeypatch.setattr(system, "kill", broken_kill)
+    else:
+        system.empties_on_kill = False
+    broker = _refused_registration(env, monkeypatch)
+    attempt = _assert_held_with_handles(broker, system, directory)
+    assert len(system.store) == 2  # the pinned pair is kept for a broker restart
+    with pytest.raises(Refused):
+        broker.phase(DRIVER_PIDFD, "core", lambda: pytest.fail("phase admitted"))
+    monkeypatch.undo()
+    system.empties_on_kill = True
+    broker.stop(attempt)  # the operator stop retries through the same pinned handles
+    assert broker.mode == "idle" and broker.handles is None
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+    assert system.store == []
+
+
+def test_held_unadmitted_invocation_clears_once_its_cgroup_empties(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    broker = _refused_registration(env, monkeypatch)
+    _assert_held_with_handles(broker, system, directory)
+    system.empties_on_kill = True
+    system.populated_value = False
+    broker.tick()
+    assert broker.mode == "idle" and not persisted(directory)["job"] and system.store == []
+
+
+def test_held_unadmitted_invocation_survives_a_broker_restart(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    broker = _refused_registration(env, monkeypatch)
+    attempt = _assert_held_with_handles(broker, system, directory)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.record.attempt == attempt
+    assert len(system.store) == 2  # not drained as orphans
+    system.empties_on_kill = True
+    restarted.stop(attempt)
+    assert restarted.mode == "idle" and system.store == []
+
+
+def test_unverified_store_drain_keeps_the_identity_held(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    real_remove = system.fdstore_remove
+    monkeypatch.setattr(system, "fdstore_remove", lambda name: None)  # removal silently ignored
+    broker = _refused_registration(env, monkeypatch)
+    assert len(system.kills) == 1  # the cgroup was killed and emptied
+    _assert_held_with_handles(broker, system, directory)
+    assert len(system.store) == 2
+    monkeypatch.setattr(system, "fdstore_remove", real_remove)
+    broker.stop(broker.record.attempt)
+    assert broker.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+
+
+def test_unadmitted_failure_without_a_recordable_identity_is_unverifiable(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+
+    def no_ids(self: Handles) -> tuple:
+        raise Refused("pinned handle has the wrong type or access mode")
+
+    monkeypatch.setattr(Handles, "ids", no_ids)
+    with pytest.raises(Refused):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert broker.mode == "unverifiable" and broker.handles is not None
+    for call in (broker.start, lambda: broker.stop("0" * 32)):
+        with pytest.raises(Refused):
+            call()

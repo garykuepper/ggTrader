@@ -46,6 +46,10 @@
 #   GGT_TEST_PYTHON=/absolute/frozen/venv/bin/python scripts/run_tests.sh tests/lab -q
 #   (GGT_PYTHON is accepted as a shorter alias and wins if both are set)
 #   GGT_TEST_NO_CGROUP=1  skip systemd-run (CI runners; the cap is for the developer host)
+#   GGT_TEST_NO_SCOPE=1   skip only systemd-run, keep the lock and the free-memory check (the
+#                         whole-job broker's unit, which cannot start a nested scope; its unit
+#                         cgroup must carry the cap, which is not chosen yet; the preflight still
+#                         uses GGT_TEST_MEM_MAX. See deploy/whole_job/README.md, _heavy_job.sh)
 #   GGT_TEST_DRY_RUN=1    print the pytest command(s) and exit (used by tests/test_root_conftest.py)
 #
 # One heavy job at a time (2026-11-18): two parallel `tests/paper/` runs each grew toward their own
@@ -96,12 +100,13 @@ cd "$REPO"
 source "$REPO/scripts/_heavy_job.sh"
 
 run_pytest() (
-    # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1. Returns its status.
+    # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1 or
+    # GGT_TEST_NO_SCOPE=1 (no nested scope: any cap is the calling unit's). Returns its status.
     if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
         echo "$PYTHON -m pytest $*"
         return 0
     fi
-    if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
+    if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" || "${GGT_TEST_NO_SCOPE:-}" == "1" ]]; then
         env PYTHONPATH=src "$PYTHON" -m pytest "$@"
     else
         # The marker records wrapper startup; it does not verify cgroup placement.
@@ -177,7 +182,10 @@ done
 # The lock is taken once, here, so it covers every pytest run below (both halves of --full).
 heavy_job_enter run_tests "$MEM_MAX"
 
-if [[ -n "$TIER" ]]; then
+if [[ "${GGT_TEST_NO_SCOPE:-}" == "1" ]]; then
+    echo "running pytest with no nested scope: any memory cap is the calling unit's own" \
+        "(free-memory check sized for $MEM_MAX)" >&2
+elif [[ -n "$TIER" ]]; then
     echo "running the $TIER test tier under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s per run" >&2
 else
     echo "running pytest under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s per run" >&2

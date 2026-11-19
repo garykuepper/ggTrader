@@ -38,7 +38,12 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   barrier. Because a full or unauthorized store can still report success, the broker reads
   `DumpUnitFileDescriptorStore` and admits the job only if the store holds exactly those two
   names with matching regular-file type, device, inode and access mode. Otherwise it kills
-  that exact unadmitted cgroup, removes its entries and stays held.
+  that exact unadmitted cgroup, removes its entries and stays held. It forgets that
+  invocation only once the cgroup is verified empty and the store is verified empty. If the
+  kill fails, the cgroup does not empty or the drain is not verified, the job's identity is
+  persisted as held and the pinned handles are kept (mode `held`): `@stop:<attempt>`, the
+  cgroup emptying, or a broker restart that restores the stored pair clears it. If no identity
+  can be recorded, the broker goes `unverifiable` and keeps the handles open.
 - **No fork under the admission lock.** PID 1 queries (`busctl`) run only outside it.
 
 ## Sequencing
@@ -65,7 +70,14 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
 
 `guest/harness.sh` (with `guest/user-data`) ran inside a throwaway QEMU guest from the signed
 Ubuntu 26.04 cloud image, no network; all 57 checks passed (`guest/2026-11-19-guest-results.txt`).
-The host-refusal guard at the top of the saved harness was added after the run. Covered:
+The host-refusal guard at the top of the saved harness was added after the run.
+
+**Correction (2026-11-19, after an independent Sol review):** the `s1-outcome` check in that
+run was vacuous: its command was always true, so its PASS proves nothing. 56 of the 57 checks
+were real. The harness now asserts that `@status` reports `job ended; driver reported status
+0` after a normal run, and `tests/scripts/test_whole_job_guest_harness.py` fails on any check
+that cannot fail. The corrected harness has **not** been run in a guest yet. The broker and
+runner fixes from the same review (below) are also untested in a guest. Covered in the run:
 
 - Direct `systemctl start` of the job unit without an operator start: refused, no phase ran.
 - Normal run: both phases in order, status 0 reported, record cleared, store empty, no job
@@ -96,8 +108,18 @@ The host-refusal guard at the top of the saved harness was added after the run. 
   wrappers, cron and Docker are outside this boundary; this is not the broad pool, and it
   does not decide kernel OOM victims or oomd behaviour.
 - No memory, swap or CPU limits are set; they need Task 2 measurements and Gary's decision.
-- The dedicated user must be able to read the job checkout and its virtualenv; the heavy-job
-  lock, test data and `.env` exclusion under that user are untested.
+- The dedicated user must be able to read the job checkout and its virtualenv; test data and
+  `.env` exclusion under that user are untested.
+- **Heavy-job lock and memory preflight.** The driver starts each phase with
+  `GGT_TEST_NO_SCOPE=1`, not CI's `GGT_TEST_NO_CGROUP=1`: `scripts/run_tests.sh` skips only the
+  nested `systemd-run` scope and still takes the shared lock in the git common directory and
+  checks `MemAvailable`. In this mode it refuses (exit 75) instead of carrying on when it cannot
+  find the git directory, cannot open the lock or cannot read `MemAvailable`. Under
+  `ggtrader-job` this needs git to accept the checkout (ownership / `safe.directory`) and write
+  access to the lock file. That privilege grant needs review and has not been tried. The
+  preflight is sized from `GGT_TEST_MEM_MAX` (default 4G), not from the unit's cap, which is
+  still unset. When the measured `MemoryMax` is chosen, the preflight value must match it.
+  The real `run_tests.sh` has never run under the broker (the guest used a fixture).
 - Wiring `@stop:<attempt>` into the recovery dispatcher (Task 3) and alert classification
   (Task 6) are not done.
 - The admission store and driver depend on a trusted root-owned copy of `scripts/`; installing

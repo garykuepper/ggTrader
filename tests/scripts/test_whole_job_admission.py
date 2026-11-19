@@ -457,3 +457,30 @@ def test_held_job_detects_lock_replacement_even_on_stop_failure(
             raise RuntimeError("stop failed")
     with replacement.admission("job-b", "boot-a"):
         pass
+
+
+def test_retain_records_identity_without_releasing_admission(directory: int) -> None:
+    state = store(directory)
+    state.retain("job-a", "boot-a")
+    snap = state.snapshot()
+    assert snap["held"] and (snap["job"], snap["boot"]) == ("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        with state.admission("job-a", "boot-a"):
+            pass
+    with pytest.raises(PermissionError):
+        state.retain("job-b", "boot-a")  # a retained identity is never replaced
+    with pytest.raises(PermissionError):
+        state.release("job-b", "boot-a")
+    restarted = store(directory)
+    assert restarted.snapshot()["job"] == "job-a"
+    restarted.clear("job-a", "boot-a", restarted.epoch)
+    assert not restarted.snapshot()["job"]
+
+
+def test_retain_refuses_while_admission_is_released(directory: int) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        state.retain("job-a", "boot-a")
+    with pytest.raises(ValueError):
+        store(directory).retain("", "boot-a")
