@@ -12,13 +12,17 @@ literal it measured: a call sequence, an exception type, a message, a cause chai
 
 from __future__ import annotations
 
+import copy
 import math
+from collections.abc import Iterator
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import pytest
 
 from ggTrader.paper import catastrophe_stop
 from ggTrader.paper.ledger import WRITE_METHODS
+from ggTrader.paper.risk import RiskGuard
 from ggTrader.paper.trader import PaperTrader
 from tests.paper import rules_support as rs
 from tests.paper.rules_support import IMPLS
@@ -267,12 +271,27 @@ def test_rule4_an_invalid_exit_quantity_blocks_strategy_buys_and_the_sweep_buy(
     failed = [m for m in rs.messages(t) if "order(s) failed" in m]
     assert failed == [f"<b>❌ 1 order(s) failed:</b>\n{INVALID_QUANTITY_ERROR}"]
     if qty is None:
-        # Measured: the order flow ends as for the other values, then the daily summary's own
-        # formatting of the `None` quantity raises (a defect candidate, preserved).
+        # Measured: the order flow runs to its end as for the other values, then the daily
+        # summary's own formatting of the `None` quantity raises (a defect candidate, preserved).
         assert t["result"] is None
         assert t["raised"] == (
             "TypeError: float() argument must be a string or a real number, not 'NoneType'"
         )
+        # The valid NVDA exit settled normally before the failure.
+        assert [(s[0], s[3]) for s in rs.intents_settled(t)] == [(rs.client_id(1), "filled")]
+        assert rs.intents_settled(t)[0][1] == 5.0
+        # The run got past the post-trade reads, then called the final daily summary with the
+        # `None` quantity in its positions argument; the TypeError is raised from inside it.
+        targets = rs.targets(t)
+        last_order = max(
+            i for i, name in enumerate(targets) if name == "persist.settle_order_intent"
+        )
+        tail = targets[last_order:]
+        assert tail.index("broker.get_account") < tail.index("broker.get_positions")
+        assert tail.index("broker.get_positions") < tail.index("notifier.daily_summary")
+        (summary,) = rs.calls(t, "notifier.daily_summary")
+        assert summary["args"][2]["AAPL"]["qty"] is None
+        assert "persist.log_snapshot" not in targets
     else:
         assert t["result"]["errors"] == [INVALID_QUANTITY_ERROR]
         assert t["result"]["buys"] == []
@@ -299,14 +318,41 @@ def test_rule4_an_invalid_exit_does_not_block_a_reserve_restoring_sweep_sell(
 # =========================================================================== rule 5
 
 
+@contextmanager
+def _recorded_concentration_checks() -> Iterator[list[dict]]:
+    """Wrap `RiskGuard.check_concentration`: record each call's arguments, call the real method.
+
+    The positions argument is deep-copied at call time, so a later mutation by the trader
+    cannot change what the test reads.
+    """
+    seen: list[dict] = []
+    real = RiskGuard.check_concentration
+
+    def recording(self, symbol, positions, portfolio_value, prospective_notional=0.0):
+        seen.append(
+            {
+                "symbol": symbol,
+                "positions": copy.deepcopy(positions),
+                "portfolio_value": portfolio_value,
+                "prospective_notional": prospective_notional,
+            }
+        )
+        return real(self, symbol, positions, portfolio_value, prospective_notional)
+
+    with patch.object(RiskGuard, "check_concentration", recording):
+        yield seen
+
+
 def test_rule5_orders_use_the_brokers_uncorrected_quantity(impl_name):
     """With a split correction on record the order is the broker's raw quantity.
 
     Scenario `split_correction`: the broker holds 20.80410098 MNST shares (the split-adjusted
     figure would be 41.608...). The corrected figures appear only in the daily summary (the
-    `split_corrections` keyword and the doubled market value of a held name, scenario
-    `split_correction_held`); the concentration check reads the same corrected positions, which
-    no transcript call exposes. Pinned today by
+    `split_corrections` keyword and the doubled market value of a held name) and in the
+    concentration check. Scenario `split_correction_held` shows the second: a recording wrapper
+    around the real `check_concentration` sees the held MNST at its doubled market value, so the
+    corrected positions (not `strategy_positions`, whose MNST value is the broker's) reach the
+    check; the broker's raw quantity is preserved there. Pinned today by
     `TestSellExits.test_sell_submits_brokers_uncorrected_qty_not_split_adjusted`
     (test_trader.py:306).
     """
@@ -316,12 +362,20 @@ def test_rule5_orders_use_the_brokers_uncorrected_quantity(impl_name):
     assert summary["kwargs"]["split_corrections"] == {"MNST": 2.0}
     assert summary["kwargs"]["booked_equity"] == 100000.0
 
-    held = rs.run(impl_name, SCENARIOS["split_correction_held"])
+    held_scenario = SCENARIOS["split_correction_held"]
+    with _recorded_concentration_checks() as checks:
+        held = rs.run(impl_name, held_scenario)
     assert rs.submissions(held) == [("BUY", "NVDA", 3300.0)]
+    raw = held_scenario.replies["get_positions"][0]["MNST"]
+    (check,) = checks
+    assert check["symbol"] == "NVDA"
+    checked = check["positions"]["MNST"]
+    assert checked["market_value"] == pytest.approx(2 * raw["market_value"])
+    assert checked["market_value"] != raw["market_value"]
+    assert checked["qty"] == raw["qty"]  # the broker's quantity is never split-adjusted
     (held_summary,) = rs.calls(held, "notifier.daily_summary")
-    raw_value = SCENARIOS["split_correction_held"].replies["get_positions"][0]["MNST"]
     shown = held_summary["args"][2]["MNST"]["market_value"]
-    assert shown == pytest.approx(2 * raw_value["market_value"])
+    assert shown == pytest.approx(2 * raw["market_value"])
     assert held_summary["kwargs"]["split_corrections"] == {"MNST": 2.0}
 
 
@@ -340,6 +394,11 @@ def test_rule6_a_read_only_run_writes_nothing_and_records_what_it_skipped(impl_n
         c["target"] for c in t["calls"] if c["target"].removeprefix("persist.") in WRITE_METHODS
     ]
     assert written == []
+    # Read-only also covers the two tape writes outside the ledger: the signal generator is told
+    # not to persist its tape, and the benchmark tape refresh is never called.
+    (signal_call,) = rs.calls(t, "signals.generate_core_signals")
+    assert signal_call["kwargs"]["persist_tape"] is False
+    assert rs.calls(t, "tape.refresh_benchmark_tape") == []
     assert t["skipped_writes"] == expected
     assert t["result"]["skipped_writes"] == expected
 
@@ -363,6 +422,9 @@ def test_rule6_the_same_run_live_does_write(impl_name):
     } <= written
     assert t["skipped_writes"] == []
     assert t["result"]["skipped_writes"] == []
+    (signal_call,) = rs.calls(t, "signals.generate_core_signals")
+    assert signal_call["kwargs"]["persist_tape"] is True
+    assert len(rs.calls(t, "tape.refresh_benchmark_tape")) == 1
 
 
 # =========================================================================== rule 7
