@@ -1204,10 +1204,12 @@ lists. A list that was not made this way is not used.
 - [ ] **Step 4: Baselines, built from `73c35417`.** Not copied or renamed from any earlier label. The
   test-outcome baseline is a fresh run at the `BASE5` tree: `$E/p5/gate_tests.sh base` (both exit 0; the live
   golden passes, not skips) yielding `$E/p5-base-core.xml` and `$E/p5-base-studies.xml`. As a cross-check only,
-  its node set and statuses equal `$E/merge-core.xml` and `$E/merge-studies.xml` (the recorded merge run); a
-  difference stops the task. The oracle comparison target stays `$E/baseline`; BASE5's own oracle evidence may
-  reuse `$E/merge/` only if `$E/merge-oracle-status.txt` is `p5 exit=0 / p7 exit=0`, its compare file shows
-  exit 0 and its log names `73c35417`; otherwise run `$E/p5/gate_oracles.sh base` (6G, with the approval
+  compare its outcomes against `$E/p4-final2-core.xml,$E/p4-final-studies.xml` with the existing outcome
+  comparer; the Phase 4 baseline nodes must remain present and passing. The counts must also match the
+  integrated full run in `$E/integrated-full.log`. The oracle comparison target stays `$E/baseline`; BASE5's
+  own oracle evidence may reuse `$E/p4-integrated/` only if `$E/p4-integrated-oracle-status.txt` records
+  `p5 exit=0 / p7 exit=0`, every JSON provenance names clean `73c35417`, and a fresh comparison to baseline
+  exits 0; otherwise run `$E/p5/gate_oracles.sh base` (6G, with the approval
   file).
 - [ ] **Step 5: Hash records.** `$E/p5-fixed.sha256` = `$E/p4-fixed.sha256` (105 lines: 103 goldens,
   `harness.py`, `persist_sql.json`) plus the hashes of `tests/paper/test_persist_sql_golden.py`,
