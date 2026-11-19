@@ -7,6 +7,7 @@ pin both, plus the way the harness finds the persist functions it wraps.
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -145,6 +146,26 @@ def test_invalid_sweep_buy_setting_logs_warning(
     with caplog.at_level("WARNING", logger=trader_module._log.name):
         run_scenario(SCENARIOS[name])
     assert any("Cash sweep buy sizing failed (non-fatal)" in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize(
+    ("name", "setting"),
+    [
+        ("sweep_min_clip_invalid_fail_soft", "SWEEP_MIN_CLIP_USD"),
+        ("sweep_buy_trigger_invalid_fail_soft", "SWEEP_BUY_TRIGGER_PCT"),
+    ],
+)
+def test_invalid_sweep_setting_changes_outcome(name: str, setting: str) -> None:
+    invalid = SCENARIOS[name]
+    assert invalid.env[setting] == "abc"
+    valid = copy.deepcopy(invalid)
+    del valid.env[setting]
+    bad_result = run_scenario(invalid)
+    good_result = run_scenario(valid)
+    bad_buys = [c for c in bad_result["calls"] if c["target"] == "broker.submit_buy"]
+    good_buys = [c for c in good_result["calls"] if c["target"] == "broker.submit_buy"]
+    assert not bad_buys
+    assert good_buys and good_buys[0]["args"][0] == "SPY"
 
 
 # --------------------------------------------------------------------------- the poll fallback
