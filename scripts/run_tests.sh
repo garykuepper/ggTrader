@@ -95,7 +95,7 @@ cd "$REPO"
 # shellcheck source=scripts/_heavy_job.sh
 source "$REPO/scripts/_heavy_job.sh"
 
-run_pytest() {
+run_pytest() (
     # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1. Returns its status.
     if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
         echo "$PYTHON -m pytest $*"
@@ -104,9 +104,22 @@ run_pytest() {
     if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
         env PYTHONPATH=src "$PYTHON" -m pytest "$@"
     else
-        # A missing marker distinguishes a failed scope launch from a pytest assertion failure.
+        # The marker records wrapper startup; it does not verify cgroup placement.
         local marker_dir phase_status=0
         marker_dir="$(mktemp -d /tmp/ggtrader-test.XXXXXXXX)" || return 125
+        cleanup_marker() {
+            local result=$?
+            trap - EXIT
+            if ! rm -f -- "$marker_dir/started" || ! rmdir -- "$marker_dir"; then
+                echo "error: test scope marker cleanup failed: $marker_dir" >&2
+                (( result >= 128 )) || result=125
+            fi
+            exit "$result"
+        }
+        trap cleanup_marker EXIT
+        trap 'exit 129' HUP
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
         systemd-run --user --scope -q --collect --slice-inherit \
             -p MemoryMax="$MEM_MAX" \
             -p MemorySwapMax=0 \
@@ -115,14 +128,12 @@ run_pytest() {
             "$marker_dir/started" env PYTHONPATH=src "$PYTHON" -m pytest "$@" \
             || phase_status=$?
         if [[ ! -f "$marker_dir/started" || $phase_status -eq 126 || $phase_status -eq 127 ]]; then
-            echo "error: test scope could not start; stopping the test job" >&2
-            phase_status=125
+            echo "error: test scope did not report startup; stopping the test job" >&2
+            (( phase_status >= 128 )) || phase_status=125
         fi
-        rm -f "$marker_dir/started"
-        rmdir "$marker_dir"
         return "$phase_status"
     fi
-}
+)
 
 study_plan() {
     # Prints the STUDIES_MIN_COLLECTED minimum, then each existing study test folder, one per
