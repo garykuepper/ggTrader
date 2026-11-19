@@ -23,6 +23,10 @@ ROOT = Path(__file__).resolve().parents[2]
         ("--studies", 5, 0, 0, 2),
         ("--full", 1, 137, 137, 2),
         ("--full", 1, 125, 125, 2),
+        ("--full", 2, 0, 2, 1),
+        ("--studies", 2, 0, 2, 1),
+        ("--full", 1, 2, 2, 2),
+        ("--full", 0, 2, 2, 2),
     ],
 )
 def test_terminal_status_stops_later_phases(
