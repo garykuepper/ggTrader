@@ -94,8 +94,10 @@ class AdmissionState:
             except BaseException:
                 self.failed = True
                 raise
-            yield fd
-            self._check_lock(fd)
+            try:
+                yield fd
+            finally:
+                self._check_lock(fd)
         finally:
             os.close(fd)
 
@@ -219,10 +221,21 @@ class AdmissionState:
 
     def hold(self, job: str, boot: str, epoch: str) -> None:
         """Hold only the expected identity; this does not authorize a cgroup stop."""
+        with self.held_job(job, boot, epoch):
+            pass
+
+    @contextmanager
+    def held_job(self, job: str, boot: str, epoch: str) -> Iterator[None]:
+        """Persist an identity-matched hold and keep the admission lock until exit.
+
+        This is a lifecycle primitive, not authorization. A future broker must authenticate
+        the peer and validate a pinned cgroup before using this around any stop operation.
+        """
         with self._lock():
             state = self._match(job, boot, epoch)
             state["held"] = True
             self._write(state)
+            yield
 
     def clear(self, job: str, boot: str, epoch: str) -> None:
         """Forget a held identity after the trusted broker independently verifies cleanup."""

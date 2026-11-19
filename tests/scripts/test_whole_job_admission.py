@@ -388,3 +388,72 @@ def test_stale_stop_cannot_hold_replacement(directory: int) -> None:
     with pytest.raises(PermissionError):
         with state.admission("job-b", "boot-b"):
             pass
+
+
+def test_held_job_blocks_cleanup_during_stop_operation(directory: int, tmp_path: Path) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    started = threading.Event()
+    finished = threading.Event()
+
+    def cleanup() -> None:
+        started.set()
+        state.clear("job-a", "boot-a", state.epoch)
+        finished.set()
+
+    with state.held_job("job-a", "boot-a", state.epoch):
+        assert json.loads((tmp_path / "admission.json").read_text())["held"]
+        thread = threading.Thread(target=cleanup)
+        thread.start()
+        assert started.wait(2)
+        assert not finished.wait(0.1)
+    thread.join(timeout=2)
+    assert finished.is_set()
+
+
+def test_held_job_failure_stays_held_and_stale_identity_never_enters(directory: int) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    entered = False
+    with pytest.raises(PermissionError):
+        with state.held_job("job-b", "boot-a", state.epoch):
+            entered = True
+    assert not entered
+    with pytest.raises(RuntimeError, match="stop failed"):
+        with state.held_job("job-a", "boot-a", state.epoch):
+            raise RuntimeError("stop failed")
+    assert state.snapshot()["held"]
+    restarted = store(directory)
+    assert restarted.snapshot()["job"] == "job-a"
+    assert restarted.snapshot()["held"]
+
+
+def test_held_job_write_failure_never_enters(directory: int, monkeypatch) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+
+    def fail(*args, **kwargs):
+        raise OSError("sync failed")
+
+    monkeypatch.setattr(os, "fsync", fail)
+    entered = False
+    with pytest.raises(OSError, match="sync failed"):
+        with state.held_job("job-a", "boot-a", state.epoch):
+            entered = True
+    assert not entered
+
+
+def test_held_job_detects_lock_replacement_even_on_stop_failure(
+    directory: int, tmp_path: Path
+) -> None:
+    first = store(directory)
+    first.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        with first.held_job("job-a", "boot-a", first.epoch):
+            (tmp_path / "admission.lock").unlink()
+            replacement = store(directory)
+            replacement.clear("job-a", "boot-a", replacement.epoch)
+            replacement.release("job-b", "boot-a")
+            raise RuntimeError("stop failed")
+    with replacement.admission("job-b", "boot-a"):
+        pass
