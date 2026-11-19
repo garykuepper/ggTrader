@@ -329,8 +329,9 @@ output, and the order of calls into the scorer):
 - `lab/wfo/run.py`: `_scorer_for` picks the scorer, `_score_fold` scores one fold, `_stitch_oos` joins the
   out-of-sample curves and scores SPY on the same days, and `_build_diagnostics` builds the 26-key
   `diagnostics` dict. `run_wfo` keeps its signature and calls them in the old order. `run_dsr`, `run_ndh`,
-  the scorer classes and the breaker functions are still looked up by module-level name at call time, so
-  patching `run.<name>` still works.
+  the scorer classes and breaker functions are looked up by module-level name at call time.
+  Replacement scorer classes must implement `from_inputs`; patching `_make_scorer` does not
+  intercept `run_wfo`.
 
 Characterization tests pin this surface: `tests/engine/test_run_signals_characterization.py` and
 `tests/lab/wfo/test_run_wfo_characterization.py` (exact goldens under their `characterization/` folders),
