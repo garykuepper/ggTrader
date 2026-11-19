@@ -13,6 +13,7 @@ from uuid import uuid4
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper import persist as _persist
 from ggTrader.paper.alpaca_broker import AlpacaBroker
+from ggTrader.paper.config import TraderConfig
 from ggTrader.paper.constants import ET as _ET
 from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import TERMINAL_STATUSES
@@ -70,10 +71,7 @@ from ggTrader.paper.split_check import (
     compute_split_corrections,
     find_split_applied_symbols,
 )
-from ggTrader.paper.untradable import (
-    configured_untradable,
-    resolve_untradable,
-)
+from ggTrader.paper.untradable import resolve_untradable
 from ggTrader.utils.json_safe import json_safe
 
 _log = logging.getLogger(__name__)
@@ -189,6 +187,8 @@ class PaperTrader:
         # One list: the ledger fills what the run record later returns.
         self._ledger = ReadOnlyLedger(base, self.skipped_writes, _log) if self._read_only else base
         self._paper_lock = None
+        #: The settings snapshot of the current run; ``run()`` replaces it at its first line.
+        self._cfg: TraderConfig | None = None
 
     def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
         """Persist the identity before submitting an order under the run lock."""
@@ -704,16 +704,18 @@ class PaperTrader:
 
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
-        threshold = None
-        if catastrophe_stop.catastrophe_stop_enabled():
+        # One snapshot of the environment for the whole run, taken here (not at construction)
+        # so a setting changed between runs applies to the next one.
+        cfg = TraderConfig.from_env(dry_run=self._dry_run, read_only=self._read_only)
+        self._cfg = cfg
+        threshold = cfg.stop_threshold
+        if cfg.stop_enabled and cfg.stop_threshold_error is not None:
+            exc = cfg.stop_threshold_error
             try:
-                threshold = catastrophe_stop.catastrophe_stop_pct()
-            except ValueError as exc:
-                try:
-                    self._notifier.send(f"<b>🛑 HALTED:</b> {exc}")
-                except Exception:
-                    _log.exception("Could not send invalid catastrophe-stop threshold alert")
-                raise
+                self._notifier.send(f"<b>🛑 HALTED:</b> {exc}")
+            except Exception:
+                _log.exception("Could not send invalid catastrophe-stop threshold alert")
+            raise exc
         if self._dry_run:
             return self._run(stop_threshold=threshold)
         with self._ledger.paper_run_lock() as lock:
@@ -724,6 +726,9 @@ class PaperTrader:
                 self._paper_lock = None
 
     def _run(self, *, stop_threshold: float | None) -> dict:
+        cfg = self._cfg
+        if cfg is None:
+            raise RuntimeError("_run needs the settings snapshot that run() takes first")
         try:
             self._ledger.init_paper_schema()
         except Exception as exc:
@@ -874,8 +879,8 @@ class PaperTrader:
         # downstream slot/count/sell logic uses instead of the raw `positions`
         # from the broker; when the flag is off this is just `positions`
         # unchanged, so behavior is identical to before this feature existed.
-        sweep_on = cash_sweep.sweep_enabled()
-        sweep_sym = cash_sweep.sweep_symbol() if sweep_on else None
+        sweep_on = cfg.sweep_enabled
+        sweep_sym = cfg.sweep_symbol
         strategy_positions = (
             {sym: pos for sym, pos in positions.items() if sym != sweep_sym}
             if sweep_on
@@ -891,7 +896,7 @@ class PaperTrader:
         untradable_seen = resolve_untradable(
             self._broker,
             set(strategy_positions) | {sym for sym, _u in all_buys},
-            configured_untradable(),
+            cfg.untradable,
         )
         frozen = untradable_seen & set(strategy_positions)
         if frozen:
@@ -1199,7 +1204,7 @@ class PaperTrader:
                 portfolio_value=portfolio_value,
                 prospective_buy_notional=prospective_buy_notional,
                 current_sweep_position_value=sweep_position_value,
-                reserve_pct=cash_sweep.reserve_pct(),
+                reserve_pct=cfg.reserve_pct(),
             )
             if sell_action.side == "sell" and sweep_position:
                 sweep_price = sweep_position["current_price"]
@@ -1364,9 +1369,9 @@ class PaperTrader:
                 buy_action = cash_sweep.compute_sweep_buy(
                     cash_after_strategy_orders=mid_account["cash"],
                     portfolio_value=mid_account["portfolio_value"],
-                    reserve_pct=cash_sweep.reserve_pct(),
-                    min_clip=cash_sweep.min_clip_usd(),
-                    buy_trigger_pct=cash_sweep.buy_trigger_pct(),
+                    reserve_pct=cfg.reserve_pct(),
+                    min_clip=cfg.min_clip_usd(),
+                    buy_trigger_pct=cfg.buy_trigger_pct(),
                 )
             except Exception as exc:
                 _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
