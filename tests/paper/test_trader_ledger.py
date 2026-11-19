@@ -182,6 +182,22 @@ def test_trader_runs_on_an_in_memory_ledger() -> None:
     assert ledger.lock_entries == 1
     assert ledger.lock_verifications == 3  # one per submitted order: a sell and two buys
     assert not ledger.get_unresolved_order_intents()
+    settlements = [
+        c["args"] for c in golden["calls"] if c["target"] == "persist.settle_order_intent"
+    ]
+    assert len(settlements) == len(ledger._intents) == 3
+    for client_id, order_id, qty, price, status in settlements:
+        row = ledger._intents[client_id]
+        assert (row["client_order_id"], row["broker_order_id"], row["state"]) == (
+            client_id,
+            order_id,
+            "resolved",
+        )
+        assert (row["filled_qty"], row["filled_avg_price"], row["terminal_status"]) == (
+            qty,
+            price,
+            status,
+        )
     settled = {(t["side"], t["symbol"]) for t in ledger.trades}
     assert settled == {("SELL", "AAPL"), ("BUY", "NVDA"), ("BUY", "GOOGL")}
     assert ledger.get_latest_snapshot() == pytest.approx(100_053.0)
