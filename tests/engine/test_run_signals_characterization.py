@@ -499,6 +499,7 @@ def intraday_with_time_stop() -> dict:
 
 @case
 def intraday_atr_without_trailing_stop() -> dict:
+    # test_intraday_fixed_stop_takes_precedence_over_unused_atr
     close = _close()
     return _go(_entry0(), close, _cfg(atr_mult=2.0), **_bars(close))
 
@@ -512,6 +513,8 @@ def intraday_without_any_price_stop() -> dict:
 
 def _bad_fraction(key: str, value: Any) -> Callable[[], dict]:
     """A case: an intraday run whose ``key`` is an invalid fraction (the loss stop is valid)."""
+
+    # Input shapes follow test_intraday_stop_requires_complete_matching_price_bars.
 
     def build() -> dict:
         close = _close()
@@ -544,12 +547,14 @@ def intraday_missing_high_low() -> dict:
 
 @case
 def intraday_stop_columns_mismatch_flat_close() -> dict:
+    # test_intraday_stop_requires_complete_matching_price_bars
     close = _close()
     return _go(_entry0(), close, _cfg(ts_stop=0.1), **_bars(close, stop_open=_wrong_columns(close)))
 
 
 @case
 def intraday_frame_index_mismatch() -> dict:
+    # test_intraday_stop_requires_complete_matching_price_bars
     close = _close()
     high = close.copy()
     high.index = range(4)
@@ -583,11 +588,13 @@ def _compact_inputs() -> dict[str, Any]:
 
 @case
 def intraday_compact_prices_multiindex() -> dict:
+    # test_compact_stop_prices_match_expanded_prices_with_chunking
     return _record(_call(_compact_inputs()))
 
 
 @case
 def intraday_compact_prices_missing_symbol() -> dict:
+    # test_compact_stop_prices_validate_each_combination_close
     inputs = _compact_inputs()
     kwargs = inputs["kwargs"]
     for key in ("stop_open", "high", "low"):
