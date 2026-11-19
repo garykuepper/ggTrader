@@ -92,8 +92,13 @@ heavy_job_enter() {
     local avail_kb need_kb margin
     margin="${GGT_HEAVY_MARGIN:-4G}"
     avail_kb="$(awk '/^MemAvailable:/ {print $2}' "${GGT_MEMINFO:-/proc/meminfo}" 2>/dev/null || true)"
+    if [[ ! "$avail_kb" =~ ^[0-9]+$ ]]; then
+        echo "cannot read available memory; not starting" >&2
+        exit 75
+    fi
+    avail_kb=$((10#$avail_kb))
     need_kb=$(( cap_kb + margin_kb ))
-    if [[ -n "$avail_kb" ]] && (( avail_kb < need_kb )); then
+    if (( avail_kb < need_kb )); then
         echo "not enough free memory for a $mem_max job: $(( avail_kb / 1024 )) MiB available," \
             "$(( need_kb / 1024 )) MiB needed (the cap plus a $margin margin); not starting" >&2
         exit 75

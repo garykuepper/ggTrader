@@ -171,6 +171,23 @@ def test_low_memory_refuses(tmp_path: Path) -> None:
     assert "not enough free memory" in result.stderr
 
 
+@pytest.mark.parametrize("contents", [None, "MemTotal: 1000 kB\n", "MemAvailable: broken kB\n"])
+def test_unreadable_available_memory_refuses_before_payload(tmp_path: Path, contents) -> None:
+    meminfo = tmp_path / "meminfo"
+    if contents is not None:
+        meminfo.write_text(contents)
+    ran = tmp_path / "ran"
+    result = subprocess.run(
+        [str(CAPPED), "touch", str(ran)],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path / "lock", GGT_MEMINFO=str(meminfo)),
+        timeout=30,
+    )
+    assert result.returncode == 75, result.stderr
+    assert not ran.exists()
+
+
 @needs_flock
 @needs_systemd_scope
 def test_two_jobs_never_overlap(tmp_path: Path) -> None:
