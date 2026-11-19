@@ -16,6 +16,16 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+#: Tests that assert on the process's own SIGALRM timer, which the per-test limit (a running
+#: timer around every test) would make fail for a reason that has nothing to do with them. Each
+#: one is frozen study code that cannot be edited; the root conftest runs it without the limit.
+UNTIMED_TESTS: frozenset[str] = frozenset(
+    {
+        "research/intraday/_lib/tests/test_intraday_probe.py"
+        "::test_alarm_bounds_total_body_time_and_restores_handler",
+    }
+)
+
 
 class TestTimedOut(Exception):
     """A test ran longer than its wall-clock limit."""

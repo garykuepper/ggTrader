@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.timeout_guard import TestTimedOut, time_limit
+from tests.timeout_guard import UNTIMED_TESTS, TestTimedOut, time_limit
 
 ROOT = Path(__file__).resolve().parents[1]
 PROBE = "tests/timeout_probe/hang_probe.py"
@@ -80,3 +80,12 @@ def test_marker_overrides_the_default() -> None:
     result = _child("-k", "test_marked_hangs", timeout_env="600")
     assert result.returncode == 1, result.stdout + result.stderr
     assert "exceeded 1s" in result.stdout
+
+
+def test_every_untimed_test_still_exists() -> None:
+    """An exemption for a test that was renamed or removed would silently exempt nothing."""
+    assert UNTIMED_TESTS, "the exemption list is not meant to be empty while the probe test exists"
+    for nodeid in UNTIMED_TESTS:
+        path, _, name = nodeid.partition("::")
+        source = (ROOT / path).read_text()
+        assert f"def {name}(" in source, f"{nodeid} no longer exists: drop it from UNTIMED_TESTS"

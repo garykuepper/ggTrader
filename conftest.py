@@ -12,7 +12,7 @@ import matplotlib
 import pytest
 
 from tests import tiers
-from tests.timeout_guard import time_limit
+from tests.timeout_guard import UNTIMED_TESTS, time_limit
 
 #: The S&P 500 list every test reads unless it says otherwise: the frozen vintage-1 fixture, so
 #: no test needs the database (spec 3.2 and 7; slice M3).
@@ -34,6 +34,8 @@ def _per_test_timeout(request: pytest.FixtureRequest):
     marker = request.node.get_closest_marker("timeout_seconds")
     if marker is not None and marker.args:
         seconds = float(marker.args[0])
+    if request.node.nodeid in UNTIMED_TESTS:
+        seconds = 0.0
     with time_limit(seconds):
         yield
 
