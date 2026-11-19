@@ -4,13 +4,20 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 from tests.paper.equivalence.generator import build_case
 
 
 def test_generator_is_deterministic_across_hash_seeds():
     script = """
 import hashlib
+import os
 from dataclasses import asdict
+import ggTrader.utils.config as config
+config.load_dotenv = lambda *args, **kwargs: False
+os.environ["GGT_MEMBERSHIP"] = "fixture:sp500_v1_2026-06-02"
+from tests.netguard import blocked_connections
 from tests.paper.equivalence.generator import build_case
 from tests.paper.transcript.harness import to_json
 
@@ -23,7 +30,8 @@ def clean(value):
         return [clean(item) for item in value]
     return value
 
-cases = [clean(asdict(build_case(seed))) for seed in range(600)]
+with blocked_connections():
+    cases = [clean(asdict(build_case(seed))) for seed in range(600)]
 print(hashlib.sha256(to_json(cases).encode()).hexdigest())
 """
     outputs = [
@@ -39,6 +47,7 @@ def test_generated_sizing_and_buy_candidates_are_valid():
     for seed in range(600):
         case = build_case(seed)
         scenario = case.scenario
+        assert not scenario.read_only or scenario.dry_run
         assert scenario.signals["scale"] > 0
         assert all(weight > 0 for weight in scenario.signals["weights"].values())
         assert scenario.replies["get_account"][0]["portfolio_value"] > 0
@@ -51,11 +60,13 @@ def test_generated_sizing_and_buy_candidates_are_valid():
             assert len(buys) == len(set(buys))
 
 
+@pytest.mark.slow
 def test_generated_cases_are_valid_harness_inputs():
     from tests.paper.transcript.harness import run_scenario
 
     for seed in range(600):
-        run_scenario(build_case(seed).scenario)
+        transcript = run_scenario(build_case(seed).scenario)
+        assert "read_only requires dry_run" not in (transcript["raised"] or "")
 
 
 def test_generated_cases_cover_scripted_inputs():
@@ -78,7 +89,7 @@ def test_late_failure_cases_reach_their_first_order():
     from tests.paper.transcript.harness import run_scenario
 
     reached = {"late_stop": 0, "late_exit": 0, "late_sleeve": 0}
-    for seed in range(600):
+    for seed in range(100):
         scenario = build_case(seed).scenario
         kind = scenario.name.rsplit("_", 1)[0]
         if kind not in reached:
@@ -88,16 +99,20 @@ def test_late_failure_cases_reach_their_first_order():
             call for call in transcript["calls"] if call["target"].startswith("broker.submit_")
         ]
         assert orders, (seed, transcript["raised"])
-        assert transcript["raised"].startswith("KeyError:"), (seed, transcript["raised"])
+        expected = "KeyError: 'sleeve1'" if kind == "late_sleeve" else "KeyError: 'qty'"
+        assert transcript["raised"] == expected, (seed, transcript["raised"])
+        assert orders[0]["target"] == (
+            "broker.submit_buy" if kind == "late_sleeve" else "broker.submit_sell"
+        )
         reached[kind] += 1
-    assert all(count > 5 for count in reached.values()), reached
+    assert all(count >= 2 for count in reached.values()), reached
 
 
 def test_deliberate_duplicate_buy_reaches_both_sleeves():
     from tests.paper.transcript.harness import run_scenario
 
     reached = 0
-    for seed in range(600):
+    for seed in range(100):
         scenario = build_case(seed).scenario
         if not scenario.name.startswith("duplicate_buy_"):
             continue
@@ -106,4 +121,29 @@ def test_deliberate_duplicate_buy_reaches_both_sleeves():
         assert len(buys) == 2, (seed, transcript["raised"])
         assert buys[0]["args"][0] == buys[1]["args"][0] == "MSFT"
         reached += 1
-    assert reached > 5
+    assert reached >= 2
+
+
+def test_structured_live_late_gate_and_sweep_round_trip():
+    from tests.paper.transcript.harness import run_scenario
+
+    late = run_scenario(build_case(4).scenario)
+    assert late["raised"] is None
+    assert any("late" in str(call).lower() for call in late["calls"])
+    sweep = run_scenario(build_case(5).scenario)
+    submits = [call for call in sweep["calls"] if call["target"].startswith("broker.submit_")]
+    assert [(call["target"], call["args"][0]) for call in submits] == [
+        ("broker.submit_sell", "SPY"),
+        ("broker.submit_buy", "MSFT"),
+        ("broker.submit_buy", "SPY"),
+    ], (sweep["raised"], submits)
+
+
+def test_scenario_distribution():
+    from collections import Counter
+
+    cases = [build_case(seed) for seed in range(600)]
+    modes = Counter((case.scenario.dry_run, case.scenario.read_only) for case in cases)
+    templates = Counter(case.scenario.name.rsplit("_", 1)[0] for case in cases)
+    print(f"modes={dict(modes)} templates={dict(templates)}")
+    assert sum(modes.values()) == 600

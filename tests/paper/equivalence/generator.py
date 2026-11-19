@@ -23,11 +23,12 @@ def build_case(seed: int) -> Case:
     """Generate a deterministic scenario using only a local seeded random source."""
     rng = Random(seed)
     mode = rng.randrange(100)
-    special = rng.random()
-    if mode < 60 and special < 0.2:
-        kind = ("late_stop", "late_exit", "late_sleeve", "duplicate_buy")[int(special / 0.05)]
-        first = _pos(10.0, 100.0, cost_basis=2000.0)
-        second = _pos(10.0, 100.0, cost_basis=2000.0 if kind == "late_stop" else 1000.0)
+    special = seed % 80
+    if special < 4:
+        kind = ("late_stop", "late_exit", "late_sleeve", "duplicate_buy")[special]
+        price = rng.choice((80.0, 100.0, 120.0))
+        first = _pos(10.0, price, cost_basis=20.0 * price)
+        second = _pos(10.0, price, cost_basis=(20.0 if kind == "late_stop" else 10.0) * price)
         second.pop("qty")
         positions = (
             {"AAPL": first, "KO": second}
@@ -74,19 +75,23 @@ def build_case(seed: int) -> Case:
         )
         return Case(scenario, None, None)
     dry_run = mode >= 60
-    read_only = not (85 <= mode < 95)
+    read_only = 60 <= mode < 85 or mode >= 95
     env = {
         "MAX_POSITIONS": str(rng.choice((2, 3, 5))),
         "CASH_SWEEP_ENABLED": str(rng.choice((True, False))).lower(),
         "CATASTROPHE_STOP_ENABLED": str(rng.choice((True, False))).lower(),
         "CATASTROPHE_STOP_PCT": str(round(rng.uniform(-0.4, -0.1), 3)),
     }
-    held = rng.sample(_SYMBOLS, rng.randrange(7))
+    held = rng.sample(_SYMBOLS, rng.choice((0, 0, 1, 1, 2, 3, 4, 5, 6)))
     positions = {}
     for symbol in held:
         qty = rng.choice((10.0, 20.0, 0.0, -1.0, float("nan"), None))
-        position = _pos(10.0, 100.0, cost_basis=rng.choice((1000.0, 2000.0)))
+        position = _pos(
+            qty if qty in (10.0, 20.0) else 10.0, 100.0, cost_basis=rng.choice((1000.0, 2000.0))
+        )
         position["qty"] = qty
+        if rng.random() < 0.12:
+            position["cost_basis"] = float("nan")
         positions[symbol] = position
     if rng.random() < 0.3:
         positions["SPY"] = _pos(100.0, 400.0)
@@ -130,11 +135,29 @@ def build_case(seed: int) -> Case:
     }
     fills = {}
     for symbol in _SYMBOLS:
-        status = rng.choice(("filled", "partial", "new", "rejected", "canceled", "expired"))
+        status = rng.choice(
+            (
+                "default",
+                "default",
+                "partial",
+                "partial_canceled",
+                "new",
+                "rejected",
+                "canceled",
+                "expired",
+            )
+        )
+        if status == "default":
+            continue
         if status == "partial":
             fills[symbol] = [
                 {"status": "partially_filled", "filled_qty": 4.0, "filled_avg_price": 100.0},
                 {"status": "filled", "filled_qty": 10.0, "filled_avg_price": 100.0},
+            ]
+        elif status == "partial_canceled":
+            fills[symbol] = [
+                {"status": "partially_filled", "filled_qty": 4.0, "filled_avg_price": 100.0},
+                {"status": "canceled", "filled_qty": 4.0, "filled_avg_price": 100.0},
             ]
         else:
             fills[symbol] = [
@@ -170,6 +193,8 @@ def build_case(seed: int) -> Case:
         env["UNTRADABLE_SYMBOLS"] = rng.choice(_SYMBOLS)
     if rng.random() < 0.1:
         replies["submit_buy"] = [None] * rng.randrange(3) + [RuntimeError("submit failed")]
+    if rng.random() < 0.1:
+        replies["submit_sell"] = [None] * rng.randrange(1, 3) + [RuntimeError("submit failed")]
     if rng.random() < 0.05:
         replies["get_clock"] = [RuntimeError("clock unavailable")]
     splits = {"corp_splits": {}, "activity_applied": set()}
@@ -184,6 +209,25 @@ def build_case(seed: int) -> Case:
         if rng.random() < 0.1
         else {}
     )
+    if special == 4:
+        dry_run, read_only = False, False
+    if special == 5:
+        dry_run, read_only = False, False
+        env["CASH_SWEEP_ENABLED"] = "true"
+        positions = {"SPY": _pos(240.0, 400.0)}
+        sleeves = {"sleeve0": sleeves["sleeve0"]}
+        signals["sleeves"] = sleeves
+        sleeves["sleeve0"]["as_of"] = "2026-06-19"
+        sleeves["sleeve0"]["buys"] = ["MSFT"]
+        env.pop("UNTRADABLE_SYMBOLS", None)
+        sleeves["sleeve0"]["sells"] = []
+        replies["get_account"] = [_acct(cash=1_000.0), _acct(cash=50_000.0)]
+        replies["get_positions"] = [positions]
+        replies["get_clock"] = [{"is_open": True, "next_close": "2026-06-19 16:00:00-04:00"}]
+        replies.pop("submit_buy", None)
+        replies.pop("submit_sell", None)
+        fills = {}
+        persist = {**PERSIST_DEFAULTS}
     scenario = Scenario(
         name=f"seed_{seed}",
         dry_run=dry_run,
@@ -191,7 +235,7 @@ def build_case(seed: int) -> Case:
         membership=FIXTURE_SPEC if dry_run else "db",
         env=env,
         now_pt=datetime(2026, 6, 19, 13, 10, tzinfo=PT)
-        if mode >= 95
+        if mode >= 95 or special == 4
         else datetime(2026, 6, 19, 12, 46, tzinfo=PT),
         signals=signals,
         fills=fills,
@@ -201,10 +245,10 @@ def build_case(seed: int) -> Case:
         notifier=notifier,
         persist=persist,
         replies=replies,
-        untradable=set(rng.sample(_SYMBOLS, rng.randrange(3))),
+        untradable=set() if special == 5 else set(rng.sample(_SYMBOLS, rng.randrange(3))),
     )
     return Case(
         scenario,
-        rng.choice((None, None, None, 1, 2, 3)),
-        "membership unavailable" if rng.random() < 0.1 else None,
+        None if special in (4, 5) else rng.choice((None, None, None, None, None, 1, 2, 3)),
+        None if special in (4, 5) else ("membership unavailable" if rng.random() < 0.1 else None),
     )
