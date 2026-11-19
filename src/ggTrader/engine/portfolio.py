@@ -187,35 +187,7 @@ def run_signals(
             mask.reindex(index=entries.index, columns=entries.columns, fill_value=False)
         )
     gaps: dict[int, np.ndarray] = {}
-    stop_columns = None
-    if stop_open is not None:
-        if td_stop is not None:
-            raise ValueError("td_stop is unreliable and cannot be combined with intraday stops")
-        if base_config.get("atr_mult") is not None and base_config.get("ts_stop") is None:
-            raise ValueError("ATR stops are not supported with intraday stop prices")
-        if base_config.get("ts_stop") is None and base_config.get("tp_stop") is None:
-            raise ValueError("intraday stop prices require a configured price stop")
-        for key in ("ts_stop", "tp_stop"):
-            value = base_config.get(key)
-            if value is None:
-                continue
-            try:
-                fraction = float(value)
-            except (TypeError, ValueError) as exc:
-                raise ValueError(f"invalid {key}: expected a finite positive fraction") from exc
-            if not np.isfinite(fraction) or fraction <= 0 or (key == "ts_stop" and fraction >= 1):
-                raise ValueError(f"invalid {key}: expected a finite positive fraction")
-        if high is None or low is None:
-            raise ValueError("stop_open requires high and low")
-        if not stop_open.columns.equals(close.columns):
-            if not isinstance(close.columns, pd.MultiIndex) or not stop_open.columns.is_unique:
-                raise ValueError("stop prices must have the same index and columns as close")
-            stop_columns = stop_open.columns.get_indexer(close.columns.get_level_values(-1))
-            if (stop_columns < 0).any():
-                raise ValueError("stop prices must have the same index and columns as close")
-        for frame in (stop_open, high, low):
-            if not frame.index.equals(close.index) or not frame.columns.equals(stop_open.columns):
-                raise ValueError("stop prices must have the same index and columns as close")
+    stop_columns = _validate_intraday_stops(stop_open, high, low, close, base_config, td_stop)
     if td_stop is not None:
         warnings.warn(
             TIME_STOP_WARNING,
@@ -423,6 +395,68 @@ def _halt_positions(
         if len(positions):
             halt_positions[int(column)] = positions
     return halt_positions, halt_columns
+
+
+def _validate_intraday_stops(
+    stop_open: pd.DataFrame | None,
+    high: pd.DataFrame | None,
+    low: pd.DataFrame | None,
+    close: pd.DataFrame,
+    base_config: Mapping[str, Any],
+    td_stop: int | None,
+) -> np.ndarray | None:
+    """Check the configuration and shape of an intraday-stop request.
+
+    Returns the position array that maps each column of ``close`` to its column in
+    ``stop_open`` when the stop frames carry one column per symbol, or ``None`` when they
+    share ``close``'s columns or no intraday stops were asked for.
+
+    Args:
+        stop_open: opens for the intraday stops, or ``None`` when none were asked for.
+        high: highs, one column per ``stop_open`` column.
+        low: lows, likewise.
+        close: closes the stops are checked against.
+        base_config: the run configuration (``ts_stop``, ``tp_stop``, ``atr_mult``).
+        td_stop: the time-stop request, which intraday stops cannot be combined with.
+
+    Raises:
+        ValueError: with ``td_stop is unreliable and cannot be combined with intraday stops``,
+            ``ATR stops are not supported with intraday stop prices``, ``intraday stop prices
+            require a configured price stop``, ``invalid ts_stop: expected a finite positive
+            fraction`` (or ``tp_stop``), ``stop_open requires high and low``, or ``stop prices
+            must have the same index and columns as close``.
+    """
+    if stop_open is None:
+        return None
+    stop_columns = None
+    if td_stop is not None:
+        raise ValueError("td_stop is unreliable and cannot be combined with intraday stops")
+    if base_config.get("atr_mult") is not None and base_config.get("ts_stop") is None:
+        raise ValueError("ATR stops are not supported with intraday stop prices")
+    if base_config.get("ts_stop") is None and base_config.get("tp_stop") is None:
+        raise ValueError("intraday stop prices require a configured price stop")
+    for key in ("ts_stop", "tp_stop"):
+        value = base_config.get(key)
+        if value is None:
+            continue
+        try:
+            fraction = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid {key}: expected a finite positive fraction") from exc
+        if not np.isfinite(fraction) or fraction <= 0 or (key == "ts_stop" and fraction >= 1):
+            raise ValueError(f"invalid {key}: expected a finite positive fraction")
+    if high is None or low is None:
+        raise ValueError("stop_open requires high and low")
+    if not stop_open.columns.equals(close.columns):
+        if not isinstance(close.columns, pd.MultiIndex) or not stop_open.columns.is_unique:
+            raise ValueError("stop prices must have the same index and columns as close")
+        stop_columns = stop_open.columns.get_indexer(close.columns.get_level_values(-1))
+        if (stop_columns < 0).any():
+            raise ValueError("stop prices must have the same index and columns as close")
+    for frame in (stop_open, high, low):
+        if not frame.index.equals(close.index) or not frame.columns.equals(stop_open.columns):
+            raise ValueError("stop prices must have the same index and columns as close")
+    return stop_columns
 
 
 def _check_shapes(close: pd.DataFrame, **frames: pd.DataFrame) -> None:
