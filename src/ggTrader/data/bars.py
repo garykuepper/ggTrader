@@ -36,8 +36,9 @@ for the reasons in S6 section 3 (tz-ambiguous stamps, serial fetch, crash on del
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -174,7 +175,7 @@ def validate_long(flat: pd.DataFrame) -> None:
 # --------------------------------------------------------------------------- read paths
 
 
-def connect_readonly(conn_str: Optional[str] = None) -> Any:
+def connect_readonly(conn_str: str | None = None) -> Any:
     """Open a server-enforced read-only psycopg2 session; refuses if the server disagrees."""
     import psycopg2
 
@@ -249,17 +250,17 @@ def _normalise_symbols(symbols: Iterable[str]) -> tuple[str, ...]:
 
 
 def load_bars(
-    symbols: Optional[Sequence[str]] = None,
+    symbols: Sequence[str] | None = None,
     start: Any = None,
     end: Any = None,
     *,
-    universe: Optional[str] = None,
-    universe_span: Optional[tuple[Any, Any]] = None,
+    universe: str | None = None,
+    universe_span: tuple[Any, Any] | None = None,
     extra_symbols: Sequence[str] = (),
     source: str = "snapshot",
-    snapshot_path: Optional[Any] = None,
+    snapshot_path: Any | None = None,
     deep_verify: bool = False,
-    membership: Optional[MembershipSource] = None,
+    membership: MembershipSource | None = None,
 ) -> Bars:
     """Load daily bars for research, read-only.
 

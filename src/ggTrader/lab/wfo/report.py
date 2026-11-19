@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, NamedTuple, Tuple
+from typing import Any, NamedTuple
 
 import pandas as pd
 
@@ -22,14 +22,14 @@ class WfoResult(NamedTuple):
     """
 
     oos_equity: pd.Series
-    fold_results: List[Dict[str, Any]]
-    live_params: Dict[str, Any]
+    fold_results: list[dict[str, Any]]
+    live_params: dict[str, Any]
     table: str
-    skipped_folds: Tuple[Dict[str, Any], ...] = ()
-    diagnostics: Dict[str, Any] = {}
+    skipped_folds: tuple[dict[str, Any], ...] = ()
+    diagnostics: dict[str, Any] = {}
 
 
-def curve_summary(curve: pd.Series) -> Dict[str, float]:
+def curve_summary(curve: pd.Series) -> dict[str, float]:
     """``curve_stats``-style summary of an equity curve through ``engine.stats`` (percent units)."""
     curve = curve.dropna()
     empty = {
@@ -56,7 +56,7 @@ def curve_summary(curve: pd.Series) -> Dict[str, float]:
     }
 
 
-def anchor_history(fold_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def anchor_history(fold_results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """One record per fold: the anchor fit up to that fold's ``train_end``, what was deployed
     and why the anchor was used (``None`` when the winner was deployed)."""
     return [
@@ -71,23 +71,23 @@ def anchor_history(fold_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     ]
 
 
-def _varying_keys(param_sets: List[Dict[str, Any]]) -> List[str]:
+def _varying_keys(param_sets: list[dict[str, Any]]) -> list[str]:
     """Parameter names whose value is not the same in every set (the full set is in the JSON)."""
     keys = sorted({k for p in param_sets for k in p})
     return [k for k in keys if len({repr(p.get(k)) for p in param_sets}) > 1]
 
 
 def format_wfo_table(
-    fold_results: List[Dict[str, Any]],
-    oos_metrics: Dict[str, float],
-    spy_metrics: Dict[str, float],
-    live_params: Dict[str, Any],
+    fold_results: list[dict[str, Any]],
+    oos_metrics: dict[str, float],
+    spy_metrics: dict[str, float],
+    live_params: dict[str, Any],
     strategy_name: str,
     n_combos: int,
     n_folds: int,
     halted: bool = False,
     anchor: AnchorSet | None = None,
-    anchor_history: List[Dict[str, Any]] | None = None,
+    anchor_history: list[dict[str, Any]] | None = None,
 ) -> str:
     """Render per-fold table + OOS aggregate + recommended live params.
 
@@ -185,7 +185,7 @@ def format_wfo_table(
     return "\n".join(lines)
 
 
-def result_payload(result: WfoResult, **extra: Any) -> Dict[str, Any]:
+def result_payload(result: WfoResult, **extra: Any) -> dict[str, Any]:
     """JSON-able run record (everything but provenance, which ``write_result_json`` stamps)."""
     rows = list(result.fold_results)
     gates = sum(1 for r in rows if r["gates_passed"])

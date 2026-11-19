@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
 
 import pandas as pd
 
@@ -13,11 +12,11 @@ class BaseDataLoader(ABC):
     @abstractmethod
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """
         Fetch OHLCV data.
@@ -36,6 +35,6 @@ class BaseDataLoader(ABC):
         pass
 
     @abstractmethod
-    def list_symbols(self) -> List[str]:
+    def list_symbols(self) -> list[str]:
         """Returns a list of available symbols from this source."""
         pass

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import timezone
-from typing import List, Optional
 
 import pandas as pd
 import yfinance as yf
@@ -21,11 +20,11 @@ class YFinanceDataLoader(BaseDataLoader):
 
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """Fetch OHLCV via yfinance and return MultiIndex DataFrame.
 
@@ -100,6 +99,6 @@ class YFinanceDataLoader(BaseDataLoader):
 
         return df
 
-    def list_symbols(self) -> List[str]:
+    def list_symbols(self) -> list[str]:
         """Return the pre-configured S&P 500 list."""
         return SP500_SYMBOLS

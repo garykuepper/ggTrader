@@ -7,7 +7,7 @@ fx_hedge_overlay strategy's carry and value signals.
 from __future__ import annotations
 
 import io
-from typing import Callable
+from collections.abc import Callable
 
 import pandas as pd
 import requests

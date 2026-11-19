@@ -8,7 +8,7 @@ null; spec 5.4 item 6, OD2). It is the only DSR implementation.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -32,9 +32,9 @@ class NdhOutcome(NamedTuple):
 
 
 def extract_grid_arrays(
-    train_metrics: List[Dict[str, Any]],
-    grid: List[Dict[str, Any]],
-) -> tuple[np.ndarray, np.ndarray, tuple[int, ...], Dict[int, int]]:
+    train_metrics: list[dict[str, Any]],
+    grid: list[dict[str, Any]],
+) -> tuple[np.ndarray, np.ndarray, tuple[int, ...], dict[int, int]]:
     """Map sweep results to N-dim grid arrays for NDH.
 
     Returns:
@@ -54,7 +54,7 @@ def extract_grid_arrays(
     # Axes are categorical coordinates for the NDH lattice; the sort only needs to be
     # deterministic. None ("no stop", e.g. td_stop/tp_stop) is not orderable against numbers,
     # so key it to sort last without comparing values.
-    axes: Dict[str, List[Any]] = {
+    axes: dict[str, list[Any]] = {
         k: sorted({c[k] for c in grid}, key=lambda v: (v is None, v)) for k in param_keys
     }
     shape = tuple(len(axes[k]) for k in param_keys)
@@ -67,11 +67,11 @@ def extract_grid_arrays(
     expectancy_arr = np.full(n_cells, float("nan"))
     axis_idx = {k: {v: i for i, v in enumerate(axes[k])} for k in param_keys}
 
-    def _flat_idx(params: Dict[str, Any]) -> int:
+    def _flat_idx(params: dict[str, Any]) -> int:
         coords = tuple(axis_idx[k][params[k]] for k in param_keys)
         return int(np.ravel_multi_index(coords, shape))
 
-    result_to_grid: Dict[int, int] = {}
+    result_to_grid: dict[int, int] = {}
     for ri, m in enumerate(train_metrics):
         flat = _flat_idx(m["params"])
         sharpe_arr[flat] = m.get("sharpe", float("nan"))
@@ -90,8 +90,8 @@ def extract_grid_arrays(
 
 
 def run_ndh(
-    train_metrics: List[Dict[str, Any]],
-    grid: List[Dict[str, Any]],
+    train_metrics: list[dict[str, Any]],
+    grid: list[dict[str, Any]],
     best_idx: int,
     threshold: float,
 ) -> NdhOutcome:

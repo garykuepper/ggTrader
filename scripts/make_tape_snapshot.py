@@ -25,9 +25,10 @@ import os
 import shlex
 import sys
 import time
+from collections.abc import Iterable
 from datetime import date
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -169,10 +170,10 @@ def long_to_wide(flat: pd.DataFrame) -> pd.DataFrame:
 
 def load_snapshot_wide(
     path: str | Path,
-    symbols: Optional[list[str]] = None,
-    start: Optional[str] = None,
-    end: Optional[str] = None,
-    session_tz: Optional[str] = None,
+    symbols: list[str] | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    session_tz: str | None = None,
 ) -> pd.DataFrame:
     """Rebuild the ``load_ohlcv`` frame for ``symbols`` in [start, end] from a snapshot.
 
@@ -308,7 +309,7 @@ def update_manifest(entry: dict[str, Any], manifest_path: Path) -> None:
 # --------------------------------------------------------------------------- main
 
 
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse the command line."""
     p = argparse.ArgumentParser(
         description="Export a hashed read-only Parquet snapshot of the daily equity OHLCV tape.",
@@ -333,7 +334,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     """Export (or verify) the snapshot and update the manifest."""
     args = parse_args(argv)
     t0 = time.time()

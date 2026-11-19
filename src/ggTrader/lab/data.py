@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -65,9 +65,9 @@ DEFAULT_UNIVERSE = "sp500"
 
 
 def fetch_stock_ohlcv(
-    symbols: List[str],
+    symbols: list[str],
     start: str,
-    end: Optional[str] = None,
+    end: str | None = None,
     interval: str = "1d",
     use_db_cache: bool = True,
     min_coverage: float = 0.0,
@@ -245,9 +245,9 @@ def collapse_daily_duplicates(wide: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_ohlcv(
-    symbols: List[str],
+    symbols: list[str],
     start: str,
-    end: Optional[str] = None,
+    end: str | None = None,
     use_negative_cache: bool = False,
 ) -> pd.DataFrame:
     """DB-first daily OHLCV as a (symbol, field) MultiIndex frame."""
@@ -266,8 +266,8 @@ def equity_universe_between(
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
     universe: str = DEFAULT_UNIVERSE,
-    membership: Optional[MembershipSource] = None,
-) -> List[str]:
+    membership: MembershipSource | None = None,
+) -> list[str]:
     """All yfinance-normalized members that existed anywhere in the span.
 
     ``membership`` is the source of the S&P 500 list (``None``: the one selected by
@@ -283,7 +283,7 @@ def equity_universe_between(
 
 def rebalance_dates(
     index: pd.DatetimeIndex, eval_start: pd.Timestamp, eval_end: pd.Timestamp
-) -> List[pd.Timestamp]:
+) -> list[pd.Timestamp]:
     """Rebalance/decision dates: window start, then the last trading day of
     each subsequent month in [eval_start, eval_end), excluding the final
     month (selecting there would leave no forward period to trade).
@@ -317,8 +317,8 @@ def eligible_at(
     past: pd.DataFrame,
     cfg: LabConfig,
     universe: str = DEFAULT_UNIVERSE,
-    membership: Optional[MembershipSource] = None,
-) -> Tuple[List[str], Dict[str, Any]]:
+    membership: MembershipSource | None = None,
+) -> tuple[list[str], dict[str, Any]]:
     """Members at asof with enough history in ``past`` (data <= asof).
 
     ``membership`` as in :func:`equity_universe_between`.
@@ -327,7 +327,7 @@ def eligible_at(
         normalize_yf_ticker(m) for m in universe_members_asof(universe, asof, membership=membership)
     ]
     have = set(past.columns.get_level_values(0).unique())
-    eligible: List[str] = []
+    eligible: list[str] = []
     for sym in members:
         if sym in have and len(past[sym]["close"].dropna()) >= cfg.min_history_bars:
             eligible.append(sym)

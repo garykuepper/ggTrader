@@ -9,7 +9,7 @@ for every fold, so the anchor is recomputed per fold; only the simulation is sha
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, NamedTuple
 
 #: Annual CAGR (percent) a combo must beat to be an anchor candidate.
 RISK_FREE_RATE_PCT = 4.0
@@ -19,7 +19,7 @@ class AnchorSet(NamedTuple):
     """Global min-drawdown parameter set for defensive fallback."""
 
     combo: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     max_drawdown_pct: float
     cagr_pct: float
     sharpe: float
@@ -31,7 +31,7 @@ NO_ANCHOR = AnchorSet(
 
 
 def pick_anchor(
-    metrics_list: List[Dict[str, Any]], risk_free_rate: float = RISK_FREE_RATE_PCT
+    metrics_list: list[dict[str, Any]], risk_free_rate: float = RISK_FREE_RATE_PCT
 ) -> AnchorSet:
     """Minimise max drawdown subject to CAGR > risk-free; least-drawdown combo if none clears it.
 

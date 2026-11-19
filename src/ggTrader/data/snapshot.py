@@ -13,9 +13,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -39,12 +40,12 @@ class SnapshotInfo:
 
     path: Path
     sha256: str
-    content_sha256: Optional[str]
+    content_sha256: str | None
     rows: int
     symbols: int
     date_min: str
     date_max: str
-    db_session_timezone: Optional[str]
+    db_session_timezone: str | None
     deep_checked: bool
 
     def as_dict(self) -> dict[str, Any]:
@@ -117,8 +118,8 @@ def _check(label: str, actual: Any, expected: Any, path: Path) -> None:
 
 
 def load_snapshot_long(
-    path: Optional[Path] = None,
-    symbols: Optional[Iterable[str]] = None,
+    path: Path | None = None,
+    symbols: Iterable[str] | None = None,
     *,
     deep: bool = False,
 ) -> tuple[pd.DataFrame, SnapshotInfo]:

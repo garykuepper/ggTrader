@@ -13,7 +13,7 @@ own UI backend, not a supported public API.
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, List
+from collections.abc import Callable, Iterable
 
 import pandas as pd
 from sqlalchemy import text
@@ -121,7 +121,7 @@ def cache_symbol_interest(
 def load_search_interest(symbols: Iterable[str], start: str, end: str) -> pd.DataFrame:
     """Load cached search-interest rows for symbols within [start, end]."""
     ensure_schema()
-    syms: List[str] = sorted(set(symbols))
+    syms: list[str] = sorted(set(symbols))
     if not syms:
         return pd.DataFrame(columns=_COLUMNS)
     with get_engine().connect() as conn:

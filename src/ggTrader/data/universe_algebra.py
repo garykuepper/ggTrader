@@ -17,9 +17,9 @@ import csv
 import hashlib
 import io
 from bisect import bisect_right
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Iterable, Mapping, Sequence
 
 #: Header every constituent file must carry.
 CSV_HEADER = ["date", "tickers"]

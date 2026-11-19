@@ -12,7 +12,7 @@ active symbol from trading. Only the research/lab CLI enables the cache.
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from sqlalchemy import text
 

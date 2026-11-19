@@ -9,7 +9,6 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import List, Optional
 
 import pandas as pd
 import requests
@@ -40,7 +39,7 @@ def _get_api_key() -> str:
 class TiingoDataLoader(BaseDataLoader):
     """Stock data loader using Tiingo. Free tier, 20yr+ history, delisted coverage."""
 
-    def __init__(self, api_key: Optional[str] = None, batch_size: int = 50):
+    def __init__(self, api_key: str | None = None, batch_size: int = 50):
         self.logger = logging.getLogger(__name__)
         self.api_key = api_key or _get_api_key()
         self.batch_size = batch_size
@@ -55,11 +54,11 @@ class TiingoDataLoader(BaseDataLoader):
 
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """Fetch OHLCV via Tiingo and return MultiIndex DataFrame.
 
@@ -115,9 +114,9 @@ class TiingoDataLoader(BaseDataLoader):
         self,
         symbol: str,
         freq: str,
-        start: Optional[str],
-        end: Optional[str],
-    ) -> Optional[pd.DataFrame]:
+        start: str | None,
+        end: str | None,
+    ) -> pd.DataFrame | None:
         url = f"{TIINGO_EOD_URL}/{symbol}/prices"
         params: dict = {"resampleFreq": freq}
         if start:
@@ -164,6 +163,6 @@ class TiingoDataLoader(BaseDataLoader):
         result.columns.names = [None, None]
         return result
 
-    def list_symbols(self) -> List[str]:
+    def list_symbols(self) -> list[str]:
         """Return the pre-configured S&P 500 list."""
         return SP500_SYMBOLS

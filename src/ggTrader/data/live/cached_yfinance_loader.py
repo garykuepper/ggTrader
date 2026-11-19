@@ -14,7 +14,6 @@ ticker newly added to an existing cache.
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -42,7 +41,7 @@ def _as_utc(value) -> pd.Timestamp:
 class CachedYFinanceLoader(YFinanceDataLoader):
     """Stock data loader with TimescaleDB caching. All yfinance fetches are persisted."""
 
-    def __init__(self, connection_string: Optional[str] = None):
+    def __init__(self, connection_string: str | None = None):
         super().__init__()
         conn = connection_string
         if conn is None:
@@ -81,7 +80,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
     def _connect(self):
         return psycopg2.connect(self.connection_string)
 
-    def _db_coverage(self, symbols: List[str], interval: str) -> Dict[str, Tuple]:
+    def _db_coverage(self, symbols: list[str], interval: str) -> dict[str, tuple]:
         """Per-symbol (first, last) cached timestamps for venue='yfinance'."""
         query = """
             SELECT symbol, min(timestamp), max(timestamp)
@@ -130,7 +129,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             cur.execute(self._INCEPTION_SCHEMA)
             conn.commit()
 
-    def _get_known_inceptions(self, symbols: List[str], interval: str) -> Dict[str, pd.Timestamp]:
+    def _get_known_inceptions(self, symbols: list[str], interval: str) -> dict[str, pd.Timestamp]:
         try:
             self._ensure_inception_schema()
             query = """
@@ -148,7 +147,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             self.logger.error(f"Inception lookup failed ({e}); treating as unknown")
             return {}
 
-    def _record_inceptions(self, inceptions: Dict[str, pd.Timestamp], interval: str) -> None:
+    def _record_inceptions(self, inceptions: dict[str, pd.Timestamp], interval: str) -> None:
         if not inceptions:
             return
         try:
@@ -171,10 +170,10 @@ class CachedYFinanceLoader(YFinanceDataLoader):
 
     def _db_fetch(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp],
-        end_date: Optional[pd.Timestamp],
+        start_date: pd.Timestamp | None,
+        end_date: pd.Timestamp | None,
     ) -> pd.DataFrame:
         conditions = ["symbol = ANY(%s)", "interval = %s", "venue = %s"]
         params: list = [list(symbols), interval, STOCK_VENUE]
@@ -286,11 +285,11 @@ class CachedYFinanceLoader(YFinanceDataLoader):
 
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """DB-first fetch with per-symbol freshness.
 
@@ -323,9 +322,9 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             self._get_known_inceptions(gap_candidates, interval) if gap_candidates else {}
         )
 
-        full_fetch: List[str] = []
-        incr_fetch: List[str] = []
-        incr_start: Optional[pd.Timestamp] = None
+        full_fetch: list[str] = []
+        incr_fetch: list[str] = []
+        incr_start: pd.Timestamp | None = None
         for sym in symbols:
             cov = coverage.get(sym)
             if cov is None:
@@ -348,7 +347,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 incr_fetch.append(sym)
                 incr_start = last + delta if incr_start is None else min(incr_start, last + delta)
 
-        fetched_frames: List[pd.DataFrame] = []
+        fetched_frames: list[pd.DataFrame] = []
         if full_fetch:
             self.logger.info(f"Full-range yfinance fetch for {len(full_fetch)} symbols")
             live = super().fetch_ohlcv(full_fetch, interval, start_date, end_date)
@@ -357,7 +356,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 fetched_frames.append(live)
                 if start_date is not None:
                     live_syms = set(live.columns.get_level_values(0).unique())
-                    new_inceptions: Dict[str, pd.Timestamp] = {}
+                    new_inceptions: dict[str, pd.Timestamp] = {}
                     for sym in full_fetch:
                         if sym not in live_syms:
                             continue

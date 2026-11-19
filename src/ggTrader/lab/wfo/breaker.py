@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Literal
+from typing import Literal
 
 
 def compute_wfe(
@@ -38,12 +38,12 @@ class WfoPolicy:
 class WfoState:
     """Tracks WFE history and circuit breaker state across WFO folds."""
 
-    wfe_history: List[float | None] = field(default_factory=list)
-    oos_sharpes: List[float] = field(default_factory=list)
+    wfe_history: list[float | None] = field(default_factory=list)
+    oos_sharpes: list[float] = field(default_factory=list)
     halted: bool = False
     halt_reason: str | None = None
     #: Rolling clean/dirty flags for the last 3 shadow windows during a halt.
-    shadow_window: List[bool] = field(default_factory=list)
+    shadow_window: list[bool] = field(default_factory=list)
 
 
 def _copy_state(state: WfoState) -> WfoState:

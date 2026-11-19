@@ -1,7 +1,5 @@
 """TimescaleDB historical data loader."""
 
-from typing import List, Optional
-
 import pandas as pd
 from sqlalchemy import create_engine, text
 
@@ -15,7 +13,7 @@ class TimescaleDBLoader(BaseDataLoader):
     Reads historical OHLCV data for backtesting.
     """
 
-    def __init__(self, connection_string: Optional[str] = None):
+    def __init__(self, connection_string: str | None = None):
         """Initialize the DB connection lazily or explicitly."""
         self.connection_string = connection_string or get_db_connection_string()
         # Keep engine None until needed to prevent connection drops in long processes
@@ -30,11 +28,11 @@ class TimescaleDBLoader(BaseDataLoader):
 
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
         quote: str = "USD",
         venue: str = "kraken_spot",
     ) -> pd.DataFrame:
@@ -115,7 +113,7 @@ class TimescaleDBLoader(BaseDataLoader):
         # Sometimes a column might be fully missing for a metric, reindex level 1
         return df_pivoted.reindex(columns=metrics, level=1)
 
-    def list_symbols(self, quote: str = "USD", venue: str = "kraken_spot") -> List[str]:
+    def list_symbols(self, quote: str = "USD", venue: str = "kraken_spot") -> list[str]:
         """Returns a list of available symbols from this source (filtered by quote and venue)."""
         query = "SELECT DISTINCT symbol FROM ohlcv WHERE venue = :venue;"
         try:
