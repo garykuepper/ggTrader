@@ -968,7 +968,9 @@ class Server:
         for fd in [*self.listeners, *self.connections]:
             poller.register(fd, select.POLLIN)
         handles = self.broker.handles
-        if handles is not None:
+        if handles is not None and (
+            self.broker.retry_at is None or self.broker.system.now() >= self.broker.retry_at
+        ):
             poller.register(handles.events, select.POLLPRI | select.POLLERR)
         for fd, _ in poller.poll(timeout * 1000):
             if fd in self.listeners:

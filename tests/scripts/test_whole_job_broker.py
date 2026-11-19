@@ -825,6 +825,33 @@ def test_tick_retries_a_failed_stop_only_after_a_pause(env, monkeypatch) -> None
     assert sum("stop failed" in line for line in logs) == failures + 1
 
 
+def test_server_ignores_ready_cgroup_events_during_stop_cooldown(env, monkeypatch) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    broker.register(DRIVER_PIDFD, lambda: None)
+    broker.retry_at = system.clock + STOP_RETRY_SECONDS
+    registrations = []
+
+    class Poll:
+        def register(self, fd, mask):
+            registrations.append(fd)
+
+        def poll(self, timeout):
+            return []
+
+    monkeypatch.setattr("scripts.whole_job_broker.select.poll", Poll)
+    with socket.socket() as job, socket.socket() as operator:
+        server = Server(broker, job, operator)
+        server.serve_once()
+        assert registrations == [job.fileno(), operator.fileno()]
+        registrations.clear()
+        system.clock = broker.retry_at
+        server.serve_once()
+        assert registrations == [job.fileno(), operator.fileno(), broker.handles.events]
+
+
 def test_record_clear_failure_after_drain_keeps_handles_and_restart_is_unverifiable(
     env, monkeypatch
 ) -> None:
