@@ -15,8 +15,8 @@ class SubmittedOrder:
         order_id: The broker's id for the order.
         side: ``"BUY"`` or ``"SELL"``.
         symbol: The ticker.
-        amount: For a BUY, the intended notional; for a SELL, the position's market value at
-            submit time. It is what the alert shows when the order has not filled.
+        amount: Intended notional for a BUY or sweep funding SELL; position market value for
+            other SELLs. It is what the alert shows when the order has not filled.
         reason: ``None`` for a strategy order, otherwise the ledger tag:
             ``cash_sweep.SWEEP_TRADE_REASON`` or ``catastrophe_stop.CATASTROPHE_STOP_REASON``.
     """
