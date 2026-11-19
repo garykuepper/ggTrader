@@ -8,13 +8,11 @@ spec for the bias-calibration that bounds the resulting bias.
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, "src")
-from ggTrader.data.core.index_constituents import normalize_yf_ticker  # noqa: E402
+from ggTrader.data.core.index_constituents import normalize_yf_ticker
 
 URL = "https://en.wikipedia.org/wiki/List_of_S%26P_400_companies"
 OUT = Path("data/universe/midcap400_tickers_snapshot_2026-06-24.txt")
