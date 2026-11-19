@@ -41,9 +41,14 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   that exact unadmitted cgroup, removes its entries and stays held. It forgets that
   invocation only once the cgroup is verified empty and the store is verified empty. If the
   kill fails, the cgroup does not empty or the drain is not verified, the job's identity is
-  persisted as held and the pinned handles are kept (mode `held`): `@stop:<attempt>`, the
-  cgroup emptying, or a broker restart that restores the stored pair clears it. If no identity
-  can be recorded, the broker goes `unverifiable` and keeps the handles open; a restart then
+  persisted as held, with that kill recorded as the job's stop intent, and the pinned handles
+  are kept (mode `held`). This also holds when the release record reached the disk but its
+  write failed (renamed, directory sync failed): the rollback rewrites it as held with the
+  intent and reads it back, and that admission instance never releases again until a broker
+  restart; if the rollback write fails too, the broker goes `unverifiable`. A held job is
+  cleared by the bounded automatic retry (see Stop), `@stop:<attempt>`, the cgroup emptying,
+  or a broker restart that restores the stored pair and retries. If no identity can be
+  recorded, the broker goes `unverifiable` and keeps the handles open; a restart then
   treats it as an unrecorded invocation (see Broker restart).
 - **No fork under the admission lock.** PID 1 queries (`busctl`) run only outside it.
 
@@ -60,14 +65,34 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   lock) remove the stored pair and read the store back; only when it is empty is the record
   cleared and the pinned handles closed. If the cgroup does not empty, the store does not
   drain or the clear fails, the record and handles are kept, the job stays held and start is
-  refused; an automatic retry waits 15 s, an operator stop retries at once. A crash after the
-  drain but before the clear leaves a record with an empty store: `unverifiable` on restart.
-  A termination the broker did not start is reported as "ended
-  without a driver report; cause not determined", never as out-of-memory.
-- **Broker restart:** admission starts held. With the same boot and an exact store, handles
-  are restored (mode `held`): no further phase is admitted, and `@stop:<attempt>` or the
-  cgroup emptying clears it. Any mismatch leaves mode `unverifiable`, which refuses start and
-  stop and needs manual investigation.
+  refused; an automatic retry waits 15 s, an operator stop retries at once.
+- **Stop intent.** Before the kill, every stop records in the admission state, durably and
+  bound to the job string, a stop intent (`stop`, equal to the recorded `job`) and the number of
+  attempts made under it (`stops`). A merely held job (a phase refused before launch) has no
+  recorded intent, and a plain hold never removes one; only the clear after a verified
+  stop does. Automatic retries stop after 5 attempts per intent, counted across broker
+  restarts; then the broker stays held, reads the pinned `cgroup.events` only (pausing 300 s
+  after any further failure) and clears the job if the cgroup empties, as an uninterruptible
+  task does once its I/O ends. That cleanup writes no `cgroup.kill` and counts no attempt: it
+  re-reads the pinned `cgroup.events` as empty, drains and verifies the store, then clears; if
+  the store will not drain it stays held and tries again after 300 s. `@stop:<attempt>`
+  starts a fresh budget of 5. `@status` reports `stop_requested` and `stop_attempts`. A state
+  file without these fields reads as no intent. A crash after the drain but before the clear
+  leaves a record with an empty store: `unverifiable` on restart. A termination the broker did
+  not start is reported as "ended without a driver report; cause not determined", never as
+  out-of-memory.
+- **Broker restart (fail closed):** admission starts held. With the same boot and an exact
+  store, handles are restored (mode `held`), no further phase is admitted, and the job is a
+  stop target whatever its record said: released (running a phase), merely held, or already
+  stopping. Its current phase is not allowed to finish. A recorded intent keeps its attempt
+  count, so a budget used up before the restart stays used up (only the `cgroup.events` read
+  and `@stop:<attempt>` remain); without one, the broker infers the intent and the first stop
+  writes it (`stop` = `job`, `stops` = 1) durably before `cgroup.kill`. This replaces the
+  earlier "let the held phase finish" rule and is acceptable only because the unit is the
+  fixed, disposable test service: it must not be copied to Hermes or any unclassified service.
+  Any mismatch (a missing, extra or different descriptor) leaves mode `unverifiable`, which
+  refuses start and stop, retries nothing even with a recorded intent, and needs manual
+  investigation. A prior-boot record is never retried; `@acknowledge` clears its intent too.
 - **Restart with no recorded job** (a crash between the store push and the record write, or a
   refused registration whose identity could not be recorded): such an invocation never got
   `go`. If the store holds exactly a pinned pair, the broker kills that cgroup through it,
@@ -100,7 +125,9 @@ runner fixes from the same review (below) are also untested in a guest. Covered 
 - Operator stop mid-phase: stale attempt refused without a hold; real stop killed the cgroup
   (including a `setsid` grandchild), second phase never started, record cleared.
 - `systemctl restart` of the broker with the driver frozen (`SIGSTOP`): handles restored by
-  exact store match, job held, stop through the restored `cgroup.kill` emptied it.
+  exact store match, job held, stop through the restored `cgroup.kill` emptied it. (That run
+  predates the fail-closed restart rule; the automatic stop after a restart is untested in a
+  guest.)
 - Broker `SIGKILL` with automatic restart: driver ended its phase on lost connection, broker
   restored handles and cleared as "without a driver report".
 - Broker `stop` then `start` (`FileDescriptorStorePreserve=yes`): handles restored, stop worked.
@@ -112,7 +139,11 @@ runner fixes from the same review (below) are also untested in a guest. Covered 
 
 - **Not run on Encom** and not reviewed: a cross-vendor security review (Sol for a Claude
   build, per the project's delegation rules) is required before any install.
-- In the guest: tampered or full descriptor stores, extra or duplicate entries, stop timeout
+- In the guest: the fail-closed restart stop (a released or plain-held job killed after a
+  broker restart, the inferred intent written before the kill, an exhausted budget kept across
+  a restart), the durable stop intent and its retry budget, a release whose directory sync
+  fails after the rename and whose rollback rename fails too, tampered or full descriptor
+  stores, extra or duplicate entries, stop timeout
   with unkillable (D-state) processes, phase deadline expiry, a crash between the store push
   and the record write, a store that will not drain, restart with a live unrecorded job, the
   path-based `cgroup.events` read at startup, PID reuse, descendant messages on an inherited socket, and the real

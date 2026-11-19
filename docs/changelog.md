@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-11-19 (whole-job broker candidate: durable stop intent)
+
+- `scripts/whole_job_broker.py`, `scripts/whole_job_admission.py`: a stop that failed was
+  retried only from broker memory, so after a broker restart the job came back merely held,
+  with no phase deadline and no retry, until someone sent a manual stop. Every stop now first
+  writes a stop intent and attempt count into the admission state, bound to the job string
+  (`stop` must equal `job`; only the clear after a verified stop removes it). A restart retries
+  the intent only through the restored descriptor pair that matches the record exactly; a
+  missing or different descriptor stays `unverifiable` and nothing is killed, a prior-boot
+  record is not retried, and a job held without an intent is not killed. Automatic retries stop
+  after 5 attempts per intent, counted across restarts; after that the broker only reads the
+  pinned `cgroup.events` and clears the job if it empties (an uninterruptible task that finally
+  dies), and `@stop:<attempt>` starts a fresh budget. The unadmitted-registration kill is now
+  recorded as an intent too, and its first retry waits 15 s like any other failed stop.
+  `@status` gains `stop_requested` and `stop_attempts`. Fixes from Sol's review of this change:
+  once the budget is used up, an already-empty cgroup whose store will not drain is no longer
+  stopped again on every pass (each pass wrote `cgroup.kill` and counted an attempt, without
+  limit); it is cleaned up without a kill or a new attempt. And a release record that was
+  renamed into place before its directory sync failed no longer loses the rollback's stop
+  intent: `AdmissionState.abort_release` records the job as held with the intent whether or not
+  the release landed, only for that same job, and that instance never releases admission again;
+  if that write fails too the broker is `unverifiable`. Fixture tests only (crash mid-stop,
+  stale descriptors, held without intent, uninterruptible task, intent write failure, a drain
+  that never verifies, a directory sync failing after the real rename); not run in a guest,
+  and nothing is installed on Encom.
+- Fail-closed restart (Sol's rule): a broker restart now stops every same-boot recorded job
+  whose exact pinned pair is restored, including a released job mid-phase and a merely held
+  one, instead of letting the held phase finish. The intent is inferred and written durably
+  (`stops` = 1) before the first `cgroup.kill`; a recorded intent keeps its count, so an
+  exhausted budget stays exhausted. A missing or mismatched pair and a prior-boot record are
+  still never acted on. This is for the fixed disposable test service only, not Hermes or any
+  unclassified unit. New fixture tests: released and plain-held restart, an inferred stop that
+  does not empty (bounded, still exhausted after a further restart), mismatched descriptors and
+  prior boot without an intent, and a release renamed into place whose directory sync fails
+  and whose rollback rename also fails, then a restart that stops it through the exact pair.
+
 ## 2026-11-19 (whole-job broker candidate: fixes from an independent Sol review)
 
 - `scripts/run_tests.sh` has a new switch, `GGT_TEST_NO_SCOPE=1`. It skips only the nested

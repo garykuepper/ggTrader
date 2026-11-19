@@ -22,6 +22,8 @@ from scripts.whole_job_broker import (
     KILL_NAME,
     PHASE_SECONDS,
     REGISTER_SECONDS,
+    STOP_ATTEMPTS,
+    STOP_EXHAUSTED_SECONDS,
     STOP_RETRY_SECONDS,
     TEST_CGROUP,
     TEST_UNIT,
@@ -711,6 +713,9 @@ def test_held_unadmitted_invocation_clears_once_its_cgroup_empties(env, monkeypa
     _assert_held_with_handles(broker, system, directory)
     system.empties_on_kill = True
     system.populated_value = False
+    broker.tick()  # the recorded stop intent waits out its retry pause
+    assert broker.mode == "held"
+    system.clock += STOP_RETRY_SECONDS + 1
     broker.tick()
     assert broker.mode == "idle" and not persisted(directory)["job"] and system.store == []
 
@@ -793,7 +798,8 @@ def test_retained_job_with_persistent_store_failure_stays_held_on_tick_and_stop(
     broker = _refused_registration(env, monkeypatch)
     attempt = _assert_held_with_handles(broker, system, directory)
     assert system.populated_value is None  # the cgroup itself was killed and is gone
-    broker.tick()  # sees the cgroup gone and retries the stop: the store still will not drain
+    system.clock += STOP_RETRY_SECONDS + 1
+    broker.tick()  # retries the recorded stop after its pause: the store still will not drain
     assert broker.mode == "held" and broker.record.attempt == attempt
     assert broker.handles is not None and broker.handles.ids() == (
         broker.record.kill,
@@ -1023,7 +1029,7 @@ def test_failed_retain_then_restart_stays_unresolved_until_the_cgroup_empties(
     broker.startup({})
     broker.start()
     monkeypatch.setattr(broker.state, "release", no_retain)
-    monkeypatch.setattr(broker.state, "retain", no_retain)
+    monkeypatch.setattr(broker.state, "abort_release", no_retain)
     with pytest.raises(OSError):
         broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
     assert broker.mode == "unverifiable" and not persisted(directory)["job"]
@@ -1134,3 +1140,577 @@ def test_unit_check_failure_at_restart_is_unverifiable_not_idle(env, monkeypatch
     assert broker.mode == "unverifiable"
     with pytest.raises(Refused):
         broker.start()
+
+
+# Durable stop intent: a requested stop survives a broker restart, a plain hold does not kill,
+# and a retry only ever goes through the exact restored pinned pair, a bounded number of times.
+
+
+def _kill_targets(system: FakeSystem, monkeypatch) -> list:
+    """Record the device/inode pair of every handle the broker writes ``cgroup.kill`` through."""
+    targets: list = []
+    real = system.kill
+
+    def kill(handles: Handles) -> None:
+        targets.append(handles.ids())
+        real(handles)
+
+    monkeypatch.setattr(system, "kill", kill)
+    return targets
+
+
+def _failed_stop(env) -> tuple[Broker, str]:
+    """An operator stop whose kill does not empty the cgroup (stop intent recorded, held)."""
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.phase(DRIVER_PIDFD, "core", lambda: None)
+    system.empties_on_kill = False
+    with pytest.raises(TimeoutError):
+        broker.stop(broker.record.attempt)
+    state = persisted(directory)
+    assert state["held"] and state["stop"] == state["job"] and state["stops"] == 1
+    return broker, broker.record.attempt
+
+
+def test_stop_intent_is_durable_before_the_kill(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    job = persisted(directory)["job"]
+    broker.stop(broker.record.attempt)
+    assert system.kills[0]["held"] and (system.kills[0]["stop"], system.kills[0]["stops"]) == (
+        job,
+        1,
+    )
+    state = persisted(directory)
+    assert (state["job"], state["stop"], state["stops"]) == ("", "", 0)
+    assert not broker.status()["stop_requested"] and broker.status()["stop_attempts"] == 0
+
+
+def test_crash_mid_stop_is_retried_after_restart_through_the_exact_pinned_pair(
+    env, monkeypatch
+) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    record = broker.record
+    real_kill = system.kill
+
+    def crash(handles: Handles) -> None:
+        raise Crash()
+
+    monkeypatch.setattr(system, "kill", crash)
+    with pytest.raises(Crash):
+        broker.stop(record.attempt)
+    monkeypatch.setattr(system, "kill", real_kill)
+    assert persisted(directory)["stop"] == record.encode() and system.populated_value
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    status = restarted.status()
+    assert status["mode"] == "held" and status["stop_requested"] and status["stop_attempts"] == 1
+    assert "retried" in status["outcome"] and targets == []  # startup itself kills nothing
+    restarted.tick()
+    assert targets == [(record.kill, record.events)]  # only the exact recorded pair
+    assert restarted.mode == "idle" and not persisted(directory)["job"] and system.store == []
+    with pytest.raises(PermissionError):
+        broker.stop(record.attempt)  # the crashed instance cannot act on the new epoch
+
+
+def test_failed_stop_is_retried_after_restart_and_the_count_continues(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    _, attempt = _failed_stop(env)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.stop_requested and restarted.stop_retry
+    with pytest.raises(Refused):
+        restarted.phase(DRIVER_PIDFD, "studies", lambda: pytest.fail("phase admitted"))
+    restarted.tick()  # second attempt: still does not empty
+    assert len(system.kills) == 2 and persisted(directory)["stops"] == 2
+    assert restarted.mode == "held" and restarted.record.attempt == attempt
+    system.empties_on_kill = True
+    system.clock += STOP_RETRY_SECONDS + 1
+    restarted.tick()
+    assert len(system.kills) == 3 and restarted.mode == "idle" and system.store == []
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+# Fail-closed restart (Sol): every same-boot record whose exact pinned pair is restored becomes a
+# stop target, whatever the record said, and the inferred intent is durable before the kill.
+
+
+def _assert_restart_stops_exact_pair(env, monkeypatch, record: JobRecord) -> Broker:
+    system, _, directory, _ = env
+    targets = _kill_targets(system, monkeypatch)
+    before = len(system.kills)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.stop_requested and restarted.stop_retry
+    assert targets == []  # startup itself kills nothing
+    with pytest.raises(Refused):
+        restarted.phase(DRIVER_PIDFD, "studies", lambda: pytest.fail("phase admitted"))
+    restarted.tick()
+    assert targets == [(record.kill, record.events)]  # only the exact recorded pair
+    at_kill = system.kills[before]
+    assert at_kill["held"] and at_kill["job"] == record.encode()
+    assert (at_kill["stop"], at_kill["stops"]) == (record.encode(), 1)  # durable before the kill
+    assert restarted.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+    assert restarted.outcome == "stop after broker restart"
+    return restarted
+
+
+def test_released_job_is_stopped_after_restart(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.phase(DRIVER_PIDFD, "core", lambda: None)  # mid-phase: it is not allowed to finish
+    state = persisted(directory)
+    assert not state["held"] and (state["stop"], state["stops"]) == ("", 0)
+    _assert_restart_stops_exact_pair(env, monkeypatch, broker.record)
+
+
+def test_plain_held_job_is_stopped_after_restart(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.state.hold(broker.record.encode(), BOOT, broker.state.epoch)
+    state = persisted(directory)
+    assert state["held"] and (state["stop"], state["stops"]) == ("", 0)  # no recorded intent
+    _assert_restart_stops_exact_pair(env, monkeypatch, broker.record)
+
+
+def test_inferred_restart_stop_that_does_not_empty_is_bounded(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    system.empties_on_kill = False
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    for _ in range(STOP_ATTEMPTS * 3):
+        restarted.tick()
+        system.clock += STOP_RETRY_SECONDS + 1
+    assert len(system.kills) == STOP_ATTEMPTS and persisted(directory)["stops"] == STOP_ATTEMPTS
+    assert persisted(directory)["stop"] == broker.record.encode()
+    assert restarted.mode == "held" and not restarted.stop_retry and "used up" in restarted.outcome
+    again = make(env)  # the next restart keeps the exhausted budget: no new kill
+    again.startup(system.inherited())
+    assert again.stop_requested and not again.stop_retry and again.stop_attempts == STOP_ATTEMPTS
+    for _ in range(3):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        again.tick()
+    assert len(system.kills) == STOP_ATTEMPTS and again.mode == "held"
+
+
+def test_refused_phase_hold_is_not_a_stop_intent(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.state.hold(broker.record.encode(), BOOT, broker.state.epoch)  # e.g. a concurrent hold
+    with pytest.raises(PermissionError):
+        broker.phase(DRIVER_PIDFD, "core", lambda: pytest.fail("phase admitted"))
+    assert broker.mode == "held" and not broker.stop_requested
+    assert persisted(directory)["stop"] == "" and system.kills == []
+    _assert_restart_stops_exact_pair(env, monkeypatch, broker.record)  # a restart fails closed
+
+
+@pytest.mark.parametrize("record_state", ["released", "held"])
+@pytest.mark.parametrize("tamper", ["missing", "other-file", "extra-name"])
+def test_restart_without_intent_and_mismatched_pair_never_kills(
+    env, monkeypatch, record_state: str, tamper: str
+) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    if record_state == "held":
+        broker.state.hold(broker.record.encode(), BOOT, broker.state.epoch)
+    inherited = system.inherited()
+    if tamper == "missing":
+        os.close(inherited.pop(KILL_NAME)[0])
+    elif tamper == "other-file":
+        other = system.tmp / "other-events"
+        other.write_text("")
+        os.close(inherited[EVENTS_NAME][0])
+        inherited[EVENTS_NAME] = [os.open(other, os.O_RDONLY)]
+    else:
+        inherited["stray"] = [os.dup(inherited[KILL_NAME][0])]
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup(inherited)
+    assert restarted.mode == "unverifiable" and restarted.handles is None
+    for _ in range(STOP_ATTEMPTS + 1):
+        system.clock += STOP_EXHAUSTED_SECONDS
+        restarted.tick()
+    with pytest.raises(Refused):
+        restarted.stop(broker.record.attempt)
+    assert targets == []
+    state = persisted(directory)
+    assert state["job"] == broker.record.encode() and (state["stop"], state["stops"]) == ("", 0)
+
+
+@pytest.mark.parametrize("record_state", ["released", "held"])
+def test_prior_boot_record_without_intent_is_never_killed(
+    env, monkeypatch, record_state: str
+) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    attempt = broker.record.attempt
+    if record_state == "held":
+        broker.state.hold(broker.record.encode(), BOOT, broker.state.epoch)
+    for _, fd in system.store:  # a reboot empties the store
+        os.close(fd)
+    system.store.clear()
+    system.boot = OTHER_BOOT
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup({})
+    assert restarted.mode == "prior-boot" and not restarted.stop_requested
+    for _ in range(3):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        restarted.tick()
+    assert targets == [] and persisted(directory)["stop"] == ""
+    restarted.acknowledge(attempt)
+    assert restarted.mode == "idle" and targets == []
+
+
+@pytest.mark.parametrize("tamper", ["missing", "other-file", "extra-name"])
+def test_stop_intent_with_stale_handles_is_unverifiable_and_never_retried(
+    env, monkeypatch, tamper: str
+) -> None:
+    system, _, directory, _ = env
+    broker, attempt = _failed_stop(env)
+    inherited = system.inherited()
+    if tamper == "missing":
+        os.close(inherited.pop(EVENTS_NAME)[0])
+    elif tamper == "other-file":
+        other = system.tmp / "other-kill"
+        other.write_text("")
+        os.close(inherited[KILL_NAME][0])
+        inherited[KILL_NAME] = [os.open(other, os.O_WRONLY)]
+    else:
+        inherited["stray"] = [os.dup(inherited[KILL_NAME][0])]
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup(inherited)
+    status = restarted.status()
+    assert status["mode"] == "unverifiable" and status["stop_requested"]
+    assert "not retried" in status["outcome"] and restarted.handles is None
+    for _ in range(STOP_ATTEMPTS + 1):
+        system.clock += STOP_EXHAUSTED_SECONDS
+        restarted.tick()
+    for call in (restarted.start, lambda: restarted.stop(attempt)):
+        with pytest.raises(Refused):
+            call()
+    assert targets == []  # nothing is killed: not the old pair, not anything else
+    assert persisted(directory)["stop"] == persisted(directory)["job"]  # evidence kept
+
+
+def test_stop_intent_for_another_job_refuses_startup(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    _failed_stop(env)
+    state = persisted(directory)
+    other = JobRecord("0" * 32, "cd" * 16, CGROUP_ID, (1, 2), (3, 4)).encode()
+    tampered = {**state, "stop": other}
+    (directory / "admission.json").write_text(json.dumps(tampered))
+    targets = _kill_targets(system, monkeypatch)
+    with pytest.raises(ValueError):
+        make(env)  # corrupt state: no broker instance, no kill
+    assert targets == [] and persisted(directory) == tampered
+
+
+def test_prior_boot_stop_intent_is_not_retried_and_clears_on_acknowledge(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    _, attempt = _failed_stop(env)
+    for name, fd in system.store:  # a reboot empties the store
+        os.close(fd)
+    system.store.clear()
+    system.boot = OTHER_BOOT
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup({})
+    assert restarted.mode == "prior-boot" and restarted.status()["stop_requested"]
+    restarted.tick()
+    assert targets == []
+    restarted.acknowledge(attempt)
+    assert restarted.mode == "idle" and not restarted.status()["stop_requested"]
+    assert (persisted(directory)["stop"], persisted(directory)["stops"]) == ("", 0)
+
+
+def test_uninterruptible_job_retries_are_bounded_and_survive_no_restart(env, monkeypatch) -> None:
+    """A task in uninterruptible sleep ignores SIGKILL until its I/O ends: the cgroup stays
+    populated whatever the broker does. Retries stop at the budget, across restarts too, and the
+    job still clears on its own once the task finally dies."""
+    system, _, directory, logs = env
+    broker, attempt = _failed_stop(env)
+    for _ in range(STOP_ATTEMPTS * 3):
+        system.clock += STOP_RETRY_SECONDS + 1
+        broker.tick()
+    assert len(system.kills) == STOP_ATTEMPTS and persisted(directory)["stops"] == STOP_ATTEMPTS
+    assert broker.mode == "held" and not broker.stop_retry and "used up" in broker.outcome
+    assert broker.retry_at is not None and broker.retry_at - system.clock > STOP_RETRY_SECONDS
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.stop_requested and not restarted.stop_retry
+    assert "used up" in restarted.outcome
+    for _ in range(3):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        restarted.tick()
+    assert len(system.kills) == STOP_ATTEMPTS  # a restart does not re-arm the retries
+    system.populated_value = None  # the I/O completed and the pending SIGKILL took effect
+    restarted.tick()
+    assert restarted.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+    assert restarted.outcome.startswith("job ended")
+
+
+def test_operator_stop_after_exhaustion_gets_a_fresh_budget(env) -> None:
+    system, _, directory, _ = env
+    broker, attempt = _failed_stop(env)
+    for _ in range(STOP_ATTEMPTS):
+        system.clock += STOP_RETRY_SECONDS + 1
+        broker.tick()
+    assert not broker.stop_retry and persisted(directory)["stops"] == STOP_ATTEMPTS
+    with pytest.raises(TimeoutError):
+        broker.stop(attempt)
+    assert persisted(directory)["stops"] == 1 and broker.stop_retry
+    system.empties_on_kill = True
+    system.clock += STOP_RETRY_SECONDS + 1
+    broker.tick()
+    assert broker.mode == "idle" and not persisted(directory)["job"]
+
+
+def test_stop_intent_write_failure_is_still_bounded(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    calls = []
+
+    def broken(*args, **kwargs):
+        calls.append(1)
+        raise OSError("disk")
+
+    monkeypatch.setattr(broker.state, "held_job", broken)
+    with pytest.raises(OSError):
+        broker.stop(broker.record.attempt)
+    for _ in range(STOP_ATTEMPTS * 3):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        broker.tick()
+    assert len(calls) == STOP_ATTEMPTS and system.kills == []  # no kill without the intent
+    assert broker.mode == "held" and not broker.stop_retry
+
+
+def test_unadmitted_stop_intent_is_retried_after_restart(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    broker = _refused_registration(env, monkeypatch)
+    record = broker.record
+    assert persisted(directory)["stop"] == record.encode() and persisted(directory)["stops"] == 1
+    targets = _kill_targets(system, monkeypatch)
+    system.empties_on_kill = True
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.stop_retry
+    restarted.tick()
+    assert targets == [(record.kill, record.events)]
+    assert restarted.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+
+
+# Sol blocker 1: once the stop budget is used up, an already-empty cgroup is cleaned up without
+# writing cgroup.kill again and without counting another stop attempt, however long the store
+# refuses to drain.
+
+
+@pytest.mark.parametrize("start", ["operator-stop", "job-ended"])
+def test_exhausted_stop_cleans_an_empty_cgroup_without_new_kills(env, start: str) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    attempt = broker.record.attempt
+    # The real _drain_verified fails every time: the store reads back non-empty after removal.
+    system.dump_override = [entry(KILL_NAME, broker.handles.kill)]
+    if start == "operator-stop":
+        with pytest.raises(RuntimeError):
+            broker.stop(attempt)
+    else:
+        system.populated_value = None  # the job ended on its own; the cgroup is already empty
+        broker.tick()
+    assert len(system.kills) == 1 and broker.mode == "held"
+    for _ in range(STOP_ATTEMPTS * 3):  # well over 9 ticks, each past any pause
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        broker.tick()
+        assert len(system.kills) <= STOP_ATTEMPTS
+        assert persisted(directory)["stops"] <= STOP_ATTEMPTS
+    assert len(system.kills) == STOP_ATTEMPTS and persisted(directory)["stops"] == STOP_ATTEMPTS
+    assert broker.stop_attempts == STOP_ATTEMPTS and not broker.stop_retry
+    assert broker.mode == "held" and broker.handles is not None
+    assert persisted(directory)["job"] == broker.record.encode()
+    assert "used up" in broker.outcome
+    system.dump_override = None  # the store drains at last: a verified-empty cleanup clears it
+    system.clock += STOP_EXHAUSTED_SECONDS + 1
+    broker.tick()
+    assert len(system.kills) == STOP_ATTEMPTS  # cleared without another kill
+    assert broker.mode == "idle" and broker.handles is None and system.store == []
+    state = persisted(directory)
+    assert state["held"] and (state["job"], state["stop"], state["stops"]) == ("", "", 0)
+
+
+def test_exhausted_cleanup_after_restart_never_kills(env) -> None:
+    system, _, directory, _ = env
+    broker, attempt = _failed_stop(env)
+    for _ in range(STOP_ATTEMPTS):
+        system.clock += STOP_RETRY_SECONDS + 1
+        broker.tick()
+    assert len(system.kills) == STOP_ATTEMPTS
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    system.populated_value = None
+    system.dump_override = [entry(KILL_NAME, restarted.handles.kill)]
+    for _ in range(10):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        restarted.tick()
+    assert len(system.kills) == STOP_ATTEMPTS and persisted(directory)["stops"] == STOP_ATTEMPTS
+    assert restarted.mode == "held" and restarted.record.attempt == attempt
+    system.dump_override = None
+    system.clock += STOP_EXHAUSTED_SECONDS + 1
+    restarted.tick()
+    assert restarted.mode == "idle" and len(system.kills) == STOP_ATTEMPTS
+
+
+def test_exhausted_cleanup_waits_while_the_cgroup_is_still_populated(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = _failed_stop(env)  # never empties: an uninterruptible task
+    for _ in range(STOP_ATTEMPTS * 2):
+        system.clock += STOP_EXHAUSTED_SECONDS + 1
+        broker.tick()
+    assert len(system.kills) == STOP_ATTEMPTS and broker.mode == "held"
+    assert persisted(directory)["job"] == broker.record.encode()
+
+
+# Sol blocker 2: a registration whose release record was renamed into place but whose directory
+# sync failed must still leave a durable stop intent when the rollback kill fails.
+
+
+def _torn_release(monkeypatch, fd: int, directory: Path, *, persistent: bool = False) -> list:
+    """Fail the directory fsync right after the release record is actually renamed into place."""
+    real_replace, real_fsync = os.replace, os.fsync
+    armed: list[bool] = []
+
+    def replace(src, dst, *args, **kwargs):
+        real_replace(src, dst, *args, **kwargs)
+        if dst == "admission.json" and not persisted(directory)["held"]:
+            armed.append(True)  # the release is on disk now, not yet synced
+
+    def fsync(target: int) -> None:
+        if target == fd and armed and (persistent or len(armed) == 1):
+            armed.append(False)
+            raise OSError("directory sync failed")
+        real_fsync(target)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(os, "fsync", fsync)
+    return armed
+
+
+@pytest.mark.parametrize("kill_failure", ["kill-raises", "never-empties"])
+def test_torn_release_rollback_records_a_durable_stop_intent(
+    env, monkeypatch, kill_failure: str
+) -> None:
+    system, fd, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    armed = _torn_release(monkeypatch, fd, directory)
+    if kill_failure == "kill-raises":
+
+        def broken_kill(handles: Handles) -> None:
+            raise OSError("EBUSY")
+
+        monkeypatch.setattr(system, "kill", broken_kill)
+    else:
+        system.empties_on_kill = False
+    with pytest.raises(OSError, match="directory sync failed"):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert armed[:2] == [True, False]  # the failure came after the actual rename
+    record = broker.record
+    assert broker.mode == "held" and broker.handles is not None
+    state = persisted(directory)
+    assert state["held"] and state["job"] == record.encode()
+    assert (state["stop"], state["stops"]) == (record.encode(), 1)  # durable stop intent
+    assert broker.stop_requested and broker.stop_attempts == 1
+    monkeypatch.undo()
+    system.empties_on_kill = True
+    targets = _kill_targets(system, monkeypatch)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and restarted.stop_requested and restarted.stop_retry
+    restarted.tick()
+    assert targets == [(record.kill, record.events)]  # retried through the exact pinned pair
+    assert restarted.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+
+
+def test_torn_release_instance_never_admits_again(env, monkeypatch) -> None:
+    system, fd, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    system.empties_on_kill = False
+    _torn_release(monkeypatch, fd, directory)
+    with pytest.raises(OSError):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    monkeypatch.undo()
+    system.empties_on_kill = True
+    broker.stop(broker.record.attempt)  # the in-process stop still works through the handles
+    assert broker.mode == "idle" and system.store == []
+    broker.start()
+    with pytest.raises(PermissionError):  # a release on the torn instance is refused
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+    assert broker.mode == "idle" and system.store == []  # the unadmitted retry was stopped
+
+
+def test_torn_release_with_failing_rollback_write_is_unverifiable(env, monkeypatch) -> None:
+    system, fd, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    system.empties_on_kill = False
+    _torn_release(monkeypatch, fd, directory, persistent=True)
+    with pytest.raises(OSError):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert broker.mode == "unverifiable" and broker.handles is not None
+    for call in (broker.start, lambda: broker.stop(broker.record.attempt)):
+        with pytest.raises(Refused):
+            call()
+
+
+def test_torn_release_with_failed_rollback_rename_is_stopped_after_restart(
+    env, monkeypatch
+) -> None:
+    """The release record is renamed into place, the directory sync fails, the rollback kill does
+    not empty the cgroup and the rollback's own rename fails: the disk keeps the unsynced
+    release. A restart treats that released record as a stop target through the exact pair."""
+    system, fd, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    system.empties_on_kill = False
+    real_replace, real_fsync = os.replace, os.fsync
+    events: list[str] = []
+
+    def replace(src, dst, *args, **kwargs):
+        if dst == "admission.json" and "renamed" in events:
+            events.append("rollback-rename-failed")
+            raise OSError("rollback rename failed")
+        real_replace(src, dst, *args, **kwargs)
+        if dst == "admission.json" and not persisted(directory)["held"]:
+            events.append("renamed")
+
+    def fsync(target: int) -> None:
+        if target == fd and events == ["renamed"]:
+            events.append("sync-failed")
+            raise OSError("directory sync failed")
+        real_fsync(target)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(os, "fsync", fsync)
+    with pytest.raises(OSError, match="directory sync failed"):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert events == ["renamed", "sync-failed", "rollback-rename-failed"]
+    record = broker.record
+    assert broker.mode == "unverifiable" and len(system.kills) == 1
+    state = persisted(directory)
+    assert not state["held"] and state["job"] == record.encode()  # the unsynced release
+    assert (state["stop"], state["stops"]) == ("", 0)  # no intent reached the disk
+    assert not [p for p in directory.iterdir() if p.name.startswith(".admission-")]
+    monkeypatch.undo()
+    system.empties_on_kill = True
+    _assert_restart_stops_exact_pair(env, monkeypatch, record)

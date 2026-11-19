@@ -20,10 +20,18 @@ again before each phase; each answer is given under the admission lock.
 Stop persists a hold, writes the pinned ``cgroup.kill`` and waits (bounded) for the pinned
 ``cgroup.events`` to report the cgroup empty or removed; it then removes the stored pair and
 reads the store back, and only when it is empty is the record cleared and the pinned handles
-closed. Any failure leaves the job held with its record and handles. A broker restart starts
-held: the job may finish its current phase but no further phase is admitted, and the store must
-again match exactly or the broker stays held as unverifiable. A restart with no recorded job is
-idle only when nothing of an unrecorded invocation can remain: a stored exact pair is killed
+closed. Any failure leaves the job held with its record and handles. Every stop first records,
+durably and bound to the job's identity, a stop intent and its attempt count; a merely held job
+has none. An incomplete stop is retried through the same handles a bounded number of times
+(``STOP_ATTEMPTS`` per intent, counted across restarts), then only an operator stop or the
+cgroup emptying ends it. A broker restart starts held and fails closed: no further phase is
+admitted, and a same-boot recorded job whose stored pair is restored exactly is a stop target
+whatever its record said (released, held, or stopping), its current phase included. A recorded
+intent keeps its attempt count, so an exhausted budget stays exhausted; an inferred one is made
+durable before its first kill. The store must match the record exactly or the broker stays held
+as unverifiable; an unverifiable or prior-boot record is never a kill target. This suits only
+the fixed disposable test service, never Hermes or any other unit. A restart with no recorded
+job is idle only when nothing of an unrecorded invocation can remain: a stored exact pair is killed
 and drained through its own pinned handles, any other stored entry stays as evidence, and with
 nothing stored the unit must be inactive and its cgroup absent or empty; otherwise the broker
 stays unverifiable. A record from an earlier boot stays held until an operator acknowledges
@@ -81,6 +89,8 @@ REGISTER_SECONDS = 60.0
 PHASE_SECONDS = 1860.0
 STOP_SECONDS = 20.0
 STOP_RETRY_SECONDS = 15.0
+STOP_ATTEMPTS = 5  # stop attempts per intent, persisted, before only an operator stop retries
+STOP_EXHAUSTED_SECONDS = 300.0  # pause after a failure once automatic retries are used up
 IO_SECONDS = 5.0
 MAX_MESSAGE = 512
 SO_PASSPIDFD = 76
@@ -248,6 +258,9 @@ class Broker:
         self.outcome = ""
         self.retry_at: float | None = None
         self.stop_retry = False
+        self.stop_requested = False
+        self.stop_attempts = 0
+        self.retry_reason = "retry incomplete stop"
 
     # Startup ------------------------------------------------------------------------------
 
@@ -271,11 +284,15 @@ class Broker:
             self.log("persisted job record is malformed; admission stays held")
             return
         self.record, self.record_boot = record, snap["boot"]
+        # The admission state only accepts an intent equal to the recorded job string.
+        self.stop_requested = bool(snap["stop"]) and snap["stop"] == snap["job"]
+        self.stop_attempts = snap["stops"] if self.stop_requested else 0
+        intent = " (a stop was requested; it is not retried)" if self.stop_requested else ""
         if snap["boot"] != self.boot:
             self._close_inherited(inherited)
             if entries:
                 self.mode = "unverifiable"
-                self.log("prior-boot record but the descriptor store is not empty")
+                self.log(f"prior-boot record but the descriptor store is not empty{intent}")
             else:
                 self.mode = "prior-boot"
                 self.log(f"job {record.attempt} belongs to an earlier boot; acknowledge to clear")
@@ -283,12 +300,37 @@ class Broker:
         handles = self._restore(record, inherited, entries)
         if handles is None:
             self.mode = "unverifiable"
-            self.log(f"job {record.attempt}: stored handles do not match; admission stays held")
+            self.outcome = f"stored handles do not match the record{intent}"
+            self.log(f"job {record.attempt}: {self.outcome}; admission stays held")
             return
         self.handles = handles
         self.mode = "held"
-        self.outcome = "broker restarted; job held, no further phase is admitted"
-        self.log(f"job {record.attempt}: pinned handles restored; job held")
+        # Fail closed: a same-boot job whose exact pinned pair is restored is always a stop
+        # target after a restart, whether it was released, merely held or already stopping.
+        # Its phase may not finish: the job is a disposable fixed test run, and a phase that
+        # cannot report to a broker that remembers it is not worth keeping alive. A recorded
+        # intent keeps its attempt count (an exhausted budget stays exhausted); an inferred one
+        # starts at zero and is made durable, with its first attempt, before the kill.
+        inferred = not self.stop_requested
+        self.stop_requested = True
+        self.stop_retry = self.stop_attempts < STOP_ATTEMPTS
+        if inferred:
+            self.retry_reason = "stop after broker restart"
+            self.outcome = (
+                "broker restarted; the job is stopped through the restored handles (no further "
+                "phase is admitted and the current one is not allowed to finish)"
+            )
+        elif self.stop_retry:
+            self.outcome = (
+                f"broker restarted; stop requested before the restart is retried through the "
+                f"restored handles (attempts so far {self.stop_attempts} of {STOP_ATTEMPTS})"
+            )
+        else:
+            self.outcome = (
+                f"broker restarted; stop requested but its {self.stop_attempts} attempts are "
+                "used up; held until an operator stop or the cgroup empties"
+            )
+        self.log(f"job {record.attempt}: pinned handles restored; {self.outcome}")
 
     def _restore(
         self, record: JobRecord, inherited: dict[str, list[int]], entries: list[StoreEntry]
@@ -421,6 +463,8 @@ class Broker:
             "phases": list(self.phases),
             "reported": self.reported,
             "outcome": self.outcome,
+            "stop_requested": self.stop_requested,
+            "stop_attempts": self.stop_attempts,
         }
 
     def start(self) -> str:
@@ -440,7 +484,8 @@ class Broker:
         self.record = None
         self.phases, self.reported, self.deadline, self.outcome = [], None, None, ""
         self.retry_at = None
-        self.stop_retry = False
+        self.stop_retry = self.stop_requested = False
+        self.stop_attempts = 0
         try:
             self.system.start_unit(TEST_UNIT)
         except BaseException:
@@ -455,7 +500,7 @@ class Broker:
             raise Refused("attempt is not the current job")
         if self.mode not in ("running", "held"):
             raise Refused(f"cannot stop while {self.mode}")
-        self._stop("operator stop")
+        self._stop("operator stop", reset=True)  # a new request gets a fresh attempt budget
 
     def acknowledge(self, attempt: str) -> None:
         """Clear a record from an earlier boot: its cgroup cannot exist on this boot."""
@@ -465,6 +510,7 @@ class Broker:
         if not hmac.compare_digest(attempt, record.attempt) or self.record_boot == self.boot:
             raise Refused("attempt or boot does not match")
         self.state.clear(record.encode(), self.record_boot, self.state.epoch)
+        self.stop_requested, self.stop_attempts = False, 0
         self.mode, self.outcome = "idle", f"prior-boot job {record.attempt} acknowledged"
         self.log(self.outcome)
 
@@ -572,7 +618,7 @@ class Broker:
         if self.retry_at is not None and now < self.retry_at:
             return
         if self.mode == "held" and self.stop_retry:
-            self._stop_quietly("retry incomplete stop")
+            self._stop_quietly(self.retry_reason)
             return
         try:
             populated = self.system.populated(self.handles)
@@ -581,7 +627,11 @@ class Broker:
             self.retry_at = now + STOP_RETRY_SECONDS
             return
         self.retry_at = None
-        if not populated:
+        if populated:
+            return
+        if self.stop_attempts >= STOP_ATTEMPTS:
+            self._clear_empty(self._ended_reason())  # budget used up: no further kill
+        else:
             self._stop_quietly(self._ended_reason())
 
     def _ended_reason(self) -> str:
@@ -593,22 +643,27 @@ class Broker:
         try:
             self._stop(reason)
         except BaseException as exc:  # noqa: BLE001 - logged, admission stays held
-            self.retry_at = self.system.now() + STOP_RETRY_SECONDS
+            # Never shorten the longer pause a stop sets once its retries are used up.
+            self.retry_at = max(self.retry_at or 0.0, self.system.now() + STOP_RETRY_SECONDS)
             self.log(f"stop failed ({reason}): {exc!r}; admission stays held")
 
-    def _stop(self, reason: str) -> None:
+    def _stop(self, reason: str, *, reset: bool = False) -> None:
         """Hold, kill the pinned cgroup, verify it empty, drain and verify the store, then clear.
 
-        The record and the pinned handles are kept until every step is verified, so a failure
-        at any point leaves the job held and retryable through the same handles.
+        The stop intent and attempt count are made durable, bound to the job identity, before
+        the kill. The record and the pinned handles are kept until every step is verified, so a
+        failure at any point leaves the job held and retryable through the same handles, also
+        after a broker restart. Automatic retries stop after ``STOP_ATTEMPTS`` attempts.
         """
         record, handles = self.record, self.handles
         if record is None or handles is None:
             raise Refused("no pinned job")
         job = record.encode()
         self.deadline = None
+        counted = False
         try:
-            with self.state.held_job(job, self.boot, self.state.epoch):
+            with self.state.held_job(job, self.boot, self.state.epoch, stop=True, reset=reset) as n:
+                self.stop_requested, self.stop_attempts, counted = True, n, True
                 self.mode = "stopping"
                 if handles.ids() != (record.kill, record.events):
                     raise Refused("pinned handles changed")
@@ -618,16 +673,68 @@ class Broker:
             self._drain_verified()  # outside the admission lock: it queries PID 1
             self.state.clear(job, self.boot, self.state.epoch)
         except BaseException:
-            self.mode = "held"
-            self.stop_retry = True
-            self.retry_at = self.system.now() + STOP_RETRY_SECONDS
-            self.outcome = f"stop incomplete ({reason}); admission held"
+            if not counted:  # the intent could not be recorded: still count, to stay bounded
+                self.stop_attempts = 1 if reset else self.stop_attempts + 1
+            self._stop_failed(reason)
             raise
+        self._cleared(record, handles, reason)
+
+    def _clear_empty(self, reason: str) -> None:
+        """Clean up a cgroup already read empty once the stop budget is used up.
+
+        No ``cgroup.kill`` is written and no stop attempt is counted: the pinned pair must
+        still be the recorded one and its ``cgroup.events`` must read empty again, then the
+        store is drained and verified and the record cleared. Any failure leaves the job held,
+        intent and count unchanged, and waits ``STOP_EXHAUSTED_SECONDS`` before reading again.
+        """
+        record, handles = self.record, self.handles
+        if record is None or handles is None:
+            return
+        try:
+            if handles.ids() != (record.kill, record.events):
+                raise Refused("pinned handles changed")
+            if self.system.populated(handles):
+                raise Refused("pinned cgroup is populated again")
+            self._drain_verified()
+            self.state.clear(record.encode(), self.boot, self.state.epoch)
+        except BaseException as exc:  # noqa: BLE001 - logged, admission stays held
+            self.mode, self.stop_retry = "held", False
+            self.retry_at = self.system.now() + STOP_EXHAUSTED_SECONDS
+            self.outcome = (
+                f"cleanup of the empty cgroup incomplete ({reason}); {self.stop_attempts} stop "
+                "attempts used up; admission held until an operator stop or a verified cleanup"
+            )
+            self.log(f"attempt {record.attempt}: {self.outcome}: {exc!r}")
+            return
+        self._cleared(record, handles, reason)
+
+    def _cleared(self, record: JobRecord, handles: Handles, reason: str) -> None:
         handles.close()
         self.handles, self.retry_at = None, None
-        self.stop_retry = False
+        self.stop_retry = self.stop_requested = False
+        self.stop_attempts = 0
         self.mode, self.driver, self.outcome = "idle", None, reason
         self.log(f"attempt {record.attempt}: {reason}; cleared")
+
+    def _stop_failed(self, reason: str) -> None:
+        """Stay held; schedule a retry only while the intent's attempt budget lasts."""
+        self.mode = "held"
+        self.retry_reason = "retry incomplete stop"
+        self.stop_retry = self.stop_attempts < STOP_ATTEMPTS
+        if self.stop_retry:
+            self.retry_at = self.system.now() + STOP_RETRY_SECONDS
+            self.outcome = (
+                f"stop incomplete ({reason}); attempt {self.stop_attempts} of {STOP_ATTEMPTS}; "
+                "admission held"
+            )
+        else:
+            # Only the cheap events read continues, at a slower pace: the cgroup emptying (an
+            # uninterruptible task finally dying) still clears the job, as does an operator stop.
+            self.retry_at = self.system.now() + STOP_EXHAUSTED_SECONDS
+            self.outcome = (
+                f"stop incomplete ({reason}); {self.stop_attempts} attempts used up; admission "
+                "held until an operator stop or the cgroup empties"
+            )
 
     def _abort_unadmitted(self, handles: Handles, record: JobRecord | None) -> None:
         """A registration failed before admission: kill that exact cgroup, then forget it.
@@ -658,12 +765,16 @@ class Broker:
         self.handles, self.driver = handles, None
         if record is not None:
             try:
-                self.state.retain(record.encode(), self.boot)
+                # The kill above was this broker's own stop: keep it as the job's stop intent so
+                # that it is retried, here and after a restart, through the same pinned pair.
+                # This also covers a release that reached the disk before its write failed.
+                self.state.abort_release(record.encode(), self.boot)
                 self.record, self.record_boot = record, self.boot
-                self.mode = "held"
+                self.stop_requested, self.stop_attempts = True, 1
+                self._stop_failed("registration refused")
                 self.outcome = (
                     f"registration refused; unadmitted invocation stop not verified ({exc!r}); "
-                    "held until a verified stop"
+                    f"held until a verified stop; {self.outcome}"
                 )
                 self.log(f"attempt {record.attempt}: {self.outcome}")
                 return

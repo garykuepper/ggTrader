@@ -358,7 +358,14 @@ def test_restart_retains_previous_job_and_requires_explicit_cleanup(
         first.hold("job-a", "boot-a", first.epoch)
     restarted = store(directory)
     snapshot = restarted.snapshot()
-    assert snapshot == {"epoch": restarted.epoch, "held": True, "job": "job-a", "boot": "boot-a"}
+    assert snapshot == {
+        "epoch": restarted.epoch,
+        "held": True,
+        "job": "job-a",
+        "boot": "boot-a",
+        "stop": "",  # a plain hold is never a stop intent
+        "stops": 0,
+    }
     with pytest.raises(PermissionError):
         restarted.release("job-b", "boot-b")
     restarted.clear("job-a", "boot-a", restarted.epoch)
@@ -484,3 +491,190 @@ def test_retain_refuses_while_admission_is_released(directory: int) -> None:
         state.retain("job-a", "boot-a")
     with pytest.raises(ValueError):
         store(directory).retain("", "boot-a")
+
+
+# Stop intent: durable, bound to the held identity, and distinct from a plain hold.
+
+
+def test_stop_intent_is_counted_bound_to_the_job_and_survives_restart(
+    directory: int, tmp_path: Path
+) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    with state.held_job("job-a", "boot-a", state.epoch, stop=True) as attempts:
+        assert attempts == 1
+        on_disk = json.loads((tmp_path / "admission.json").read_text())
+        assert (on_disk["stop"], on_disk["stops"]) == ("job-a", 1)  # durable before acting
+    with state.held_job("job-a", "boot-a", state.epoch, stop=True) as attempts:
+        assert attempts == 2
+    with state.held_job("job-a", "boot-a", state.epoch) as attempts:  # a plain hold keeps it
+        assert attempts == 2
+    restarted = store(directory)
+    snap = restarted.snapshot()
+    assert (snap["held"], snap["job"], snap["stop"], snap["stops"]) == (True, "job-a", "job-a", 2)
+    with restarted.held_job("job-a", "boot-a", restarted.epoch, stop=True, reset=True) as n:
+        assert n == 1
+    with pytest.raises(PermissionError):
+        with restarted.held_job("job-b", "boot-a", restarted.epoch, stop=True):
+            pass
+    assert restarted.snapshot()["stop"] == "job-a"
+    restarted.clear("job-a", "boot-a", restarted.epoch)
+    snap = restarted.snapshot()
+    assert (snap["job"], snap["stop"], snap["stops"]) == ("", "", 0)
+
+
+def test_plain_hold_and_failed_launch_record_no_stop_intent(directory: int) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    with pytest.raises(RuntimeError):
+        with state.admission("job-a", "boot-a"):
+            raise RuntimeError("launch failed")
+    state.hold("job-a", "boot-a", state.epoch)
+    snap = store(directory).snapshot()
+    assert snap["held"] and snap["job"] == "job-a" and (snap["stop"], snap["stops"]) == ("", 0)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"stop": "job-b", "stops": 1},  # an intent for another job
+        {"stop": "job-a", "stops": 1, "held": False},  # an intent on a released job
+        {"stop": "job-a", "stops": 0},
+        {"stop": "", "stops": 1},
+        {"stop": "job-a", "stops": -1},
+        {"stop": "job-a", "stops": True},
+        {"stop": "job-a", "stops": 10**7},
+        {"stop": 1, "stops": 1},
+    ],
+)
+def test_invalid_stop_intent_is_rejected(
+    directory: int, tmp_path: Path, changes: dict[str, object]
+) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    state.hold("job-a", "boot-a", state.epoch)
+    path = tmp_path / "admission.json"
+    data = json.loads(path.read_text())
+    data.update(changes)
+    path.write_text(json.dumps(data))
+    with pytest.raises((ValueError, PermissionError)):
+        state.snapshot()
+    with pytest.raises((ValueError, PermissionError)):
+        store(directory)  # a restart refuses it too and leaves the evidence in place
+    assert json.loads(path.read_text()) == data
+
+
+def test_state_written_before_stop_intents_reads_as_no_intent(
+    directory: int, tmp_path: Path
+) -> None:
+    store(directory)
+    path = tmp_path / "admission.json"
+    legacy = {"epoch": "a" * 64, "held": True, "job": "job-a", "boot": "boot-a"}
+    path.write_text(json.dumps(legacy))
+    path.chmod(0o600)
+    restarted = store(directory)
+    snap = restarted.snapshot()
+    assert (snap["job"], snap["stop"], snap["stops"]) == ("job-a", "", 0)
+    assert set(json.loads(path.read_text())) == {"epoch", "held", "job", "boot", "stop", "stops"}
+
+
+# Rolling back an unadmitted job: the stop intent must be recordable whether or not a failed
+# release write reached the disk, and only then.
+
+
+def _fail_directory_sync_after_rename(monkeypatch, directory: int, tmp_path: Path) -> None:
+    real_replace, real_fsync = os.replace, os.fsync
+    armed: list[bool] = []
+
+    def replace(src, dst, *args, **kwargs):
+        real_replace(src, dst, *args, **kwargs)
+        armed.append(True)
+
+    def fsync(fd: int) -> None:
+        if fd == directory and armed:
+            armed.clear()
+            monkeypatch.setattr(os, "replace", real_replace)
+            monkeypatch.setattr(os, "fsync", real_fsync)
+            raise OSError("sync failed")
+        real_fsync(fd)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(os, "fsync", fsync)
+
+
+def test_abort_release_after_torn_release_records_the_intent(
+    directory: int, tmp_path: Path, monkeypatch
+) -> None:
+    state = store(directory)
+    _fail_directory_sync_after_rename(monkeypatch, directory, tmp_path)
+    with pytest.raises(OSError, match="sync failed"):
+        state.release("job-a", "boot-a")
+    assert json.loads((tmp_path / "admission.json").read_text())["held"] is False  # renamed
+    with pytest.raises(PermissionError):
+        state.snapshot()  # still poisoned for everything else
+    state.abort_release("job-a", "boot-a")
+    on_disk = json.loads((tmp_path / "admission.json").read_text())
+    assert (on_disk["held"], on_disk["job"], on_disk["stop"], on_disk["stops"]) == (
+        True,
+        "job-a",
+        "job-a",
+        1,
+    )
+    with state.held_job("job-a", "boot-a", state.epoch, stop=True) as attempts:
+        assert attempts == 2  # the stop path keeps working on this instance
+    state.clear("job-a", "boot-a", state.epoch)
+    with pytest.raises(PermissionError):
+        state.release("job-b", "boot-a")  # but it never releases admission again
+    snap = store(directory).snapshot()
+    assert (snap["held"], snap["job"]) == (True, "")
+
+
+def test_abort_release_when_the_rename_did_not_land(directory: int, monkeypatch) -> None:
+    state = store(directory)
+
+    def fail(*args, **kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(os, "replace", fail)
+    with pytest.raises(OSError):
+        state.release("job-a", "boot-a")
+    monkeypatch.undo()
+    state.abort_release("job-a", "boot-a")
+    snap = state.snapshot()
+    assert (snap["held"], snap["job"], snap["stop"], snap["stops"]) == (True, "job-a", "job-a", 1)
+
+
+def test_abort_release_without_a_failed_release_retains_with_intent(directory: int) -> None:
+    state = store(directory)
+    state.abort_release("job-a", "boot-a")
+    snap = store(directory).snapshot()
+    assert (snap["held"], snap["stop"], snap["stops"]) == (True, "job-a", 1)
+
+
+def test_abort_release_refuses_another_job_or_an_unrelated_failure(
+    directory: int, tmp_path: Path, monkeypatch
+) -> None:
+    state = store(directory)
+    _fail_directory_sync_after_rename(monkeypatch, directory, tmp_path)
+    with pytest.raises(OSError):
+        state.release("job-a", "boot-a")
+    for job, boot in (("job-b", "boot-a"), ("job-a", "boot-b")):
+        with pytest.raises(PermissionError):
+            state.abort_release(job, boot)  # only the job whose release was torn
+    assert json.loads((tmp_path / "admission.json").read_text())["job"] == "job-a"
+    state.abort_release("job-a", "boot-a")
+    assert state.snapshot()["stop"] == "job-a"
+    other = store(directory)
+    other.clear("job-a", "boot-a", other.epoch)
+    other.failed = True  # a failure other than a torn release of this job
+    with pytest.raises(PermissionError):
+        other.abort_release("job-c", "boot-a")
+
+
+def test_abort_release_refuses_a_released_state_for_another_job(directory: int) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        state.abort_release("job-b", "boot-a")
+    with pytest.raises(PermissionError):
+        state.abort_release("job-a", "boot-b")
