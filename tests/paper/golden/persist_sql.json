@@ -3513,6 +3513,27 @@
    },
    "raised": null
   },
+  "get_total_dividend_accrual__empty_table": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "0.0"
+   },
+   "raised": null
+  },
   "get_open_split_corrections": {
    "events": [
     {

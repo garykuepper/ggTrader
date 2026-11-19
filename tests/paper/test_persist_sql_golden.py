@@ -313,7 +313,15 @@ _add(
     _case(
         persist.settle_order_intent,
         ("cid-2", "ord-2", 5.0, 200.0, "filled"),
-        _settle_intent_script(row=intent_row(side="SELL", reason="exit_signal", amount=5.0))
+        _settle_intent_script(
+            row=intent_row(
+                client_order_id="cid-2",
+                side="SELL",
+                amount_kind="qty",
+                reason="exit_signal",
+                amount=5.0,
+            )
+        )
         + [None, None],
     ),
 )
@@ -625,6 +633,10 @@ _add(
     _case(persist.get_total_dividend_accrual, (), [R([(Decimal("12.50"),)])]),
 )
 _add("get_total_dividend_accrual__no_row", _case(persist.get_total_dividend_accrual, (), [R()]))
+_add(
+    "get_total_dividend_accrual__empty_table",
+    _case(persist.get_total_dividend_accrual, (), [R([(0.0,)])]),
+)
 
 # --- split state
 _add(
