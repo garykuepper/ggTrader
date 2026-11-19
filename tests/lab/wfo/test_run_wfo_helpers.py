@@ -207,11 +207,19 @@ def test_stitch_oos_spy_with_one_date_gives_nan_spy() -> None:
     assert all(np.isnan(v) for v in spy_metrics.values())
 
 
-def test_stitch_oos_scales_spy_to_start_cash() -> None:
+def test_stitch_oos_scales_spy_to_start_cash(monkeypatch: Any) -> None:
     from ggTrader.lab.wfo.report import curve_summary
 
     curve = _curve([100.0, 102.0, 101.0, 105.0], "2024-01-01")
     spy = _curve([400.0, 404.0, 396.0, 408.0], "2024-01-01")
+    seen = []
+
+    def record_summary(values: pd.Series) -> dict:
+        seen.append(values)
+        return curve_summary(values)
+
+    monkeypatch.setattr(run, "curve_summary", record_summary)
     _, _, spy_metrics = run._stitch_oos([curve], spy, 100.0)
     expected = curve_summary(100.0 * (spy / spy.iloc[0]))
     assert spy_metrics == expected
+    pd.testing.assert_series_equal(seen[1], _curve([100.0, 101.0, 99.0, 102.0], "2024-01-01"))
