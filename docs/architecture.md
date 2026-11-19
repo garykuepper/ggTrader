@@ -50,7 +50,7 @@ src/ggTrader/
 │
 ├── lab/                          # The Research & Simulation Engine
 │   ├── cli.py                   # Command-line entry point for running simulations (ggt lab)
-│   ├── data.py                  # Loads stock lists and historical prices (yfinance, TimescaleDB)
+│   ├── data.py                  # Loads stock lists and historical prices; `fetch_stock_ohlcv` is a thin wrapper over data/live/fetch_chain.py
 │   ├── persist.py               # Saves blend results to database tables
 │   ├── strategy.py              # LabConfig (shared research settings)
 │   ├── universe.py              # Vectorised point-in-time universe mask and optional exit policies
@@ -83,10 +83,14 @@ src/ggTrader/
 │   ├── gates.py                 # Input/output sanity gates and the 12:55 PT late-run cutoff
 │   ├── untradable.py            # UNTRADABLE_SYMBOLS, broker status and the "asset is not active" 422
 │   ├── overlay.py               # Blend sleeve curves through engine.run_signals
-│   ├── trader.py                # Coordinates signals, risk checks, and submits orders
+│   ├── trader.py                # Coordinates signals, risk checks, and submits orders (reaches the database only through a PaperLedger)
+│   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
+│   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
+│   ├── ports.py                 # Broker and Notifier protocols (AlpacaBroker, TelegramNotifier and DryRunNotifier satisfy them)
+│   ├── ledger.py                # PaperLedger protocol; ModuleLedger, ReadOnlyLedger, InMemoryLedger
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
-│   └── persist.py               # Saves daily paper trading logs and portfolio balances
+│   └── persist.py               # Saves daily paper trading logs and portfolio balances (PgPaperLedger holds the SQL; the module functions delegate to it)
 │
 ├── data/                        # Data Downloader & Database Loader
 │   ├── bars.py                  # Read-only research bars (per-field frames) from the snapshot or DB
@@ -97,7 +101,10 @@ src/ggTrader/
 │   ├── historical/
 │   │   └── timescaledb_loader.py # Fetches historical prices from your local database
 │   └── live/
-│       └── yfinance_loader.py    # Downloads live stock data and saves it to a cache
+│       ├── yfinance_loader.py    # Downloads live stock data and saves it to a cache
+│       ├── cached_yfinance_loader.py # Database-cached yfinance loader (public persist() writes a frame to the cache)
+│       ├── tiingo_loader.py      # Tiingo fallback for symbols yfinance misses
+│       └── fetch_chain.py        # OhlcvFetchChain / fetch_stock_ohlcv: DB cache, then yfinance, then Tiingo for the gaps
 │
 ├── utils/                       # Common Helpers
 │   ├── config.py                # Global settings and defaults
@@ -324,7 +331,7 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
 1. signal_runner.require_rust_engine() -> engine.selfcheck before any data: Rust dispatched,
                                           vectorbt/vectorbt-rust paired; otherwise no orders.
     ↓
-2. loader chain (lab.data.fetch_stock_ohlcv, the 12:45 partial bar) -> paper.live_bars.Bars
+2. loader chain (data.live.fetch_chain.fetch_stock_ohlcv, the 12:45 partial bar) -> paper.live_bars.Bars
                                        -> paper.gates.vet_bars (empty / duplicates / weekend /
                                           universe / history / last-bar coverage; a not-yet-complete
                                           bar dated today is dropped, anything else thin is a bad tape)
@@ -338,14 +345,74 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
                                        (UNTRADABLE_SYMBOLS + broker status + 422 "not active"),
                                        risk guardrails, MAX_POSITIONS cap (alphabetical)
     ↓
-5. trader.execute()                 -> Alpaca orders (--live only; a dry run is read-only)
+5. trader order steps              -> Alpaca orders (--live only; a dry run is read-only)
     ↓
-6. persist.save()                   -> ledger, snapshot, peak (--live only)
+6. self._ledger (PaperLedger)       -> intents, trades, snapshot, peak, split and dividend rows
+                                       (--live only; a read-only run skips and records the writes)
     ↓
 7. notifier.send()                  -> Telegram (a read-only dry run logs instead)
 ```
 
 `paper/` reaches vectorbt only through `ggTrader.engine` (`tests/engine/test_boundary.py` scans every file under `src/`; `tests/paper/test_paper_boundary.py` checks the signal path).
+
+### 4a. Paper trader interfaces, records and the price-loader chain (refactor phase 4)
+
+Phase 4 gave the paper trader typed records and swappable interfaces and gave the price-loader
+fallback one tested home. It changed no order, no SQL statement, no Telegram line and no price row,
+with one intended exception (the per-run settings snapshot, below). `PaperTrader._run` is **not**
+split here; that is Phase 5, which builds on these pieces.
+
+| Piece | Where | Status |
+|---|---|---|
+| Eight records: `Account`, `Position`, `OrderStatus`, `MarketClock`, `SleeveSignals`, `SignalBundle` (`TypedDict`s, so the JSON-shaped mappings are unchanged) and `SubmittedOrder`, `RunResult` (frozen dataclasses the trader builds) | `paper/models.py` | permanent |
+| `Broker` and `Notifier` protocols (the 11 broker methods and 3 notifier methods the trader calls) | `paper/ports.py` | permanent |
+| `PaperLedger` protocol, one method per public function of `paper/persist.py`, plus `InMemoryLedger` (a test double: no database) and `ReadOnlyLedger` (skips every write, records the method name in `skipped_writes`) | `paper/ledger.py` | permanent |
+| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because tests and the transcript harness patch them by name | `paper/persist.py` | permanent class; the delegations stay while the string-patch tests do |
+| `ModuleLedger`, the **string-patch adapter**: resolves the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` keeps working | `paper/ledger.py` | **temporary**: deleted in Phase 5 once `tests/paper/test_trader.py` (about 440 string patches) moves to `InMemoryLedger` |
+| `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
+| `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live` | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
+| `CachedYFinanceLoader.persist(df, interval)`: public writer that delegates to `_cache_to_db`, so callers stop reaching for the private method | `data/live/cached_yfinance_loader.py` | permanent |
+
+How the trader uses them. `PaperTrader.__init__(broker, notifier, risk_cfg=None, dry_run=True,
+read_only=None, membership=None, *, ledger=None)` takes a `Broker`, a `Notifier` and an optional
+`PaperLedger`. With no ledger it builds a `ModuleLedger`; a read-only run wraps whichever ledger it
+has in a `ReadOnlyLedger`. `trader.py` reaches the database only through `self._ledger`: it has no
+`_write` helper, makes no call to an imported persist function and reads no environment variable
+(it still binds the 26 persist names at module level, which `ModuleLedger` and the harness use).
+Every pending order is a `SubmittedOrder`, read by attribute rather than by tuple index, and every
+result is built as a `RunResult` and returned as `.as_dict()`, so `run()` still returns a `dict`
+with the same key order. A test can build a trader on `InMemoryLedger` and needs no persist patch;
+that covers the **ledger only**: the signal, membership, benchmark-refresh, date, uuid and clock
+collaborators are still patched in the trader module.
+
+**Intended behavior change: one settings snapshot per run.** The run-time environment settings used
+to be read at several points of a run. `TraderConfig.from_env()` now reads them all once, at the top
+of `run()`, so the sweep and untradable settings are read before the run lock, the market gate and
+the account reads. The only observable difference arises if the process environment changes during
+a run, which nothing in the code does. A malformed float is stored in the record and re-raised where
+the trader used to parse it, so each setting keeps its old fail time (the sweep reserve ends the run;
+the minimum clip and buy trigger are logged and skip the sweep buy; an invalid stop threshold halts
+before the lock). Transcript pins cover these; the read timing itself is a deliberate change and is
+not claimed to be identical.
+
+**Pins that make the changes provable** (tests, not behavior): the transcripts now cover 103
+scenarios (the original 96 stay byte-identical; seven were added); `tests/paper/golden/persist_sql.json`
+records every SQL text, bind dictionary and commit, rollback and close event of the 31 persist
+functions through a recording engine; `tests/paper/test_phase4_pins.py` pins result key order,
+tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py` gains a rule that
+`paper/` imports nothing from `lab.data` except `STOCK_BASE_CONFIG`.
+
+**Known bind-key change.** `create_order_intent` used to pass `locals()` to the SQL call, which
+included the open connection under the key `conn`; SQLAlchemy ignored it. The explicit bind
+dictionary drops that stray key. The SQL text and the other seven keys are unchanged.
+
+**Verification status at the time of writing.** The fast-core test tier (which includes the transcript, SQL-golden,
+pin and import-rule tests) passes on the branch and the hash records verify. The real-tape oracle comparison
+(`gate_oracles.sh`) and the full final gate (`scripts/run_tests.sh --full` plus the test-outcome
+comparison) are controller-owned and **not yet run for the finished Phase 4 head**; this section must
+not be read as a claim of complete parity until they are recorded. Nothing here was deployed: the
+trader stays stopped, cron is off, and code reaches the `ggtrader_live` container only through the
+image rebuild.
 
 ---
 

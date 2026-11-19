@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-11-19 (refactor phase 4: paper trader interfaces and records, price-loader chain)
+
+- Gave the paper trader typed records and swappable interfaces, and gave the price-loader fallback
+  one tested home. **No order, SQL statement, Telegram line or price row changed**, with the one
+  intended exception below. `PaperTrader._run` was not split; that is Phase 5.
+- Added `paper/models.py` (eight records, including `SubmittedOrder`, which replaces the five-item
+  pending-order tuple, and `RunResult`, which builds the result dict), `paper/ports.py` (`Broker`
+  and `Notifier` protocols), `paper/ledger.py` (the `PaperLedger` protocol with `InMemoryLedger`,
+  `ReadOnlyLedger` and `ModuleLedger`) and `paper/config.py` (`TraderConfig`). The trader now reaches
+  the database only through `self._ledger`; `PgPaperLedger` in `paper/persist.py` holds the SQL
+  unchanged and the module functions remain as one-line delegations. `ModuleLedger`, the string-patch
+  adapter that keeps the roughly 440 dotted-string test patches working, is temporary and goes in
+  Phase 5.
+- Moved the price-loader fallback (DB cache, then yfinance, then Tiingo) into
+  `data/live/fetch_chain.py` as `OhlcvFetchChain` and `fetch_stock_ohlcv`;
+  `lab.data.fetch_stock_ohlcv` is now a wrapper with the same signature and `paper/` imports its
+  fetch path from `data/live`. `CachedYFinanceLoader` gained a public `persist()`. A new import
+  rule keeps `paper/` from importing anything from `lab.data` except `STOCK_BASE_CONFIG`.
+- Intended behavior change: the stop, sweep and untradable settings are read once into one frozen
+  `TraderConfig` at the top of `run()`, not at several points of the run. The sweep and untradable
+  settings are therefore read before the run lock and the market gate. This differs only if the
+  environment changes mid-run, which nothing does; malformed floats are stored and re-raised where
+  they were parsed, so each keeps its old fail time.
+- Pins added before the changes: the transcript set grows from 96 to 103 scenarios (the original
+  96 goldens are byte-identical), a recording-engine SQL golden covers all 31 persist functions
+  (`tests/paper/golden/persist_sql.json`), and shape pins cover result key order, tuple-index sites
+  and environment-read timing.
+- One bind key dropped: `create_order_intent` used to pass the open connection to the SQL call under
+  the key `conn` (SQLAlchemy ignored it); the explicit dictionary omits it. The SQL text and the
+  other seven keys are unchanged. The test token `_cache_to_db` became `persist` in 12 mock lines of
+  `tests/lab/test_fetch_stock_ohlcv_chain.py` (9) and `tests/paper/test_signal_runner.py` (3).
+- Verification status: the fast-core test tier (which includes the transcript, SQL-golden, pin and
+  import-rule tests) passes on the branch and the hash records verify. The real-tape oracle comparison and the full final gate
+  have **not yet been run for the finished Phase 4 head**; parity is not claimed until they are.
+  `ggt paper` output did not change, so `docs/cli_reference.md` is unchanged. Not deployed; the trader
+  stays stopped and cron stays off.
+
 ## 2026-11-18 (refactor phases 0–2)
 
 - Added offline safety gates, recorded trader transcripts and loader behavior, and serialized
