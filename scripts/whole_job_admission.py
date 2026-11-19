@@ -10,6 +10,8 @@ lock inherited by a forked child until that child execs or exits. Corrupt prior 
 is preserved and startup refuses admission until an operator investigates it.
 The directory must remain under trusted control: metadata checks detect some changes,
 but cannot make a check and write atomic against a privileged concurrent replacement.
+Job IDs must uniquely identify individual launches. State does not authorize a kill or
+prove cleanup: a trusted broker must verify the pinned cgroup before stop or clear.
 """
 
 import fcntl
@@ -35,8 +37,15 @@ class AdmissionState:
         self._check_directory()
         self.epoch = secrets.token_hex(32)
         with self._lock():
-            self._read(missing_ok=True)
-            self._write({"epoch": self.epoch, "held": True, "job": "", "boot": ""})
+            previous = self._read(missing_ok=True)
+            self._write(
+                {
+                    "epoch": self.epoch,
+                    "held": True,
+                    "job": previous["job"] if previous else "",
+                    "boot": previous["boot"] if previous else "",
+                }
+            )
 
     def _check_directory(self) -> None:
         try:
@@ -198,17 +207,41 @@ class AdmissionState:
             raise ValueError("invalid job or boot identifier")
         with self._lock():
             state = self._current()
-            if not state["held"]:
-                raise PermissionError("admission is already released")
+            if not state["held"] or state["job"]:
+                raise PermissionError("prior admission must be held and cleared")
             state.update(held=False, job=job, boot=boot)
             self._write(state)
 
-    def hold(self) -> None:
-        """Persist a hold; the caller must separately stop the verified cgroup."""
+    def snapshot(self) -> dict[str, Any]:
+        """Read this epoch's held state and retained identity under the lock."""
         with self._lock():
-            state = self._current()
+            return self._current().copy()
+
+    def hold(self, job: str, boot: str, epoch: str) -> None:
+        """Hold only the expected identity; this does not authorize a cgroup stop."""
+        with self._lock():
+            state = self._match(job, boot, epoch)
             state["held"] = True
             self._write(state)
+
+    def clear(self, job: str, boot: str, epoch: str) -> None:
+        """Forget a held identity after the trusted broker independently verifies cleanup."""
+        with self._lock():
+            state = self._match(job, boot, epoch)
+            if not state["held"]:
+                raise PermissionError("active job must be held before cleanup")
+            state.update(job="", boot="")
+            self._write(state)
+
+    def _match(self, job: str, boot: str, epoch: str) -> dict[str, Any]:
+        state = self._current()
+        if (
+            not job
+            or not boot
+            or (state["job"], state["boot"], state["epoch"]) != (job, boot, epoch)
+        ):
+            raise PermissionError("job identity or epoch does not match")
+        return state
 
     @contextmanager
     def admission(self, job: str, boot: str) -> Iterator[None]:

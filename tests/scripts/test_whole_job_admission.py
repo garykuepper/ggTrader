@@ -51,7 +51,7 @@ def test_identity_mismatch_and_explicit_hold_refuse_admission(directory: int) ->
         with pytest.raises(PermissionError):
             with state.admission(job, boot):
                 pass
-    state.hold()
+    state.hold("job-a", "boot-a", state.epoch)
     with pytest.raises(PermissionError):
         with state.admission("job-a", "boot-a"):
             pass
@@ -119,7 +119,7 @@ def test_hold_waits_for_in_progress_launch(directory: int) -> None:
 
     def hold() -> None:
         entered.set()
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
         completed.set()
 
     with state.admission("job-a", "boot-a"):
@@ -143,7 +143,7 @@ def test_corrupt_state_latches_and_startup_preserves_evidence(
     saved = path.read_bytes()
     path.write_bytes(b"corrupt")
     with pytest.raises(ValueError):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
     with pytest.raises(ValueError):
         store(directory)
     assert path.read_bytes() == b"corrupt"
@@ -160,7 +160,7 @@ def test_epoch_failure_is_latched(directory: int, tmp_path: Path) -> None:
     old = path.read_bytes()
     store(directory)
     with pytest.raises(PermissionError):
-        first.hold()
+        first.hold("job-a", "boot-a", first.epoch)
     path.write_bytes(old)
     with pytest.raises(PermissionError):
         with first.admission("job-a", "boot-a"):
@@ -197,7 +197,7 @@ def test_rejects_unsafe_state_file(directory: int, tmp_path: Path, kind: str) ->
     else:
         path.chmod(0o644)
     with pytest.raises((OSError, PermissionError)):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
 
 
 def test_fifo_state_fails_without_blocking(tmp_path: Path) -> None:
@@ -228,7 +228,7 @@ def test_lock_replacement_while_waiting_is_rejected(
 
     monkeypatch.setattr(fcntl, "flock", replace_lock)
     with pytest.raises(PermissionError):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
 
 
 def test_failed_fdopen_closes_fd(directory: int, monkeypatch) -> None:
@@ -256,7 +256,7 @@ def test_failed_replace_disables_instance(directory: int, monkeypatch) -> None:
     with pytest.raises(OSError, match="replace failed"):
         state.release("job-a", "boot-a")
     with pytest.raises(PermissionError):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
 
 
 def test_lock_open_failure_is_latched(directory: int, tmp_path: Path) -> None:
@@ -266,7 +266,7 @@ def test_lock_open_failure_is_latched(directory: int, tmp_path: Path) -> None:
     lock.unlink()
     lock.symlink_to(tmp_path / "missing")
     with pytest.raises(OSError):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
     lock.unlink()
     lock.touch(mode=0o600)
     with pytest.raises(PermissionError):
@@ -281,6 +281,7 @@ def test_exception_cannot_overwrite_replacement_epoch(directory: int, tmp_path: 
         with first.admission("job-a", "boot-a"):
             (tmp_path / "admission.lock").unlink()
             second = store(directory)
+            second.clear("job-a", "boot-a", second.epoch)
             second.release("job-b", "boot-a")
             raise RuntimeError("launch failed")
     with second.admission("job-b", "boot-a"):
@@ -308,7 +309,7 @@ def test_directory_becoming_public_disables_instance(directory: int, tmp_path: P
     tmp_path.chmod(0o777)
     try:
         with pytest.raises(PermissionError):
-            state.hold()
+            state.hold("job-a", "boot-a", state.epoch)
     finally:
         tmp_path.chmod(0o700)
     with pytest.raises(PermissionError):
@@ -335,7 +336,7 @@ def test_invalid_serialized_identity_is_rejected(
     data.update(changes)
     path.write_text(json.dumps(data))
     with pytest.raises((ValueError, PermissionError)):
-        state.hold()
+        state.hold("job-a", "boot-a", state.epoch)
 
 
 def test_oversized_serialized_identity_cannot_be_released(directory: int) -> None:
@@ -344,4 +345,46 @@ def test_oversized_serialized_identity_cannot_be_released(directory: int) -> Non
         state.release("🙂" * 512, "🙂" * 512)
     with pytest.raises(PermissionError):
         with state.admission("🙂" * 512, "🙂" * 512):
+            pass
+
+
+@pytest.mark.parametrize("previously_held", [False, True])
+def test_restart_retains_previous_job_and_requires_explicit_cleanup(
+    directory: int, previously_held: bool
+) -> None:
+    first = store(directory)
+    first.release("job-a", "boot-a")
+    if previously_held:
+        first.hold("job-a", "boot-a", first.epoch)
+    restarted = store(directory)
+    snapshot = restarted.snapshot()
+    assert snapshot == {"epoch": restarted.epoch, "held": True, "job": "job-a", "boot": "boot-a"}
+    with pytest.raises(PermissionError):
+        restarted.release("job-b", "boot-b")
+    restarted.clear("job-a", "boot-a", restarted.epoch)
+    restarted.release("job-b", "boot-b")
+
+
+def test_stale_stop_cannot_hold_replacement(directory: int) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        state.clear("job-a", "boot-a", state.epoch)
+    state.hold("job-a", "boot-a", state.epoch)
+    with pytest.raises(PermissionError):
+        state.clear("job-a", "boot-a", "0" * 64)
+    state.clear("job-a", "boot-a", state.epoch)
+    state.release("job-b", "boot-b")
+    for job, boot, epoch in [
+        ("job-a", "boot-a", state.epoch),
+        ("job-b", "boot-a", state.epoch),
+        ("job-b", "boot-b", "0" * 64),
+    ]:
+        with pytest.raises(PermissionError):
+            state.hold(job, boot, epoch)
+        with state.admission("job-b", "boot-b"):
+            pass
+    state.hold("job-b", "boot-b", state.epoch)
+    with pytest.raises(PermissionError):
+        with state.admission("job-b", "boot-b"):
             pass
