@@ -1,7 +1,8 @@
 # TEMPLATE, NOT INSTALLED, NOT ENABLED. Guest-test candidate only; read README.md first.
 # System unit (root). Holds the admission record and the pinned cgroup handles of the one
 # fixed test unit. __BROKER_ROOT__ is a root-owned, non-writable copy of this repository's
-# scripts/ (whole_job_broker.py, whole_job_admission.py, whole_job_prototype.py, __init__.py).
+# scripts/ (whole_job_broker.py, whole_job_admission.py, whole_job_prototype.py,
+# whole_job_driver.py); scripts/ is imported as a namespace package.
 [Unit]
 Description=ggTrader whole-job broker (candidate)
 
