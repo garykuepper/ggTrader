@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS fred_series (
 
 def ensure_schema() -> None:
     """Create the ``fred_series`` cache table if it is missing."""
-    from ggTrader.lab.persist import get_engine  # lazy: keeps this module free of lab imports
+    from ggTrader.utils.db import get_engine
 
     with get_engine().begin() as conn:
         conn.execute(text(_SCHEMA))
@@ -115,7 +115,7 @@ def cache_series(series_id: str, http_fetch: HttpFetch | None = None) -> int:
     df = fetch_fred_series(series_id, http_fetch=http_fetch)
     if df.empty:
         return 0
-    from ggTrader.lab.persist import get_engine  # lazy: keeps this module free of lab imports
+    from ggTrader.utils.db import get_engine
 
     ensure_schema()
     rows = _rows_for_upsert(series_id, df)
@@ -133,7 +133,7 @@ def cache_series(series_id: str, http_fetch: HttpFetch | None = None) -> int:
 
 def load_fred_series(series_id: str, start: str, end: str) -> pd.DataFrame:
     """Load a cached FRED series for [start, end] from the DB."""
-    from ggTrader.lab.persist import get_engine  # lazy: keeps this module free of lab imports
+    from ggTrader.utils.db import get_engine
 
     query = text(
         """

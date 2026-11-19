@@ -10,7 +10,7 @@ from datetime import date
 
 from sqlalchemy import text
 
-from ggTrader.lab.persist import get_engine as _get_engine
+from ggTrader.utils.db import get_engine as _get_engine
 from ggTrader.utils.json_safe import json_safe
 
 _SCHEMA = """

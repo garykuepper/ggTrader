@@ -8,11 +8,9 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-from ggTrader.utils.config import get_db_connection_string
-
-_ENGINE = None
+from ggTrader.utils.db import get_engine
 
 
 def _sanitize(obj: Any) -> Any:
@@ -97,13 +95,6 @@ PROVENANCE_MIGRATIONS = (
     "ALTER TABLE lab_runs ADD COLUMN IF NOT EXISTS provenance JSONB",
     "ALTER TABLE lab_sweeps ADD COLUMN IF NOT EXISTS provenance JSONB",
 )
-
-
-def get_engine():
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(get_db_connection_string())
-    return _ENGINE
 
 
 def init_schema() -> None:

@@ -26,9 +26,6 @@ LAYER_RULES = {
 }
 LAYER_EXCEPTIONS: frozenset[tuple[str, int, str]] = frozenset(
     {
-        ("utils/fred_data.py", 92, "ggTrader.lab.persist"),
-        ("utils/fred_data.py", 118, "ggTrader.lab.persist"),
-        ("utils/fred_data.py", 136, "ggTrader.lab.persist"),
         ("utils/significance.py", 49, "ggTrader.lab.wfo.report"),
     }
 )
