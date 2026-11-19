@@ -380,6 +380,91 @@ def _stitch_oos(
     return oos_equity, oos_metrics, spy_metrics
 
 
+class _Tally(NamedTuple):
+    """The counts and out-of-sample scores the fold loop and the stitch hand to the diagnostics."""
+
+    n_folds: int  # every generated fold, skipped ones included
+    n_test_runs: int
+    od12_flips: list[int]
+    oos_metrics: dict[str, float]
+    spy_metrics: dict[str, float]
+
+
+def _build_diagnostics(
+    scorer: Scorer,
+    inputs: ScoringInputs,
+    options: SignalSimOptions,
+    tally: _Tally,
+    *,
+    started: float,
+    fold_started: float,
+) -> dict[str, Any]:
+    """The 26-key ``diagnostics`` dict of a ``WfoResult``, in its pinned key order.
+
+    ``started`` and ``fold_started`` are the two ``time.time()`` readings ``run_wfo`` takes at
+    its start and just before the fold loop; the two timing keys are read here, last.
+    ``timings_s`` lists the scorer's own timings first, then ``folds_s``, then ``total_s``.
+    """
+    strategy = inputs.strategy
+    bars = inputs.bars
+    stop_settings = getattr(scorer, "stop_settings", None)
+    price_stop_active = stop_settings is not None and any(
+        stop_settings[key] is not None
+        for key in ("trailing_fraction", "take_profit_fraction", "atr_multiplier")
+    )
+    return {
+        "engine": engine_config.active_engine(),
+        "definitions": "vbt",
+        "strategy_kind": strategy.kind,
+        "intraday_stops": options.intraday_stops,
+        "halt_mask_supplied": options.halt_mask is not None,
+        "halt_mask_sha256": (
+            _halt_mask_hash(options.halt_mask) if options.halt_mask is not None else None
+        ),
+        "order_sequence": (
+            options.order_sequence or ("auto" if options.intraday_stops else "default")
+            if strategy.kind == "signals"
+            else "auto"
+        ),
+        "stop_exit_price": (
+            options.stop_exit_price or ("stopmarket" if options.intraday_stops else "stoplimit")
+            if price_stop_active
+            else None
+        ),
+        "stop_entry_price": (inputs.base_config.get("stop_entry_price") or "close")
+        if price_stop_active
+        else None,
+        "stop_settings": stop_settings,
+        "time_stop_warning": (
+            engine_portfolio.TIME_STOP_WARNING
+            if stop_settings is not None and stop_settings["time_stop_bars"] is not None
+            else None
+        ),
+        "n_combos": len(inputs.params),
+        "n_symbols": len(bars.symbols),
+        "n_bars": len(bars.close),
+        "n_folds": tally.n_folds,
+        "n_simulations": scorer.n_simulations,
+        "n_chunks": scorer.n_chunks,
+        "legacy_equivalent_simulations": tally.n_folds * 2 + tally.n_test_runs + 1,
+        "od12_ndh_flips_folds": tally.od12_flips,
+        "timings_s": {
+            **{k: round(v, 3) for k, v in scorer.timings.items()},
+            "folds_s": round(time.time() - fold_started, 3),
+            "total_s": round(time.time() - started, 3),
+        },
+        "peak_rss_mb": round(_peak_rss_mb()),
+        "max_bytes": inputs.max_bytes,
+        "oos_metrics": tally.oos_metrics,
+        "spy_metrics": tally.spy_metrics,
+        "pit_masked": inputs.mask is not None,
+        "guards": {
+            "min_losing_days": inputs.min_losing_days,
+            "zero_trade_rule": "selection windows (anchor, train, live)",
+        },
+    }
+
+
 def run_wfo(
     strategy_name: str,
     strategy_cls: Any,
@@ -540,61 +625,10 @@ def run_wfo(
     if verbose:
         print(table)
 
-    n_folds = len(folds)
-    stop_settings = getattr(scorer, "stop_settings", None)
-    price_stop_active = stop_settings is not None and any(
-        stop_settings[key] is not None
-        for key in ("trailing_fraction", "take_profit_fraction", "atr_multiplier")
+    tally = _Tally(len(folds), n_test_runs, od12_flips, oos_metrics, spy_metrics)
+    diagnostics = _build_diagnostics(
+        scorer, scoring_inputs, sim_options, tally, started=started, fold_started=fold_started
     )
-    diagnostics = {
-        "engine": engine_config.active_engine(),
-        "definitions": "vbt",
-        "strategy_kind": strategy.kind,
-        "intraday_stops": intraday_stops,
-        "halt_mask_supplied": halt_mask is not None,
-        "halt_mask_sha256": _halt_mask_hash(halt_mask) if halt_mask is not None else None,
-        "order_sequence": (
-            order_sequence or ("auto" if intraday_stops else "default")
-            if strategy.kind == "signals"
-            else "auto"
-        ),
-        "stop_exit_price": (
-            stop_exit_price or ("stopmarket" if intraday_stops else "stoplimit")
-            if price_stop_active
-            else None
-        ),
-        "stop_entry_price": (base_config.get("stop_entry_price") or "close")
-        if price_stop_active
-        else None,
-        "stop_settings": stop_settings,
-        "time_stop_warning": (
-            engine_portfolio.TIME_STOP_WARNING
-            if stop_settings is not None and stop_settings["time_stop_bars"] is not None
-            else None
-        ),
-        "n_combos": len(combos),
-        "n_symbols": len(bars.symbols),
-        "n_bars": len(bars.close),
-        "n_folds": n_folds,
-        "n_simulations": scorer.n_simulations,
-        "n_chunks": scorer.n_chunks,
-        "legacy_equivalent_simulations": n_folds * 2 + n_test_runs + 1,
-        "od12_ndh_flips_folds": od12_flips,
-        "timings_s": {
-            **{k: round(v, 3) for k, v in scorer.timings.items()},
-            "folds_s": round(time.time() - fold_started, 3),
-            "total_s": round(time.time() - started, 3),
-        },
-        "peak_rss_mb": round(_peak_rss_mb()),
-        "max_bytes": max_bytes,
-        "oos_metrics": oos_metrics,
-        "spy_metrics": spy_metrics,
-        "pit_masked": pit is not None,
-        "guards": {
-            "min_losing_days": min_losing_days,
-            "zero_trade_rule": "selection windows (anchor, train, live)",
-        },
-    }
     return WfoResult(
         oos_equity=oos_equity,
         fold_results=fold_results,
