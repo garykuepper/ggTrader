@@ -68,6 +68,11 @@ def _env(lock: Path, **extra: str) -> dict[str, str]:
         if key not in _GUARD_VARS and not key.startswith("GGT_HEAVY")
     }
     env["GGT_HEAVY_LOCK"] = str(lock)
+    # A fake, roomy meminfo: the real preflight would refuse these tests on a busy host (media or
+    # game servers running). Tests of the preflight itself pass their own GGT_MEMINFO.
+    plenty = lock.parent / "meminfo-plenty"
+    plenty.write_text("MemTotal:       134217728 kB\nMemAvailable:   100663296 kB\n")
+    env["GGT_MEMINFO"] = str(plenty)
     env.update(extra)
     return env
 
@@ -283,3 +288,42 @@ def test_run_tests_time_limit_stops_a_hang(tmp_path: Path) -> None:
     assert result.returncode == 143, result.stderr
     assert "STOPPED AT THE TIME LIMIT" in result.stderr
     assert time.monotonic() - started < 15
+
+
+def test_guard_tests_do_not_depend_on_the_hosts_free_memory(tmp_path: Path) -> None:
+    """On a busy host (media or game servers running) the real preflight would refuse these."""
+    env = _env(tmp_path / "lock")
+    meminfo = Path(env["GGT_MEMINFO"])
+    available_kb = int(
+        next(
+            line for line in meminfo.read_text().splitlines() if line.startswith("MemAvailable:")
+        ).split()[1]
+    )
+    assert available_kb >= 64 * 1024 * 1024
+
+
+@pytest.mark.parametrize("bad", ["1.5G", "50%", "4GiB", "4g", "abc"])
+def test_an_unreadable_cap_is_refused_before_anything_runs(tmp_path: Path, bad: str) -> None:
+    ran = tmp_path / "ran"
+    result = subprocess.run(
+        [str(CAPPED), "bash", "-c", f"touch {ran}"],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path / "lock", GGT_RUN_MEM_MAX=bad),
+        timeout=30,
+    )
+    assert result.returncode == 2, result.stderr
+    assert "cannot read the size" in result.stderr
+    assert not ran.exists()
+
+
+def test_an_unreadable_margin_is_refused(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [str(CAPPED), "true"],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path / "lock", GGT_HEAVY_MARGIN="lots"),
+        timeout=30,
+    )
+    assert result.returncode == 2, result.stderr
+    assert "cannot read the size" in result.stderr

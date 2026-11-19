@@ -14,12 +14,14 @@
   job waits `GGT_HEAVY_WAIT`, default 1800 s, then exits 75); a job exits 75 at once when free memory
   is below its cap plus `GGT_HEAVY_MARGIN` (default 4G); each pytest run is stopped after
   `GGT_TEST_MAX_SECONDS` (default 1800) and a `run_capped.sh` job after `GGT_RUN_MAX_SECONDS`
-  (default 7200), exit 143. The default test memory cap drops from 8G to 4G: a full gate peaked at
-  about 1.8 GiB, and a 2G cap kills the real-tape live-golden test.
+  (default 7200), exit 143. The default test memory cap drops from 8G to 4G: a full gate was sampled at
+  1.84 GiB or more (a floor, since the sampler can miss the last high-water mark) and a 2G cap kills
+  the real-tape live-golden test, so 4G leaves about twice the headroom.
 - Every test is stopped after `GGT_TEST_TIMEOUT` seconds (default 180; `@pytest.mark.timeout_seconds(n)`
   overrides) so a hang fails the test instead of eating memory. One frozen study test that asserts
   on the process's own SIGALRM timer is exempt (`tests/timeout_guard.py: UNTIMED_TESTS`).
-- CI (`GGT_TEST_NO_CGROUP=1`) is unchanged: no lock, no preflight, no time limit. Nothing here
+- CI (`GGT_TEST_NO_CGROUP=1`) keeps no lock, no preflight and no runner time limit; the per-test
+  timeout does apply to CI. Nothing here
   touches the stopped trader, system services or any other project.
 
 ## 2026-11-18 (refactor phases 0-1: safety nets, dead code, wipe flags)

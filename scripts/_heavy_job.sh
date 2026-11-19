@@ -22,9 +22,11 @@
 # Environment: GGT_HEAVY_LOCK (lock path override), GGT_HEAVY_WAIT, GGT_HEAVY_MARGIN,
 # GGT_MEMINFO (meminfo path override, for tests).
 
-# size_to_kb SIZE: 512M, 4G, 64K or plain bytes -> kilobytes.
+# size_to_kb SIZE: 512M, 4G, 64K or plain bytes -> kilobytes. Anything else (1.5G, 50%, 4g) is an
+# error, because systemd reads some of those differently: callers must run it as
+# `kb="$(size_to_kb "$x")" || exit 2`, since an exit inside $(...) only leaves the subshell.
 size_to_kb() {
-    local size="${1^^}"
+    local size="$1"
     if [[ ! "$size" =~ ^[0-9]+[KMG]?$ ]]; then
         echo "error: cannot read the size '$1' (use for example 512M or 4G)" >&2
         exit 2
@@ -59,6 +61,12 @@ heavy_job_enter() {
         return 0
     fi
 
+    # Validate before taking the lock: an unreadable size must stop the job, never switch the
+    # free-memory check off.
+    local cap_kb margin_kb
+    cap_kb="$(size_to_kb "$mem_max")" || exit 2
+    margin_kb="$(size_to_kb "${GGT_HEAVY_MARGIN:-4G}")" || exit 2
+
     local lock holder wait_s note
     lock="$(heavy_job_lock_path)"
     holder="$lock.holder"
@@ -84,7 +92,7 @@ heavy_job_enter() {
     local avail_kb need_kb margin
     margin="${GGT_HEAVY_MARGIN:-4G}"
     avail_kb="$(awk '/^MemAvailable:/ {print $2}' "${GGT_MEMINFO:-/proc/meminfo}" 2>/dev/null || true)"
-    need_kb=$(( $(size_to_kb "$mem_max") + $(size_to_kb "$margin") ))
+    need_kb=$(( cap_kb + margin_kb ))
     if [[ -n "$avail_kb" ]] && (( avail_kb < need_kb )); then
         echo "not enough free memory for a $mem_max job: $(( avail_kb / 1024 )) MiB available," \
             "$(( need_kb / 1024 )) MiB needed (the cap plus a $margin margin); not starting" >&2

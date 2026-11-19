@@ -27,8 +27,13 @@ UNTIMED_TESTS: frozenset[str] = frozenset(
 )
 
 
-class TestTimedOut(Exception):
-    """A test ran longer than its wall-clock limit."""
+class TestTimedOut(BaseException):
+    """A test ran longer than its wall-clock limit.
+
+    A ``BaseException`` on purpose: the order-polling loop that caused the 2026-11-18 incident
+    wraps its work in ``except Exception``, which would otherwise swallow the alarm and keep
+    spinning. pytest still reports it as an ordinary test failure (as it does ``HarnessError``).
+    """
 
     __test__ = False  # the name starts with "Test": keep pytest from trying to collect it
 
@@ -50,7 +55,15 @@ def time_limit(seconds: float) -> Iterator[None]:
         yield
         return
 
+    fired = 0
+
     def expired(signum: int, frame: object) -> None:
+        nonlocal fired
+        fired += 1
+        if fired == 1:
+            # One more chance if the first alarm is swallowed (a bare ``except BaseException``).
+            # Only once: a repeating timer could fire inside pytest's own failure reporting.
+            signal.setitimer(signal.ITIMER_REAL, 1.0)
         raise TestTimedOut(f"test exceeded {seconds:g}s (a hang?)")
 
     started = time.monotonic()

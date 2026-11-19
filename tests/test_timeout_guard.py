@@ -89,3 +89,34 @@ def test_every_untimed_test_still_exists() -> None:
         path, _, name = nodeid.partition("::")
         source = (ROOT / path).read_text()
         assert f"def {name}(" in source, f"{nodeid} no longer exists: drop it from UNTIMED_TESTS"
+
+
+def test_a_broad_except_cannot_swallow_the_timeout() -> None:
+    """The order-polling loop of the incident wraps its work in ``except Exception``."""
+    started = time.monotonic()
+    deadline = started + 3  # an inner bound, so a broken guard fails this test instead of hanging
+    with pytest.raises(TestTimedOut), time_limit(0.5):
+        try:
+            while time.monotonic() < deadline:
+                pass
+        except Exception:
+            pass
+        while time.monotonic() < deadline:
+            pass
+    assert time.monotonic() - started < 2
+
+
+def test_a_swallowed_alarm_fires_again() -> None:
+    hits = 0
+    started = time.monotonic()
+    deadline = started + 4
+    with pytest.raises(TestTimedOut), time_limit(0.3):
+        while time.monotonic() < deadline:
+            try:
+                while time.monotonic() < deadline:
+                    pass
+            except BaseException:
+                hits += 1
+                if hits >= 2:
+                    raise
+    assert hits >= 2
