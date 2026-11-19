@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-18 (test-run safety after the out-of-memory incident)
+
+- Encom ran out of memory at about 13:53 and thrashed until it was power-cycled at 17:58. Two
+  parallel `tests/paper/` runs, started by parallel builders, each grew toward their own 8 GiB
+  cap, together needed more than the machine had free, and nothing was killed. The growth was a
+  hang: the `ggt` CLI callback left the `ggTrader` logger at INFO, and on Python 3.12 every log
+  record reads `time.time()`, which starved paper tests that stub the global clock, so
+  `_poll_orders` never reached its deadline (the root `conftest.py` now restores the logger after
+  every test, `a44fa90a`).
+- `scripts/run_tests.sh` and `scripts/run_capped.sh` now share a guard (`scripts/_heavy_job.sh`):
+  one heavy job at a time through a lock in the git directory that every worktree shares (a second
+  job waits `GGT_HEAVY_WAIT`, default 1800 s, then exits 75); a job exits 75 at once when free memory
+  is below its cap plus `GGT_HEAVY_MARGIN` (default 4G); each pytest run is stopped after
+  `GGT_TEST_MAX_SECONDS` (default 1800) and a `run_capped.sh` job after `GGT_RUN_MAX_SECONDS`
+  (default 7200), exit 143. The default test memory cap drops from 8G to 4G: a full gate peaked at
+  about 1.8 GiB, and a 2G cap kills the real-tape live-golden test.
+- Every test is stopped after `GGT_TEST_TIMEOUT` seconds (default 180; `@pytest.mark.timeout_seconds(n)`
+  overrides) so a hang fails the test instead of eating memory. One frozen study test that asserts
+  on the process's own SIGALRM timer is exempt (`tests/timeout_guard.py: UNTIMED_TESTS`).
+- CI (`GGT_TEST_NO_CGROUP=1`) is unchanged: no lock, no preflight, no time limit. Nothing here
+  touches the stopped trader, system services or any other project.
+
 ## 2026-11-18 (refactor phases 0-1: safety nets, dead code, wipe flags)
 
 - Added the safety nets a code refactor depends on, all as tests and tools with no change to

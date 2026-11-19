@@ -97,6 +97,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Apply the chosen tier's marker expression (it replaces the pyproject default)."""
     tiers.apply_tier(config.option, config.getoption("--tier"))
+    # Registered here, not in pyproject.toml: tests/test_tiers.py requires the markers listed there
+    # to be exactly the tier markers.
+    config.addinivalue_line(
+        "markers",
+        "timeout_seconds(n): this test may run n seconds instead of the per-test limit "
+        "(GGT_TEST_TIMEOUT, default 180)",
+    )
 
 
 def pytest_collection_finish(session: pytest.Session) -> None:
