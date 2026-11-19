@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-19 (refactor phase 3: research engine helpers and fold records)
+
+- Structure only; no strategy, data source or result was intentionally changed. `engine.run_signals`
+  now delegates to three private helpers (`_halt_positions`, `_validate_intraday_stops`,
+  `_reject_overlaps`), and `lab.wfo.run.run_wfo` to `_scorer_for`, `_score_fold`, `_stitch_oos` and
+  `_build_diagnostics`. New `ScoringInputs` and `SignalSimOptions` carriers (with `from_inputs`
+  constructors on both scorers) and a `FoldRecord` in `lab/wfo/fold_record.py`. Public signatures, fold
+  and diagnostics key order, error messages, printed output and scorer call order are unchanged.
+- Correction: a fold row has 28 keys, not 27 as the refactor design said; `FoldRecord` and the tests use 28.
+- Added characterization tests (exact goldens for `run_signals` and `run_wfo`, the 28 fold keys and 26
+  diagnostics keys in order, scorer and gate seams) and helper unit tests for each new piece.
+- Verification: the pin check, the `tests/engine tests/lab tests/utils` run, the fast core and ruff passed
+  on this tree. Real-tape oracle results (P5, P7, the 13 `*_oos_equity.csv` byte comparison) were not
+  re-run for the final tree: the oracle comparison matched the baseline for Tasks 20 and 21 only, and a
+  later P5 attempt under a 3G cap exited 137, so the real-tape gate for Tasks 22 to 27 is still open.
+
 ## 2026-11-18 (refactor phases 0–2)
 
 - Added offline safety gates, recorded trader transcripts and loader behavior, and serialized
