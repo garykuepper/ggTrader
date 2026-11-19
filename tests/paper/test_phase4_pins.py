@@ -7,9 +7,10 @@ pin both, plus the way the harness finds the persist functions it wraps.
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -111,7 +112,9 @@ def test_harness_wraps_25_names_and_replaces_the_lock_separately(
     recorded: list[tuple[object, str, object]] = []
     real_patch = harness.patch
 
-    def recording_object(target: object, attribute: str, new: object, *a: object, **k: object):
+    def recording_object(
+        target: object, attribute: str, new: object, *a: object, **k: object
+    ) -> Any:
         recorded.append((target, attribute, new))
         return real_patch.object(target, attribute, new, *a, **k)
 
@@ -131,6 +134,17 @@ def test_harness_wraps_25_names_and_replaces_the_lock_separately(
     assert lock.__name__ == "paper_run_lock"
     assert lock.__qualname__.startswith("_Run.")  # the context manager of the run
     assert not any(in_trader[n] is lock for n in ordinary)
+
+
+@pytest.mark.parametrize(
+    "name", ["sweep_min_clip_invalid_fail_soft", "sweep_buy_trigger_invalid_fail_soft"]
+)
+def test_invalid_sweep_buy_setting_logs_warning(
+    name: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level("WARNING", logger=trader_module._log.name):
+        run_scenario(SCENARIOS[name])
+    assert any("Cash sweep buy sizing failed (non-fatal)" in r.message for r in caplog.records)
 
 
 # --------------------------------------------------------------------------- the poll fallback
@@ -155,7 +169,7 @@ def _trader(broker: MagicMock) -> Iterator[PaperTrader]:
         yield PaperTrader(broker, MagicMock(), dry_run=True, membership=FIXTURE_SPEC)
 
 
-def _broker(get_order) -> MagicMock:
+def _broker(get_order: Callable[[str], dict]) -> MagicMock:
     broker = MagicMock()
     broker.get_clock.return_value = {"is_open": True}
     broker.get_order.side_effect = get_order
