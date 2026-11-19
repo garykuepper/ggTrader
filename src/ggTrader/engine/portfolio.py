@@ -179,28 +179,7 @@ def run_signals(
     if stop_entry_price not in ("close", "fillprice"):
         raise ValueError("stop_entry_price must be 'close' or 'fillprice'")
     _check_shapes(close, entries=entries, exits=exits)
-    halt_positions = {}
-    if halt_mask is not None:
-        if (
-            not isinstance(halt_mask, pd.DataFrame)
-            or not halt_mask.index.equals(close.index)
-            or not halt_mask.columns.is_unique
-            or halt_mask.isna().to_numpy().any()
-            or not all(pd.api.types.is_bool_dtype(dtype) for dtype in halt_mask.dtypes)
-        ):
-            raise ValueError("halt_mask must have matching dates and known boolean states")
-        if halt_mask.columns.equals(close.columns):
-            halt_columns = np.arange(len(close.columns))
-        elif isinstance(close.columns, pd.MultiIndex):
-            halt_columns = halt_mask.columns.get_indexer(close.columns.get_level_values(-1))
-            if (halt_columns < 0).any():
-                raise ValueError("halt_mask must cover every symbol")
-        else:
-            raise ValueError("halt_mask must match close columns")
-        for column in np.unique(halt_columns):
-            positions = np.flatnonzero(halt_mask.iloc[:, column].to_numpy(dtype=bool))
-            if len(positions):
-                halt_positions[int(column)] = positions
+    halt_positions, halt_columns = _halt_positions(halt_mask, close)
     entries = _as_bool(entries)
     exits = _as_bool(exits)
     if mask is not None:
@@ -396,6 +375,54 @@ def _cfg_float(base_config: Mapping[str, Any], key: str) -> float:
     if key not in base_config:
         raise ValueError(f"base_config is missing {key!r}")
     return float(base_config[key])
+
+
+def _halt_positions(
+    halt_mask: pd.DataFrame | None, close: pd.DataFrame
+) -> tuple[dict[int, np.ndarray], np.ndarray]:
+    """Validate ``halt_mask`` against ``close`` and index its flagged bars.
+
+    Args:
+        halt_mask: boolean halt bars, grid-aligned with ``close`` or one column per symbol;
+            ``None`` means no halts.
+        close: the caller's close frame, before any forward fill.
+
+    Returns:
+        ``(positions, columns)``. ``positions`` maps a halt-mask column position to the sorted
+        bar positions flagged in it (columns with no flag are absent). ``columns[c]`` is the
+        halt-mask column that serves column ``c`` of ``close``: ``np.arange`` when the frames
+        share columns, the symbol lookup for a MultiIndex ``close``. With no mask the result is
+        ``({}, np.empty(0, dtype=np.intp))``.
+
+    Raises:
+        ValueError: the mask has other dates, a non-boolean or missing state, does not cover
+            every symbol, or does not match the columns of ``close``.
+    """
+    halt_positions: dict[int, np.ndarray] = {}
+    halt_columns = np.empty(0, dtype=np.intp)
+    if halt_mask is None:
+        return halt_positions, halt_columns
+    if (
+        not isinstance(halt_mask, pd.DataFrame)
+        or not halt_mask.index.equals(close.index)
+        or not halt_mask.columns.is_unique
+        or halt_mask.isna().to_numpy().any()
+        or not all(pd.api.types.is_bool_dtype(dtype) for dtype in halt_mask.dtypes)
+    ):
+        raise ValueError("halt_mask must have matching dates and known boolean states")
+    if halt_mask.columns.equals(close.columns):
+        halt_columns = np.arange(len(close.columns))
+    elif isinstance(close.columns, pd.MultiIndex):
+        halt_columns = halt_mask.columns.get_indexer(close.columns.get_level_values(-1))
+        if (halt_columns < 0).any():
+            raise ValueError("halt_mask must cover every symbol")
+    else:
+        raise ValueError("halt_mask must match close columns")
+    for column in np.unique(halt_columns):
+        positions = np.flatnonzero(halt_mask.iloc[:, column].to_numpy(dtype=bool))
+        if len(positions):
+            halt_positions[int(column)] = positions
+    return halt_positions, halt_columns
 
 
 def _check_shapes(close: pd.DataFrame, **frames: pd.DataFrame) -> None:
