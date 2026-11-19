@@ -1,0 +1,26 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. Guest-test candidate only; read README.md first.
+# System unit (root). Holds the admission record and the pinned cgroup handles of the one
+# fixed test unit. __BROKER_ROOT__ is a root-owned, non-writable copy of this repository's
+# scripts/ (whole_job_broker.py, whole_job_admission.py, whole_job_prototype.py, __init__.py).
+[Unit]
+Description=ggTrader whole-job broker (candidate)
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=/usr/bin/python3 -I __BROKER_ROOT__/scripts/whole_job_broker.py serve
+Restart=on-failure
+RestartSec=2
+# The pinned cgroup.kill/cgroup.events pair must survive broker restarts; FDPOLL=0 is sent
+# with each descriptor so polling never drops them. The broker verifies the store exactly.
+FileDescriptorStoreMax=2
+FileDescriptorStorePreserve=yes
+StateDirectory=ggtrader-job-broker
+StateDirectoryMode=0700
+RuntimeDirectory=ggtrader-job-broker
+RuntimeDirectoryMode=0755
+UMask=0077
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes
+# No [Install]: started by hand during a guest or maintenance-window test only.

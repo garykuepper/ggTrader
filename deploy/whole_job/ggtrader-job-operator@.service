@@ -1,0 +1,16 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. Guest-test candidate only; read README.md first.
+# Fixed root operator requests. The instance is the request; the broker reads it from the
+# unit name PID 1 reports for the sender, never from the message:
+#   ggtrader-job-operator@status.service
+#   ggtrader-job-operator@start.service
+#   ggtrader-job-operator@stop:<attempt>.service
+#   ggtrader-job-operator@acknowledge:<attempt>.service   (record from an earlier boot)
+[Unit]
+Description=ggTrader whole-job operator request %i (candidate)
+Requires=ggtrader-job-broker.service
+After=ggtrader-job-broker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I __BROKER_ROOT__/scripts/whole_job_broker.py request
+NoNewPrivileges=yes

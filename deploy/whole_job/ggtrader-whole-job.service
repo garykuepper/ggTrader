@@ -1,0 +1,26 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. Guest-test candidate only; read README.md first.
+# The one fixed whole-job unit. Started only by the broker (StartUnit); its main process
+# registers with the broker and runs no phase until the broker answers "go".
+[Unit]
+Description=ggTrader whole test job (candidate)
+# Never pulled in by anything: a reboot must not resume a job.
+DefaultDependencies=yes
+
+[Service]
+Type=exec
+User=ggtrader-job
+Group=ggtrader-job
+# Nondelegated: the job cannot create sub-cgroups or move processes out.
+Delegate=no
+ExecStart=/usr/bin/python3 -I __BROKER_ROOT__/scripts/whole_job_driver.py
+WorkingDirectory=__JOB_CHECKOUT__
+Restart=no
+KillMode=control-group
+# Backstop only; the broker enforces per-phase deadlines through the pinned cgroup.kill.
+RuntimeMaxSec=4200
+# Limits are deliberately unset: they must come from Task 2 measurements and Gary's decision.
+# MemoryMax=__MEASURED__
+# MemorySwapMax=0
+NoNewPrivileges=yes
+PrivateTmp=yes
+# No [Install] section.

@@ -1,0 +1,639 @@
+"""Broker sequencing against an injected host fixture, plus the kernel pieces it can run safely.
+
+The fixture stands in for PID 1, cgroupfs and the descriptor store: these tests prove the
+broker's ordering and refusals, not systemd or kernel behaviour. The only real kernel paths
+exercised are SCM_PIDFD over a socket pair, pidfd fdinfo and descriptor passing to a local
+datagram socket; no unit, cgroup or host setting is touched.
+"""
+
+import array
+import fcntl
+import json
+import os
+import socket
+import stat
+from pathlib import Path
+
+import pytest
+
+from scripts.whole_job_admission import AdmissionState
+from scripts.whole_job_broker import (
+    EVENTS_NAME,
+    KILL_NAME,
+    PHASE_SECONDS,
+    REGISTER_SECONDS,
+    TEST_CGROUP,
+    TEST_UNIT,
+    Broker,
+    Handles,
+    JobRecord,
+    LinuxSystem,
+    Refused,
+    Server,
+    StoreEntry,
+    UnitState,
+    inherited_fds,
+    pidfd_pid,
+    receive,
+    store_matches,
+)
+
+BOOT = "0f0e0d0c-0b0a-4908-8706-050403020100"
+OTHER_BOOT = "1f0e0d0c-0b0a-4908-8706-050403020100"
+INVOCATION = "ab" * 16
+DRIVER_PID = 4242
+DRIVER_PIDFD = 900
+CGROUP_ID = 777
+
+
+class FakeSystem:
+    """PID 1, cgroupfs and descriptor-store fixture; asserts no PID 1 call holds the lock."""
+
+    def __init__(self, tmp: Path, directory: Path) -> None:
+        self.tmp = tmp
+        self.directory = directory
+        self.clock = 1000.0
+        self.boot = BOOT
+        self.pidfds = {DRIVER_PIDFD: DRIVER_PID}
+        self.units = {
+            TEST_UNIT: UnitState("inactive", 0, "", TEST_CGROUP, CGROUP_ID, False),
+        }
+        self.pid_units = {DRIVER_PID: TEST_UNIT}
+        self.cgroups = {DRIVER_PID: TEST_CGROUP}
+        self.started: list[str] = []
+        self.store: list[tuple[str, int]] = []
+        self.dump_override: list[StoreEntry] | None = None
+        self.populated_value: bool | None = True
+        self.empties_on_kill = True
+        self.kills: list[dict] = []
+        self.opened = 0
+
+    # Guard: forking (busctl) is forbidden while the admission lock is held.
+    def _unlocked(self) -> None:
+        fd = os.open(self.directory / "admission.lock", os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise AssertionError("PID 1 query while the admission lock is held") from None
+        finally:
+            os.close(fd)
+
+    def now(self) -> float:
+        return self.clock
+
+    def boot_id(self) -> str:
+        return self.boot
+
+    def pidfd_pid(self, pidfd: int) -> int:
+        return self.pidfds.get(pidfd, -1)
+
+    def unit_by_pidfd(self, pidfd: int) -> tuple[str, str]:
+        self._unlocked()
+        pid = self.pidfd_pid(pidfd)
+        if pid <= 0:
+            raise Refused("ESRCH")
+        unit = self.pid_units[pid]
+        return unit, self.units[unit].invocation
+
+    def unit_state(self, unit: str) -> UnitState:
+        self._unlocked()
+        return self.units[unit]
+
+    def proc_cgroup(self, pid: int) -> str:
+        return self.cgroups[pid]
+
+    def start_unit(self, unit: str) -> None:
+        self._unlocked()
+        self.started.append(unit)
+        self.units[unit] = UnitState(
+            "active", DRIVER_PID, INVOCATION, TEST_CGROUP, CGROUP_ID, False
+        )
+        self.populated_value = True
+
+    def open_job_cgroup(self, cgroup_id: int) -> Handles:
+        assert cgroup_id == CGROUP_ID
+        self.opened += 1
+        kill = self.tmp / f"kill-{self.opened}"
+        events = self.tmp / f"events-{self.opened}"
+        kill.write_text("")
+        events.write_text("populated 1\n")
+        return Handles(os.open(kill, os.O_WRONLY), os.open(events, os.O_RDONLY))
+
+    def populated(self, handles: Handles) -> bool | None:
+        return self.populated_value
+
+    def kill(self, handles: Handles) -> None:
+        self.kills.append(json.loads((self.directory / "admission.json").read_text()))
+        if self.empties_on_kill:
+            self.populated_value = None
+            self.units[TEST_UNIT] = UnitState("failed", 0, "", TEST_CGROUP, CGROUP_ID, False)
+
+    def wait_empty(self, handles: Handles, seconds: float) -> bool:
+        return not self.populated_value
+
+    def fdstore_add(self, name: str, fd: int) -> None:
+        self.store.append((name, os.dup(fd)))
+
+    def fdstore_remove(self, name: str) -> None:
+        for entry in [e for e in self.store if e[0] == name]:
+            os.close(entry[1])
+            self.store.remove(entry)
+
+    def fdstore_barrier(self) -> None:
+        self._unlocked()
+
+    def fdstore_dump(self) -> list[StoreEntry]:
+        self._unlocked()
+        if self.dump_override is not None:
+            return self.dump_override
+        return [entry(name, fd) for name, fd in self.store]
+
+    def inherited(self) -> dict[str, list[int]]:
+        result: dict[str, list[int]] = {}
+        for name, fd in self.store:
+            result.setdefault(name, []).append(os.dup(fd))
+        return result
+
+
+def entry(name: str, fd: int) -> StoreEntry:
+    info = os.fstat(fd)
+    return StoreEntry(name, info.st_mode, info.st_dev, info.st_ino, fcntl.fcntl(fd, fcntl.F_GETFL))
+
+
+@pytest.fixture
+def env(tmp_path: Path):
+    directory = tmp_path / "state"
+    directory.mkdir(mode=0o700)
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+    system = FakeSystem(tmp_path, directory)
+    logs: list[str] = []
+    try:
+        yield system, fd, directory, logs
+    finally:
+        os.close(fd)
+
+
+def make(env) -> Broker:
+    system, fd, _, logs = env
+    broker = Broker(system, AdmissionState(fd, expected_owner=os.geteuid()), log=logs.append)
+    return broker
+
+
+def admitted(env) -> tuple[Broker, list[str]]:
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    sent: list[str] = []
+    broker.register(DRIVER_PIDFD, lambda: sent.append("go"))
+    return broker, sent
+
+
+def persisted(directory: Path) -> dict:
+    return json.loads((directory / "admission.json").read_text())
+
+
+def test_start_register_binds_attempt_invocation_handles_and_exact_store(env) -> None:
+    system, _, directory, _ = env
+    broker, sent = admitted(env)
+    assert sent == ["go"] and broker.mode == "running"
+    record = JobRecord.parse(persisted(directory)["job"])
+    assert record.invocation == INVOCATION and record.cgroup_id == CGROUP_ID
+    assert persisted(directory)["boot"] == BOOT and not persisted(directory)["held"]
+    assert (record.kill, record.events) == broker.handles.ids()
+    assert sorted(name for name, _ in system.store) == [EVENTS_NAME, KILL_NAME]
+    assert system.started == [TEST_UNIT]
+
+
+def test_record_round_trips_and_rejects_garbage() -> None:
+    record = JobRecord("a" * 32, "b" * 32, 5, (1, 2), (3, 4))
+    assert JobRecord.parse(record.encode()) == record
+    for bad in ["", record.encode() + ";x", record.encode().replace("v1", "v2"), "v1;" + "x" * 99]:
+        with pytest.raises(ValueError):
+            JobRecord.parse(bad)
+
+
+def test_nothing_runs_without_an_operator_start(env) -> None:
+    system, _, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    system.start_unit(TEST_UNIT)  # e.g. a root `systemctl start` that bypassed the broker
+    with pytest.raises(Refused):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        "wrong-unit",
+        "not-main-pid",
+        "invocation-changed",
+        "wrong-cgroup",
+        "proc-cgroup",
+        "delegated",
+        "exited",
+    ],
+)
+def test_registration_refuses_unverified_sender(env, tamper: str) -> None:
+    system, _, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    state = system.units[TEST_UNIT]
+    if tamper == "wrong-unit":
+        system.pid_units[DRIVER_PID] = "other.service"
+        system.units["other.service"] = state
+    elif tamper == "not-main-pid":
+        system.units[TEST_UNIT] = UnitState("active", 1, INVOCATION, TEST_CGROUP, CGROUP_ID, False)
+    elif tamper == "invocation-changed":
+        system.units[TEST_UNIT] = UnitState("active", DRIVER_PID, "cd" * 16, TEST_CGROUP, 1, False)
+        system.unit_by_pidfd = lambda pidfd: (TEST_UNIT, INVOCATION)
+    elif tamper == "wrong-cgroup":
+        system.units[TEST_UNIT] = UnitState(
+            "active", DRIVER_PID, INVOCATION, "/x", CGROUP_ID, False
+        )
+    elif tamper == "proc-cgroup":
+        system.cgroups[DRIVER_PID] = TEST_CGROUP + "/escaped"
+    elif tamper == "delegated":
+        system.units[TEST_UNIT] = UnitState(
+            "active", DRIVER_PID, INVOCATION, TEST_CGROUP, CGROUP_ID, True
+        )
+    else:
+        system.pidfds[DRIVER_PIDFD] = -1
+    with pytest.raises(Refused):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+    assert system.opened == 0 and system.store == []
+
+
+@pytest.mark.parametrize("tamper", ["missing", "extra", "duplicate", "inode", "flags", "empty"])
+def test_store_must_hold_exactly_the_pinned_pair_before_go(env, tamper: str) -> None:
+    system, _, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    real_dump = system.fdstore_dump
+
+    def dump() -> list[StoreEntry]:
+        rows = real_dump()
+        if not rows or tamper == "empty":
+            return [] if tamper == "empty" else rows
+        kill = next(r for r in rows if r.name == KILL_NAME)
+        if tamper == "missing":
+            return [r for r in rows if r is not kill]
+        if tamper == "extra":
+            return [*rows, StoreEntry("other", kill.mode, kill.dev, kill.inode + 1, kill.flags)]
+        if tamper == "duplicate":
+            return [*rows, kill]
+        if tamper == "inode":
+            return [r if r is not kill else StoreEntry(KILL_NAME, r.mode, r.dev, 1, r.flags)
+                    for r in rows]  # fmt: skip
+        return [r if r is not kill else StoreEntry(KILL_NAME, r.mode, r.dev, r.inode, os.O_RDWR)
+                for r in rows]  # fmt: skip
+
+    system.fdstore_dump = dump
+    with pytest.raises(Refused, match="exactly"):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+    assert len(system.kills) == 1 and system.store == []  # unadmitted invocation stopped
+    assert broker.mode == "idle"
+
+
+def test_store_comparison_needs_regular_files_and_access_modes(tmp_path: Path) -> None:
+    path = tmp_path / "f"
+    path.write_text("")
+    kill, events = os.open(path, os.O_WRONLY), os.open(path, os.O_RDONLY)
+    try:
+        info = os.fstat(kill)
+        record = JobRecord(
+            "a" * 32, "b" * 32, 1, (info.st_dev, info.st_ino), (info.st_dev, info.st_ino)
+        )
+        rows = [entry(KILL_NAME, kill), entry(EVENTS_NAME, events)]
+        assert store_matches(rows, record)
+        assert not store_matches(rows[::-1][:1], record)
+        assert not store_matches([entry(KILL_NAME, events), entry(EVENTS_NAME, kill)], record)
+        fifo = [StoreEntry(r.name, stat.S_IFIFO | 0o600, r.dev, r.inode, r.flags) for r in rows]
+        assert not store_matches(fifo, record)
+    finally:
+        os.close(kill)
+        os.close(events)
+
+
+def test_phases_are_admitted_once_in_order_and_only_from_the_driver(env) -> None:
+    system, _, _, _ = env
+    broker, _ = admitted(env)
+    sent: list[str] = []
+    with pytest.raises(Refused):
+        broker.phase(DRIVER_PIDFD, "studies", lambda: sent.append("studies"))
+    broker.phase(DRIVER_PIDFD, "core", lambda: sent.append("core"))
+    with pytest.raises(Refused):
+        broker.phase(DRIVER_PIDFD, "core", lambda: sent.append("again"))
+    system.pidfds[901] = 5151  # a descendant sending on an inherited socket
+    system.pid_units[5151] = TEST_UNIT
+    system.cgroups[5151] = TEST_CGROUP
+    with pytest.raises(Refused):
+        broker.phase(901, "studies", lambda: sent.append("child"))
+    assert sent == ["core"] and broker.phases == ["core"]
+
+
+def test_stale_stop_never_holds_a_replacement(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    with pytest.raises(Refused):
+        broker.stop("0" * 32)
+    assert not persisted(directory)["held"] and system.kills == []
+
+
+def test_stop_persists_hold_before_kill_and_clears_only_after_empty(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    attempt = broker.record.attempt
+    job = persisted(directory)["job"]
+    broker.stop(attempt)
+    assert system.kills == [{**system.kills[0], "held": True, "job": job}]
+    assert persisted(directory)["held"] and persisted(directory)["job"] == ""
+    assert system.store == [] and broker.mode == "idle" and broker.handles is None
+    broker.start()  # an explicit operator start is the only release
+
+
+def test_stop_that_does_not_empty_stays_held_and_blocks_start(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    system.empties_on_kill = False
+    with pytest.raises(TimeoutError):
+        broker.stop(broker.record.attempt)
+    assert persisted(directory)["held"] and persisted(directory)["job"]
+    assert broker.mode == "held"
+    with pytest.raises(Refused):
+        broker.start()
+    with pytest.raises(Refused):
+        broker.phase(DRIVER_PIDFD, "core", lambda: pytest.fail("phase admitted"))
+    system.empties_on_kill = True
+    broker.stop(broker.record.attempt)
+    assert broker.mode == "idle" and not persisted(directory)["job"]
+
+
+def test_broker_restart_restores_exact_handles_and_holds(env) -> None:
+    system, fd, directory, logs = env
+    broker, _ = admitted(env)
+    broker.phase(DRIVER_PIDFD, "core", lambda: None)
+    attempt = broker.record.attempt
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "held" and persisted(directory)["held"]
+    with pytest.raises(Refused):
+        restarted.phase(DRIVER_PIDFD, "studies", lambda: pytest.fail("phase admitted"))
+    with pytest.raises(PermissionError):
+        broker.phase(DRIVER_PIDFD, "studies", lambda: pytest.fail("stale instance admitted"))
+    restarted.stop(attempt)
+    assert restarted.mode == "idle" and not persisted(directory)["job"]
+
+
+@pytest.mark.parametrize("tamper", ["missing", "extra-name", "duplicate", "other-file"])
+def test_restart_with_inexact_store_stays_unverifiable(env, tamper: str) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    inherited = system.inherited()
+    if tamper == "missing":
+        os.close(inherited.pop(KILL_NAME)[0])
+    elif tamper == "extra-name":
+        inherited["stray"] = [os.dup(inherited[KILL_NAME][0])]
+    elif tamper == "duplicate":
+        inherited[KILL_NAME].append(os.dup(inherited[KILL_NAME][0]))
+    else:
+        other = system.tmp / "other"
+        other.write_text("")
+        os.close(inherited[KILL_NAME][0])
+        inherited[KILL_NAME] = [os.open(other, os.O_WRONLY)]
+    restarted = make(env)
+    restarted.startup(inherited)
+    assert restarted.mode == "unverifiable" and restarted.handles is None
+    for call in (restarted.start, lambda: restarted.stop(broker.record.attempt)):
+        with pytest.raises(Refused):
+            call()
+    assert persisted(directory)["held"] and persisted(directory)["job"]
+
+
+def test_unreported_termination_is_cleared_without_claiming_oom(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    system.populated_value = False
+    broker.tick()
+    assert broker.mode == "idle" and not persisted(directory)["job"]
+    assert "without a driver report" in broker.outcome and "oom" not in broker.outcome.lower()
+
+
+def test_reported_completion_then_close_clears(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.done(DRIVER_PIDFD, 0)
+    broker.driver_closed()
+    assert broker.outcome == "job ended; driver reported status 0"
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+def test_phase_deadline_stops_the_job(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    broker.phase(DRIVER_PIDFD, "core", lambda: None)
+    system.clock += PHASE_SECONDS + 1
+    broker.tick()
+    assert len(system.kills) == 1 and broker.outcome == "phase deadline exceeded"
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+def test_unregistered_start_is_abandoned(env) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    system.clock += REGISTER_SECONDS + 1
+    broker.tick()
+    assert broker.mode == "idle"
+    with pytest.raises(Refused):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+
+
+def test_prior_boot_record_needs_acknowledgement_of_that_attempt(env) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    attempt = broker.record.attempt
+    for _, fd in list(system.store):
+        os.close(fd)
+    system.store = []
+    system.boot = OTHER_BOOT
+    system.units[TEST_UNIT] = UnitState("inactive", 0, "", TEST_CGROUP, CGROUP_ID, False)
+    rebooted = make(env)
+    rebooted.startup({})
+    assert rebooted.mode == "prior-boot"
+    with pytest.raises(Refused):
+        rebooted.start()
+    with pytest.raises(Refused):
+        rebooted.acknowledge("0" * 32)
+    rebooted.acknowledge(attempt)
+    assert rebooted.mode == "idle" and not persisted(directory)["job"]
+    rebooted.start()
+
+
+def test_prior_boot_record_with_stored_handles_is_unverifiable(env) -> None:
+    system, _, _, _ = env
+    admitted(env)
+    system.boot = OTHER_BOOT
+    rebooted = make(env)
+    rebooted.startup(system.inherited())
+    assert rebooted.mode == "unverifiable"
+
+
+def test_orphan_store_entries_without_a_record_are_removed(env) -> None:
+    system, _, _, logs = env
+    path = system.tmp / "orphan"
+    path.write_text("")
+    system.store.append((KILL_NAME, os.open(path, os.O_WRONLY)))
+    broker = make(env)
+    broker.startup(system.inherited())
+    assert broker.mode == "idle" and system.store == []
+
+
+def test_start_refuses_active_unit_or_nonempty_store(env) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    system.units[TEST_UNIT] = UnitState("active", 1, INVOCATION, TEST_CGROUP, CGROUP_ID, False)
+    with pytest.raises(Refused):
+        broker.start()
+    system.units[TEST_UNIT] = UnitState("failed", 0, "", TEST_CGROUP, CGROUP_ID, False)
+    path = system.tmp / "stray"
+    path.write_text("")
+    system.store.append(("stray", os.open(path, os.O_RDONLY)))
+    with pytest.raises(Refused):
+        broker.start()
+
+
+def test_operator_actions_are_fixed(env) -> None:
+    broker = make(env)
+    broker.startup({})
+    assert broker.operator("status", None)["mode"] == "idle"
+    for action, attempt in [("stop", None), ("start", "a" * 32), ("kill", None)]:
+        with pytest.raises(Refused):
+            broker.operator(action, attempt)
+
+
+# Real kernel pieces (no unit, cgroup or host setting is touched) ---------------------------
+
+
+def test_scm_pidfd_identifies_the_sender_per_message() -> None:
+    left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    with left, right:
+        right.setsockopt(socket.SOL_SOCKET, 76, 1)
+        left.send(b"register x")
+        data, pidfd = receive(right)
+        try:
+            assert data == b"register x" and pidfd_pid(pidfd) == os.getpid()
+        finally:
+            os.close(pidfd)
+
+
+def test_receive_refuses_passed_descriptors() -> None:
+    left, right = socket.socketpair(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    with left, right:
+        right.setsockopt(socket.SOL_SOCKET, 76, 1)
+        read, write = os.pipe()
+        try:
+            left.sendmsg([b"x"], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [read]))])
+        finally:
+            os.close(read)
+            os.close(write)
+        with pytest.raises(Refused):
+            receive(right)
+
+
+def test_inherited_descriptors_require_our_pid(monkeypatch) -> None:
+    assert inherited_fds({"LISTEN_PID": "1", "LISTEN_FDS": "2", "LISTEN_FDNAMES": "a:b"}) == {}
+    with pytest.raises(ValueError):
+        inherited_fds({"LISTEN_PID": str(os.getpid()), "LISTEN_FDS": "2", "LISTEN_FDNAMES": "a"})
+
+
+def test_notify_passes_descriptor_with_fdpoll_off(tmp_path: Path) -> None:
+    path = str(tmp_path / "notify")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as server:
+        server.bind(path)
+        target = tmp_path / "f"
+        target.write_text("")
+        fd = os.open(target, os.O_RDONLY)
+        try:
+            LinuxSystem(path).fdstore_add(EVENTS_NAME, fd)
+        finally:
+            os.close(fd)
+        data, ancillary, _, _ = server.recvmsg(256, socket.CMSG_SPACE(4))
+        assert data == b"FDSTORE=1\nFDNAME=job-events\nFDPOLL=0"
+        ((level, kind, payload),) = ancillary
+        received = array.array("i", payload)[0]
+        assert (level, kind) == (socket.SOL_SOCKET, socket.SCM_RIGHTS)
+        assert os.fstat(received).st_ino == target.stat().st_ino
+        os.close(received)
+
+
+def test_server_protocol_challenge_register_and_phase(env, tmp_path: Path) -> None:
+    system, _, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    operator = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    listener.bind(str(tmp_path / "job.sock"))
+    operator.bind(str(tmp_path / "operator.sock"))
+    listener.listen(1)
+    operator.listen(1)
+    # The fixture maps the real kernel-attached pidfd of this process to the driver.
+    system.pidfd_pid = lambda pidfd: DRIVER_PID if pidfd_pid(pidfd) == os.getpid() else -1
+    server = Server(broker, listener, operator)
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
+    with listener, operator:
+        client.connect(str(tmp_path / "job.sock"))
+        server.serve_once(1)
+        nonce = client.recv(512).decode().split(" ")[1]
+        client.send(b"register wrong-nonce")
+        server.serve_once(1)
+        assert client.recv(512).startswith(b"refused")
+        client.send(f"register {nonce}".encode())
+        server.serve_once(1)
+        assert client.recv(512) == b"go"
+        client.send(f"phase {nonce} core".encode())
+        server.serve_once(1)
+        assert client.recv(512) == b"ok core"
+        client.send(f"done {nonce} 0".encode())
+        server.serve_once(1)
+        assert client.recv(512) == b"ok done"
+        client.close()
+        server.serve_once(1)  # connection closed: the job is stopped and cleared
+    assert broker.mode == "idle" and not persisted(directory)["job"]
+
+
+def test_failed_record_write_stops_the_unadmitted_invocation(env, monkeypatch) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+
+    def fail(job: str, boot: str) -> None:
+        raise OSError("disk")
+
+    monkeypatch.setattr(broker.state, "release", fail)
+    with pytest.raises(OSError):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert len(system.kills) == 1 and system.store == [] and broker.mode == "idle"
+
+
+def test_go_send_failure_holds_and_stops(env) -> None:
+    system, _, directory, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+
+    def broken() -> None:
+        raise BrokenPipeError
+
+    with pytest.raises(BrokenPipeError):
+        broker.register(DRIVER_PIDFD, broken)
+    assert len(system.kills) == 1 and system.kills[0]["held"]
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
