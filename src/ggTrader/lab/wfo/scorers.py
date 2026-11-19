@@ -174,6 +174,69 @@ def check_combination_order(
         )
 
 
+@dataclass(frozen=True, eq=False)
+class ScoringInputs:
+    """The nine values every scorer is built from.
+
+    ``eq=False`` because a frame in a field makes the generated ``__eq__`` raise. Nothing is
+    copied or validated here: the scorers take their own copies.
+    """
+
+    strategy: Any
+    bars: Bars
+    grid: ParamGrid
+    names: Sequence[str]
+    params: Sequence[Mapping[str, Any]]
+    mask: pd.DataFrame | None
+    base_config: Mapping[str, Any]
+    max_bytes: int
+    min_losing_days: int = engine_config.MIN_LOSING_DAYS
+
+    def as_args(self) -> tuple[Any, ...]:
+        """The nine values in the scorer constructors' positional order."""
+        return (
+            self.strategy,
+            self.bars,
+            self.grid,
+            self.names,
+            self.params,
+            self.mask,
+            self.base_config,
+            self.max_bytes,
+            self.min_losing_days,
+        )
+
+
+@dataclass(frozen=True, eq=False)
+class SignalSimOptions:
+    """Execution options only a signal strategy can honor."""
+
+    intraday_stops: bool = False
+    halt_mask: pd.DataFrame | None = None
+    order_sequence: str | None = None
+    stop_exit_price: str | None = None
+
+    def require_signal_strategy(self) -> None:
+        """Raise ``ValueError`` for the first option set (the strategy is not a signal one)."""
+        if self.intraday_stops:
+            raise ValueError("intraday stops require a signal strategy")
+        if self.halt_mask is not None:
+            raise ValueError("halt_mask requires a signal strategy")
+        if self.order_sequence is not None:
+            raise ValueError("order_sequence requires a signal strategy")
+        if self.stop_exit_price is not None:
+            raise ValueError("stop_exit_price requires a signal strategy")
+
+    def as_kwargs(self) -> dict[str, Any]:
+        """The four options as ``SignalScorer`` keyword arguments."""
+        return {
+            "intraday_stops": self.intraday_stops,
+            "halt_mask": self.halt_mask,
+            "order_sequence": self.order_sequence,
+            "stop_exit_price": self.stop_exit_price,
+        }
+
+
 class SignalScorer:
     """One grouped full-history simulation per strategy configuration, sliced per window."""
 
@@ -208,6 +271,15 @@ class SignalScorer:
         self.n_chunks = 0
         self.timings: dict[str, float] = {}
         self._prepared = False
+
+    @classmethod
+    def from_inputs(
+        cls,
+        inputs: ScoringInputs,
+        options: SignalSimOptions = SignalSimOptions(),  # noqa: B008
+    ) -> SignalScorer:
+        """The constructor called with the nine inputs and four options (does not prepare)."""
+        return cls(*inputs.as_args(), **options.as_kwargs())
 
     def prepare(self, requests: Sequence[WindowReq]) -> None:  # noqa: ARG002
         """Build every combination's signals and simulate the whole history once."""
@@ -362,6 +434,11 @@ class WeightScorer:
         self.n_chunks = 0
         self.timings: dict[str, float] = {}
         self._sims: dict[tuple, _WindowSim | None] = {}
+
+    @classmethod
+    def from_inputs(cls, inputs: ScoringInputs) -> WeightScorer:
+        """The constructor called with the nine inputs (does not prepare)."""
+        return cls(*inputs.as_args())
 
     def _key(self, req: WindowReq) -> tuple:
         if req.kind == "anchor":  # every anchor is a prefix of one window from the first bar

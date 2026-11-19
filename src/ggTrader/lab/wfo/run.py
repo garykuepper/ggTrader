@@ -38,7 +38,14 @@ from ggTrader.lab.wfo.breaker import (
 from ggTrader.lab.wfo.folds import TEST_MONTHS, TRAIN_MONTHS, Fold, generate_folds
 from ggTrader.lab.wfo.gates import run_dsr, run_ndh
 from ggTrader.lab.wfo.report import WfoResult, anchor_history, curve_summary, format_wfo_table
-from ggTrader.lab.wfo.scorers import Scorer, SignalScorer, WeightScorer, WindowReq
+from ggTrader.lab.wfo.scorers import (
+    Scorer,
+    ScoringInputs,
+    SignalScorer,
+    SignalSimOptions,
+    WeightScorer,
+    WindowReq,
+)
 from ggTrader.lab.wfo.select import best_index, composite_score, pick_live_winner
 from ggTrader.utils.json_safe import canonical_hash
 
@@ -147,24 +154,20 @@ def _make_scorer(
     stop_exit_price: str | None = None,
     halt_mask: pd.DataFrame | None = None,
 ) -> Scorer:
-    args = (strategy, bars, grid, names, combos, mask, base_config, max_bytes, min_losing_days)
+    """Build a scorer from the old thirteen-argument call; ``run_wfo`` uses ``_scorer_for``."""
+    inputs = ScoringInputs(
+        strategy, bars, grid, names, combos, mask, base_config, max_bytes, min_losing_days
+    )
+    options = SignalSimOptions(intraday_stops, halt_mask, order_sequence, stop_exit_price)
+    return _scorer_for(strategy, inputs, options)
+
+
+def _scorer_for(strategy: Any, inputs: ScoringInputs, options: SignalSimOptions) -> Scorer:
+    """The scorer of the strategy's kind; options only a signal strategy can honor are refused."""
     if strategy.kind == "signals":
-        return SignalScorer(
-            *args,
-            intraday_stops=intraday_stops,
-            halt_mask=halt_mask,
-            order_sequence=order_sequence,
-            stop_exit_price=stop_exit_price,
-        )
-    if intraday_stops:
-        raise ValueError("intraday stops require a signal strategy")
-    if halt_mask is not None:
-        raise ValueError("halt_mask requires a signal strategy")
-    if order_sequence is not None:
-        raise ValueError("order_sequence requires a signal strategy")
-    if stop_exit_price is not None:
-        raise ValueError("stop_exit_price requires a signal strategy")
-    return WeightScorer(*args)
+        return SignalScorer.from_inputs(inputs, options)
+    options.require_signal_strategy()
+    return WeightScorer.from_inputs(inputs)
 
 
 def run_wfo(
@@ -254,21 +257,11 @@ def run_wfo(
         bars, ohlcv, mask, universe_fn, strategy.kind, strategy_name, allow_unmasked
     )
 
-    scorer = _make_scorer(
-        strategy,
-        bars,
-        param_grid,
-        names,
-        combos,
-        pit,
-        base,
-        max_bytes,
-        min_losing_days,
-        intraday_stops,
-        order_sequence,
-        stop_exit_price,
-        halt_mask,
+    scoring_inputs = ScoringInputs(
+        strategy, bars, param_grid, names, combos, pit, base, max_bytes, min_losing_days
     )
+    sim_options = SignalSimOptions(intraday_stops, halt_mask, order_sequence, stop_exit_price)
+    scorer = _scorer_for(strategy, scoring_inputs, sim_options)
     live_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     live_req = WindowReq("live", 0, live_start, eval_end_ts)
     requests: list[WindowReq] = [live_req]
