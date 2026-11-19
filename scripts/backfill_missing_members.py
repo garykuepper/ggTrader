@@ -35,8 +35,6 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, "src")
-
 import pandas as pd
 
 from ggTrader.data.live.cached_yfinance_loader import STOCK_VENUE

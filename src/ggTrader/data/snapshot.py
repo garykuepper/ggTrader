@@ -13,11 +13,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Any
 
 import pandas as pd
+
+from ggTrader.utils.manifest import sha256_file as sha256_file
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_SNAPSHOT_DIR = REPO_ROOT / "data" / "snapshots"
@@ -25,7 +28,6 @@ MANIFEST_NAME = "MANIFEST.json"
 #: Environment variable that points research at another snapshot file.
 SNAPSHOT_ENV_VAR = "GGT_SNAPSHOT"
 FIELDS = ("open", "high", "low", "close", "volume")
-_HASH_BLOCK = 1 << 20
 
 
 class SnapshotIntegrityError(RuntimeError):
@@ -38,12 +40,12 @@ class SnapshotInfo:
 
     path: Path
     sha256: str
-    content_sha256: Optional[str]
+    content_sha256: str | None
     rows: int
     symbols: int
     date_min: str
     date_max: str
-    db_session_timezone: Optional[str]
+    db_session_timezone: str | None
     deep_checked: bool
 
     def as_dict(self) -> dict[str, Any]:
@@ -58,15 +60,6 @@ class SnapshotInfo:
             "date_max": self.date_max,
             "deep_checked": self.deep_checked,
         }
-
-
-def sha256_file(path: Path) -> str:
-    """SHA-256 of a file, streamed."""
-    digest = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for block in iter(lambda: fh.read(_HASH_BLOCK), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def content_sha256(flat: pd.DataFrame) -> str:
@@ -125,8 +118,8 @@ def _check(label: str, actual: Any, expected: Any, path: Path) -> None:
 
 
 def load_snapshot_long(
-    path: Optional[Path] = None,
-    symbols: Optional[Iterable[str]] = None,
+    path: Path | None = None,
+    symbols: Iterable[str] | None = None,
     *,
     deep: bool = False,
 ) -> tuple[pd.DataFrame, SnapshotInfo]:

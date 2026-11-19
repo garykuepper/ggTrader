@@ -1,0 +1,323 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "db"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "db"
+        },
+        "persist_tape": true
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "tape.refresh_benchmark_tape"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-05-15"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_dividend_corrections"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [
+        100000.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.save_peak_value"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "before": "2026-06-19"
+      },
+      "raised": null,
+      "target": "persist.get_latest_snapshot"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "2026-06-19",
+        "SELL",
+        "AAPL",
+        10.0,
+        "qty",
+        null
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.create_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.verify"
+    },
+    {
+      "args": [
+        "AAPL",
+        10.0,
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.submit_sell"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1",
+        10.0,
+        100.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.settle_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "SELL",
+        "AAPL",
+        1000.0,
+        "ord-1"
+      ],
+      "kwargs": {
+        "price": 100.0,
+        "qty": 10.0,
+        "status": "filled"
+      },
+      "raised": null,
+      "target": "notifier.trade_alert"
+    },
+    {
+      "args": [
+        "<b>📊 Paper Trade</b>\nSELL <b>AAPL</b>\nShares: 10.0000 @ $100.00\nTotal Value: $1000.00\nOrder: <code>ord-1</code>"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": "RuntimeError: positions down",
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        "<b>⚠️ Account or positions data unavailable after trading:</b> orders may have been submitted; snapshot not saved."
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": "RuntimeError: positions down",
+  "result": null,
+  "skipped_writes": []
+}

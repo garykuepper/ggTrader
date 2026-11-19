@@ -9,7 +9,7 @@ step; ``train_end == test_start``, both ends inclusive, so adjacent windows shar
 
 from __future__ import annotations
 
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 import pandas as pd
 
@@ -45,9 +45,9 @@ def generate_folds(
     eval_end: pd.Timestamp,
     train_months: int = TRAIN_MONTHS,
     test_months: int = TEST_MONTHS,
-) -> List[Fold]:
+) -> list[Fold]:
     """Rolling fixed-width folds. Slides forward by ``test_months`` each step."""
-    folds: List[Fold] = []
+    folds: list[Fold] = []
     cursor = eval_start
     while True:
         train_end = cursor + pd.DateOffset(months=train_months)

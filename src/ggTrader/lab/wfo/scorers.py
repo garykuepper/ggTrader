@@ -24,8 +24,9 @@ equity before it) and are sliced.
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Protocol, Sequence
+from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
@@ -67,13 +68,13 @@ class Scorer(Protocol):
     kind: str
     n_simulations: int
     n_chunks: int
-    timings: Dict[str, float]
+    timings: dict[str, float]
 
     def prepare(self, requests: Sequence[WindowReq]) -> None:
         """Run the simulations the requests need (once)."""
         ...
 
-    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> List[Dict[str, Any]]:
+    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> list[dict[str, Any]]:
         """Legacy-style metric rows (empty when the window has fewer than two bars)."""
         ...
 
@@ -102,9 +103,9 @@ def metric_rows(
     n_trades: np.ndarray,
     names: Sequence[str],
     params: Sequence[Mapping[str, Any]],
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Legacy ``curve_stats`` rows (percent units) from an engine statistics table."""
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for pos, col in enumerate(columns):
         rows.append(
             {
@@ -133,7 +134,7 @@ def _window_metrics(
     *,
     guarded: bool = False,
     min_losing_days: int = engine_config.MIN_LOSING_DAYS,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Metric rows of bars ``start..end-1`` for the given columns of ``ret``.
 
     ``guarded`` windows (those that feed a selection) blank Sharpe and Sortino of a combination
@@ -205,7 +206,7 @@ class SignalScorer:
         self.stop_exit_price = stop_exit_price
         self.n_simulations = 0
         self.n_chunks = 0
-        self.timings: Dict[str, float] = {}
+        self.timings: dict[str, float] = {}
         self._prepared = False
 
     def prepare(self, requests: Sequence[WindowReq]) -> None:  # noqa: ARG002
@@ -276,7 +277,7 @@ class SignalScorer:
         start = self.index[0] if req.start is None else req.start
         return windows.slice_positions(self.index, start, req.end)
 
-    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> List[Dict[str, Any]]:
+    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> list[dict[str, Any]]:
         """Metric rows of the window for ``combos`` (default all), sliced from the simulation."""
         a, b = self._span(req)
         columns = list(range(len(self.names))) if combos is None else list(combos)
@@ -359,8 +360,8 @@ class WeightScorer:
         self.index = bars.close.index
         self.n_simulations = 0
         self.n_chunks = 0
-        self.timings: Dict[str, float] = {}
-        self._sims: Dict[tuple, _WindowSim | None] = {}
+        self.timings: dict[str, float] = {}
+        self._sims: dict[tuple, _WindowSim | None] = {}
 
     def _key(self, req: WindowReq) -> tuple:
         if req.kind == "anchor":  # every anchor is a prefix of one window from the first bar
@@ -369,7 +370,7 @@ class WeightScorer:
 
     def prepare(self, requests: Sequence[WindowReq]) -> None:
         """Simulate every requested window, one stacked ``run_weights`` call per kind."""
-        wanted: Dict[str, List[tuple]] = {}
+        wanted: dict[str, list[tuple]] = {}
         for req in requests:
             key = self._key(req)
             if key not in self._sims and key not in wanted.setdefault(key[0], []):
@@ -403,11 +404,11 @@ class WeightScorer:
         elif labels != [(g,) for g in range(n_combos)]:
             raise ValueError("weight combination order does not match the grid")
 
-    def _simulate(self, keys: List[tuple]) -> None:
+    def _simulate(self, keys: list[tuple]) -> None:
         t0 = time.time()
         n_combos = len(self.names)
         close = self.bars.close.ffill()
-        blocks: List[tuple | None] = []
+        blocks: list[tuple | None] = []
         for key in keys:
             _, start, end = key
             i0, i1 = windows.slice_positions(self.index, start, end)
@@ -490,7 +491,7 @@ class WeightScorer:
             end = windows.slice_positions(sim.index, sim.index[0], req.end)[1]
         return sim, end
 
-    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> List[Dict[str, Any]]:
+    def metrics(self, req: WindowReq, combos: Sequence[int] | None = None) -> list[dict[str, Any]]:
         """Metric rows of the window for ``combos`` (default all)."""
         sim, end = self._window(req)
         if sim is None:

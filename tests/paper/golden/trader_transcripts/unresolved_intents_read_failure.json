@@ -1,0 +1,39 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": "RuntimeError: ledger offline",
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [
+        "<b>🛑 Order recovery/pending orders failed:</b> ledger offline. Orders may already have been submitted; check their status."
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": "RuntimeError: ledger offline",
+  "result": null,
+  "skipped_writes": []
+}

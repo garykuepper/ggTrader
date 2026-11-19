@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-from ggTrader.utils.config import get_db_connection_string
+from ggTrader.utils.db import get_engine
 
-_ENGINE = None
+_log = logging.getLogger(__name__)
 
 
 def _sanitize(obj: Any) -> Any:
@@ -99,13 +100,6 @@ PROVENANCE_MIGRATIONS = (
 )
 
 
-def get_engine():
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(get_db_connection_string())
-    return _ENGINE
-
-
 def init_schema() -> None:
     eng = get_engine()
     with eng.begin() as conn:
@@ -120,8 +114,8 @@ def init_schema() -> None:
                         "if_not_exists => TRUE, migrate_data => TRUE)"
                     )
                 )
-            except Exception:
-                pass  # plain Postgres (no TimescaleDB extension) — table still works
+            except Exception as exc:
+                _log.debug("Hypertable creation skipped: %s", type(exc).__name__)
 
 
 def start_run(
@@ -130,8 +124,8 @@ def start_run(
     freq: str,
     eval_start: str,
     eval_end: str,
-    params: Dict[str, Any],
-    provenance: Optional[Dict[str, Any]] = None,
+    params: dict[str, Any],
+    provenance: dict[str, Any] | None = None,
 ) -> str:
     """Insert a run row; ``provenance`` (engine stack block) is stored when given.
 
@@ -140,7 +134,7 @@ def start_run(
     """
     run_id = f"{strategy}_{uuid.uuid4().hex[:8]}"
     columns, values = "", ""
-    binds: Dict[str, Any] = {
+    binds: dict[str, Any] = {
         "r": run_id,
         "s": strategy,
         "m": market,
@@ -182,9 +176,9 @@ def write_plan(
     run_id: str,
     strategy: str,
     asof: pd.Timestamp,
-    plan: List[Dict[str, Any]],
+    plan: list[dict[str, Any]],
     eligible_count: int,
-    coverage: Dict[str, Any],
+    coverage: dict[str, Any],
 ) -> None:
     with get_engine().begin() as conn:
         conn.execute(
@@ -204,7 +198,7 @@ def write_plan(
         )
 
 
-def read_plan(run_id: str, strategy: str, asof: pd.Timestamp) -> List[Dict[str, Any]]:
+def read_plan(run_id: str, strategy: str, asof: pd.Timestamp) -> list[dict[str, Any]]:
     with get_engine().connect() as conn:
         row = conn.execute(
             text("SELECT plan FROM lab_plans WHERE run_id=:r AND strategy=:s AND asof=:a"),
@@ -215,13 +209,13 @@ def read_plan(run_id: str, strategy: str, asof: pd.Timestamp) -> List[Dict[str, 
     return row[0] if isinstance(row[0], list) else json.loads(row[0])
 
 
-def read_all_plans(run_id: str, strategy: str) -> Dict[pd.Timestamp, List[Dict[str, Any]]]:
+def read_all_plans(run_id: str, strategy: str) -> dict[pd.Timestamp, list[dict[str, Any]]]:
     with get_engine().connect() as conn:
         rows = conn.execute(
             text("SELECT asof, plan FROM lab_plans WHERE run_id=:r AND strategy=:s ORDER BY asof"),
             {"r": run_id, "s": strategy},
         ).fetchall()
-    out: Dict[pd.Timestamp, List[Dict[str, Any]]] = {}
+    out: dict[pd.Timestamp, list[dict[str, Any]]] = {}
     for asof, plan in rows:
         out[pd.Timestamp(asof)] = plan if isinstance(plan, list) else json.loads(plan)
     return out
@@ -232,7 +226,7 @@ def write_returns_equity(
     strategy: str,
     rets: pd.Series,
     equity: pd.Series,
-    benchmark_equity: Optional[pd.Series] = None,
+    benchmark_equity: pd.Series | None = None,
 ) -> None:
     bench = benchmark_equity.reindex(equity.index) if benchmark_equity is not None else None
     with get_engine().begin() as conn:
@@ -278,9 +272,9 @@ def write_returns_equity(
 def write_summary(
     run_id: str,
     strategy: str,
-    metrics: Dict[str, Any],
-    benchmark_metrics: Dict[str, Any],
-    diagnostics: Dict[str, Any],
+    metrics: dict[str, Any],
+    benchmark_metrics: dict[str, Any],
+    diagnostics: dict[str, Any],
 ) -> None:
     with get_engine().begin() as conn:
         conn.execute(
@@ -304,14 +298,14 @@ def write_summary(
 def start_sweep(
     strategy: str,
     market: str,
-    param_grid: Dict[str, Any],
+    param_grid: dict[str, Any],
     n_combos: int,
-    provenance: Optional[Dict[str, Any]] = None,
+    provenance: dict[str, Any] | None = None,
 ) -> str:
     """Insert a sweep row; ``provenance`` is stored when given (see ``start_run``)."""
     sweep_id = f"sweep_{strategy}_{uuid.uuid4().hex[:8]}"
     columns, values = "", ""
-    binds: Dict[str, Any] = {
+    binds: dict[str, Any] = {
         "s": sweep_id,
         "st": strategy,
         "m": market,
@@ -336,10 +330,10 @@ def start_sweep(
 def write_sweep_combo(
     sweep_id: str,
     combo_name: str,
-    params: Dict[str, Any],
-    metrics: Dict[str, Any],
-    benchmark_metrics: Dict[str, Any],
-    diagnostics: Dict[str, Any],
+    params: dict[str, Any],
+    metrics: dict[str, Any],
+    benchmark_metrics: dict[str, Any],
+    diagnostics: dict[str, Any],
 ) -> None:
     with get_engine().begin() as conn:
         conn.execute(

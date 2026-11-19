@@ -113,7 +113,7 @@ def compute_weights_and_scale(
     weights = inverse_vol_weights(vols)
 
     common = None
-    for label, r in returns.items():
+    for _label, r in returns.items():
         common = r.index if common is None else common.intersection(r.index)
     blended = sum(returns[label].reindex(common) * w for label, w in weights.items())
     blend_vol = (

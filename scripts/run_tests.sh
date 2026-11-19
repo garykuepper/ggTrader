@@ -41,15 +41,28 @@
 # Examples:
 #   scripts/run_tests.sh tests/paper -q     # any pytest args
 #   scripts/run_tests.sh --full -q          # the gate before a merge or a deploy
-#   GGT_TEST_MEM_MAX=4G scripts/run_tests.sh
+#   GGT_TEST_MEM_MAX=3G scripts/run_tests.sh
 #   GGT_TEST_PYTHON=/absolute/frozen/venv/bin/python scripts/run_tests.sh tests/lab -q
 #   (GGT_PYTHON is accepted as a shorter alias and wins if both are set)
 #   GGT_TEST_NO_CGROUP=1  skip systemd-run (CI runners; the cap is for the developer host)
 #   GGT_TEST_DRY_RUN=1    print the pytest command(s) and exit (used by tests/test_root_conftest.py)
+#
+# One heavy job at a time (2026-11-18): two parallel `tests/paper/` runs each grew toward their own
+# cap, together needed more memory than Encom had free, and the host thrashed until it was
+# power-cycled. So this script (and scripts/run_capped.sh) takes a lock in the repository's git
+# directory, shared by every worktree: a second job waits GGT_HEAVY_WAIT seconds (default 1800)
+# then exits 75, and a job also exits 75 at once when free memory is below its cap plus
+# GGT_HEAVY_MARGIN (default 4G). The lock is held across both pytest runs of --full and --studies.
+# Details and the exceptions (CI, nested runs, dry runs) are in scripts/_heavy_job.sh.
+#   GGT_TEST_MAX_SECONDS  wall-clock limit of each pytest run (default 1800; a healthy full gate
+#                         takes about 8 minutes in all). Exit 143 means the limit stopped it.
+#   Exit 75: busy or short of memory, pytest never started. Exit 137 or 143: a hang, not a big
+#   suite: look for a test that touches a real DB, network or clock; never raise the cap or limit.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MEM_MAX="${GGT_TEST_MEM_MAX:-8G}"
+MEM_MAX="${GGT_TEST_MEM_MAX:-4G}"
+MAX_SECONDS="${GGT_TEST_MAX_SECONDS:-1800}"
 PYTHON="${GGT_PYTHON:-${GGT_TEST_PYTHON:-$REPO/.venv/bin/python}}"
 
 usage() {
@@ -78,6 +91,9 @@ fi
 
 cd "$REPO"
 
+# shellcheck source=scripts/_heavy_job.sh
+source "$REPO/scripts/_heavy_job.sh"
+
 run_pytest() {
     # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1. Returns its status.
     if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
@@ -90,6 +106,7 @@ run_pytest() {
         systemd-run --user --scope -q --collect \
             -p MemoryMax="$MEM_MAX" \
             -p MemorySwapMax=0 \
+            -p RuntimeMaxSec="$MAX_SECONDS" \
             env PYTHONPATH=src "$PYTHON" -m pytest "$@"
     fi
 }
@@ -133,10 +150,13 @@ for arg in "$@"; do
     [[ -e "${arg%%::*}" ]] && has_path=1
 done
 
+# The lock is taken once, here, so it covers every pytest run below (both halves of --full).
+heavy_job_enter run_tests "$MEM_MAX"
+
 if [[ -n "$TIER" ]]; then
-    echo "running the $TIER test tier under MemoryMax=$MEM_MAX (no swap)" >&2
+    echo "running the $TIER test tier under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s per run" >&2
 else
-    echo "running pytest under MemoryMax=$MEM_MAX (no swap)" >&2
+    echo "running pytest under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s per run" >&2
 fi
 
 # The tests/ run (the whole run for fast, targeted and pass-through calls).
@@ -190,6 +210,12 @@ if [[ $status -eq 137 ]]; then
     echo >&2
     echo "pytest was killed at the $MEM_MAX cap -- the suite outgrew its budget." >&2
     echo "Raise it deliberately with GGT_TEST_MEM_MAX, or fix the leak." >&2
+fi
+
+# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
+if [[ $status -eq 143 ]]; then
+    echo >&2
+    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long suite; report it" >&2
 fi
 
 if [[ "$TIER" == "fast" ]]; then

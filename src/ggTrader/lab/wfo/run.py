@@ -15,7 +15,8 @@ diagnostic, and are gone (see research/programme/vectorbt-engine/P5-completion.m
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -87,7 +88,7 @@ def _instantiate(strategy_name: str, strategy_cls: Any) -> Any:
     return strategy
 
 
-def _normalise_config(base_config: Mapping[str, Any]) -> Dict[str, Any]:
+def _normalise_config(base_config: Mapping[str, Any]) -> dict[str, Any]:
     """The run's base config; ``"1d"`` becomes the engine's ``"1D"`` (pandas 3 wants upper)."""
     config = dict(base_config)
     if str(config.get("FREQ", "")).lower() == "1d":
@@ -175,8 +176,8 @@ def run_wfo(
     eval_start: str,
     eval_end: str,
     market: str,
-    base_config: Dict[str, Any],
-    grid: ParamGrid | Sequence[Dict[str, Any]],
+    base_config: dict[str, Any],
+    grid: ParamGrid | Sequence[dict[str, Any]],
     ndh_threshold: float = 0.85,
     dsr_threshold: float = 0.80,
     universe_fn: Any = None,
@@ -270,7 +271,7 @@ def run_wfo(
     )
     live_start = eval_end_ts - pd.DateOffset(months=TRAIN_MONTHS)
     live_req = WindowReq("live", 0, live_start, eval_end_ts)
-    requests: List[WindowReq] = [live_req]
+    requests: list[WindowReq] = [live_req]
     for i, fold in enumerate(folds):
         requests += [
             WindowReq("anchor", i, None, fold.train_end),
@@ -279,12 +280,12 @@ def run_wfo(
         ]
     scorer.prepare(requests)
 
-    fold_results: List[Dict[str, Any]] = []
-    skipped_folds: List[Dict[str, Any]] = []
-    oos_curves: List[pd.Series] = []
+    fold_results: list[dict[str, Any]] = []
+    skipped_folds: list[dict[str, Any]] = []
+    oos_curves: list[pd.Series] = []
     oos_running_value = start_cash
-    fold_winners: List[Dict[str, Any]] = []
-    od12_flips: List[int] = []
+    fold_winners: list[dict[str, Any]] = []
+    od12_flips: list[int] = []
     wfo_state = WfoState()
     anchor: AnchorSet = NO_ANCHOR
     n_test_runs = 0
@@ -443,7 +444,7 @@ def run_wfo(
         oos_metrics = dict(nan_metrics)
         spy_metrics = dict(nan_metrics)
 
-    live = _select_live_params(scorer, live_req, live_start, eval_end_ts, fold_winners, names)
+    live = _select_live_params(scorer, live_req, live_start, eval_end_ts, fold_winners)
     table = format_wfo_table(
         fold_results,
         oos_metrics,
@@ -529,15 +530,14 @@ def _select_live_params(
     live_req: WindowReq,
     live_start: pd.Timestamp,
     eval_end_ts: pd.Timestamp,
-    fold_winners: List[Dict[str, Any]],
-    names: Sequence[str],  # noqa: ARG001
-) -> Dict[str, Any]:
+    fold_winners: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Score the most recent ``TRAIN_MONTHS`` window and pick the durable winner."""
     train_metrics = scorer.metrics(live_req)
     if not train_metrics:
         return {"combo": "none", "params": {}, "train_metrics": {}, "stability": 0}
     scores = composite_score(train_metrics)
-    fold_win_counts: Dict[str, int] = {}
+    fold_win_counts: dict[str, int] = {}
     for fw in fold_winners:
         fold_win_counts[fw["combo"]] = fold_win_counts.get(fw["combo"], 0) + 1
     best_idx, stability = pick_live_winner(train_metrics, scores, fold_win_counts)

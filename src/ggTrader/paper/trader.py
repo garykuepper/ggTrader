@@ -8,10 +8,12 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 from ggTrader.paper import cash_sweep, catastrophe_stop
 from ggTrader.paper.alpaca_broker import AlpacaBroker
+from ggTrader.paper.constants import ET as _ET
+from ggTrader.paper.constants import PT as _PT
+from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
@@ -57,7 +59,6 @@ from ggTrader.paper.split_check import (
 )
 from ggTrader.paper.untradable import (
     configured_untradable,
-    is_untradable_error,
     resolve_untradable,
 )
 from ggTrader.utils.json_safe import json_safe
@@ -76,8 +77,6 @@ _SPLIT_LOOKBACK_DAYS = 14
 # point -- only the repeated Telegram noise is capped.
 _STALE_PENDING_DAYS = 5
 
-_ET = ZoneInfo("America/New_York")
-_PT = ZoneInfo("America/Los_Angeles")
 
 #: The S&P 500 list `ggt paper` reads: the latest database vintage, behind the freshness gate of
 #: `ggTrader.data.membership_gate` (slice M4). If the database cannot be read, or the list is too
@@ -249,7 +248,7 @@ class PaperTrader:
                 ):
                     raise ValueError("Invalid order fill")
                 status = info.get("status")
-                terminal = {"filled", "canceled", "rejected", "expired"}
+                terminal = set(TERMINAL_STATUSES)
                 active = {
                     "new",
                     "accepted",
@@ -349,10 +348,9 @@ class PaperTrader:
     def _reconcile_pending_orders(self) -> set[str]:
         """Settle orders that were still working at the end of a prior run.
 
-        Orders queued after the close (the 21:30 stocks cron submits ~30 min
-        post-close) fill at the next session, long after that run exited. Each
-        run re-checks them: a completed fill is booked at its real executed
-        value under the original order date; a terminally-failed order is
+        Orders queued after the close may fill at the next session, long after
+        that run exited. Each run re-checks them: a completed fill is booked at
+        its real executed value under the original order date; a terminally-failed order is
         dropped; anything still working is left for a later run.
 
         Returns the set of symbols that remain pending after this pass, so
@@ -388,7 +386,7 @@ class PaperTrader:
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty")
             filled_price = info.get("filled_avg_price")
-            terminal = status in ("filled", "canceled", "rejected", "expired")
+            terminal = status in TERMINAL_STATUSES
             if not terminal:
                 still_pending.add(po["symbol"])
                 self._flag_if_stale(po, now)
@@ -433,8 +431,8 @@ class PaperTrader:
         is_open = True
         try:
             is_open = self._broker.get_clock()["is_open"]
-        except Exception:
-            pass
+        except Exception as exc:
+            _log.debug("Broker clock lookup skipped: %s", type(exc).__name__)
 
         max_wait = 15.0 if is_open else 2.0
         remaining = {item[0]: item for item in orders}
@@ -446,7 +444,7 @@ class PaperTrader:
                     status = order_info["status"]
                     # A partial fill is NOT terminal: keep polling so it can
                     # complete (or time out) rather than booking the partial.
-                    if status in ("filled", "canceled", "rejected", "expired"):
+                    if status in TERMINAL_STATUSES:
                         filled_orders[oid] = order_info
                         remaining.pop(oid)
                 except Exception as e:
@@ -694,18 +692,6 @@ class PaperTrader:
         result["skipped"] = skipped
         return result
 
-    @staticmethod
-    def _order_failed(
-        errors: list[str], untradable_hit: set[str], label: str, symbol: str, exc: Exception
-    ) -> None:
-        """Record a rejected order: an inactive/untradable asset is skipped and alerted once
-        per run (OD17); any other failure is a real error."""
-        if is_untradable_error(exc):
-            untradable_hit.add(symbol)
-            _log.warning("%s %s skipped, broker will not trade the asset: %s", label, symbol, exc)
-            return
-        errors.append(f"{label} {symbol}: {exc}")
-
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
         threshold = None
@@ -917,7 +903,6 @@ class PaperTrader:
         # Also drops a held-but-frozen name's own buy signal: it is no longer in
         # `strategy_positions`, so the buy loop's "already held" check would not catch it.
         all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
-        untradable_hit: set[str] = set()
 
         # Determine unapplied-split corrections for currently-held symbols.
         # Primary evidence is paper_snapshots/paper_trades history (see
@@ -1400,7 +1385,7 @@ class PaperTrader:
         # working at run end (queued after the close, or a partial fill not yet
         # complete) are persisted so the next run reconciles their final fill;
         # terminally-failed orders are simply dropped.
-        for oid, side, symbol, amount, reason in pending_orders:
+        for oid, side, symbol, amount, _reason in pending_orders:
             info = filled_orders.get(oid, {})
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty") or 0.0
@@ -1419,12 +1404,6 @@ class PaperTrader:
             # Leave durable intents for the next reconciliation pass; do not
             # create a second legacy representation or book a separate trade.
 
-        if untradable_hit:
-            self._notifier.send(
-                "<b>⚠️ Untradable (order skipped):</b> "
-                f"{', '.join(sorted(untradable_hit))} — the broker says the asset is not "
-                "active/tradable; excluded, not an error — resolve manually"
-            )
         if errors:
             self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
 
@@ -1525,11 +1504,11 @@ class PaperTrader:
             dividend_total=dividend_info["total"],
             new_dividend_accruals=dividend_info["new_accruals"],
             errors=loss_halts + errors,
+            starting_capital=starting_capital,
         )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 
         try:
-            # Same run_date reasoning as log_trade / log_pending_order above:
             # stamp the actual ET session date of this run, not the lagged
             # signals["as_of"] date.
             if corrected_value is not None:
@@ -1553,7 +1532,7 @@ class PaperTrader:
             "buys": executed_buys,
             "sells": executed_sells,
             "errors": loss_halts + errors,
-            "untradable": sorted(untradable_seen | untradable_hit),
+            "untradable": sorted(untradable_seen),
             "skipped_writes": list(self.skipped_writes),
         }
 

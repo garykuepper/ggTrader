@@ -22,8 +22,9 @@ period with ``coverage_stats()`` rather than ignoring it.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -35,7 +36,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[4]
 SP500_HISTORY_CSV = PROJECT_ROOT / "data" / "universe" / "sp500_constituents_history.csv.gz"
 
 
-def load_sp500_history(csv_path: Optional[Path] = None) -> pd.DataFrame:
+def load_sp500_history(csv_path: Path | None = None) -> pd.DataFrame:
     """The snapshot table: DatetimeIndex (UTC) -> sorted list of tickers.
 
     With ``csv_path`` this reads that file (pure file reader, no source selection). Without it
@@ -61,9 +62,7 @@ def load_sp500_history(csv_path: Optional[Path] = None) -> pd.DataFrame:
     ).sort_index()
 
 
-def _history(
-    history: Optional[pd.DataFrame], membership: Optional["MembershipSource"]
-) -> pd.DataFrame:
+def _history(history: pd.DataFrame | None, membership: "MembershipSource" | None) -> pd.DataFrame:
     """The table to look up in: an explicit ``history``, else the source's (or selected) one."""
     if history is not None:
         return history
@@ -74,9 +73,9 @@ def _history(
 
 def sp500_members_asof(
     asof: pd.Timestamp,
-    history: Optional[pd.DataFrame] = None,
-    membership: Optional["MembershipSource"] = None,
-) -> List[str]:
+    history: pd.DataFrame | None = None,
+    membership: "MembershipSource" | None = None,
+) -> list[str]:
     """Members at ``asof``: the latest snapshot row dated on or before it."""
     hist = _history(history, membership)
     ts = pd.Timestamp(asof)
@@ -92,9 +91,9 @@ def sp500_members_asof(
 def all_members_between(
     start: pd.Timestamp,
     end: pd.Timestamp,
-    history: Optional[pd.DataFrame] = None,
-    membership: Optional["MembershipSource"] = None,
-) -> List[str]:
+    history: pd.DataFrame | None = None,
+    membership: "MembershipSource" | None = None,
+) -> list[str]:
     """Union of members over [start, end] — the data-download universe.
 
     Includes the snapshot in force at ``start`` (the latest row <= start), plus
@@ -119,7 +118,7 @@ def normalize_yf_ticker(ticker: str) -> str:
     return ticker.strip().upper().replace(".", "-")
 
 
-def coverage_stats(members: Iterable[str], available: Iterable[str]) -> Dict[str, object]:
+def coverage_stats(members: Iterable[str], available: Iterable[str]) -> dict[str, object]:
     """Quantify how much of a point-in-time universe has price data.
 
     ``available`` is compared in yfinance ticker form. The residual
@@ -144,7 +143,7 @@ def coverage_stats(members: Iterable[str], available: Iterable[str]) -> Dict[str
 _SNAPSHOT_DIR = PROJECT_ROOT / "data" / "universe"
 
 
-def _load_snapshot(filename: str) -> List[str]:
+def _load_snapshot(filename: str) -> list[str]:
     """Load a newline-delimited ticker snapshot file."""
     path = _SNAPSHOT_DIR / filename
     if not path.exists():
@@ -152,7 +151,7 @@ def _load_snapshot(filename: str) -> List[str]:
     return [line.strip() for line in path.read_text().splitlines() if line.strip()]
 
 
-_SNAPSHOT_REGISTRY: Dict[str, str] = {
+_SNAPSHOT_REGISTRY: dict[str, str] = {
     "nasdaq100": "nasdaq100_tickers_snapshot_2026-06-09.txt",
     "russell2000": "russell2000_tickers_snapshot_2026-06-09.txt",
     "midcap400": "midcap400_tickers_snapshot_2026-06-24.txt",
@@ -184,7 +183,7 @@ _SNAPSHOT_REGISTRY: Dict[str, str] = {
 }
 
 
-def snapshot_members(universe: str) -> List[str]:
+def snapshot_members(universe: str) -> list[str]:
     """Return members from a static snapshot file.
 
     Unlike ``sp500_members_asof``, these are NOT point-in-time — they use a
@@ -202,9 +201,9 @@ def snapshot_members(universe: str) -> List[str]:
 def universe_members_asof(
     universe: str,
     asof: pd.Timestamp,
-    history: Optional[pd.DataFrame] = None,
-    membership: Optional["MembershipSource"] = None,
-) -> List[str]:
+    history: pd.DataFrame | None = None,
+    membership: "MembershipSource" | None = None,
+) -> list[str]:
     """Unified universe lookup: PIT for sp500, static snapshot for others."""
     if universe == "sp500":
         return sp500_members_asof(asof, history, membership)
@@ -215,8 +214,8 @@ def universe_all_between(
     universe: str,
     start: pd.Timestamp,
     end: pd.Timestamp,
-    membership: Optional["MembershipSource"] = None,
-) -> List[str]:
+    membership: "MembershipSource" | None = None,
+) -> list[str]:
     """All members across [start, end]: PIT union for sp500, snapshot for others."""
     if universe == "sp500":
         return all_members_between(start, end, membership=membership)

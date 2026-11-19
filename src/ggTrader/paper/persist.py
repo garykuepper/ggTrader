@@ -10,7 +10,8 @@ from datetime import date
 
 from sqlalchemy import text
 
-from ggTrader.lab.persist import get_engine as _get_engine
+from ggTrader.paper.constants import TERMINAL_STATUSES
+from ggTrader.utils.db import get_engine as _get_engine
 from ggTrader.utils.json_safe import json_safe
 
 _SCHEMA = """
@@ -105,7 +106,7 @@ def init_paper_schema() -> None:
 
 
 _LOCK_KEY = 1734837291
-_TERMINAL_STATUSES = {"filled", "canceled", "expired", "rejected"}
+_TERMINAL_STATUSES = set(TERMINAL_STATUSES)
 
 
 def create_order_intent(

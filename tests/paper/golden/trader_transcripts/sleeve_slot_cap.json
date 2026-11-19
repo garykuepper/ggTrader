@@ -1,0 +1,615 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "db"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "db"
+        },
+        "persist_tape": true
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "tape.refresh_benchmark_tape"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "AMZN",
+          "GOOGL",
+          "MSFT",
+          "NVDA"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [
+        100000.0
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.save_peak_value"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "before": "2026-06-19"
+      },
+      "raised": null,
+      "target": "persist.get_latest_snapshot"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "2026-06-19",
+        "BUY",
+        "MSFT",
+        1650.0,
+        "notional",
+        null
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.create_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.verify"
+    },
+    {
+      "args": [
+        "MSFT",
+        1650.0,
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.submit_buy"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000002",
+        "2026-06-19",
+        "BUY",
+        "NVDA",
+        1650.0,
+        "notional",
+        null
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.create_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.verify"
+    },
+    {
+      "args": [
+        "NVDA",
+        1650.0,
+        "00000000-0000-0000-0000-000000000002"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.submit_buy"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000002",
+        "ord-2"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000003",
+        "2026-06-19",
+        "BUY",
+        "AMZN",
+        1650.0,
+        "notional",
+        null
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.create_order_intent"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.verify"
+    },
+    {
+      "args": [
+        "AMZN",
+        1650.0,
+        "00000000-0000-0000-0000-000000000003"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.submit_buy"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000003",
+        "ord-3"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "returned": 1000000.0
+      },
+      "raised": null,
+      "target": "clock.time"
+    },
+    {
+      "args": [
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        "ord-2"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        "ord-3"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000001",
+        "ord-1",
+        16.5,
+        100.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.settle_order_intent"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000002"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000002",
+        "ord-2"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000002",
+        "ord-2",
+        16.5,
+        100.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.settle_order_intent"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000003"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000003",
+        "ord-3"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "00000000-0000-0000-0000-000000000003",
+        "ord-3",
+        16.5,
+        100.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.settle_order_intent"
+    },
+    {
+      "args": [
+        "BUY",
+        "MSFT",
+        1650.0,
+        "ord-1"
+      ],
+      "kwargs": {
+        "price": 100.0,
+        "qty": 16.5,
+        "status": "filled"
+      },
+      "raised": null,
+      "target": "notifier.trade_alert"
+    },
+    {
+      "args": [
+        "<b>📊 Paper Trade</b>\nBUY <b>MSFT</b>\nShares: 16.5000 @ $100.00\nTotal Value: $1650.00\nOrder: <code>ord-1</code>"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "BUY",
+        "NVDA",
+        1650.0,
+        "ord-2"
+      ],
+      "kwargs": {
+        "price": 100.0,
+        "qty": 16.5,
+        "status": "filled"
+      },
+      "raised": null,
+      "target": "notifier.trade_alert"
+    },
+    {
+      "args": [
+        "<b>📊 Paper Trade</b>\nBUY <b>NVDA</b>\nShares: 16.5000 @ $100.00\nTotal Value: $1650.00\nOrder: <code>ord-2</code>"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "BUY",
+        "AMZN",
+        1650.0,
+        "ord-3"
+      ],
+      "kwargs": {
+        "price": 100.0,
+        "qty": 16.5,
+        "status": "filled"
+      },
+      "raised": null,
+      "target": "notifier.trade_alert"
+    },
+    {
+      "args": [
+        "<b>📊 Paper Trade</b>\nBUY <b>AMZN</b>\nShares: 16.5000 @ $100.00\nTotal Value: $1650.00\nOrder: <code>ord-3</code>"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_earliest_snapshot"
+    },
+    {
+      "args": [
+        100033.0,
+        233.0,
+        {
+          "AMZN": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 99.0,
+            "market_value": 1633.5,
+            "qty": 16.5,
+            "unrealized_pl": -16.5,
+            "unrealized_plpc": -0.01
+          },
+          "MSFT": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 101.0,
+            "market_value": 1666.5,
+            "qty": 16.5,
+            "unrealized_pl": 16.5,
+            "unrealized_plpc": 0.01
+          },
+          "NVDA": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 102.0,
+            "market_value": 1683.0,
+            "qty": 16.5,
+            "unrealized_pl": 33.0,
+            "unrealized_plpc": 0.02
+          }
+        }
+      ],
+      "kwargs": {
+        "booked_equity": null,
+        "dividend_total": 0.0,
+        "errors": [],
+        "new_dividend_accruals": [],
+        "split_corrections": {},
+        "starting_capital": null,
+        "total_pnl": null,
+        "unrealized_pnl": 33.0
+      },
+      "raised": null,
+      "target": "notifier.daily_summary"
+    },
+    {
+      "args": [
+        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,033.00</b>\nChange since prior snapshot: 🟢 $+233.00 (+0.23%)\nPositions: 3\n\n  NVDA: 16.5000 @ $102.00 — $+33.00 (+2.00%)\n  MSFT: 16.5000 @ $101.00 — $+16.50 (+1.00%)\n  AMZN: 16.5000 @ $99.00 — $-16.50 (-1.00%)"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "<b>📊 Risk:</b> Positions: 3/4 | Scale: 1.00x | Weights: sp500=50%, nasdaq100=50%"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [
+        "2026-06-19",
+        100033.0,
+        95050.0,
+        {
+          "AMZN": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 99.0,
+            "market_value": 1633.5,
+            "qty": 16.5,
+            "unrealized_pl": -16.5,
+            "unrealized_plpc": -0.01
+          },
+          "MSFT": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 101.0,
+            "market_value": 1666.5,
+            "qty": 16.5,
+            "unrealized_pl": 16.5,
+            "unrealized_plpc": 0.01
+          },
+          "NVDA": {
+            "avg_entry": 100.0,
+            "change_today": 0.0,
+            "cost_basis": 1650.0,
+            "current_price": 102.0,
+            "market_value": 1683.0,
+            "qty": 16.5,
+            "unrealized_pl": 33.0,
+            "unrealized_plpc": 0.02
+          }
+        }
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.log_snapshot"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": null,
+  "result": {
+    "buys": [
+      "MSFT",
+      "NVDA",
+      "AMZN"
+    ],
+    "errors": [],
+    "sells": [],
+    "skipped_writes": [],
+    "untradable": []
+  },
+  "skipped_writes": []
+}

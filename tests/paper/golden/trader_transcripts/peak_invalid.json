@@ -1,0 +1,157 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_clock"
+    },
+    {
+      "args": [
+        "db"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "membership.live_membership_source"
+    },
+    {
+      "args": [],
+      "kwargs": {
+        "membership": {
+          "membership": "db"
+        },
+        "persist_tape": true
+      },
+      "raised": null,
+      "target": "signals.generate_core_signals"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "tape.refresh_benchmark_tape"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_account"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_positions"
+    },
+    {
+      "args": [
+        [
+          "AAPL",
+          "MSFT"
+        ]
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_untradable"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_open_split_states"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-06-05"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_split_evidence"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_total_dividend_accrual"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_snapshot_history"
+    },
+    {
+      "args": [
+        [
+          "AAPL"
+        ],
+        "2026-05-15"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_dividend_corrections"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_peak_value"
+    },
+    {
+      "args": [
+        "<b>🛑 HALTED:</b> Invalid stored risk peak: Invalid portfolio value for risk peak"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": null,
+  "result": {
+    "buys": [],
+    "errors": [
+      "Invalid stored risk peak: Invalid portfolio value for risk peak"
+    ],
+    "sells": []
+  },
+  "skipped_writes": []
+}

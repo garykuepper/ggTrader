@@ -15,7 +15,6 @@ never on the command line, and nothing here prints or logs a connection string: 
 
 from __future__ import annotations
 
-import hashlib
 import os
 import subprocess
 from collections.abc import Callable
@@ -26,6 +25,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from ggTrader.data.membership import redact
 from ggTrader.data.universe_db import loader_url
+from ggTrader.utils.manifest import sha256_file as file_sha256
 from ggTrader.utils.paths import REPO_ROOT
 
 #: Default folder for dumps; ``data/exports/`` is git-ignored.
@@ -36,8 +36,6 @@ EXPORT_SCHEMA = "universe"
 DUMP_TIMEOUT_SECONDS = 300
 #: How long ``pg_dump`` may wait for a table lock before giving up.
 LOCK_WAIT_TIMEOUT = "30s"
-#: Hash read size in bytes.
-_CHUNK = 1 << 20
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 
@@ -91,15 +89,6 @@ def dump_command(
     if sslmode:
         env["PGSSLMODE"] = sslmode[-1]
     return argv, env
-
-
-def file_sha256(path: Path) -> str:
-    """sha256 of a file, read in chunks."""
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(_CHUNK), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def export_universe(

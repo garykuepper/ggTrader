@@ -7,7 +7,8 @@ accepted and normalised here.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import pandas as pd
 
@@ -17,7 +18,7 @@ from ggTrader.data.membership import MembershipSource
 from ggTrader.lab import universe as universe_mod
 from ggTrader.lab.strategies.contract import ParamGrid
 
-UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], List[str]]
+UniverseFn = Callable[[pd.Timestamp, pd.DataFrame], list[str]]
 
 
 def as_bars(data: Bars | pd.DataFrame) -> Bars:
@@ -39,7 +40,7 @@ def as_bars(data: Bars | pd.DataFrame) -> Bars:
     if "close" not in fields:
         raise ValueError("ohlcv has no 'close' field")
     symbols = sorted(data.columns.get_level_values(0).unique())
-    frames: Dict[str, pd.DataFrame] = {}
+    frames: dict[str, pd.DataFrame] = {}
     for name in BAR_FIELDS:
         if name in fields:
             frame = data.xs(name, axis=1, level=-1)[symbols].astype("float64")
@@ -119,8 +120,8 @@ def mask_from_universe_fn(
 
 
 def resolve_grid(
-    strategy_cls: Any, grid: ParamGrid | Sequence[Dict[str, Any]]
-) -> tuple[ParamGrid, List[Dict[str, Any]]]:
+    strategy_cls: Any, grid: ParamGrid | Sequence[dict[str, Any]]
+) -> tuple[ParamGrid, list[dict[str, Any]]]:
     """The strategy's :class:`ParamGrid` and its combinations as plain dicts (legacy order).
 
     A list of combination dicts (the legacy ``build_grid`` output) is accepted when it equals
@@ -149,11 +150,11 @@ def resolve_grid(
     return candidate, rebuilt
 
 
-def _key(combo: Dict[str, Any]) -> tuple:
+def _key(combo: dict[str, Any]) -> tuple:
     return tuple(sorted((k, repr(v)) for k, v in combo.items()))
 
 
-def combo_name(strategy_name: str, params: Dict[str, Any]) -> str:
+def combo_name(strategy_name: str, params: dict[str, Any]) -> str:
     """Deterministic label from strategy name + sorted param key-value pairs (legacy format)."""
     parts = [f"{k}{v}" for k, v in sorted(params.items())]
     return strategy_name + "__" + "_".join(parts)

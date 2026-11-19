@@ -6,7 +6,6 @@ import logging
 import os
 from datetime import date, datetime, timezone
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -30,6 +29,7 @@ from ggTrader.data.membership_gate import (
 )
 from ggTrader.engine import selfcheck as engine_selfcheck
 from ggTrader.lab.data import fetch_stock_ohlcv
+from ggTrader.paper.constants import ET as _ET
 from ggTrader.paper.gates import (
     SanityConfig,
     SignalGateError,
@@ -48,7 +48,6 @@ from ggTrader.paper.persist import get_rebalance_state, save_rebalance_state
 
 _log = logging.getLogger(__name__)
 
-_ET = ZoneInfo("America/New_York")
 
 #: ``SignalGateError`` code for a live run that was not given the latest database vintage.
 CODE_NOT_LIVE = "membership_not_live"

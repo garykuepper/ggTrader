@@ -33,10 +33,11 @@ import json
 import os
 import re
 from bisect import bisect_right
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, Mapping, Protocol, Sequence
+from typing import Any, Literal, Protocol
 from urllib.parse import unquote, urlparse
 
 import pandas as pd

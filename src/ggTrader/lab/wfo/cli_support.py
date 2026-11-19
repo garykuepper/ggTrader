@@ -1,15 +1,14 @@
-"""Glue between ``ggt lab --engine vbt`` and the vectorbt-engine walk-forward.
+"""Load inputs and run the walk-forward flow for ``ggt lab --wfo``.
 
-Loads the bars read-only (frozen snapshot by default), builds the point-in-time mask and runs
-:func:`~ggTrader.lab.wfo.run.run_wfo`; the legacy CLI path is untouched. Every result is
-written as JSON with a provenance block (``utils.results.write_result_json``).
+Loads bars and point-in-time membership, runs :func:`~ggTrader.lab.wfo.run.run_wfo`, and writes
+each successful result as JSON with a provenance block.
 """
 
 from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -26,7 +25,7 @@ DEFAULT_RESULTS_DIR = REPO_ROOT / "results" / "lab"
 
 
 def load_run_bars(
-    universes: List[str],
+    universes: list[str],
     cfg: LabConfig,
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
@@ -92,8 +91,8 @@ def run_vbt_wfo(
     eval_end: pd.Timestamp,
     *,
     market: str,
-    base_config: Dict[str, Any],
-    overrides: Dict[str, list] | None = None,
+    base_config: dict[str, Any],
+    overrides: dict[str, list] | None = None,
     snapshot: str | None = None,
     result_json: str | None = None,
     membership: MembershipSource | None = None,

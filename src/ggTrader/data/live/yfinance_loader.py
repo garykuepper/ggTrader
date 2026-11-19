@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import timezone
-from typing import List, Optional
 
 import pandas as pd
 import yfinance as yf
@@ -17,15 +16,15 @@ class YFinanceDataLoader(BaseDataLoader):
     """Stock data loader using yfinance. Free, no API key, daily bars back to 1980+."""
 
     def __init__(self):
-        self.logger = logging.getLogger("ggTraderLive")
+        self.logger = logging.getLogger(__name__)
 
     def fetch_ohlcv(
         self,
-        symbols: List[str],
+        symbols: list[str],
         interval: str,
-        start_date: Optional[pd.Timestamp] = None,
-        end_date: Optional[pd.Timestamp] = None,
-        limit: Optional[int] = None,
+        start_date: pd.Timestamp | None = None,
+        end_date: pd.Timestamp | None = None,
+        limit: int | None = None,
     ) -> pd.DataFrame:
         """Fetch OHLCV via yfinance and return MultiIndex DataFrame.
 
@@ -52,7 +51,11 @@ class YFinanceDataLoader(BaseDataLoader):
         end = (end_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
         self.logger.info(
-            f"Fetching {len(symbols)} stocks from yfinance ({yf_interval}): {start} -> {end}"
+            "Fetching %s stocks from yfinance (%s): %s -> %s",
+            len(symbols),
+            yf_interval,
+            start,
+            end,
         )
 
         try:
@@ -68,7 +71,7 @@ class YFinanceDataLoader(BaseDataLoader):
                 progress=False,
             )
         except Exception as e:
-            self.logger.error(f"yfinance download failed: {e!r}")
+            self.logger.error("yfinance download failed: %r", e)
             return pd.DataFrame()
 
         if df.empty:
@@ -96,6 +99,6 @@ class YFinanceDataLoader(BaseDataLoader):
 
         return df
 
-    def list_symbols(self) -> List[str]:
+    def list_symbols(self) -> list[str]:
         """Return the pre-configured S&P 500 list."""
         return SP500_SYMBOLS

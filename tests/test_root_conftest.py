@@ -141,6 +141,8 @@ def _scratch_repo(root: Path, study_dirs: tuple[str, ...] = (), minimum: int | N
     (root / "scripts").mkdir()
     (root / "tests").mkdir()
     shutil.copy(RUN_TESTS, root / "scripts" / "run_tests.sh")
+    # run_tests.sh sources it; a copy without it must fail loudly, never run unguarded.
+    shutil.copy(RUN_TESTS.with_name("_heavy_job.sh"), root / "scripts" / "_heavy_job.sh")
     tiers_text = (ROOT / "tests" / "tiers.py").read_text()
     # The scratch repo never inherits the real floor (it grows with every study move).
     tiers_text = re.sub(

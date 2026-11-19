@@ -32,8 +32,9 @@ Exit policies are opt-in helpers that change numbers by policy and are off by de
 from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -60,11 +61,11 @@ class StaleConstituentsError(RuntimeError):
 
 def check_constituent_age(
     asof: Any,
-    membership_history: Optional[pd.DataFrame] = None,
+    membership_history: pd.DataFrame | None = None,
     *,
     max_age_days: int = DEFAULT_MAX_AGE_DAYS,
     on_stale: str = "warn",
-    membership: Optional[MembershipSource] = None,
+    membership: MembershipSource | None = None,
 ) -> dict[str, Any]:
     """How old is the constituent list at ``asof``? Warn, raise or ignore when too old.
 
@@ -141,9 +142,9 @@ def _check_columns(symbols: Sequence[str]) -> list[str]:
 def membership_mask(
     index: pd.DatetimeIndex,
     symbols: Sequence[str],
-    membership_history: Optional[pd.DataFrame] = None,
+    membership_history: pd.DataFrame | None = None,
     *,
-    membership: Optional[MembershipSource] = None,
+    membership: MembershipSource | None = None,
 ) -> pd.DataFrame:
     """True where ``symbol`` is a PIT index member on the bar (``dates x symbols``, bool).
 
@@ -192,12 +193,12 @@ def static_membership_mask(
 
 def pit_mask(
     close: pd.DataFrame,
-    membership_history: Optional[pd.DataFrame] = None,
+    membership_history: pd.DataFrame | None = None,
     *,
-    membership: Optional[MembershipSource] = None,
+    membership: MembershipSource | None = None,
     min_history_bars: int = 400,
-    max_stocks: Optional[int] = None,
-    static_members: Optional[Sequence[str]] = None,
+    max_stocks: int | None = None,
+    static_members: Sequence[str] | None = None,
     max_age_days: int = DEFAULT_MAX_AGE_DAYS,
     on_stale: str = "warn",
 ) -> pd.DataFrame:
@@ -270,13 +271,13 @@ class TerminalExits:
     """
 
     exits: pd.DataFrame
-    entries: Optional[pd.DataFrame]
+    entries: pd.DataFrame | None
     meta: dict[str, Any]
 
 
 def terminal_exits(
     close: pd.DataFrame,
-    entries: Optional[pd.DataFrame] = None,
+    entries: pd.DataFrame | None = None,
     *,
     min_trailing_nan_bars: int = 1,
 ) -> TerminalExits:

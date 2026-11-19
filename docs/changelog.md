@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-11-18 (refactor phases 0–2)
+
+- Added offline safety gates, recorded trader transcripts and loader behavior, and serialized
+  heavy jobs to protect the host. Evidence and test comparers now fail closed, including required
+  safety nodes, while ignoring only the checkout-specific tape path in P5 results.
+- Consolidated engine cache configuration and paper constants, modernized annotations, enabled
+  selected lint rules, and logged previously silent fallback exceptions at debug level.
+- Verified the frozen evidence pins (4 moved and 18 historical matches); the phase gate matched
+  both oracle and test baselines. These changes do not authorize deployment or trader restart.
+- Paper Telegram summaries now label total P&L percentages against both the prior snapshot and
+  starting capital when available; invalid non-positive bases are shown as unavailable.
+
+## 2026-11-18 (test-run safety after the out-of-memory incident)
+
+- Encom ran out of memory at about 13:53 and thrashed until it was power-cycled at 17:58. Two
+  parallel `tests/paper/` runs, started by parallel builders, each grew toward their own 8 GiB
+  cap, together needed more than the machine had free, and nothing was killed. The growth was a
+  hang: the `ggt` CLI callback left the `ggTrader` logger at INFO, and on Python 3.12 every log
+  record reads `time.time()`, which starved paper tests that stub the global clock, so
+  `_poll_orders` never reached its deadline (the root `conftest.py` now restores the logger after
+  every test, `a44fa90a`).
+- `scripts/run_tests.sh` and `scripts/run_capped.sh` now share a guard (`scripts/_heavy_job.sh`):
+  one heavy job at a time through a lock in the git directory that every worktree shares (a second
+  job waits `GGT_HEAVY_WAIT`, default 1800 s, then exits 75); a job exits 75 at once when free memory
+  is below its cap plus `GGT_HEAVY_MARGIN` (default 4G); each pytest run is stopped after
+  `GGT_TEST_MAX_SECONDS` (default 1800) and a `run_capped.sh` job after `GGT_RUN_MAX_SECONDS`
+  (default 7200), exit 143. The default test memory cap drops from 8G to 4G: a full gate was sampled at
+  1.84 GiB or more (a floor, since the sampler can miss the last high-water mark) and a 2G cap kills
+  the real-tape live-golden test, so 4G leaves about twice the headroom.
+- Every test is stopped after `GGT_TEST_TIMEOUT` seconds (default 180; `@pytest.mark.timeout_seconds(n)`
+  overrides) so a hang fails the test instead of eating memory. One frozen study test that asserts
+  on the process's own SIGALRM timer is exempt (`tests/timeout_guard.py: UNTIMED_TESTS`).
+- CI (`GGT_TEST_NO_CGROUP=1`) keeps no lock, no preflight and no runner time limit; the per-test
+  timeout does apply to CI. Nothing here
+  touches the stopped trader, system services or any other project.
+
+## 2026-11-18 (refactor phases 0-1: safety nets, dead code, wipe flags)
+
+- Added the safety nets a code refactor depends on, all as tests and tools with no change to
+  trading or research behavior: an oracle and test-outcome comparer
+  (`scripts/compare_evidence_json.py`, `scripts/compare_test_outcomes.py`), a connection guard that
+  fails any paper test attempting a real network or database call, a check that every
+  `ggTrader` name a study imports still resolves, import-direction rules between packages, a
+  recorded transcript of every outside call the paper trader makes over 95 scenarios, and a
+  characterization test of the price-loader fallback chain.
+- Removed the never-called untradable-skip branch from `paper/trader.py`. An exception raised
+  by the broker on submit still ends the run; behavior is unchanged and the transcripts did not
+  change.
+- Removed an unused parameter of `lab/wfo/run.py::_select_live_params`, documented the config
+  keys nothing in `src/` reads, and corrected stale architecture, help and comment text.
+- Behavior change (owner-approved): `ggt db truncate` now requires `--yes-wipe-ohlcv` and
+  `ggt db clean` requires `--yes`. Without the flag the command prints what it would delete and
+  exits with code 2 before any database connection.
+- Not deployed; nothing here touches the stopped trader or its container.
+
 ## 2026-11-11 (paper signal dates)
 
 - Reject future-dated bars before signal generation and reject future, stale or

@@ -1,0 +1,70 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "pend-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order"
+    },
+    {
+      "args": [
+        "pend-1",
+        10.0,
+        60.0,
+        "filled"
+      ],
+      "kwargs": {},
+      "raised": "RuntimeError: ledger locked",
+      "target": "persist.settle_legacy_pending_order"
+    },
+    {
+      "args": [
+        "<b>🛑 Could not settle pending order pend-1 — no orders placed:</b> ledger locked"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": "RuntimeError: ledger locked",
+  "result": null,
+  "skipped_writes": []
+}

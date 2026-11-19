@@ -81,3 +81,6 @@ backups/
 
 # graphify knowledge-graph output (regenerable: graph.json, graph.html, cache, manifest)
 graphify-out/
+
+# Fallback heavy-job lock when there is no git directory (scripts/_heavy_job.sh)
+/.ggtrader-heavy.lock*

@@ -9,7 +9,6 @@ plain (no mode) run were removed in P5c; strategies that were not ported stay ru
 from __future__ import annotations
 
 import argparse
-from typing import List
 
 import pandas as pd
 
@@ -43,9 +42,9 @@ def check_strategy(name: str) -> str:
     raise SystemExit(f"Unknown strategy {name!r}; ported strategies: {sorted(registry.REGISTRY)}")
 
 
-def _parse_blend_sleeves(spec: str) -> List[tuple[str, str]]:
+def _parse_blend_sleeves(spec: str) -> list[tuple[str, str]]:
     """Parse 'strat@univ,strat@univ' into [(strategy, universe), ...]; validate."""
-    sleeves: List[tuple[str, str]] = []
+    sleeves: list[tuple[str, str]] = []
     for part in spec.split(","):
         item = part.strip()
         if item.count("@") != 1:
@@ -121,7 +120,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return p
 
 
-def run_lab(argv: List[str] | None = None) -> str:
+def run_lab(argv: list[str] | None = None) -> str:
     args = build_arg_parser().parse_args(argv)
     # Raises MembershipSourceNotSelected (naming --membership and GGT_MEMBERSHIP) when neither is
     # set, before any data is loaded; there is deliberately no default source.
@@ -184,7 +183,7 @@ def run_lab(argv: List[str] | None = None) -> str:
     return outcome if isinstance(outcome, str) else outcome.table
 
 
-def _parse_sweep_params(raw: List[str]) -> dict[str, list]:
+def _parse_sweep_params(raw: list[str]) -> dict[str, list]:
     """Parse CLI '--sweep-param key=v1,v2,v3' into {key: [v1, v2, v3]}."""
     result: dict[str, list] = {}
     for item in raw:

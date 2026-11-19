@@ -5,16 +5,63 @@ as study tests under research/<category>/<study>/code/tests, get the same safety
 plotting backend and the same options. tests/test_root_conftest.py proves it.
 """
 
+import logging
+import os
+
 import matplotlib
 import pytest
 
 from tests import tiers
+from tests.timeout_guard import UNTIMED_TESTS, time_limit
 
 #: The S&P 500 list every test reads unless it says otherwise: the frozen vintage-1 fixture, so
 #: no test needs the database (spec 3.2 and 7; slice M3).
 TEST_MEMBERSHIP = "fixture:sp500_v1_2026-06-02"
 
 matplotlib.use("Agg")
+
+
+#: Seconds one test may run before it fails as a presumed hang. The slowest test in the recorded
+#: baseline takes 21 s, so this is generous; GGT_TEST_TIMEOUT=0 turns it off, and a test that
+#: really needs longer says so with ``@pytest.mark.timeout_seconds(n)``.
+DEFAULT_TEST_TIMEOUT_SECONDS = 180.0
+
+
+@pytest.fixture(autouse=True)
+def _per_test_timeout(request: pytest.FixtureRequest):
+    """Fail a test that runs past its wall-clock limit (tests/timeout_guard.py)."""
+    seconds = float(os.environ.get("GGT_TEST_TIMEOUT", DEFAULT_TEST_TIMEOUT_SECONDS))
+    marker = request.node.get_closest_marker("timeout_seconds")
+    if marker is not None and marker.args:
+        seconds = float(marker.args[0])
+    if request.node.nodeid in UNTIMED_TESTS:
+        seconds = 0.0
+    with time_limit(seconds):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _restore_ggtrader_logger():
+    """Give every test the ggTrader logger it started with.
+
+    ``ggt`` configures that logger (a handler, level INFO) in its CLI callback, and a test that
+    runs the CLI would otherwise leave INFO enabled for the rest of the process. On Python 3.12 a
+    log record reads ``time.time()``, and paper tests that stub the global clock with a finite
+    sequence then lose values to those records: the order-polling loop never reaches its
+    deadline and the run allocates until the memory cap kills it (found 2026-11-18).
+    """
+    logger = logging.getLogger("ggTrader")
+    handlers, level, propagate, disabled = (
+        list(logger.handlers),
+        logger.level,
+        logger.propagate,
+        logger.disabled,
+    )
+    yield
+    logger.handlers[:] = handlers
+    logger.setLevel(level)
+    logger.propagate = propagate
+    logger.disabled = disabled
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -50,6 +97,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def pytest_configure(config: pytest.Config) -> None:
     """Apply the chosen tier's marker expression (it replaces the pyproject default)."""
     tiers.apply_tier(config.option, config.getoption("--tier"))
+    # Registered here, not in pyproject.toml: tests/test_tiers.py requires the markers listed there
+    # to be exactly the tier markers.
+    config.addinivalue_line(
+        "markers",
+        "timeout_seconds(n): this test may run n seconds instead of the per-test limit "
+        "(GGT_TEST_TIMEOUT, default 180)",
+    )
 
 
 def pytest_collection_finish(session: pytest.Session) -> None:

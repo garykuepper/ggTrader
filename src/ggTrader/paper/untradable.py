@@ -3,13 +3,15 @@
 AVB merged into EQR (2026-08-17) and the broker marks it inactive, so every order for it is
 rejected with HTTP 422 ``asset AVB is not active`` while the paper account still holds 4.05
 shares. The rebuilt trader treats such a symbol as *untradable*: it never takes a slot, is
-never sold or bought, and one alert names it. Three sources feed one set:
+never sold or bought, and one alert names it. Two sources feed one set:
 
 1. ``UNTRADABLE_SYMBOLS`` (comma separated, environment): the owner's explicit list.
 2. The broker's asset status (``tradable: false``), looked up for held names and buy
    candidates; a lookup failure degrades to the configured set only.
-3. A rejected order whose error says the asset is not active or tradable: the order is skipped
-   and alerted, never raised, so one dead ticker cannot abort a run that has other orders.
+
+Untradable names are filtered before ordering. An exception raised by the broker on submit
+is re-raised and ends the run. An order later reported as rejected follows normal settlement,
+which can leave other exits eligible.
 """
 
 from __future__ import annotations

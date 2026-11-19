@@ -1,0 +1,62 @@
+{
+  "calls": [
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.enter"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.init_paper_schema"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_unresolved_order_intents"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.get_pending_orders"
+    },
+    {
+      "args": [
+        "prev-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "broker.get_order_by_client_id"
+    },
+    {
+      "args": [
+        "prev-1",
+        "ord-prev-1"
+      ],
+      "kwargs": {},
+      "raised": null,
+      "target": "persist.attach_broker_order"
+    },
+    {
+      "args": [
+        "<b>🛑 Order recovery/pending orders failed:</b> Unresolved working orders block submissions. Orders may already have been submitted; check their status."
+      ],
+      "kwargs": {},
+      "raised": "RuntimeError: telegram down",
+      "target": "notifier.send"
+    },
+    {
+      "args": [],
+      "kwargs": {},
+      "raised": null,
+      "target": "lock.exit"
+    }
+  ],
+  "raised": "RuntimeError: Unresolved working orders block submissions",
+  "result": null,
+  "skipped_writes": []
+}
