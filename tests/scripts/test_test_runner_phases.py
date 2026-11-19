@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
     [
         ("--full", 137, 0, 137, 1),
         ("--full", 143, 0, 143, 1),
+        ("--full", 130, 0, 130, 1),
+        ("--full", 139, 0, 139, 1),
         ("--full", 1, 0, 1, 2),
         ("--studies", 5, 0, 0, 2),
         ("--full", 1, 137, 137, 2),
@@ -52,6 +54,7 @@ def test_terminal_status_stops_later_phases(
     env = {
         **os.environ,
         "GGT_TEST_NO_CGROUP": "1",
+        "GGT_TEST_DRY_RUN": "",
         "GGT_PYTHON": str(fake),
         "PHASE_LOG": str(log),
         "FIRST_STATUS": str(first_status),
@@ -70,3 +73,5 @@ def test_terminal_status_stops_later_phases(
     if first_status == 137:
         assert "cap was hit" not in result.stderr
         assert "killed" in result.stderr.lower()
+    if first_status == 143:
+        assert "time limit or another signal" in result.stderr
