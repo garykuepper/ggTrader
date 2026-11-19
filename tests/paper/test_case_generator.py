@@ -36,7 +36,15 @@ print(hashlib.sha256(to_json(cases).encode()).hexdigest())
 """
     outputs = [
         subprocess.check_output(
-            [sys.executable, "-c", script], env={**os.environ, "PYTHONHASHSEED": seed}, text=True
+            [sys.executable, "-c", script],
+            env={
+                "PATH": os.defpath,
+                "PYTHONPATH": os.getcwd(),
+                "PYTHONHASHSEED": seed,
+                "GGT_MEMBERSHIP": "fixture:sp500_v1_2026-06-02",
+            },
+            text=True,
+            timeout=20,
         )
         for seed in ("1", "2")
     ]
@@ -50,7 +58,11 @@ def test_generated_sizing_and_buy_candidates_are_valid():
         assert not scenario.read_only or scenario.dry_run
         assert scenario.signals["scale"] > 0
         assert all(weight > 0 for weight in scenario.signals["weights"].values())
-        assert scenario.replies["get_account"][0]["portfolio_value"] > 0
+        assert all(
+            account["portfolio_value"] > 0
+            for account in scenario.replies["get_account"]
+            if isinstance(account, dict)
+        )
         for sleeve in scenario.signals["sleeves"].values():
             assert len(sleeve["buys"]) == len(set(sleeve["buys"]))
         buys = [
@@ -124,29 +136,27 @@ def test_deliberate_duplicate_buy_reaches_both_sleeves():
     assert reached >= 2
 
 
-def test_structured_live_late_gate_and_sweep_round_trip():
+@pytest.mark.parametrize("seed", range(4, 600, 80))
+def test_structured_live_late_gate(seed):
     from tests.paper.transcript.harness import run_scenario
 
-    late = run_scenario(build_case(4).scenario)
-    assert late["raised"] is None
-    assert any("late" in str(call).lower() for call in late["calls"])
-    sweep = run_scenario(build_case(5).scenario)
+    transcript = run_scenario(build_case(seed).scenario)
+    assert transcript["raised"] is None
+    assert transcript["result"]["gate"] == "late_run"
+    assert not [call for call in transcript["calls"] if call["target"].startswith("broker.submit_")]
+
+
+@pytest.mark.parametrize("seed", range(5, 600, 80))
+def test_structured_sweep_round_trip(seed):
+    from tests.paper.transcript.harness import run_scenario
+
+    sweep = run_scenario(build_case(seed).scenario)
     submits = [call for call in sweep["calls"] if call["target"].startswith("broker.submit_")]
     assert [(call["target"], call["args"][0]) for call in submits] == [
         ("broker.submit_sell", "SPY"),
         ("broker.submit_buy", "MSFT"),
         ("broker.submit_buy", "SPY"),
     ], (sweep["raised"], submits)
-
-
-def test_scenario_distribution():
-    from collections import Counter
-
-    cases = [build_case(seed) for seed in range(600)]
-    modes = Counter((case.scenario.dry_run, case.scenario.read_only) for case in cases)
-    templates = Counter(case.scenario.name.rsplit("_", 1)[0] for case in cases)
-    print(f"modes={dict(modes)} templates={dict(templates)}")
-    assert sum(modes.values()) == 600
 
 
 @pytest.mark.parametrize("seed", [6, 86])

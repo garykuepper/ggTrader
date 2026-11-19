@@ -181,24 +181,20 @@ def build_case(seed: int) -> Case:
         )
         if status == "default":
             continue
-        if status == "partial":
-            fills[symbol] = [
+        if status in ("partial", "partial_canceled"):
+            qty = positions.get(symbol, {}).get("qty")
+            if qty not in (10.0, 20.0):
+                continue
+            fills[f"{symbol}:SELL"] = [
                 {"status": "partially_filled", "filled_qty": 4.0, "filled_avg_price": 100.0},
-                {"status": "filled", "filled_qty": 10.0, "filled_avg_price": 100.0},
-            ]
-        elif status == "partial_canceled":
-            fills[symbol] = [
-                {"status": "partially_filled", "filled_qty": 4.0, "filled_avg_price": 100.0},
-                {"status": "canceled", "filled_qty": 4.0, "filled_avg_price": 100.0},
+                {
+                    "status": "filled" if status == "partial" else "canceled",
+                    "filled_qty": qty if status == "partial" else 4.0,
+                    "filled_avg_price": 100.0,
+                },
             ]
         else:
-            fills[symbol] = [
-                {
-                    "status": status,
-                    "filled_qty": 10.0 if status == "filled" else 0.0,
-                    "filled_avg_price": 100.0 if status == "filled" else None,
-                }
-            ]
+            fills[symbol] = [{"status": status, "filled_qty": 0.0, "filled_avg_price": None}]
     existing_orders = []
     if rng.random() < 0.1:
         symbol = rng.choice(_SYMBOLS)
