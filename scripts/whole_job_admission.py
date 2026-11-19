@@ -5,6 +5,9 @@ authenticate all requests, and independently verify boot and pinned cgroup ident
 Production must use the default root owner. This module does not launch or stop processes.
 Admission is locked through the caller's launch operation; an exception records a hold.
 Each broker startup creates a new epoch and persists a hold before serving requests.
+The broker must never fork while admission is locked: close-on-exec does not close a
+lock inherited by a forked child until that child execs or exits. Corrupt prior state
+is preserved and startup refuses admission until an operator investigates it.
 """
 
 import fcntl
@@ -24,7 +27,12 @@ class AdmissionState:
         self.directory = directory
         self.owner = expected_owner
         info = os.fstat(directory)
-        if not stat.S_ISDIR(info.st_mode) or info.st_uid != self.owner or info.st_mode & 0o077:
+        if (
+            not stat.S_ISDIR(info.st_mode)
+            or info.st_uid != self.owner
+            or info.st_mode & 0o077
+            or os.get_inheritable(directory)
+        ):
             raise PermissionError("admission directory is not private and trusted")
         self.epoch = secrets.token_hex(32)
         self.failed = False
@@ -44,24 +52,47 @@ class AdmissionState:
 
     @contextmanager
     def _lock(self) -> Iterator[None]:
-        fd = os.open(
-            "admission.lock",
-            os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC,
-            0o600,
-            dir_fd=self.directory,
-        )
         try:
-            self._check_file(fd)
-            fcntl.flock(fd, fcntl.LOCK_EX)
+            if os.get_inheritable(self.directory):
+                raise PermissionError("admission directory is inheritable")
+            fd = os.open(
+                "admission.lock",
+                os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
+                0o600,
+                dir_fd=self.directory,
+            )
+        except BaseException:
+            self.failed = True
+            raise
+        try:
+            try:
+                self._check_file(fd)
+                fcntl.flock(fd, fcntl.LOCK_EX)
+                self._check_lock(fd)
+            except BaseException:
+                self.failed = True
+                raise
             yield
+            self._check_lock(fd)
         finally:
             os.close(fd)
+
+    def _check_lock(self, fd: int) -> None:
+        try:
+            self._check_file(fd)
+            held = os.fstat(fd)
+            current = os.stat("admission.lock", dir_fd=self.directory, follow_symlinks=False)
+            if (held.st_dev, held.st_ino) != (current.st_dev, current.st_ino):
+                raise PermissionError("admission lock was replaced")
+        except BaseException:
+            self.failed = True
+            raise
 
     def _read(self, *, missing_ok: bool = False) -> dict[str, Any] | None:
         try:
             fd = os.open(
                 "admission.json",
-                os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
                 dir_fd=self.directory,
             )
         except FileNotFoundError:
@@ -70,7 +101,12 @@ class AdmissionState:
             raise PermissionError("admission state missing") from None
         try:
             self._check_file(fd)
-            data = os.read(fd, 4097)
+            data = b""
+            while len(data) < 4097:
+                chunk = os.read(fd, 4097 - len(data))
+                if not chunk:
+                    break
+                data += chunk
         finally:
             os.close(fd)
         if len(data) > 4096:
@@ -101,7 +137,12 @@ class AdmissionState:
             dir_fd=self.directory,
         )
         try:
-            with os.fdopen(fd, "w") as file:
+            try:
+                file = os.fdopen(fd, "w", encoding="utf-8")
+            except BaseException:
+                os.close(fd)
+                raise
+            with file:
                 json.dump(state, file)
                 file.flush()
                 os.fsync(file.fileno())
@@ -115,11 +156,15 @@ class AdmissionState:
 
     def _current(self) -> dict[str, Any]:
         if self.failed:
-            raise PermissionError("admission instance has a failed state write")
-        state = self._read()
-        if state is None or state["epoch"] != self.epoch:
-            raise PermissionError("stale admission instance")
-        return state
+            raise PermissionError("admission instance has failed")
+        try:
+            state = self._read()
+            if state is None or state["epoch"] != self.epoch:
+                raise PermissionError("stale admission instance")
+            return state
+        except BaseException:
+            self.failed = True
+            raise
 
     def release(self, job: str, boot: str) -> None:
         """Bind a hold release to an independently verified job and boot."""

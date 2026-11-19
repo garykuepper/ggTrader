@@ -1,6 +1,9 @@
 """Filesystem fixture tests for the offline admission store."""
 
+import fcntl
 import os
+import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -125,6 +128,146 @@ def test_hold_waits_for_in_progress_launch(directory: int) -> None:
         assert not completed.wait(0.1)
     thread.join(timeout=2)
     assert completed.is_set()
+    with pytest.raises(PermissionError):
+        with state.admission("job-a", "boot-a"):
+            pass
+
+
+def test_corrupt_state_latches_and_startup_preserves_evidence(
+    directory: int, tmp_path: Path
+) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    path = tmp_path / "admission.json"
+    saved = path.read_bytes()
+    path.write_bytes(b"corrupt")
+    with pytest.raises(ValueError):
+        state.hold()
+    with pytest.raises(ValueError):
+        store(directory)
+    assert path.read_bytes() == b"corrupt"
+    path.write_bytes(saved)
+    with pytest.raises(PermissionError):
+        with state.admission("job-a", "boot-a"):
+            pass
+
+
+def test_epoch_failure_is_latched(directory: int, tmp_path: Path) -> None:
+    first = store(directory)
+    first.release("job-a", "boot-a")
+    path = tmp_path / "admission.json"
+    old = path.read_bytes()
+    store(directory)
+    with pytest.raises(PermissionError):
+        first.hold()
+    path.write_bytes(old)
+    with pytest.raises(PermissionError):
+        with first.admission("job-a", "boot-a"):
+            pass
+
+
+def test_short_reads_are_completed(directory: int, monkeypatch) -> None:
+    state = store(directory)
+    original = os.read
+    monkeypatch.setattr(os, "read", lambda fd, size: original(fd, min(size, 4)))
+    state.release("job-a", "boot-a")
+    with state.admission("job-a", "boot-a"):
+        pass
+
+
+def test_inheritable_directory_fd_is_rejected(directory: int) -> None:
+    os.set_inheritable(directory, True)
+    try:
+        with pytest.raises(PermissionError):
+            store(directory)
+    finally:
+        os.set_inheritable(directory, False)
+
+
+@pytest.mark.parametrize("kind", ["symlink", "hardlink", "mode"])
+def test_rejects_unsafe_state_file(directory: int, tmp_path: Path, kind: str) -> None:
+    state = store(directory)
+    path = tmp_path / "admission.json"
+    if kind == "symlink":
+        path.unlink()
+        path.symlink_to(tmp_path / "target")
+    elif kind == "hardlink":
+        os.link(path, tmp_path / "hardlink")
+    else:
+        path.chmod(0o644)
+    with pytest.raises((OSError, PermissionError)):
+        state.hold()
+
+
+def test_fifo_state_fails_without_blocking(tmp_path: Path) -> None:
+    os.mkfifo(tmp_path / "admission.json", 0o600)
+    code = (
+        "import os, sys\n"
+        "from scripts.whole_job_admission import AdmissionState\n"
+        "fd = os.open(sys.argv[1], os.O_RDONLY | os.O_DIRECTORY)\n"
+        "AdmissionState(fd, expected_owner=os.geteuid())\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(tmp_path)], capture_output=True, timeout=2, check=False
+    )
+    assert result.returncode != 0
+
+
+def test_lock_replacement_while_waiting_is_rejected(
+    directory: int, tmp_path: Path, monkeypatch
+) -> None:
+    state = store(directory)
+    original = fcntl.flock
+
+    def replace_lock(fd: int, operation: int) -> None:
+        original(fd, operation)
+        path = tmp_path / "admission.lock"
+        path.unlink()
+        path.touch(mode=0o600)
+
+    monkeypatch.setattr(fcntl, "flock", replace_lock)
+    with pytest.raises(PermissionError):
+        state.hold()
+
+
+def test_failed_fdopen_closes_fd(directory: int, monkeypatch) -> None:
+    state = store(directory)
+    opened = []
+
+    def fail(fd: int, *args, **kwargs):
+        opened.append(fd)
+        raise OSError("fdopen failed")
+
+    monkeypatch.setattr(os, "fdopen", fail)
+    with pytest.raises(OSError, match="fdopen failed"):
+        state.release("job-a", "boot-a")
+    with pytest.raises(OSError):
+        os.fstat(opened[0])
+
+
+def test_failed_replace_disables_instance(directory: int, monkeypatch) -> None:
+    state = store(directory)
+
+    def fail(*args, **kwargs):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(os, "replace", fail)
+    with pytest.raises(OSError, match="replace failed"):
+        state.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        state.hold()
+
+
+def test_lock_open_failure_is_latched(directory: int, tmp_path: Path) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    lock = tmp_path / "admission.lock"
+    lock.unlink()
+    lock.symlink_to(tmp_path / "missing")
+    with pytest.raises(OSError):
+        state.hold()
+    lock.unlink()
+    lock.touch(mode=0o600)
     with pytest.raises(PermissionError):
         with state.admission("job-a", "boot-a"):
             pass
