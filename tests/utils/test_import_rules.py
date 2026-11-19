@@ -215,7 +215,7 @@ def _paper_lab_hits(relative: str, tree: ast.AST) -> list[str]:
                 hits += [
                     f"{relative}:{node.lineno} imports {alias.name} from {module}"
                     for alias in node.names
-                    if alias.name in {"data", "negative_cache"}
+                    if alias.name in {"data", "negative_cache", "*"}
                 ]
     return hits
 
@@ -240,11 +240,13 @@ def test_paper_import_rule_rejects_every_prohibited_form() -> None:
         "from ggTrader.lab.data import *",
         "from ggTrader.lab import data",
         "from ggTrader.lab import negative_cache",
+        "from ggTrader.lab import *",
         "from ggTrader.lab.negative_cache import load_skip_symbols",
         "from ggTrader.lab.negative_cache import *",
         "from ..lab.data import fetch_stock_ohlcv",
         "from ..lab import data",
         "from ..lab import negative_cache as nc",
+        "from ..lab import *",
         "from ..lab.negative_cache import record_no_data",
     ]
     for source in forbidden:
