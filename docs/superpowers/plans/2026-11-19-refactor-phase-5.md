@@ -1468,13 +1468,14 @@ def run_recorded(impl: str, case: Case) -> Recorded          # transcript, log r
 @dataclass(frozen=True)
 class Recorded:
     transcript: dict
-    logs: tuple[tuple[int, str, int, str, str | None], ...]  # (calls so far, logger, levelno, message, exc type)
+    logs: tuple[tuple[int, str, int, str, str | None, str | None], ...]  # calls, logger, level, message, exc type, exc text
 def digest(rec: Recorded) -> str                             # sha256 of to_json(transcript) + the log tuples
 @dataclass(frozen=True)
 class SeedSummary:                                           # all a test needs; the transcript is NOT kept
     seed: int; digest: str; witnesses: frozenset[str]
     violations: tuple[str, ...]                              # safety invariants (a)-(g) that failed, with detail
     error: str | None                                        # a harness error (never expected), else None
+    projections: tuple[tuple[str, str], ...]                 # witness name and relevant-call fingerprint
 def summarize_seed(seed: int) -> SeedSummary                 # ONE run of the NEW implementation, under
                                                              # tests.netguard.blocked_connections(); derives the
                                                              # digest, the witnesses and the violations from it
