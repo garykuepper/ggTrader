@@ -74,6 +74,13 @@ def test_protocol_parameters_and_returns_follow_the_persist_functions() -> None:
     persist_fns = _public_persist_functions()
     for name, method in _protocol_methods().items():
         assert _params(method) == _params(persist_fns[name]), name
+        for key, parameter in inspect.signature(method).parameters.items():
+            if key == "self" or (name, key) == ("log_snapshot", "positions"):
+                continue
+            assert (
+                parameter.annotation
+                == inspect.signature(persist_fns[name]).parameters[key].annotation
+            )
         if name != "paper_run_lock":
             expected = inspect.signature(persist_fns[name]).return_annotation
             assert inspect.signature(method).return_annotation == expected, name
