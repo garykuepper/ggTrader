@@ -246,30 +246,9 @@ def run_signals(
         )
 
     result = _run_chunks(simulate, close, groups, all_groups, base_config, n_dense, max_bytes)
-    if halt_positions:
-        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
-            index=False, name=None
-        ):
-            dates = halt_positions.get(int(halt_columns[int(col)]))
-            if dates is not None:
-                at = int(np.searchsorted(dates, int(entry)))
-                if at < len(dates) and dates[at] <= int(exit_):
-                    raise ValueError(
-                        f"halt during an open position at "
-                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
-                    )
-    if gaps:
-        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
-            index=False, name=None
-        ):
-            dates = gaps.get(int(col))
-            if dates is not None:
-                at = int(np.searchsorted(dates, int(entry)))
-                if at < len(dates) and dates[at] <= int(exit_):
-                    raise ValueError(
-                        f"missing price bar during an open position at "
-                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
-                    )
+    _reject_overlaps(
+        result, close, halt_positions=halt_positions, halt_columns=halt_columns, gaps=gaps
+    )
     return result
 
 
@@ -395,6 +374,56 @@ def _halt_positions(
         if len(positions):
             halt_positions[int(column)] = positions
     return halt_positions, halt_columns
+
+
+def _reject_overlaps(
+    result: SimResult,
+    close: pd.DataFrame,
+    *,
+    halt_positions: Mapping[int, np.ndarray],
+    halt_columns: np.ndarray,
+    gaps: Mapping[int, np.ndarray],
+) -> None:
+    """Reject a simulation whose trades span a flagged halt bar or a missing price bar.
+
+    Args:
+        result: the finished simulation; its ``trades`` frame is read in order (by column,
+            then id).
+        close: the forward-filled close frame, used only to format the message.
+        halt_positions: halt-mask column position -> sorted flagged bar positions.
+        halt_columns: the halt-mask column serving each column of ``close``.
+        gaps: ``close`` column position -> sorted missing-bar positions.
+
+    Raises:
+        ValueError: for the first trade (in ``result.trades`` order) that overlaps a flagged
+            halt bar or, if there is none, for the first that overlaps a missing price bar.
+            A trade overlaps when a flagged bar lies at or after its entry bar and at or
+            before its exit bar.
+    """
+    if halt_positions:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = halt_positions.get(int(halt_columns[int(col)]))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"halt during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
+    if gaps:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = gaps.get(int(col))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"missing price bar during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
 
 
 def _validate_intraday_stops(
