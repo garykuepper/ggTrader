@@ -20,7 +20,10 @@ def encode(value: object) -> object:
     if isinstance(value, pd.Timestamp):
         return {"$type": "pandas.Timestamp", "v": value.isoformat()}
     if isinstance(value, np.generic):
-        return {"$type": f"numpy.{type(value).__name__}", "v": encode(value.item())}
+        item = value.item()
+        if isinstance(item, np.generic):
+            raise TypeError(f"Unsupported type: {type(value).__name__}")
+        return {"$type": f"numpy.{type(value).__name__}", "v": encode(item)}
     if value is None or type(value) in (bool, int, str):
         return value
     if type(value) is float:
@@ -77,6 +80,21 @@ def compare(actual: object, golden: object, *, rtol: float, exact: bool) -> list
         elif isinstance(a, dict):
             if list(a) != list(b):
                 differences.append(path or "$")
+            elif list(a) == ["$dict"]:
+                left, right = a["$dict"], b["$dict"]
+                if len(left) != len(right):
+                    differences.append(path or "$")
+                for i, (lp, rp) in enumerate(zip(left, right)):
+                    if lp[0] != rp[0] or type(lp[0]) is not type(rp[0]):
+                        differences.append(f"{path}.$dict[{i}]".lstrip("."))
+                    else:
+                        key = lp[0]
+                        child = (
+                            f"{path}.{key}".lstrip(".")
+                            if isinstance(key, str)
+                            else f"{path}.$dict[{i}]".lstrip(".")
+                        )
+                        walk(lp[1], rp[1], child)
             else:
                 for key in a:
                     walk(a[key], b[key], f"{path}.{key}" if path else key)
@@ -87,6 +105,9 @@ def compare(actual: object, golden: object, *, rtol: float, exact: bool) -> list
                 walk(left, right, f"{path}[{i}]")
         elif isinstance(a, float) and not exact:
             if not math.isclose(a, b, rel_tol=rtol, abs_tol=0.0):
+                differences.append(path or "$")
+        elif isinstance(a, float) and exact:
+            if a != b or math.copysign(1.0, a) != math.copysign(1.0, b):
                 differences.append(path or "$")
         elif a != b:
             differences.append(path or "$")
@@ -100,10 +121,14 @@ def check_golden(path: Path, actual: object) -> None:
     encoded = encode(actual)
     actual_text = dumps(encoded)
     if os.environ.get("GGT_REGEN_CHARACTERIZATION") == "1":
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(actual_text, encoding="utf-8")
         pytest.fail(f"regenerated {path}; review the diff and rerun")
     if not path.exists():
-        pytest.fail(f"missing {path}; regenerate with GGT_REGEN_CHARACTERIZATION=1")
+        pytest.fail(
+            f"missing {path}; regenerate with "
+            "GGT_REGEN_CHARACTERIZATION=1 scripts/run_tests.sh tests/"
+        )
     golden_text = path.read_text(encoding="utf-8")
     golden = json.loads(golden_text)
     paths = compare(

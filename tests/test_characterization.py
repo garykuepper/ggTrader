@@ -45,6 +45,17 @@ def test_compare_is_exact_on_structure_and_tolerant_on_floats():
 
 def test_compare_reports_a_path():
     assert "a[1]" in compare({"a": [1, 2]}, {"a": [1, 3]}, rtol=RTOL, exact=False)
+    assert "a[1]" in compare(encode({"a": [1, 2]}), encode({"a": [1, 3]}), rtol=RTOL, exact=False)
+
+
+def test_exact_float_comparison_distinguishes_signed_zero():
+    assert compare(-0.0, 0.0, rtol=RTOL, exact=True)
+    assert not compare(-0.0, 0.0, rtol=RTOL, exact=False)
+
+
+def test_numpy_scalar_that_cannot_convert_is_rejected():
+    with pytest.raises(TypeError, match="longdouble"):
+        encode(np.longdouble(1.5))
 
 
 def test_check_golden_regenerate_then_pass(tmp_path, monkeypatch):
@@ -56,7 +67,7 @@ def test_check_golden_regenerate_then_pass(tmp_path, monkeypatch):
         check_golden(path, {"a": [1, 2]})
     monkeypatch.delenv("GGT_REGEN_CHARACTERIZATION")
     check_golden(path, {"a": [1, 2]})
-    with pytest.raises(pytest.fail.Exception, match=r"\$dict"):
+    with pytest.raises(pytest.fail.Exception, match=r"differing paths: a\[1\]"):
         check_golden(path, {"a": [1, 3]})
 
 
