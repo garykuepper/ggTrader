@@ -16,7 +16,7 @@ from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
-from ggTrader.paper.models import SubmittedOrder
+from ggTrader.paper.models import RunResult, SubmittedOrder
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
     attach_broker_order,
@@ -740,7 +740,7 @@ class PaperTrader:
         if not market_open:
             _log.info("Market closed; skipping run")
             self._notifier.send("<b>ℹ️ Market closed</b> — no trading this run.")
-            return {"buys": [], "sells": [], "errors": []}
+            return RunResult([], [], []).as_dict()
 
         try:
             blend = generate_core_signals(
@@ -776,7 +776,7 @@ class PaperTrader:
         if late is not None:
             if not self._dry_run:
                 self._notifier.send(f"<b>⏰ Late run — no orders placed:</b> {late}")
-                return {"buys": [], "sells": [], "errors": [], "gate": "late_run"}
+                return RunResult([], [], [], gate="late_run").as_dict()
             _log.warning("dry run past the late-run cutoff (a live run would stop): %s", late)
             self._notifier.send(f"<b>⏰ DRY RUN late-run notice:</b> {late}")
 
@@ -836,7 +836,7 @@ class PaperTrader:
                     f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
                     f"no trades submitted this run."
                 )
-                return {"buys": [], "sells": [], "errors": []}
+                return RunResult([], [], []).as_dict()
 
         try:
             account = self._broker.get_account()
@@ -946,14 +946,14 @@ class PaperTrader:
             _log.warning("Could not load persisted peak: %s", exc)
             reason = "Risk history unavailable: could not read persisted peak"
             self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-            return {"buys": [], "sells": [], "errors": [reason]}
+            return RunResult([], [], [reason]).as_dict()
         if persisted_peak is not None:
             try:
                 self._risk.update_peak(persisted_peak)
             except ValueError as exc:
                 reason = f"Invalid stored risk peak: {exc}"
                 self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-                return {"buys": [], "sells": [], "errors": [reason]}
+                return RunResult([], [], [reason]).as_dict()
 
         # Check max drawdown halt BEFORE updating the peak with today's
         # value, so a real drawdown against the persisted peak is actually
@@ -967,7 +967,7 @@ class PaperTrader:
                 or portfolio_value <= 0
             ):
                 self._notifier.send(f"<b>🛑 HALTED:</b> {halt_reason}")
-                return {"buys": [], "sells": [], "errors": [halt_reason]}
+                return RunResult([], [], [halt_reason]).as_dict()
             loss_halts.append(halt_reason)
 
         if not loss_halts:
@@ -979,7 +979,7 @@ class PaperTrader:
                 _log.warning("Could not persist peak value: %s", exc)
                 reason = "Risk history unavailable: could not persist drawdown peak"
                 self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-                return {"buys": [], "sells": [], "errors": [reason]}
+                return RunResult([], [], [reason]).as_dict()
 
         # Booked equity can understate a holding whose split the broker has not applied yet,
         # so a harmless split can look like a loss. That false halt is accepted on purpose: it
@@ -989,12 +989,12 @@ class PaperTrader:
         if last_equity is None:
             reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
             self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-            return {"buys": [], "sells": [], "errors": [reason]}
+            return RunResult([], [], [reason]).as_dict()
         daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
         if daily_halted:
             if not math.isfinite(last_equity) or last_equity <= 0:
                 self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
-                return {"buys": [], "sells": [], "errors": [daily_reason]}
+                return RunResult([], [], [daily_reason]).as_dict()
             if split_corrections:
                 symbols = ", ".join(sorted(map(str, split_corrections)))
                 daily_reason += (
@@ -1529,13 +1529,13 @@ class PaperTrader:
             except Exception:
                 _log.exception("Could not send snapshot failure notice")
 
-        return {
-            "buys": executed_buys,
-            "sells": executed_sells,
-            "errors": loss_halts + errors,
-            "untradable": sorted(untradable_seen),
-            "skipped_writes": list(self.skipped_writes),
-        }
+        return RunResult(
+            executed_buys,
+            executed_sells,
+            loss_halts + errors,
+            untradable=sorted(untradable_seen),
+            skipped_writes=list(self.skipped_writes),
+        ).as_dict()
 
 
 def run_paper_trading(
