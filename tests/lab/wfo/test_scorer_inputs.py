@@ -90,10 +90,13 @@ def test_from_inputs_builds_the_same_scorer_as_the_constructor() -> None:
     wbuilt = WeightScorer.from_inputs(inp)
     assert type(wbuilt) is WeightScorer
     assert vars(wbuilt).keys() == vars(wdirect).keys()
+    assert wbuilt.mask is inp.mask
     for key, value in vars(wdirect).items():
         if isinstance(value, pd.Index):
             assert wbuilt.index.equals(value)
-        elif not isinstance(value, pd.DataFrame):
+        elif isinstance(value, pd.DataFrame):
+            assert getattr(wbuilt, key).equals(value)
+        else:
             assert getattr(wbuilt, key) == value, key
 
 
