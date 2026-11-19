@@ -8,11 +8,14 @@ Each broker startup creates a new epoch and persists a hold before serving reque
 The broker must never fork while admission is locked: close-on-exec does not close a
 lock inherited by a forked child until that child execs or exits. Corrupt prior state
 is preserved and startup refuses admission until an operator investigates it.
+The directory must remain under trusted control: metadata checks detect some changes,
+but cannot make a check and write atomic against a privileged concurrent replacement.
 """
 
 import fcntl
 import json
 import os
+import re
 import secrets
 import stat
 from collections.abc import Iterator
@@ -26,19 +29,30 @@ class AdmissionState:
     def __init__(self, directory: int, *, expected_owner: int = 0) -> None:
         self.directory = directory
         self.owner = expected_owner
-        info = os.fstat(directory)
-        if (
-            not stat.S_ISDIR(info.st_mode)
-            or info.st_uid != self.owner
-            or info.st_mode & 0o077
-            or os.get_inheritable(directory)
-        ):
-            raise PermissionError("admission directory is not private and trusted")
-        self.epoch = secrets.token_hex(32)
         self.failed = False
+        info = os.fstat(directory)
+        self.directory_id = (info.st_dev, info.st_ino)
+        self._check_directory()
+        self.epoch = secrets.token_hex(32)
         with self._lock():
             self._read(missing_ok=True)
             self._write({"epoch": self.epoch, "held": True, "job": "", "boot": ""})
+
+    def _check_directory(self) -> None:
+        try:
+            info = os.fstat(self.directory)
+            if (
+                not stat.S_ISDIR(info.st_mode)
+                or info.st_uid != self.owner
+                or info.st_mode & 0o077
+                or info.st_nlink == 0
+                or (info.st_dev, info.st_ino) != self.directory_id
+                or os.get_inheritable(self.directory)
+            ):
+                raise PermissionError("admission directory is not private and trusted")
+        except BaseException:
+            self.failed = True
+            raise
 
     def _check_file(self, fd: int) -> None:
         info = os.fstat(fd)
@@ -51,10 +65,9 @@ class AdmissionState:
             raise PermissionError("untrusted admission state file")
 
     @contextmanager
-    def _lock(self) -> Iterator[None]:
+    def _lock(self) -> Iterator[int]:
         try:
-            if os.get_inheritable(self.directory):
-                raise PermissionError("admission directory is inheritable")
+            self._check_directory()
             fd = os.open(
                 "admission.lock",
                 os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK,
@@ -72,13 +85,14 @@ class AdmissionState:
             except BaseException:
                 self.failed = True
                 raise
-            yield
+            yield fd
             self._check_lock(fd)
         finally:
             os.close(fd)
 
     def _check_lock(self, fd: int) -> None:
         try:
+            self._check_directory()
             self._check_file(fd)
             held = os.fstat(fd)
             current = os.stat("admission.lock", dir_fd=self.directory, follow_symlinks=False)
@@ -112,17 +126,29 @@ class AdmissionState:
         if len(data) > 4096:
             raise ValueError("admission state too large")
         state = json.loads(data)
+        self._validate(state)
+        return state
+
+    @staticmethod
+    def _validate(state: Any) -> None:
         if (
             not isinstance(state, dict)
             or set(state) != {"epoch", "held", "job", "boot"}
             or not all(isinstance(state[key], str) for key in ("epoch", "job", "boot"))
             or not isinstance(state["held"], bool)
+            or re.fullmatch(r"[0-9a-f]{64}", state["epoch"]) is None
+            or len(state["job"]) > 512
+            or len(state["boot"]) > 512
+            or bool(state["job"]) != bool(state["boot"])
+            or (not state["held"] and not state["job"])
+            or len(json.dumps(state).encode("utf-8")) > 4096
         ):
             raise ValueError("invalid admission state")
-        return state
 
     def _write(self, state: dict[str, Any]) -> None:
         try:
+            self._check_directory()
+            self._validate(state)
             self._write_state(state)
         except BaseException:
             self.failed = True
@@ -187,13 +213,16 @@ class AdmissionState:
     @contextmanager
     def admission(self, job: str, boot: str) -> Iterator[None]:
         """Hold the admission lock while the caller validates and launches a job."""
-        with self._lock():
+        with self._lock() as lock_fd:
             state = self._current()
             if state["held"] or state["job"] != job or state["boot"] != boot:
                 raise PermissionError("job is held or identity does not match")
             try:
                 yield
             except BaseException:
+                self._check_lock(lock_fd)
+                state = self._current()
+                self._check_lock(lock_fd)
                 state["held"] = True
                 self._write(state)
                 raise

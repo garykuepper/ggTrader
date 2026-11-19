@@ -1,6 +1,7 @@
 """Filesystem fixture tests for the offline admission store."""
 
 import fcntl
+import json
 import os
 import subprocess
 import sys
@@ -270,4 +271,77 @@ def test_lock_open_failure_is_latched(directory: int, tmp_path: Path) -> None:
     lock.touch(mode=0o600)
     with pytest.raises(PermissionError):
         with state.admission("job-a", "boot-a"):
+            pass
+
+
+def test_exception_cannot_overwrite_replacement_epoch(directory: int, tmp_path: Path) -> None:
+    first = store(directory)
+    first.release("job-a", "boot-a")
+    with pytest.raises(PermissionError):
+        with first.admission("job-a", "boot-a"):
+            (tmp_path / "admission.lock").unlink()
+            second = store(directory)
+            second.release("job-b", "boot-a")
+            raise RuntimeError("launch failed")
+    with second.admission("job-b", "boot-a"):
+        pass
+
+
+def test_exception_cannot_overwrite_changed_epoch_with_same_lock(
+    directory: int, tmp_path: Path
+) -> None:
+    first = store(directory)
+    first.release("job-a", "boot-a")
+    path = tmp_path / "admission.json"
+    with pytest.raises(PermissionError):
+        with first.admission("job-a", "boot-a"):
+            data = json.loads(path.read_text())
+            data["epoch"] = "a" * 64
+            path.write_text(json.dumps(data))
+            raise RuntimeError("launch failed")
+    assert json.loads(path.read_text())["epoch"] == "a" * 64
+
+
+def test_directory_becoming_public_disables_instance(directory: int, tmp_path: Path) -> None:
+    state = store(directory)
+    state.release("job-a", "boot-a")
+    tmp_path.chmod(0o777)
+    try:
+        with pytest.raises(PermissionError):
+            state.hold()
+    finally:
+        tmp_path.chmod(0o700)
+    with pytest.raises(PermissionError):
+        with state.admission("job-a", "boot-a"):
+            pass
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"epoch": ""},
+        {"epoch": "x" * 64},
+        {"held": False, "job": "", "boot": ""},
+        {"held": True, "job": "job-a", "boot": ""},
+        {"held": False, "job": "x" * 513, "boot": "boot-a"},
+    ],
+)
+def test_invalid_serialized_identity_is_rejected(
+    directory: int, tmp_path: Path, changes: dict[str, object]
+) -> None:
+    state = store(directory)
+    path = tmp_path / "admission.json"
+    data = json.loads(path.read_text())
+    data.update(changes)
+    path.write_text(json.dumps(data))
+    with pytest.raises((ValueError, PermissionError)):
+        state.hold()
+
+
+def test_oversized_serialized_identity_cannot_be_released(directory: int) -> None:
+    state = store(directory)
+    with pytest.raises(ValueError):
+        state.release("🙂" * 512, "🙂" * 512)
+    with pytest.raises(PermissionError):
+        with state.admission("🙂" * 512, "🙂" * 512):
             pass
