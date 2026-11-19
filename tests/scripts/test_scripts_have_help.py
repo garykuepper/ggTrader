@@ -55,6 +55,12 @@ DELEGATES = {
     ),
 }
 
+#: Import-only library modules in ``scripts/``: imported by a sibling script (the whole-job
+#: broker and driver, which are scanned), never run, so they get no fake CLI. Each is checked
+#: instead to have no main guard and to do no work at import time. Adding a guard to one means
+#: it became a command: remove it from this set so the parser checks apply.
+LIBRARIES = frozenset({"scripts/whole_job_admission.py", "scripts/whole_job_prototype.py"})
+
 #: Calls a module top level may make: constants, paths, regexes, loggers, sys.path set-up.
 MODULE_CALLS = frozenset(
     {
@@ -95,8 +101,9 @@ def _has_main_guard(path: Path) -> bool:
 
 
 def scanned_scripts(root: Path) -> list[Path]:
-    """``scripts/*.py`` and the study drivers: ``code/*.py`` and ``_lib/*.py`` with a main guard."""
+    """``scripts/*.py`` but ``LIBRARIES``, and study drivers: ``code/``, ``_lib/`` with a guard."""
     live = [*root.joinpath("scripts").glob("*.py"), *root.joinpath("scripts/one_off").glob("*.py")]
+    live = [p for p in live if p.relative_to(root).as_posix() not in LIBRARIES]
     study = [*root.glob("research/*/*/code/*.py"), *root.glob("research/*/_lib/*.py")]
     return sorted([*live, *(p for p in study if _has_main_guard(p))])
 
@@ -152,11 +159,9 @@ def _first_work_before_parse(
     return "<no parse_args call in the entry function>"
 
 
-def _static_problems(path: Path) -> list[str]:
-    tree = ast.parse(path.read_text())
+def _module_level_work(tree: ast.Module) -> list[str]:
+    """Top-level calls outside ``MODULE_CALLS`` (work that would run on import)."""
     problems: list[str] = []
-    if not any(_is_main_guard(n) for n in tree.body):
-        return ['no `if __name__ == "__main__":` guard']
     for node in tree.body:
         if isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.ClassDef)):
             continue
@@ -165,6 +170,14 @@ def _static_problems(path: Path) -> list[str]:
         ):
             continue
         problems += [f"module-level call {c}" for c in _calls(node) if c not in MODULE_CALLS]
+    return problems
+
+
+def _static_problems(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text())
+    if not any(_is_main_guard(n) for n in tree.body):
+        return ['no `if __name__ == "__main__":` guard']
+    problems = _module_level_work(tree)
     rel = path.relative_to(ROOT).as_posix()
     if rel in DELEGATES:
         lib_path, entry_name = DELEGATES[rel]
@@ -197,6 +210,27 @@ def _ids(paths: list[Path]) -> list[str]:
 def test_script_has_a_parser_a_main_guard_and_parses_first(script: Path) -> None:
     problems = _static_problems(script)
     assert not problems, f"{script.relative_to(ROOT)}: {problems}"
+
+
+@pytest.mark.parametrize("library", sorted(LIBRARIES))
+def test_script_library_is_import_only(library: str) -> None:
+    """A ``LIBRARIES`` module exists, is not a command, and does no work when imported."""
+    path = ROOT / library
+    assert path.is_file(), f"{library}: listed in LIBRARIES but missing"
+    tree = ast.parse(path.read_text())
+    assert not any(_is_main_guard(n) for n in tree.body), (
+        f"{library} has a main guard: it is a command, remove it from LIBRARIES"
+    )
+    assert _module_level_work(tree) == [], f"{library}: {_module_level_work(tree)}"
+
+
+def test_library_exemption_skips_only_listed_modules(tmp_path: Path) -> None:
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    for name in ("whole_job_admission.py", "whole_job_prototype.py", "other.py"):
+        (scripts / name).write_text("X = 1\n")
+    found = [p.relative_to(tmp_path).as_posix() for p in scanned_scripts(tmp_path)]
+    assert found == ["scripts/other.py"]
 
 
 def test_every_moved_script_is_still_scanned() -> None:
