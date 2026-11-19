@@ -164,7 +164,7 @@ def test_transcripts_stable_across_hash_seeds() -> None:
 
 
 def test_every_scenario_has_a_golden() -> None:
-    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 95
+    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 96
     missing = sorted(name for name in SCENARIOS if not _golden_path(name).exists())
     assert not missing, f"scenarios without a golden: {missing}"
 
@@ -792,6 +792,12 @@ def _check_poll_clock_failure(t: dict) -> None:
     assert t["raised"] is None and t["result"]["sells"] == ["AAPL"]
 
 
+def _check_total_pnl_two_bases(t: dict) -> None:
+    assert any(
+        "+20.15% of prior snapshot, +25.07% of starting capital" in message for message in _sends(t)
+    )
+
+
 def _check_poll_transient_lookup_error(t: dict) -> None:
     polls = _calls(t, "broker.get_order")
     assert [c["raised"] for c in polls] == ["RuntimeError: blip", None]
@@ -1071,6 +1077,7 @@ BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
         _check_unassessable_notice_fails_with_pending
     ),
     "poll_clock_failure": _check_poll_clock_failure,
+    "total_pnl_two_bases": _check_total_pnl_two_bases,
     "poll_transient_lookup_error": _check_poll_transient_lookup_error,
     "poll_final_lookup_fails": _check_poll_final_lookup_fails,
     "poll_market_closed_short_wait": _check_poll_market_closed,
@@ -1117,6 +1124,7 @@ BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
 #: (settled, unresolved) intent rows each golden ends with: the `Intents:` line of its docstring.
 EXPECTED_INTENT_ROWS: dict[str, tuple[int, int]] = {
     "plain_buys_and_sells": (3, 0),
+    "total_pnl_two_bases": (3, 0),
     "untradable_holding": (1, 0),
     "untradable_candidate": (1, 0),
     "split_correction": (1, 0),

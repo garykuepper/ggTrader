@@ -77,6 +77,7 @@ class TelegramNotifier:
         dividend_total: float | None = None,
         new_dividend_accruals: list[dict] | None = None,
         errors: list[str] | None = None,
+        starting_capital: float | None = None,
     ) -> bool:
         """`portfolio_value`/`positions`/`total_pnl`/`unrealized_pnl` are all
         expected to already be split-corrected AND dividend-accrual-adjusted
@@ -150,6 +151,17 @@ class TelegramNotifier:
         if total_pnl is not None:
             total_pct = (total_pnl / day_start * 100) if day_start and day_start > 0 else 0.0
             total_pct_text = f" ({total_pct:+.2f}%)" if day_start is not None else ""
+            starting_capital = _pnl_number(starting_capital)
+            if starting_capital is not None:
+                capital_pct = (
+                    f"{total_pnl / starting_capital * 100:+.2f}%" if starting_capital > 0 else "n/a"
+                )
+                parts = []
+                if day_start is not None:
+                    prior_pct = f"{total_pct:+.2f}%" if day_start > 0 else "n/a"
+                    parts.append(f"{prior_pct} of prior snapshot")
+                parts.append(f"{capital_pct} of starting capital")
+                total_pct_text = f" ({', '.join(parts)})"
             unrealized_pnl = _pnl_number(unrealized_pnl)
             if unrealized_pnl is None:
                 detail = "realized: unavailable, unrealized: unavailable"

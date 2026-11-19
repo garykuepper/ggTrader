@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 def _make_notifier(**env_overrides):
     env = {
@@ -97,6 +99,44 @@ class TestTradeAlert:
 
 
 class TestDailySummary:
+    @pytest.mark.parametrize(
+        ("daily_pnl", "capital", "expected"),
+        [
+            (1234.56, 126000, "(+1.23% of prior snapshot, +0.98% of starting capital)"),
+            (None, 126000, "(+0.98% of starting capital)"),
+            (1234.56, 0, "(+1.23% of prior snapshot, n/a of starting capital)"),
+            (1234.56, -5, "(+1.23% of prior snapshot, n/a of starting capital)"),
+            (1234.56, None, "(+1.23%)"),
+            (1234.56, float("nan"), "(+1.23%)"),
+        ],
+    )
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_total_line_with_starting_capital(self, mock_post, daily_pnl, capital, expected):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(101234.56, daily_pnl, {}, total_pnl=1234.56, starting_capital=capital)
+        assert expected in mock_post.call_args[1]["json"]["text"]
+
+    @pytest.mark.parametrize("previous", [0, -5])
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_total_line_with_nonpositive_prior_snapshot(self, mock_post, previous):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(
+            101234.56, 101234.56 - previous, {}, total_pnl=1234.56, starting_capital=126000
+        )
+        assert (
+            "(n/a of prior snapshot, +0.98% of starting capital)"
+            in (mock_post.call_args[1]["json"]["text"])
+        )
+
+    @patch("ggTrader.paper.notifier.requests.post")
+    def test_total_line_keeps_old_caller_format(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        n = _make_notifier()
+        n.daily_summary(101234.56, 1234.56, {}, total_pnl=1234.56)
+        assert "(+1.23%)" in mock_post.call_args[1]["json"]["text"]
+
     def test_dry_run_summary_logs_unavailable_value(self, caplog):
         import logging
 

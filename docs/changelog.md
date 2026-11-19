@@ -9,6 +9,8 @@
   selected lint rules, and logged previously silent fallback exceptions at debug level.
 - Verified the frozen evidence pins (4 moved and 18 historical matches); the phase gate matched
   both oracle and test baselines. These changes do not authorize deployment or trader restart.
+- Paper Telegram summaries now label total P&L percentages against both the prior snapshot and
+  starting capital when available; invalid non-positive bases are shown as unavailable.
 
 ## 2026-11-18 (test-run safety after the out-of-memory incident)
 

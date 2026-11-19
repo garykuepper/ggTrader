@@ -218,6 +218,7 @@
           }
         ],
         "split_corrections": {},
+        "starting_capital": null,
         "total_pnl": null,
         "unrealized_pnl": 365.22
       },

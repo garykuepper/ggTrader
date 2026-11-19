@@ -215,6 +215,7 @@
         ],
         "new_dividend_accruals": [],
         "split_corrections": {},
+        "starting_capital": null,
         "total_pnl": null,
         "unrealized_pnl": 0.0
       },

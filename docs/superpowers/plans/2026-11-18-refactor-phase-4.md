@@ -9,7 +9,7 @@ Phase 5 needs and proves each one inert.
 
 **Architecture:** Same method as Phases 0-3: the safety nets are written first (Tasks 31-33),
 then each slice is one small commit that must reproduce the nets exactly. The nets already in the
-worktree are the 95 transcript goldens, the 28-test characterization of `fetch_stock_ohlcv`, the
+worktree are the 96 transcript goldens, the 28-test characterization of `fetch_stock_ohlcv`, the
 live golden, the connection guard, the study-surface test and the import-direction rules. Phase 4
 adds two nets they cannot supply: a recording-engine golden of every SQL statement and bind
 dictionary in `paper/persist.py`, and pins for the tuple-index reads, the result-dict key order
@@ -45,7 +45,7 @@ the worktree before it was applied. Blocking: `persist_function_names()` returns
 `paper_run_lock` (Task 32 asserts 26, and separately that the ordinary wrapping covers the other 25);
 the SQL reference golden is immutable and compared through one explicit `conn`-dropping normalization
 (Task 38); the chain-test hash gets one authorized, mechanical re-record in Task 40 (the hash count is
-99, not 100: 95 goldens plus `harness.py`, `scenarios.py`, `test_trader_transcripts.py` and the chain
+100: 96 goldens plus `harness.py`, `scenarios.py`, `test_trader_transcripts.py` and the chain
 test); the parallel worktrees are created after Task 36's commit; the in-memory-ledger test keeps the
 non-ledger collaborator patches and the Phase 5 claim is narrowed; `init_paper_schema` has eleven
 statements. Important: modeled recorder events and execution-failure cases for every mutator,
@@ -181,17 +181,17 @@ every extraction shows its diff with `--color-moved`. What Phase 4 adds:
   Phase 0-2's gate proved it unchanged). *Test-outcome baseline:* `$E/p4base-core.xml` and
   `$E/p4base-studies.xml`, recorded in Task 30 on `BASE4`.
 - **Hash records** (Task 30 Step 5; all under `$E`, all checked by gate step 2). `p4-fixed.sha256` holds
-  the 95 transcript goldens and `harness.py` (96 lines) and is **never re-recorded**; Task 33 appends
+  the 96 transcript goldens and `harness.py` (97 lines) and is **never re-recorded**; Task 33 appends
   `persist_sql.json` and the goldens Task 32 added, and nothing else changes it. `p4-pins.sha256` holds
   `scenarios.py`, `test_trader_transcripts.py` and `tests/lab/test_fetch_stock_ohlcv_chain.py` (3 lines);
   Task 33 re-records the first two (Task 32 edits `scenarios.py` additively) and Task 40 re-records
-  the third (the mechanical rename of Deviation 8), each with its diff shown. Total at Task 30: 99 lines
-  (95 goldens plus 4 Python files), not 100.
+  the third (the mechanical rename of Deviation 8), each with its diff shown. Total at Task 30: 100 lines
+  (96 goldens plus 4 Python files).
 - **The nets, by name** (used by every task below; the exact commands are in "The task gate"):
 
 | Net | What it proves | Where |
 |---|---|---|
-| **T** transcripts | 95 scenarios of `PaperTrader.run`: every broker, persist, notifier, signal, lock, clock and uuid call with deep-copied arguments, the rendered Telegram text, the result dict and the raise | `tests/paper/test_trader_transcripts.py`, `tests/paper/golden/trader_transcripts/` (95 files), harness in `tests/paper/transcript/` |
+| **T** transcripts | 96 scenarios of `PaperTrader.run`: every broker, persist, notifier, signal, lock, clock and uuid call with deep-copied arguments, the rendered Telegram text, the result dict and the raise | `tests/paper/test_trader_transcripts.py`, `tests/paper/golden/trader_transcripts/` (96 files), harness in `tests/paper/transcript/` |
 | **C** chain characterization | 28 tests of `fetch_stock_ohlcv`: every provider request, every persisted frame and its order, every printed line, the two cache routes | `tests/lab/test_fetch_stock_ohlcv_chain.py` |
 | **G** live golden | the live signal path over 120 sessions on the frozen tape (needs `data/snapshots/ohlcv_20261106.parquet`); it patches `signal_runner.fetch_stock_ohlcv` | `tests/paper/test_live_golden.py` |
 | **N** connection guard | any socket, psycopg2, hostname or curl_cffi attempt fails the test, even if the code swallows it | `tests/netguard.py`, `tests/paper/conftest.py`, applied by `test_fetch_stock_ohlcv_chain.py` |
@@ -232,7 +232,7 @@ every extraction shows its diff with `--color-moved`. What Phase 4 adds:
     (`test_trader_transcripts.py:1252`, a grep of `paper/*.py` for variable names).
 
   **Rule for every task below that moves or renames anything in the trader module:** if the
-  harness needs a change, make it in the same commit and show the 95 goldens byte-identical with
+  harness needs a change, make it in the same commit and show the 96 goldens byte-identical with
   `sha256sum -c $E/p4-fixed.sha256`. The expected harness diff for Tasks
   34-43 is *none*; a needed harness change is reported as a finding before it is made.
 - **Names that must stay importable** (S and the existing tests check these):
@@ -270,7 +270,7 @@ every extraction shows its diff with `--color-moved`. What Phase 4 adds:
 1. `.venv/bin/ruff check . && .venv/bin/ruff format --check .` clean.
 2. Net T and the hash records: `./offline.sh scripts/run_tests.sh tests/paper/test_trader_transcripts.py`
    passes with no golden regenerated, then `sha256sum -c $E/p4-fixed.sha256 $E/p4-pins.sha256` prints
-   OK for every line (the 95 goldens and `harness.py` are in the first file and never change), and
+   OK for every line (the 96 goldens and `harness.py` are in the first file and never change), and
    `git diff --stat -- tests/paper/transcript/harness.py tests/paper/golden` is empty (apart from
    Task 32's additions, which Task 33 appends to the hash records).
 3. The neighbourhood run: `./offline.sh scripts/run_tests.sh tests/paper tests/lab tests/data tests/utils`.
@@ -361,9 +361,9 @@ Each was checked against the code. None changes the design's intent.
    public method, so `tests/lab/test_fetch_stock_ohlcv_chain.py` (the `_cache_to_db` mocks),
    `tests/paper/test_signal_runner.py:342` and the characterization helper rename one token. Task 40
    does the rename before the chain is built, so Task 42 is held to an unedited net.
-9. **The design counts 86 transcript scenarios; there are 95** (Phase 0-2 added nine after review,
-   `tests/paper/transcript/scenarios.py:24`, `EXPECTED_SCENARIO_COUNT = 95`). Task 32 adds a few
-   more; Task 33 re-records the count and the pin hashes (the 95 original goldens stay in `p4-fixed.sha256`).
+9. **The design counts 86 transcript scenarios; there are 96** (nine added after review and one for Telegram,
+   `tests/paper/transcript/scenarios.py:24`, `EXPECTED_SCENARIO_COUNT = 96`). Task 32 adds a few
+   more; Task 33 re-records the count and the pin hashes (the 96 original goldens stay in `p4-fixed.sha256`).
 10. **`paper/` keeps one import from `lab.data`.** The design says `paper/` imports "its data path"
     from `data/live`, not `lab`. `overlay.py:18` also imports the config constant `STOCK_BASE_CONFIG`
     from `lab.data`; that is not a data path and stays. Task 42's rule allows exactly that name.
@@ -381,7 +381,7 @@ Each was checked against the code. None changes the design's intent.
    cast, `commit` dropped from one function, `begin()` swapped for `connect()` in one, a tuple
    index read changed at each of the ten sites, a result key reordered, and a float setting read at
    the wrong time.
-2. **The string-patch contract.** The about 440 patches in `test_trader.py` and 95 goldens must pass
+2. **The string-patch contract.** The about 440 patches in `test_trader.py` and 96 goldens must pass
    with no edit. A name patched *after* the trader is constructed (many tests) must still win:
    `ModuleLedger` resolves the name on the `trader` module at each call. Task 37 tests this for all
    26 names, including a patch applied between two calls.
@@ -480,13 +480,13 @@ Each was checked against the code. None changes the design's intent.
   numbers) is a finding to report before any task starts.
 - [ ] **Step 5: The hash records** (Global Constraints, "Hash records").
   ```
-  ls tests/paper/golden/trader_transcripts/*.json | wc -l          # 95
+  ls tests/paper/golden/trader_transcripts/*.json | wc -l          # 96
   sha256sum tests/paper/golden/trader_transcripts/*.json tests/paper/transcript/harness.py \
-    > $E/p4-fixed.sha256                                            # 96 lines
+    > $E/p4-fixed.sha256                                            # 97 lines
   sha256sum tests/paper/transcript/scenarios.py tests/paper/test_trader_transcripts.py \
-    tests/lab/test_fetch_stock_ohlcv_chain.py > $E/p4-pins.sha256   # 3 lines; 99 in all
+    tests/lab/test_fetch_stock_ohlcv_chain.py > $E/p4-pins.sha256   # 3 lines; 100 in all
   ```
-  (95 JSON files plus four Python files make 99, not 100; the builder confirms the two counts.)
+  (96 JSON files plus four Python files make 100; the builder confirms the two counts.)
   and record `./offline.sh .venv/bin/python -c "from tests.paper.transcript.harness import persist_function_names as f; print(len(f()), f())"`
   (expected: **26** names: the 25 listed in Global Constraints plus `paper_run_lock`, which the
   patching loop skips and replaces separately).
@@ -619,7 +619,7 @@ stores `{"cases": {name: record}}` through `json.dumps(..., indent=1, sort_keys=
   `tests/paper/golden/trader_transcripts/<new>.json`. `EXPECTED_SCENARIO_COUNT` in `scenarios.py:24`
   rises by the number added. No existing scenario, golden or harness line changes.
 
-**What already pins this, so it is not repeated:** the 95 goldens pin the `result` dict content
+**What already pins this, so it is not repeated:** the 96 goldens pin the `result` dict content
 (`to_json` sorts keys, so **not** the key order) and every call. The scenarios already cover the
 three result shapes' content, the `poll_*` family and `invalid_catastrophe_threshold`.
 
@@ -659,13 +659,13 @@ three result shapes' content, the `poll_*` family and `invalid_catastrophe_thres
     `_poll_orders` (`trader.py:460-469`) is built from `item[2]`, `item[1]` and `item[3]` for a SELL
     and for a BUY (the `notional` is `item[3]` only for a BUY).
   Add only the scenarios whose behavior no existing golden shows; the builder checks each name
-  against the 95 and records the decision in the commit message.
+  against the 96 and records the decision in the commit message.
 - Each new scenario gets a `test_golden_shows_scenario_behavior` entry like the others.
 
 - [ ] **Step 1:** Write the tests and scenarios.
 - [ ] **Step 2:** Regenerate once (`GGT_REGEN_TRANSCRIPTS=1`, expected to fail) and rerun; the only
   new or changed files under `tests/paper/golden/` are the added scenarios' goldens (`git status`
-  confirms; the 95 existing files are untouched). Run the determinism test across two hash seeds
+  confirms; the 96 existing files are untouched). Run the determinism test across two hash seeds
   (the existing `test_transcripts_stable_across_hash_seeds`).
 - [ ] **Step 3: Tuple-index mutation check (not committed).** For each of the ten sites of risk 9,
   change the index or attribute read (for example `item[2]` to `item[1]` at `trader.py:462`, `o[1]`
@@ -1063,7 +1063,7 @@ First merge `refactor/phase-4-ledger` into `refactor/phase-4` (the chain touches
     edit) and patches **no persist function**. What it proves is ledger-independent testing: the persist
     patches are no longer needed, not that the whole trader runs without a patch.
 - [ ] **Step 2 to 4:** FAIL, implement, PASS. The about 440 existing string patches pass unchanged (the
-  neighbourhood run), as do all 95 goldens byte for byte.
+  neighbourhood run), as do all 96 goldens byte for byte.
 - [ ] **Step 5: Mutation check (not committed):** in `ModuleLedger.__getattr__`, cache the looked-up
   function; confirm `test_string_patch_after_construction_still_wins` and a transcript fail; revert.
 - [ ] **Step 6:** The task gate, oracle label `t39`.
@@ -1100,7 +1100,7 @@ and venue); failures are logged and swallowed, as `_cache_to_db` always did." Bo
   in `$E/p4-pins.sha256` (Task 30 Step 5), so the rename makes the gate's hash check fail for that one
   line. Re-record **only that line** (`sha256sum tests/lab/test_fetch_stock_ohlcv_chain.py` replacing
   its entry), after `git diff` of the file shows exclusively the nine `_cache_to_db` to `persist` token
-  changes. The 95 goldens and `harness.py` in `$E/p4-fixed.sha256` and the other two lines of
+  changes. The 96 goldens and `harness.py` in `$E/p4-fixed.sha256` and the other two lines of
   `$E/p4-pins.sha256` are untouched, and `sha256sum -c` on both files must still be all OK afterwards.
 - [ ] **Step 4:** Net C (28 tests, now through `persist`), `tests/paper/test_signal_runner.py`,
   `tests/data/test_cached_yfinance_loader.py` pass; the task gate; V after: counts unchanged, or the
@@ -1303,7 +1303,7 @@ error was; the values themselves come from the snapshot taken at the top of `run
 - [ ] **Step 2 to 4:** FAIL, implement, PASS. The scenarios added in Task 32 (`sweep_min_clip_invalid_fail_soft`,
   `sweep_buy_trigger_invalid_fail_soft`, `sweep_reserve_invalid_ends_run`, `sweep_reserve_invalid_but_sweep_off`,
   `untradable_symbols_from_env`, `catastrophe_enabled_pct_blank`, `invalid_catastrophe_threshold`) and the
-  existing 95 pass byte-identical; `ENV_VARS` and its grep test are unchanged.
+  existing 96 pass byte-identical; `ENV_VARS` and its grep test are unchanged.
 - [ ] **Step 5: Mutation check (not committed):** make `from_env` raise on a bad `SWEEP_MIN_CLIP_USD`;
   confirm `sweep_min_clip_invalid_fail_soft` fails; read `reserve_pct()` once at the top; confirm a
   transcript fails; revert.
@@ -1317,7 +1317,7 @@ error was; the values themselves come from the snapshot taken at the top of `run
   `ledger.py`, `config.py`, `data/live/fetch_chain.py`, the ledger implementations and the string-patch
   adapter, and say which is temporary)
 - Modify: `docs/changelog.md` (one entry: what moved, "no order, SQL statement, Telegram line or price
-  row changed", the 95 plus added scenarios, the SQL golden, the one dropped bind key, the three renamed
+  row changed", the 96 plus added scenarios, the SQL golden, the one dropped bind key, the three renamed
   test tokens; the entry is merged with Phase 3's if both landed)
 - Modify: `docs/cli_reference.md` only if `ggt paper` output changed (it must not)
 
@@ -1376,7 +1376,7 @@ left alone.
 - The test-outcome check passes against `p4base-core.xml,p4base-studies.xml`, with the tests of Tasks
   31, 32, 34-43 named in `--must-pass`, and the real-tape and live-golden tests passing, not skipping.
 - The oracle check (label `phase4`) exits 0 against `$E/baseline`.
-- `sha256sum -c $E/p4-fixed.sha256 $E/p4-pins.sha256` is all OK (the 95 original goldens and
+- `sha256sum -c $E/p4-fixed.sha256 $E/p4-pins.sha256` is all OK (the 96 original goldens and
   `harness.py` unchanged since Task 30).
 - The pin check (L and K) passes in three processes; V passes with the counts in `.github/workflows/ci.yml`.
 - `ruff check .` and `ruff format --check .` are clean; `tests/utils/test_import_rules.py` shows the same

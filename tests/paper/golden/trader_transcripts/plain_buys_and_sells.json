@@ -576,6 +576,7 @@
         "errors": [],
         "new_dividend_accruals": [],
         "split_corrections": {},
+        "starting_capital": 100000.0,
         "total_pnl": 53.0,
         "unrealized_pnl": 53.0
       },
@@ -584,7 +585,7 @@
     },
     {
       "args": [
-        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,053.00</b>\nChange since prior snapshot: 🟢 $+553.00 (+0.56%)\nTotal P&L: $+53.00 (+0.05%) — realized: $+0.00, unrealized: $+53.00\nPositions: 3\n\n  NVDA: 33 @ $102.00 — $+66.00 (+2.00%)\n  KO: 20 @ $61.00 — $+20.00 (+1.67%)\n  GOOGL: 33 @ $99.00 — $-33.00 (-1.00%)"
+        "<b>📈 Paper Portfolio Summary</b>\nValue: <b>$100,053.00</b>\nChange since prior snapshot: 🟢 $+553.00 (+0.56%)\nTotal P&L: $+53.00 (+0.05% of prior snapshot, +0.05% of starting capital) — realized: $+0.00, unrealized: $+53.00\nPositions: 3\n\n  NVDA: 33 @ $102.00 — $+66.00 (+2.00%)\n  KO: 20 @ $61.00 — $+20.00 (+1.67%)\n  GOOGL: 33 @ $99.00 — $-33.00 (-1.00%)"
       ],
       "kwargs": {},
       "raised": null,

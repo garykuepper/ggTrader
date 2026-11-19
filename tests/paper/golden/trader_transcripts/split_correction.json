@@ -360,6 +360,7 @@
         "split_corrections": {
           "MNST": 2.0
         },
+        "starting_capital": 100000.0,
         "total_pnl": 0.0,
         "unrealized_pnl": 365.22
       },
@@ -368,7 +369,7 @@
     },
     {
       "args": [
-        "<b>📈 Paper Portfolio Summary</b>\n<b>⚠️ Split correction applied:</b> MNST 2x — the broker never applied this split to the account; figures below are split-adjusted.\nBooked equity (broker, uncorrected): $100,000.00 | Split-adjusted equity: $100,000.00\nValue: <b>$100,000.00</b>\nChange since prior snapshot: 🟢 $+1,000.00 (+1.01%)\nTotal P&L: $+0.00 (+0.00%) — realized: $-365.22, unrealized: $+365.22\nPositions: 1\n\n  VZ: 77.0500 @ $48.59 — $+365.22 (+10.81%)"
+        "<b>📈 Paper Portfolio Summary</b>\n<b>⚠️ Split correction applied:</b> MNST 2x — the broker never applied this split to the account; figures below are split-adjusted.\nBooked equity (broker, uncorrected): $100,000.00 | Split-adjusted equity: $100,000.00\nValue: <b>$100,000.00</b>\nChange since prior snapshot: 🟢 $+1,000.00 (+1.01%)\nTotal P&L: $+0.00 (+0.00% of prior snapshot, +0.00% of starting capital) — realized: $-365.22, unrealized: $+365.22\nPositions: 1\n\n  VZ: 77.0500 @ $48.59 — $+365.22 (+10.81%)"
       ],
       "kwargs": {},
       "raised": null,

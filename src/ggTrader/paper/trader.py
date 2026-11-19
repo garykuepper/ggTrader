@@ -1504,6 +1504,7 @@ class PaperTrader:
             dividend_total=dividend_info["total"],
             new_dividend_accruals=dividend_info["new_accruals"],
             errors=loss_halts + errors,
+            starting_capital=starting_capital,
         )
         self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
 

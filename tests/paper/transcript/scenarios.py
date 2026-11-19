@@ -21,7 +21,7 @@ from tests.paper.transcript.harness import PT, Scenario, Seq
 FIXTURE_SPEC = "fixture:sp500_v1_2026-06-02"
 
 #: How many scenarios the suite records: the 38 of the first plan, then the follow-up rounds.
-EXPECTED_SCENARIO_COUNT = 95
+EXPECTED_SCENARIO_COUNT = 96
 
 SCENARIOS: dict[str, Scenario] = {}
 
@@ -185,6 +185,17 @@ def plain_buys_and_sells() -> dict:
             ],
         ),
     )
+
+
+@scenario
+def total_pnl_two_bases() -> dict:
+    """A $20,053 total is +20.15% of prior snapshot and +25.07% of capital.
+
+    Intents: 3 settled, none unresolved.
+    """
+    result = plain_buys_and_sells()
+    result["persist"]["get_earliest_snapshot"] = 80_000.0
+    return result
 
 
 @scenario

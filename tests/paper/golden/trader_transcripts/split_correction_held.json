@@ -356,6 +356,7 @@
         "split_corrections": {
           "MNST": 2.0
         },
+        "starting_capital": null,
         "total_pnl": null,
         "unrealized_pnl": 133.5138076292003
       },

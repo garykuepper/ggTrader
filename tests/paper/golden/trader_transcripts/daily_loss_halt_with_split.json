@@ -223,6 +223,7 @@
         "split_corrections": {
           "AAPL": 2.0
         },
+        "starting_capital": null,
         "total_pnl": null,
         "unrealized_pnl": 5000.0
       },
