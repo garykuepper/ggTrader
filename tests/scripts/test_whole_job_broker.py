@@ -842,6 +842,24 @@ def test_events_read_failure_defers_retry(env, monkeypatch) -> None:
     assert sum("cannot read pinned cgroup events" in line for line in logs) == 1
 
 
+def test_phase_deadline_still_stops_during_events_read_backoff(env, monkeypatch) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    broker.register(DRIVER_PIDFD, lambda: None)
+    broker.deadline = system.clock + 1
+
+    def fail(_handles):
+        raise OSError("invalid events")
+
+    monkeypatch.setattr(system, "populated", fail)
+    broker.tick()
+    system.clock += 2
+    broker.tick()
+    assert len(system.kills) == 1
+
+
 def test_server_ignores_ready_cgroup_events_during_stop_cooldown(env, monkeypatch) -> None:
     system, _, _, _ = env
     broker = make(env)

@@ -564,10 +564,10 @@ class Broker:
             return
         if self.mode not in ("running", "held") or self.handles is None:
             return
-        if self.retry_at is not None and now < self.retry_at:
-            return
         if self.mode == "running" and self.deadline is not None and now > self.deadline:
             self._stop_quietly("phase deadline exceeded")
+            return
+        if self.retry_at is not None and now < self.retry_at:
             return
         try:
             populated = self.system.populated(self.handles)
