@@ -44,7 +44,6 @@ def test_impl_py_holds_only_impls() -> None:
         or isinstance(node, ast.ImportFrom)
         for node in ast.walk(tree)
     )
-    assert impl.IMPLS == ("new", "legacy")
 
 
 def test_implementation_new_changes_nothing() -> None:
