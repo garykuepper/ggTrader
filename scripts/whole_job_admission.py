@@ -21,9 +21,10 @@ retry. A state file written before these fields existed reads as having no stop 
 
 A release whose write fails may already be on disk (renamed into place, directory not synced).
 The instance then latches as failed, except for one way forward: ``abort_release`` for that
-same job, which records the job as held with a stop intent whether or not the release landed,
-so a rollback that cannot be shown complete survives a restart as a stop to retry. That
-instance never releases admission again; a new instance (a broker restart) is needed.
+same job, which records the job as held with a stop intent whether or not the release landed.
+The broker writes it before the rollback kill, so the kill is durable and counted and survives
+a restart as a stop to retry. That instance never releases admission again, even after the job
+is cleared; a new instance (a broker restart) is needed.
 """
 
 import fcntl
@@ -247,9 +248,9 @@ class AdmissionState:
                 raise
 
     def abort_release(self, job: str, boot: str) -> None:
-        """Record an unadmitted job as held with a stop intent (one attempt already made).
+        """Record an unadmitted job as held with a stop intent and its first attempt counted.
 
-        For a registration rolled back after its kill could not be shown complete. The stored
+        For a registration being rolled back: the caller writes this before its kill. The stored
         state must be this epoch's and either held and clear (no release written) or released
         to exactly this job (the release reached the disk, perhaps unsynced, and its write
         failed). Allowed on a failed instance only when that failure was this job's own

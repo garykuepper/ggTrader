@@ -37,19 +37,23 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
 - **Exact descriptor store.** Both handles are sent with `FDSTORE=1`, `FDPOLL=0`, then a
   barrier. Because a full or unauthorized store can still report success, the broker reads
   `DumpUnitFileDescriptorStore` and admits the job only if the store holds exactly those two
-  names with matching regular-file type, device, inode and access mode. Otherwise it kills
-  that exact unadmitted cgroup, removes its entries and stays held. It forgets that
-  invocation only once the cgroup is verified empty and the store is verified empty. If the
-  kill fails, the cgroup does not empty or the drain is not verified, the job's identity is
-  persisted as held, with that kill recorded as the job's stop intent, and the pinned handles
-  are kept (mode `held`). This also holds when the release record reached the disk but its
-  write failed (renamed, directory sync failed): the rollback rewrites it as held with the
-  intent and reads it back, and that admission instance never releases again until a broker
-  restart; if the rollback write fails too, the broker goes `unverifiable`. A held job is
-  cleared by the bounded automatic retry (see Stop), `@stop:<attempt>`, the cgroup emptying,
-  or a broker restart that restores the stored pair and retries. If no identity can be
-  recorded, the broker goes `unverifiable` and keeps the handles open; a restart then
-  treats it as an unrecorded invocation (see Broker restart).
+  names with matching regular-file type, device, inode and access mode. Otherwise it rolls
+  the registration back. Before any kill it records the job's identity as held with a stop
+  intent and its first attempt (`abort_release`, written and read back); then, under the
+  admission lock and only through handles that still match the record, it kills that exact
+  unadmitted cgroup, waits for it to empty, drains the store and verifies it empty, and
+  clears the record. If that intent cannot be written, nothing is killed: the attempt is
+  still counted, the handles are kept and the broker goes `unverifiable` (the invocation
+  never got `go` and the driver exits on refusal); a restart then decides from what is on
+  disk. If the kill fails, the cgroup does not empty or the drain is not verified, the job
+  stays `held` with its intent and handles, for the bounded automatic retry (see Stop),
+  `@stop:<attempt>`, the cgroup emptying, or a broker restart that restores the stored pair
+  and retries with the count kept. This also holds when the release record reached the disk
+  but its write failed (renamed, directory sync failed): the rollback intent replaces it.
+  That admission instance never releases again, so once such a job is cleared the broker
+  goes `restart-required` (start refused), not `idle`, until a broker restart. If the pinned
+  handles cannot be identified, nothing is killed or recorded and the broker goes
+  `unverifiable`.
 - **No fork under the admission lock.** PID 1 queries (`busctl`) run only outside it.
 
 ## Sequencing
@@ -94,14 +98,17 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   refuses start and stop, retries nothing even with a recorded intent, and needs manual
   investigation. A prior-boot record is never retried; `@acknowledge` clears its intent too.
 - **Restart with no recorded job** (a crash between the store push and the record write, or a
-  refused registration whose identity could not be recorded): such an invocation never got
-  `go`. If the store holds exactly a pinned pair, the broker kills that cgroup through it,
-  waits for it to empty, drains the store and verifies it empty before going idle. Any other
-  stored entry is kept as evidence and the mode is `unverifiable`, as it is when that kill
-  does not empty the cgroup. With nothing stored, the job unit must be `inactive` or `failed`
-  and the cgroup at its path absent or `populated 0` (an unpinned read, used only to refuse);
-  otherwise, or if either cannot be read, the mode is `unverifiable`. `unverifiable` is left
-  only by a broker restart, which repeats these checks.
+  refused registration whose stop intent could not be recorded): such an invocation never got
+  `go`, and it is never killed, because no identity-bound stop intent or attempt count can be
+  made durable for it first (a kill here could repeat on every restart). If the store holds
+  exactly a pinned pair, the broker drains it only once that pair's own `cgroup.events` reads
+  empty or removed, verifies the store empty and goes on to the checks below; while it is
+  still populated or cannot be read the mode is `unverifiable`. Any other stored entry is
+  kept as evidence and the mode is `unverifiable`. The job unit must then be `inactive` or
+  `failed` (unless an exact pinned pair just read empty) and the cgroup at its path absent or
+  `populated 0` (an unpinned read, used only to refuse); otherwise, or if either cannot be
+  read, the mode is `unverifiable`. `unverifiable` is left only by a broker restart, which
+  repeats these checks.
 - **Reboot:** nothing is enabled, so neither the broker nor the job starts. On a later broker
   start a record from another boot is `prior-boot`; only `@acknowledge:<attempt>` clears it.
 

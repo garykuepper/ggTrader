@@ -2,6 +2,23 @@
 
 ## 2026-11-19 (whole-job broker candidate: durable stop intent)
 
+- Fixes from Sol's review of a60ed4da (`scripts/whole_job_broker.py`): the rollback of a
+  refused registration killed the cgroup first and recorded the stop intent afterwards, so a
+  release renamed into place whose directory sync failed could be killed with no durable,
+  identity-bound intent. Now `abort_release` (held, intent, first attempt counted, read back)
+  is written before the kill, and the kill runs under the admission lock only through handles
+  that still match the record; if the intent cannot be written nothing is killed (the attempt
+  is still counted in memory and the broker is `unverifiable`). A rollback that does stop and
+  drain the job now clears the record; after a torn release the broker then goes
+  `restart-required` (start refused) instead of `idle`, because that admission instance can
+  never release again. A restart with a stored pair but no record no longer kills it: no
+  intent or count can be bound to it, so a kill there could repeat on every restart. It is
+  drained only once its own pinned `cgroup.events` reads empty (the driver exits without
+  `go`); until then the broker stays `unverifiable`. New fixture tests: state at the rollback
+  kill, intent write failure (no kill), handles that stop matching (no kill), a successful
+  rollback after a torn release, a crash at the rollback kill retried after restart with the
+  count kept, an exhausted rollback budget across a restart, and repeated restarts that never
+  kill an unrecorded pair. Fixture tests only; not run in a guest.
 - `scripts/whole_job_broker.py`, `scripts/whole_job_admission.py`: a stop that failed was
   retried only from broker memory, so after a broker restart the job came back merely held,
   with no phase deadline and no retry, until someone sent a manual stop. Every stop now first

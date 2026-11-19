@@ -20,22 +20,26 @@ again before each phase; each answer is given under the admission lock.
 Stop persists a hold, writes the pinned ``cgroup.kill`` and waits (bounded) for the pinned
 ``cgroup.events`` to report the cgroup empty or removed; it then removes the stored pair and
 reads the store back, and only when it is empty is the record cleared and the pinned handles
-closed. Any failure leaves the job held with its record and handles. Every stop first records,
-durably and bound to the job's identity, a stop intent and its attempt count; a merely held job
-has none. An incomplete stop is retried through the same handles a bounded number of times
-(``STOP_ATTEMPTS`` per intent, counted across restarts), then only an operator stop or the
-cgroup emptying ends it. A broker restart starts held and fails closed: no further phase is
-admitted, and a same-boot recorded job whose stored pair is restored exactly is a stop target
-whatever its record said (released, held, or stopping), its current phase included. A recorded
-intent keeps its attempt count, so an exhausted budget stays exhausted; an inferred one is made
-durable before its first kill. The store must match the record exactly or the broker stays held
-as unverifiable; an unverifiable or prior-boot record is never a kill target. This suits only
-the fixed disposable test service, never Hermes or any other unit. A restart with no recorded
-job is idle only when nothing of an unrecorded invocation can remain: a stored exact pair is killed
-and drained through its own pinned handles, any other stored entry stays as evidence, and with
-nothing stored the unit must be inactive and its cgroup absent or empty; otherwise the broker
-stays unverifiable. A record from an earlier boot stays held until an operator acknowledges
-that exact attempt. A termination the broker did not initiate is reported as such, never as an
+closed. Any failure leaves the job held with its record and handles. Every ``cgroup.kill`` the
+broker writes, including the rollback of a refused registration, is preceded by a durable stop
+intent bound to the job's identity and its attempt count; when that cannot be written nothing is
+killed. A merely held job has no intent. A rollback after a release write failed leaves that
+admission instance unable to release again, so a verified clear then ends in mode
+``restart-required``, not idle. An incomplete stop is retried through the same handles a bounded
+number of times (``STOP_ATTEMPTS`` per intent, counted across restarts), then only an operator
+stop or the cgroup emptying ends it. A broker restart starts held and fails closed: no further
+phase is admitted, and a same-boot recorded job whose stored pair is restored exactly is a stop
+target whatever its record said (released, held, or stopping), its current phase included. A
+recorded intent keeps its attempt count, so an exhausted budget stays exhausted; an inferred one
+is made durable before its first kill. The store must match the record exactly or the broker
+stays held as unverifiable; an unverifiable or prior-boot record is never a kill target. This
+suits only the fixed disposable test service, never Hermes or any other unit. A restart with no
+recorded job is idle only when nothing of an unrecorded invocation can remain: a stored exact
+pair is never killed (no intent can be recorded for it) and is drained only once its own pinned
+``cgroup.events`` reads empty, any other stored entry stays as evidence, and with nothing stored
+the unit must be inactive and its cgroup absent or empty; otherwise the broker stays
+unverifiable. A record from an earlier boot stays held until an operator acknowledges that exact
+attempt. A termination the broker did not initiate is reported as such, never as an
 out-of-memory kill.
 
 The broker never forks while the admission lock is held: PID 1 queries run ``busctl`` only
@@ -356,9 +360,11 @@ class Broker:
         """No recorded job: go idle only once no unrecorded invocation can remain.
 
         Stored descriptors without a record mean a registration was cut short after the pair was
-        stored (a crash, or a refused registration whose identity could not be recorded). That
-        invocation never got ``go``. An exact pair is killed and drained through its own pinned
-        handles; anything else stays in the store as evidence and the broker stays unverifiable.
+        stored (a crash, or a refused registration whose stop intent could not be recorded).
+        That invocation never got ``go``. It is never killed: the broker writes ``cgroup.kill``
+        only after a durable, identity-bound stop intent and attempt count. An exact pair is
+        drained once its own pinned ``cgroup.events`` reads empty or removed; until then, and
+        for anything else stored (kept as evidence), the broker stays unverifiable.
         With nothing stored, the fixed unit must be inactive and its cgroup absent or empty.
         """
         if inherited or entries:
@@ -368,19 +374,25 @@ class Broker:
                 self.outcome = "descriptor store holds entries with no recorded job; kept"
                 self.log(f"{self.outcome}; admission stays held")
                 return
+            # Never killed: with no record there is no identity-bound stop intent or attempt
+            # count to make durable first, so a kill here could repeat on every restart. The
+            # invocation never got ``go`` and its driver exits on refusal or a lost connection;
+            # the pair is drained only once its own pinned ``cgroup.events`` reads it empty.
             try:
-                self.system.kill(handles)
-                if not self.system.wait_empty(handles, STOP_SECONDS):
-                    raise TimeoutError("unrecorded cgroup did not empty")
+                if self.system.populated(handles):
+                    raise Refused("unrecorded pinned cgroup is still populated")
                 self._drain_verified()
             except BaseException as exc:  # noqa: BLE001 - fail closed, keep what is stored
                 handles.close()
                 self.mode = "unverifiable"
-                self.outcome = f"unrecorded stored invocation not shown stopped ({exc!r})"
+                self.outcome = (
+                    f"unrecorded stored invocation not shown ended ({exc!r}); it is never "
+                    "killed without a recorded stop intent; restart the broker once it has ended"
+                )
                 self.log(f"{self.outcome}; admission stays held")
                 return
             handles.close()
-            self.log("unrecorded stored invocation killed; cgroup empty and store drained")
+            self.log("unrecorded stored invocation had ended; store drained without a kill")
         try:
             unit = self.system.unit_state(TEST_UNIT)
             live = self.system.job_cgroup_populated()
@@ -389,8 +401,9 @@ class Broker:
             self.outcome = f"no recorded job and the test unit could not be checked ({exc!r})"
             self.log(f"{self.outcome}; restart the broker to recheck")
             return
-        # A stored pair just emptied may leave the unit briefly deactivating; its pinned cgroup
-        # is the evidence there. Without one, the unit's own state must also show it stopped.
+        # A stored pair whose cgroup just emptied may leave the unit briefly deactivating; its
+        # pinned cgroup is the evidence there. Without one, the unit's own state must also show
+        # it stopped.
         stopped = bool(inherited or entries) or unit.active_state in ("inactive", "failed")
         if live is True or not stopped:
             self.mode = "unverifiable"
@@ -714,7 +727,15 @@ class Broker:
         self.stop_retry = self.stop_requested = False
         self.stop_attempts = 0
         self.mode, self.driver, self.outcome = "idle", None, reason
-        self.log(f"attempt {record.attempt}: {reason}; cleared")
+        if self.state.torn_release is not None:
+            # The record is cleared and synced, but this admission instance had a release write
+            # fail and never releases again: idle would accept a start that cannot be admitted.
+            self.mode = "restart-required"
+            self.outcome = (
+                f"{reason}; record cleared, but a release write failed on this admission "
+                "instance: restart the broker before the next start"
+            )
+        self.log(f"attempt {record.attempt}: {self.outcome}; cleared")
 
     def _stop_failed(self, reason: str) -> None:
         """Stay held; schedule a retry only while the intent's attempt budget lasts."""
@@ -737,56 +758,64 @@ class Broker:
             )
 
     def _abort_unadmitted(self, handles: Handles, record: JobRecord | None) -> None:
-        """A registration failed before admission: kill that exact cgroup, then forget it.
+        """A registration failed before admission: stop that exact cgroup, then forget it.
 
-        The handles are closed and the identity dropped only after the cgroup is verified empty
-        and the descriptor store verified empty. Otherwise the job stays held: its identity is
-        persisted (held) and the pinned handles kept, so ``@stop:<attempt>``, the cgroup
-        emptying, or a broker restart (which restores the stored pair) can still clear it.
+        Nothing is killed before the job's identity, a stop intent and its first attempt are
+        durable (``abort_release``), also when the release record reached the disk but its
+        write failed. Without that, nothing is killed: an identity that cannot be read or
+        recorded leaves the broker ``unverifiable`` with the handles kept (the invocation never
+        got ``go`` and the driver exits on refusal), and a restart decides from what is on
+        disk. After the kill, through the handles re-checked against the record under the
+        admission lock, the cgroup and the store must be verified empty and the record cleared
+        before the job is forgotten. Any failure leaves it held for the bounded retry,
+        ``@stop:<attempt>`` or a restart, with the intent and its count kept.
         """
-        self.pending = None
-        try:
-            self.system.kill(handles)
-            if not self.system.wait_empty(handles, STOP_SECONDS):
-                raise TimeoutError("unadmitted cgroup did not empty")
-            self._drain_verified()
-        except BaseException as exc:  # noqa: BLE001 - fail closed: keep the job held
-            self._hold_unadmitted(handles, record, exc)
+        self.pending, self.driver, self.handles = None, None, handles
+        if record is None:
+            self.record = None
+            self.mode = "unverifiable"
+            self.outcome = (
+                "registration refused; the pinned handles could not be identified, so nothing "
+                "was killed or recorded; manual investigation needed"
+            )
+            self.log(self.outcome)
             return
-        handles.close()
-        self.mode = "idle"
-        self.outcome = "registration refused; unadmitted invocation stopped"
-        self.log(self.outcome)
-
-    def _hold_unadmitted(
-        self, handles: Handles, record: JobRecord | None, exc: BaseException
-    ) -> None:
-        """Keep an unadmitted job that was not shown stopped as held, never as idle."""
-        self.handles, self.driver = handles, None
-        if record is not None:
-            try:
-                # The kill above was this broker's own stop: keep it as the job's stop intent so
-                # that it is retried, here and after a restart, through the same pinned pair.
-                # This also covers a release that reached the disk before its write failed.
-                self.state.abort_release(record.encode(), self.boot)
-                self.record, self.record_boot = record, self.boot
-                self.stop_requested, self.stop_attempts = True, 1
-                self._stop_failed("registration refused")
-                self.outcome = (
-                    f"registration refused; unadmitted invocation stop not verified ({exc!r}); "
-                    f"held until a verified stop; {self.outcome}"
-                )
-                self.log(f"attempt {record.attempt}: {self.outcome}")
-                return
-            except BaseException as hold_exc:  # noqa: BLE001 - falls through to unverifiable
-                exc = hold_exc
-        self.record = record
-        self.mode = "unverifiable"
-        self.outcome = (
-            f"registration refused; unadmitted invocation stop not verified and not recorded "
-            f"({exc!r}); manual investigation needed"
-        )
-        self.log(self.outcome)
+        job = record.encode()
+        self.record, self.record_boot = record, self.boot
+        # Counted before the write, as in _stop: an intent that cannot be recorded still uses
+        # its attempt, so the budget stays bounded even though no kill follows.
+        self.stop_requested, self.stop_attempts, self.stop_retry = True, 1, False
+        try:
+            self.state.abort_release(job, self.boot)
+        except BaseException as exc:  # noqa: BLE001 - fail closed: no kill without the intent
+            self.mode = "unverifiable"
+            self.outcome = (
+                f"registration refused; its stop intent could not be recorded ({exc!r}), so the "
+                "unadmitted invocation was not killed; restart the broker to recheck"
+            )
+            self.log(f"attempt {record.attempt}: {self.outcome}")
+            return
+        self.mode = "stopping"
+        try:
+            with self.state.held_job(job, self.boot, self.state.epoch) as stops:
+                if stops != 1:
+                    raise Refused("stop intent was not recorded before the kill")
+                if handles.ids() != (record.kill, record.events):
+                    raise Refused("pinned handles changed")
+                self.system.kill(handles)
+                if not self.system.wait_empty(handles, STOP_SECONDS):
+                    raise TimeoutError("unadmitted cgroup did not empty")
+            self._drain_verified()  # outside the admission lock: it queries PID 1
+            self.state.clear(job, self.boot, self.state.epoch)
+        except BaseException as exc:  # noqa: BLE001 - fail closed: keep the job held
+            self._stop_failed("registration refused")
+            self.outcome = (
+                f"registration refused; unadmitted invocation stop not verified ({exc!r}); "
+                f"held until a verified stop; {self.outcome}"
+            )
+            self.log(f"attempt {record.attempt}: {self.outcome}")
+            return
+        self._cleared(record, handles, "registration refused; unadmitted invocation stopped")
 
 
 def store_matches(entries: list[StoreEntry], record: JobRecord) -> bool:
