@@ -93,7 +93,7 @@ State on entry: 30 `src/` and `scripts/` files are modified by `ruff check --sel
 
 **Files:**
 - Modify: the 30 files already changed in the working tree (`git diff --name-only`), `.github/workflows/ci.yml`
-- Test: `tests/cli/test_cli_help_parses.py` (new)
+- Test: `tests/scripts/test_cli_help_parses.py` (new)
 
 **Interfaces:** Produces: `test_every_ggt_command_help_exits_zero`, a parametrized test over `["--help"]`, `["paper", "--help"]`, `["lab", "--help"]`, `["db", "--help"]`, `["db", "truncate", "--help"]`, `["db", "clean", "--help"]`, run through `typer.testing.CliRunner` on `ggTrader.cli.main.app`.
 
