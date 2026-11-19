@@ -230,9 +230,10 @@ def toy_never_trades() -> dict:
 def toy_policy_exclude() -> dict:
     """The run-level policy on a run it does not change.
 
-    Every combination here has a finite WFE and no anchor fold feeds the breaker, so the
-    exclusion rules have nothing to exclude and the record equals ``toy_entries_inside_train``
-    (``_claim_policy_exclude`` asserts the equality). That the policy changes a verdict is pinned
+    Exclusion changes the breaker's history, but this three-fold run cannot trigger its
+    four-observation chronic check; acute failure halts both policies. The record equals
+    ``toy_entries_inside_train`` (``_claim_policy_exclude`` asserts the equality). A changed
+    verdict is pinned
     by the two ``scripted_chronic_decay_*`` scenarios, and that it reaches the breaker by
     ``test_policy_forwards_nan_exclusion_to_breaker``.
     """
