@@ -287,8 +287,19 @@ def test_rule4_an_invalid_exit_quantity_blocks_strategy_buys_and_the_sweep_buy(
             i for i, name in enumerate(targets) if name == "persist.settle_order_intent"
         )
         tail = targets[last_order:]
-        assert tail.index("broker.get_account") < tail.index("broker.get_positions")
-        assert tail.index("broker.get_positions") < tail.index("notifier.daily_summary")
+        assert tail == [
+            "persist.settle_order_intent",
+            "persist.get_unresolved_order_intents",
+            "persist.get_pending_orders",
+            "notifier.trade_alert",
+            "notifier.send",
+            "notifier.send",
+            "broker.get_account",
+            "broker.get_positions",
+            "persist.get_earliest_snapshot",
+            "notifier.daily_summary",
+            "lock.exit",
+        ]
         (summary,) = rs.calls(t, "notifier.daily_summary")
         assert summary["args"][2]["AAPL"]["qty"] is None
         assert "persist.log_snapshot" not in targets
