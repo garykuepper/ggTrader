@@ -16,7 +16,15 @@ from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
-from ggTrader.paper.models import RunResult, SubmittedOrder
+from ggTrader.paper.models import (
+    Account,
+    MarketClock,
+    OrderStatus,
+    Position,
+    RunResult,
+    SignalBundle,
+    SubmittedOrder,
+)
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
     attach_broker_order,
@@ -46,6 +54,7 @@ from ggTrader.paper.persist import (
     settle_legacy_pending_order,
     settle_order_intent,
 )
+from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
 from ggTrader.paper.signal_runner import (
     generate_core_signals,
@@ -133,8 +142,8 @@ class PaperTrader:
 
     def __init__(
         self,
-        broker: AlpacaBroker,
-        notifier: TelegramNotifier,
+        broker: Broker,
+        notifier: Notifier,
         risk_cfg: RiskConfig | None = None,
         dry_run: bool = True,
         read_only: bool | None = None,
@@ -413,7 +422,7 @@ class PaperTrader:
                 )
         return still_pending
 
-    def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, dict]:
+    def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, OrderStatus]:
         """Poll submitted orders until they reach a terminal status (or a
         wait budget expires), returning `{order_id: order_info}`.
 
@@ -422,7 +431,7 @@ class PaperTrader:
         which is sized from the account's real post-trade cash and so must be
         submitted and polled separately, after the main batch resolves.
         """
-        filled_orders: dict[str, dict] = {}
+        filled_orders: dict[str, OrderStatus] = {}
         if not orders:
             return filled_orders
 
@@ -732,7 +741,7 @@ class PaperTrader:
         market_open = True
         next_close: str | None = None
         try:
-            clock = self._broker.get_clock()
+            clock: MarketClock = self._broker.get_clock()
             market_open = clock.get("is_open", True)
             next_close = clock.get("next_close")
         except Exception as exc:
@@ -743,7 +752,7 @@ class PaperTrader:
             return RunResult([], [], []).as_dict()
 
         try:
-            blend = generate_core_signals(
+            blend: SignalBundle = generate_core_signals(
                 persist_tape=not self._read_only,
                 membership=live_membership_source(self._membership),
             )
@@ -839,12 +848,12 @@ class PaperTrader:
                 return RunResult([], [], []).as_dict()
 
         try:
-            account = self._broker.get_account()
+            account: Account = self._broker.get_account()
         except Exception as exc:
             _account_read_halt(self._notifier, exc)
             raise
         try:
-            positions = self._broker.get_positions()
+            positions: dict[str, Position] = self._broker.get_positions()
         except Exception as exc:
             _log.error("Position read failed (%s); stopping before orders", type(exc).__name__)
             try:
@@ -1255,7 +1264,7 @@ class PaperTrader:
         # strategy exits) to fill before buying: Alpaca credits proceeds only on
         # fill, and on 2026-09-25 buys sent while the funding sell was still
         # working were rejected for insufficient buying power (6 of 8).
-        filled_orders: dict[str, dict] = self._poll_orders(
+        filled_orders: dict[str, OrderStatus] = self._poll_orders(
             [o for o in pending_orders if o.side == "SELL"]
         )
 

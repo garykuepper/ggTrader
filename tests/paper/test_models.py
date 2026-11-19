@@ -7,7 +7,16 @@ from unittest.mock import patch
 
 import pytest
 
-from ggTrader.paper.models import RunResult, SubmittedOrder
+from ggTrader.paper.models import (
+    Account,
+    MarketClock,
+    OrderStatus,
+    Position,
+    RunResult,
+    SignalBundle,
+    SleeveSignals,
+    SubmittedOrder,
+)
 
 
 def _order() -> SubmittedOrder:
@@ -123,3 +132,59 @@ def test_cli_consumes_every_shape(shape: str) -> None:
         result = CliRunner().invoke(app, ["paper"])
     assert result.exit_code == 0, result.output
     assert "Planned buys:" in result.output
+
+
+@pytest.mark.parametrize(
+    ("record", "keys"),
+    [
+        (Account, {"cash", "portfolio_value", "last_equity", "buying_power", "multiplier"}),
+        (
+            Position,
+            {
+                "qty",
+                "market_value",
+                "current_price",
+                "avg_entry",
+                "cost_basis",
+                "unrealized_pl",
+                "unrealized_plpc",
+                "change_today",
+            },
+        ),
+        (
+            OrderStatus,
+            {
+                "id",
+                "client_order_id",
+                "symbol",
+                "side",
+                "status",
+                "qty",
+                "notional",
+                "filled_qty",
+                "filled_avg_price",
+            },
+        ),
+        (MarketClock, {"is_open", "next_open", "next_close"}),
+        (
+            SleeveSignals,
+            {
+                "buys",
+                "sells",
+                "as_of",
+                "universe_size",
+                "membership_gate",
+                "last_exit",
+                "engine",
+                "bars",
+            },
+        ),
+        (
+            SignalBundle,
+            {"sleeves", "weights", "scale", "rebalanced_today", "fallback_used"},
+        ),
+    ],
+)
+def test_typed_dict_keys_are_the_documented_ones(record: type, keys: set[str]) -> None:
+    assert set(record.__annotations__) == keys
+    assert record.__total__ is False
