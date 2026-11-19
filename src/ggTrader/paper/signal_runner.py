@@ -85,7 +85,7 @@ def refresh_benchmark_tape(lookback_days: int = 30) -> list[str]:
         )
         if df.empty:
             return []
-        CachedYFinanceLoader()._cache_to_db(df, "1d")
+        CachedYFinanceLoader().persist(df, "1d")
     except Exception as exc:
         _log.warning("benchmark tape refresh failed (non-fatal): %s", exc)
         return []

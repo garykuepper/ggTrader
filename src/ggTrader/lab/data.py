@@ -134,7 +134,7 @@ def fetch_stock_ohlcv(
         if not extra.empty:
             if loader is not None:
                 try:
-                    loader._cache_to_db(extra, interval)
+                    loader.persist(extra, interval)
                 except Exception as exc:
                     print(f"  [data] failed to persist gap fetch: {exc!r}")
             df = pd.concat([df, extra], axis=1)
@@ -154,7 +154,7 @@ def fetch_stock_ohlcv(
             if not tiingo_extra.empty:
                 if loader is not None:
                     try:
-                        loader._cache_to_db(tiingo_extra, interval)
+                        loader.persist(tiingo_extra, interval)
                     except Exception as exc:
                         print(f"  [data] failed to persist Tiingo data: {exc!r}")
                 df = pd.concat([df, tiingo_extra], axis=1)

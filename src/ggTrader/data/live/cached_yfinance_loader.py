@@ -280,6 +280,14 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 except Exception as exc:
                     self.logger.debug("Cache connection close skipped: %s", type(exc).__name__)
 
+    def persist(self, df: pd.DataFrame, interval: str) -> None:
+        """Write a fetched OHLCV frame to the ``ohlcv`` table.
+
+        Timestamps are stored as naive UTC, rows are upserted by timestamp, symbol, interval and
+        venue, and failures are logged and swallowed, as ``_cache_to_db`` always did.
+        """
+        self._cache_to_db(df, interval)
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
