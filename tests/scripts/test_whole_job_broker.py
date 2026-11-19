@@ -850,6 +850,10 @@ def test_server_ignores_ready_cgroup_events_during_stop_cooldown(env, monkeypatc
         system.clock = broker.retry_at
         server.serve_once()
         assert registrations == [job.fileno(), operator.fileno(), broker.handles.events]
+        registrations.clear()
+        broker.mode = "unverifiable"
+        server.serve_once()
+        assert registrations == [job.fileno(), operator.fileno()]
 
 
 def test_record_clear_failure_after_drain_keeps_handles_and_restart_is_unverifiable(
