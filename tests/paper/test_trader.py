@@ -3160,7 +3160,7 @@ class TestReadOnlyDryRun:
         assert not mocks["log_trade"].called and not mocks["clear_pending_order"].called
         assert result["buys"] == ["GOOG"]  # MSFT still has an order working
 
-    def test_read_only_ledger_skips_and_records(self, mock_signals):
+    def test_write_helper_skips_and_records(self, mock_signals):
         """The trader's ledger (what `_write` was) skips a write and records its name."""
         trader, _b, _n = self._dry_trader()
         with patch("ggTrader.paper.trader.log_dividend_accrual") as persisted:

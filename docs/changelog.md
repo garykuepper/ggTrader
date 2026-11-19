@@ -20,8 +20,8 @@
   rule keeps `paper/` from importing anything from `lab.data` except `STOCK_BASE_CONFIG`.
 - Intended behavior change: the stop, sweep and untradable settings are read once into one frozen
   `TraderConfig` at the top of `run()`, not at several points of the run. The sweep and untradable
-  settings are therefore read before the run lock and the market gate. This differs only if the
-  environment changes mid-run, which nothing does; malformed floats are stored and re-raised where
+  settings are therefore read before the run lock and the market gate. This can differ if the
+  environment changes mid-run, including `.env` loading; malformed floats are stored and re-raised where
   they were parsed, so each keeps its old fail time.
 - Pins added before the changes: the transcript set grows from 96 to 103 scenarios (the original
   96 goldens are byte-identical), a recording-engine SQL golden covers all 31 persist functions

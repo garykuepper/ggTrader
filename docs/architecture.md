@@ -384,12 +384,15 @@ result is built as a `RunResult` and returned as `.as_dict()`, so `run()` still 
 with the same key order. A test can build a trader on `InMemoryLedger` and needs no persist patch;
 that covers the **ledger only**: the signal, membership, benchmark-refresh, date, uuid and clock
 collaborators are still patched in the trader module.
+`InMemoryLedger` is a test double without durable storage or a cross-process lock; injecting it
+into a live trader would not provide production order-intent safety.
 
 **Intended behavior change: one settings snapshot per run.** The run-time environment settings used
 to be read at several points of a run. `TraderConfig.from_env()` now reads them all once, at the top
 of `run()`, so the sweep and untradable settings are read before the run lock, the market gate and
-the account reads. The only observable difference arises if the process environment changes during
-a run, which nothing in the code does. A malformed float is stored in the record and re-raised where
+the account reads. This can change behavior if the process environment changes during a run;
+configuration loading can add `.env` values, although the standard broker loads them before the
+trader is constructed. A malformed float is stored in the record and re-raised where
 the trader used to parse it, so each setting keeps its old fail time (the sweep reserve ends the run;
 the minimum clip and buy trigger are logged and skip the sweep buy; an invalid stop threshold halts
 before the lock). Transcript pins cover these; the read timing itself is a deliberate change and is
