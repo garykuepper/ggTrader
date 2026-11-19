@@ -12,27 +12,42 @@
 #   scripts/run_capped.sh --help
 #
 # Environment:
-#   GGT_RUN_MEM_MAX   cgroup MemoryMax for the command (default 6G)
+#   GGT_RUN_MEM_MAX      cgroup MemoryMax for the command (default 6G)
+#   GGT_RUN_MAX_SECONDS  wall-clock limit for the command (default 7200)
+#   GGT_HEAVY_WAIT       seconds to wait for another heavy job to finish (default 1800)
+#   GGT_HEAVY_MARGIN     free memory required beyond the cap (default 4G)
 #
-# Exit status is the command's own. Exit 137 means the cap was hit: this script
-# never retries, and a retry with a higher cap must be a deliberate decision.
+# Only one heavy ggTrader job (this script or scripts/run_tests.sh) runs at a time: a second one
+# waits on a lock in the repository's git directory, then exits 75. It also exits 75, at once,
+# when free memory is below the cap plus the margin. See scripts/_heavy_job.sh.
+#
+# Exit status is the command's own. Exit 137 means the cap was hit and exit 143 means the time
+# limit stopped it: this script never retries, and a retry with a higher cap or limit must be a
+# deliberate decision. Exit 75 means busy or short of memory, and the command never started.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MEM_MAX="${GGT_RUN_MEM_MAX:-6G}"
+MAX_SECONDS="${GGT_RUN_MAX_SECONDS:-7200}"
 
 usage() {
     cat <<EOF
 Usage: scripts/run_capped.sh [--help] <command...>
 
 Run <command...> in a transient systemd scope with MemoryMax=\$GGT_RUN_MEM_MAX
-(default 6G) and MemorySwapMax=0, with the repo .venv/bin first on PATH.
+(default 6G), MemorySwapMax=0 and a wall-clock limit of \$GGT_RUN_MAX_SECONDS
+(default 7200), with the repo .venv/bin first on PATH. Only one heavy ggTrader job
+runs at a time (see scripts/_heavy_job.sh).
 
 Environment:
-  GGT_RUN_MEM_MAX   memory cap for the command (default 6G)
+  GGT_RUN_MEM_MAX      memory cap for the command (default 6G)
+  GGT_RUN_MAX_SECONDS  wall-clock limit for the command (default 7200)
+  GGT_HEAVY_WAIT       seconds to wait for another heavy job (default 1800)
+  GGT_HEAVY_MARGIN     free memory required beyond the cap (default 4G)
 
-Exit 137 means the command was killed at the cap; the script prints a message
-and does not retry.
+Exit 137 means the command was killed at the cap and exit 143 that the time limit
+stopped it; the script prints a message and does not retry. Exit 75 means another
+heavy job is running or free memory is short: the command never started.
 EOF
 }
 
@@ -48,12 +63,17 @@ fi
 
 cd "$REPO"
 
-echo "running under MemoryMax=$MEM_MAX (no swap)" >&2
+# shellcheck source=scripts/_heavy_job.sh
+source "$REPO/scripts/_heavy_job.sh"
+heavy_job_enter run_capped "$MEM_MAX"
+
+echo "running under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s" >&2
 
 set +e
 systemd-run --user --scope -q --collect \
     -p MemoryMax="$MEM_MAX" \
     -p MemorySwapMax=0 \
+    -p RuntimeMaxSec="$MAX_SECONDS" \
     env "PATH=$REPO/.venv/bin:$PATH" "$@"
 status=$?
 set -e
@@ -61,6 +81,11 @@ set -e
 # 137 = SIGKILL, which from inside this scope means the cap was hit.
 if [[ $status -eq 137 ]]; then
     echo "KILLED AT MEMORY CAP ($MEM_MAX): do not retry with a higher cap; report it" >&2
+fi
+
+# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
+if [[ $status -eq 143 ]]; then
+    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long job; report it" >&2
 fi
 
 exit $status
