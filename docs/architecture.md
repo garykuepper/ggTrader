@@ -409,13 +409,10 @@ tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py
 included the open connection under the key `conn`; SQLAlchemy ignored it. The explicit bind
 dictionary drops that stray key. The SQL text and the other seven keys are unchanged.
 
-**Verification status at the time of writing.** The fast-core test tier (which includes the transcript, SQL-golden,
-pin and import-rule tests) passes on the branch and the hash records verify. The real-tape oracle comparison
-(`gate_oracles.sh`) and the full final gate (`scripts/run_tests.sh --full` plus the test-outcome
-comparison) are controller-owned and **not yet run for the finished Phase 4 head**; this section must
-not be read as a claim of complete parity until they are recorded. Nothing here was deployed: the
-trader stays stopped, cron is off, and code reaches the `ggtrader_live` container only through the
-image rebuild.
+**Verification status.** Full core and study tests, the baseline outcome comparison, fixed hashes and
+research pin verification passed. P5 and P7 matched the real-tape baseline, including all 13 equity
+CSVs. The disposable PostgreSQL test was skipped because its test DSN was not configured. The trader
+stays stopped and cron is off; code reaches the container only through an image rebuild.
 
 ---
 

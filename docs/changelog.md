@@ -31,11 +31,10 @@
   the key `conn` (SQLAlchemy ignored it); the explicit dictionary omits it. The SQL text and the
   other seven keys are unchanged. The test token `_cache_to_db` became `persist` in 12 mock lines of
   `tests/lab/test_fetch_stock_ohlcv_chain.py` (9) and `tests/paper/test_signal_runner.py` (3).
-- Verification status: the fast-core test tier (which includes the transcript, SQL-golden, pin and
-  import-rule tests) passes on the branch and the hash records verify. The real-tape oracle comparison and the full final gate
-  have **not yet been run for the finished Phase 4 head**; parity is not claimed until they are.
-  `ggt paper` output did not change, so `docs/cli_reference.md` is unchanged. Not deployed; the trader
-  stays stopped and cron stays off.
+- Verification: full core and study tests, baseline outcome comparison, fixed hashes and research
+  pins passed. P5 and P7 matched the baseline, including 13 equity CSVs. The disposable PostgreSQL
+  test was skipped because its test DSN was not configured. `ggt paper` output did not change;
+  the trader stays stopped and cron stays off.
 
 ## 2026-11-18 (refactor phases 0–2)
 
