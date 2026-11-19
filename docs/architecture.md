@@ -42,7 +42,7 @@ src/ggTrader/
 │   ├── selfcheck.py             # Dispatch probe: proves the configured engine really runs
 │   ├── indicators.py            # Presets with every flag explicit: wilder_rsi, bbands, ema, sma, macd, atr
 │   ├── signals.py               # cross_above/cross_below (float coercion), time_stop
-│   ├── portfolio.py             # run_signals / run_weights -> SimResult, column chunking
+│   ├── portfolio.py             # run_signals / run_weights -> SimResult, column chunking; run_signals' halt, intraday-stop and overlap checks are private helpers
 │   ├── stats.py                 # Window Sharpe/vol/drawdown, finite guard, per-window trades, DSR
 │   ├── windows.py               # Calendar folds -> bar positions, range_split wrapper
 │   ├── provenance.py            # provenance() stamp and compare() across epochs
@@ -61,8 +61,9 @@ src/ggTrader/
 │   │   ├── gates.py             # NDH lattice glue (lab.gates.ndh_check) and the DSR gate
 │   │   ├── anchor.py            # defensive anchor fit only on data to each fold's train_end
 │   │   ├── breaker.py           # circuit breaker, 2-of-3 shadow re-entry, WFE, WfoPolicy
-│   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows)
-│   │   ├── run.py / report.py   # run_wfo, WfoResult, table, curve_summary, JSON payload
+│   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows); ScoringInputs and SignalSimOptions carry their inputs
+│   │   ├── fold_record.py       # FOLD_KEYS (the 28 fold-dict keys, in order) and FoldRecord, whose as_dict() builds each fold row
+│   │   ├── run.py / report.py   # run_wfo (with private fold, stitch and diagnostics helpers), WfoResult, table, curve_summary, JSON payload
 │   │   └── inputs.py / cli_support.py  # Bars input, PIT masks, `ggt lab` glue
 │   ├── gates.py                 # NDH plateau check (the DSR gate is engine.stats.dsr)
 │   └── strategies/              # Strategies on the engine contract; any module dropped in here is found
@@ -318,6 +319,31 @@ are produced (`lab/wfo/`).
 
 The deleted legacy path ran three grouped simulations per fold plus one for the live pick (52 for 17
 folds); the engine path runs one (two memory chunks on the full SP500 ensemble grid).
+
+**Code layout after refactor phase 3 (structure only).** `run_signals` and `run_wfo` were long functions;
+their blocks now sit in private helpers, with the public surface unchanged (parameter names, order and
+defaults, the keys and key order of every fold row and of `diagnostics`, exceptions and messages, printed
+output, and the order of calls into the scorer):
+
+- `engine/portfolio.py`: `_halt_positions` (validates `halt_mask` and maps halted columns),
+  `_validate_intraday_stops` (the intraday-stop frame and config checks) and `_reject_overlaps` (raises
+  when a trade spans a halt or a gap). Each keeps the old check order and messages.
+- `lab/wfo/scorers.py`: `ScoringInputs` and `SignalSimOptions` are frozen carriers for what the scorers
+  take; `SignalScorer.from_inputs` and `WeightScorer.from_inputs` build a scorer from them. The scorer
+  constructors keep their signatures.
+- `lab/wfo/fold_record.py`: `FoldRecord` holds one fold row, and `FOLD_KEYS` names its **28** keys in
+  order (earlier notes said 27). `as_dict()` returns the same dict `run_wfo` always produced.
+- `lab/wfo/run.py`: `_scorer_for` picks the scorer, `_score_fold` scores one fold, `_stitch_oos` joins the
+  out-of-sample curves and scores SPY on the same days, and `_build_diagnostics` builds the 26-key
+  `diagnostics` dict. `run_wfo` keeps its signature and calls them in the old order. `run_dsr`, `run_ndh`,
+  the scorer classes and breaker functions are looked up by module-level name at call time.
+  Replacement scorer classes must implement `from_inputs`; patching `_make_scorer` does not
+  intercept `run_wfo`.
+
+Characterization tests pin this surface: `tests/engine/test_run_signals_characterization.py` and
+`tests/lab/wfo/test_run_wfo_characterization.py` (exact goldens under their `characterization/` folders),
+plus helper unit tests in `tests/engine/test_run_signals_helpers.py`, `tests/lab/wfo/test_scorer_inputs.py`,
+`tests/lab/wfo/test_fold_record.py` and `tests/lab/wfo/test_run_wfo_helpers.py`.
 
 ### 4. Paper Trading Cycle (`ggt paper`)
 

@@ -35,6 +35,20 @@
   pins passed. P5 and P7 matched the baseline, including 13 equity CSVs. The disposable PostgreSQL
   test was skipped because its test DSN was not configured. `ggt paper` output did not change;
   the trader stays stopped and cron stays off.
+## 2026-11-19 (refactor phase 3: research engine helpers and fold records)
+
+- Structure only; no strategy, data source or result was intentionally changed. `engine.run_signals`
+  now delegates to three private helpers (`_halt_positions`, `_validate_intraday_stops`,
+  `_reject_overlaps`), and `lab.wfo.run.run_wfo` to `_scorer_for`, `_score_fold`, `_stitch_oos` and
+  `_build_diagnostics`. New `ScoringInputs` and `SignalSimOptions` carriers (with `from_inputs`
+  constructors on both scorers) and a `FoldRecord` in `lab/wfo/fold_record.py`. Public signatures, fold
+  and diagnostics key order, error messages, printed output and scorer call order are unchanged.
+- Correction: a fold row has 28 keys, not 27 as the refactor design said; `FoldRecord` and the tests use 28.
+- Added characterization tests (exact goldens for `run_signals` and `run_wfo`, the 28 fold keys and 26
+  diagnostics keys in order, scorer and gate seams) and helper unit tests for each new piece.
+- Verification: characterization pins, full test and study tiers, test-outcome comparison, research
+  pin verification and Ruff passed. P5 and P7 matched the baseline, including all 13 equity CSVs.
+  A P5 attempt at 3G hit its cap; the owner approved the successful 6G oracle run.
 
 ## 2026-11-18 (refactor phases 0–2)
 
