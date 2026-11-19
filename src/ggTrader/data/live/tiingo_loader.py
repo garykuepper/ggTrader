@@ -41,7 +41,7 @@ class TiingoDataLoader(BaseDataLoader):
     """Stock data loader using Tiingo. Free tier, 20yr+ history, delisted coverage."""
 
     def __init__(self, api_key: Optional[str] = None, batch_size: int = 50):
-        self.logger = logging.getLogger("ggTraderLive")
+        self.logger = logging.getLogger(__name__)
         self.api_key = api_key or _get_api_key()
         self.batch_size = batch_size
         self._last_request_time = 0.0
@@ -78,7 +78,11 @@ class TiingoDataLoader(BaseDataLoader):
         end_str = end_date.strftime("%Y-%m-%d") if end_date else None
 
         self.logger.info(
-            f"Fetching {len(symbols)} stocks from Tiingo ({tiingo_freq}): {start_str} -> {end_str}"
+            "Fetching %s stocks from Tiingo (%s): %s -> %s",
+            len(symbols),
+            tiingo_freq,
+            start_str,
+            end_str,
         )
 
         frames: list[pd.DataFrame] = []
@@ -95,7 +99,7 @@ class TiingoDataLoader(BaseDataLoader):
 
         if failed:
             self.logger.warning(
-                f"Tiingo: {len(failed)} symbols returned no data (first 10: {failed[:10]})"
+                "Tiingo: %s symbols returned no data (first 10: %s)", len(failed), failed[:10]
             )
 
         if not frames:
@@ -132,7 +136,7 @@ class TiingoDataLoader(BaseDataLoader):
                 return None
             resp.raise_for_status()
         except requests.RequestException as exc:
-            self.logger.debug(f"Tiingo fetch failed for {symbol}: {exc!r}")
+            self.logger.debug("Tiingo fetch failed for %s: %r", symbol, exc)
             return None
 
         data = resp.json()

@@ -17,7 +17,7 @@ class YFinanceDataLoader(BaseDataLoader):
     """Stock data loader using yfinance. Free, no API key, daily bars back to 1980+."""
 
     def __init__(self):
-        self.logger = logging.getLogger("ggTraderLive")
+        self.logger = logging.getLogger(__name__)
 
     def fetch_ohlcv(
         self,
@@ -52,7 +52,11 @@ class YFinanceDataLoader(BaseDataLoader):
         end = (end_ts + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
 
         self.logger.info(
-            f"Fetching {len(symbols)} stocks from yfinance ({yf_interval}): {start} -> {end}"
+            "Fetching %s stocks from yfinance (%s): %s -> %s",
+            len(symbols),
+            yf_interval,
+            start,
+            end,
         )
 
         try:
@@ -68,7 +72,7 @@ class YFinanceDataLoader(BaseDataLoader):
                 progress=False,
             )
         except Exception as e:
-            self.logger.error(f"yfinance download failed: {e!r}")
+            self.logger.error("yfinance download failed: %r", e)
             return pd.DataFrame()
 
         if df.empty:

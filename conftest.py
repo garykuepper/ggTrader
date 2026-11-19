@@ -5,6 +5,8 @@ as study tests under research/<category>/<study>/code/tests, get the same safety
 plotting backend and the same options. tests/test_root_conftest.py proves it.
 """
 
+import logging
+
 import matplotlib
 import pytest
 
@@ -15,6 +17,30 @@ from tests import tiers
 TEST_MEMBERSHIP = "fixture:sp500_v1_2026-06-02"
 
 matplotlib.use("Agg")
+
+
+@pytest.fixture(autouse=True)
+def _restore_ggtrader_logger():
+    """Give every test the ggTrader logger it started with.
+
+    ``ggt`` configures that logger (a handler, level INFO) in its CLI callback, and a test that
+    runs the CLI would otherwise leave INFO enabled for the rest of the process. On Python 3.12 a
+    log record reads ``time.time()``, and paper tests that stub the global clock with a finite
+    sequence then lose values to those records: the order-polling loop never reaches its
+    deadline and the run allocates until the memory cap kills it (found 2026-11-18).
+    """
+    logger = logging.getLogger("ggTrader")
+    handlers, level, propagate, disabled = (
+        list(logger.handlers),
+        logger.level,
+        logger.propagate,
+        logger.disabled,
+    )
+    yield
+    logger.handlers[:] = handlers
+    logger.setLevel(level)
+    logger.propagate = propagate
+    logger.disabled = disabled
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

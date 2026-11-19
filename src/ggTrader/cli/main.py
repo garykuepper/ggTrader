@@ -4,12 +4,20 @@ from __future__ import annotations
 
 import typer
 
+from ggTrader.utils.logging_setup import configure
+
 app = typer.Typer(
     name="ggt",
     help="ggTrader — research lab, database administration, and paper trader",
     no_args_is_help=True,
     add_completion=False,
 )
+
+
+@app.callback()
+def callback() -> None:
+    """Configure logging for CLI commands."""
+    configure()
 
 
 @app.command(
