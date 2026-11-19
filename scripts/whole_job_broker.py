@@ -573,6 +573,7 @@ class Broker:
             populated = self.system.populated(self.handles)
         except OSError as exc:
             self.log(f"cannot read pinned cgroup events: {exc}")
+            self.retry_at = now + STOP_RETRY_SECONDS
             return
         if not populated:
             self._stop_quietly(self._ended_reason())
