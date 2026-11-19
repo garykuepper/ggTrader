@@ -1,8 +1,7 @@
 # ggTrader refactor: consolidated design
 
 **Date:** 2026-11-17
-**Status:** Owner decisions 1 to 5 recorded 2026-11-17 (section 8). Execution has not been
-approved. No code has changed.
+**Status:** Phases 0 to 2 built and gated. Execution approved 2026-11-18; merge remains owner-gated.
 **Scope:** `src/ggTrader/` (22,680 lines in 105 files) and `scripts/` (about 7,400 lines).
 Study code under `research/` is out of scope: each study is bound to its results by a code hash.
 **Implementation plan for phases 0 to 2:** [2026-11-17-refactor-phase-0-2.md](../plans/2026-11-17-refactor-phase-0-2.md).
@@ -351,7 +350,7 @@ A default is not an approval. Tasks 6 and 9 wait for a recorded answer.
 **Recorded 2026-11-17 (owner):** 1 yes (delete the dead branch); 2 yes (wipe flags);
 3 keep the unused writers; 4 both (clarified 2026-11-18): the Telegram total line shows the percentage
 against the day's starting value and against starting capital, a separate small change
-outside phases 0 to 2; 5 not yet: no execution until the owner says so.
+outside phases 0 to 2; 5 execution approved 2026-11-18.
 
 1. **Dead untradable branch.** Delete it? The trader keeps behaving exactly as now: an
    exception raised on submit ends the run. *Recommended: yes.*

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-18 (refactor phases 0–2)
+
+- Added offline safety gates, recorded trader transcripts and loader behavior, and serialized
+  heavy jobs to protect the host. Evidence and test comparers now fail closed, including required
+  safety nodes, while ignoring only the checkout-specific tape path in P5 results.
+- Consolidated engine cache configuration and paper constants, modernized annotations, enabled
+  selected lint rules, and logged previously silent fallback exceptions at debug level.
+- Verified the frozen evidence pins (4 moved and 18 historical matches); the phase gate matched
+  both oracle and test baselines. These changes do not authorize deployment or trader restart.
+
 ## 2026-11-18 (test-run safety after the out-of-memory incident)
 
 - Encom ran out of memory at about 13:53 and thrashed until it was power-cycled at 17:58. Two
