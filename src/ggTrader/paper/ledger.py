@@ -8,7 +8,7 @@ parameters, same return annotation (``log_snapshot`` takes ``dict[str, Position]
 ``paper_run_lock`` returns ``AbstractContextManager[RunLock]``). The names are the same on purpose,
 so the skipped-write record of a read-only run stays name-for-name what it is today.
 
-Nothing imports this module yet; the trader is wired to it in a later task.
+The trader uses these adapters to access persistence and suppress read-only writes.
 """
 
 from __future__ import annotations
