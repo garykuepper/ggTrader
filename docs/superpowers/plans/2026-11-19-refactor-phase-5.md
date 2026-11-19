@@ -56,6 +56,30 @@ the interim flow state is defined; `RunHalted` becomes a returned value; and ret
 specified as a concrete owner-gated task (Task 75), with the phase reported **incomplete against the
 design** until it is done. `BASE5` is `73c35417`, not the plan commit.
 
+**Revision 3 (2026-11-19, after the second Sol and Opus reviews), recorded in
+`.superpowers/sdd/2026-11-19-refactor-phase-5/revision-2-report.md`.** Phase-gate hash checks split into
+files that existed at `BASE5` (compared to `BASE5`) and new immutable files (compared to the Task 51
+hashes), and the gate tools, conftests, tiers, both runner scripts, both comparers and `offline.sh` are
+hash-pinned (`$E/p5-tools.sha256`); Task 74 retires every removed `legacy` parametrized node by name and
+defines the pre- and post-retirement must-pass files exactly; Task 75 names every frozen file it edits,
+keeps the per-seed digest values and amends only the digest file's runner-hash provenance, and retires the
+`ModuleLedger` baseline nodes through a filtered baseline, not an edit of the comparator; `Executor.submit`
+returns the broker order id and the **flow** builds `SubmittedOrder` after the old counter updates and the
+post-submit `market_value` read, never in a dry run; `after_orders` receives every order, sells included,
+and `unfilled_exit_errors` receives the raw broker positions; standalone scripts get the repository root on
+`PYTHONPATH` and their own `blocked_connections()` per process, and run under offline, cap and
+serialization; the p5 oracle cap is exactly the approved 6G (no override), the p7 driver is bounded, and the
+tests run even while the oracle half is pending; the generator reaches late-stage planner failures after an
+earlier submission (mutation SM16) and a `membership_source` failure inside the signal `try` (SM17); planners
+are **explicit iterator classes**, not generators, because the real `find_catastrophe_stops` turns a
+`StopIteration` inside its own generator expression into `RuntimeError` today and a heuristic adapter would
+change that; digests are recorded from the Task 49 commit that holds the runner (not `BASE5`) after a
+pre-record review gate; `run_with` moves to a hash-pinned file and `impl.py` holds only `IMPLS`; buys keep
+their order and cross-sleeve duplicates, only sells are sorted unique; the 600-seed checks share one cached
+pass per session; amendment and verdict authority follow the family rule; shared constants and helpers get a
+non-circular home and new modules never import `trader`; the slot-arithmetic explanation is corrected; and
+the final gate results are written after the gate, in Task 78.
+
 ## Scope
 
 **In this plan** (design 5.1 and the phase 5 row of section 7):
@@ -101,9 +125,11 @@ A default is not an approval. Nothing here runs until the owner says so.
   immutable) patches the 25 persist names in the `ggTrader.paper.trader` namespace and relies on
   `ModuleLedger` to make that reach the trader; `tests/paper/test_phase4_pins.py` (immutable) asserts the
   names stay bound in the trader module. Retiring the adapter therefore needs the owner's written approval
-  of three edits to files they asked to keep immutable (a harness ledger injection, a Phase 4 pin
-  amendment, and the 26 persist imports leaving `trader.py`), each proven by the 103 goldens staying
-  byte-identical. Task 75 specifies this concretely. *Recommended: approve Task 75 after Task 74 passes.
+  of edits to a **closed list of frozen files** (Task 75's table: the harness, the Phase 4 pins, this phase's
+  digest runner, the seam contract, the digest file's runner-hash provenance field and, if they patch persist
+  names, the rule tests and their support file, plus two Phase 4 ledger tests), each proven by the 103
+  goldens staying byte-identical and the 600 per-seed digests staying unchanged, and a filtered baseline for
+  the `ModuleLedger` tests that disappear. Task 75 specifies this concretely. *Recommended: approve Task 75 after Task 74 passes.
   Until the owner decides, the hand-back reports Phase 5 as "complete except adapter retirement (O-P5-1)".*
 - **O-P5-2, `RunContext` and the clock.** Design 5.1 says the context holds `now_pt` and "the clock is
   read once". Today `now_pt` is read after signal generation (minutes after the run starts), at the
@@ -117,11 +143,14 @@ A default is not an approval. Nothing here runs until the owner says so.
   (`peak_rss_mb` in `$E/baseline/p5/*.json`), so it cannot pass under 3G; it needs the 6G cap
   (`run_capped.sh` default), and 6G was approved only for the Phase 3 and 4 final runs. Phase 5 needs its own
   recorded approval.** Until the owner writes it (the orchestrator then creates
-  `$E/p5/owner-approved-6G.txt` quoting it), `gate_oracles.sh` refuses to run the p5 driver, the oracle half of
-  every gate is reported "not run: awaiting O-P5-3", and no phase gate is declared passed. The p7 driver is
-  bounded at 3G and 900 s. A 137 or 143 exit stops the task and is reported, never retried with a higher
-  cap. The owner may also drop the per-task oracle (Tasks 55-63, 74) for Phase 5 by saying so; the phase
-  gates keep it.
+  `$E/p5/owner-approved-6G.txt` quoting it, first line exactly `cap=6G`), `gate_oracles.sh` refuses to run the
+  p5 driver, the oracle half of every gate is reported "not run: awaiting O-P5-3", and no phase gate is
+  declared passed. **The tests half still runs and is still compared** (the wrappers of Task 46 Step 3 do not
+  stop at the refusal): a gate is then reported "tests half passed, oracle half pending", which is not a pass.
+  The p5 cap is the literal `6G`, the approved figure, with no environment override and no other value; the
+  p7 driver is bounded at 3G and 900 s and needs no approval. A 137 or 143 exit stops the task and is
+  reported, never retried with a higher cap. The owner may also drop the per-task oracle (Tasks 55-63, 74
+  and 75) for Phase 5 by saying so; the phase gates keep it.
 - **O-P5-4, what "kept seams" mean.** Eight private `PaperTrader` methods are assigned or patched by tests
   (`_submit_order`, `_poll_orders`, `_reconcile_order_intents`, `_reconcile_pending_orders`,
   `_missed_exits`, `_compute_split_corrections`, `_accrue_dividends`, plus `_risk`, `_dry_run` and
@@ -141,7 +170,10 @@ A default is not an approval. Nothing here runs until the owner says so.
 > hang: stop, report, never raise a cap. Builders run only small targeted paths. **Every delegated brief
 > contains this block verbatim and adds: "You must not run `gate_oracles.sh`, `scripts/p5_wfo_validation.py`,
 > `scripts/p7_live_golden.py`, `tests/paper/` as a directory, a whole tier or `--full`; the orchestrator runs
-> those." (A Phase 4 builder ran the oracles anyway; it is recorded as a boundary violation.)**
+> those." (A Phase 4 builder ran the oracles anyway; it is recorded as a boundary violation.)** **Every
+> standalone script this plan adds (the Task 49 log investigation and the digest recorder included) is a heavy
+> job too: it runs only as `./offline.sh env PYTHONPATH=<repository root> ... scripts/run_capped.sh <python>
+> <script>` (see "Standalone scripts" below), capped, serialized, one process at a time.**
 
 Everything in the Phase 0-2 and Phase 4 plans' Global Constraints applies and is not repeated: offline by
 construction (`./offline.sh`, scrubbed environment, no `.env`, no database address), tests only through
@@ -161,13 +193,34 @@ delegate prompts and goldens. Phase 5 adds:
   `ggTrader.paper.persist`, `ggTrader.paper.alpaca_broker`, `ggTrader.paper.notifier`,
   `ggTrader.paper.signal_runner` or `ggTrader.lab`.
 - **Everything is bounded, and the fast core stays fast.** Fixed seed counts, never read from the
-  environment: `FAST_SEEDS = 100` (the first 100 seeds) and `FULL_SEEDS = 600`. **Every test that runs the
-  600 seeds is `@pytest.mark.slow` and `@pytest.mark.timeout_seconds(600)`; every fast test uses the first
-  100 only.** Budgets (one table, used by every task): the Phase 5 fast tests together run in at most 60 s,
-  each 600-seed test in at most 300 s measured (timeout 600 s), every other test keeps the default 180 s
-  limit, and every pytest run keeps `GGT_TEST_MAX_SECONDS` at its default. A budget breach is fixed by making
-  the generator or the runner cheaper, never by lowering a seed count. No loop in a test depends on a wall
-  clock; the harness's fake clock and its runaway guard (`MAX_POLLS = 200`) stay on.
+  environment: `FAST_SEEDS = 100` (the first 100 seeds) and `FULL_SEEDS = 600`. **Each seed is run once per
+  pytest session and summarized once.** `runner.summarize_seed(seed)` runs the **new** implementation under
+  `blocked_connections()` (a session-scoped fixture is set up *before* the function-scoped autouse guard, so
+  it brings its own) and returns a small immutable `SeedSummary`: the digest, the set of witness names
+  reached, the list of safety-invariant violations (a)-(g), and the harness error text or `None`. It never
+  keeps the `Recorded` transcript, so memory stays flat. Two session fixtures in `test_run_digests.py` fill
+  one shared cache keyed by seed: `fast_summaries` (seeds 0-99) and `full_summaries` (seeds 0-599, computing
+  only the seeds the cache lacks). The harness-error, witness, digest and safety tests are **assertions over
+  that cache**, not separate runs; the 600-seed tests are `@pytest.mark.slow` and
+  `@pytest.mark.timeout_seconds(600)` and the first of them pays for the pass. The differential
+  (`test_run_differential.py`, two implementations) has its own 100-seed pass and is the only other
+  seed loop. Budgets (one table, used by every task): the Phase 5 fast tests together run in at most 60 s;
+  the whole 600-seed pass in at most 300 s measured (once, not per test); every other test keeps the default
+  180 s limit; every pytest run keeps `GGT_TEST_MAX_SECONDS` at its default. A budget breach is fixed by
+  making the generator or the runner cheaper, never by lowering a seed count. No loop in a test depends on a
+  wall clock; the harness's fake clock and its runaway guard (`MAX_POLLS = 200`) stay on. Child processes
+  spawned by a test (the determinism test) run only `build_case` (no trader, no broker, no network) with the
+  environment they inherit from `offline.sh` plus `PYTHONHASHSEED` and `PYTHONPATH`.
+- **Standalone scripts** (the Task 49 log investigation and the digest recorder; they live outside the
+  repository). Run from `$E`, they cannot import `tests.paper...` unless the repository root is on the
+  import path, and they run outside pytest, so the autouse connection guard is not there. Every such script
+  (1) is started as `./offline.sh env PYTHONPATH=/home/flynn/ggTrader-refactor PYTHONHASHSEED=<n>
+  GGT_RUN_MEM_MAX=3G GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh .venv/bin/python <script>` (controls after
+  `offline.sh`; one process per command, never two at once), (2) checks at its top that `ggTrader.__file__`
+  and `tests.paper.equivalence.runner.__file__` are under the worktree it was told to use, and (3) wraps the
+  work of **each process** in `tests.netguard.blocked_connections()` (the guard does not cover child
+  processes, so a script spawns none) and exits non-zero if the guard recorded an attempt. Its own sha256 is
+  written next to it.
 - **Two sets of pins, with different rules (Task 51 records them).**
   - **Immutable behavioral set**, hash-recorded in `$E/p5-behavior.sha256` at Task 51: the 103 goldens in
     `tests/paper/golden/trader_transcripts/`, `tests/paper/transcript/harness.py`,
@@ -176,18 +229,44 @@ delegate prompts and goldens. Phase 5 adds:
     `tests/paper/test_phase4_pins.py`, `tests/lab/test_fetch_stock_ohlcv_chain.py`,
     `src/ggTrader/paper/persist.py`, and the files Tasks 47-50 add that describe behavior and do not mention
     the frozen copy: `tests/paper/test_run_rules.py`, `tests/paper/rules_support.py`,
+    `tests/paper/equivalence/run_with.py` (the `run_with` helper; Task 47), `tests/paper/test_run_with.py`,
+    `tests/paper/equivalence/__init__.py`,
     `tests/paper/equivalence/generator.py`, `witnesses.py`, `runner.py`, `tests/paper/test_run_digests.py`,
     `tests/paper/golden/run_equivalence_digests.json` and `tests/paper/test_seam_contract.py`. Phase 5 never
     regenerates a golden or a digest (no regeneration switch exists in any new test; a digest is recorded
     once, by a script that lives outside the repository, and is never re-recorded silently). A change to one
-    of these needs a written amendment note approved by Opus and a new hash record line.
+    of these needs a written amendment note (authority below) and a new hash record line.
+    **Two lists are kept apart, because a git diff against `BASE5` cannot describe a file that did not exist
+    then:** the **pre-existing** immutable paths (every file above that exists at `73c35417`: the 103 goldens,
+    `harness.py`, `scenarios.py`, `test_trader_transcripts.py`, `persist_sql.json`,
+    `test_persist_sql_golden.py`, `test_phase4_pins.py`, `tests/lab/test_fetch_stock_ohlcv_chain.py`,
+    `persist.py`) are checked with `git diff --stat 73c35417 -- <paths>` printing nothing; the **new**
+    immutable files (everything Tasks 47-50 add above) are checked with `sha256sum -c
+    $E/p5-behavior.sha256`, recorded at Task 51. A gate runs both and no other substitute.
   - **Mutable structural set**, reviewed per task and **not** hash-recorded:
     `tests/paper/test_run_structure.py` (the ratchet constants), `tests/paper/test_run_differential.py`,
-    `tests/paper/equivalence/impl.py` (it holds `IMPLS`), `tests/paper/test_run_legacy_frozen.py` and
-    `tests/paper/golden/run_legacy.sha256`. Tasks 57-63 edit the ratchet; Task 74 deletes the differential,
-    the frozen-copy check and its hash, and sets `IMPLS = ("new",)`. Nothing in the gates requires a
-    mutable file after its retirement task (see "The task gate").
-  - The pins whose change is an amendment keep one record: `$E/p5/amendments.md`.
+    `tests/paper/equivalence/impl.py`, `tests/paper/test_run_legacy_frozen.py` and
+    `tests/paper/golden/run_legacy.sha256`. **`impl.py` holds exactly one assignment, `IMPLS`** (plus its
+    docstring and the `Literal` alias); it holds no function, so a mutable file never defines behavior. Tasks
+    57-63 edit the ratchet; Task 74 deletes the differential, the frozen-copy check and its hash, and changes
+    the one `IMPLS` line to `("new",)`, and checks that `git diff` of `impl.py` is exactly that line.
+    Nothing in the gates requires a mutable file after its retirement task (see "The task gate").
+  - **Gate tools are pinned too** (`$E/p5-tools.sha256`, recorded in Task 46 Step 5, checked by `sha256sum -c`
+    and by `git diff --stat 73c35417 -- <repository-resident tools>` at every task gate and phase gate): `scripts/run_tests.sh`,
+    `scripts/run_capped.sh`, `scripts/_heavy_job.sh`, `scripts/compare_test_outcomes.py`,
+    `scripts/compare_evidence_json.py`, `scripts/verify_pins.py`, `scripts/p5_wfo_validation.py`,
+    `scripts/p7_live_golden.py`, the repository-root `conftest.py`, `tests/paper/conftest.py`,
+    `tests/tiers.py`, `tests/netguard.py`, `offline.sh`, `.github/workflows/ci.yml`, `pyproject.toml`,
+    and (outside the repository) the four `$E/p5/gate_*.sh` wrappers and `$E/p5/pins-*.txt`. A change to any
+    of them is an amendment, not a task edit; no Phase 5 task edits one.
+  - **Amendment authority (the family rule applies to amendments and to verdicts).** The pins record one
+    file `$E/p5/amendments.md`. An amendment to a **Claude-built** file (Tasks 47, 48, 50 and their
+    helpers, Task 76) is approved by **Sol**; to a **Codex-built** file (Task 49 and everything Terra builds)
+    by **Opus**; to a file of mixed or unrecorded authorship (the Phase 3-4 harness, `test_phase4_pins.py`) by
+    **both**, each reading the whole amendment. **Opus's verdicts are evidence-based judgments**
+    (CLAUDE.md: trust and verdict calls, audit conclusions, protocol decisions, final synthesis) made on gate
+    results, mutation matrices and Codex-built code; **Opus does not certify a Claude-built test**, and no
+    verdict of this plan lets it. The family that wrote a fix never approves it.
 - **The per-run settings snapshot is preserved.** `run()` builds `TraderConfig.from_env(...)` once, at its
   first line, and stores it as `self._cfg` (Phase 4, Deviations 3 and 4). `RunContext.config` is that
   object. No new module reads the environment or calls `cash_sweep.sweep_enabled`, `sweep_symbol`,
@@ -211,18 +290,50 @@ delegate prompts and goldens. Phase 5 adds:
 - **Layer rules.** The new modules sit in `paper/`; they import nothing from `lab` except what `paper/`
   imports today (`STOCK_BASE_CONFIG`, in `overlay.py`, which Phase 5 does not touch). `tests/utils/test_import_rules.py`
   and `tests/paper/test_paper_boundary.py` stay green without changes.
+- **Shared constants and helpers have a non-circular home; no new module imports `trader`.** `trader.py`
+  imports every new module, so a new module that imports `ggTrader.paper.trader` (or
+  `from ggTrader.paper import trader`) would be circular, and a function-local import would hide it.
+  What the new modules need from `trader.py` moves **down**, to modules that import nothing from the step
+  objects: the constants `MAX_SIGNAL_AGE_DAYS` (4), `STALE_PENDING_DAYS` (5) and `SPLIT_LOOKBACK_DAYS` (14) go
+  to `constants.py` beside `TRADER_LOGGER_NAME`, and the two helpers `as_date(value)` and
+  `account_read_halt(notifier, exc)` go to the new `run_helpers.py` (imports: `constants`, `ports`, `logging`;
+  it logs through `logging.getLogger(TRADER_LOGGER_NAME)`). `trader.py` keeps its old names bound to them
+  (`_MAX_SIGNAL_AGE_DAYS = constants.MAX_SIGNAL_AGE_DAYS`, `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS`,
+  `_as_date = run_helpers.as_date`, `_account_read_halt = run_helpers.account_read_halt`, kept for
+  `run_paper_trading`, for `persist.py`'s docstring reference and for any patch). Because a patch of a
+  `trader` alias would **not** reach the new modules, Task 50 asserts that no test and no harness file
+  patches or assigns `ggTrader.paper.trader.` + one of those five names (today none does). Everything
+  else the new modules need is either already outside `trader.py` (`gates.py`: `SignalGateError`,
+  `late_run_reason`; `ports.py`; `models.py`; `config.py`; `risk.py`; `cash_sweep`; `catastrophe_stop`;
+  `untradable`; `split_check`; `dividend_check`; `ledger.py`) or **injected**: the signal-generation and clock
+  functions through `RunHooks`, the private methods through `TraderSeams`, and `LIVE_MEMBERSHIP_SPEC`,
+  which stays in `trader.py` and is passed in as the `membership` argument. Task 50's scanner fails any new
+  module that imports `ggTrader.paper.trader` in any form.
 - **Names that must stay importable and patchable** (Task 50 turns this into a test that scans the
   tests for dotted strings): everything Phase 4 lists, plus `ggTrader.paper.trader.find_split_applied_symbols`,
   `catastrophe_stop`, `cash_sweep` (module bindings patched by attribute), `time`, `datetime`, `uuid4`,
   `_today_et`, `_now_pt`, `generate_core_signals`, `refresh_benchmark_tape`, `live_membership_source`,
   `require_live_membership_spec`, the 26 persist names, `AlpacaBroker`, `TelegramNotifier`,
-  `DryRunNotifier`, `PaperTrader` and the eight private seams above. Extracted code calls
+  `DryRunNotifier`, `PaperTrader`, the five moved names of "Shared constants and helpers" (as aliases) and
+  the eight private seams above. Extracted code calls
   `catastrophe_stop.<fn>` and `cash_sweep.<fn>` through the module attribute, never `from ... import`.
-- **Exceptions keep their types.** A `StopIteration` raised inside the run (an empty `sleeves` mapping, an
-  exhausted `Mock(side_effect=[...])`) must reach the caller of `run()` as a `StopIteration`, as it does
-  today. A generator would turn it into `RuntimeError` (PEP 479), so planners are consumed through
-  `Planner.advance()` (Interfaces) and `strategy_signals`, `assess_stops` and the sweep planners are plain
-  functions.
+- **Exceptions keep their types, exactly where they are raised today.** Two facts about today's code, both
+  to be measured in Task 48 and not assumed: a `StopIteration` raised by a collaborator **in a plain
+  statement of `_run`** (an empty `sleeves` mapping through `next(iter(...))`, an exhausted
+  `Mock(side_effect=[...])` on `catastrophe_stop.unrealized_pct` in the unassessable scan or in the per-stop
+  call) reaches the caller of `run()` as a `StopIteration`; but the same exhausted mock called **inside
+  `catastrophe_stop.find_catastrophe_stops`, whose body is `sorted(<generator expression>)`**, reaches it as
+  `RuntimeError("generator raised StopIteration")` with the `StopIteration` as `__cause__` (PEP 479, in the
+  collaborator's own frame). A planner that is a generator, behind an adapter that re-raises "a
+  `RuntimeError` whose cause is a `StopIteration`", cannot tell its own frame's conversion from the
+  collaborator's, and would turn the second case into a `StopIteration`. So **planners are explicit iterator
+  classes**: plain classes whose `advance()` is an ordinary method with no `yield`, which hold their cursor
+  and counters as attributes and let every exception propagate untouched. The orchestrator loops
+  `while (d := planner.advance()) is not None`, never `for`, and `OrderFlow.run`, `PreflightGate.check` and
+  every function that calls a collaborator are plain functions or methods. Task 50 forbids `yield`,
+  `yield from` and generator expressions in `planning.py`, `order_flow.py`, `preflight.py`, `portfolio.py` and
+  `risk_assessor.py`, and allows in `reporter.py` only the generator expressions `_run` has in region R7
+  (three at `73c35417`, moved verbatim), so no new frame can convert an exception.
 
 ## Review Focus
 
@@ -253,6 +364,23 @@ named.
 6. **A position record missing a field the run reads late.** A sell's `market_value` is read only after the
    order was submitted, and never in a dry run. Tests: Task 48
    `test_live_exit_reads_market_value_only_after_the_order_is_submitted` and the dry-run twin.
+7. **A planner failing late, after an earlier order went out.** Three today-real shapes: a later catastrophe
+   stop whose position record lacks `qty` (`KeyError('qty')` after the first stop was submitted); an exit
+   validation that finds a position without `qty` after stop orders went out (the validation reads `qty`
+   before any ordinary exit, but after the stops); and a later sleeve's buy whose sleeve is missing from the
+   open-position counts (`KeyError` at `sleeve_open_count[universe]` after an earlier sleeve's buy was
+   submitted). A planner that is drained into a list before the first submission moves all three raises in
+   front of the first order. Tests: Task 48 `test_a_later_stop_without_qty_raises_after_the_first_stop_order_went_out`,
+   `test_exit_validation_without_qty_raises_after_the_stop_orders`,
+   `test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy`; generator witnesses W16-W18
+   (Task 49) and mutation SM16.
+8. **`live_membership_source` failing inside the signal `try`.** Its call is an argument of the
+   `generate_core_signals(...)` call, so a failure (an unselected or unreadable membership source) is caught by
+   the `except Exception` of the signals block: the owner gets `Paper trading failed: signal generation
+   error` plus the exception text, then the exception propagates, and `generate_core_signals` is never
+   called. A gate that evaluated the source before the `try` would raise with no alert. Tests: Task 48
+   `test_a_membership_source_failure_sends_the_signal_generation_error_alert`, Task 57
+   `test_membership_source_failure_is_inside_the_signal_try`, mutation SM17.
 
 ## Preserved quirks (recorded, not fixed)
 
@@ -286,6 +414,12 @@ Each is pinned by a transcript or a named test, and carried through every task u
     submitted** (and after the symbol was booked), never before and never in a dry run. A position record
     without `market_value` therefore raises `KeyError` *after* a live order went out (Task 48 characterizes
     it; the planners must not read the field earlier).
+12. **A `StopIteration` from `catastrophe_stop.unrealized_pct` keeps its type in two places and becomes
+    `RuntimeError` in the third.** In the unassessable scan and in the per-stop percentage call it reaches
+    the caller as `StopIteration`; inside `find_catastrophe_stops` (a `sorted` over a generator expression) it
+    reaches the caller as `RuntimeError("generator raised StopIteration")` (Task 48 measures all three).
+13. **Late failures leave earlier orders live** (Review Focus 7): a later stop or sleeve whose position or
+    count record is incomplete raises after earlier orders were submitted, with no cancellation attempted.
 
 ## The nets, by name
 
@@ -296,8 +430,8 @@ Each is pinned by a transcript or a named test, and carried through every task u
 | **K** shape pins | result key order, tuple sites, environment timing, poll fallback | `tests/paper/test_phase4_pins.py` (immutable) |
 | **C** chain, **G** live golden, **N** guard, **S** surface, **I** imports, **V** pins | as in Phase 4 | unchanged |
 | **R** rules (new, Task 48) | one named test per rule of design 5.1, each also citing the existing tests that pin it, run against `_run` and `_run_legacy`; hook-order events; the characterizations the transcripts miss | `tests/paper/test_run_rules.py` (immutable) |
-| **D** digests (new, Task 49) | the new run of 100 seeds (fast) and 600 seeds (slow) against recorded digests of transcript plus log records, taken from the untouched code; safety invariants over the same seeds | `tests/paper/test_run_digests.py`, `equivalence/`, `golden/run_equivalence_digests.json` (immutable) |
-| **E** differential (new, Task 47/49) | new run equals old run for 100 seeds (transcript plus log records). **Blind to helpers the two share** (see "Standard mutations") | `tests/paper/test_run_differential.py` (mutable; deleted in Task 74) |
+| **D** digests (new, Task 49) | the new run of 100 seeds (fast) and 600 seeds (slow), each seed run once per session and summarized (digest, witnesses reached, safety violations), against recorded digests of transcript plus log records taken from the untouched code (recorded at the Task 49 commit that holds the runner); safety invariants and witnesses over the same cached pass | `tests/paper/test_run_digests.py`, `equivalence/` (including `run_with.py`), `golden/run_equivalence_digests.json` (immutable) |
+| **E** differential (new, Task 47/49) | new run equals old run for 100 seeds (transcript plus log records). **Blind to helpers the two share** (see "Standard mutations"). Needs `run_with` from the immutable `equivalence/run_with.py`; the mutable `impl.py` only says which implementations exist | `tests/paper/test_run_differential.py` (mutable; deleted in Task 74) |
 | **Q** seams and structure (new, Task 50) | legacy patch seams still intercept; imports and environment discipline of new modules; `InMemoryLedger` out of production code; ratchet on `_run` | `tests/paper/test_seam_contract.py` (immutable), `tests/paper/test_run_structure.py` (mutable) |
 | **F** frozen copy (new, Task 47) | `_run_legacy` source hash | `tests/paper/test_run_legacy_frozen.py` (mutable; deleted in Task 74) |
 | **O** oracle, **P** outcomes | as in Phase 0-2; baselines under `$E` | `gate_*.sh` in `$E/p5/` |
@@ -330,7 +464,8 @@ New modules under `src/ggTrader/paper/` (each module docstring lists its public 
 | `risk_assessor.py` | `RiskAssessor` | 59 | `_run` 955-1034 |
 | `order_flow.py` | `OrderFlow`, `FlowOutcome` (the staged plan-then-execute glue) | 60-62 | `_run` 1048-1397 |
 | `reporter.py` | `RunReporter` | 63 | `_run` 1036-1046, 1399-1553 |
-| `constants.py` (edit) | `TRADER_LOGGER_NAME` | 52 | none |
+| `constants.py` (edit) | `TRADER_LOGGER_NAME`, `MAX_SIGNAL_AGE_DAYS`, `STALE_PENDING_DAYS`, `SPLIT_LOOKBACK_DAYS` | 52 | module constants 83, 89, 113 (trader keeps aliases) |
+| `run_helpers.py` | `as_date`, `account_read_halt` (non-circular home; see Global Constraints) | 52 | `_as_date` 126, `_account_read_halt` 131 (trader keeps aliases) |
 
 Rows of design 5.1 not in the table: `TraderConfig` and `RunResult` exist since Phase 4 (`config.py`,
 `models.py`) and are only consumed here; `RunContext` is in `models.py`. `ledger.py` is not in the table:
@@ -347,13 +482,14 @@ signal derivation 816, freshness gate 832); R3 portfolio 857-953; R4 risk 955-10
 | Path | Edited by |
 |---|---|
 | `src/ggTrader/paper/trader.py` | 47, 52, 55-63, 74, 75, 76 |
-| `src/ggTrader/paper/models.py`, `constants.py`, `seams.py` | 52 (`models.py` also 53-54 only for a field a planner needs, reported) |
+| `src/ggTrader/paper/models.py`, `constants.py`, `seams.py`, `run_helpers.py` | 52 (`models.py` also 53-54 only for a field a planner needs, reported) |
 | `src/ggTrader/paper/ledger.py` | 75 only (delete `ModuleLedger`) |
 | `planning.py` | 53, 54 (then only by 60-62 for a wiring fix, reported) |
 | `execution.py` | 55, 60, 61, 62 |
 | `corporate_actions.py` / `preflight.py` / `portfolio.py` / `risk_assessor.py` / `reporter.py` | 56 / 57 / 58 / 59 / 63 |
 | `order_flow.py` | 60, 61, 62 |
-| `tests/paper/test_run_legacy_frozen.py`, `tests/paper/golden/run_legacy.sha256`, `tests/paper/equivalence/__init__.py`, `equivalence/impl.py`, `tests/paper/test_run_differential.py` (first version) | 47 (the last four edited by 49; all deleted or reduced in 74) |
+| `tests/paper/test_run_legacy_frozen.py`, `tests/paper/golden/run_legacy.sha256`, `tests/paper/equivalence/impl.py` (only `IMPLS`), `tests/paper/test_run_differential.py` (first version) | 47 (the differential edited by 49; all deleted or reduced in 74) |
+| `tests/paper/equivalence/__init__.py`, `tests/paper/equivalence/run_with.py`, `tests/paper/test_run_with.py` | 47 (immutable from Task 51) |
 | `tests/paper/test_run_rules.py`, `tests/paper/rules_support.py` | 48 |
 | `tests/paper/equivalence/generator.py`, `witnesses.py`, `runner.py`, `tests/paper/test_run_digests.py`, `tests/paper/golden/run_equivalence_digests.json`, `tests/paper/test_run_differential.py` (differential cases) | 49 |
 | `tests/paper/test_seam_contract.py`, `tests/paper/test_run_structure.py` | 50, then the ratchet constant by 57-63, 74 |
@@ -392,8 +528,9 @@ class OrderIntent:
     size: float                  # qty for a SELL, notional for a BUY: the 2nd argument of _submit_order
     reason: str | None
     book_amount: float | None    # SubmittedOrder.amount when it is known BEFORE the order (sweep sell: the sized
-                                 # notional; buy and sweep buy: the notional). None for STOP and EXIT: the flow
-                                 # reads strategy_positions[symbol]["market_value"] AFTER _submit_order returns,
+                                 # notional; buy and sweep buy: the notional). None for STOP and EXIT: the FLOW
+                                 # reads strategy_positions[symbol]["market_value"] AFTER `executor.submit` returned
+                                 # AND after it updated the old counters (stopped / executed_sells / regular_sell_count),
                                  # from the mapping it handed the planner, and never in a dry run (Quirk 11).
     sleeve: str | None = None; unrealized_pct: float | None = None; stop_threshold: float | None = None
 @dataclass(frozen=True, slots=True)
@@ -403,7 +540,10 @@ class InvalidExit: symbol: str; error: str    # the orchestrator appends the err
 Decision = OrderIntent | Skip | InvalidExit
 @dataclass(frozen=True)
 class StrategySignals:
-    buys: tuple[tuple[str, str], ...]; sells: tuple[str, ...]      # (symbol, sleeve); sorted unique
+    buys: tuple[tuple[str, str], ...]   # (symbol, sleeve) in the ORDER of `all_buys` today: sleeve by sleeve, each
+                                        # sleeve's own order, NOT sorted, NOT deduplicated (the same symbol in two
+                                        # sleeves appears twice; Quirk 6). The tuple holds exactly the list's items.
+    sells: tuple[str, ...]              # `sorted(set(all_sells))`: the ONLY sorted-unique field
     last_exit: Mapping[str, str]; as_of: str; weights: Mapping[str, float]; scale: float
 @dataclass
 class ExecutionBook:   # mutable on purpose: the run's accumulator; its lists are returned as they are
@@ -419,12 +559,14 @@ class RunContext: today_et: date; config: TraderConfig; pending_symbols: frozens
 # paper/planning.py -- pure; no logging, no broker, no notifier, no ledger, no environment
 class Planner(Protocol):
     def advance(self) -> Decision | None: ...    # the next decision, or None when the stage is exhausted
-# A generator body plus ONE adapter, `_GeneratorPlanner`, is the only code that touches StopIteration:
-#   advance(): try next(gen); except StopIteration -> return None (normal end);
-#   except RuntimeError whose __cause__ is a StopIteration raised inside the body and whose text is
-#   "generator raised StopIteration" -> raise that original StopIteration (PEP 479 would otherwise change
-#   its type, and a `for` loop over a planner would end silently). The orchestrator never uses `for` on a
-#   planner; it loops `while (d := planner.advance()) is not None`.
+# Every planner is an EXPLICIT ITERATOR CLASS (`StopPlanner`, `ExitValidationPlanner`, `ExitPlanner`,
+# `BuyPlanner`): an ordinary class whose `advance()` is a plain method with no `yield`, holding its cursor
+# and counters as attributes. Nothing wraps or inspects an exception: whatever a collaborator raises
+# (`StopIteration`, `KeyError`, a `RuntimeError` produced by a collaborator's own generator expression)
+# leaves `advance()` as it left the collaborator. After the stage is exhausted `advance()` keeps returning
+# `None`. The orchestrator never uses `for` on a planner; it loops `while (d := planner.advance()) is not None`.
+# The planning functions named below as returning `Planner` are the constructors of these classes
+# (`plan_stops(...) -> StopPlanner`), kept as functions so the call sites read as before.
 class RiskLimits(Protocol):      # RiskGuard satisfies it; used read-only
     def max_new_positions(self, current_count: int) -> int: ...
     def sleeve_slot_caps(self, weights: dict[str, float]) -> dict[str, int]: ...
@@ -454,22 +596,31 @@ def plan_sweep_buy(*, cfg: TraderConfig, mid_account: Account) -> OrderIntent | 
 
 # paper/execution.py
 class Executor(Protocol):
+    submits_orders: bool            # True on OrderExecutor, False on DryRunExecutor: the flow branches on THIS,
+                                    # never on the value `submit` returned (a seam may return None or a mock)
     def recover_intents(self) -> None: ...
-    def submit(self, intent: OrderIntent) -> SubmittedOrder | None: ...        # None in a dry run
+    def submit(self, intent: OrderIntent) -> str | None: ...   # the BROKER ORDER ID the seam returned; None in a dry
+                                                               # run. It builds no SubmittedOrder and reads no position
     def announce(self, intent: OrderIntent) -> None: ...      # the message sent after the intent is booked
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]: ...
-    def after_sells(self, filled: Mapping[str, OrderStatus]) -> None: ...
-    def after_orders(self, orders: Sequence[SubmittedOrder]) -> None: ...
+    def after_sells(self, filled: Mapping[str, OrderStatus]) -> None: ...   # `filled` = what `poll` of the sells returned
+    def after_orders(self, orders: Sequence[SubmittedOrder]) -> None: ...   # EVERY order submitted this run, sells included
     def unfilled_exit_errors(self, orders: Sequence[SubmittedOrder], filled: Mapping[str, OrderStatus],
-                             positions: Mapping[str, Position]) -> list[str]: ...
+                             broker_positions: Mapping[str, Position]) -> list[str]: ...
+    # `broker_positions` is the RAW `positions` mapping of `broker.get_positions()` (today's
+    # `positions[symbol]["qty"]` is the expected quantity), NOT `strategy_positions` and not the corrected view.
 class OrderExecutor:                       # live; holds the bodies moved in Task 55
     def __init__(self, *, broker: Broker, notifier: Notifier, ledger: PaperLedger, hooks: RunHooks,
                  lock: Callable[[], RunLock | None], read_only: bool, seams: TraderSeams) -> None
     # (a) the RUN-PATH methods of the Executor protocol. They reach the work only through the seams, so a
     #     test assignment or class patch of a private PaperTrader method intercepts the new run exactly as it
     #     intercepts the old one (S7):
-    #       recover_intents -> seams.reconcile_intents(); submit -> seams.submit_order(side, symbol, size, reason);
-    #       poll -> seams.poll_orders(list(orders)); after_sells / after_orders -> seams.reconcile_intents()
+    #       recover_intents -> seams.reconcile_intents(); submit -> seams.submit_order(side, symbol, size, reason)
+    #       and returns its return value (the order id) untouched; poll -> seams.poll_orders(list(orders));
+    #       after_sells -> seams.reconcile_intents() when `filled` is non-empty (today `if filled_orders and not
+    #       self._dry_run`); after_orders -> seams.reconcile_intents() when `orders` is non-empty (today
+    #       `if pending_orders and not self._dry_run`; `orders` includes the sells); the sweep buy's
+    #       reconcile (live branch only, unconditional there) is `recover_intents()`, which is the same seam call.
     # (b) the MOVED BODIES, called only by the PaperTrader forwards (S1) and by tests:
     def submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str
     def poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, OrderStatus]
@@ -498,6 +649,9 @@ class PreflightGate:
     def __init__(self, *, broker: Broker, notifier: Notifier, hooks: RunHooks, membership: str | None,
                  read_only: bool, dry_run: bool, skipped_writes: list[str]) -> None
     def check(self) -> PreflightResult | Halted           # the old errors (signal gate, StopIteration) still raise
+    # `hooks.membership_source(membership)` is evaluated INSIDE the signal `try`, as the argument of
+    # `hooks.generate_signals(persist_tape=..., membership=...)`, so its failure sends the "signal generation
+    # error" alert and re-raises, and `generate_signals` is never reached (Review Focus 8).
 
 # paper/portfolio.py
 @dataclass(frozen=True)
@@ -613,10 +767,19 @@ snapshot step, as today.
   names differ at each hop (`submit` / `submit_order` / `_submit_order`), so there is no recursion; Task 55
   tests the whole chain and a recursion guard. `DryRunExecutor.submit` never calls the seam, so a mock
   `_submit_order` is never reached in a dry run, as today. The run makes the same seam calls, in the same
-  order and number, in dry and live runs (`_poll_orders([])` twice in a dry run).
-- **S8. Exceptions keep their types** (Global Constraints): planners are advanced, not iterated;
-  `strategy_signals`, `assess_stops`, `plan_sweep_sell`, `plan_sweep_buy` and `PreflightGate.check` are plain
-  functions or methods, not generators.
+  order and number, in dry and live runs (`_poll_orders([])` twice in a dry run). **Who builds what:**
+  `Executor.submit` returns only the order id (a `str`; `None` in a dry run). The **flow** keeps the order of
+  today's statements: submit, then the old counters and sets (`stopped`, `executed_sells`,
+  `regular_sell_count`, `executed_buys`, `buys_attempted`, `sleeve_open_count`), then **the post-submit
+  `strategy_positions[symbol]["market_value"]` read for a stop or an exit**, then `SubmittedOrder(...)` appended
+  to the book, then the announcement. In a dry run (`executor.submits_orders` is False) the flow updates the
+  same counters and announces, but builds no `SubmittedOrder` and reads no `market_value`. A seam that returns
+  `None` or a mock in a live run is still a live order.
+- **S8. Exceptions keep their types** (Global Constraints): planners are explicit iterator classes advanced
+  with `advance()`, never generators and never iterated with `for`; `strategy_signals`, `assess_stops`,
+  `plan_sweep_sell`, `plan_sweep_buy`, `OrderFlow.run` and `PreflightGate.check` are plain functions or
+  methods. No adapter, no `try` and no `except` anywhere in the planners touches `StopIteration` or
+  `RuntimeError`.
 
 ## Deviations from the design
 
@@ -636,8 +799,8 @@ snapshot step, as today.
    execute (a stop sell frees a slot before the sweep funding is estimated; the sweep sell is computed from
    the post-stop position set), so the planners cannot return one list. Without a home for it `_run` would
    stay near 200 lines.
-4. **Planners are lazy `Planner` objects** advanced one decision at a time, not functions returning lists
-   (Review Focus 1) and not bare generators (S8). They are still pure.
+4. **Planners are lazy `Planner` objects** (explicit iterator classes) advanced one decision at a time, not
+   functions returning lists (Review Focus 1) and not generators (S8). They are still pure.
 5. **`ModuleLedger` stays until Task 75** (O-P5-1), and so do the eight private seams (O-P5-4). Without
    Task 75 the phase is incomplete against design section 7, and every report says so.
 6. **Test migration scope.** "Migrate the trader tests to the in-memory ledger" means the 239 persist-name
@@ -668,8 +831,12 @@ snapshot step, as today.
 | 15 | Unused `_run_legacy` helpers or stale imports after Task 74 | `trader.py` | Task 74 removes only names `trader.py` no longer uses and that no test or harness patches (Task 50 list) |
 | 16 | A planner reads a position field before the order that needs it (`market_value` after submit, never in a dry run) | planners | Task 48 characterizations; Task 53 `Mapping`-subclass lookup counts |
 | 17 | A mutation in a helper that old and new runs share passes the differential | executors, `__init__`, ledger | "Standard mutations" table names the nets per site; D and T carry the shared sites |
-| 18 | A `StopIteration` inside a planner becomes `RuntimeError` | planners | `Planner.advance()`; Task 53 tests with an exhausted mock side effect |
+| 18 | A `StopIteration` inside a planner changes type, or a collaborator's own `RuntimeError` (the one `find_catastrophe_stops` produces from its generator expression) is mistaken for one and rewritten | planners | explicit iterator classes, no adapter (Global Constraints); Task 48 measures all three call sites; Task 53 tests each; Task 50 forbids `yield` and generator expressions in the new modules |
 | 19 | The new run bypasses `trader._submit_order = MagicMock(...)` and calls the real ledger and lock | executors | S7; Task 55 chain tests; Task 50 seam-interception tests |
+| 20 | A planner drained before the first submission moves a late failure in front of the first order (Review Focus 7) | planners, flow | Task 48 late-failure tests; W16-W18; SM16 |
+| 21 | `membership_source` evaluated outside the signal `try` loses the alert (Review Focus 8) | gate | Task 48 and Task 57 tests; SM17 |
+| 22 | A gate tool, conftest, tier file or wrapper edited to make a gate pass | `scripts/`, `conftest.py`, `$E/p5/` | `$E/p5-tools.sha256` and `git diff 73c35417` on the repository-resident tools at every gate |
+| 23 | A new module imports `trader` (circular) or copies a constant the trader also holds | new modules | "Shared constants and helpers" in Global Constraints; Task 50 scanner |
 
 ## Order of work
 
@@ -728,6 +895,8 @@ by design** and the digests, the transcripts and the named test must fail instea
 | 13b | `ReadOnlyLedger`'s skip message goes to a different logger | **S** | logger test; D | blind |
 | 14 | trade alert shows the intended amount for a filled order | N (`RunReporter`) | T; D | must fail |
 | 15 | drop `if loss_halts: all_buys = []` (a loss halt no longer clears the buys) | N | `drawdown_halt`, `daily_loss_halt` goldens; `test_loss_limit_allows_protective_exit_but_blocks_new_buys`; D | must fail |
+| 16 | **materialize a planner before submission**: evaluate every decision of a stage (the stop loop, the exits, the buys) before its first order is submitted, then submit. In `OrderFlow`: drain `advance()` into a list first. In the inline `_run` (before Task 60): a pre-pass that performs the same reads (`strategy_positions[symbol]["qty"]`, `sleeve_open_count[universe]`) over every candidate ahead of the first `_submit_order` | N (inline stage before Task 60; `OrderFlow` after) | Task 48 `test_a_later_stop_without_qty_raises_after_the_first_stop_order_went_out`, `test_exit_validation_without_qty_raises_after_the_stop_orders`, `test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy` (the raise moves in front of the first order, so the call sequence differs); Task 54 `test_plan_buys_evaluates_each_symbol_only_after_the_previous_intent_was_consumed`; witnesses W16-W18 and D | must fail |
+| 17 | evaluate `hooks.membership_source(...)` before the signal `try` (or outside it) | N (`PreflightGate`) | Task 48 `test_a_membership_source_failure_sends_the_signal_generation_error_alert`; Task 57 `test_membership_source_failure_is_inside_the_signal_try`; D (witness W19: a membership-source failure) | must fail |
 
 ## The task gate
 
@@ -736,23 +905,27 @@ run, and the exact spelling of `-m "not slow"` is confirmed in Task 46 Step 3 wi
 
 **Pin lists** (written in Task 46 Step 3, one path per line, read by every gate; a path appears only from the
 task that creates it, and **no gate names a deleted or a frozen mutable file after its retirement task**):
-- `$E/p5/pins-pre.txt`: `test_run_rules.py`, `test_run_digests.py`, `test_run_differential.py`,
+- `$E/p5/pins-pre.txt`: `test_run_rules.py`, `test_run_with.py`, `test_run_digests.py`, `test_run_differential.py`,
   `test_run_legacy_frozen.py`, `test_seam_contract.py`, `test_run_structure.py`, `test_persist_sql_golden.py`,
   `test_phase4_pins.py` (all under `tests/paper/`). Used by Tasks 47-73.
 - `$E/p5/pins-post.txt`: the same minus `test_run_differential.py` and `test_run_legacy_frozen.py`. Used from
-  Task 74 on (Task 74 runs **both**, see there).
+  Task 74 on (Task 74 collects with **both**, see there).
 - `$E/p5/units.txt`: the unit-test files of the new modules (`test_seams.py`, `test_planning.py`,
   `test_execution.py`, ...), each appended by the task that creates it.
 
 1. `.venv/bin/ruff check . && .venv/bin/ruff format --check .` clean.
 2. **T and the hash records:** `T tests/paper/test_trader_transcripts.py`, no golden regenerated, then
-   `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256` (and, from Task 51, `$E/p5-behavior.sha256`) prints OK
-   for every line, and `git diff --stat 73c35417 -- src/ggTrader/paper/persist.py src/ggTrader/paper/ledger.py
-   tests/paper/transcript tests/paper/golden/trader_transcripts tests/paper/golden/persist_sql.json
-   tests/paper/test_trader_transcripts.py
-   tests/paper/test_persist_sql_golden.py tests/paper/test_phase4_pins.py` prints nothing (Task 75 amends the
-   `ledger.py`, `transcript` and `test_phase4_pins.py` entries with the owner's approval, and records it in
-   `$E/p5/amendments.md`).
+   `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-tools.sha256` (and, from Task 51,
+   `$E/p5-behavior.sha256`) prints OK for every line, and the **two-list check of Global Constraints**:
+   (a) `git diff --stat 73c35417 -- <pre-existing immutable paths> <repository-resident tools>` prints nothing
+   (the paths: `src/ggTrader/paper/persist.py src/ggTrader/paper/ledger.py tests/paper/transcript
+   tests/paper/golden/trader_transcripts tests/paper/golden/persist_sql.json
+   tests/paper/test_trader_transcripts.py tests/paper/test_persist_sql_golden.py tests/paper/test_phase4_pins.py
+   tests/lab/test_fetch_stock_ohlcv_chain.py`, plus the tool list of Global Constraints) and (b) the new
+   immutable files are checked **only** by the `$E/p5-behavior.sha256` hashes (a diff against `BASE5` would
+   list them as added and is not used for them). Task 75 amends the `ledger.py`, `transcript`,
+   `test_phase4_pins.py` and the behavioral-set entries it names, with the owner's approval, recorded in
+   `$E/p5/amendments.md`.
 3. **The pins:** `T $(cat $E/p5/pins-pre.txt) -m "not slow"` (Tasks 47-73) or `pins-post.txt` (Task 74 on).
    Tasks 55-63 and 74 also run the 600-seed digest test: `T tests/paper/test_run_digests.py -m slow`.
 4. **The neighbourhood:** `T tests/paper tests/utils -m "not slow"` (the paper tests run under the guard N;
@@ -762,8 +935,9 @@ task that creates it, and **no gate names a deleted or a frozen mutable file aft
 6. **The oracle O** (Tasks 55-63, 74 and 75 only; label `t<task number>`): `$E/p5/gate_oracles.sh t<NN>`, then
    `PART=oracle $E/p5/gate_compare.sh t<NN>` (the oracle half only; the tests half was step 3 and 4 above),
    exit 0 against `$E/baseline`. The p5 driver runs only with the owner's
-   recorded 6G approval (O-P5-3); without it this step is reported "not run" and the task is not marked
-   gate-complete. The oracle drivers do not import `paper.trader`, so here it is mainly an import-time and
+   recorded 6G approval (O-P5-3) and at exactly 6G; without it this step is reported "not run" and the task is
+   marked "tests half passed, oracle half pending", never gate-complete, and **steps 1-5 and 7 still run and
+   still count**. The oracle drivers do not import `paper.trader`, so here it is mainly an import-time and
    shared-module slip detector; the owner may drop it per task by saying so.
 7. **Orchestrator re-verification:** it reads the diff with `git diff --color-moved=dimmed-zebra BASE..HEAD`,
    confirms every moved block is a pure move, reruns steps 1-4 itself, and does not pass on a builder's claim.
@@ -774,14 +948,27 @@ Where a task below says "the task gate" it means steps 1-5 and 7, plus step 6 wh
 steps 1-4 and 7, with the Task 65-73 protocol replacing step 5.
 
 **The phase gates** (Tasks 51, 64, 77), run by the orchestrator one job at a time: the whole fast core (`T`),
-the `--full` tier and `--studies` (`$E/p5/gate_run.sh LABEL`: oracle half, then two junit files, 3G tests), then
+the `--full` tier and `--studies` (`$E/p5/gate_run.sh LABEL`: oracle half, then two junit files, 3G tests; an oracle
+refusal for want of the 6G approval is recorded and the tests half still runs), then
 `PHASE=pre|post $E/p5/gate_compare.sh LABEL` (oracle compare against `$E/baseline`; test-outcome compare against
 `$E/p5-base-core.xml,$E/p5-base-studies.xml` with `$E/p5/must-pass-<pre|post>.txt`), `scripts/verify_pins.py`
-with the counts in `.github/workflows/ci.yml`, the mutation matrix, the hash records, and the reviews of the
-roles table. **Pre and post retirement:** gates up to Task 73 use `pre` (its must-pass file lists the
-differential and frozen-copy nodes); Task 74 and later use `post` (no node of a deleted file). Both must-pass
-files contain the 277 `test_trader.py` node ids, the two live-golden nodes, `safety-nodes.txt`, and every node
-of the immutable behavioral set.
+with the counts in `.github/workflows/ci.yml`, the mutation matrix, the hash records (the two-list check and
+`$E/p5-tools.sha256`), and the reviews of the roles table. A phase gate is **passed** only when both halves
+passed; "tests half passed, oracle half pending" is reported as exactly that. **Pre and post retirement:** gates up to Task 73 use `pre`; Task 74 and later use `post`. The two files
+are defined exactly, and Task 74 produces `post` from `pre` by an explicit, checked list:
+- `must-pass-pre.txt` = `$E/safety-nodes.txt` + the two live-golden node ids + the 277 `test_trader.py`
+  node ids + every node of the new behavioral and structural tests as collected with `--collect-only -q`
+  (fast and slow) at the Task 51 head, **including** every `[...legacy...]` parametrized node of the rules and
+  seam tests and every node of the differential and frozen-copy files.
+- `$E/p5/retired-nodes.txt` (Task 74) = **every node that exists in `pre` and no longer exists after Task 74**:
+  (i) every node of `test_run_differential.py` and `test_run_legacy_frozen.py` (deleted files), (ii) every
+  parametrized node of `test_run_rules.py`, `test_seam_contract.py` and any other file collected over `IMPLS`
+  whose id carries the `legacy` implementation, (iii) any further node `--collect-only` shows as gone, each
+  with a one-line reason. It never contains a node of the baseline (`p5-base-*.xml`) and never a `new` node.
+- `must-pass-post.txt` = `must-pass-pre.txt` minus `retired-nodes.txt` plus the new nodes Task 74 adds (its two
+  structure tests). A node of `pre` that is neither retired nor in `post` stops the gate.
+Both files contain the 277 `test_trader.py` node ids and the two live-golden nodes. `gate_compare.sh` takes
+`PHASE=pre|post` and is run against the matching file only.
 
 ## Tasks
 
@@ -790,8 +977,8 @@ of the immutable behavioral set.
 **Files:** none under `src/` or `tests/`. Evidence under `$E` (not in git).
 
 - [ ] **Step 1: Preconditions.** The owner has approved execution; O-P5-1 to O-P5-5 are answered in writing
-  (a default is not an answer; O-P5-3's 6G approval is recorded in `$E/p5/owner-approved-6G.txt`, quoting the
-  owner, or the oracle steps below are reported "not run"); the plan commit is the head of `refactor/phase-4`;
+  (a default is not an answer; O-P5-3's 6G approval is recorded in `$E/p5/owner-approved-6G.txt`, first line
+  exactly `cap=6G`, then the owner's words, or the oracle steps below are reported "not run" and the tests half still runs); the plan commit is the head of `refactor/phase-4`;
   `git status --short` is empty; no heavy job runs.
 - [ ] **Step 2: Branch and `BASE5`.** **`BASE5` is `73c35417`** (the code head of Phases 3 and 4 integrated),
   not whatever commit the plan sits on. Check `git rev-parse 73c35417` resolves, and
@@ -808,30 +995,39 @@ of the immutable behavioral set.
   four **new** under `$E/p5/` (`chmod +x`), modelled on `$E/p4/gate_*.sh`; the label namespace is `p5-<label>`;
   every control follows `offline.sh`. Keep a `diff` of each against its model in `$E/p5/*.diff`.
 
-  `$E/p5/gate_oracles.sh LABEL`:
+  `$E/p5/gate_oracles.sh LABEL` (**the p5 cap is the literal `6G` and cannot be changed from the
+  environment; the p7 driver is the literal 3G and 900 s; the refusal is a recorded status, not a stop of the
+  whole gate**):
   ```bash
   #!/usr/bin/env bash
   set -u
   E=/home/flynn/ggTrader-refactor-evidence
   L=p5-${1:?label required}
-  WT=${WT:-/home/flynn/ggTrader-refactor}
-  P5_MEM=${P5_ORACLE_MEM_MAX:-6G}   # the p5 driver peaked at 3,916 MB at the baseline: 3G cannot pass
+  WT=/home/flynn/ggTrader-refactor
+  P5_MEM=6G            # the one approved figure (O-P5-3); the p5 driver peaked at 3,916 MB, so 3G cannot pass
+  P7_MEM=3G; P7_SECONDS=900
   cd "$WT" || exit 1
-  if [[ "$P5_MEM" != "3G" && ! -s "$E/p5/owner-approved-6G.txt" ]]; then
-      echo "p5 oracle not run: no recorded owner approval of the 6G cap (O-P5-3)" >&2
-      exit 2
-  fi
   mkdir "$E/$L" || exit 1
-  ./offline.sh env GGT_RUN_MEM_MAX="$P5_MEM" GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh \
-      .venv/bin/python scripts/p5_wfo_validation.py --runs all --force --out-dir "$E/$L/p5" > "$E/$L-p5.log" 2>&1
-  rc=$?
-  printf 'p5 exit=%s\n' "$rc" > "$E/$L-oracle-status.txt"
-  (( rc == 0 )) || exit "$rc"
-  ./offline.sh env GGT_RUN_MEM_MAX=3G GGT_RUN_MAX_SECONDS=900 scripts/run_capped.sh \
+  if [[ "$(head -n1 "$E/p5/owner-approved-6G.txt" 2>/dev/null)" != "cap=$P5_MEM" ]]; then
+      echo "p5 oracle not run: no recorded owner approval of cap=$P5_MEM (O-P5-3)" >&2
+      printf 'p5 not-run\n' > "$E/$L-oracle-status.txt"
+      rc=2
+  else
+      ./offline.sh env GGT_RUN_MEM_MAX="$P5_MEM" GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh \
+          .venv/bin/python scripts/p5_wfo_validation.py --runs all --force --out-dir "$E/$L/p5" \
+          > "$E/$L-p5.log" 2>&1
+      rc=$?
+      printf 'p5 exit=%s\n' "$rc" > "$E/$L-oracle-status.txt"
+      # a real failure (a cap kill 137, a time stop 143, a busy 75) stops the oracle half here and is reported
+      (( rc == 0 )) || exit "$rc"
+  fi
+  # the p7 driver is bounded and needs no approval, so it runs even when p5 was refused
+  ./offline.sh env GGT_RUN_MEM_MAX="$P7_MEM" GGT_RUN_MAX_SECONDS="$P7_SECONDS" scripts/run_capped.sh \
       .venv/bin/python scripts/p7_live_golden.py --out "$E/$L/p7.json" > "$E/$L-p7.log" 2>&1
-  rc=$?
-  printf 'p7 exit=%s\n' "$rc" >> "$E/$L-oracle-status.txt"
-  (( rc == 0 )) || exit "$rc"
+  rc7=$?
+  printf 'p7 exit=%s\n' "$rc7" >> "$E/$L-oracle-status.txt"
+  (( rc == 0 )) || exit "$rc"          # 2 = p5 not run for want of the approval
+  exit "$rc7"
   ```
   `$E/p5/gate_tests.sh LABEL`: the same shape with `./offline.sh env GGT_TEST_MEM_MAX=3G scripts/run_tests.sh
   --full -rA --junitxml="$E/$L-core.xml" tests > "$E/$L-core.log" 2>&1`, status `core exit=N`, then
@@ -840,15 +1036,23 @@ of the immutable behavioral set.
 
   `$E/p5/gate_compare.sh LABEL` with `PART=oracle|tests|all` (default `all`) and `PHASE=pre|post` (needed for
   `tests` and `all`): it checks the status files the part needs (`$'p5 exit=0\np7 exit=0'` for the oracle half;
-  `$'core exit=0\nstudies exit=0'` for the tests half; the `-run.txt` marker `run-done` for `all`), then
+  `$'core exit=0\nstudies exit=0'` for the tests half; the `-run.txt` marker `run-done` for `all`). With
+  `PART=all` it compares the tests half even when the oracle status says `p5 not-run`, and then exits 3 with
+  the line `tests half compared; oracle half not run` (never 0); a failed tests half exits 1. It accepts
+  `BASELINE_SUFFIX` (default empty) and, only when that is `-t75`, compares against
+  `$E/p5-base-{core,studies}-t75.xml`; it refuses any other value, and refuses `-t75` unless
+  `$E/p5/retired-baseline-nodes.txt` and `$E/p5/amendments.md` exist (Task 75 Step 5). Then
   `./offline.sh .venv/bin/python scripts/compare_evidence_json.py "$E/baseline" "$E/$L"` (oracle parts) and
   `./offline.sh .venv/bin/python scripts/compare_test_outcomes.py "$E/p5-base-core.xml,$E/p5-base-studies.xml"
   "$E/$L-core.xml,$E/$L-studies.xml" --must-pass-file "$E/p5/must-pass-$PHASE.txt"` (tests parts), writing
   `$E/$L-compare-status.txt` with one exit line each.
 
   `$E/p5/gate_run.sh LABEL`: validates the label (`^[a-zA-Z0-9_]+$`, and no existing `$E/p5-$LABEL-*` file or
-  `$E/p5-$LABEL` directory), runs `gate_oracles.sh` then `gate_tests.sh` (an oracle refusal, exit 2, stops it:
-  a phase gate cannot pass without the oracle), and writes `run-done` to `$E/p5-$LABEL-run.txt`.
+  `$E/p5-$LABEL` directory), runs `gate_oracles.sh` and records its exit status, then **runs `gate_tests.sh`
+  whatever the oracle status was** except 75, 137 or 143 (busy, cap kill, time stop: the heavy-job rules say
+  stop and report), and writes `oracle=<rc>` and `tests=<rc>` and `run-done` to `$E/p5-$LABEL-run.txt`. An
+  oracle refusal (exit 2) therefore leaves a complete tests half and a recorded "oracle not run"; the gate is
+  then reported "tests half passed, oracle half pending" and is not a pass.
 
   Pin lists: write `$E/p5/pins-pre.txt`, `pins-post.txt` and an empty `units.txt` as defined under "The task
   gate". Command spelling: print what the wrapper would run, **with the controls after `offline.sh`**:
@@ -868,7 +1072,15 @@ of the immutable behavioral set.
 - [ ] **Step 5: Hash records.** `$E/p5-fixed.sha256` = `$E/p4-fixed.sha256` (105 lines: 103 goldens,
   `harness.py`, `persist_sql.json`) plus the hashes of `tests/paper/test_persist_sql_golden.py`,
   `tests/paper/test_phase4_pins.py` and `src/ggTrader/paper/persist.py`; `$E/p5-pins.sha256` =
-  `$E/p4-pins.sha256` (3 lines). `sha256sum -c` prints OK for all 111.
+  `$E/p4-pins.sha256` (3 lines). `sha256sum -c` prints OK for all 111. **`$E/p5-tools.sha256`** records the
+  hash of every gate tool listed under "Gate tools are pinned too" in Global Constraints: `scripts/run_tests.sh`,
+  `scripts/run_capped.sh`, `scripts/_heavy_job.sh`, `scripts/compare_test_outcomes.py`,
+  `scripts/compare_evidence_json.py`, `scripts/verify_pins.py`, `scripts/p5_wfo_validation.py`,
+  `scripts/p7_live_golden.py`, `conftest.py`, `tests/paper/conftest.py`, `tests/tiers.py`, `tests/netguard.py`,
+  `offline.sh`, `.github/workflows/ci.yml`, `pyproject.toml`, `$E/p5/gate_oracles.sh`, `gate_tests.sh`,
+  `gate_compare.sh`, `gate_run.sh`, and (after Step 6 writes them) `$E/p5/pins-pre.txt`, `pins-post.txt`. It is
+  built from the tree at `73c35417` (check `git diff --stat 73c35417 -- <repository-resident tools>` prints
+  nothing first); `sha256sum -c` prints OK for every line.
 - [ ] **Step 6: Node lists.** From `$E/p5-base-core.xml`, with the node-id construction of
   `scripts/compare_test_outcomes.py` (`outcomes()`, loaded by file path in a one-off, not imported as a
   package): `$E/p5/trader-node-ids.txt` = every node of `tests/paper/test_trader.py` (**277 nodes**: 197 test
@@ -877,14 +1089,16 @@ of the immutable behavioral set.
   batch, the batch sizes summing to 277 (the function counts per batch in Tasks 65-73 are re-measured here);
   `$E/p5/must-pass-pre.txt` = `$E/safety-nodes.txt` + the two live-golden node ids + the 277 ids (Tasks 47-51
   append the nodes of the new behavioral and structural tests as they appear, collected with
-  `--collect-only -q`); `must-pass-post.txt` is produced by Task 74 (see there).
+  `--collect-only -q` for the fast and for the slow collection, `legacy` parametrized nodes included, as
+  defined under "The task gate"); `must-pass-post.txt` is produced by Task 74 (see there).
 - [ ] **Step 7: Anchors (Haiku inventory, every figure checked by Sonnet).** Re-measure the region table
   of "Target structure", the ten `RunResult` sites, every `self._dry_run` and `self._read_only` read, the 28
   `self._ledger` calls, the `book_amount` read sites (`["market_value"]` of a sell, after `_submit_order`),
   and the counts quoted here (4,224 lines, 197 test functions, 277 nodes, 439 dotted patches of which 239
   name a persist function, 211 of them inside tests and 28 in the autouse fixtures and `_intent_store`, and
   137 name `generate_core_signals`; 103 goldens; the persist-name string patches outside `test_trader.py`, for
-  Task 75). Write them to `$E/p5/anchors-trader.txt`.
+  Task 75), the generator expressions inside `_run` (three, all in R7, with their lines), and the module
+  constants and helpers that move (lines 83, 89, 113, 126, 131). Write them to `$E/p5/anchors-trader.txt`.
 - [ ] **Step 8:** Report usage to the owner.
 
 ### Task 47: Freeze a copy of today's `_run`, and the implementation switch (builder: Sonnet; reviewer: Sol)
@@ -893,14 +1107,22 @@ of the immutable behavioral set.
 - Modify: `src/ggTrader/paper/trader.py` (add `_run_legacy`, a byte-for-byte copy of `_run`, directly under it;
   its docstring says "frozen oracle copy of `_run` at 73c35417; deleted in Task 74; never edited")
 - Create: `tests/paper/test_run_legacy_frozen.py`, `tests/paper/golden/run_legacy.sha256`,
-  `tests/paper/equivalence/__init__.py`, `tests/paper/equivalence/impl.py`, `tests/paper/test_run_differential.py`
+  `tests/paper/equivalence/__init__.py` (empty), `tests/paper/equivalence/run_with.py`,
+  `tests/paper/equivalence/impl.py`, `tests/paper/test_run_differential.py`
 
-**Interfaces:** `tests/paper/equivalence/impl.py` produces
-`def run_with(impl: Literal["new", "legacy"], scenario: Scenario) -> dict` (the harness's
-`run_scenario`, with `PaperTrader._run` replaced by `PaperTrader._run_legacy` inside a
-`patch.object` context for `"legacy"`; the harness is not edited) and
-`IMPLS: tuple[str, ...] = ("new", "legacy")`. `impl.py`, `test_run_differential.py` and
-`test_run_legacy_frozen.py` are **mutable-set** files (Global Constraints): Task 74 retires them.
+**Interfaces.** The behavior and the one switch are in **different files** so that the file Task 74 edits
+never defines behavior:
+- `tests/paper/equivalence/run_with.py` (**immutable behavioral set**, hash-recorded at Task 51; builder
+  Sonnet, reviewer Sol): `def run_with(impl: str, scenario: Scenario) -> dict`, the harness's `run_scenario`
+  with `PaperTrader._run` replaced by `PaperTrader._run_legacy` inside a `patch.object` context for
+  `"legacy"` (the harness is not edited). It reads `impl.IMPLS` **at call time** (`from tests.paper.equivalence import impl`) and **raises `ValueError`
+  for an `impl` not in `IMPLS`**, so after Task 74 the `legacy` branch is unreachable by construction, not by
+  convention. It also exports `Impl = Literal["new", "legacy"]` for typing.
+- `tests/paper/equivalence/impl.py` (**mutable set**): its whole code is `IMPLS: tuple[str, ...] = ("new",
+  "legacy")` plus a docstring. No function, no import of the trader. Task 74 changes that one line and
+  checks that `git diff` of the file is exactly that line.
+- `test_run_differential.py` and `test_run_legacy_frozen.py` are **mutable-set** files (Global Constraints):
+  Task 74 retires them. Every immutable test imports `run_with` from `run_with.py` and `IMPLS` from `impl.py`.
 
 - [ ] **Step 1: Failing tests.** `test_run_legacy_exists_and_is_a_copy` (`PaperTrader._run_legacy` is a
   function with the same parameters as `_run`), `test_run_legacy_source_is_frozen` (`sha256` of the dedented
@@ -909,7 +1131,11 @@ of the immutable behavioral set.
   at `BASE5`, computed with `git show 73c35417:src/ggTrader/paper/trader.py`) in `test_run_legacy_frozen.py`;
   `test_both_implementations_give_identical_transcripts_for_every_golden_scenario` (for all 103
   `SCENARIOS`, `run_with("new", s) == run_with("legacy", s)`; trivially true now) in
-  `test_run_differential.py`. FAIL: `_run_legacy` is missing.
+  `test_run_differential.py`; `test_run_with_rejects_an_implementation_not_in_impls` (patch `IMPLS` to
+  `("new",)`: `run_with("legacy", ...)` raises `ValueError`) and `test_impl_py_holds_only_impls` (an AST scan of
+  `impl.py` finds one assignment and no function) in `test_run_legacy_frozen.py`'s sibling
+  `tests/paper/test_run_with.py` (**immutable**, hash-recorded; add it to the behavioral set list in Task 51).
+  FAIL: `_run_legacy` is missing.
 - [ ] **Step 2:** Implement: copy the method; compute and record the hash.
 - [ ] **Step 3:** The new tests pass; the 103 transcripts (T) are byte-identical; `git diff 73c35417 --
   src/ggTrader/paper/trader.py` shows only the added method.
@@ -943,11 +1169,16 @@ on a golden file. Targets are `broker.submit_sell`, `broker.submit_buy`, `persis
     `test_stopped_symbol_not_rebought_by_coincident_buy_signal` (`test_trader.py:2694, 2708`).
   - `test_rule2_slot_arithmetic_counts_regular_sells_not_all_sells`: **`MAX_POSITIONS=3`, three held (one
     catastrophe-stopped, one with an ordinary exit signal that fully fills, one flat), three buy signals, one
-    sleeve: exactly TWO buys are submitted.** `strategy_positions` already lost the stopped symbol (2 left), the
-    one ordinary sell frees one more (`max_new_positions(2 - 1) = 2`). Counting the stop sell again through
-    `len(executed_sells)` would give `2 - 2 = 0` free positions and permit **three** buys. A second case is the
-    existing at-the-cap shape (`catastrophe_stop_at_position_cap`: three held with one stopped and no ordinary
-    sell gives exactly one buy; the double count would give two). Pinned today by
+    sleeve: exactly TWO buys are submitted.** The arithmetic, with `max_new_positions(n) = max(0,
+    MAX_POSITIONS - n)` where `n` is a **held count** and the result is a **number of free slots**:
+    `strategy_positions` already lost the stopped symbol, so `len(strategy_positions) = 2`; one ordinary sell
+    (`regular_sell_count = 1`); held count `2 - 1 = 1`; free slots `max_new_positions(1) = 3 - 1 = 2`; two buys.
+    Counting the stop sell a second time through `len(executed_sells) = 2` would give a held count of
+    `2 - 2 = 0`, hence `max_new_positions(0) = 3` free slots, and permit **three** buys (one over the cap
+    once the one flat holding is counted). A second case is the existing at-the-cap shape
+    (`catastrophe_stop_at_position_cap`: three held, one stopped, no ordinary sell: `len(strategy_positions) =
+    2`, held count `2 - 0 = 2`, one free slot, exactly one buy; the double count would give held count
+    `2 - 1 = 1`, two free slots, two buys). Pinned today by
     `test_slot_math_counts_stop_exactly_once_at_position_cap` (`test_trader.py:2770`).
   - `test_rule3_a_terminal_sell_that_does_not_fully_fill_blocks_all_strategy_buys` (cases: canceled after a
     partial fill = `sell_partial_fill_canceled`; rejected = `sell_rejected_by_broker`; expired; `filled` with a
@@ -999,8 +1230,34 @@ on a golden file. Targets are `broker.submit_sell`, `broker.submit_buy`, `persis
     order) produce the literal sequence measured on the untouched code: one call per held position in
     dictionary order (the unassessable scan), one per assessable position (inside `find_catastrophe_stops`), then
     one per breaching symbol that passed the quantity and pending checks, in that order. A second case replaces
-    the wrapper with `Mock(side_effect=[...])` of exactly that length: it must pass, and one value short must
-    surface as `StopIteration` from `run()` (never `RuntimeError`).
+    the wrapper with `Mock(side_effect=[...])` of exactly that length: it must pass. **Then three
+    "one value short" cases, one per call site, each measured on the untouched code (Quirk 12):** short in the
+    unassessable scan: `StopIteration` reaches the caller of `run()`; short in the call **inside
+    `find_catastrophe_stops`** (a `sorted` over a generator expression): `RuntimeError` with message
+    `generator raised StopIteration` and a `StopIteration` as `__cause__` reaches the caller; short in the
+    per-stop percentage call: `StopIteration` reaches the caller. The test asserts the exception type, the
+    message and the cause chain literally, so an implementation that "fixes" the middle case into a
+    `StopIteration` (or the outer two into `RuntimeError`) fails. A fourth case patches
+    `catastrophe_stop.find_catastrophe_stops` itself with a generator function whose body raises
+    `StopIteration` (a nested generator frame): the caller gets `RuntimeError` with that cause, in both
+    implementations. These four cases are what forbids a planner adapter that rewrites a
+    `RuntimeError` whose cause is a `StopIteration`.
+  - **Late planner failures after an earlier order (Review Focus 7; the raise must stay behind the first
+    order).** `test_a_later_stop_without_qty_raises_after_the_first_stop_order_went_out`: two breaching
+    positions, the second (in sorted symbol order) without a `qty` key, live: `submit_sell` was called once for the
+    first, its intent was saved and attached, its stop notice was sent, **then** `KeyError('qty')` reaches the
+    caller; no second order. (A dry run: the first stop's DRY RUN notice is sent, then the same `KeyError`.)
+    `test_exit_validation_without_qty_raises_after_the_stop_orders`: a stop that submits, then an exit signal on a
+    held position without `qty`: the run raises `KeyError('qty')` after the stop order, with no ordinary exit
+    submitted. `test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy`: two sleeves,
+    the second not in `weights`, both with buy candidates: the first sleeve's buy was submitted, then
+    `KeyError` for the second sleeve's name reaches the caller. Each is measured on the untouched code and
+    the literal call sequence is written down; a builder who cannot reproduce a shape reports it.
+  - `test_a_membership_source_failure_sends_the_signal_generation_error_alert` (Review Focus 8): the patched
+    `live_membership_source` raises `ValueError("boom")`: the notifier receives `Paper trading failed: signal
+    generation error\nboom`, the run raises that `ValueError`, `generate_core_signals` was never called, and no
+    broker order, persist write or refresh follows. A `SignalGateError` from `generate_core_signals` keeps its own
+    `🛑 Signal gate` notice (existing `signal_gate_error` and `signal_generation_error` goldens). In a read-only dry run, the same.
   - `test_stops_are_executed_before_the_sweep_sell_is_sized` (SM11): a stop and a funding sweep sell in one run
     (`catastrophe_stop` plus `sweep_funding_sell` environments): the stop SELL's `submit_sell` precedes the SPY
     SELL, and the SPY quantity equals the one sized from the post-stop positions.
@@ -1014,19 +1271,23 @@ on a golden file. Targets are `broker.submit_sell`, `broker.submit_buy`, `persis
   once per submitted order), and `test_late_run_gate_reads_the_clock_after_signal_generation` (`now_pt` is
   called after `generate_signals` returned, in every implementation).
 - [ ] **Step 4: Run:** all pass on both implementations.
-- [ ] **Step 5: Mutation matrix (not committed), reach map first.** Apply SM 1-9, 11 and 15 (SM 6, 7 are shared
-  sites; the others sit in `_run`) per the SM table: each fails a rule or characterization test that the reach
-  map showed reaches it (two cases for SM4, SM8's buy case for 7b), SM9 fails the event tests. A mutation that
-  passes means the test is rewritten, not the mutation.
+- [ ] **Step 5: Mutation matrix (not committed), reach map first.** Apply SM 1-9, 11, 15, 16 and 17 (SM 6, 7
+  are shared sites; the others sit in `_run`; SM16 and SM17 are written against the inline stage and the
+  inline signal `try`) per the SM table: each fails a rule or characterization test that the reach map showed
+  reaches it (two cases for SM4, SM8's buy case for 7b), SM9 fails the event tests, SM16 the three
+  late-failure tests, SM17 the membership-alert test. A mutation that passes means the test is rewritten, not
+  the mutation.
 - [ ] **Step 6:** `-p no:randomly`, in the neighbourhood, the task gate (pins-pre files that exist). Commit:
   `test: name the seven order-flow rules of design 5.1, pin the hook call order and the late reads`.
 
 ### Task 49: Seeded differential, recorded digests and safety invariants (builder: Terra; reviewer: Opus)
 
 **Files:**
-- Create: `tests/paper/equivalence/generator.py`, `witnesses.py`, `runner.py`, `tests/paper/test_run_digests.py`,
-  `tests/paper/golden/run_equivalence_digests.json` (all **immutable-set**); add the differential cases to
-  `tests/paper/test_run_differential.py` (**mutable-set**, deleted in Task 74).
+- Create: `tests/paper/equivalence/generator.py`, `witnesses.py`, `runner.py`, `tests/paper/test_run_digests.py`
+  (all **immutable-set**), and, in a **second commit**, `tests/paper/golden/run_equivalence_digests.json`
+  (immutable-set); add the differential cases to `tests/paper/test_run_differential.py` (**mutable-set**,
+  deleted in Task 74). `run_with` is **not** built here: the differential, the runner's `"legacy"` branch and
+  every rule test import it from `equivalence/run_with.py` (Task 47).
 
 **Interfaces:**
 ```python
@@ -1039,6 +1300,14 @@ class Recorded:
     transcript: dict
     logs: tuple[tuple[int, str, int, str, str | None], ...]  # (calls so far, logger, levelno, message, exc type)
 def digest(rec: Recorded) -> str                             # sha256 of to_json(transcript) + the log tuples
+@dataclass(frozen=True)
+class SeedSummary:                                           # all a test needs; the transcript is NOT kept
+    seed: int; digest: str; witnesses: frozenset[str]
+    violations: tuple[str, ...]                              # safety invariants (a)-(g) that failed, with detail
+    error: str | None                                        # a harness error (never expected), else None
+def summarize_seed(seed: int) -> SeedSummary                 # ONE run of the NEW implementation, under
+                                                             # tests.netguard.blocked_connections(); derives the
+                                                             # digest, the witnesses and the violations from it
 FAST_SEEDS = 100; FULL_SEEDS = 600                           # constants, not read from the environment
 WITNESSES: dict[str, Callable[[dict], bool]]                 # one predicate per rule precondition
 ```
@@ -1053,8 +1322,8 @@ transcript calls made so far, so the interleaving of records and calls is pinned
 raises the scripted exception on call number `lock_fails_on` only, recording it exactly as the harness lock
 does and replacing `run.lock` (the harness's `FakeRunLock` takes one `failure` and applies it to every call, and
 `Seq` is a persist-reply type the lock never reads, so the harness alone cannot fail the kth verify); (3)
-`impl="legacy"` swaps `PaperTrader._run` for `_run_legacy`. A submit failing on order k needs no wrapper: the
-scenario's `replies["submit_buy"]` is an ordered list whose last entry repeats.
+`impl="legacy"` goes through `run_with.run_with` (Task 47), not through code of its own. A submit failing on
+order k needs no wrapper: the scenario's `replies["submit_buy"]` is an ordered list whose last entry repeats.
 
 The generator samples (bounded ranges, valid harness inputs only): mode (live 60%, read-only dry 25%,
 dry with writes 10%, dry-run-with-late-clock 5%); the sweep on or off; the stop on or off with a threshold in
@@ -1065,68 +1334,133 @@ untradable symbols from the environment and from the broker; legacy pending orde
 evidence; account cash and `last_equity` (halts); the persisted peak; per-symbol status sequences (filled,
 partial then filled, working, rejected, canceled, expired); a submit failure on order k; a `lock.verify`
 failure on order k (the `Case`); scripted notifier failures; a clock failure; a late `now_pt`; a stale
-`as_of`; the overlay fallback flag. Read replies not drawn come from `scenarios.PERSIST_DEFAULTS` (imported,
-not edited).
+`as_of`; the overlay fallback flag; **a failing `live_membership_source`**; and **the late-stage planner
+failures of Review Focus 7**, each drawn on its own with a fixed probability so each is reached more than
+five times in 600 seeds: (L1) two or more breaching positions of which a **later one (in sorted symbol order)
+has no `qty` key**, so the run raises `KeyError` after the first stop order went out; (L2) a stop that
+submits followed by an **exit signal on a held position without `qty`**, so the exit validation raises after the
+stop order; (L3) **two sleeves with the second absent from `weights`** and buy candidates in both, so the
+second sleeve's first reachable buy raises `KeyError` after the first sleeve's buy went out. **Buys keep the order and the
+duplicates the trader keeps (`StrategySignals.buys`): within one sleeve the generator draws buy symbols
+without replacement (unique), and the same symbol appears in two sleeves only in the deliberate duplicate
+seeds (W20).** That uniqueness is what makes safety invariant (e) true on the untouched code; without it a
+repeated symbol inside one sleeve is bought twice today (the held-check reads a mapping the buys never
+update) and invariant (e) would fail for a reason that is not a bug. Read replies not drawn come from
+`scenarios.PERSIST_DEFAULTS` (imported, not edited).
 
-- [ ] **Step 1: Failing tests** (`tests/paper/test_run_digests.py` unless named otherwise). **Every test that
-  covers 600 seeds is `slow`; the fast twin covers the first 100.**
-  `test_generator_is_deterministic` (same seed, same case, in a child process under two `PYTHONHASHSEED`s),
-  `test_every_generated_case_runs_without_a_harness_error` (100 seeds, on the **new** run, so it survives Task 74) and
-  `test_every_generated_case_runs_without_a_harness_error_600` (slow),
+- [ ] **Step 1: Failing tests** (`tests/paper/test_run_digests.py` unless named otherwise). **One cache serves
+  every 600-seed check** (Global Constraints, "Everything is bounded"): `fast_summaries` and `full_summaries` are
+  session-scoped fixtures filling one dict seed -> `SeedSummary` by `summarize_seed`; each fixture wraps its
+  work in `blocked_connections()` because a session fixture is set up before the autouse function guard. The
+  tests below are assertions over the cache; the ones over `full_summaries` are `slow` and
+  `timeout_seconds(600)`.
+  `test_generator_is_deterministic` (same seed, same case, in a child process under two `PYTHONHASHSEED`s; the
+  child runs only `build_case` and prints a hash of the case, with the environment of Global Constraints),
+  `test_every_generated_case_runs_without_a_harness_error` (over `fast_summaries`: no summary has an `error`) and
+  `..._600` (slow, `full_summaries`),
   `test_every_witness_is_reached_at_least_once_in_100_seeds` and
-  `test_every_witness_is_reached_at_least_five_times_in_600_seeds` (slow) (witnesses W1-W15: stopped symbol
+  `test_every_witness_is_reached_at_least_five_times_in_600_seeds` (slow) (witnesses W1-W20: stopped symbol
   also buy-signalled; stop plus regular sell with slot-limited buys; live sell not fully filled with buys
   signalled; invalid exit quantity with buys and the sweep on; held split correction on a sold symbol;
   read-only run with a non-empty skip list; submit raised after at least one order; rejected exit then another
   exit; unassessable stop; loss halt with exits; sweep sell and sweep buy in one run; live late-run gate; a
-  pending symbol skipped; two sleeves at their caps; **a catastrophe stop and a funding sweep sell in one run**),
+  pending symbol skipped; two sleeves at their caps; a catastrophe stop and a funding sweep sell in one run;
+  **W16 a later stop without `qty` raising after the first stop order; W17 an exit validation without `qty`
+  raising after a stop order; W18 a later sleeve missing from the open counts raising after an earlier
+  sleeve's buy; W19 a `live_membership_source` failure ending in the signal-generation-error alert; W20 the
+  same symbol bought by two sleeves**),
   `test_new_run_matches_the_recorded_digests_for_100_seeds` and
-  `test_new_run_matches_the_recorded_digests_for_600_seeds` (slow; the new run only),
+  `test_new_run_matches_the_recorded_digests_for_600_seeds` (slow; compare each cached digest with the file),
   `test_digest_file_pins_the_generator_and_the_runner` (the file stores the sha256 of `generator.py`,
-  `witnesses.py` and `runner.py` and of the base commit; a changed file fails),
-  `test_safety_invariants_for_100_seeds` and `..._for_600_seeds` (slow), on the new run: (a) a dry run has no
+  `witnesses.py` and `runner.py`, the production base `73c35417` and the `recorder_commit`; a changed file
+  fails),
+  `test_safety_invariants_for_100_seeds` and `..._for_600_seeds` (slow; assertions that `violations` is empty
+  over the cache; the invariants are computed inside `summarize_seed`): (a) a dry run has no
   `submit_*` and no `create_order_intent`, `attach_broker_order` or `settle_order_intent`; (b) every
   `submit_*` is preceded in order by `create_order_intent` and a `lock.verify` and followed by
   `attach_broker_order` unless it raised (the lock call carries no client id, so the pairing is by position);
   (c) after a raised `submit_*` or a raised `lock.verify` there is no later `create_order_intent` or
-  `submit_*`; (d) once a `HALTED buys` notice is sent no `submit_buy` follows; (e) in a single-sleeve seed no
-  symbol except the sweep symbol is submitted twice; (f) a read-only run has no `persist.*` call that is a
-  member of `WRITE_METHODS`; (g) every `submit_buy` notional is positive and finite, every `submit_sell`
-  quantity is positive and finite. In `test_run_differential.py`:
+  `submit_*`; (d) once a `HALTED buys` notice is sent no `submit_buy` follows; (e) in a **single-sleeve** seed no
+  symbol except the sweep symbol is submitted twice (valid because the generator draws unique buys within a
+  sleeve), and in a two-sleeve seed a symbol is submitted twice only if it is a buy candidate of both sleeves;
+  (f) a read-only run has no `persist.*` call that is a member of `WRITE_METHODS`; (g) every `submit_buy`
+  notional is positive and finite, every `submit_sell` quantity is positive and finite. Also
+  `test_summarize_seed_keeps_no_transcript` (a `SeedSummary` holds no dict or list beyond the witness set and the
+  violation tuple; its `pickle` size is under 2 KB) and `test_the_cache_runs_each_seed_once` (a counting wrapper
+  on `run_recorded` sees one call per seed after both fixtures were used). In `test_run_differential.py`:
   `test_new_run_equals_old_run_for_100_seeds` (`run_recorded("new", c) == run_recorded("legacy", c)`, compared as
   whole `Recorded` values; on a failure print the first differing call index and log record).
   Run them: all fail (no generator).
 - [ ] **Step 2:** Implement the generator, witnesses and runner; run the tests on the untouched code (`_run`
-  equals `_run_legacy`, so the equality test passes trivially; its power is shown in Step 4).
-- [ ] **Step 3a: Investigate the log content before any digest exists.** Run all 600 seeds on the legacy
-  implementation with **raw** messages, twice in each of two `PYTHONHASHSEED` values (1 and 2) and in two
-  separate processes, and diff the four result sets. Classify every differing record: (i) an object address or
-  set rendering inside text -> a masking rule in `runner.normalize_log`, listed with the record, its source
-  line and the reason; (ii) a set whose order leaks into a message where today's code does not sort it -> a
-  candidate finding for the hand-back (not fixed), and a sorted rendering in the digest only; (iii) anything
-  else -> stop and report. Write the decisions to `$E/p5/log-normalization.md`; **Opus (reviewing Codex's
-  work) approves it before Step 3b.** Decide there, too, whether exception text of caught errors stays in the
-  message (it does unless it carried an address).
-- [ ] **Step 3b: Record the digests once, from the untouched code**, with a one-off script that lives **outside
-  the repository** (`$E/p5/record_digests.py`, its own sha256 written next to it), run as
-  `./offline.sh env GGT_RUN_MEM_MAX=3G GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh .venv/bin/python
-  $E/p5/record_digests.py` (capped, scrubbed, one heavy job). It calls `digest(run_recorded("new",
-  build_case(s)))` for seeds 0-599 and writes the file with `generator_sha256`, `witnesses_sha256`,
-  `runner_sha256`, `base: 73c35417`, the seed count and the normalization version. **No recording switch is
-  committed** and the file is never re-recorded to make a test pass: a digest mismatch is investigated as a
-  behavior change first, and only an Opus-approved amendment (with the reason, in `$E/p5/amendments.md`) may
-  re-record, from a scratch checkout of `73c35417` (not from the working tree). Run twice under two hash
-  seeds: identical files.
-- [ ] **Step 4: Mutation matrix (not committed), reach map first.** Apply SM 1-8, 10, 11, 13a, 13b, 14 and 15
-  at their sites in `_run` and the shared helpers. **N sites** (1-5, 8, 11, 13a, 14, 15): the differential test
-  and the digest tests both fail. **S sites** (6, 7, 10, 13b): the digest tests fail and so does the named rule
-  or unit test; the differential is *expected to pass* (both runs share the helper), and the matrix records
-  that as the reason the digests exist. A mutation that survives 100 seeds but not 600 is noted, and the
-  generator (not the seed count) is improved until none does; revert each.
-- [ ] **Step 5:** Run `T tests/paper/test_run_digests.py tests/paper/test_run_differential.py -m "not slow"`
-  and `T tests/paper/test_run_digests.py -m slow` and record the wall times in `$E/p5/timings.md` against the
-  budgets (fast tests together at most 60 s, each slow test at most 300 s). The task gate. Commit: `test:
-  seeded equivalence of the trader run, recorded digests and safety invariants`.
+  equals `_run_legacy`, so the equality test passes trivially; its power is shown in Step 4). Digest-file tests
+  fail until Step 7 (the file does not exist yet): that is the only expected failure.
+- [ ] **Step 3a: Investigate the log content before any digest exists.** Standalone script
+  (`$E/p5/investigate_logs.py`, outside the repository, with the Global Constraints "Standalone scripts"
+  rules): run all 600 seeds on the **legacy** implementation with **raw** messages, in **four separate capped
+  processes**, one at a time (`PYTHONHASHSEED` 1 then 2, each twice), each started as `./offline.sh env
+  PYTHONPATH=/home/flynn/ggTrader-refactor PYTHONHASHSEED=<n> GGT_RUN_MEM_MAX=3G GGT_RUN_MAX_SECONDS=1800
+  scripts/run_capped.sh .venv/bin/python $E/p5/investigate_logs.py --out $E/p5/logs-<n>-<k>.json`, each wrapping
+  its work in `blocked_connections()`; then diff the four result sets. Classify every differing record: (i) an
+  object address or set rendering inside text -> a masking rule in `runner.normalize_log`, listed with the
+  record, its source line and the reason; (ii) a set whose order leaks into a message where today's code does not
+  sort it -> a candidate finding for the hand-back (not fixed), and a sorted rendering in the digest only; (iii)
+  anything else -> stop and report. Write the decisions to `$E/p5/log-normalization.md`; **Opus (reviewing
+  Codex's work) approves it before Step 3b.** Decide there, too, whether exception text of caught errors stays
+  in the message (it does unless it carried an address).
+- [ ] **Step 3b: Provisional digests (uncommitted).** With the generator, witnesses and runner as they stand,
+  record a **provisional** `tests/paper/golden/run_equivalence_digests.json` in the working tree (not
+  committed) with the recorder of Step 7 pointed at the working tree (`--worktree /home/flynn/ggTrader-refactor`,
+  the same offline, `PYTHONPATH`, cap, `blocked_connections()` and serialization wrapper as Step 7), so Step 4 can
+  exercise the digest tests.
+- [ ] **Step 4: Mutation matrix (not committed), reach map first.** Apply SM 1-8, 10, 11, 13a, 13b, 14, 15, 16
+  and 17 at their sites in `_run` and the shared helpers. **N sites** (1-5, 8, 11, 13a, 14, 15, 16, 17): the
+  differential test and the digest tests both fail. **S sites** (6, 7, 10, 13b): the digest tests fail and so
+  does the named rule or unit test; the differential is *expected to pass* (both runs share the helper), and
+  the matrix records that as the reason the digests exist. SM16 must be caught by the witnesses W16-W18 seeds
+  and SM17 by W19. Every mutation run is one capped, serialized `T` command: the fast differential and fast
+  digest tests for an N site, the slow digest tests (one 600-seed pass, at most 300 s) for an S site or for a
+  mutation the fast tests miss; never two at once. A mutation that survives 100 seeds but not 600 is noted, and the generator (not the seed
+  count) is improved until none does; revert each. **Any change to the generator, witnesses or runner sends
+  the work back to Step 3a's normalization check and Step 3b**; the matrix is rerun on the final candidate.
+- [ ] **Step 5: Pre-record review gate (before anything is committed or recorded for good).** On the **final
+  candidate** (matrix clean, normalization approved), **Opus** (reviewing Codex's work; fresh context; given
+  `generator.py`, `witnesses.py`, `runner.py`, `test_run_digests.py`, `$E/p5/log-normalization.md`, the
+  witness list and the matrix result, and the claim "each test fails for the wrong behavior and passes for
+  today's; each witness is reachable and counts what it names") reports every finding. Findings are fixed by
+  Terra and the review repeats until there are none. The orchestrator then writes the sha256 of the three
+  files to `$E/p5/review-gate.txt`. **From here the three files are frozen:** an edit after this point
+  restarts at Step 3a. (Task 51's reads are confirmations of these hashes, never the first look.)
+- [ ] **Step 6: Commit A (the recorder commit).** Commit everything except the digest file (the provisional
+  copy is removed from the tree): `test: seeded equivalence of the trader run and safety invariants`. This commit
+  is **not a gate point** (the digest-file tests fail at it by absence). Check
+  `git diff 73c35417 A -- src` shows exactly the `_run_legacy` addition (and its docstring) and nothing else, and
+  that the frozen-copy hash test passes.
+- [ ] **Step 7: Record the digests once, from commit A, not from `BASE5`.** `BASE5` has no runner, so a
+  scratch checkout of `73c35417` cannot record anything; the **recorder commit is A**. A one-off script outside the
+  repository (`$E/p5/record_digests.py`, its own sha256 written next to it, taking `--worktree` and `--out`) is run
+  against a scratch checkout of A (`git worktree add $E/p5/record-A A`; it is removed afterwards) as
+  `./offline.sh env PYTHONPATH=$E/p5/record-A:$E/p5/record-A/src PYTHONHASHSEED=<n> GGT_RUN_MEM_MAX=3G
+  GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh .venv/bin/python $E/p5/record_digests.py --worktree
+  $E/p5/record-A --out $E/p5/digests-<n>.json` (capped, scrubbed, one heavy job, **`blocked_connections()` around
+  the whole process**). The script first asserts that `ggTrader.__file__` and `tests.paper.equivalence.runner.__file__`
+  lie under `--worktree` (if the editable install of the `.venv` wins over `PYTHONPATH` it stops and reports,
+  never records from the wrong tree) and that the source of `PaperTrader._run` hashes to `run_legacy.sha256`. It calls
+  `summarize_seed(s).digest` for seeds 0-599 and writes `generator_sha256`, `witnesses_sha256`, `runner_sha256`,
+  `production_base: 73c35417`, `recorder_commit: <A full hash>`, the seed count and the normalization version, and
+  writes `$E/p5/digests-map.sha256` (the sha256 of the canonical JSON of the `digests` object alone, which Task 75
+  uses to prove an amendment changed no digest).
+  **No recording switch is committed** and the file is never re-recorded to make a test pass: a digest mismatch is
+  investigated as a behavior change first, and only an amendment (authority: Opus, Codex-built; reason in
+  `$E/p5/amendments.md`) may re-record, again from a scratch checkout of the recorder commit (commit A, or the
+  amended generator's commit with the same two prechecks), never from the working tree and never from
+  `73c35417`. Run under `PYTHONHASHSEED` 1 and 2: the two files are byte-identical, and their `digests` mapping and
+  three stored file hashes equal the provisional file of Step 3b (only `recorder_commit` may differ; any other
+  difference stops the task).
+- [ ] **Step 8: Commit B** adds `tests/paper/golden/run_equivalence_digests.json`: `test: recorded per-seed
+  digests of the untouched trader run`. Run `T tests/paper/test_run_digests.py tests/paper/test_run_differential.py
+  -m "not slow"` and `T tests/paper/test_run_digests.py -m slow` and record the wall times in
+  `$E/p5/timings.md` against the budgets (the fast Phase 5 tests together at most 60 s; the one 600-seed pass at
+  most 300 s). The task gate. Task 51 records the immutable hashes at the head of this commit.
 
 ### Task 50: Seam, import and structure contracts (builder: Sonnet; reviewer: Sol)
 
@@ -1158,7 +1492,20 @@ prove each rule detects its violation, so a vacuous pass is not a silent one.
     no `import time`, no `import uuid`, no `.now(`, `.today(`, `os.environ`, `getenv`, no call to the
     environment accessors of "per-run settings snapshot"; no `from ggTrader.paper.cash_sweep import` or
     `from ggTrader.paper.catastrophe_stop import` (module attribute access only); no class deriving from
-    `Exception` or `BaseException` in `preflight.py` (Deviation 2).
+    `Exception` or `BaseException` in `preflight.py` (Deviation 2); **no import of `ggTrader.paper.trader` in
+    any form** (`import ggTrader.paper.trader`, `from ggTrader.paper import trader`, `from ggTrader.paper.trader
+    import ...`, a relative form, or `importlib` of that name; function-local imports included: the scan walks
+    every `Import`/`ImportFrom` node); **no `yield`, `yield from` or generator expression** in `planning.py`,
+    `order_flow.py`, `preflight.py`, `portfolio.py` and `risk_assessor.py`, and in `reporter.py` only the
+    generator expressions `_run` has in region R7 (three at `73c35417`, listed in `GENEXP_ALLOWED` with the line
+    they were moved from); `ruff`'s unused-import rule cannot catch these, so the scan does.
+  - `test_moved_constants_and_helpers_have_one_home`: `constants.py` defines `MAX_SIGNAL_AGE_DAYS`,
+    `STALE_PENDING_DAYS`, `SPLIT_LOOKBACK_DAYS` and `run_helpers.py` defines `as_date` and `account_read_halt`
+    (a half that checks nothing until Task 52 creates the module and is proved on synthetic sources, like the
+    scanner; no `xfail`); `trader.py` binds the five old names to them from Task 52 on; **and no file under `tests/`
+    patches or assigns `ggTrader.paper.trader.` followed by one of `_MAX_SIGNAL_AGE_DAYS`,
+    `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS`, `_as_date`, `_account_read_halt`** (a patch of an alias would
+    not reach the new modules; today none does).
   - `test_the_new_module_scanner_detects_each_violation`: the same scanner over synthetic sources.
   - `test_env_changed_after_the_first_broker_call_is_ignored_by_every_stage`: a broker whose first
     `get_account` mutates `SWEEP_SYMBOL`, `UNTRADABLE_SYMBOLS`, `CATASTROPHE_STOP_PCT`, `SWEEP_MIN_CLIP_USD`,
@@ -1175,8 +1522,9 @@ prove each rule detects its violation, so a vacuous pass is not a silent one.
     25 lines; both measured with `ast` on `PaperTrader.run` and `PaperTrader._run`. A comment states the
     ratchet protocol.
 - [ ] **Step 2:** Run; confirm every test passes on today's code.
-- [ ] **Step 3: Mutation check (not committed).** Delete the `find_split_applied_symbols` import: patch-target
-  test fails. Make `_run` read `os.environ` once: the env test and the existing `test_trader_py_reads_no_environment`
+- [ ] **Step 3: Mutation check (not committed).** The synthetic-source meta-test also shows the scanner flags
+  `from ggTrader.paper import trader` inside a function, a `yield` and a generator expression in `planning.py`.
+  Delete the `find_split_applied_symbols` import: patch-target test fails. Make `_run` read `os.environ` once: the env test and the existing `test_trader_py_reads_no_environment`
   fail. Add `from ggTrader.paper.ledger import InMemoryLedger` to `cli/main.py`: the guard test fails. Revert.
 - [ ] **Step 4:** The task gate. Commit: `test: contracts for the legacy seams, new-module imports and run size`.
 
@@ -1187,32 +1535,46 @@ prove each rule detects its violation, so a vacuous pass is not a silent one.
 - [ ] **Step 1: Cross-process determinism.** The pin files of Tasks 47-50 under `PYTHONHASHSEED` unset, 1 and 2, all pass.
 - [ ] **Step 2: Fast core collects them.** `T --fast --collect-only -q` lists every node of the new files except the
   `slow` digest tests, which `T --full --collect-only -q` lists (two files of node ids, diffed, as in Phase 4 Task 33).
-  Append the new node ids to `$E/p5/must-pass-pre.txt`.
-- [ ] **Step 3: The whole mutation matrix** (SM 1-15), reach map first, on the untouched-but-for-mutation `_run`
+  Append the new node ids to `$E/p5/must-pass-pre.txt`, **every `legacy` parametrized node included**; Task 74's
+  `retired-nodes.txt` is built from this list.
+- [ ] **Step 3: The whole mutation matrix** (SM 1-17), reach map first, on the untouched-but-for-mutation `_run`
   and helpers: each fails the nets of the table (S sites: the differential is expected to pass, and the matrix says
   so). Record the result in `$E/p5/mutation-matrix-A.md`.
 - [ ] **Step 4: Phase gate** (fast core, `--full`, `--studies`, O, P) through `$E/p5/gate_run.sh phaseA` and
   `PHASE=pre $E/p5/gate_compare.sh phaseA`: all pass, the oracle only with the owner's recorded approval (else
   report "oracle not run" and leave the gate open); no `src/` change beyond `_run_legacy`.
 - [ ] **Step 5: Family-rule reads (fresh contexts).** **Sol** (reviewing the Claude-built Tasks 47, 48, 50) is
-  given only `test_run_rules.py`, `rules_support.py`, `test_seam_contract.py` and the claim "each test fails for
-  the wrong behavior and passes for today's"; **Opus** (reviewing the Codex-built Task 49) is given only the
-  generator, witnesses, runner, the digest tests and the log-normalization note, with the same claim. Each
-  reports any test that would pass for a wrong reason; fixes are made before the hash record, by the family
-  that did not review them.
-- [ ] **Step 6: Record** `$E/p5-behavior.sha256` (the immutable behavioral set listed in Global Constraints, which
-  includes the digest file) and `$E/p5/mutable-files.txt` (the mutable set, names only). The behavioral files
-  are immutable from here.
+  given only `test_run_rules.py`, `rules_support.py`, `run_with.py`, `test_run_with.py`, `test_seam_contract.py`
+  and the claim "each test fails for the wrong behavior and passes for today's"; Sol also reads the Task 49
+  files as context but **does not certify them**. **Opus** (reviewing the Codex-built Task 49) **confirms** that
+  the sha256 of `generator.py`, `witnesses.py` and `runner.py` equal the ones recorded at the Task 49 pre-record
+  review gate (`$E/p5/review-gate.txt`) and reads the digest tests with the same claim; it does not read the
+  Claude-built rules tests. Each reports any test that would pass for a wrong reason. Fixes to Claude-built
+  files are made before the hash record by Claude and approved by Sol; **a finding in a Task 49 file is an
+  amendment** (authority Opus) that restarts Task 49 at Step 3a and re-records from the new recorder commit.
+- [ ] **Step 6: Record** `$E/p5-behavior.sha256` (the **new** immutable files of Global Constraints: the Task 47
+  to 50 files above, `run_with.py`, `test_run_with.py`, `equivalence/__init__.py` and the digest file; the
+  pre-existing immutable paths are covered by `p5-fixed.sha256` and the `git diff` against `BASE5`, not by this
+  record) and `$E/p5/mutable-files.txt` (the mutable set, names only). The behavioral files are immutable from
+  here. Check the digest file's three stored hashes against the files and `recorder_commit` is an ancestor of
+  the head (`git merge-base --is-ancestor`).
 - [ ] **Step 7:** Report usage (Phase A done).
 
 ### Task 52: Seams, records and the logger constant (builder: Terra; reviewer: Opus)
 
 **Files:**
-- Create: `src/ggTrader/paper/seams.py`, `tests/paper/test_seams.py`
+- Create: `src/ggTrader/paper/seams.py`, `src/ggTrader/paper/run_helpers.py`, `tests/paper/test_seams.py`,
+  `tests/paper/test_run_helpers.py`
 - Modify: `src/ggTrader/paper/models.py` (the records of "Interfaces", including `FlowState`),
-  `src/ggTrader/paper/constants.py` (`TRADER_LOGGER_NAME = "ggTrader.paper.trader"`),
+  `src/ggTrader/paper/constants.py` (`TRADER_LOGGER_NAME = "ggTrader.paper.trader"`, `MAX_SIGNAL_AGE_DAYS = 4`,
+  `STALE_PENDING_DAYS = 5`, `SPLIT_LOOKBACK_DAYS = 14`: the values `trader.py` holds at 113, 89, 83),
   `src/ggTrader/paper/trader.py` (add `_hooks()` and `_seams()` building the two records with late-binding
-  lambdas, call them nowhere yet), `tests/paper/test_models.py`. **`ledger.py` is not edited**: its stale docstring
+  lambdas, call them nowhere yet; rebind `_MAX_SIGNAL_AGE_DAYS`, `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS`,
+  `_as_date` and `_account_read_halt` to the new homes, deleting their bodies; nothing else in `trader.py`
+  changes, and `_run` and `_run_legacy` read the same names as before), `tests/paper/test_models.py`.
+  `run_helpers.py` holds `as_date(value)` and `account_read_halt(notifier, exc)`, moved unchanged apart from
+  the logger (`logging.getLogger(TRADER_LOGGER_NAME)`); its imports are `logging`, `datetime`, `constants` and
+  `ports` only, never `trader`. **`ledger.py` is not edited**: its stale docstring
   was already corrected in `612e169f`, and a gate step checks `git diff 73c35417 -- src/ggTrader/paper/ledger.py`
   is empty.
 
@@ -1225,7 +1587,12 @@ prove each rule detects its violation, so a vacuous pass is not a silent one.
   `test_order_intent_book_amount_is_optional`, `test_skip_and_invalid_exit_are_frozen`,
   `test_execution_book_lists_are_not_shared_between_books`,
   `test_risk_verdict_with_halt_returns_a_new_verdict_and_keeps_order`, `test_run_context_is_frozen`,
-  `test_strategy_signals_fields_are_immutable_views`, `test_flow_state_lists_are_not_shared_between_states`.
+  `test_strategy_signals_fields_are_immutable_views`, `test_flow_state_lists_are_not_shared_between_states`,
+  `test_strategy_signals_keeps_buy_order_and_cross_sleeve_duplicates` (a hand-built `StrategySignals` keeps the
+  tuple as given; the sorted-unique rule is documented on `sells` only), and in `test_run_helpers.py`:
+  `test_account_read_halt_logs_on_the_trader_logger_and_survives_a_failing_notifier` (the two records and the
+  message of today's `_account_read_halt`), `test_as_date_accepts_datetime_and_date`,
+  `test_trader_aliases_are_the_new_homes` (`trader._as_date is run_helpers.as_date`, the three constants equal).
   FAIL: modules and names are missing.
 - [ ] **Step 2:** Implement. `RunHooks.utcnow` is `lambda: datetime.now(timezone.utc)` reading the trader's
   `datetime` name; `clock_time` and `sleep` read the trader's `time`. No behavior of `_run` changes; `_run_legacy` and `_run` still use their old code.
@@ -1249,7 +1616,9 @@ an exit planner reads `["qty"]` before the order; **no planner reads `["market_v
 `book_amount` is `None`; the flow reads it after the submit, Quirk 11).
 
 - [ ] **Step 1: Failing tests** (plain data, no mocks, no notifier, no broker):
-  - `test_strategy_signals_merges_sleeves_in_order_and_sorts_sells`, `test_strategy_signals_takes_as_of_from_the_first_sleeve`,
+  - `test_strategy_signals_merges_sleeves_in_order_and_sorts_sells` (**buys keep the order of `all_buys` and the
+    duplicates across sleeves; only the sells are `sorted(set(...))`**: a symbol in two sleeves appears twice, in
+    sleeve order, and an unsorted sleeve stays unsorted), `test_strategy_signals_takes_as_of_from_the_first_sleeve`,
     `test_empty_sleeves_ends_the_run_with_stop_iteration_after_the_fallback_notice` (the plain function raises
     `StopIteration`, as `next(iter({}))` does today; Review Focus 4).
   - `test_assess_stops_flags_none_and_invalid_positions` (a position whose `unrealized_pct` is `None` or raises `ValueError`),
@@ -1270,13 +1639,22 @@ an exit planner reads `["qty"]` before the order; **no planner reads `["market_v
     `test_no_planner_reads_market_value` (a `Mapping` subclass raises on any `["market_value"]` lookup).
   - `test_planners_are_lazy_and_do_not_mutate_their_inputs` (inputs are `MappingProxyType`s and frozen sets; one
     `advance()` does not evaluate the next decision: a `Mapping` subclass counts lookups).
-  - **`test_a_stop_iteration_inside_a_planner_surfaces_as_stop_iteration`** (a collaborator whose call raises
-    `StopIteration`, e.g. a `Mock(side_effect=[])`, called inside `plan_stops` and `plan_exits`): `advance()` raises
-    that same `StopIteration` object, not `RuntimeError`, and a normally finished planner returns `None`;
-    `test_advance_after_exhaustion_keeps_returning_none`.
+  - **Exception types are untouched (Quirk 12; the three call sites of Task 48):**
+    `test_a_stop_iteration_from_the_per_stop_percentage_call_surfaces_as_stop_iteration` (a
+    `Mock(side_effect=[...])` on `catastrophe_stop.unrealized_pct`, one value short at the per-stop call:
+    `advance()` raises that same `StopIteration` object);
+    `test_a_collaborators_own_runtime_error_passes_through_advance_unchanged` (the patched
+    `catastrophe_stop.find_catastrophe_stops` is a generator function whose body raises `StopIteration`, and, in
+    a second case, the real function with `unrealized_pct` one value short inside its `sorted(...)`: `advance()`
+    raises the **`RuntimeError` object with message `generator raised StopIteration` and its `StopIteration`
+    `__cause__`**, never a `StopIteration`); `test_a_key_error_passes_through_advance_unchanged` (a later
+    position without `qty`); `test_a_normally_finished_planner_returns_none`;
+    `test_advance_after_exhaustion_keeps_returning_none`; `test_planners_are_explicit_classes` (no planner
+    constructor returns a generator: `inspect.isgenerator` false, no `yield` in the module source).
   FAIL: ImportError.
-- [ ] **Step 2:** Implement; planners are generator bodies behind `_GeneratorPlanner` (Interfaces); no logging, no
-  notifier, no broker, no ledger.
+- [ ] **Step 2:** Implement; planners are **explicit iterator classes** (`StopPlanner`, `ExitValidationPlanner`,
+  `ExitPlanner`; Interfaces), each `advance()` a plain method with a cursor attribute, no `yield`, no
+  `try`/`except` around a collaborator call; no logging, no notifier, no broker, no ledger.
 - [ ] **Step 3:** New tests pass. `_run` is **not** wired yet; the task gate (T byte-identical). Commit:
   `refactor(paper): pure planning for signals, stops and exits`.
 
@@ -1306,13 +1684,15 @@ not a book amount); its intent's `book_amount` is the sized notional.
     `test_plan_buys_slot_arithmetic_is_the_callers_slots_available` (rule 2: the planner takes `slots_available`, the orchestrator computes it from regular sells),
     `test_plan_buys_evaluates_each_symbol_only_after_the_previous_intent_was_consumed` (a concentration check that raises on the
     second symbol is not called after one `advance()`; Review Focus 1),
-    `test_a_stop_iteration_from_check_concentration_surfaces_as_stop_iteration`,
+    `test_a_stop_iteration_from_check_concentration_surfaces_as_stop_iteration` (`BuyPlanner` is an explicit
+    class too: `advance()` raises the same object; the old `for` loop over a list did not convert either),
     `test_a_symbol_bought_by_two_sleeves_is_planned_twice_as_today`, `test_a_buy_signal_for_the_sweep_symbol_is_an_ordinary_candidate`,
     `test_plan_buys_raises_key_error_for_a_sleeve_missing_from_the_open_counts_at_the_old_point` (`open_by_sleeve[universe]` is read after
     the held, stopped, pending and slot checks, as `sleeve_open_count[universe]` is today).
   - `test_plan_sweep_buy_matches_compute_sweep_buy_for_valid_settings`, `test_plan_sweep_buy_reraises_each_stored_parse_error_in_its_old_order`
     (`reserve_pct`, then `min_clip_usd`, then `buy_trigger_pct`), `test_plan_sweep_buy_returns_none_when_the_action_is_not_a_buy`.
-- [ ] **Step 2:** Implement; **Step 3:** pass; `_run` still unwired. The task gate. Commit:
+- [ ] **Step 2:** Implement (`BuyPlanner`, an explicit iterator class with the sleeve cursor, the symbol cursor
+  and `buys_attempted`-style counters as attributes); **Step 3:** pass; `_run` still unwired. The task gate. Commit:
   `refactor(paper): pure planning for the sweep sell, buys and the sweep buy`.
 
 ### Task 55: Move the order bodies into `OrderExecutor` / `DryRunExecutor` (builder: Terra; reviewer: Opus)
@@ -1330,7 +1710,12 @@ injected ledger, `self._notifier` and `self._broker` likewise, `uuid4()` is `hoo
 notice and raise; dry: warn and return `set()`). `PaperTrader._executor_for_call()` builds
 `DryRunExecutor` when `self._dry_run`, else `OrderExecutor`, from the current attributes (S4, S5), with
 `seams=self._seams()`. The executor's run-path methods (`submit`, `poll`, `recover_intents`, `after_*`) are
-added now and reach the work through the seams (S7); nothing calls them yet.
+added now and reach the work through the seams (S7); nothing calls them yet. **`submit` returns the
+broker order id the seam returned, as a bare value; it does not build a `SubmittedOrder`, update a counter or
+read a position** (the flow does, in Tasks 60-62: S7, "Who builds what"). `after_sells(filled)` reconciles when
+`filled` is non-empty; `after_orders(orders)` reconciles when `orders` is non-empty and receives **every**
+order of the run, sells included; `unfilled_exit_errors(orders, filled, broker_positions)` takes the raw
+broker positions (today's `positions[symbol]["qty"]`); `submits_orders` is a class attribute.
 
 Note for the differential (Tasks 49 and 55 on): after this task `_run_legacy` calls the same moved bodies through
 the forwards, so the differential no longer checks them; the digests, the transcripts and this task's unit
@@ -1356,7 +1741,16 @@ tests do.
   `AssertionError` and a broker whose `submit_buy` and `submit_sell` raise `AssertionError`; `DryRunExecutor.submit`
   returns `None`, and a full dry scenario run through `PaperTrader` with `trader._submit_order = MagicMock()`
   and `trader._dry_run = True` assigned after construction ends with that mock never called),
-  `test_dry_run_executor_still_polls_through_the_seam_with_an_empty_list`.
+  `test_dry_run_executor_still_polls_through_the_seam_with_an_empty_list`,
+  **the run-path contract of Tasks 60-62:** `test_executor_submit_returns_the_seam_value_untouched` (a seam
+  returning `"oid-1"`, `None` or a `MagicMock`: `OrderExecutor.submit` returns exactly that object, and builds
+  nothing), `test_executors_declare_submits_orders` (`OrderExecutor.submits_orders is True`,
+  `DryRunExecutor.submits_orders is False`), `test_after_orders_reconciles_for_a_list_holding_only_sells` (the
+  old `if pending_orders and not self._dry_run`; an empty list does not reconcile), `test_after_sells_reconciles_only_for_a_non_empty_filled_mapping`,
+  `test_dry_run_after_hooks_do_nothing`, `test_unfilled_exit_errors_use_the_raw_broker_positions` (a quantity
+  that differs between the raw position and a split-corrected one decides the error; sweep sells are skipped; the
+  texts equal `SELL X not fully filled (<status>); new strategy buys blocked`, `unknown` for a missing status),
+  `test_unfilled_exit_errors_is_empty_in_a_dry_run`.
   FAIL: ImportError.
 - [ ] **Step 2:** Implement and cut the five bodies from `trader.py` (their forwards: `return self._executor_for_call().<method>(...)`
   with the same signature and docstring first line); `trader.py` keeps its imports that tests patch (`# noqa: F401 - patch target`).
@@ -1393,8 +1787,10 @@ unchanged except the ledger and broker are injected and `find_split_applied_symb
 return, the old locals rebound per the bridge table); lower `RUN_MAX_LINES`.
 
 The gate keeps this order exactly: clock gate (fail open on a clock error, `Market closed` notice and
-`Halted("market_closed", RunResult([], [], []))`), the signals `try` (`SignalGateError` notice and re-raise, any other
-exception notice and re-raise), the per-sleeve info log and membership warning, the late-run gate
+`Halted("market_closed", RunResult([], [], []))`), the signals `try` (**`hooks.membership_source(membership)` is
+evaluated inside it, as an argument of `hooks.generate_signals(persist_tape=not read_only, membership=...)`**;
+`SignalGateError` notice and re-raise, any other exception, a membership-source failure included, notice
+`Paper trading failed: signal generation error\n<exc>` and re-raise), the per-sleeve info log and membership warning, the late-run gate
 (`hooks.now_pt()`; live: notice and `Halted("late_run", RunResult([], [], [], gate="late_run"))`; dry: warning, DRY RUN
 notice, continue), the read-only skip (`skipped_writes.append`, the info log) or `hooks.refresh_tape()` with its
 warning, the overlay fallback notice, the signal derivation (`strategy_signals`, a plain function), the freshness
@@ -1406,9 +1802,15 @@ loop (`hooks.today_et()` read once; stale notice and `Halted("stale_signals", Ru
   `test_late_run_live_halts_with_gate_late_run`, `test_late_run_dry_warns_and_continues` (quirk 1),
   `test_read_only_appends_to_the_shared_skipped_list_and_does_not_refresh`, `test_live_refreshes_and_warns_when_nothing_refreshed`,
   `test_fallback_notice_precedes_the_freshness_check`, `test_stale_unparseable_and_future_as_of_halt_with_the_old_texts` (three cases),
-  `test_the_clock_is_read_after_signals_and_today_after_the_late_gate`, `test_empty_sleeves_raise_stop_iteration_through_check`.
+  `test_the_clock_is_read_after_signals_and_today_after_the_late_gate`, `test_empty_sleeves_raise_stop_iteration_through_check`,
+  `test_membership_source_failure_is_inside_the_signal_try` (a hook whose `membership_source` raises: the notice
+  above is sent once, `generate_signals` is never called, the same exception propagates; a `SignalGateError` from
+  `generate_signals` keeps its own notice), `test_gate_uses_the_shared_constants_not_trader` (the freshness
+  limit is `constants.MAX_SIGNAL_AGE_DAYS`; the module imports `gates`, `constants`, `models`, `ports`, `signals`
+  types and nothing from `trader`).
 - [ ] **Step 2-3:** Implement; cut; SM9 is re-located here (mutation: read `hooks.now_pt()` first; the event-order tests
-  fail, the transcripts cannot); SM13a (the read-only skip message to another logger; the differential must fail).
+  fail, the transcripts cannot); SM13a (the read-only skip message to another logger; the differential must fail);
+  **SM17** (evaluate `hooks.membership_source(...)` before the `try`; the membership-alert tests and the W19 seeds fail).
 - [ ] **Step 4:** The task gate (D under both hash seeds). Commit: `refactor(paper): PreflightGate takes the market, signal, late-run and freshness gates`.
 
 ### Task 58: Wire `PortfolioView.load` (region R3) (builder: Terra; reviewer: Opus)
@@ -1459,8 +1861,11 @@ fields); ratchet.
 
 The stage: `assess_stops`; with unassessable symbols, `verdict.with_halt(reason)`, `all_buys = []`, the alert and the pending notice
 (each in a `try`); `plan_stops` advanced decision by decision (`Skip` is logged; `InvalidExit` appends the error and the symbol;
-an `OrderIntent` is submitted through the executor, **then** `stopped`, the sell list, the pending list (the order's `book_amount`
-read from `strategy_positions[symbol]["market_value"]` after the submit, Quirk 11), then `announce`); the stopped symbols are removed from the open positions;
+an `OrderIntent` goes to `executor.submit`, which returns **only the broker order id** (`None` in a dry run); **then**
+the flow does what `_run` does now, in this order: `stopped.add`, `executed_sells.append`; **then, live only
+(`executor.submits_orders`), it reads `strategy_positions[symbol]["market_value"]` (Quirk 11) and builds
+`SubmittedOrder(order_id, "SELL", symbol, market_value, reason)` and appends it to the book's orders**; then
+`announce`. A dry run updates the same sets, builds no `SubmittedOrder`, reads no `market_value`, and announces); the stopped symbols are removed from the open positions;
 `validate_exits`; if any symbol is invalid the buy candidates are emptied; then the limits (`sleeve_slot_caps`,
 `sleeve_open_count`, `buys_by_sleeve`, `sleeve_position_notional`, in this order, each evaluated here as today).
 
@@ -1469,8 +1874,12 @@ read from `strategy_positions[symbol]["market_value"]` after the submit, Quirk 1
   `test_invalid_stop_quantity_blocks_buys_not_other_stops` (rule 4), `test_stopped_symbols_leave_the_open_positions_at_once` (rule 1),
   `test_exit_validation_runs_after_the_stops_and_before_the_limits`, `test_limits_are_computed_in_the_old_order_and_raise_where_they_raised`,
   `test_a_stop_sells_book_amount_is_read_after_the_submit_and_never_in_a_dry_run` (Quirk 11),
+  `test_the_flow_builds_the_submitted_order_from_the_returned_id_after_the_counters` (a fake executor records
+  the sequence submit -> `stopped`/`executed_sells` visible -> `market_value` lookup -> order appended ->
+  announce; with a `Mapping` subclass that counts lookups on `strategy_positions`; a seam returning `None` in a live
+  run still books an order with `order_id=None`),
   `test_flow_state_after_stage_one_holds_every_field_the_inline_remainder_reads` (the fields of the interim table).
-- [ ] **Step 2-4:** Implement; ratchet; SM 1, 4a, 11: the rule tests and D (and the differential, N sites) fail. The task gate. Commit:
+- [ ] **Step 2-4:** Implement; ratchet; SM 1, 4a, 11, 16: the rule tests and D (and the differential, N sites) fail; SM16 is caught by `test_a_later_stop_without_qty_raises_after_the_first_stop_order_went_out` and `test_exit_validation_without_qty_raises_after_the_stop_orders` (Task 48), now through the flow. The task gate. Commit:
   `refactor(paper): OrderFlow runs the catastrophe-stop stage and the exit validation`.
 
 ### Task 61: Wire `OrderFlow` stage II: sweep sell, sells, settlement of the sells (region R6b) (builder: Terra; reviewer: Opus)
@@ -1479,8 +1888,8 @@ read from `strategy_positions[symbol]["market_value"]` after the submit, Quirk 1
 `trader.py` (`_run` 1183-1301 gone), ratchet, tests.
 
 The stage: when the sweep is on and there is no halt, `plan_sweep_sell` (the anticipated-sell and slot estimate use the open positions after the stops;
-`cfg.reserve_pct()` raises here, outside any `try`) and its execution; `plan_exits` advanced lazily (`regular_sell_count` counts regular sells only; an exit's `book_amount` is read after its submit);
-`executor.poll` of the sells (through the seam, dry runs included); `after_sells(filled)`; `unfilled_exit_errors` (live only): each error is appended and the buys cleared (rule 3).
+`cfg.reserve_pct()` raises here, outside any `try`) and its execution (`executor.submit` returns the id; the flow builds `SubmittedOrder(oid, "SELL", sweep_sym, sell_action.notional, SWEEP_TRADE_REASON)` and appends it; no counter, no `market_value` read); `plan_exits` advanced lazily (after each submit the flow does `executed_sells.append` and `regular_sell_count += 1`, **then, live only,** reads `strategy_positions[symbol]["market_value"]` and builds and appends the `SubmittedOrder`; a dry run counts and announces only; `regular_sell_count` counts regular sells only);
+`executor.poll` of the sells (through the seam, dry runs included; the list is the book's orders whose `side == "SELL"`); `after_sells(filled)` with the mapping `poll` returned; `unfilled_exit_errors(book.orders, filled, view.positions)` (live only; **`view.positions` is the raw broker mapping, not `strategy_positions` and not the corrected view**): each error is appended and the buys cleared (rule 3).
 A sell still working at the deadline never reaches `unfilled_exit_errors`: `after_sells` raises first (Quirk 10).
 
 - [ ] **Step 1: Failing tests:** `test_sweep_sell_is_planned_after_the_stops_were_executed` (SM 11 target), `test_a_bad_reserve_raises_after_the_stop_orders_went_out`
@@ -1489,24 +1898,30 @@ A sell still working at the deadline never reaches `unfilled_exit_errors`: `afte
   `test_a_working_exit_raises_in_reconciliation_before_any_error_is_built` (Quirk 10),
   `test_an_unfilled_exit_leaves_the_sweep_buy_enabled` (Quirk 9),
   `test_an_invalid_exit_still_allows_a_reserve_restoring_sweep_sell` (Quirk 8),
-  `test_dry_run_polls_an_empty_list_and_reconciles_nothing`.
-- [ ] **Step 2-4:** Implement; ratchet; SM 2, 3, 8-adjacent, 11 at N sites (D and the differential fail) and 7, 10 at S sites (D and the unit tests fail, the differential does not). The task gate. Commit:
+  `test_dry_run_polls_an_empty_list_and_reconciles_nothing`,
+  `test_unfilled_exit_errors_are_given_the_raw_broker_positions` (a split-corrected quantity differs from the raw
+  one; the raw one decides), `test_the_flow_builds_each_sell_order_after_its_counters_and_its_market_value_read`.
+- [ ] **Step 2-4:** Implement; ratchet; SM 2, 3, 8-adjacent, 11, 16 at N sites (D and the differential fail) and 7, 10 at S sites (D and the unit tests fail, the differential does not). The task gate. Commit:
   `refactor(paper): OrderFlow runs the sweep sell, the sells and their settlement`.
 
 ### Task 62: Wire `OrderFlow` stage III: buys, settlement, sweep buy (region R6c) (builder: Terra; reviewer: Opus)
 
 **Files:** Modify `order_flow.py`, `execution.py`, `trader.py` (`_run` 1302-1397 gone), ratchet, tests.
 
-The stage: `slots_available = risk.max_new_positions(len(open_positions) - regular_sell_count)` computed here; `plan_buys` advanced lazily; the
-poll of the remaining orders; `after_orders`; the sweep buy only when the sweep is on, there is no halt and no invalid exit symbol (rule 4), with the broker
-account read, `plan_sweep_buy` and the old fail-soft `try` (`Cash sweep buy sizing failed (non-fatal): %s`); live: submit, poll, append, reconcile unconditionally.
+The stage: `slots_available = risk.max_new_positions(len(open_positions) - regular_sell_count)` computed here (`open_positions` is the post-stop
+`strategy_positions`; `max_new_positions(n)` takes a **held count** and returns **free slots**, see Task 48 rule 2); `plan_buys` advanced lazily (after each submit the flow does
+`executed_buys.append`, `buys_attempted += 1`, `sleeve_open_count[universe] += 1`, then, live only, builds and appends `SubmittedOrder(oid, "BUY", symbol, sleeve_notional, None)`); the
+poll of the remaining orders (`[o for o in book.orders if o.order_id not in filled]`); `after_orders(book.orders)` with **every order of the run, the sells included** (reconciles if the list is non-empty and the run is live); the sweep buy only when the sweep is on, there is no halt and no invalid exit symbol (rule 4), with the broker
+account read, `plan_sweep_buy` and the old fail-soft `try` (`Cash sweep buy sizing failed (non-fatal): %s`); live: `executor.submit` returns the id, the flow builds `SubmittedOrder(oid, "BUY", sweep_sym, notional, SWEEP_TRADE_REASON)`, polls it (`filled.update(executor.poll([order]))`), **then** appends it to the book, then reconciles unconditionally (`executor.recover_intents()`, the same seam call).
 
 - [ ] **Step 1: Failing tests:** `test_buy_count_and_sleeve_open_count_follow_yielded_intents`, `test_a_halted_run_submits_no_buys_and_no_sweep_buy`,
   `test_invalid_exit_blocks_the_sweep_buy` (rule 4), `test_sweep_buy_sizing_failure_logs_and_buys_nothing` (each stored parse error, and a broker error),
   `test_live_sweep_buy_is_polled_appended_and_reconciled_in_that_order`, `test_dry_sweep_buy_only_announces`,
   `test_a_submit_exception_ends_the_run_after_the_intent_is_saved` (rule 7a; no later order), `test_rejected_order_reaches_normal_settlement` (rule 7b),
-  `test_three_held_one_stopped_one_ordinary_sell_permits_two_buys` (rule 2, the corrected example).
-- [ ] **Step 2-4:** Implement; ratchet; SM 1-5, 8 (N sites: D and the differential fail), SM 7 (S site). The task gate. Commit:
+  `test_three_held_one_stopped_one_ordinary_sell_permits_two_buys` (rule 2, the corrected example: held count `2 - 1 = 1`, two free slots),
+  `test_after_orders_receives_every_order_including_the_sells` (a run with only sells still reconciles once; an empty list does not),
+  `test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy` (the Task 48 shape, now through the flow).
+- [ ] **Step 2-4:** Implement; ratchet; SM 1-5, 8, 16 (N sites: D and the differential fail), SM 7 (S site). The task gate. Commit:
   `refactor(paper): OrderFlow runs the buys, their settlement and the sweep buy`.
 
 ### Task 63: Wire `RunReporter` and finish `_run` (regions R5, R7) (builder: Terra; reviewer: Opus)
@@ -1532,10 +1947,10 @@ exists (`1c7a3138`) and is preserved:** `daily_summary` keeps every keyword it h
 
 ### Task 64: Wiring gate (phase D)
 
-- [ ] **Step 1:** Mutation matrix SM 1-15 on the final tree, reach map first: each fails the nets of its row, recorded in `$E/p5/mutation-matrix-D.md` (S sites: differential blind, digests and named tests fail); a mutation no net catches is a finding and is fixed (a test is added, in an amendment note approved by Opus).
-- [ ] **Step 2:** The phase gate (`gate_run.sh phaseD`, `PHASE=pre gate_compare.sh phaseD`, `verify_pins.py`); the oracle only with the owner's recorded 6G approval.
-- [ ] **Step 3:** `git diff --stat 73c35417 -- <the immutable paths of Global Constraints>` empty; `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-behavior.sha256` all OK (or the amendment notes).
-- [ ] **Step 4: Reviews (the family rule).** **Opus** reviews Tasks 52-63 as one body (Codex-built; fresh context, given the diff, the rules, and the claim "behavior is unchanged"). **Sol** reviews the Claude-built pins (Tasks 47, 48, 50), and the decision to keep the seams and the `Halted` deviation. The Codex-built generator, digests and Tasks 52-63 are **not** reviewed by Sol, and Opus does not review the Claude-built pins. Findings are fixed (by the family that did not review the fixed code) before Task 65.
+- [ ] **Step 1:** Mutation matrix SM 1-17 on the final tree, reach map first: each fails the nets of its row, recorded in `$E/p5/mutation-matrix-D.md` (S sites: differential blind, digests and named tests fail); a mutation no net catches is a finding and is fixed by adding a test through an **amendment note whose approver is the family that did not write the new test** (Global Constraints, "Amendment authority": Sol for a Claude-built test, Opus for a Codex-built one); a new test never goes into an immutable file without that note and a new hash line.
+- [ ] **Step 2:** The phase gate (`gate_run.sh phaseD`, `PHASE=pre gate_compare.sh phaseD`, `verify_pins.py`); the oracle only with the owner's recorded 6G approval (the tests half runs and is compared either way; without the approval the gate is "tests half passed, oracle half pending").
+- [ ] **Step 3: The records, in the two lists of Global Constraints.** (a) **Pre-existing immutable files and tools against `BASE5`:** `git diff --stat 73c35417 -- src/ggTrader/paper/persist.py src/ggTrader/paper/ledger.py tests/paper/transcript tests/paper/golden/trader_transcripts tests/paper/golden/persist_sql.json tests/paper/test_trader_transcripts.py tests/paper/test_persist_sql_golden.py tests/paper/test_phase4_pins.py tests/lab/test_fetch_stock_ohlcv_chain.py scripts/run_tests.sh scripts/run_capped.sh scripts/_heavy_job.sh scripts/compare_test_outcomes.py scripts/compare_evidence_json.py scripts/verify_pins.py scripts/p5_wfo_validation.py scripts/p7_live_golden.py conftest.py tests/paper/conftest.py tests/tiers.py tests/netguard.py offline.sh .github/workflows/ci.yml pyproject.toml` prints nothing; (b) **new immutable files against the Task 51 hashes**, not against `BASE5` (a diff against `BASE5` shows them as added): `sha256sum -c $E/p5-behavior.sha256` all OK, and the digest file's stored generator, witnesses and runner hashes equal the files; (c) **every pin and tool record:** `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-tools.sha256` all OK (the wrapper scripts and the pin lists of `$E/p5/` are in `p5-tools.sha256`, so a wrapper edited to make a gate pass fails here); (d) the amendment notes, each listed with its approver, for any line that changed.
+- [ ] **Step 4: Reviews (the family rule).** **Opus** reviews Tasks 52-63 as one body (Codex-built; fresh context, given the diff, the rules, and the claim "behavior is unchanged"). **Sol** reviews the Claude-built pins (Tasks 47, 48, 50), and the decision to keep the seams and the `Halted` deviation (a design judgment, on evidence). **The family rule is symmetric:** Opus never reviews a Claude-built file and Sol never certifies a Codex-built one, though each may read the other's slice as context. Where this plan says "Opus judges", it means the verdict calls CLAUDE.md gives it (trust, audit conclusion, protocol decision, synthesis) over **evidence and Codex-built code**; a verdict about a Claude-built test needs Sol's review as its basis. Findings are fixed by the family that did not review the fixed code and approved by the reviewer of the other family, before Task 65.
 - [ ] **Step 5:** Report usage (Phase D done).
 
 ### Task 65: The test rig and one pilot conversion (builder: Terra; reviewer: Opus)
@@ -1601,28 +2016,48 @@ autouse guard (`_unstubbed_persist_guard`) that fails any test which reaches a p
 ### Task 74: Delete the frozen copy; the digests keep guarding (builder: Terra; reviewer: Opus)
 
 **Files:** Modify `src/ggTrader/paper/trader.py` (delete `_run_legacy`, then every import and name only it used and no test or harness patches, from the Task 50 list; keep each name that is a patch target with its `# noqa: F401 - patch target`),
-`tests/paper/equivalence/impl.py` (`IMPLS = ("new",)`; the rule tests and the seam tests that parametrize over it adapt with no edit),
+`tests/paper/equivalence/impl.py` (**only** the `IMPLS` line becomes `IMPLS: tuple[str, ...] = ("new",)`),
 `tests/paper/test_run_structure.py` (keeps the ratchet; gains the two tests below). **Delete** `tests/paper/test_run_differential.py`, `tests/paper/test_run_legacy_frozen.py` and
-`tests/paper/golden/run_legacy.sha256` (all **mutable-set** files). **Not edited:** every immutable-set file, `test_run_digests.py` and the digest file included (the `"legacy"` branch of `runner.run_recorded` becomes unreachable and stays; no remaining test calls it).
+`tests/paper/golden/run_legacy.sha256` (all **mutable-set** files). **Not edited:** every immutable-set file, `run_with.py`, `test_run_with.py`, `test_run_rules.py`, `test_seam_contract.py`, `test_run_digests.py` and the digest file included. The rule tests and the seam tests parametrize over `impl.IMPLS`, so they lose their `legacy` cases with no edit; `run_with("legacy", ...)` now raises `ValueError` (Task 47), and the `"legacy"` branch of `runner.run_recorded` stays unreachable and unedited (no remaining test calls it).
 
 - [ ] **Step 1: Failing tests:** `test_trader_has_no_run_legacy` and `test_every_noqa_f401_in_trader_names_its_reason` (every remaining `# noqa: F401` in `trader.py` is followed by `- <reason>`), both in `test_run_structure.py`; the unused-import check itself is `ruff check` (the gate's step 1).
-- [ ] **Step 2: Before and after.** Run `T $(cat $E/p5/pins-pre.txt) -m "not slow"` and `T tests/paper/test_run_digests.py -m slow`, record the passing node ids (`$E/p5/t74-before.txt`). Delete the copy and its tests, switch the gates to `pins-post.txt`, rerun `T $(cat $E/p5/pins-post.txt) -m "not slow"` and the slow digest test: **the digest tests' node ids and outcomes are identical to the "before" run**, and the digest file is byte-identical to its Task 49 hash.
-- [ ] **Step 3: Node replacement is explicit.** `T --collect-only -q` before and after: the difference equals exactly `$E/p5/retired-nodes.txt` (every node of the two deleted files) plus the two new tests. Produce `$E/p5/must-pass-post.txt` = `must-pass-pre.txt` minus the retired nodes plus the new ones. The comparison against `p5-base-*` is unaffected (no baseline node is retired: the baseline predates those files), and the gates from here use `PHASE=post`. `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-behavior.sha256` still all OK (no immutable file changed); the 103 transcripts and the rule tests pass.
-- [ ] **Step 4:** The task gate (`pins-post`). Commit: `refactor(paper): delete the frozen oracle copy of _run; recorded digests keep guarding`.
+- [ ] **Step 2: Before.** Record **every** collected node of the pin files and the digest tests, fast and slow, with their outcomes: `T $(cat $E/p5/pins-pre.txt) -m "not slow" -rA --junitxml=$E/t74-before-fast.xml`, `T tests/paper/test_run_digests.py -m slow -rA --junitxml=$E/t74-before-slow.xml`, and `T $(cat $E/p5/pins-pre.txt) tests/paper/test_run_with.py tests/paper/test_run_digests.py --collect-only -q` for the slow set too (saved as `$E/p5/t74-collect-before.txt`, one node per line, both markers). The digest file is hashed (`$E/p5/t74-digest-before.sha256`).
+- [ ] **Step 3: Delete, then After.** Delete the copy, the two test files, the hash file; change the one `IMPLS` line; switch the gates to `pins-post.txt` (which `test_run_with.py` is part of in both lists). Rerun the same three commands into `$E/p5/t74-collect-after.txt`, `$E/t74-after-fast.xml`, `$E/t74-after-slow.xml`. Then:
+  - **Checks on `impl.py`:** `git diff -U0 -- tests/paper/equivalence/impl.py` shows exactly one removed and one added line, the `IMPLS` assignment; no other file under `tests/paper/equivalence/` differs from its Task 51 hash.
+  - **The retired nodes, by name.** `$E/p5/retired-nodes.txt` is **computed, then reviewed**: `comm -23 t74-collect-before.txt t74-collect-after.txt` (nodes that existed and are gone), and each line is classified in the file as (i) a node of a deleted file (`test_run_differential.py`, `test_run_legacy_frozen.py`, **every** node of both, fast and slow collections), (ii) a **`legacy`-parametrized node of a surviving file**: every id of `test_run_rules.py`, `test_seam_contract.py` and any other immutable file parametrized over `IMPLS` that carries the `legacy` implementation (these exist in `pre` and must-pass-pre and disappear without an edit of those files, because `IMPLS` lost its second member; their `new` twins keep their ids), or (iii) anything else, which stops the task (an unexplained disappearance is a lost test, not a retirement). The `new`-implementation nodes' ids are checked to be **unchanged** (`comm -13 collect-before collect-after` lists only the two new structure tests).
+  - **Added nodes:** `comm -13` shows exactly the two new tests of Step 1 and nothing else.
+  - **The digest nodes** (every node of `test_run_digests.py`, fast and slow) have identical ids and outcomes before and after (`diff` of the two junit summaries filtered to that file), and the digest file hash equals `t74-digest-before.sha256` and the Task 49 record.
+- [ ] **Step 4: Must-pass files, exactly.** `$E/p5/must-pass-post.txt` = `must-pass-pre.txt` minus `retired-nodes.txt` plus the two new tests; the orchestrator checks (a) every node in `retired-nodes.txt` is in `must-pass-pre.txt`, (b) none is in the baseline `p5-base-*.xml` (the baseline predates every one of them, so no baseline node is retired by this task), (c) every other node of `pre` is in `post` (`comm -23 pre-sorted post-sorted` equals `retired-nodes.txt`), (d) `post` still holds the 277 `test_trader.py` ids and both live-golden nodes. From here the gates use `PHASE=post`. `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-tools.sha256 $E/p5-behavior.sha256` still all OK (no immutable file changed); the 103 transcripts and the rule tests pass.
+- [ ] **Step 5:** The task gate (`pins-post`). Commit: `refactor(paper): delete the frozen oracle copy of _run; recorded digests keep guarding`.
 
 ### Task 75 (OWNER-GATED, O-P5-1): retire `ModuleLedger` and the string-patch harness
 
 **Why it is a task of this plan.** Design section 7 says "delete the adapter and `_run_legacy`". Without this task the phase leaves the adapter in place and **must be reported as incomplete against the
-design**; with it, Phase 5 matches the design. It runs only after the owner approves in writing, because it edits files the owner asked to keep immutable (`harness.py`, `test_phase4_pins.py`, the
-`ledger.py` of Phase 4). Builder: Terra; reviewers: Opus for the Codex-built code, Sol for any Claude-built part; orchestrator re-verification as in the task gate. If the owner declines or defers,
+design**; with it, Phase 5 matches the design. It runs only after the owner approves in writing, because it edits files the owner asked to keep immutable and one hash-recorded digest file. Builder: Terra; reviewers: Opus for the Codex-built code, Sol for any Claude-built part (the amendment authority of Global Constraints applies to each file below: files of mixed or unrecorded authorship need **both**); orchestrator re-verification as in the task gate. If the owner declines or defers,
 the plan stops at Task 74 and Tasks 76-78 report "complete except adapter retirement (O-P5-1)".
 
-- [ ] **Step 0: Owner approval, recorded**, naming the three immutable-file amendments below. Inventory (Haiku, checked by Sonnet): every `ModuleLedger`, `TRADER_NAMES` and `sys.modules` reference; every persist-name string patch outside `test_trader.py` (`test_trader_ledger.py` has one, plus the pin "the 26 names stay bound"); the harness persist loop; `test_phase4_pins.py` lines that assert the names bound (about 106-107 and 127); `tests/paper/test_ledger.py`'s `ModuleLedger` tests.
-- [ ] **Step 1: Build the injected harness beside the old one.** New file `tests/paper/transcript/injected.py` (the harness is not edited yet): `HarnessLedger`, a `PaperLedger` whose every method calls `run.persist_wrapper(name)` (so the recorded `persist.<name>` entries are unchanged) and whose `paper_run_lock` is `run.paper_run_lock`; `run_scenario_injected(scenario)`, a copy of `_run_scenario` that passes `ledger=HarnessLedger(run)` and patches only the non-persist names. New test `tests/paper/test_trader_transcripts_injected.py`: for all 103 scenarios the injected transcript's `to_json` equals the same golden file, byte for byte. Both harnesses pass: this is the proof that retiring the patching changes no recorded call.
-- [ ] **Step 2: Amend the immutable files (approval of Step 0), one commit each, each recorded in `$E/p5/amendments.md` with the proof:** (a) `tests/paper/transcript/harness.py`: its persist-patch loop and `paper_run_lock` replacement become the injection of Step 1; `scenarios.py`, `test_trader_transcripts.py` and the 103 goldens stay byte-identical (their hashes in `p5-fixed.sha256` are unchanged; only `harness.py`'s line is re-recorded); (b) `tests/paper/equivalence/runner.py` (immutable behavioral set) takes the same injection instead of `persist_function_names()`; the digest file is **not** re-recorded, and `test_run_digests.py` (fast and slow) must pass against it unchanged: that is the proof; (c) `tests/paper/test_phase4_pins.py` and `tests/paper/test_seam_contract.py::test_trader_persist_names_unchanged` stop asserting that the persist names are bound in the trader module.
-- [ ] **Step 3: Migrate the remaining string patches** outside `test_trader.py` (`test_trader_ledger.py` and any other the inventory found) to an injected `InMemoryLedger` or `SpyLedger`; the autouse guard of Task 73 now patches the default ledger's factory instead of the 26 names (`ggTrader.paper.trader.PgPaperLedger` -> a factory whose every method records and raises `UnstubbedPersistCall`).
+**The closed list of frozen files this task edits (the owner's approval names exactly these; the Step 0 inventory may remove a name from the list, never add one: a further file found is a stop and a new approval).**
+
+| File | Set | Edit | Proof it changes no recorded behavior |
+|---|---|---|---|
+| `tests/paper/transcript/harness.py` | pre-existing immutable (`p5-fixed.sha256`) | the persist-patch loop and the `paper_run_lock` replacement become the injection of Step 1 | 103 goldens byte-identical |
+| `tests/paper/test_phase4_pins.py` | pre-existing immutable (`p5-fixed.sha256`) | the lines asserting the persist names stay bound in `trader` (about 106-107 and 127) | the rest of the file passes unchanged |
+| `tests/paper/equivalence/runner.py` | new immutable (`p5-behavior.sha256`) | takes the same injection instead of `persist_function_names()` | `test_run_digests.py` (fast and slow) passes against the digest file's **per-seed digests, unchanged** |
+| `tests/paper/golden/run_equivalence_digests.json` | new immutable (`p5-behavior.sha256`) | **only** `runner_sha256` (the runner it records the pin of) and one appended `amendments` entry (date, reason, the new `runner_sha256`, the commit); `generator_sha256`, `witnesses_sha256`, `production_base`, `recorder_commit` and the whole `digests` mapping are not touched | the `digests` object's canonical-JSON sha256 equals the one recorded before the edit (`$E/p5/digests-map.sha256`, taken at Task 49 Step 7); no digest is recomputed or re-recorded |
+| `tests/paper/test_seam_contract.py` | new immutable | `test_trader_persist_names_unchanged` is removed or reduced to the ledger-protocol equality, and the `test_legacy_seams_intercept_the_run` case "a string patch of one persist name wins" becomes "an injected ledger's method wins"; every other case unchanged | the file's other nodes keep ids and pass |
+| `tests/paper/test_run_rules.py`, `tests/paper/rules_support.py` | new immutable | **only if** their hook-order environment copy patches persist names (the Step 0 inventory decides); then the same injection | the rule tests keep their ids and pass on the unchanged goldens |
+| `tests/paper/test_trader_ledger.py` | Phase 4 test | its persist-name patching and `TRADER_NAMES` uses | the injected-ledger tests keep ids and pass |
+| `tests/paper/test_ledger.py` | Phase 4 test | the five `test_module_ledger_*` tests and `test_trader_names_are_the_26_names_trader_imports` are removed with `ModuleLedger`; `test_module_exposes_its_public_names` drops the name `ModuleLedger` | see "Baseline node retirement" below |
+
+Also recorded: `$E/p5-fixed.sha256` (the `harness.py` and `test_phase4_pins.py` lines) and `$E/p5-behavior.sha256` (the `runner.py`, `test_seam_contract.py`, `test_run_rules.py`/`rules_support.py` if edited, and digest-file lines) are re-recorded **after** each amendment is approved, each re-recorded line listed in `$E/p5/amendments.md` with the approver. Files **not** frozen and edited here: `src/ggTrader/paper/trader.py`, `src/ggTrader/paper/ledger.py`, `tests/paper/test_trader.py` (the explicit persist-name patches Task 73's guard docstring lists for `run_paper_trading` tests), `tests/paper/support.py`, `tests/paper/transcript/injected.py` and `tests/paper/test_trader_transcripts_injected.py` (new).
+
+- [ ] **Step 0: Owner approval, recorded** in `$E/p5/amendments.md`, quoting the owner and naming each row of the table above. Inventory (Haiku, checked by Sonnet): every `ModuleLedger`, `TRADER_NAMES`, `persist_function_names` and `sys.modules` reference; every persist-name string patch outside `test_trader.py`; the harness persist loop; the `test_phase4_pins.py` lines asserting the names bound; `tests/paper/test_ledger.py`'s `ModuleLedger` tests; every other user of `TRADER_NAMES` (it is deleted with `ModuleLedger` unless the inventory finds a user, in which case it is kept and the amendment note says why). Write `$E/p5/digests-map.sha256` (if not already there from Task 49) and `$E/p5/retired-baseline-nodes.txt` (below) here, before any edit.
+- [ ] **Step 1: Build the injected harness beside the old one.** New file `tests/paper/transcript/injected.py` (the harness is not edited yet): `HarnessLedger`, a `PaperLedger` whose every method calls `run.persist_wrapper(name)` (so the recorded `persist.<name>` entries are unchanged) and whose `paper_run_lock` is `run.paper_run_lock`; `run_scenario_injected(scenario)`, a copy of `_run_scenario` that passes `ledger=HarnessLedger(run)` and patches only the non-persist names. New test `tests/paper/test_trader_transcripts_injected.py`: for all 103 scenarios the injected transcript's `to_json` equals the same golden file, byte for byte. Both harnesses pass: this is the proof that retiring the patching changes no recorded call. Not a gate point on its own beyond that.
+- [ ] **Step 2: Amend the frozen files of the table, one commit each**, in the order harness, runner, digest-file provenance, pins, seam contract, rules (if listed), the Phase 4 tests; each with its approver recorded and its proof run: after the **runner** commit, `T tests/paper/test_run_digests.py -m "not slow"` and `-m slow` pass; after the **digest-file** commit (`runner_sha256` and the `amendments` entry only) `test_digest_file_pins_the_generator_and_the_runner` passes and the `digests` map hash equals `digests-map.sha256`. The 103 goldens, `scenarios.py` and `test_trader_transcripts.py` stay byte-identical (their `p5-fixed.sha256` lines are unchanged; only the lines of the edited files are re-recorded).
+- [ ] **Step 3: Migrate the remaining string patches** outside `test_trader.py` (`test_trader_ledger.py` and any other the inventory found) and the explicit persist-name patches of the `run_paper_trading` tests inside `test_trader.py` to an injected `InMemoryLedger` or `SpyLedger`; the autouse guard of Task 73 now patches the default ledger's factory instead of the 26 names (`ggTrader.paper.trader.PgPaperLedger` -> a factory whose every method records and raises `UnstubbedPersistCall`). All 277 `test_trader.py` node ids still pass.
 - [ ] **Step 4: Retire.** `PaperTrader.__init__` builds `PgPaperLedger()` as its default (it is stateless and reads the engine at each call, so construction opens no connection: `persist.py:135-150`); `ModuleLedger` leaves `ledger.py`, its tests leave `tests/paper/test_ledger.py`; the 26 persist imports and the `sys.modules` lookup leave `trader.py`; the constructor docstring and the module docstring of `ledger.py` stop describing a module lookup. `git grep -n ModuleLedger src tests scripts` finds nothing outside history and the changelog.
-- [ ] **Step 5:** The task gate and a **phase-style gate** (fast core, `--full`, `--studies`, oracle with approval): the 103 goldens byte-identical, the digest tests (fast and slow) unchanged, the SQL golden and `persist.py` untouched, `ledger.py`'s diff exactly the deletion. Commit per step; the last: `refactor(paper): retire ModuleLedger; the transcript harness injects its ledger`.
+- [ ] **Step 5: Baseline node retirement, narrowly scoped (the comparator is not edited).** `compare_test_outcomes.py` treats a baseline node missing from the new run as a breach ("missing from new") and a smaller node count as a breach, so the removed `ModuleLedger` tests would fail the gate; the script and `gate_compare.sh`'s defaults stay as hash-pinned. Instead, **only for gates from this task on**, `PHASE=post BASELINE_SUFFIX=-t75 $E/p5/gate_compare.sh LABEL` compares against `$E/p5-base-core-t75.xml` and `$E/p5-base-studies-t75.xml`: copies of the baseline junit files with exactly the `<testcase>` elements named in `$E/p5/retired-baseline-nodes.txt` removed, made by a one-off `$E/p5/filter_baseline.py` (outside the repository, sha256 recorded). Rules: every listed node is in `tests/paper/test_ledger.py` and tests only `ModuleLedger` or the "26 names are bound in the trader" check (at most the six nodes of the table above; the Step 0 inventory fixes the exact ids); a node that was merely edited stays in the baseline and must pass; the file, the filter script, the two filtered XMLs and the owner's approval are listed in `amendments.md`; `gate_compare.sh` refuses `BASELINE_SUFFIX` unless that file and the amendment note exist; `must-pass-post.txt` loses the same nodes (they appear in neither baseline nor new run). The unfiltered baseline remains the comparison target for every gate before this task and is kept.
+- [ ] **Step 6:** The task gate and a **phase-style gate** (fast core, `--full`, `--studies`, oracle with approval at exactly 6G; the tests half runs either way): the 103 goldens byte-identical, the digest tests (fast and slow) unchanged against the unchanged per-seed digests, the SQL golden and `persist.py` untouched, `ledger.py`'s diff exactly the deletion of `ModuleLedger` (and `TRADER_NAMES` if deleted), every changed frozen-file hash listed in `amendments.md`. Commit per step; the last: `refactor(paper): retire ModuleLedger; the transcript harness injects its ledger`.
 
 ### Task 76: Lint survivors, docs, changelog (builder: Sonnet; reviewer: Sol)
 
@@ -1630,7 +2065,7 @@ the plan stops at Task 74 and Tasks 76-78 report "complete except adapter retire
 
 - [ ] **Step 1:** Run `ruff check --select C901,PLR0912,PLR0915,PLR0913 src/ggTrader/paper` with design 5.4's limits (`max-complexity = 15`, `max-args = 8`); list every survivor.
 - [ ] **Step 2:** Enable the four rules for `src/ggTrader/paper` with a per-file ignore for each survivor, each with a one-line reason (a deliberate wide constructor, a long moved body whose only change was a move). Nothing outside `paper/` is switched on here (design 5.4 enables the rest later).
-- [ ] **Step 3:** Docs. Remove the stale "verification status" paragraph Phase 4 left and replace it with the recorded gate results of Task 77 (written after it, in the same commit as the final evidence references).
+- [ ] **Step 3:** Docs, **without any gate result.** Task 76 runs *before* the final gate (Task 77) and the final reviews (Task 78), so it cannot truthfully hold their results. Remove the stale "verification status" paragraph Phase 4 left and put in its place one line: "Phase 5 verification: recorded in Task 78's commit `docs: record phase 5 verification`" (the commit does not exist yet; the architecture and changelog entries say what was built and what was preserved, not what passed). The changelog entry also states whether the adapter was retired.
 - [ ] **Step 4:** The task gate. Commit: `docs: refactor phase 5 (the trader run split into step objects)`.
 
 ### Task 77: Integration gate (orchestrator)
@@ -1640,14 +2075,15 @@ the plan stops at Task 74 and Tasks 76-78 report "complete except adapter retire
   `PHASE=post $E/p5/gate_compare.sh phase5`: the outcome check against `p5-base-*.xml` with `must-pass-post.txt` (every Phase 5 pin that still exists, **all 277 `test_trader.py` node ids** and both live-golden nodes); `scripts/verify_pins.py` with the counts of `.github/workflows/ci.yml`. Without the owner's 6G approval the oracle half is reported "not run" and the gate is **not** declared passed.
 - [ ] **Step 3:** The records: `sha256sum -c $E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-behavior.sha256` all OK (or the amendment notes of Task 75, each listed); `git diff --stat 73c35417 -- src/ggTrader/paper/persist.py` empty; `git diff --stat 73c35417 -- src/ggTrader/paper/ledger.py` **empty if Task 75 did not run, exactly the `ModuleLedger` deletion if it did**; `git diff --stat 73c35417 -- tests/paper/golden/trader_transcripts tests/paper/golden/persist_sql.json` empty; the digest file's hash unchanged.
 - [ ] **Step 4:** `grep -n "os.environ\|getenv\|_write\b" src/ggTrader/paper/trader.py` prints nothing; `_run` is at most 45 lines and `run` at most 25 (the ratchet); every new module passes the discovered-module scan of Task 50.
-- [ ] **Step 5:** The final mutation matrix (SM 1-15), reach map first, on the final head. **Step 6:** report usage.
+- [ ] **Step 5:** The final mutation matrix (SM 1-17), reach map first, on the final head. **Step 6:** report usage. (This task records its results in `$E` only; the documents that quote them are written by Task 78 Step 5, after the reviews.)
 
 ### Task 78: Independent reviews and the hand-back
 
 - [ ] **Step 1: Sol** (fresh context) reviews the **Claude-built** work (Tasks 47, 48, 50, 76, and the orchestrator's fixes): given the branch diff of those tasks, the seven rules, the safety-invariant list, the immutable list and the claim "no behavior changed"; not given the builders' reports. Sol may read the rest of the branch as context but does not certify the Codex-built code (family rule). Findings are checked by the orchestrator against the code before they are acted on.
-- [ ] **Step 2: Opus** (fresh context) reviews the **Codex-built** work (Tasks 49, 52-75 as built by Terra): same evidence plus the SM matrix results and reach maps; asked to find a mutation or an input class the nets miss. Opus does not certify the Claude-built pins. Opus alone judges the equivalence verdict and the deviations that touch live safety (Deviation 1, the lazy planners, the `Halted` return).
+- [ ] **Step 2: Opus** (fresh context) reviews the **Codex-built** work (Tasks 49, 52-75 as built by Terra): same evidence plus the SM matrix results and reach maps; asked to find a mutation or an input class the nets miss. Opus does not certify the Claude-built pins (that is Sol's, Step 1). Opus renders the **equivalence verdict** and the judgment on the deviations that touch live safety (Deviation 1, the lazy planners, the `Halted` return) as the critical judgments CLAUDE.md assigns it, **on evidence and on the Codex-built code**; where a verdict leans on a Claude-built test, it quotes Sol's Step 1 finding for that test and does not re-review it. The hand-back states which reviewer certified which slice.
 - [ ] **Step 3:** Each finding is fixed in its own commit, with its test, and the affected gate steps rerun; a finding that is a candidate behavior change (the quirks) is **not** fixed and goes to the hand-back. A fix is reviewed by the family that did not write it.
-- [ ] **Step 4: Hand-back** to the owner: branch `refactor/phase-5` and its head, the gate results (and any half "not run"), the anchors before and after (`_run` 826 lines to at most 45; 239 persist patches to 0), the preserved quirks (1-11) as candidate findings, the deviations (notably `Halted` in place of a raised `RunHalted`), the owner decisions still open (O-P5-1, O-P5-3, O-P5-4, O-P5-5), and usage. **Say plainly whether Task 75 ran: if it did not, the phase is "complete except adapter retirement" and not complete against design section 7.** The Telegram dual-base total is already merged on the base (`1c7a3138`) and untouched. **No merge, push or deploy; the trader stays off.**
+- [ ] **Step 4: Record the verification, after the reviews (a documentation-only commit).** Only now, with the gate (Task 77) and both reviews (Steps 1-2) done and their findings fixed, write the final gate results into the documents Task 76 left a pointer in: `docs/architecture.md` and `docs/changelog.md` get the "verification status" paragraph (gate labels, pass/pending halves, node counts, the 103 goldens and 600 digests unchanged, the mutation matrix result, who reviewed which slice, the owner decisions still open, whether Task 75 ran). The commit changes documents only (`git diff --stat <head before> HEAD -- . ':!docs'` prints nothing), so no gate reruns except `ruff` and the hash records (`$E/p5-fixed.sha256 $E/p5-pins.sha256 $E/p5-tools.sha256 $E/p5-behavior.sha256` still OK). Commit: `docs: record phase 5 verification`. If a gate half is still pending (the oracle awaiting O-P5-3), the paragraph says exactly that and the phase is **not** reported verified.
+- [ ] **Step 5: Hand-back** to the owner: branch `refactor/phase-5` and its head, the gate results as recorded in Step 4 (and any half "not run"), the anchors before and after (`_run` 826 lines to at most 45; 239 persist patches to 0), the preserved quirks (1-13) as candidate findings, the deviations (notably `Halted` in place of a raised `RunHalted`), the owner decisions still open (O-P5-1, O-P5-3, O-P5-4, O-P5-5), and usage. **Say plainly whether Task 75 ran: if it did not, the phase is "complete except adapter retirement" and not complete against design section 7.** The Telegram dual-base total is already merged on the base (`1c7a3138`) and untouched. **No merge, push or deploy; the trader stays off.**
 
 ## Execution roles (`CLAUDE.md`, delegation preference of 2026-11-08)
 
@@ -1656,7 +2092,7 @@ Phases and expected runs:
 
 | Phase | Tasks | Builder runs | Reviewer runs |
 |---|---|---|---|
-| A: nets | 46-51 | 3 Sonnet (47, 48, 50), 1 Terra (49), Haiku inventories | 2 Sol (47-48-50, Task 51 read), 1 Opus (49, Task 51 read) |
+| A: nets | 46-51 | 3 Sonnet (47, 48, 50), 1 Terra (49), Haiku inventories | 2 Sol (47-48-50, Task 51 read), 1 Opus (49 pre-record gate, normalization approval, Task 51 hash confirmation) |
 | B-C: inert pieces and moved bodies | 52-56 | 5 Terra | 5 Opus |
 | D: wiring | 57-63 | 7 Terra | 7 Opus, then 1 Opus (Terra's 52-63) and 1 Sol (Sonnet's pins) at Task 64 |
 | E: tests | 65-74 | 10 Terra | 10 Opus |
@@ -1664,7 +2100,7 @@ Phases and expected runs:
 | F: docs, gate | 76-78 | 1 Sonnet | 1 Sol, final Sol and Opus (each on the other family's slice) |
 
 - **Orchestrator: Claude Sonnet.** It re-verifies every task itself (reads the diff with `--color-moved`, reruns the task gate, runs the mutations, accepts no builder claim unchecked) and runs the oracle and `--full` runs one at a time.
-- **The family rule, as `CLAUDE.md` states it: a reviewer never reviews its own model family's build.** Claude output (Sonnet, Haiku) is reviewed by **Sol**; Codex output (Terra, Luna) is reviewed by **Opus**. Applied here: the pins and rules (Tasks 47, 48, 50) and docs (76) are Sonnet-built and reviewed by **Sol**; the generator, digests (Task 49), the refactoring under them (52-63), the test migration (65-74) and Task 75 are Terra-built and reviewed by **Opus**. Opus therefore does not read the Claude-built rules tests, and Sol does not read the Codex-built generator. A fix is attributed to the family that wrote it and reviewed by the other. "Anything headed for a merge gets both" is met at Tasks 64 and 78 by **each reviewer certifying the other family's slice**, both reading the whole diff as context. Whole-branch reviews are given only the evidence and the claims; a review of a family's own build says so.
+- **The family rule, as `CLAUDE.md` states it: a reviewer never reviews its own model family's build.** Claude output (Sonnet, Haiku) is reviewed by **Sol**; Codex output (Terra, Luna) is reviewed by **Opus**. Applied here: the pins and rules (Tasks 47, 48, 50) and docs (76) are Sonnet-built and reviewed by **Sol**; the generator, digests (Task 49), the refactoring under them (52-63), the test migration (65-74) and Task 75 are Terra-built and reviewed by **Opus**. Opus therefore does not read the Claude-built rules tests, and Sol does not read the Codex-built generator. A fix is attributed to the family that wrote it and reviewed by the other. **Amendments follow the same rule** (Global Constraints, "Amendment authority"): Sol approves an amendment to a Claude-built file, Opus one to a Codex-built file, both one to a file of mixed or unrecorded authorship; Opus's verdicts are evidence-based and never a certification of a Claude-built test. "Anything headed for a merge gets both" is met at Tasks 64 and 78 by **each reviewer certifying the other family's slice**, both reading the whole diff as context. Whole-branch reviews are given only the evidence and the claims; a review of a family's own build says so.
 - **Haiku** takes the inventories (Task 46 anchors and node lists, per-node assertion counts, the mutation-site map, the Task 75 inventory); a stronger model samples each batch and checks every figure that reaches a report.
 - **Briefs** carry the task text, the file paths, the heavy-job block of Global Constraints (with the explicit ban on the oracle scripts), and no private account records.
 - The lead remains responsible for the final call.
