@@ -21,9 +21,9 @@
 # waits on a lock in the repository's git directory, then exits 75. It also exits 75, at once,
 # when free memory is below the cap plus the margin. See scripts/_heavy_job.sh.
 #
-# Exit status is the command's own. Exit 137 means the cap was hit and exit 143 means the time
-# limit stopped it: this script never retries, and a retry with a higher cap or limit must be a
-# deliberate decision. Exit 75 means busy or short of memory, and the command never started.
+# Exit status is the command's own. Exit 137 or 143 alone does not establish the cause. This
+# script never retries; raising a cap or limit must be deliberate. Exit 75 means busy or short
+# of memory, and the command never started.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -78,14 +78,13 @@ systemd-run --user --scope -q --collect \
 status=$?
 set -e
 
-# 137 = SIGKILL, which from inside this scope means the cap was hit.
+# Exit codes alone do not identify the cause.
 if [[ $status -eq 137 ]]; then
-    echo "KILLED AT MEMORY CAP ($MEM_MAX): do not retry with a higher cap; report it" >&2
+    echo "Killed (exit 137); a memory cap or another cause is unverified. Do not retry blindly." >&2
 fi
 
-# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
 if [[ $status -eq 143 ]]; then
-    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long job; report it" >&2
+    echo "Terminated (exit 143); a time limit or another signal may be responsible." >&2
 fi
 
 exit $status

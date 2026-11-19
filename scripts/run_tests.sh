@@ -178,7 +178,7 @@ if [[ "$TIER" == "studies" && $has_path -eq 0 && $status -eq 5 ]]; then
 fi
 
 if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 \
-    && $status -ne 137 && $status -ne 143 ]]; then
+    && $status -lt 128 ]]; then
     mapfile -t plan < <(study_plan)
     min_collected="${plan[0]}"
     study_dirs=()
@@ -198,7 +198,7 @@ if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 \
         if [[ $half -eq 5 && "$min_collected" -eq 0 ]]; then
             half=0
         fi
-        status=$(( status == 0 || half == 137 || half == 143 ? half : status ))
+        status=$(( status == 0 || half >= 128 ? half : status ))
     fi
 fi
 

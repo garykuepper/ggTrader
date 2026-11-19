@@ -31,7 +31,9 @@ needs_systemd_scope = pytest.mark.skipif(
 )
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "run_capped.sh"
-KILL_MESSAGE = "KILLED AT MEMORY CAP ({cap}): do not retry with a higher cap; report it"
+KILL_MESSAGE = (
+    "Killed (exit 137); a memory cap or another cause is unverified. Do not retry blindly."
+)
 # Multiplying bytes writes every page, so the allocation is resident; a bare
 # bytearray(n) is lazily zeroed and may never reach the cap.
 ALLOC_512M = "x = b'\\x01' * (512*1024*1024); print(len(x))"
