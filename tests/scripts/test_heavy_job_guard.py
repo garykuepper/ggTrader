@@ -42,6 +42,12 @@ needs_systemd_scope = pytest.mark.skipif(
 )
 needs_flock = pytest.mark.skipif(FLOCK is None, reason="flock not installed")
 
+
+def _python() -> str:
+    """The interpreter the dry-run tests hand to run_tests.sh (it only prints the command)."""
+    return os.environ.get("GGT_TEST_PYTHON") or shutil.which("python3") or "python3"
+
+
 #: Variables the guard reads. A test starts from none of them: run_tests.sh exports
 #: GGT_HEAVY_LOCK_HELD to its children, which would otherwise make every test below a no-op.
 _GUARD_VARS = (
@@ -183,6 +189,95 @@ def test_runtime_limit_stops_a_hang(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=_env(tmp_path / "lock", GGT_RUN_MAX_SECONDS="2"),
+        timeout=60,
+    )
+    assert result.returncode == 143, result.stderr
+    assert "STOPPED AT THE TIME LIMIT" in result.stderr
+    assert time.monotonic() - started < 15
+
+
+def _holder_note(lock: Path) -> str:
+    note = Path(f"{lock}.holder")
+    return note.read_text() if note.exists() else ""
+
+
+def test_dry_run_takes_no_lock(tmp_path: Path, holder: _Holder) -> None:
+    # tests/test_root_conftest.py runs run_tests.sh in dry-run mode from inside a locked test run.
+    result = subprocess.run(
+        [str(TESTS)],
+        capture_output=True,
+        text=True,
+        env=_env(holder.lock, GGT_TEST_DRY_RUN="1", GGT_HEAVY_WAIT="1", GGT_PYTHON=_python()),
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "waiting for another heavy ggTrader job" not in result.stderr
+
+
+def test_run_tests_default_cap_is_4g(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [str(TESTS)],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path / "lock", GGT_TEST_DRY_RUN="1", GGT_PYTHON=_python()),
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "MemoryMax=4G" in result.stderr
+
+
+@needs_flock
+def test_run_tests_refuses_when_busy(tmp_path: Path, holder: _Holder) -> None:
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py", "-q"],
+        capture_output=True,
+        text=True,
+        env=_env(holder.lock, GGT_HEAVY_WAIT="1"),
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stdout + result.stderr
+    assert "another heavy ggTrader job is still running after 1s" in result.stderr
+    assert "passed" not in result.stdout
+
+
+@needs_flock
+@needs_systemd_scope
+def test_run_tests_lock_covers_both_halves(tmp_path: Path) -> None:
+    lock = tmp_path / "lock"
+    proc = subprocess.Popen(
+        [str(TESTS), "--studies", "--collect-only", "-q"],
+        env=_env(lock, GGT_HEAVY_WAIT="60"),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    polls: list[bool] = []
+    try:
+        deadline = time.monotonic() + 240
+        while proc.poll() is None and time.monotonic() < deadline:
+            busy = subprocess.run([FLOCK or "flock", "-n", str(lock), "true"], check=False)
+            if proc.poll() is None:
+                polls.append(busy.returncode != 0)
+            time.sleep(0.2)
+        assert proc.wait(timeout=30) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    assert any(polls), "the lock was never seen held"
+    first = polls.index(True)
+    assert all(polls[first:]), "the lock was free between the two pytest runs"
+
+
+@needs_systemd_scope
+def test_run_tests_time_limit_stops_a_hang(tmp_path: Path) -> None:
+    fake_python = tmp_path / "python"
+    fake_python.write_text("#!/bin/sh\nsleep 30\n")
+    fake_python.chmod(0o755)
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(tmp_path / "lock", GGT_PYTHON=str(fake_python), GGT_TEST_MAX_SECONDS="2"),
         timeout=60,
     )
     assert result.returncode == 143, result.stderr
