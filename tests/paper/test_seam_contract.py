@@ -223,19 +223,35 @@ def _is_forbidden_import(name: str) -> bool:
     return any(_is_or_under(name, prefix) for prefix in FORBIDDEN_DOTTED)
 
 
-def _logger_name_ok(node: ast.Call) -> bool:
+def _logger_name_ok(node: ast.Call, resolve: Callable[[str | None], str | None]) -> bool:
     if len(node.args) != 1 or node.keywords:
         return False
-    arg = node.args[0]
-    return (isinstance(arg, ast.Name) and arg.id == "TRADER_LOGGER_NAME") or (
-        isinstance(arg, ast.Attribute) and arg.attr == "TRADER_LOGGER_NAME"
-    )
+    return resolve(_dotted(node.args[0])) == "ggTrader.paper.constants.TRADER_LOGGER_NAME"
 
 
 def scan_new_module(source: str, filename: str) -> list[Finding]:
     """The rule violations of one new `paper/` module (`filename` is its base name)."""
     tree = ast.parse(source)
     found: list[Finding] = []
+    # This conservative file-wide map does not model scope or later rebinding.
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = (
+                    alias.name if alias.asname else alias.name.split(".")[0]
+                )
+        elif isinstance(node, ast.ImportFrom):
+            base = _resolve_from(node, PACKAGE)
+            for alias in node.names:
+                if alias.name != "*":
+                    aliases[alias.asname or alias.name] = f"{base}.{alias.name}"
+
+    def resolve(name: str | None) -> str | None:
+        if name is None:
+            return None
+        first, separator, rest = name.partition(".")
+        return aliases.get(first, first) + (separator + rest if separator else "")
 
     def add(rule: str, node: ast.AST, detail: str = "") -> None:
         found.append(Finding(rule, getattr(node, "lineno", 0), detail))
@@ -271,22 +287,24 @@ def scan_new_module(source: str, filename: str) -> list[Finding]:
                 add("clock-call", node, f".{func.attr}(")
             if isinstance(func, ast.Name) and func.id == "__import__":
                 add("dynamic-import", node, "__import__")
-            if isinstance(func, ast.Attribute):
-                owner = _dotted(func.value)
-                module = owner.split(".")[-1] if owner else None
-                if module in SETTINGS_ACCESSORS and func.attr in SETTINGS_ACCESSORS[module]:
-                    add("settings-accessor", node, f"{module}.{func.attr}")
-            if _dotted(func) in ("logging.getLogger",) or (
-                isinstance(func, ast.Name) and func.id == "getLogger"
+            if resolve(_dotted(func)) == "logging.getLogger" or (
+                isinstance(func, ast.Name)
+                and resolve(func.id) in ("getLogger", "logging.getLogger")
             ):
-                if not _logger_name_ok(node):
+                if not _logger_name_ok(node, resolve):
                     add("logger-name", node, ast.unparse(node))
         if isinstance(node, ast.Attribute):
+            owner = resolve(_dotted(node.value))
+            module = owner.split(".")[-1] if owner else None
+            if module in SETTINGS_ACCESSORS and node.attr in SETTINGS_ACCESSORS[module]:
+                add("settings-accessor", node, f"{module}.{node.attr}")
             if node.attr in ENV_ATTRS:
                 add("environment-read", node, node.attr)
-            dotted = _dotted(node)
+            dotted = resolve(_dotted(node))
             if dotted is not None and _is_or_under(dotted, TRADER_MODULE):
                 add("imports-trader", node, dotted)
+            if dotted is not None and _is_forbidden_import(dotted):
+                add("forbidden-import", node, dotted)
         if isinstance(node, ast.Name) and node.id in ENV_ATTRS:
             add("environment-read", node, node.id)
 
@@ -1073,6 +1091,21 @@ VIOLATIONS: tuple[tuple[str, str, str], ...] = (
     ("logger-name", "x.py", "import logging\n_log = logging.getLogger('ggTrader.paper.trader')\n"),
     ("logger-name", "x.py", "import logging\n_log = logging.getLogger()\n"),
     ("logger-name", "x.py", "from logging import getLogger\n_log = getLogger(__name__)\n"),
+    ("logger-name", "x.py", "import logging as log\n_log = log.getLogger(__name__)\n"),
+    ("imports-trader", "x.py", "from ggTrader import paper\nx = paper.trader.PaperTrader\n"),
+    ("forbidden-import", "x.py", "import ggTrader.paper as gp\nx = gp.persist.log_trade\n"),
+    ("logger-name", "x.py", "from logging import getLogger as get_log\nx = get_log(__name__)\n"),
+    (
+        "settings-accessor",
+        "x.py",
+        "from ggTrader.paper import cash_sweep as sweep\nx = sweep.reserve_pct()\n",
+    ),
+    ("settings-accessor", "x.py", "from . import untradable as u\nx = u.configured_untradable()\n"),
+    (
+        "settings-accessor",
+        "x.py",
+        "from ggTrader.paper import cash_sweep\nf = cash_sweep.reserve_pct\n",
+    ),
 )
 
 
@@ -1125,6 +1158,8 @@ def test_the_scanner_accepts_what_new_modules_may_do():
         "_log = logging.getLogger(TRADER_LOGGER_NAME)\n",
         "import logging\nfrom ggTrader.paper import constants\n"
         "_log = logging.getLogger(constants.TRADER_LOGGER_NAME)\n",
+        "import logging as log\nfrom ggTrader.paper.constants import TRADER_LOGGER_NAME as NAME\n"
+        "_log = log.getLogger(NAME)\n",
         "class Halted:\n    pass\n",
     )
     for source in allowed:
