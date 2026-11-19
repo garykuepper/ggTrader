@@ -102,7 +102,7 @@ def _db_diag():
             result = conn.execute(text(query))
             row = result.fetchone()
             if row:
-                print(dict(zip(result.keys(), row)))
+                print(dict(zip(result.keys(), row, strict=False)))
 
 
 def _db_clean():

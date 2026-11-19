@@ -248,6 +248,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                     close_c.tolist(),
                     vol_c.tolist(),
                     [0] * n,
+                    strict=False,
                 )
             )
         if not records:
@@ -276,8 +277,8 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             if conn is not None:
                 try:
                     conn.close()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    self.logger.debug("Cache connection close skipped: %s", type(exc).__name__)
 
     # ------------------------------------------------------------------
     # Public API

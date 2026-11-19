@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import uuid
 from typing import Any
@@ -11,6 +12,8 @@ import pandas as pd
 from sqlalchemy import text
 
 from ggTrader.utils.db import get_engine
+
+_log = logging.getLogger(__name__)
 
 
 def _sanitize(obj: Any) -> Any:
@@ -111,8 +114,8 @@ def init_schema() -> None:
                         "if_not_exists => TRUE, migrate_data => TRUE)"
                     )
                 )
-            except Exception:
-                pass  # plain Postgres (no TimescaleDB extension) — table still works
+            except Exception as exc:
+                _log.debug("Hypertable creation skipped: %s", type(exc).__name__)
 
 
 def start_run(

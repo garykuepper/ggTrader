@@ -124,7 +124,7 @@ class Bars:
         last_pos = self.close.index.get_indexer(self.last_valid_bar.dropna())
         gap = (len(self.close) - 1) - last_pos
         names = self.last_valid_bar.dropna().index
-        return sorted(str(s) for s, g in zip(names, gap) if g >= min_bars)
+        return sorted(str(s) for s, g in zip(names, gap, strict=False) if g >= min_bars)
 
     def summary(self, early_min_bars: int = 5) -> dict[str, Any]:
         """JSON-able coverage facts that every run records (spec 5.7)."""

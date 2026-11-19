@@ -431,8 +431,8 @@ class PaperTrader:
         is_open = True
         try:
             is_open = self._broker.get_clock()["is_open"]
-        except Exception:
-            pass
+        except Exception as exc:
+            _log.debug("Broker clock lookup skipped: %s", type(exc).__name__)
 
         max_wait = 15.0 if is_open else 2.0
         remaining = {item[0]: item for item in orders}
@@ -1385,7 +1385,7 @@ class PaperTrader:
         # working at run end (queued after the close, or a partial fill not yet
         # complete) are persisted so the next run reconciles their final fill;
         # terminally-failed orders are simply dropped.
-        for oid, side, symbol, amount, reason in pending_orders:
+        for oid, side, symbol, amount, _reason in pending_orders:
             info = filled_orders.get(oid, {})
             status = info.get("status", "pending")
             filled_qty = info.get("filled_qty") or 0.0
