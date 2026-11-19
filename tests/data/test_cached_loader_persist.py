@@ -64,7 +64,7 @@ def test_persist_swallows_nothing_new() -> None:
         loader.persist(_utc_frame(), "1d")
 
 
-def test_persist_through_the_real_writer_still_swallows_driver_errors(monkeypatch) -> None:
+def test_persist_through_the_real_writer_still_swallows_driver_errors(monkeypatch, caplog) -> None:
     loader = _loader()
     conn = MagicMock()
     monkeypatch.setattr(loader, "_connect", lambda: conn)
@@ -74,6 +74,8 @@ def test_persist_through_the_real_writer_still_swallows_driver_errors(monkeypatc
 
     monkeypatch.setattr("ggTrader.data.live.cached_yfinance_loader.execute_values", boom)
 
-    loader.persist(_utc_frame(), "1d")  # must not raise
+    with caplog.at_level(logging.ERROR, logger="test.persist"):
+        loader.persist(_utc_frame(), "1d")  # must not raise
 
     assert conn.close.called
+    assert "Failed to cache stock data to DB: driver down" in caplog.text
