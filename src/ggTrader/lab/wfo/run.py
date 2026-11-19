@@ -346,6 +346,40 @@ def _score_fold(
     )
 
 
+def _stitch_oos(
+    oos_curves: Sequence[pd.Series], spy_close: pd.Series, start_cash: float
+) -> tuple[pd.Series, dict[str, float], dict[str, float]]:
+    """Join the per-fold out-of-sample curves and score them and SPY over the same dates.
+
+    Concatenates the curves, keeps the last of any duplicated date, scores the result with
+    ``curve_summary`` and scores the SPY close over the same dates scaled to ``start_cash``.
+    With no curve, or fewer than two SPY dates, the affected metrics are a three-key NaN dict
+    (``sharpe``, ``cagr_pct``, ``max_drawdown_pct``), not the six-key ``curve_summary`` shape.
+
+    Returns:
+        ``(oos_equity, oos_metrics, spy_metrics)``; each NaN dict is built fresh.
+    """
+    nan_metrics = {
+        "sharpe": float("nan"),
+        "cagr_pct": float("nan"),
+        "max_drawdown_pct": float("nan"),
+    }
+    if oos_curves:
+        oos_equity = pd.concat(oos_curves)
+        oos_equity = oos_equity[~oos_equity.index.duplicated(keep="last")]
+        oos_metrics = curve_summary(oos_equity)
+        spy_oos = spy_close.reindex(oos_equity.index).ffill().dropna()
+        if len(spy_oos) > 1:
+            spy_metrics = curve_summary(start_cash * (spy_oos / spy_oos.iloc[0]))
+        else:
+            spy_metrics = dict(nan_metrics)
+    else:
+        oos_equity = pd.Series(dtype=float)
+        oos_metrics = dict(nan_metrics)
+        spy_metrics = dict(nan_metrics)
+    return oos_equity, oos_metrics, spy_metrics
+
+
 def run_wfo(
     strategy_name: str,
     strategy_cls: Any,
@@ -488,24 +522,7 @@ def run_wfo(
         fold_results.append(out.record.as_dict())
         fold_winners.append(out.winner)
 
-    nan_metrics = {
-        "sharpe": float("nan"),
-        "cagr_pct": float("nan"),
-        "max_drawdown_pct": float("nan"),
-    }
-    if oos_curves:
-        oos_equity = pd.concat(oos_curves)
-        oos_equity = oos_equity[~oos_equity.index.duplicated(keep="last")]
-        oos_metrics = curve_summary(oos_equity)
-        spy_oos = spy_close.reindex(oos_equity.index).ffill().dropna()
-        if len(spy_oos) > 1:
-            spy_metrics = curve_summary(start_cash * (spy_oos / spy_oos.iloc[0]))
-        else:
-            spy_metrics = dict(nan_metrics)
-    else:
-        oos_equity = pd.Series(dtype=float)
-        oos_metrics = dict(nan_metrics)
-        spy_metrics = dict(nan_metrics)
+    oos_equity, oos_metrics, spy_metrics = _stitch_oos(oos_curves, spy_close, start_cash)
 
     live = _select_live_params(scorer, live_req, live_start, eval_end_ts, fold_winners)
     table = format_wfo_table(

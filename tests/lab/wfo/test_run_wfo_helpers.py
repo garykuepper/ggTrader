@@ -150,3 +150,68 @@ def test_score_fold_flat_curve_when_no_anchor() -> None:
     assert curve.index.equals(pd.bdate_range(fold.test_start, fold.test_end, tz="UTC"))
     assert outcome.running_value == 777.0
     assert np.isnan(outcome.record.oos_sharpe)
+
+
+# --- _stitch_oos ---------------------------------------------------------------------------
+
+
+def _curve(values: list[float], start: str) -> pd.Series:
+    index = pd.date_range(start, periods=len(values), freq="D", tz="UTC")
+    return pd.Series(values, index=index, dtype=float)
+
+
+def test_stitch_oos_no_curves_gives_empty_float_series_and_nan_dicts() -> None:
+    spy = _curve([100.0, 101.0, 102.0], "2024-01-01")
+    equity, oos_metrics, spy_metrics = run._stitch_oos([], spy, 1000.0)
+    assert equity.empty
+    assert equity.dtype == float
+    assert all(np.isnan(v) for v in oos_metrics.values())
+    assert all(np.isnan(v) for v in spy_metrics.values())
+
+
+def test_stitch_oos_keeps_last_of_duplicated_dates() -> None:
+    first = _curve([100.0, 101.0, 102.0], "2024-01-01")
+    second = _curve([500.0, 501.0], "2024-01-03")
+    spy = _curve([1.0] * 6, "2024-01-01")
+    equity, _, _ = run._stitch_oos([first, second], spy, 100.0)
+    assert list(equity.index) == list(pd.date_range("2024-01-01", periods=4, freq="D", tz="UTC"))
+    assert list(equity.values) == [100.0, 101.0, 500.0, 501.0]
+
+
+def test_stitch_oos_nan_dicts_have_three_keys() -> None:
+    spy = _curve([100.0, 101.0], "2024-01-01")
+    _, oos_metrics, spy_metrics = run._stitch_oos([], spy, 1000.0)
+    keys = ["sharpe", "cagr_pct", "max_drawdown_pct"]
+    assert list(oos_metrics) == keys
+    assert list(spy_metrics) == keys
+
+
+def test_stitch_oos_nan_dicts_are_not_shared() -> None:
+    spy = _curve([100.0, 101.0], "2024-01-01")
+    _, oos_metrics, spy_metrics = run._stitch_oos([], spy, 1000.0)
+    assert oos_metrics is not spy_metrics
+    oos_metrics["sharpe"] = 1.0
+    assert np.isnan(spy_metrics["sharpe"])
+    _, again, _ = run._stitch_oos([], spy, 1000.0)
+    assert np.isnan(again["sharpe"])
+
+
+def test_stitch_oos_spy_with_one_date_gives_nan_spy() -> None:
+    curve = _curve([100.0, 101.0, 103.0], "2024-01-01")
+    # Only the last curve date has a SPY close: the leading NaNs are dropped, one date is left.
+    spy = _curve([400.0], "2024-01-03")
+    equity, oos_metrics, spy_metrics = run._stitch_oos([curve], spy, 100.0)
+    assert list(equity.values) == [100.0, 101.0, 103.0]
+    assert len(oos_metrics) == 6
+    assert list(spy_metrics) == ["sharpe", "cagr_pct", "max_drawdown_pct"]
+    assert all(np.isnan(v) for v in spy_metrics.values())
+
+
+def test_stitch_oos_scales_spy_to_start_cash() -> None:
+    from ggTrader.lab.wfo.report import curve_summary
+
+    curve = _curve([100.0, 102.0, 101.0, 105.0], "2024-01-01")
+    spy = _curve([400.0, 404.0, 396.0, 408.0], "2024-01-01")
+    _, _, spy_metrics = run._stitch_oos([curve], spy, 100.0)
+    expected = curve_summary(100.0 * (spy / spy.iloc[0]))
+    assert spy_metrics == expected
