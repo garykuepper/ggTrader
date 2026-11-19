@@ -6,17 +6,36 @@ plotting backend and the same options. tests/test_root_conftest.py proves it.
 """
 
 import logging
+import os
 
 import matplotlib
 import pytest
 
 from tests import tiers
+from tests.timeout_guard import time_limit
 
 #: The S&P 500 list every test reads unless it says otherwise: the frozen vintage-1 fixture, so
 #: no test needs the database (spec 3.2 and 7; slice M3).
 TEST_MEMBERSHIP = "fixture:sp500_v1_2026-06-02"
 
 matplotlib.use("Agg")
+
+
+#: Seconds one test may run before it fails as a presumed hang. The slowest test in the recorded
+#: baseline takes 21 s, so this is generous; GGT_TEST_TIMEOUT=0 turns it off, and a test that
+#: really needs longer says so with ``@pytest.mark.timeout_seconds(n)``.
+DEFAULT_TEST_TIMEOUT_SECONDS = 180.0
+
+
+@pytest.fixture(autouse=True)
+def _per_test_timeout(request: pytest.FixtureRequest):
+    """Fail a test that runs past its wall-clock limit (tests/timeout_guard.py)."""
+    seconds = float(os.environ.get("GGT_TEST_TIMEOUT", DEFAULT_TEST_TIMEOUT_SECONDS))
+    marker = request.node.get_closest_marker("timeout_seconds")
+    if marker is not None and marker.args:
+        seconds = float(marker.args[0])
+    with time_limit(seconds):
+        yield
 
 
 @pytest.fixture(autouse=True)

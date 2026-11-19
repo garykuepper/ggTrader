@@ -77,6 +77,7 @@ markers = [
     "tripwire: only meaningful when a dependency pin moves; FULL tier only",
     "study: tests the code of one closed research study, not the engine; STUDIES and FULL tiers",
     "tooling: tests a repository-maintenance script or its workflow; FULL tier only",
+    "timeout_seconds(n): this test may run n seconds instead of the default per-test limit (GGT_TEST_TIMEOUT, 180)",
 ]
 
 [tool.mypy]
