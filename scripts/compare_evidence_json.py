@@ -20,6 +20,9 @@ def _ignored(name: Path, path: tuple) -> bool:
     """Return whether this path of this file is a named volatile field."""
     if path in VOLATILE:
         return True
+    # src/ggTrader/data/snapshot.py:54: the tape location is checkout-specific.
+    if name.name.startswith("_p5_") and path == ("tape", "path"):
+        return True
     if name.name.startswith("_p5_compare_") and path == P5_VOLATILE:
         return True
     return name.name == "p7.json" and path == P7_VOLATILE

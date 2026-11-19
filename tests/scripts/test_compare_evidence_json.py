@@ -85,3 +85,28 @@ def test_nan_equals_nan_and_duplicate_keys_differ(tmp_path: Path) -> None:
     (a / "x.json").write_text('{"a": 1, "a": 2}')
     (b / "x.json").write_text('{"a": 2}')
     assert run(a, b).returncode == 1
+
+
+def test_tape_path_is_ignored_only_in_p5_result_files(tmp_path: Path) -> None:
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    for directory, tape_path in ((a, "/a/t.parquet"), (b, "/b/t.parquet")):
+        (directory / "_p5_run.json").write_text(
+            json.dumps({"tape": {"path": tape_path, "sha256": "s1"}})
+        )
+    assert run(a, b).returncode == 0
+    for directory in (a, b):
+        (directory / "_p5_run.json").rename(directory / "x.json")
+    assert run(a, b).returncode == 1
+
+
+def test_tape_hash_difference_is_reported_in_p5_results(tmp_path: Path) -> None:
+    a, b = tmp_path / "a", tmp_path / "b"
+    a.mkdir()
+    b.mkdir()
+    for directory, digest in ((a, "s1"), (b, "s2")):
+        (directory / "_p5_run.json").write_text(
+            json.dumps({"tape": {"path": "/a", "sha256": digest}})
+        )
+    assert "tape.sha256" in run(a, b).stdout

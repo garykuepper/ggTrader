@@ -118,3 +118,15 @@ def test_numbers_inside_a_skip_reason_are_content(tmp_path: Path) -> None:
         return _suite(_case("test_a", f'<skipped message="{text}"/>'))
 
     assert _run(tmp_path, skip("needs 12:30 window"), skip("needs 12:45 window")).returncode == 1
+
+
+def test_must_pass_file_requires_every_listed_node(tmp_path: Path) -> None:
+    base, new, required = tmp_path / "base.xml", tmp_path / "new.xml", tmp_path / "nodes.txt"
+    base.write_text(_suite(_case("test_a")))
+    required.write_text("# required\n\ntests/test_a.py::test_a\ntests/test_a.py::test_b\n")
+    new.write_text(_suite(_case("test_a"), _case("test_b", '<skipped message="skip"/>')))
+    command = [sys.executable, str(SCRIPT), str(base), str(new), "--must-pass-file", str(required)]
+    result = subprocess.run(command, capture_output=True, text=True)
+    assert result.returncode == 1 and "tests/test_a.py::test_b" in result.stdout
+    new.write_text(_suite(_case("test_a"), _case("test_b")))
+    assert subprocess.run(command, capture_output=True, text=True).returncode == 0

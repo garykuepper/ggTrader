@@ -61,9 +61,16 @@ def main() -> int:
     parser.add_argument("baseline", help="JUnit XML file, or several separated by commas")
     parser.add_argument("new", help="JUnit XML file, or several separated by commas")
     parser.add_argument("--must-pass", nargs="+", default=[])
+    parser.add_argument("--must-pass-file", type=Path)
     args = parser.parse_args()
     try:
         baseline, new = load(args.baseline), load(args.new)
+        if args.must_pass_file:
+            args.must_pass.extend(
+                line.strip()
+                for line in args.must_pass_file.read_text().splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            )
     except (OSError, ET.ParseError, ValueError) as exc:
         print(exc)
         return 1
