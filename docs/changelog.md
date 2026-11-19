@@ -14,6 +14,16 @@
   are empty. On a kill error, a cgroup that does not empty, or an unverified drain, it records
   the identity as held (new `AdmissionState.retain`) and keeps the pinned handles. Before this
   fix it reported "stopped" and went idle.
+- `scripts/whole_job_broker.py` (Sol recheck): a stop now drains the descriptor store and reads
+  it back, outside the admission lock, before it clears the record; the record and the pinned
+  handles are kept until both the cgroup and the store are verified empty. Before this, the
+  record was cleared and the handles closed first, and a failed store removal still went idle
+  (this also hit a held unadmitted job stopped by a tick or an operator stop). Automatic stop
+  retries now wait 15 s. A restart with no recorded job no longer drains the store and goes
+  idle unconditionally: an exact stored pair is killed through its own handles and drained
+  with verification, any other stored entry is kept, and with nothing stored the job unit must
+  be inactive and its cgroup absent or empty; otherwise the broker stays `unverifiable`.
+  Fixture tests only; not run in a guest.
 - `deploy/whole_job/guest/harness.sh`: `s1-outcome` was always true; it now checks the reported
   outcome. The 2026-11-19 guest run's `s1-outcome` PASS was vacuous. The corrected harness and
   these fixes have not been run in a guest, and nothing is installed on Encom.

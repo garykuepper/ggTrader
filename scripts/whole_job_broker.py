@@ -18,11 +18,17 @@ exactly the expected pair. The driver runs no phase until the broker answers ``g
 again before each phase; each answer is given under the admission lock.
 
 Stop persists a hold, writes the pinned ``cgroup.kill`` and waits (bounded) for the pinned
-``cgroup.events`` to report the cgroup empty or removed; only then is the record cleared. A
-broker restart starts held: the job may finish its current phase but no further phase is
-admitted, and the store must again match exactly or the broker stays held as unverifiable. A
-record from an earlier boot stays held until an operator acknowledges that exact attempt. A
-termination the broker did not initiate is reported as such, never as an out-of-memory kill.
+``cgroup.events`` to report the cgroup empty or removed; it then removes the stored pair and
+reads the store back, and only when it is empty is the record cleared and the pinned handles
+closed. Any failure leaves the job held with its record and handles. A broker restart starts
+held: the job may finish its current phase but no further phase is admitted, and the store must
+again match exactly or the broker stays held as unverifiable. A restart with no recorded job is
+idle only when nothing of an unrecorded invocation can remain: a stored exact pair is killed
+and drained through its own pinned handles, any other stored entry stays as evidence, and with
+nothing stored the unit must be inactive and its cgroup absent or empty; otherwise the broker
+stays unverifiable. A record from an earlier boot stays held until an operator acknowledges
+that exact attempt. A termination the broker did not initiate is reported as such, never as an
+out-of-memory kill.
 
 The broker never forks while the admission lock is held: PID 1 queries run ``busctl`` only
 outside it. Kernel and systemd behaviour this relies on was observed in a disposable systemd
@@ -58,6 +64,7 @@ from scripts.whole_job_admission import AdmissionState  # noqa: E402
 
 TEST_UNIT = "ggtrader-whole-job.service"
 TEST_CGROUP = "/system.slice/ggtrader-whole-job.service"
+CGROUP_ROOT = "/sys/fs/cgroup"
 BROKER_UNIT = "ggtrader-job-broker.service"
 OPERATOR_UNIT = re.compile(
     r"ggtrader-job-operator@(status|start|stop|acknowledge)(?::([0-9a-f]{32}))?\.service"
@@ -73,6 +80,7 @@ PHASES = ("core", "studies")
 REGISTER_SECONDS = 60.0
 PHASE_SECONDS = 1860.0
 STOP_SECONDS = 20.0
+STOP_RETRY_SECONDS = 15.0
 IO_SECONDS = 5.0
 MAX_MESSAGE = 512
 SO_PASSPIDFD = 76
@@ -144,9 +152,6 @@ class JobRecord:
         a, inv, cg, kd, ki, ed, ei = match.groups()
         return cls(a, inv, int(cg), (int(kd), int(ki)), (int(ed), int(ei)))
 
-    def expected_store(self) -> set[tuple[str, FileId, int]]:
-        return {(KILL_NAME, self.kill, os.O_WRONLY), (EVENTS_NAME, self.events, os.O_RDONLY)}
-
 
 class Handles:
     """Pinned ``cgroup.kill`` (write-only) and ``cgroup.events`` (read-only) descriptors."""
@@ -189,6 +194,7 @@ class System(Protocol):
     def populated(self, handles: Handles) -> bool | None: ...
     def kill(self, handles: Handles) -> None: ...
     def wait_empty(self, handles: Handles, seconds: float) -> bool: ...
+    def job_cgroup_populated(self) -> bool | None: ...
     def fdstore_add(self, name: str, fd: int) -> None: ...
     def fdstore_remove(self, name: str) -> None: ...
     def fdstore_barrier(self) -> None: ...
@@ -240,6 +246,7 @@ class Broker:
         self.deadline: float | None = None
         self.reported: int | None = None
         self.outcome = ""
+        self.retry_at: float | None = None
 
     # Startup ------------------------------------------------------------------------------
 
@@ -253,9 +260,7 @@ class Broker:
             self.mode = "unverifiable"
             raise
         if not snap["job"]:
-            self._close_inherited(inherited)
-            self._drain_store(entries)
-            self.mode = "idle"
+            self._startup_unrecorded(inherited, entries)
             return
         try:
             record = JobRecord.parse(snap["job"])
@@ -302,6 +307,74 @@ class Broker:
         self._close_inherited(inherited)
         return None
 
+    def _startup_unrecorded(
+        self, inherited: dict[str, list[int]], entries: list[StoreEntry]
+    ) -> None:
+        """No recorded job: go idle only once no unrecorded invocation can remain.
+
+        Stored descriptors without a record mean a registration was cut short after the pair was
+        stored (a crash, or a refused registration whose identity could not be recorded). That
+        invocation never got ``go``. An exact pair is killed and drained through its own pinned
+        handles; anything else stays in the store as evidence and the broker stays unverifiable.
+        With nothing stored, the fixed unit must be inactive and its cgroup absent or empty.
+        """
+        if inherited or entries:
+            handles = self._orphan_pair(inherited, entries)
+            if handles is None:
+                self.mode = "unverifiable"
+                self.outcome = "descriptor store holds entries with no recorded job; kept"
+                self.log(f"{self.outcome}; admission stays held")
+                return
+            try:
+                self.system.kill(handles)
+                if not self.system.wait_empty(handles, STOP_SECONDS):
+                    raise TimeoutError("unrecorded cgroup did not empty")
+                self._drain_verified()
+            except BaseException as exc:  # noqa: BLE001 - fail closed, keep what is stored
+                handles.close()
+                self.mode = "unverifiable"
+                self.outcome = f"unrecorded stored invocation not shown stopped ({exc!r})"
+                self.log(f"{self.outcome}; admission stays held")
+                return
+            handles.close()
+            self.log("unrecorded stored invocation killed; cgroup empty and store drained")
+        try:
+            unit = self.system.unit_state(TEST_UNIT)
+            live = self.system.job_cgroup_populated()
+        except Exception as exc:  # noqa: BLE001 - fail closed but keep serving status
+            self.mode = "unverifiable"
+            self.outcome = f"no recorded job and the test unit could not be checked ({exc!r})"
+            self.log(f"{self.outcome}; restart the broker to recheck")
+            return
+        # A stored pair just emptied may leave the unit briefly deactivating; its pinned cgroup
+        # is the evidence there. Without one, the unit's own state must also show it stopped.
+        stopped = bool(inherited or entries) or unit.active_state in ("inactive", "failed")
+        if live is True or not stopped:
+            self.mode = "unverifiable"
+            self.outcome = (
+                f"no recorded job but the test unit is {unit.active_state} "
+                f"(cgroup populated: {live}); restart the broker once it has stopped"
+            )
+            self.log(f"{self.outcome}; admission stays held")
+            return
+        self.mode = "idle"
+
+    def _orphan_pair(
+        self, inherited: dict[str, list[int]], entries: list[StoreEntry]
+    ) -> Handles | None:
+        """The inherited pair if it is exactly one pinned ``kill``/``events`` pair, else None."""
+        kill = inherited.get(KILL_NAME, [])
+        events = inherited.get(EVENTS_NAME, [])
+        if set(inherited) == {KILL_NAME, EVENTS_NAME} and len(kill) == 1 and len(events) == 1:
+            handles = Handles(kill[0], events[0])
+            try:
+                if store_holds(entries, *handles.ids()):
+                    return handles
+            except (OSError, Refused):
+                pass
+        self._close_inherited(inherited)
+        return None
+
     @staticmethod
     def _close_inherited(inherited: dict[str, list[int]]) -> None:
         for fds in inherited.values():
@@ -311,14 +384,17 @@ class Broker:
                 except OSError:
                     pass
 
-    def _drain_store(self, entries: list[StoreEntry], names: tuple[str, ...] = ()) -> None:
-        """Remove every listed entry and every name we may have pushed, then barrier."""
-        for name in sorted({entry.name for entry in entries} | set(names)):
+    def _drain_verified(self) -> None:
+        """Remove the pinned pair and anything else stored, then require the store read empty.
+
+        Never called under the admission lock: the read-back is a PID 1 query (a fork).
+        """
+        names = {entry.name for entry in self.system.fdstore_dump()} | {KILL_NAME, EVENTS_NAME}
+        for name in sorted(names):
             self.system.fdstore_remove(name)
-        if entries or names:
-            self.system.fdstore_barrier()
-        if entries:
-            self.log(f"removed {len(entries)} unrecorded descriptor store entries")
+        self.system.fdstore_barrier()
+        if self.system.fdstore_dump():
+            raise RuntimeError("descriptor store not empty after removal")
 
     # Operator requests ---------------------------------------------------------------------
 
@@ -362,6 +438,7 @@ class Broker:
         self.mode = "pending"
         self.record = None
         self.phases, self.reported, self.deadline, self.outcome = [], None, None, ""
+        self.retry_at = None
         try:
             self.system.start_unit(TEST_UNIT)
         except BaseException:
@@ -487,6 +564,8 @@ class Broker:
             return
         if self.mode not in ("running", "held") or self.handles is None:
             return
+        if self.retry_at is not None and now < self.retry_at:
+            return
         if self.mode == "running" and self.deadline is not None and now > self.deadline:
             self._stop_quietly("phase deadline exceeded")
             return
@@ -507,10 +586,15 @@ class Broker:
         try:
             self._stop(reason)
         except BaseException as exc:  # noqa: BLE001 - logged, admission stays held
+            self.retry_at = self.system.now() + STOP_RETRY_SECONDS
             self.log(f"stop failed ({reason}): {exc!r}; admission stays held")
 
     def _stop(self, reason: str) -> None:
-        """Hold, kill the pinned cgroup, verify it empty, clear, then drop the stored handles."""
+        """Hold, kill the pinned cgroup, verify it empty, drain and verify the store, then clear.
+
+        The record and the pinned handles are kept until every step is verified, so a failure
+        at any point leaves the job held and retryable through the same handles.
+        """
         record, handles = self.record, self.handles
         if record is None or handles is None:
             raise Refused("no pinned job")
@@ -524,27 +608,16 @@ class Broker:
                 self.system.kill(handles)
                 if not self.system.wait_empty(handles, STOP_SECONDS):
                     raise TimeoutError("pinned cgroup did not empty")
+            self._drain_verified()  # outside the admission lock: it queries PID 1
             self.state.clear(job, self.boot, self.state.epoch)
         except BaseException:
             self.mode = "held"
             self.outcome = f"stop incomplete ({reason}); admission held"
             raise
-        self._release_handles()
+        handles.close()
+        self.handles, self.retry_at = None, None
         self.mode, self.driver, self.outcome = "idle", None, reason
         self.log(f"attempt {record.attempt}: {reason}; cleared")
-
-    def _release_handles(self) -> None:
-        if self.handles is not None:
-            self.handles.close()
-            self.handles = None
-        try:
-            self.system.fdstore_remove(KILL_NAME)
-            self.system.fdstore_remove(EVENTS_NAME)
-            self.system.fdstore_barrier()
-            if self.system.fdstore_dump():
-                self.log("descriptor store not empty after removal; next start will refuse")
-        except BaseException as exc:  # noqa: BLE001 - the record is already clear
-            self.log(f"descriptor store cleanup failed: {exc!r}; next start will refuse")
 
     def _abort_unadmitted(self, handles: Handles, record: JobRecord | None) -> None:
         """A registration failed before admission: kill that exact cgroup, then forget it.
@@ -559,9 +632,7 @@ class Broker:
             self.system.kill(handles)
             if not self.system.wait_empty(handles, STOP_SECONDS):
                 raise TimeoutError("unadmitted cgroup did not empty")
-            self._drain_store(self.system.fdstore_dump(), (KILL_NAME, EVENTS_NAME))
-            if self.system.fdstore_dump():
-                raise RuntimeError("descriptor store not empty after removal")
+            self._drain_verified()
         except BaseException as exc:  # noqa: BLE001 - fail closed: keep the job held
             self._hold_unadmitted(handles, record, exc)
             return
@@ -599,6 +670,11 @@ class Broker:
 
 def store_matches(entries: list[StoreEntry], record: JobRecord) -> bool:
     """True only for exactly the pinned pair: names, regular files, device, inode, access."""
+    return store_holds(entries, record.kill, record.events)
+
+
+def store_holds(entries: list[StoreEntry], kill: FileId, events: FileId) -> bool:
+    """True only when the store is exactly this ``kill``/``events`` pair."""
     if len(entries) != 2:
         return False
     found = {
@@ -606,7 +682,7 @@ def store_matches(entries: list[StoreEntry], record: JobRecord) -> bool:
         for entry in entries
         if stat.S_ISREG(entry.mode) and not entry.flags & os.O_PATH
     }
-    return found == record.expected_store()
+    return found == {(KILL_NAME, kill, os.O_WRONLY), (EVENTS_NAME, events, os.O_RDONLY)}
 
 
 # Linux implementation ------------------------------------------------------------------------
@@ -730,7 +806,7 @@ class LinuxSystem:
 
     def open_job_cgroup(self, cgroup_id: int) -> Handles:
         flags = os.O_PATH | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
-        directory = os.open("/sys/fs/cgroup", flags)
+        directory = os.open(CGROUP_ROOT, flags)
         try:
             for part in TEST_CGROUP.strip("/").split("/"):
                 child = os.open(part, flags, dir_fd=directory)
@@ -756,6 +832,38 @@ class LinuxSystem:
                 handles.close()
                 raise Refused("cgroup changed while opening its handles")
             return handles
+        finally:
+            os.close(directory)
+
+    def job_cgroup_populated(self) -> bool | None:
+        """Populated state of whatever cgroup is at the fixed unit's path; None if absent.
+
+        Not pinned: used only at startup with no recorded job, to refuse idle while any cgroup
+        at that path still holds processes. It can only make the broker stricter. Only the
+        unit's own directory may be missing; anything else missing or unreadable raises.
+        """
+        flags = os.O_PATH | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+        *parents, leaf = TEST_CGROUP.strip("/").split("/")
+        directory = os.open(CGROUP_ROOT, flags)
+        try:
+            for part in parents:
+                child = os.open(part, flags, dir_fd=directory)
+                os.close(directory)
+                directory = child
+            try:
+                child = os.open(leaf, flags, dir_fd=directory)
+            except FileNotFoundError:
+                return None  # systemd removes a stopped unit's cgroup once it is empty
+            os.close(directory)
+            directory = child
+            events = os.open(
+                "cgroup.events", os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW, dir_fd=directory
+            )
+            handles = Handles(-1, events)  # populated() reads only the events descriptor
+            try:
+                return self.populated(handles)
+            finally:
+                os.close(events)
         finally:
             os.close(directory)
 

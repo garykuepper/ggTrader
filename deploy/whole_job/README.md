@@ -43,7 +43,8 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   kill fails, the cgroup does not empty or the drain is not verified, the job's identity is
   persisted as held and the pinned handles are kept (mode `held`): `@stop:<attempt>`, the
   cgroup emptying, or a broker restart that restores the stored pair clears it. If no identity
-  can be recorded, the broker goes `unverifiable` and keeps the handles open.
+  can be recorded, the broker goes `unverifiable` and keeps the handles open; a restart then
+  treats it as an unrecorded invocation (see Broker restart).
 - **No fork under the admission lock.** PID 1 queries (`busctl`) run only outside it.
 
 ## Sequencing
@@ -55,14 +56,27 @@ name the current attempt (from `@status`), so a delayed request cannot stop its 
   in order) is admitted under the lock, with a broker deadline.
 - **Stop** (operator, phase deadline, lost driver connection, driver report, or the pinned
   `cgroup.events` reporting empty): persist the hold, verify the handles, write
-  `cgroup.kill`, wait up to 20 s for `populated 0` or removal (`ENODEV`), then clear the
-  record and remove the stored handles. If the cgroup does not empty, the record stays held
-  and start is refused. A termination the broker did not start is reported as "ended
+  `cgroup.kill`, wait up to 20 s for `populated 0` or removal (`ENODEV`), then (outside the
+  lock) remove the stored pair and read the store back; only when it is empty is the record
+  cleared and the pinned handles closed. If the cgroup does not empty, the store does not
+  drain or the clear fails, the record and handles are kept, the job stays held and start is
+  refused; an automatic retry waits 15 s, an operator stop retries at once. A crash after the
+  drain but before the clear leaves a record with an empty store: `unverifiable` on restart.
+  A termination the broker did not start is reported as "ended
   without a driver report; cause not determined", never as out-of-memory.
 - **Broker restart:** admission starts held. With the same boot and an exact store, handles
   are restored (mode `held`): no further phase is admitted, and `@stop:<attempt>` or the
   cgroup emptying clears it. Any mismatch leaves mode `unverifiable`, which refuses start and
   stop and needs manual investigation.
+- **Restart with no recorded job** (a crash between the store push and the record write, or a
+  refused registration whose identity could not be recorded): such an invocation never got
+  `go`. If the store holds exactly a pinned pair, the broker kills that cgroup through it,
+  waits for it to empty, drains the store and verifies it empty before going idle. Any other
+  stored entry is kept as evidence and the mode is `unverifiable`, as it is when that kill
+  does not empty the cgroup. With nothing stored, the job unit must be `inactive` or `failed`
+  and the cgroup at its path absent or `populated 0` (an unpinned read, used only to refuse);
+  otherwise, or if either cannot be read, the mode is `unverifiable`. `unverifiable` is left
+  only by a broker restart, which repeats these checks.
 - **Reboot:** nothing is enabled, so neither the broker nor the job starts. On a later broker
   start a record from another boot is `prior-boot`; only `@acknowledge:<attempt>` clears it.
 
@@ -100,7 +114,8 @@ runner fixes from the same review (below) are also untested in a guest. Covered 
   build, per the project's delegation rules) is required before any install.
 - In the guest: tampered or full descriptor stores, extra or duplicate entries, stop timeout
   with unkillable (D-state) processes, phase deadline expiry, a crash between the store push
-  and the record write, PID reuse, descendant messages on an inherited socket, and the real
+  and the record write, a store that will not drain, restart with a live unrecorded job, the
+  path-based `cgroup.events` read at startup, PID reuse, descendant messages on an inherited socket, and the real
   `scripts/run_tests.sh` (a fixture script stood in for the phases). These are covered only by
   the fixture tests in `tests/scripts/test_whole_job_broker.py` and
   `tests/scripts/test_whole_job_driver.py`, which do not exercise systemd or the kernel.

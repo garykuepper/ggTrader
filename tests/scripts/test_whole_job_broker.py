@@ -22,6 +22,7 @@ from scripts.whole_job_broker import (
     KILL_NAME,
     PHASE_SECONDS,
     REGISTER_SECONDS,
+    STOP_RETRY_SECONDS,
     TEST_CGROUP,
     TEST_UNIT,
     Broker,
@@ -64,6 +65,7 @@ class FakeSystem:
         self.store: list[tuple[str, int]] = []
         self.dump_override: list[StoreEntry] | None = None
         self.populated_value: bool | None = True
+        self.path_populated: bool | None = None  # the unit's cgroup looked up by path
         self.empties_on_kill = True
         self.kills: list[dict] = []
         self.opened = 0
@@ -109,6 +111,7 @@ class FakeSystem:
             "active", DRIVER_PID, INVOCATION, TEST_CGROUP, CGROUP_ID, False
         )
         self.populated_value = True
+        self.path_populated = True
 
     def open_job_cgroup(self, cgroup_id: int) -> Handles:
         assert cgroup_id == CGROUP_ID
@@ -126,10 +129,14 @@ class FakeSystem:
         self.kills.append(json.loads((self.directory / "admission.json").read_text()))
         if self.empties_on_kill:
             self.populated_value = None
+            self.path_populated = None
             self.units[TEST_UNIT] = UnitState("failed", 0, "", TEST_CGROUP, CGROUP_ID, False)
 
     def wait_empty(self, handles: Handles, seconds: float) -> bool:
         return not self.populated_value
+
+    def job_cgroup_populated(self) -> bool | None:
+        return self.path_populated
 
     def fdstore_add(self, name: str, fd: int) -> None:
         self.store.append((name, os.dup(fd)))
@@ -484,14 +491,17 @@ def test_prior_boot_record_with_stored_handles_is_unverifiable(env) -> None:
     assert rebooted.mode == "unverifiable"
 
 
-def test_orphan_store_entries_without_a_record_are_removed(env) -> None:
+def test_stray_store_entry_without_a_record_stays_unresolved(env) -> None:
     system, _, _, logs = env
     path = system.tmp / "orphan"
     path.write_text("")
     system.store.append((KILL_NAME, os.open(path, os.O_WRONLY)))
     broker = make(env)
     broker.startup(system.inherited())
-    assert broker.mode == "idle" and system.store == []
+    assert broker.mode == "unverifiable" and len(system.store) == 1  # kept, not drained
+    assert system.kills == []
+    with pytest.raises(Refused):
+        broker.start()
 
 
 def test_start_refuses_active_unit_or_nonempty_store(env) -> None:
@@ -749,3 +759,267 @@ def test_unadmitted_failure_without_a_recordable_identity_is_unverifiable(env, m
     for call in (broker.start, lambda: broker.stop("0" * 32)):
         with pytest.raises(Refused):
             call()
+
+
+# A stop forgets the job only after the cgroup is empty AND the store removal is verified.
+
+
+def test_stop_keeps_record_and_handles_until_store_removal_is_verified(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+    attempt = broker.record.attempt
+    real_remove = system.fdstore_remove
+    monkeypatch.setattr(system, "fdstore_remove", lambda name: None)  # removal silently ignored
+    with pytest.raises(RuntimeError):
+        broker.stop(attempt)
+    assert broker.mode == "held" and broker.record is not None and broker.handles is not None
+    assert broker.handles.ids() == (broker.record.kill, broker.record.events)  # still open
+    assert persisted(directory)["held"] and persisted(directory)["job"] == broker.record.encode()
+    assert len(system.store) == 2 and "stop incomplete" in broker.outcome
+    with pytest.raises(Refused):
+        broker.start()
+    monkeypatch.setattr(system, "fdstore_remove", real_remove)
+    broker.stop(attempt)
+    assert broker.mode == "idle" and broker.handles is None and system.store == []
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+
+
+def test_retained_job_with_persistent_store_failure_stays_held_on_tick_and_stop(
+    env, monkeypatch
+) -> None:
+    system, _, directory, logs = env
+    real_remove = system.fdstore_remove
+    monkeypatch.setattr(system, "fdstore_remove", lambda name: None)
+    broker = _refused_registration(env, monkeypatch)
+    attempt = _assert_held_with_handles(broker, system, directory)
+    assert system.populated_value is None  # the cgroup itself was killed and is gone
+    broker.tick()  # sees the cgroup gone and retries the stop: the store still will not drain
+    assert broker.mode == "held" and broker.record.attempt == attempt
+    assert broker.handles is not None and broker.handles.ids() == (
+        broker.record.kill,
+        broker.record.events,
+    )
+    assert persisted(directory)["job"] == broker.record.encode() and len(system.store) == 2
+    assert any("stop failed" in line for line in logs)
+    with pytest.raises(RuntimeError):
+        broker.stop(attempt)  # an operator stop does not paper over it either
+    assert broker.mode == "held" and broker.handles is not None
+    assert persisted(directory)["held"] and persisted(directory)["job"]
+    with pytest.raises(Refused):
+        broker.start()
+    monkeypatch.setattr(system, "fdstore_remove", real_remove)
+    broker.stop(attempt)
+    assert broker.mode == "idle" and system.store == [] and not persisted(directory)["job"]
+
+
+def test_tick_retries_a_failed_stop_only_after_a_pause(env, monkeypatch) -> None:
+    system, _, _, logs = env
+    monkeypatch.setattr(system, "fdstore_remove", lambda name: None)
+    broker = _refused_registration(env, monkeypatch)
+    broker.tick()
+    failures = sum("stop failed" in line for line in logs)
+    broker.tick()
+    assert sum("stop failed" in line for line in logs) == failures  # no retry every second
+    system.clock += STOP_RETRY_SECONDS + 1
+    broker.tick()
+    assert sum("stop failed" in line for line in logs) == failures + 1
+
+
+def test_record_clear_failure_after_drain_keeps_handles_and_restart_is_unverifiable(
+    env, monkeypatch
+) -> None:
+    system, _, directory, _ = env
+    broker, _ = admitted(env)
+
+    def fail(job: str, boot: str, epoch: str) -> None:
+        raise OSError("disk")
+
+    monkeypatch.setattr(broker.state, "clear", fail)
+    with pytest.raises(OSError):
+        broker.stop(broker.record.attempt)
+    assert broker.mode == "held" and broker.handles is not None and system.store == []
+    assert persisted(directory)["held"] and persisted(directory)["job"]
+    restarted = make(env)  # a crash here: the record survives, the store is empty
+    restarted.startup(system.inherited())
+    assert restarted.mode == "unverifiable" and persisted(directory)["job"]
+
+
+# Restart without a recorded job: idle only once nothing of an unrecorded invocation remains.
+
+
+class Crash(BaseException):
+    """The broker process dies at this point: no exception handler of its own runs."""
+
+
+def _crash_after_store_push(env, monkeypatch) -> Broker:
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+
+    def crash(job: str, boot: str) -> None:
+        raise Crash
+
+    monkeypatch.setattr(broker.state, "release", crash)
+    monkeypatch.setattr(broker, "_abort_unadmitted", lambda handles, record: None)
+    with pytest.raises(Crash):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    return broker
+
+
+def test_crash_between_store_push_and_record_kills_and_drains_on_restart(env, monkeypatch) -> None:
+    system, _, directory, _ = env
+    _crash_after_store_push(env, monkeypatch)
+    assert len(system.store) == 2 and not persisted(directory)["job"]
+    assert system.kills == []
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert len(system.kills) == 1  # killed through the stored pinned handle
+    assert restarted.mode == "idle" and system.store == []
+    restarted.start()
+
+
+def test_crash_between_store_push_and_record_with_live_cgroup_stays_unresolved(
+    env, monkeypatch
+) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    _crash_after_store_push(env, monkeypatch)
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "unverifiable" and len(system.store) == 2  # store kept
+    assert persisted(directory)["held"] and not persisted(directory)["job"]
+    with pytest.raises(Refused):
+        restarted.start()
+    again = make(env)  # the condition survives a further restart
+    again.startup(system.inherited())
+    assert again.mode == "unverifiable" and len(system.store) == 2
+    system.empties_on_kill = True
+    resolved = make(env)
+    resolved.startup(system.inherited())
+    assert resolved.mode == "idle" and system.store == []
+
+
+def test_failed_retain_then_restart_stays_unresolved_until_the_cgroup_empties(
+    env, monkeypatch
+) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+
+    def no_retain(job: str, boot: str) -> None:
+        raise OSError("disk")
+
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    monkeypatch.setattr(broker.state, "release", no_retain)
+    monkeypatch.setattr(broker.state, "retain", no_retain)
+    with pytest.raises(OSError):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    assert broker.mode == "unverifiable" and not persisted(directory)["job"]
+    assert len(system.store) == 2
+    restarted = make(env)
+    restarted.startup(system.inherited())
+    assert restarted.mode == "unverifiable" and len(system.store) == 2
+    with pytest.raises(Refused):
+        restarted.start()
+    system.empties_on_kill = True
+    resolved = make(env)
+    resolved.startup(system.inherited())
+    assert resolved.mode == "idle" and system.store == []
+
+
+def test_identity_failure_then_restart_with_a_live_unrecorded_job_is_unverifiable(
+    env, monkeypatch
+) -> None:
+    system, _, directory, _ = env
+    system.empties_on_kill = False
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    real_ids = Handles.ids
+
+    def no_ids(self: Handles) -> tuple:
+        raise Refused("pinned handle has the wrong type or access mode")
+
+    monkeypatch.setattr(Handles, "ids", no_ids)
+    with pytest.raises(Refused):
+        broker.register(DRIVER_PIDFD, lambda: pytest.fail("go sent"))
+    monkeypatch.setattr(Handles, "ids", real_ids)
+    assert broker.mode == "unverifiable" and system.store == []
+    assert not persisted(directory)["job"]
+    restarted = make(env)  # nothing recorded, nothing stored: only the live cgroup remains
+    restarted.startup(system.inherited())
+    assert restarted.mode == "unverifiable"
+    with pytest.raises(Refused):
+        restarted.start()
+    # The job ends on its own; a later restart sees no unit cgroup and an inactive unit.
+    system.path_populated = None
+    system.units[TEST_UNIT] = UnitState("failed", 0, "", TEST_CGROUP, CGROUP_ID, False)
+    resolved = make(env)
+    resolved.startup(system.inherited())
+    assert resolved.mode == "idle"
+
+
+@pytest.mark.parametrize("active", ["active", "activating", "deactivating"])
+def test_restart_with_active_unit_and_no_record_is_unverifiable(env, active: str) -> None:
+    system, _, _, _ = env
+    system.units[TEST_UNIT] = UnitState(active, DRIVER_PID, INVOCATION, TEST_CGROUP, 1, False)
+    broker = make(env)
+    broker.startup({})
+    assert broker.mode == "unverifiable"
+
+
+def test_restart_with_populated_unit_cgroup_and_no_record_is_unverifiable(env) -> None:
+    system, _, _, _ = env
+    system.path_populated = True  # e.g. leftovers after a failed final SIGKILL
+    system.units[TEST_UNIT] = UnitState("failed", 0, "", TEST_CGROUP, CGROUP_ID, False)
+    broker = make(env)
+    broker.startup({})
+    assert broker.mode == "unverifiable"
+
+
+@pytest.mark.parametrize("content", [None, "populated 0\nfrozen 0\n", "populated 1\n", "junk\n"])
+def test_job_cgroup_populated_reads_the_fixed_path(tmp_path: Path, monkeypatch, content) -> None:
+    import scripts.whole_job_broker as broker_module
+
+    monkeypatch.setattr(broker_module, "CGROUP_ROOT", str(tmp_path))
+    group = tmp_path / TEST_CGROUP.strip("/")
+    group.parent.mkdir(parents=True)
+    if content is not None:
+        group.mkdir()
+        (group / "cgroup.events").write_text(content)
+    system = LinuxSystem(str(tmp_path / "notify"))
+    if content == "junk\n":
+        with pytest.raises(OSError):
+            system.job_cgroup_populated()
+        return
+    expected = {None: None, "populated 0\nfrozen 0\n": False, "populated 1\n": True}[content]
+    assert system.job_cgroup_populated() is expected
+
+
+def test_job_cgroup_lookup_fails_closed_when_more_than_the_unit_is_missing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import scripts.whole_job_broker as broker_module
+
+    monkeypatch.setattr(broker_module, "CGROUP_ROOT", str(tmp_path / "absent"))
+    with pytest.raises(OSError):
+        LinuxSystem(str(tmp_path / "notify")).job_cgroup_populated()
+    monkeypatch.setattr(broker_module, "CGROUP_ROOT", str(tmp_path))
+    (tmp_path / TEST_CGROUP.strip("/")).mkdir(parents=True)  # unit cgroup without events file
+    with pytest.raises(OSError):
+        LinuxSystem(str(tmp_path / "notify")).job_cgroup_populated()
+
+
+def test_unit_check_failure_at_restart_is_unverifiable_not_idle(env, monkeypatch) -> None:
+    system, _, _, _ = env
+
+    def broken() -> bool | None:
+        raise OSError("EIO")
+
+    monkeypatch.setattr(system, "job_cgroup_populated", broken)
+    broker = make(env)
+    broker.startup({})
+    assert broker.mode == "unverifiable"
+    with pytest.raises(Refused):
+        broker.start()
