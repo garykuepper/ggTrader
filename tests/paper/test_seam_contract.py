@@ -16,7 +16,7 @@ import copy
 import os
 import re
 from collections import Counter
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -229,13 +229,10 @@ def _logger_name_ok(node: ast.Call, resolve: Callable[[str | None], str | None])
     return resolve(_dotted(node.args[0])) == "ggTrader.paper.constants.TRADER_LOGGER_NAME"
 
 
-def scan_new_module(source: str, filename: str) -> list[Finding]:
-    """The rule violations of one new `paper/` module (`filename` is its base name)."""
-    tree = ast.parse(source)
-    found: list[Finding] = []
-    # This conservative file-wide map does not model scope or later rebinding.
+def _import_aliases(nodes: Iterable[ast.AST]) -> dict[str, str]:
+    """Map imported local names to their fully qualified origins."""
     aliases: dict[str, str] = {}
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 aliases[alias.asname or alias.name.split(".")[0]] = (
@@ -246,6 +243,15 @@ def scan_new_module(source: str, filename: str) -> list[Finding]:
             for alias in node.names:
                 if alias.name != "*":
                     aliases[alias.asname or alias.name] = f"{base}.{alias.name}"
+    return aliases
+
+
+def scan_new_module(source: str, filename: str) -> list[Finding]:
+    """The rule violations of one new `paper/` module (`filename` is its base name)."""
+    tree = ast.parse(source)
+    found: list[Finding] = []
+    # This conservative file-wide map does not model scope or later rebinding.
+    aliases = _import_aliases(ast.walk(tree))
 
     def resolve(name: str | None) -> str | None:
         if name is None:
@@ -351,17 +357,25 @@ def _defined_names(tree: ast.Module) -> dict[str, ast.AST]:
             names[node.target.id] = node
         elif isinstance(node, ast.FunctionDef):
             names[node.name] = node
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name != "*":
+                    names[alias.asname or alias.name] = alias
     return names
 
 
-def _binds_to(node: ast.AST, home_name: str) -> bool:
-    """True if `node` is ``X = <module>.<home_name>`` or ``X = <home_name>`` (an alias)."""
-    if not isinstance(node, ast.Assign):
+def _binds_to(node: ast.AST, home_name: str, home_module: str, imports: dict[str, str]) -> bool:
+    """Check that a trader alias resolves to its canonical home."""
+    if isinstance(node, ast.alias):
+        return imports.get(node.asname or node.name) == f"ggTrader.paper.{home_module}.{home_name}"
+    if not isinstance(node, ast.Assign | ast.AnnAssign) or node.value is None:
         return False
-    value = node.value
-    return (isinstance(value, ast.Attribute) and value.attr == home_name) or (
-        isinstance(value, ast.Name) and value.id == home_name
-    )
+    value = _dotted(node.value)
+    if value is None:
+        return False
+    first, sep, rest = value.partition(".")
+    resolved = imports.get(first, first) + (sep + rest if sep else "")
+    return resolved == f"ggTrader.paper.{home_module}.{home_name}"
 
 
 def _literal_int(node: ast.AST) -> int | None:
@@ -382,7 +396,9 @@ def home_findings(
     only binds the old names to them (no literal, no ``def``).
     """
     constants = _defined_names(ast.parse(constants_src))
-    trader = _defined_names(ast.parse(trader_src))
+    trader_tree = ast.parse(trader_src)
+    trader = _defined_names(trader_tree)
+    imports = _import_aliases(trader_tree.body)
     helpers = _defined_names(ast.parse(run_helpers_src)) if run_helpers_src is not None else None
     found: list[Finding] = []
 
@@ -403,7 +419,7 @@ def home_findings(
                 found.append(Finding("value-drift", getattr(in_constants, "lineno", 0), new))
             if in_trader is None:
                 found.append(Finding("name-lost", 0, old))
-            elif not _binds_to(in_trader, new):
+            elif not _binds_to(in_trader, new, "constants", imports):
                 found.append(Finding("duplicated", getattr(in_trader, "lineno", 0), old))
 
     for old, new in MOVED_HELPERS.items():
@@ -416,7 +432,7 @@ def home_findings(
                 found.append(Finding("missing-home", 0, new))
             if in_trader is None:
                 found.append(Finding("name-lost", 0, old))
-            elif not _binds_to(in_trader, new):
+            elif not _binds_to(in_trader, new, "run_helpers", imports):
                 found.append(Finding("duplicated", getattr(in_trader, "lineno", 0), old))
     return found
 
@@ -1237,6 +1253,41 @@ def test_the_home_check_distinguishes_before_and_after_the_move():
         "_as_date = run_helpers.as_date\n_account_read_halt = run_helpers.account_read_halt\n"
     )
     assert home_findings(constants, helpers, after_trader) == []
+    wrong_owner = after_trader.replace("run_helpers.as_date", "unrelated.as_date")
+    assert {f.rule for f in home_findings(constants, helpers, wrong_owner)} == {"duplicated"}
+    wrong_constant = after_trader.replace(
+        "constants.MAX_SIGNAL_AGE_DAYS", "other.MAX_SIGNAL_AGE_DAYS"
+    )
+    assert {f.rule for f in home_findings(constants, helpers, wrong_constant)} == {"duplicated"}
+    wrong_import = after_trader.replace(
+        "from ggTrader.paper import constants, run_helpers",
+        "from ggTrader.paper import constants\nfrom ggTrader.paper import ledger as run_helpers",
+    )
+    assert [(f.rule, f.detail) for f in home_findings(constants, helpers, wrong_import)] == [
+        ("duplicated", "_as_date"),
+        ("duplicated", "_account_read_halt"),
+    ]
+    direct = after_trader.replace(
+        "_as_date = run_helpers.as_date",
+        "from ggTrader.paper.run_helpers import as_date as _as_date",
+    )
+    assert home_findings(constants, helpers, direct) == []
+    plain = after_trader.replace(
+        "_as_date = run_helpers.as_date",
+        "from ggTrader.paper.run_helpers import as_date\n_as_date = as_date",
+    )
+    assert home_findings(constants, helpers, plain) == []
+    wrong_plain = plain.replace(
+        "from ggTrader.paper.run_helpers import as_date", "def as_date(x): return x"
+    )
+    assert [(f.rule, f.detail) for f in home_findings(constants, helpers, wrong_plain)] == [
+        ("duplicated", "_as_date")
+    ]
+    typed = after_trader.replace(
+        "_MAX_SIGNAL_AGE_DAYS = constants.MAX_SIGNAL_AGE_DAYS",
+        "_MAX_SIGNAL_AGE_DAYS: int = constants.MAX_SIGNAL_AGE_DAYS",
+    )
+    assert home_findings(constants, helpers, typed) == []
     # Created the helpers module but left the literals and defs in the trader: duplicates.
     assert {f.rule for f in home_findings(constants, helpers, before_trader)} == {"duplicated"}
     # Created the helpers module but not the constants.
