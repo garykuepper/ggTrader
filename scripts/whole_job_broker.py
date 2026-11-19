@@ -569,6 +569,9 @@ class Broker:
             return
         if self.retry_at is not None and now < self.retry_at:
             return
+        if self.mode == "held" and self.retry_at is not None:
+            self._stop_quietly("retry incomplete stop")
+            return
         try:
             populated = self.system.populated(self.handles)
         except OSError as exc:
@@ -613,6 +616,7 @@ class Broker:
             self.state.clear(job, self.boot, self.state.epoch)
         except BaseException:
             self.mode = "held"
+            self.retry_at = self.system.now() + STOP_RETRY_SECONDS
             self.outcome = f"stop incomplete ({reason}); admission held"
             raise
         handles.close()

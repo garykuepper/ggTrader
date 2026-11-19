@@ -860,6 +860,30 @@ def test_phase_deadline_still_stops_during_events_read_backoff(env, monkeypatch)
     assert len(system.kills) == 1
 
 
+def test_failed_kill_is_retried_when_job_remains_populated(env, monkeypatch) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    broker.register(DRIVER_PIDFD, lambda: None)
+    kill = system.kill
+    calls = []
+
+    def fail_once(handles):
+        calls.append(1)
+        if len(calls) == 1:
+            raise OSError("temporary kill failure")
+        kill(handles)
+
+    monkeypatch.setattr(system, "kill", fail_once)
+    broker._stop_quietly("deadline")
+    assert broker.mode == "held" and system.populated_value
+    system.clock += STOP_RETRY_SECONDS + 1
+    broker.tick()
+    assert len(calls) == 2
+    assert broker.mode == "idle"
+
+
 def test_server_ignores_ready_cgroup_events_during_stop_cooldown(env, monkeypatch) -> None:
     system, _, _, _ = env
     broker = make(env)
