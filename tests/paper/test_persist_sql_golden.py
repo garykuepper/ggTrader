@@ -10,6 +10,7 @@ order is not part of the contract.
 
 from __future__ import annotations
 
+import copy
 import difflib
 import functools
 import inspect
@@ -133,7 +134,7 @@ _add("init_paper_schema", _case(persist.init_paper_schema, (), [None] * 11))
 _add("init_paper_schema__execute_fails", _case(persist.init_paper_schema, (), _first_fails(1)))
 _add("init_paper_schema__execute_fails_at_6", _case(persist.init_paper_schema, (), _first_fails(6)))
 
-# --- create_order_intent (records the stray `conn` key of locals(), Deviation 5)
+# --- create_order_intent (the reference records the stray `conn` key of locals(), Deviation 5)
 _INTENT_ARGS = ("cid-1", "2026-06-22", "BUY", "AAPL", 1000.0, "notional", None)
 _add("create_order_intent", _case(persist.create_order_intent, _INTENT_ARGS, [None]))
 _add(
@@ -806,6 +807,24 @@ def _golden() -> dict:
     return json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))["cases"]
 
 
+def normalize_reference(name: str, entry: dict) -> dict:
+    """The reference entry with the stray `conn` bind key removed from `create_order_intent`.
+
+    Deviation 5: the old `create_order_intent` passed `locals()` as its bind dictionary, which
+    also carried the connection under the key `conn`; the SQL never binds it. Since Task 38 the
+    function passes exactly the seven named parameters. The reference file is never edited and
+    still records `conn` (`test_persist_ledger.py` checks that); this is the one explicit
+    normalization, applied before comparing: it touches the `params` of every `execute` event of
+    the cases of `create_order_intent` and nothing else.
+    """
+    result = copy.deepcopy(entry)
+    if name.split("__")[0] == "create_order_intent":
+        for event in result["events"]:
+            if event["op"] == "execute" and event["params"] is not None:
+                event["params"].pop("conn", None)
+    return result
+
+
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_persist_sql_case_matches_golden(name: str) -> None:
     actual = record(name)
@@ -817,9 +836,8 @@ def test_persist_sql_case_matches_golden(name: str) -> None:
         )
     golden = _golden()
     assert name in golden, f"no golden entry for {name}"
-    assert actual == golden[name], f"{name} differs from its golden:\n" + _diff(
-        golden[name], actual, name
-    )
+    expected = normalize_reference(name, golden[name])
+    assert actual == expected, f"{name} differs from its golden:\n" + _diff(expected, actual, name)
 
 
 def test_every_case_has_a_golden_entry() -> None:
@@ -953,7 +971,7 @@ def test_case_shows_what_its_name_claims(name: str) -> None:
         assert _writes(rec, "UPDATE") == 0 and _writes(rec, "INSERT") == 0
     if name == "create_order_intent":
         params = rec["events"][1]["params"]
-        assert params["conn"] == {"$type": "Connection"}
+        assert "conn" not in params and len(params) == 7  # the stray key of Deviation 5 is gone
 
 
 @pytest.mark.parametrize("name", sorted(CASES))
