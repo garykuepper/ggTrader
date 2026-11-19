@@ -462,7 +462,9 @@ def scripted_skipped_fold() -> dict:
             _fold_script(folds[0]),
             _fold_script(folds[1], train=[]),
             _fold_script(folds[2]),
-            _fold_script(folds[3], train=[]),
+            _fold_script(
+                folds[3], train=[], anchor=_rows((0.9, 1.4, 1.0), drawdowns=(-9.0, -7.0, -3.0))
+            ),
         ],
     }
     return _scripted_run(script, eval_end=ee)
@@ -760,6 +762,22 @@ def _claim_skipped(record: dict[str, Any]) -> None:
     assert all(item["reason"] == "no_train_metrics" for item in skipped)
     assert len(_rows_of(record)) == 2
     assert record["diagnostics"]["n_folds"] == 4
+    fallback = record["table"].split("Anchor Set (Defensive Fallback)", 1)[1]
+    assert inputs.combo_name("toy", {"delay": 150}) in fallback
+
+
+def test_policy_forwards_nan_exclusion_to_breaker(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The run-level policy reaches the circuit breaker on each fold."""
+    original = run.check_circuit_breaker
+    calls = []
+
+    def recording_breaker(*args: Any, **kwargs: Any) -> Any:
+        calls.append(kwargs.get("nan_policy"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(run, "check_circuit_breaker", recording_breaker)
+    toy_policy_exclude()
+    assert calls and all(policy == "exclude" for policy in calls)
 
 
 def _claim_halt(record: dict[str, Any]) -> None:
