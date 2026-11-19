@@ -17,10 +17,11 @@ def fake_env(tmp_path: Path) -> dict[str, str]:
     launcher = tmp_path / "systemd-run"
     launcher.write_text(
         f"#!{sys.executable}\n"
-        "import json, os, subprocess, sys\n"
+        "import json, os, signal, subprocess, sys\n"
         "args = sys.argv[1:]\n"
         "with open(os.environ['LAUNCH_LOG'], 'a') as f: f.write(json.dumps(args) + '\\n')\n"
-        "if os.environ.get('LAUNCH_FAIL'): sys.exit(1)\n"
+        "if os.environ.get('LAUNCH_FAIL'): sys.exit(int(os.environ['LAUNCH_FAIL']))\n"
+        "if os.environ.get('LAUNCH_SIGNAL'): os.kill(os.getppid(), signal.SIGTERM); sys.exit(0)\n"
         "i = 0\n"
         "while args[i].startswith('-'):\n"
         "    i += 2 if args[i] == '-p' else 1\n"
@@ -80,9 +81,23 @@ def test_capped_scope_failure_does_not_run_payload(
     assert len(_calls(fake_env)) == 1
 
 
-@pytest.mark.parametrize("failure", [False, True])
+@pytest.mark.parametrize(
+    ("failure", "expected", "calls_expected", "cleanup_fails"),
+    [
+        (False, 1, 2, False),
+        (True, 125, 1, False),
+        (137, 137, 1, False),
+        (False, 125, 1, True),
+        (137, 137, 1, True),
+    ],
+)
 def test_scope_failure_aborts_later_phase(
-    tmp_path: Path, fake_env: dict[str, str], failure: bool
+    tmp_path: Path,
+    fake_env: dict[str, str],
+    failure: bool | int,
+    expected: int,
+    calls_expected: int,
+    cleanup_fails: bool,
 ) -> None:
     (tmp_path / "scripts").mkdir()
     (tmp_path / "tests").mkdir()
@@ -100,7 +115,11 @@ def test_scope_failure_aborts_later_phase(
     python.chmod(0o755)
     fake_env["GGT_PYTHON"] = str(python)
     if failure:
-        fake_env["LAUNCH_FAIL"] = "1"
+        fake_env["LAUNCH_FAIL"] = str(int(failure))
+    if cleanup_fails:
+        rmdir = tmp_path / "rmdir"
+        rmdir.write_text('#!/bin/sh\n/usr/bin/rmdir "$@"\nexit 1\n')
+        rmdir.chmod(0o755)
     result = subprocess.run(
         [str(tmp_path / "scripts/run_tests.sh"), "--full"],
         env=fake_env,
@@ -108,9 +127,9 @@ def test_scope_failure_aborts_later_phase(
         text=True,
         timeout=10,
     )
-    assert result.returncode == (125 if failure else 1), result.stderr
+    assert result.returncode == expected, result.stderr
     calls = _calls(fake_env)
-    assert len(calls) == (1 if failure else 2)
+    assert len(calls) == calls_expected
     assert all(
         args[:5] == ["--user", "--scope", "-q", "--collect", "--slice-inherit"] for args in calls
     )
@@ -132,3 +151,28 @@ def test_ci_explicitly_skips_launcher(fake_env: dict[str, str]) -> None:
     )
     assert result.returncode == 0, result.stderr
     assert not Path(fake_env["LAUNCH_LOG"]).exists()
+
+
+def test_capped_help_does_not_claim_signal_cause() -> None:
+    result = subprocess.run(
+        [str(ROOT / "scripts/run_capped.sh"), "--help"], capture_output=True, text=True, check=True
+    )
+    assert "alone does not establish the cause" in result.stdout
+    assert "killed at the cap" not in result.stdout
+
+
+def test_interrupted_scope_cleans_marker(fake_env: dict[str, str]) -> None:
+    fake_env["LAUNCH_SIGNAL"] = "1"
+    fake_env["GGT_PYTHON"] = "/bin/true"
+    result = subprocess.run(
+        [str(ROOT / "scripts/run_tests.sh"), "tests/test_runner_docs.py"],
+        env=fake_env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 143, result.stderr
+    calls = _calls(fake_env)
+    assert len(calls) == 1
+    marker = next(arg for arg in calls[0] if arg.startswith("/tmp/ggtrader-test."))
+    assert not Path(marker).parent.exists()

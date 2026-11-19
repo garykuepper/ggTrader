@@ -46,9 +46,9 @@ Environment:
   GGT_HEAVY_WAIT       seconds to wait for another heavy job (default 1800)
   GGT_HEAVY_MARGIN     free memory required beyond the cap (default 4G)
 
-Exit 137 means the command was killed at the cap and exit 143 that the time limit
-stopped it; the script prints a message and does not retry. Exit 75 means another
-heavy job is running or free memory is short: the command never started.
+Exit 137 or 143 alone does not establish the cause; the script does not retry.
+Exit 75 means another heavy job is running or free memory is short: the command
+never started.
 EOF
 }
 
