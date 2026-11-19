@@ -4,18 +4,21 @@ from __future__ import annotations
 
 import logging
 import math
+import sys
 import time
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
 
 from ggTrader.paper import cash_sweep, catastrophe_stop
+from ggTrader.paper import persist as _persist
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.constants import ET as _ET
 from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
+from ggTrader.paper.ledger import ModuleLedger, PaperLedger, ReadOnlyLedger
 from ggTrader.paper.models import (
     Account,
     MarketClock,
@@ -27,32 +30,32 @@ from ggTrader.paper.models import (
 )
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.persist import (
-    attach_broker_order,
-    clear_pending_order,  # noqa: F401 - legacy test compatibility
-    clear_split_correction,
-    create_order_intent,
-    get_accrued_dividend_keys,
-    get_earliest_snapshot,
-    get_last_buy_dates,
-    get_latest_snapshot,
-    get_open_split_states,
-    get_peak_value,
-    get_pending_orders,
-    get_snapshot_history,
-    get_total_dividend_accrual,
-    get_trade_history_dates,
-    get_unresolved_order_intents,
-    init_paper_schema,
-    log_dividend_accrual,
-    log_pending_order,  # noqa: F401 - compatibility for existing test patches
-    log_snapshot,
-    log_trade,  # noqa: F401 - legacy test compatibility
-    mark_pending_order_stale,
-    paper_run_lock,
-    save_peak_value,
-    save_split_correction,
-    settle_legacy_pending_order,
-    settle_order_intent,
+    attach_broker_order,  # noqa: F401 - looked up by ModuleLedger at call time
+    clear_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time; legacy test compatibility
+    clear_split_correction,  # noqa: F401 - looked up by ModuleLedger at call time
+    create_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_accrued_dividend_keys,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_earliest_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_last_buy_dates,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_latest_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_open_split_states,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_peak_value,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_pending_orders,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_snapshot_history,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_total_dividend_accrual,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_trade_history_dates,  # noqa: F401 - looked up by ModuleLedger at call time
+    get_unresolved_order_intents,  # noqa: F401 - looked up by ModuleLedger at call time
+    init_paper_schema,  # noqa: F401 - looked up by ModuleLedger at call time
+    log_dividend_accrual,  # noqa: F401 - looked up by ModuleLedger at call time
+    log_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time; compatibility for existing test patches
+    log_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
+    log_trade,  # noqa: F401 - looked up by ModuleLedger at call time; legacy test compatibility
+    mark_pending_order_stale,  # noqa: F401 - looked up by ModuleLedger at call time
+    paper_run_lock,  # noqa: F401 - looked up by ModuleLedger at call time
+    save_peak_value,  # noqa: F401 - looked up by ModuleLedger at call time
+    save_split_correction,  # noqa: F401 - looked up by ModuleLedger at call time
+    settle_legacy_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time
+    settle_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
 )
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
@@ -148,6 +151,8 @@ class PaperTrader:
         dry_run: bool = True,
         read_only: bool | None = None,
         membership: str | None = None,
+        *,
+        ledger: PaperLedger | None = None,
     ) -> None:
         """Wire the trader.
 
@@ -163,6 +168,11 @@ class PaperTrader:
             membership: membership spec for the S&P 500 list (``fixture:<name>``, ``db``,
                 ``db:<id>``); ``None`` defers to ``GGT_MEMBERSHIP`` and fails if that is unset.
                 ``run_paper_trading`` always passes one.
+            ledger: where durable state lives (default: the persist functions, looked up in this
+                module at each call so a patch applied by name, even after construction, wins).
+                Injecting a ledger replaces only the database; the broker, notifier, signals and
+                clock are still the caller's to provide. A read-only run wraps whichever ledger
+                it is given.
         """
         require_live_membership_spec(membership, dry_run=dry_run)
         self._broker = broker
@@ -175,17 +185,10 @@ class PaperTrader:
             raise ValueError("read_only requires dry_run: a live run must book its trades")
         #: Names of the persistence calls a read-only run skipped (for the run record).
         self.skipped_writes: list[str] = []
+        base = ledger if ledger is not None else ModuleLedger(sys.modules[__name__], _persist)
+        # One list: the ledger fills what the run record later returns.
+        self._ledger = ReadOnlyLedger(base, self.skipped_writes, _log) if self._read_only else base
         self._paper_lock = None
-
-    def _write(self, fn, *args, **kwargs):
-        """Call a persistence function, or record and skip it in read-only mode."""
-        if self._read_only:
-            # `_mock_name`: a patched persist function (tests) has no `__name__`.
-            name = getattr(fn, "__name__", None) or getattr(fn, "_mock_name", None) or repr(fn)
-            self.skipped_writes.append(name)
-            _log.info("read-only: skipped write %s", name)
-            return None
-        return fn(*args, **kwargs)
 
     def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
         """Persist the identity before submitting an order under the run lock."""
@@ -195,7 +198,7 @@ class PaperTrader:
         submit = self._broker.submit_buy if side == "BUY" else self._broker.submit_sell
         stage = "intent"
         try:
-            create_order_intent(
+            self._ledger.create_order_intent(
                 client_id,
                 _today_et().isoformat(),
                 side,
@@ -209,7 +212,7 @@ class PaperTrader:
             stage = "submit"
             order_id = submit(symbol, amount, client_id)
             stage = "attach"
-            attach_broker_order(client_id, order_id)
+            self._ledger.attach_broker_order(client_id, order_id)
         except Exception:
             try:
                 self._notifier.send(f"Order {client_id} failed at {stage}; investigation required")
@@ -221,8 +224,8 @@ class PaperTrader:
     def _reconcile_order_intents(self) -> set[str]:
         """Resolve terminal intents and block uncertain or working orders."""
         try:
-            intents = get_unresolved_order_intents()
-            legacy_ids = {p["order_id"] for p in get_pending_orders()}
+            intents = self._ledger.get_unresolved_order_intents()
+            legacy_ids = {p["order_id"] for p in self._ledger.get_pending_orders()}
             working = set()
             for intent in intents:
                 client_id = intent["client_order_id"]
@@ -275,9 +278,9 @@ class PaperTrader:
                     raise ValueError("Filled order has no fill")
                 if status not in terminal | active:
                     raise ValueError("Unknown order status")
-                attach_broker_order(client_id, oid)
+                self._ledger.attach_broker_order(client_id, oid)
                 if status in terminal:
-                    settle_order_intent(
+                    self._ledger.settle_order_intent(
                         client_id,
                         oid,
                         float(qty),
@@ -317,7 +320,7 @@ class PaperTrader:
         if not candidates:
             return []
         try:
-            entries = get_last_buy_dates()
+            entries = self._ledger.get_last_buy_dates()
         except Exception as exc:
             _log.warning("last-buy lookup failed, skipping exit catch-up: %s", exc)
             return []
@@ -347,7 +350,7 @@ class PaperTrader:
             f"has been open {age_days:.1f} days without filling."
         )
         try:
-            mark_pending_order_stale(pending_order["order_id"])
+            self._ledger.mark_pending_order_stale(pending_order["order_id"])
         except Exception as exc:
             _log.warning(
                 "Could not mark pending order %s stale (non-fatal): %s",
@@ -369,7 +372,7 @@ class PaperTrader:
         """
         still_pending: set[str] = set()
         try:
-            pending = get_pending_orders()
+            pending = self._ledger.get_pending_orders()
         except Exception as exc:
             if not self._dry_run:
                 self._notifier.send(
@@ -403,7 +406,7 @@ class PaperTrader:
                 continue  # still working — try again next run
 
             try:
-                settle_legacy_pending_order(oid, filled_qty, filled_price, status)
+                self._ledger.settle_legacy_pending_order(oid, filled_qty, filled_price, status)
             except Exception as exc:
                 self._notifier.send(
                     f"<b>🛑 Could not settle pending order {oid} — no orders placed:</b> {exc}"
@@ -518,7 +521,7 @@ class PaperTrader:
         held_symbols = set(positions)
 
         try:
-            persisted_states = get_open_split_states()
+            persisted_states = self._ledger.get_open_split_states()
         except Exception as exc:
             _log.warning("Could not load persisted split state (non-fatal): %s", exc)
             persisted_states = {}
@@ -528,7 +531,7 @@ class PaperTrader:
         for symbol in list(persisted_states):
             if symbol not in held_symbols:
                 try:
-                    self._write(clear_split_correction, symbol)
+                    self._ledger.clear_split_correction(symbol)
                 except Exception as exc:
                     _log.warning(
                         "Could not clear stale split state for %s (non-fatal): %s", symbol, exc
@@ -551,7 +554,7 @@ class PaperTrader:
             return persisted
 
         try:
-            snapshot_history = get_snapshot_history()
+            snapshot_history = self._ledger.get_snapshot_history()
         except Exception as exc:
             _log.warning("Could not load snapshot history for split check (non-fatal): %s", exc)
             snapshot_history = []
@@ -559,7 +562,7 @@ class PaperTrader:
         trade_dates_by_symbol: dict[str, list] = {}
         for symbol in corp_splits:
             try:
-                trade_dates_by_symbol[symbol] = get_trade_history_dates(symbol)
+                trade_dates_by_symbol[symbol] = self._ledger.get_trade_history_dates(symbol)
             except Exception as exc:
                 _log.warning(
                     "Could not load trade history for %s split check (non-fatal): %s",
@@ -582,7 +585,7 @@ class PaperTrader:
         for symbol in applied_symbols:
             if symbol in persisted:
                 try:
-                    self._write(clear_split_correction, symbol)
+                    self._ledger.clear_split_correction(symbol)
                 except Exception as exc:
                     _log.warning(
                         "Could not clear confirmed-applied split state for %s (non-fatal): %s",
@@ -595,7 +598,7 @@ class PaperTrader:
         for symbol, factor in new_corrections.items():
             ex_date = min(ex for ex, _ in corp_splits[symbol])
             try:
-                self._write(save_split_correction, symbol, str(ex_date), factor)
+                self._ledger.save_split_correction(symbol, str(ex_date), factor)
             except Exception as exc:
                 _log.warning("Could not persist split state for %s (non-fatal): %s", symbol, exc)
 
@@ -621,13 +624,13 @@ class PaperTrader:
         """
         result: dict = {"total": 0.0, "new_accruals": [], "skipped": []}
         try:
-            result["total"] = get_total_dividend_accrual()
+            result["total"] = self._ledger.get_total_dividend_accrual()
         except Exception as exc:
             _log.warning("Could not load dividend accrual total (non-fatal): %s", exc)
             return result
 
         try:
-            snapshot_history = get_snapshot_history()
+            snapshot_history = self._ledger.get_snapshot_history()
         except Exception as exc:
             _log.warning(
                 "Could not load snapshot history for dividend accrual (non-fatal): %s", exc
@@ -648,7 +651,7 @@ class PaperTrader:
             return result
 
         try:
-            already_accrued_keys = get_accrued_dividend_keys()
+            already_accrued_keys = self._ledger.get_accrued_dividend_keys()
         except Exception as exc:
             _log.warning("Could not load accrued dividend keys (non-fatal): %s", exc)
             return result
@@ -662,8 +665,7 @@ class PaperTrader:
 
         for acc in accruals:
             try:
-                self._write(
-                    log_dividend_accrual,
+                self._ledger.log_dividend_accrual(
                     acc["symbol"],
                     acc["ex_date"],
                     acc["rate"],
@@ -693,7 +695,7 @@ class PaperTrader:
             )
 
         try:
-            result["total"] = get_total_dividend_accrual()
+            result["total"] = self._ledger.get_total_dividend_accrual()
         except Exception as exc:
             _log.warning("Could not reload dividend accrual total (non-fatal): %s", exc)
         result["new_accruals"] = accruals
@@ -714,7 +716,7 @@ class PaperTrader:
                 raise
         if self._dry_run:
             return self._run(stop_threshold=threshold)
-        with paper_run_lock() as lock:
+        with self._ledger.paper_run_lock() as lock:
             self._paper_lock = lock
             try:
                 return self._run(stop_threshold=threshold)
@@ -723,7 +725,7 @@ class PaperTrader:
 
     def _run(self, *, stop_threshold: float | None) -> dict:
         try:
-            self._write(init_paper_schema)
+            self._ledger.init_paper_schema()
         except Exception as exc:
             _log.warning("DB schema init failed (non-fatal): %s", exc)
 
@@ -950,7 +952,7 @@ class PaperTrader:
         # this the halt below always compares against a same-run peak and
         # can never fire).
         try:
-            persisted_peak = get_peak_value()
+            persisted_peak = self._ledger.get_peak_value()
         except Exception as exc:
             _log.warning("Could not load persisted peak: %s", exc)
             reason = "Risk history unavailable: could not read persisted peak"
@@ -983,7 +985,7 @@ class PaperTrader:
             self._risk.update_peak(portfolio_value)
             try:
                 if self._risk.peak_value is not None:
-                    self._write(save_peak_value, self._risk.peak_value)
+                    self._ledger.save_peak_value(self._risk.peak_value)
             except Exception as exc:
                 _log.warning("Could not persist peak value: %s", exc)
                 reason = "Risk history unavailable: could not persist drawdown peak"
@@ -1028,7 +1030,7 @@ class PaperTrader:
 
         # Prior reporting snapshot is used only for the daily summary, not the risk check.
         try:
-            prev_snapshot_value = get_latest_snapshot(before=today_et)
+            prev_snapshot_value = self._ledger.get_latest_snapshot(before=today_et)
         except Exception as exc:
             _log.warning("Could not load prior reporting snapshot: %s", exc)
             prev_snapshot_value = None
@@ -1487,7 +1489,7 @@ class PaperTrader:
         if unrealized_pnl is not None and not math.isfinite(unrealized_pnl):
             unrealized_pnl = None
         try:
-            starting_capital = get_earliest_snapshot()
+            starting_capital = self._ledger.get_earliest_snapshot()
         except Exception as exc:
             _log.warning("Starting snapshot read failed (%s)", type(exc).__name__)
             errors.append("Starting snapshot unavailable; total P&L unavailable")
@@ -1522,8 +1524,7 @@ class PaperTrader:
             # stamp the actual ET session date of this run, not the lagged
             # signals["as_of"] date.
             if corrected_value is not None:
-                self._write(
-                    log_snapshot,
+                self._ledger.log_snapshot(
                     today_et.isoformat(),
                     corrected_value,
                     new_account["cash"],

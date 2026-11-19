@@ -3160,11 +3160,13 @@ class TestReadOnlyDryRun:
         assert not mocks["log_trade"].called and not mocks["clear_pending_order"].called
         assert result["buys"] == ["GOOG"]  # MSFT still has an order working
 
-    def test_write_helper_skips_and_records(self, mock_signals):
+    def test_read_only_ledger_skips_and_records(self, mock_signals):
+        """The trader's ledger (what `_write` was) skips a write and records its name."""
         trader, _b, _n = self._dry_trader()
-        fn = MagicMock(__name__="log_dividend_accrual")
-        assert trader._write(fn, "AAPL", 1) is None
-        fn.assert_not_called()
+        with patch("ggTrader.paper.trader.log_dividend_accrual") as persisted:
+            skipped = trader._ledger.log_dividend_accrual("AAPL", date(2026, 6, 1), 0.1, 1, 0.1)
+        assert skipped is None
+        persisted.assert_not_called()
         assert trader.skipped_writes == ["log_dividend_accrual"]
 
     def test_dry_and_live_take_the_same_path_up_to_order_submission(self, mock_signals):
@@ -3501,7 +3503,9 @@ def test_submit_order_persists_intent_before_broker_call():
     from ggTrader.paper.trader import PaperTrader
 
     broker = MagicMock()
-    trader = PaperTrader(broker, MagicMock(), dry_run=True)
+    # `read_only=False`: a read-only trader's ledger would skip the intent writes, and the point
+    # here is the order of intent, submit and attach (a dry run never reaches `_submit_order`).
+    trader = PaperTrader(broker, MagicMock(), dry_run=True, read_only=False)
     trader._paper_lock = MagicMock()
     events = []
     with (
