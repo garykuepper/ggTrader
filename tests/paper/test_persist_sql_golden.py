@@ -1,9 +1,9 @@
 """Golden record of the SQL, bind dictionaries and transaction events of `paper/persist.py`.
 
 Each case runs one persist function against a recording engine (`sql_recorder.py`) and compares
-the events, the returned value and the raised exception with `golden/persist_sql.json`. To record
-a deliberate change, run once with ``GGT_REGEN_PERSIST_SQL=1`` (it writes the file and fails),
-read the diff against `persist.py`, and rerun. The events are modeled context events, not
+the events, the returned value and the raised exception with the immutable pre-extraction
+`golden/persist_sql.json`. Regeneration is refused to preserve the original evidence. The events
+are modeled context events, not
 SQLAlchemy's real transaction semantics (see the recorder's docstring). Bind dictionary insertion
 order is not part of the contract.
 """
@@ -803,7 +803,7 @@ def _diff(expected: object, actual: object, name: str) -> str:
 
 
 def _golden() -> dict:
-    assert GOLDEN_PATH.exists(), f"no golden: run once with {REGEN_ENV}=1 and review it"
+    assert GOLDEN_PATH.exists(), f"missing immutable golden: {GOLDEN_PATH}"
     return json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))["cases"]
 
 
@@ -827,13 +827,9 @@ def normalize_reference(name: str, entry: dict) -> dict:
 
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_persist_sql_case_matches_golden(name: str) -> None:
-    actual = record(name)
     if os.environ.get(REGEN_ENV):
-        GOLDEN_PATH.parent.mkdir(parents=True, exist_ok=True)
-        GOLDEN_PATH.write_text(_dumps({n: record(n) for n in CASES}) + "\n", encoding="utf-8")
-        pytest.fail(
-            f"regenerated {GOLDEN_PATH.name}: review the diff and rerun without {REGEN_ENV}"
-        )
+        pytest.fail(f"{GOLDEN_PATH.name} is immutable; unset {REGEN_ENV}")
+    actual = record(name)
     golden = _golden()
     assert name in golden, f"no golden entry for {name}"
     expected = normalize_reference(name, golden[name])
