@@ -1,0 +1,4464 @@
+{
+ "$dict": [
+  [
+   "cases",
+   {
+    "$dict": [
+     [
+      "unsupported_key",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "base_config keys ['vol_target'] are not supported by the engine (vol-target sizing is not ported); legacy lab/simulate.py applied them, so ignoring them would change the result. Pass per-bar sizes through run_signals(size=...) instead."
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "bad_order_sequence",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "order_sequence must be 'default' or 'auto'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "bad_stop_exit_price",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_exit_price must be 'stoplimit' or 'stopmarket'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "bad_stop_entry_price",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_entry_price must be 'close' or 'fillprice'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "shape_mismatch_entries",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "entries must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_unsupported_key_over_order_sequence",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "base_config keys ['vol_target'] are not supported by the engine (vol-target sizing is not ported); legacy lab/simulate.py applied them, so ignoring them would change the result. Pass per-bar sizes through run_signals(size=...) instead."
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_order_sequence_over_stop_exit_price",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "order_sequence must be 'default' or 'auto'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_stop_exit_price_over_stop_entry_price",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_exit_price must be 'stoplimit' or 'stopmarket'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_stop_entry_price_over_shapes",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_entry_price must be 'close' or 'fillprice'"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_entries_shape_over_exits_shape",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "entries must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_shapes_over_halt_mask",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "entries must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_halt_bad_frame_over_missing_symbol",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_halt_mask_over_intraday_config",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_td_stop_over_atr_without_trailing",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "td_stop is unreliable and cannot be combined with intraday stops"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_atr_without_trailing_over_no_price_stop",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "ATR stops are not supported with intraday stop prices"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_trailing_over_target_both_invalid",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_trailing_over_target_both_invalid_text_inf",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_invalid_target_over_missing_high_low",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid tp_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_missing_high_low_over_stop_columns_mismatch",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_open requires high and low"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_intraday_config_over_time_stop_limit",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "td_stop is unreliable and cannot be combined with intraday stops"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_time_stop_limit_over_atr_arguments",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "n must be a non-negative int, got -1"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "UserWarning"
+            ],
+            [
+             "message",
+             "td_stop is based on entry signals, not filled positions; an earlier entry signal can close a later trade early, prevent an entry, or cause a hold beyond the limit."
+            ],
+            [
+             "from_caller",
+             true
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_atr_shapes_over_size_shape",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "high must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_stop_bars_invalid_price_over_entry_on_missing_bar",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop prices must be finite and positive at 2024-01-02 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_stop_bars_entry_on_missing_bar_over_invalid_ohlc",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "entry requested on a missing price bar"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_intraday_chunk_check_over_halt_overlap",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid OHLC prices at 2024-01-04 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "precedence_halt_overlap_in_chunk_two_over_gap_in_chunk_one",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-03 00:00:00, B"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_not_a_frame",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_index_mismatch",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_duplicate_columns",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_nan_state",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_int_dtype",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must have matching dates and known boolean states"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_grid_aligned_no_overlap",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                1,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_compact_multiindex_no_overlap",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "first",
+               "second"
+              ],
+              "dtypes": [
+               "float64",
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0,
+                10000.0
+               ],
+               [
+                10000.0,
+                10000.0
+               ],
+               [
+                10000.0,
+                10000.0
+               ],
+               [
+                10000.0,
+                10000.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "first",
+               "second"
+              ],
+              "dtypes": [
+               "float64",
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0,
+                0.0
+               ],
+               [
+                0.0,
+                0.0
+               ],
+               [
+                0.0,
+                0.0
+               ],
+               [
+                0.0,
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0,
+               1
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "first",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                1,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                0
+               ],
+               [
+                1,
+                1,
+                "second",
+                "B",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                1,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                1
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "first",
+               "second"
+              ],
+              "values": [
+               1,
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_missing_symbol",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must cover every symbol"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_mask_columns_differ_flat_close",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt_mask must match close columns"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_overlap_on_entry_bar",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-02 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_overlap_on_exit_bar",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-04 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_overlap_in_second_chunk",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-03 00:00:00, ('second', 'B')"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "two_halted_positions_first_by_column",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-05 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_flagged_but_flat",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                1,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "all_false_halt_mask_equals_none",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "pair"
+        ],
+        [
+         "equal",
+         true
+        ],
+        [
+         "first",
+         {
+          "$dict": [
+           [
+            "outcome",
+            "result"
+           ],
+           [
+            "result",
+            {
+             "$dict": [
+              [
+               "engine",
+               "rust"
+              ],
+              [
+               "n_chunks",
+               1
+              ],
+              [
+               "value",
+               {
+                "$frame": {
+                 "columns": [
+                  "all"
+                 ],
+                 "dtypes": [
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "returns",
+               {
+                "$frame": {
+                 "columns": [
+                  "all"
+                 ],
+                 "dtypes": [
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "trades",
+               {
+                "$frame": {
+                 "columns": [
+                  "id",
+                  "col",
+                  "group",
+                  "symbol",
+                  "size",
+                  "entry_idx",
+                  "entry_price",
+                  "entry_fees",
+                  "exit_idx",
+                  "exit_price",
+                  "exit_fees",
+                  "pnl",
+                  "return",
+                  "direction",
+                  "status",
+                  "parent_id"
+                 ],
+                 "dtypes": [
+                  "int64",
+                  "int64",
+                  "object",
+                  "object",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "int64",
+                  "int64"
+                 ],
+                 "index": [
+                  0
+                 ],
+                 "rows": [
+                  [
+                   0,
+                   0,
+                   "all",
+                   "A",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   100.0,
+                   0.0,
+                   0.0,
+                   0.0,
+                   0,
+                   1,
+                   0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "n_trades",
+               {
+                "$series": {
+                 "name": null,
+                 "dtype": "int64",
+                 "index": [
+                  "all"
+                 ],
+                 "values": [
+                  1
+                 ]
+                }
+               }
+              ]
+             ]
+            }
+           ],
+           [
+            "warnings",
+            []
+           ]
+          ]
+         }
+        ],
+        [
+         "second",
+         {
+          "$dict": [
+           [
+            "outcome",
+            "result"
+           ],
+           [
+            "result",
+            {
+             "$dict": [
+              [
+               "engine",
+               "rust"
+              ],
+              [
+               "n_chunks",
+               1
+              ],
+              [
+               "value",
+               {
+                "$frame": {
+                 "columns": [
+                  "all"
+                 ],
+                 "dtypes": [
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ],
+                  [
+                   10000.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "returns",
+               {
+                "$frame": {
+                 "columns": [
+                  "all"
+                 ],
+                 "dtypes": [
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ],
+                  [
+                   0.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "trades",
+               {
+                "$frame": {
+                 "columns": [
+                  "id",
+                  "col",
+                  "group",
+                  "symbol",
+                  "size",
+                  "entry_idx",
+                  "entry_price",
+                  "entry_fees",
+                  "exit_idx",
+                  "exit_price",
+                  "exit_fees",
+                  "pnl",
+                  "return",
+                  "direction",
+                  "status",
+                  "parent_id"
+                 ],
+                 "dtypes": [
+                  "int64",
+                  "int64",
+                  "object",
+                  "object",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "int64",
+                  "int64"
+                 ],
+                 "index": [
+                  0
+                 ],
+                 "rows": [
+                  [
+                   0,
+                   0,
+                   "all",
+                   "A",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   100.0,
+                   0.0,
+                   0.0,
+                   0.0,
+                   0,
+                   1,
+                   0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "n_trades",
+               {
+                "$series": {
+                 "name": null,
+                 "dtype": "int64",
+                 "index": [
+                  "all"
+                 ],
+                 "values": [
+                  1
+                 ]
+                }
+               }
+              ]
+             ]
+            }
+           ],
+           [
+            "warnings",
+            []
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_with_time_stop",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "td_stop is unreliable and cannot be combined with intraday stops"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_atr_without_trailing_stop",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "ATR stops are not supported with intraday stop prices"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_without_any_price_stop",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "intraday stop prices require a configured price stop"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_trailing_fraction_nan",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_trailing_fraction_zero",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_trailing_fraction_one",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_trailing_fraction_text",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid ts_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_target_fraction_zero",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid tp_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_target_fraction_negative",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid tp_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_target_fraction_inf",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid tp_stop: expected a finite positive fraction"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_missing_high_low",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop_open requires high and low"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_stop_columns_mismatch_flat_close",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop prices must have the same index and columns as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_frame_index_mismatch",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop prices must have the same index and columns as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_compact_prices_multiindex",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "first",
+               "second"
+              ],
+              "dtypes": [
+               "float64",
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                9995.049504950495,
+                9995.049504950495
+               ],
+               [
+                9941.089108910892,
+                9995.049504950495
+               ],
+               [
+                9941.089108910892,
+                9995.049504950495
+               ],
+               [
+                9941.089108910892,
+                9995.049504950495
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "first",
+               "second"
+              ],
+              "dtypes": [
+               "float64",
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0,
+                0.0
+               ],
+               [
+                -0.005398712233779079,
+                0.0
+               ],
+               [
+                0.0,
+                0.0
+               ],
+               [
+                0.0,
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0,
+               1
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "first",
+                "A",
+                4.9504950495049505,
+                0,
+                101.0,
+                0.0,
+                1,
+                89.1,
+                0.0,
+                -58.91089108910893,
+                -0.11782178217821786,
+                0,
+                1,
+                0
+               ],
+               [
+                1,
+                1,
+                "second",
+                "B",
+                4.9504950495049505,
+                0,
+                101.0,
+                0.0,
+                3,
+                100.0,
+                0.0,
+                -4.95049504950498,
+                -0.00990099009900996,
+                0,
+                0,
+                1
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "first",
+               "second"
+              ],
+              "values": [
+               1,
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_compact_prices_missing_symbol",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "stop prices must have the same index and columns as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_gap_in_second_chunk",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "missing price bar during an open position at 2024-01-03 00:00:00, B"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_entry_on_missing_bar",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "entry requested on a missing price bar"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_invalid_ohlc",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "invalid OHLC prices at 2024-01-03 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_trailing_stop_result",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10020.0
+               ],
+               [
+                10016.0
+               ],
+               [
+                10016.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0020000000000000018
+               ],
+               [
+                -0.0003992015968063978
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                2,
+                108.0,
+                0.0,
+                16.0,
+                0.08,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_take_profit_only_result",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10020.0
+               ],
+               [
+                10020.0
+               ],
+               [
+                10020.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0020000000000000018
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                1,
+                110.00000000000001,
+                0.0,
+                20.00000000000003,
+                0.10000000000000014,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "intraday_chunked_equals_unchunked",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "pair"
+        ],
+        [
+         "equal",
+         true
+        ],
+        [
+         "first",
+         {
+          "$dict": [
+           [
+            "outcome",
+            "result"
+           ],
+           [
+            "result",
+            {
+             "$dict": [
+              [
+               "engine",
+               "rust"
+              ],
+              [
+               "n_chunks",
+               1
+              ],
+              [
+               "value",
+               {
+                "$frame": {
+                 "columns": [
+                  "a",
+                  "b"
+                 ],
+                 "dtypes": [
+                  "float64",
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   10000.0,
+                   10000.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "returns",
+               {
+                "$frame": {
+                 "columns": [
+                  "a",
+                  "b"
+                 ],
+                 "dtypes": [
+                  "float64",
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   0.0,
+                   0.0
+                  ],
+                  [
+                   -0.0020000000000000018,
+                   -0.0020000000000000018
+                  ],
+                  [
+                   0.0,
+                   0.0
+                  ],
+                  [
+                   0.0,
+                   0.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "trades",
+               {
+                "$frame": {
+                 "columns": [
+                  "id",
+                  "col",
+                  "group",
+                  "symbol",
+                  "size",
+                  "entry_idx",
+                  "entry_price",
+                  "entry_fees",
+                  "exit_idx",
+                  "exit_price",
+                  "exit_fees",
+                  "pnl",
+                  "return",
+                  "direction",
+                  "status",
+                  "parent_id"
+                 ],
+                 "dtypes": [
+                  "int64",
+                  "int64",
+                  "object",
+                  "object",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "int64",
+                  "int64"
+                 ],
+                 "index": [
+                  0,
+                  1
+                 ],
+                 "rows": [
+                  [
+                   0,
+                   0,
+                   "a",
+                   "A",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   90.0,
+                   0.0,
+                   -20.0,
+                   -0.1,
+                   0,
+                   1,
+                   0
+                  ],
+                  [
+                   1,
+                   1,
+                   "b",
+                   "B",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   90.0,
+                   0.0,
+                   -20.0,
+                   -0.1,
+                   0,
+                   1,
+                   1
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "n_trades",
+               {
+                "$series": {
+                 "name": null,
+                 "dtype": "int64",
+                 "index": [
+                  "a",
+                  "b"
+                 ],
+                 "values": [
+                  1,
+                  1
+                 ]
+                }
+               }
+              ]
+             ]
+            }
+           ],
+           [
+            "warnings",
+            []
+           ]
+          ]
+         }
+        ],
+        [
+         "second",
+         {
+          "$dict": [
+           [
+            "outcome",
+            "result"
+           ],
+           [
+            "result",
+            {
+             "$dict": [
+              [
+               "engine",
+               "rust"
+              ],
+              [
+               "n_chunks",
+               2
+              ],
+              [
+               "value",
+               {
+                "$frame": {
+                 "columns": [
+                  "a",
+                  "b"
+                 ],
+                 "dtypes": [
+                  "float64",
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   10000.0,
+                   10000.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ],
+                  [
+                   9980.0,
+                   9980.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "returns",
+               {
+                "$frame": {
+                 "columns": [
+                  "a",
+                  "b"
+                 ],
+                 "dtypes": [
+                  "float64",
+                  "float64"
+                 ],
+                 "index": [
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-02T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-03T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-04T00:00:00"
+                  },
+                  {
+                   "$type": "pandas.Timestamp",
+                   "v": "2024-01-05T00:00:00"
+                  }
+                 ],
+                 "rows": [
+                  [
+                   0.0,
+                   0.0
+                  ],
+                  [
+                   -0.0020000000000000018,
+                   -0.0020000000000000018
+                  ],
+                  [
+                   0.0,
+                   0.0
+                  ],
+                  [
+                   0.0,
+                   0.0
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "trades",
+               {
+                "$frame": {
+                 "columns": [
+                  "id",
+                  "col",
+                  "group",
+                  "symbol",
+                  "size",
+                  "entry_idx",
+                  "entry_price",
+                  "entry_fees",
+                  "exit_idx",
+                  "exit_price",
+                  "exit_fees",
+                  "pnl",
+                  "return",
+                  "direction",
+                  "status",
+                  "parent_id"
+                 ],
+                 "dtypes": [
+                  "int64",
+                  "int64",
+                  "object",
+                  "object",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "float64",
+                  "int64",
+                  "int64",
+                  "int64"
+                 ],
+                 "index": [
+                  0,
+                  1
+                 ],
+                 "rows": [
+                  [
+                   0,
+                   0,
+                   "a",
+                   "A",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   90.0,
+                   0.0,
+                   -20.0,
+                   -0.1,
+                   0,
+                   1,
+                   0
+                  ],
+                  [
+                   1,
+                   1,
+                   "b",
+                   "B",
+                   2.0,
+                   0,
+                   100.0,
+                   0.0,
+                   1,
+                   90.0,
+                   0.0,
+                   -20.0,
+                   -0.1,
+                   0,
+                   1,
+                   1
+                  ]
+                 ]
+                }
+               }
+              ],
+              [
+               "n_trades",
+               {
+                "$series": {
+                 "name": null,
+                 "dtype": "int64",
+                 "index": [
+                  "a",
+                  "b"
+                 ],
+                 "values": [
+                  1,
+                  1
+                 ]
+                }
+               }
+              ]
+             ]
+            }
+           ],
+           [
+            "warnings",
+            [
+             {
+              "$dict": [
+               [
+                "category",
+                "ResourceWarning"
+               ],
+               [
+                "message",
+                "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+               ],
+               [
+                "from_caller",
+                false
+               ]
+              ]
+             },
+             {
+              "$dict": [
+               [
+                "category",
+                "ResourceWarning"
+               ],
+               [
+                "message",
+                "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+               ],
+               [
+                "from_caller",
+                false
+               ]
+              ]
+             }
+            ]
+           ]
+          ]
+         }
+        ]
+       ]
+      }
+     ],
+     [
+      "halt_and_gap_both_overlap",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-04 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "gap_only_overlap",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "missing price bar during an open position at 2024-01-05 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "time_stop_result",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                2,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "UserWarning"
+            ],
+            [
+             "message",
+             "td_stop is based on entry signals, not filled positions; an earlier entry signal can close a later trade early, prevent an entry, or cause a hold beyond the limit."
+            ],
+            [
+             "from_caller",
+             true
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "plain_result",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "result"
+        ],
+        [
+         "result",
+         {
+          "$dict": [
+           [
+            "engine",
+            "rust"
+           ],
+           [
+            "n_chunks",
+            1
+           ],
+           [
+            "value",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ],
+               [
+                10000.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "returns",
+            {
+             "$frame": {
+              "columns": [
+               "all"
+              ],
+              "dtypes": [
+               "float64"
+              ],
+              "index": [
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-02T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-03T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-04T00:00:00"
+               },
+               {
+                "$type": "pandas.Timestamp",
+                "v": "2024-01-05T00:00:00"
+               }
+              ],
+              "rows": [
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ],
+               [
+                0.0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "trades",
+            {
+             "$frame": {
+              "columns": [
+               "id",
+               "col",
+               "group",
+               "symbol",
+               "size",
+               "entry_idx",
+               "entry_price",
+               "entry_fees",
+               "exit_idx",
+               "exit_price",
+               "exit_fees",
+               "pnl",
+               "return",
+               "direction",
+               "status",
+               "parent_id"
+              ],
+              "dtypes": [
+               "int64",
+               "int64",
+               "object",
+               "object",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "int64",
+               "float64",
+               "float64",
+               "float64",
+               "float64",
+               "int64",
+               "int64",
+               "int64"
+              ],
+              "index": [
+               0
+              ],
+              "rows": [
+               [
+                0,
+                0,
+                "all",
+                "A",
+                2.0,
+                0,
+                100.0,
+                0.0,
+                2,
+                100.0,
+                0.0,
+                0.0,
+                0.0,
+                0,
+                1,
+                0
+               ]
+              ]
+             }
+            }
+           ],
+           [
+            "n_trades",
+            {
+             "$series": {
+              "name": null,
+              "dtype": "int64",
+              "index": [
+               "all"
+              ],
+              "values": [
+               1
+              ]
+             }
+            }
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  ]
+ ]
+}
