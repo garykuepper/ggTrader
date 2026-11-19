@@ -304,28 +304,38 @@ def precedence_atr_shapes_over_size_shape() -> dict:
 
 @case
 def precedence_stop_bars_invalid_price_over_entry_on_missing_bar() -> dict:
-    close = _frame(A=[100.0, 100.0, NAN, 100.0])
+    # The entry on a wholly missing bar is earlier (bar 1) than the partial bar (bar 3), so the
+    # invalid-price message winning shows the code order, not the order of the dates. The loser
+    # alone is intraday_entry_on_missing_bar.
+    close = _frame(A=[100.0, NAN, 100.0, 100.0])
     low = close.copy()
-    low.iloc[0, 0] = NAN  # a partial bar: invalid, not missing
-    entries = _frame(A=[False, False, True, False])  # entry on the wholly missing bar 2
+    low.iloc[3, 0] = NAN  # a partial bar: invalid, not missing
+    entries = _frame(A=[False, True, False, False])  # entry on the wholly missing bar 1
     return _go(entries, close, _cfg(ts_stop=0.1), **_bars(close, low=low))
 
 
 @case
 def precedence_stop_bars_entry_on_missing_bar_over_invalid_ohlc() -> dict:
-    close = _frame(A=[100.0, NAN, 100.0, 100.0])
+    # The invalid OHLC is earlier (bar 1) than the entry on the missing bar (bar 3), so the
+    # missing-bar message winning shows the code order, not the order of the dates. The loser
+    # alone is intraday_invalid_ohlc.
+    close = _frame(A=[100.0, 100.0, 100.0, NAN])
     high = close.copy()
-    high.iloc[3, 0] = 90.0  # high below the close: invalid OHLC
-    entries = _frame(A=[False, True, False, False])
+    high.iloc[1, 0] = 90.0  # high below the close: invalid OHLC
+    entries = _frame(A=[False, False, False, True])
     return _go(entries, close, _cfg(ts_stop=0.1), **_bars(close, high=high))
 
 
 @case
 def precedence_intraday_chunk_check_over_halt_overlap() -> dict:
+    # The halted position is in chunk 1 (group a) and the invalid OHLC is in chunk 2 (group b).
+    # The chunk-2 validation runs while the simulation is still going, before any halt overlap
+    # is looked for, so the OHLC error wins although its chunk comes later. The loser alone is
+    # alone_halt_overlap_in_first_chunk.
     close = _two_flat()
     high = close.copy()
-    high.iloc[2, 0] = 90.0  # invalid OHLC in chunk 1 (group a)
-    halt = _frame(A=[False] * 4, B=[False, True, False, False])  # a halted position in chunk 2
+    high.iloc[2, 1] = 90.0  # invalid OHLC in chunk 2 (group b)
+    halt = _frame(A=[False, True, False, False], B=[False] * 4)  # a halted position in chunk 1
     return _go(
         _two_entries(),
         close,
@@ -350,6 +360,68 @@ def precedence_halt_overlap_in_chunk_two_over_gap_in_chunk_one() -> dict:
         max_bytes=1,
         **_bars(close),
     )
+
+
+# --- the losing input of a precedence case, alone -----------------------------------------
+# Each case keeps one invalid input that loses a precedence case above and drops the other,
+# so its message in the golden shows the loser really is invalid by itself (LOSER_ALONE maps
+# every precedence case to the case that shows its loser alone).
+
+
+@case
+def alone_exits_shape_mismatch() -> dict:
+    return _go(_entry0(), _close(), exits=_wrong_columns(_off(_entry0())))
+
+
+@case
+def alone_time_stop_limit_fractional() -> dict:
+    return _go(_entry0(), _close(), td_stop=1.9)
+
+
+@case
+def alone_atr_period_zero() -> dict:
+    close = _close()
+    return _go(_entry0(), close, _cfg(atr_mult=2.0, atr_period=0), high=close, low=close)
+
+
+@case
+def alone_size_shape_mismatch() -> dict:
+    close = _close()
+    return _go(_entry0(), close, size=_wrong_columns(close))
+
+
+@case
+def alone_halt_overlap_in_first_chunk() -> dict:
+    close = _two_flat()
+    halt = _frame(A=[False, True, False, False], B=[False] * 4)
+    return _go(
+        _two_entries(),
+        close,
+        _cfg(ts_stop=0.1),
+        halt_mask=halt,
+        groups=["a", "b"],
+        max_bytes=1,
+        **_bars(close),
+    )
+
+
+@case
+def alone_gap_overlap_in_first_chunk() -> dict:
+    close = _frame(A=[100.0, NAN, 100.0, 100.0], B=[100.0] * 4)
+    return _go(
+        _two_entries(),
+        close,
+        _cfg(ts_stop=0.1),
+        groups=["a", "b"],
+        max_bytes=1,
+        **_bars(close),
+    )
+
+
+@case
+def alone_gap_overlap_single_position() -> dict:
+    close = _frame(A=[100.0, NAN, 100.0, 100.0])
+    return _go(_entry0(), close, _cfg(ts_stop=0.1), **_bars(close))
 
 
 # --- halt mask -----------------------------------------------------------------------------
@@ -725,16 +797,35 @@ WHAT_THE_NAME_CLAIMS: dict[str, tuple[str, str]] = {
     "precedence_atr_shapes_over_size_shape": ("raises", "high must have the same index"),
     "precedence_stop_bars_invalid_price_over_entry_on_missing_bar": (
         "raises",
-        "stop prices must be finite and positive",
+        "stop prices must be finite and positive at 2024-01-05 00:00:00, A",
     ),
     "precedence_stop_bars_entry_on_missing_bar_over_invalid_ohlc": (
         "raises",
         "entry requested on a missing price bar",
     ),
-    "precedence_intraday_chunk_check_over_halt_overlap": ("raises", "invalid OHLC prices at"),
+    "precedence_intraday_chunk_check_over_halt_overlap": (
+        "raises",
+        "invalid OHLC prices at 2024-01-04 00:00:00, B",
+    ),
     "precedence_halt_overlap_in_chunk_two_over_gap_in_chunk_one": (
         "raises",
-        "halt during an open position at",
+        "halt during an open position at 2024-01-03 00:00:00, B",
+    ),
+    "alone_exits_shape_mismatch": ("raises", "exits must have the same index"),
+    "alone_time_stop_limit_fractional": ("raises", "n must be a non-negative int, got 1.9"),
+    "alone_atr_period_zero": ("raises", "atr_period must be >= 1, got 0"),
+    "alone_size_shape_mismatch": ("raises", "size must have the same index"),
+    "alone_halt_overlap_in_first_chunk": (
+        "raises",
+        "halt during an open position at 2024-01-03 00:00:00, A",
+    ),
+    "alone_gap_overlap_in_first_chunk": (
+        "raises",
+        "missing price bar during an open position at 2024-01-03 00:00:00, A",
+    ),
+    "alone_gap_overlap_single_position": (
+        "raises",
+        "missing price bar during an open position at 2024-01-03 00:00:00, A",
     ),
     "halt_mask_not_a_frame": ("raises", "known boolean states"),
     "halt_mask_index_mismatch": ("raises", "known boolean states"),
@@ -828,6 +919,40 @@ FROZEN_ORDERINGS: list[tuple[str, list[str]]] = [
         ],
     ),
 ]
+
+#: Each precedence case -> the case that shows its LOSING input alone. The loser's own message in
+#: the golden must differ from the precedence case's (winning) message, so the winner did not win
+#: merely because the loser was never invalid. The loser alone keeps the same fault; where the
+#: precedence case needed a second setting to reach the check (a valid stop beside an invalid
+#: target), the alone case uses a valid one.
+LOSER_ALONE: dict[str, str] = {
+    "precedence_unsupported_key_over_order_sequence": "bad_order_sequence",
+    "precedence_order_sequence_over_stop_exit_price": "bad_stop_exit_price",
+    "precedence_stop_exit_price_over_stop_entry_price": "bad_stop_entry_price",
+    "precedence_stop_entry_price_over_shapes": "shape_mismatch_entries",
+    "precedence_entries_shape_over_exits_shape": "alone_exits_shape_mismatch",
+    "precedence_shapes_over_halt_mask": "halt_mask_not_a_frame",
+    "precedence_halt_bad_frame_over_missing_symbol": "halt_mask_missing_symbol",
+    "precedence_halt_mask_over_intraday_config": "intraday_with_time_stop",
+    "precedence_td_stop_over_atr_without_trailing": "intraday_atr_without_trailing_stop",
+    "precedence_atr_without_trailing_over_no_price_stop": "intraday_without_any_price_stop",
+    "precedence_trailing_over_target_both_invalid": "intraday_invalid_target_fraction_zero",
+    "precedence_trailing_over_target_both_invalid_text_inf": "intraday_invalid_target_fraction_inf",
+    "precedence_invalid_target_over_missing_high_low": "intraday_missing_high_low",
+    "precedence_missing_high_low_over_stop_columns_mismatch": (
+        "intraday_stop_columns_mismatch_flat_close"
+    ),
+    "precedence_intraday_config_over_time_stop_limit": "alone_time_stop_limit_fractional",
+    "precedence_time_stop_limit_over_atr_arguments": "alone_atr_period_zero",
+    "precedence_atr_shapes_over_size_shape": "alone_size_shape_mismatch",
+    "precedence_stop_bars_invalid_price_over_entry_on_missing_bar": "intraday_entry_on_missing_bar",
+    "precedence_stop_bars_entry_on_missing_bar_over_invalid_ohlc": "intraday_invalid_ohlc",
+    "precedence_intraday_chunk_check_over_halt_overlap": "alone_halt_overlap_in_first_chunk",
+    "precedence_halt_overlap_in_chunk_two_over_gap_in_chunk_one": (
+        "alone_gap_overlap_in_first_chunk"
+    ),
+    "halt_and_gap_both_overlap": "alone_gap_overlap_single_position",
+}
 
 SIGNATURE: list[tuple[str, str, Any]] = [
     ("entries", "POSITIONAL_OR_KEYWORD", inspect.Parameter.empty),
@@ -955,6 +1080,24 @@ def test_every_frozen_ordering_has_a_case() -> None:
             assert _entries(golden[name])["outcome"] == "raises", (
                 f"{ordering}: {name} does not raise"
             )
+
+
+def _error_message(golden: dict[str, Any], name: str) -> str:
+    record = _entries(golden[name])
+    assert record["outcome"] == "raises", name
+    return _entries(record["error"])["message"]
+
+
+def test_every_precedence_case_has_its_losing_input_alone() -> None:
+    """The loser of each precedence case raises its own, different, message when alone."""
+    golden = _golden_cases()
+    precedence = [name for name in CASES if name.startswith("precedence_")]
+    covered = {name for name in LOSER_ALONE if name.startswith("precedence_")}
+    assert covered == set(precedence)
+    for winner, loser in LOSER_ALONE.items():
+        assert winner in CASES and loser in CASES, (winner, loser)
+        winning, losing = _error_message(golden, winner), _error_message(golden, loser)
+        assert losing != winning, f"{loser} alone raises the same message as {winner}"
 
 
 def test_run_signals_signature_is_frozen() -> None:

@@ -199,6 +199,11 @@ def _toy_run(
 
 
 INSIDE_TRAIN = (330, 400, 480)
+#: Two delays on which zero thresholds change the deployed combination in fold 2: the winner
+#: (delay 400) passes both gates only when they are open, and the default run falls back to the
+#: anchor (delay 330). Three delays never show this (the neighborhood variance cap or a
+#: negative peak Sharpe still blocks the winner).
+OPEN_GATES_DELAYS = (330, 400)
 
 
 @scenario
@@ -213,7 +218,7 @@ def toy_entries_inside_train() -> dict:
 
 @scenario
 def toy_open_gates() -> dict:
-    return _toy_run(INSIDE_TRAIN, ndh_threshold=0.0, dsr_threshold=0.0)
+    return _toy_run(OPEN_GATES_DELAYS, ndh_threshold=0.0, dsr_threshold=0.0)
 
 
 @scenario
@@ -223,16 +228,40 @@ def toy_never_trades() -> dict:
 
 @scenario
 def toy_policy_exclude() -> dict:
+    """The run-level policy on a run it does not change.
+
+    Every combination here has a finite WFE and no anchor fold feeds the breaker, so the
+    exclusion rules have nothing to exclude and the record equals ``toy_entries_inside_train``
+    (``_claim_policy_exclude`` asserts the equality). That the policy changes a verdict is pinned
+    by the two ``scripted_chronic_decay_*`` scenarios, and that it reaches the breaker by
+    ``test_policy_forwards_nan_exclusion_to_breaker``.
+    """
     policy = WfoPolicy(nan_wfe="exclude", anchor_fold_wfe="exclude_from_breaker")
     return _toy_run(INSIDE_TRAIN, policy=policy)
 
 
+INTRADAY_BASE = {**h.TOY_CONFIG, "ts_stop": 0.1, "stop_entry_price": "fillprice"}
+#: A halt on a bar before the earliest entry (delay 330): no position is open, so nothing refuses.
+FLAT_HALT_BAR = 1
+
+
+def _toy_halt_mask(*bars_halted: int) -> pd.DataFrame:
+    """The toy grid's halt mask, true on the given bar positions only."""
+    close = h.toy_bars().close
+    mask = pd.DataFrame(False, index=close.index, columns=close.columns)
+    for bar in bars_halted:
+        mask.iloc[bar] = True
+    return mask
+
+
 @scenario
 def toy_intraday_halt_mask() -> dict:
-    bars = h.toy_bars()
-    halt_mask = pd.DataFrame(False, index=bars.close.index, columns=bars.close.columns)
-    base = {**h.TOY_CONFIG, "ts_stop": 0.1, "stop_entry_price": "fillprice"}
-    return _toy_run(base=base, intraday_stops=True, halt_mask=halt_mask)
+    return _toy_run(
+        INSIDE_TRAIN,
+        base=INTRADAY_BASE,
+        intraday_stops=True,
+        halt_mask=_toy_halt_mask(FLAT_HALT_BAR),
+    )
 
 
 @scenario
@@ -723,8 +752,13 @@ def _claim_entries_inside_train(record: dict[str, Any]) -> None:
 
 
 def _claim_open_gates(record: dict[str, Any]) -> None:
-    first = _rows_of(record)[0]
+    # fold 2's winner (delay 400) is deployed because the gates are open; the same grid under the
+    # default thresholds refuses it (test_open_gates_change_the_deployed_combination)
+    first, second = _rows_of(record)[:2]
     assert first["gates_passed"] is True and first["used_anchor"] is False
+    assert second["gates_passed"] is True and second["used_anchor"] is False
+    assert second["deployed_combo"] == second["winner_combo"] == "toy__delay400"
+    assert second["ndh_density"] == 0.0 and second["dsr_value"] < 0.8
 
 
 def _claim_never_trades(record: dict[str, Any]) -> None:
@@ -734,13 +768,28 @@ def _claim_never_trades(record: dict[str, Any]) -> None:
 
 def _claim_policy_exclude(record: dict[str, Any]) -> None:
     assert any(row["used_anchor"] for row in _rows_of(record))
+    # the policy is a no-op on this input: the whole record equals the default-policy run's
+    golden = _golden_scenarios()
+    this = _entries(golden["toy_policy_exclude"])
+    default = _entries(golden["toy_entries_inside_train"])
+    for key in ("fold_results", "skipped_folds", "live_params", "table", "oos_equity", "stdout"):
+        assert this[key] == default[key], key
 
 
 def _claim_intraday(record: dict[str, Any]) -> None:
+    # The halt mask here flags a flat bar, so it refuses nothing; that a halt on an open position
+    # refuses is test_halt_on_an_open_position_refuses_through_run_wfo. What this record shows
+    # is the intraday trailing stop acting: the stopped positions leave the out-of-sample curve
+    # flat, where the stop-less run on the same grid loses 28.7%.
     diagnostics = record["diagnostics"]
     assert diagnostics["intraday_stops"] is True
     assert diagnostics["halt_mask_supplied"] is True
     assert diagnostics["stop_entry_price"] == "fillprice"
+    assert diagnostics["stop_settings"]["trailing_fraction"] == 0.1
+    assert diagnostics["oos_metrics"]["total_return_pct"] == 0.0
+    stopless = _record_of("toy_entries_inside_train")["diagnostics"]["oos_metrics"]
+    assert stopless["total_return_pct"] < -25.0
+    assert any(row["winner_trades_whole_simulation"] >= 1 for row in _rows_of(record))
 
 
 def _claim_verbose(record: dict[str, Any]) -> None:
@@ -764,6 +813,40 @@ def _claim_skipped(record: dict[str, Any]) -> None:
     assert record["diagnostics"]["n_folds"] == 4
     fallback = record["table"].split("Anchor Set (Defensive Fallback)", 1)[1]
     assert inputs.combo_name("toy", {"delay": 150}) in fallback
+
+
+def test_open_gates_change_the_deployed_combination() -> None:
+    """Zero thresholds deploy fold 2's winner; the default thresholds fall back to the anchor."""
+    default = _toy_run(OPEN_GATES_DELAYS)["fold_results"][1]
+    open_ = _toy_run(OPEN_GATES_DELAYS, ndh_threshold=0.0, dsr_threshold=0.0)["fold_results"][1]
+    assert default["winner_combo"] == open_["winner_combo"] == "toy__delay400"
+    assert default["gates_passed"] is False and open_["gates_passed"] is True
+    assert default["used_anchor"] is True and open_["used_anchor"] is False
+    assert default["deployed_combo"] == "toy__delay330"
+    assert open_["deployed_combo"] == "toy__delay400"
+
+
+def test_a_halt_flag_changes_the_mask_hash_but_not_a_flat_run() -> None:
+    """A flagged flat bar is a different mask from an all-false one but refuses nothing."""
+    flagged = SCENARIOS["toy_intraday_halt_mask"]()
+    all_false = _toy_run(
+        INSIDE_TRAIN, base=INTRADAY_BASE, intraday_stops=True, halt_mask=_toy_halt_mask()
+    )
+    assert (
+        flagged["diagnostics"]["halt_mask_sha256"] != all_false["diagnostics"]["halt_mask_sha256"]
+    )
+    assert dumps(encode(flagged["fold_results"])) == dumps(encode(all_false["fold_results"]))
+
+
+def test_halt_on_an_open_position_refuses_through_run_wfo() -> None:
+    """The engine's halt refusal is not swallowed: a halt inside the delay-330 trade raises."""
+    with pytest.raises(ValueError, match="halt during an open position at 2020-09-11"):
+        _toy_run(
+            INSIDE_TRAIN,
+            base=INTRADAY_BASE,
+            intraday_stops=True,
+            halt_mask=_toy_halt_mask(400),
+        )
 
 
 def test_policy_forwards_nan_exclusion_to_breaker(monkeypatch: pytest.MonkeyPatch) -> None:

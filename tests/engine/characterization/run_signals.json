@@ -699,7 +699,7 @@
            ],
            [
             "message",
-            "stop prices must be finite and positive at 2024-01-02 00:00:00, A"
+            "stop prices must be finite and positive at 2024-01-05 00:00:00, A"
            ]
           ]
          }
@@ -759,7 +759,7 @@
            ],
            [
             "message",
-            "invalid OHLC prices at 2024-01-04 00:00:00, A"
+            "invalid OHLC prices at 2024-01-04 00:00:00, B"
            ]
           ]
          }
@@ -863,6 +863,299 @@
            ]
           }
          ]
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_exits_shape_mismatch",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "exits must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_time_stop_limit_fractional",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "n must be a non-negative int, got 1.9"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "UserWarning"
+            ],
+            [
+             "message",
+             "td_stop is based on entry signals, not filled positions; an earlier entry signal can close a later trade early, prevent an entry, or cause a hold beyond the limit."
+            ],
+            [
+             "from_caller",
+             true
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_atr_period_zero",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "atr_period must be >= 1, got 0"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_size_shape_mismatch",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "size must have the same index, columns and shape as close"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_halt_overlap_in_first_chunk",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "halt during an open position at 2024-01-03 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_gap_overlap_in_first_chunk",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "missing price bar during an open position at 2024-01-03 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         [
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          },
+          {
+           "$dict": [
+            [
+             "category",
+             "ResourceWarning"
+            ],
+            [
+             "message",
+             "one group of 1 columns is estimated above max_bytes=1; it cannot be split because its columns share one cash pool"
+            ],
+            [
+             "from_caller",
+             false
+            ]
+           ]
+          }
+         ]
+        ]
+       ]
+      }
+     ],
+     [
+      "alone_gap_overlap_single_position",
+      {
+       "$dict": [
+        [
+         "outcome",
+         "raises"
+        ],
+        [
+         "error",
+         {
+          "$dict": [
+           [
+            "type",
+            "ValueError"
+           ],
+           [
+            "message",
+            "missing price bar during an open position at 2024-01-03 00:00:00, A"
+           ]
+          ]
+         }
+        ],
+        [
+         "warnings",
+         []
         ]
        ]
       }
