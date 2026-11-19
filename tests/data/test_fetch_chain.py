@@ -16,7 +16,7 @@ from ggTrader.data.live import fetch_chain
 from ggTrader.data.live.fetch_chain import GapFiller, OhlcvFetchChain, fetch_stock_ohlcv
 from tests.netguard import blocked_connections
 
-A, B, C = "ZZTEST1", "ZZTEST2", "ZZTEST3"
+A, B, C, D = "ZZTEST1", "ZZTEST2", "ZZTEST3", "ZZTEST4"
 START, END = "2024-01-01", "2024-01-03"
 START_TS, END_TS = pd.Timestamp(START, tz="UTC"), pd.Timestamp(END, tz="UTC")
 
@@ -685,3 +685,139 @@ def test_fetch_stock_ohlcv_passes_min_coverage_and_interval(default_seams, capsy
     result = fetch_stock_ohlcv([B, A], START, END, interval="1d", min_coverage=0.5)
     assert symbols_of(result) == [A, B]
     assert lines(capsys) == [SUMMARY.format(rows=2, n=2)]
+
+
+def test_facade_forwards_nondefault_interval_open_end_coverage_and_negative_cache(
+    default_seams, capsys
+):
+    s = default_seams
+    sparse = frame([A, B], [START, END])
+    sparse[(B, "close")] = [1.0, float("nan")]
+    s.cache.fetch_ohlcv.return_value = sparse
+    neg = Mock()
+    neg.load_skip.return_value = set()
+    result = fetch_stock_ohlcv([B, A], START, interval="1wk", min_coverage=0.75, negative_cache=neg)
+    kwargs = {"start_date": START_TS, "end_date": None, "limit": None}
+    assert s.cache.fetch_ohlcv.call_args_list == [(([A, B], "1wk"), kwargs)]
+    neg.load_skip.assert_called_once_with("1wk")
+    neg.record.assert_not_called()
+    assert symbols_of(result) == [A]
+    assert lines(capsys) == ["  [data] 2 rows x 1 symbols (1wk)"]
+
+
+def test_default_chain_imports_yfinance_after_negative_cache_before_the_cache(
+    default_seams, monkeypatch, capsys
+):
+    import ggTrader.data.live as live_package
+
+    # `from package import module` finds an already-set attribute first, so clear it too.
+    monkeypatch.delattr(live_package, "yfinance_loader", raising=False)
+    monkeypatch.setitem(sys.modules, "ggTrader.data.live.yfinance_loader", None)
+    neg = Mock()
+    neg.load_skip.return_value = {C}
+    with pytest.raises(ImportError):
+        fetch_stock_ohlcv([B, A], START, END, negative_cache=neg)
+    default_seams.cache_cls.assert_not_called()
+    default_seams.yf_cls.assert_not_called()
+    neg.record.assert_not_called()
+    assert lines(capsys) == ["  [data] negative cache: skipping 1 known no-data symbols"]
+
+
+def test_default_chain_without_db_cache_still_imports_yfinance_first(default_seams, monkeypatch):
+    import ggTrader.data.live as live_package
+
+    monkeypatch.delattr(live_package, "yfinance_loader", raising=False)
+    monkeypatch.setitem(sys.modules, "ggTrader.data.live.yfinance_loader", None)
+    with pytest.raises(ImportError):
+        fetch_stock_ohlcv([B, A], START, END, use_db_cache=False)
+    default_seams.yf_cls.assert_not_called()
+
+
+# ---- review fixes: merge-before-sort, symbol sets once per stage, both gaps filled -----------
+
+
+def test_tiingo_sort_failure_keeps_the_merged_bars_and_records_no_false_dead_symbol(
+    rig, capsys, monkeypatch
+):
+    rig.cache.fetch_ohlcv.return_value = frame([A], [START])
+    rig.tiingo.fetch_ohlcv.return_value = frame([B], [END])
+
+    def broken_sort(self, *args, **kwargs):
+        raise RuntimeError("sort failed")
+
+    monkeypatch.setattr(pd.DataFrame, "sort_index", broken_sort)
+    result = fetch(rig, symbols=(C, B, A), negative=True)
+    assert symbols_of(result) == [A, B]  # B was concatenated before the sort raised
+    rig.neg.record.assert_called_once_with([C], "1d")  # not B: it was supplied
+    assert lines(capsys) == [
+        "  [data] fetching 2 symbols missing from cache...",
+        "  [data] trying Tiingo for 2 symbols yfinance missed...",
+        "  [data] Tiingo fallback unavailable: RuntimeError('sort failed')",
+        "  [data] negative cache: recorded 1 no-data symbols",
+        SUMMARY.format(rows=2, n=2),
+    ]
+
+
+def test_yfinance_gap_sort_failure_propagates(rig, monkeypatch):
+    rig.cache.fetch_ohlcv.return_value = frame([A], [START])
+    rig.primary.fetch_ohlcv.return_value = frame([B], [END])
+
+    def broken_sort(self, *args, **kwargs):
+        raise RuntimeError("sort failed")
+
+    monkeypatch.setattr(pd.DataFrame, "sort_index", broken_sort)
+    with pytest.raises(RuntimeError, match="sort failed"):
+        fetch(rig)
+    rig.make_tiingo.assert_not_called()
+
+
+def test_both_gaps_supply_data_with_shrinking_requests_and_ordered_persistence(rig, capsys):
+    events: list[str] = []
+    cache_frame = frame([A], [START, END])
+    yf_extra, tiingo_extra = frame([B], [START, END]), frame([C], [START, END])
+    yf_extra[:] = 2.0
+    tiingo_extra[:] = 3.0
+    rig.cache.fetch_ohlcv.side_effect = lambda *a, **k: events.append("cache fetch") or cache_frame
+    rig.primary.fetch_ohlcv.side_effect = lambda *a, **k: events.append("yf fetch") or yf_extra
+    rig.tiingo.fetch_ohlcv.side_effect = lambda *a, **k: (
+        events.append("tiingo fetch") or tiingo_extra
+    )
+    rig.cache.persist.side_effect = lambda df, interval: events.append(f"persist {symbols_of(df)}")
+    rig.neg.record.side_effect = lambda syms, interval: events.append(f"record {syms}")
+    result = fetch(rig, symbols=(D, C, B, A), negative=True)
+    assert rig.primary.fetch_ohlcv.call_args_list == [request([B, C, D])]
+    assert rig.tiingo.fetch_ohlcv.call_args_list == [request([C, D])]
+    assert events == [
+        "cache fetch",
+        "yf fetch",
+        f"persist {[B]}",
+        "tiingo fetch",
+        f"persist {[C]}",
+        f"record {[D]}",
+    ]
+    assert symbols_of(result) == [A, B, C]
+    assert (result[A]["close"] == 1.0).all()
+    assert (result[B]["close"] == 2.0).all()
+    assert (result[C]["close"] == 3.0).all()
+    assert lines(capsys) == [
+        "  [data] fetching 3 symbols missing from cache...",
+        "  [data] trying Tiingo for 2 symbols yfinance missed...",
+        "  [data] negative cache: recorded 1 no-data symbols",
+        SUMMARY.format(rows=2, n=3),
+    ]
+
+
+def test_symbol_set_is_computed_once_per_stage_not_once_per_ticker(rig, monkeypatch):
+    calls: list[int] = []
+    real = fetch_chain._symbols
+
+    def counting(df):
+        calls.append(1)
+        return real(df)
+
+    monkeypatch.setattr(fetch_chain, "_symbols", counting)
+    rig.cache.fetch_ohlcv.return_value = frame([A], [START])
+    many = [f"ZZMANY{i}" for i in range(20)]
+    fetch(rig, symbols=[A, *many], negative=True)
+    # two gap stages plus the no-data record, whatever the number of tickers
+    assert len(calls) == 3

@@ -96,6 +96,7 @@ class OhlcvFetchChain:
         fillers: Sequence[GapFiller],
         cache: Callable[[], CacheProvider] | None = None,
         negative_cache: NegativeCache | None = None,
+        preflight: Callable[[], object] | None = None,
     ) -> None:
         """Wire the chain.
 
@@ -105,11 +106,15 @@ class OhlcvFetchChain:
             fillers: Gap fillers tried in order, each for the symbols still missing.
             cache: Builds the DB cache, tried first; None skips it and nothing is persisted.
             negative_cache: Optional no-data list; never touched when None.
+            preflight: Called after the negative cache loads and before the cache is tried, outside
+                any guard, so an error stops the fetch. The default chain imports the yfinance
+                module here, as the original did.
         """
         self._primary = primary
         self._fillers = tuple(fillers)
         self._cache = cache
         self._negative_cache = negative_cache
+        self._preflight = preflight
 
     def fetch(
         self,
@@ -129,6 +134,8 @@ class OhlcvFetchChain:
         end_ts = pd.Timestamp(end, tz="UTC") if end else None
 
         skip = self._load_skip(interval)
+        if self._preflight is not None:
+            self._preflight()
 
         writer: CacheWriter | None = None
         df = pd.DataFrame()
@@ -151,16 +158,22 @@ class OhlcvFetchChain:
                 raise ValueError("yfinance returned no data for the requested universe")
 
         for index, filler in enumerate(self._fillers):
-            missing = [t for t in tickers if t not in _symbols(df) and t not in skip]
+            have = _symbols(df)
+            missing = [t for t in tickers if t not in have and t not in skip]
             if not missing:
                 continue
             reuse = primary if index == 0 else None
-            if filler.swallow_errors is None:
-                df = self._fill(df, filler, missing, reuse, writer, interval, start_ts, end_ts)
-                continue
             try:
-                df = self._fill(df, filler, missing, reuse, writer, interval, start_ts, end_ts)
+                extra = self._fetch_extra(
+                    filler, missing, reuse, writer, interval, start_ts, end_ts
+                )
+                if not extra.empty:
+                    # Assign before sorting: a sort failure keeps the merged bars, as before.
+                    df = pd.concat([df, extra], axis=1)
+                    df.sort_index(axis=1, inplace=True)
             except Exception as exc:
+                if filler.swallow_errors is None:
+                    raise
                 print(f"  [data] {filler.swallow_errors}: {exc!r}")
 
         self._record_no_data(df, tickers, skip, interval)
@@ -195,9 +208,8 @@ class OhlcvFetchChain:
             print(f"  [data] negative cache unavailable ({exc!r}); fetching all")
             return set()
 
-    def _fill(
+    def _fetch_extra(
         self,
-        df: pd.DataFrame,
         filler: GapFiller,
         missing: list[str],
         reuse: OhlcvProvider | None,
@@ -206,7 +218,7 @@ class OhlcvFetchChain:
         start_ts: pd.Timestamp,
         end_ts: pd.Timestamp | None,
     ) -> pd.DataFrame:
-        """Run one gap filler for ``missing`` and return ``df`` with what it supplied."""
+        """Ask one gap filler for ``missing`` and persist what it supplied; the caller merges."""
         intro = filler.intro.format(n=len(missing))
         if filler.announce_before_make:
             print(intro)
@@ -214,15 +226,12 @@ class OhlcvFetchChain:
         if not filler.announce_before_make:
             print(intro)
         extra = provider.fetch_ohlcv(missing, interval, start_date=start_ts, end_date=end_ts)
-        if not extra.empty:
-            if writer is not None:
-                try:
-                    writer.persist(extra, interval)
-                except Exception as exc:
-                    print(f"  [data] failed to persist {filler.persist_error}: {exc!r}")
-            df = pd.concat([df, extra], axis=1)
-            df.sort_index(axis=1, inplace=True)
-        return df
+        if not extra.empty and writer is not None:
+            try:
+                writer.persist(extra, interval)
+            except Exception as exc:
+                print(f"  [data] failed to persist {filler.persist_error}: {exc!r}")
+        return extra
 
     def _record_no_data(
         self, df: pd.DataFrame, tickers: list[str], skip: set[str], interval: str
@@ -245,6 +254,11 @@ def _make_cache() -> CacheProvider:
     from ggTrader.data.live import cached_yfinance_loader as module
 
     return module.CachedYFinanceLoader()
+
+
+def _import_yfinance() -> None:
+    """Import the yfinance module up front; the original did so outside any guard."""
+    from ggTrader.data.live import yfinance_loader  # noqa: F401
 
 
 def _make_yfinance() -> OhlcvProvider:
@@ -285,6 +299,7 @@ def default_chain(
         ],
         cache=_make_cache if use_db_cache else None,
         negative_cache=negative_cache,
+        preflight=_import_yfinance,
     )
 
 
