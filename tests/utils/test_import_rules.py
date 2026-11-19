@@ -176,35 +176,89 @@ def test_layer_scan_sees_every_import_form() -> None:
     assert len([m for _, m in _layer_imports("utils/sample.py", ast.parse(source))]) >= 8
 
 
+PAPER_LAB_DATA_ALLOWED = frozenset({"STOCK_BASE_CONFIG"})
+
+
+def _paper_lab_hits(relative: str, tree: ast.AST) -> list[str]:
+    """Imports a paper file may not make: lab.data beyond its config constant, negative_cache.
+
+    Relative forms are resolved against the file's package, so ``from ..lab import data`` and
+    ``from ..lab.data import x`` count exactly as the absolute spellings do.
+    """
+    lab_data, negative = "ggTrader.lab.data", "ggTrader.lab.negative_cache"
+    package = relative.removesuffix(".py").split("/")[:-1]
+
+    def within(name: str, root: str) -> bool:
+        return name == root or name.startswith(f"{root}.")
+
+    hits: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            hits += [
+                f"{relative}:{node.lineno} imports {alias.name}"
+                for alias in node.names
+                if within(alias.name, lab_data) or within(alias.name, negative)
+            ]
+        elif isinstance(node, ast.ImportFrom):
+            keep = len(package) - (node.level - 1) if node.level else 0
+            base = ["ggTrader", *package[: max(keep, 0)]] if node.level else []
+            module = ".".join([*base, *(node.module.split(".") if node.module else [])])
+            if within(module, negative):
+                hits.append(f"{relative}:{node.lineno} imports {module}")
+            elif within(module, lab_data):
+                hits += [
+                    f"{relative}:{node.lineno} imports {alias.name} from {module}"
+                    for alias in node.names
+                    if alias.name not in PAPER_LAB_DATA_ALLOWED
+                ]
+            elif module == "ggTrader.lab":
+                hits += [
+                    f"{relative}:{node.lineno} imports {alias.name} from {module}"
+                    for alias in node.names
+                    if alias.name in {"data", "negative_cache"}
+                ]
+    return hits
+
+
 def test_paper_imports_only_the_config_constant_from_lab_data() -> None:
     """The trader gets its price fetch from ``data/live``; only the config constant stays in lab."""
-    allowed = {"STOCK_BASE_CONFIG"}
-    lab_data = "ggTrader.lab.data"
     hits: list[str] = []
     for path in _files("paper"):
         relative = path.relative_to(SRC).as_posix()
-        for node in ast.walk(ast.parse(path.read_text(), filename=str(path))):
-            if isinstance(node, ast.Import):
-                hits += [
-                    f"{relative}:{node.lineno} imports {alias.name}"
-                    for alias in node.names
-                    if alias.name == lab_data or alias.name.startswith(f"{lab_data}.")
-                ]
-            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-                if node.module == lab_data or node.module.startswith(f"{lab_data}."):
-                    hits += [
-                        f"{relative}:{node.lineno} imports {alias.name} from {node.module}"
-                        for alias in node.names
-                        if alias.name not in allowed
-                    ]
-                elif node.module == "ggTrader.lab":
-                    hits += [
-                        f"{relative}:{node.lineno} imports {alias.name} from ggTrader.lab"
-                        for alias in node.names
-                        if alias.name in {"data", "negative_cache"}
-                    ]
-                if node.module == "ggTrader.lab.negative_cache" or node.module.startswith(
-                    "ggTrader.lab.negative_cache."
-                ):
-                    hits.append(f"{relative}:{node.lineno} imports {node.module}")
+        hits += _paper_lab_hits(relative, ast.parse(path.read_text(), filename=str(path)))
     assert hits == []
+
+
+def test_paper_import_rule_rejects_every_prohibited_form() -> None:
+    forbidden = [
+        "import ggTrader.lab.data",
+        "import ggTrader.lab.data as d",
+        "import ggTrader.lab.negative_cache",
+        "import ggTrader.lab.negative_cache as nc",
+        "from ggTrader.lab.data import fetch_stock_ohlcv",
+        "from ggTrader.lab.data import STOCK_BASE_CONFIG, load_ohlcv",
+        "from ggTrader.lab.data import *",
+        "from ggTrader.lab import data",
+        "from ggTrader.lab import negative_cache",
+        "from ggTrader.lab.negative_cache import load_skip_symbols",
+        "from ggTrader.lab.negative_cache import *",
+        "from ..lab.data import fetch_stock_ohlcv",
+        "from ..lab import data",
+        "from ..lab import negative_cache as nc",
+        "from ..lab.negative_cache import record_no_data",
+    ]
+    for source in forbidden:
+        assert _paper_lab_hits("paper/sample.py", ast.parse(source)), source
+
+
+def test_paper_import_rule_allows_the_config_constant_and_the_fetch_chain() -> None:
+    allowed = [
+        "from ggTrader.lab.data import STOCK_BASE_CONFIG",
+        "from ..lab.data import STOCK_BASE_CONFIG",
+        "from ggTrader.data.live.fetch_chain import fetch_stock_ohlcv",
+        "from ..data.live.fetch_chain import fetch_stock_ohlcv",
+        "from ggTrader.lab import strategy",
+        "from .risk import RiskLimits",
+    ]
+    for source in allowed:
+        assert _paper_lab_hits("paper/sample.py", ast.parse(source)) == [], source

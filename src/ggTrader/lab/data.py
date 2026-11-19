@@ -68,21 +68,21 @@ DEFAULT_UNIVERSE = "sp500"
 class _LabNegativeCache:
     """The lab's no-data list as the fetch chain's ``NegativeCache``.
 
-    The module is imported inside each method, so it is resolved when the chain calls it and
+    Each function is imported inside its method, so it is resolved when the chain calls it and
     inside the chain's own guard, as before; an import error is "negative cache unavailable".
     """
 
     def load_skip(self, interval: str) -> set[str]:
         """The symbols recorded as no-data for ``interval`` within the TTL window."""
-        from ggTrader.lab import negative_cache
+        from ggTrader.lab.negative_cache import load_skip_symbols
 
-        return negative_cache.load_skip_symbols(interval)
+        return load_skip_symbols(interval)
 
     def record(self, symbols: list[str], interval: str) -> None:
         """Remember ``symbols`` as no-data for ``interval``."""
-        from ggTrader.lab import negative_cache
+        from ggTrader.lab.negative_cache import record_no_data
 
-        negative_cache.record_no_data(symbols, interval)
+        record_no_data(symbols, interval)
 
 
 def fetch_stock_ohlcv(

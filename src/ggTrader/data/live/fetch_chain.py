@@ -107,8 +107,8 @@ class OhlcvFetchChain:
             cache: Builds the DB cache, tried first; None skips it and nothing is persisted.
             negative_cache: Optional no-data list; never touched when None.
             preflight: Called after the negative cache loads and before the cache is tried, outside
-                any guard, so an error stops the fetch. The default chain imports the yfinance
-                module here, as the original did.
+                any guard, so an error stops the fetch. The default chain resolves the yfinance
+                loader class here, as the original did.
         """
         self._primary = primary
         self._fillers = tuple(fillers)
@@ -250,29 +250,29 @@ class OhlcvFetchChain:
 
 
 def _make_cache() -> CacheProvider:
-    """Build the DB-first loader, resolving the class when called so patches on the module hold."""
-    from ggTrader.data.live import cached_yfinance_loader as module
+    """Build the DB-first loader; the class is imported when called, as the original did."""
+    from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
 
-    return module.CachedYFinanceLoader()
+    return CachedYFinanceLoader()
 
 
 def _import_yfinance() -> None:
-    """Import the yfinance module up front; the original did so outside any guard."""
-    from ggTrader.data.live import yfinance_loader  # noqa: F401
+    """Resolve the yfinance loader class up front; the original did so outside any guard."""
+    from ggTrader.data.live.yfinance_loader import YFinanceDataLoader  # noqa: F401
 
 
 def _make_yfinance() -> OhlcvProvider:
-    """Build the plain yfinance loader, resolving the class when called."""
-    from ggTrader.data.live import yfinance_loader as module
+    """Build the plain yfinance loader; the class is imported when called."""
+    from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
 
-    return module.YFinanceDataLoader()
+    return YFinanceDataLoader()
 
 
 def _make_tiingo() -> OhlcvProvider:
-    """Build the Tiingo loader, resolving the class when called."""
-    from ggTrader.data.live import tiingo_loader as module
+    """Build the Tiingo loader; the class is imported when called."""
+    from ggTrader.data.live.tiingo_loader import TiingoDataLoader
 
-    return module.TiingoDataLoader()
+    return TiingoDataLoader()
 
 
 def default_chain(
