@@ -1293,9 +1293,9 @@ error was; the values themselves come from the snapshot taken at the top of `run
   `test_env_is_read_at_run_time_not_construction` (construct, then `monkeypatch.setenv`, then run: the
   setting applies; the stop-threshold alert and raise keep their text),
   `test_early_exits_with_a_malformed_sweep_float_return_their_normal_result` (market closed, stale
-  `as_of` and a lock failure with `SWEEP_CASH_RESERVE_PCT=abc` and the sweep on: same results and same
-  Telegram text as with the variable unset, nothing raised; transcripts `market_closed`, `stale_as_of` and
-  `lock_verify_failure` with that environment added in the test through `Scenario.env`),
+  `as_of` with `SWEEP_CASH_RESERVE_PCT=abc` and the sweep on: same results and same Telegram text as
+  with the variable unset, nothing raised; for `lock_verify_failure`, preserve the existing reserve
+  parse error before the lock check, with that environment added through `Scenario.env`),
   `test_two_runs_on_one_trader_each_take_their_own_snapshot` (run, change the environment, run again:
   the second run uses the new values, and one run never mixes two values),
   `test_catastrophe_stop_error_is_still_raised_before_the_lock` (a bad `CATASTROPHE_STOP_PCT` with the stop
