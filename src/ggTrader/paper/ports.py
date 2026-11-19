@@ -57,6 +57,7 @@ class Notifier(Protocol):
         symbol: str,
         amount: float,
         order_id: str,
+        *,
         qty: float | None = None,
         price: float | None = None,
         status: str | None = None,

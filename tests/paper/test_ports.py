@@ -76,7 +76,15 @@ def test_notifier_protocols_match_telegram_and_dry_run_notifier() -> None:
     telegram = _public_methods(TelegramNotifier)
     assert set(telegram) == set(proto)
     for name, sig in proto.items():
-        assert _shape(sig) == _shape(telegram[name]), name
+        if name == "trade_alert":
+            assert [p.name for p in sig.parameters.values()] == list(telegram[name].parameters)
+            assert all(
+                sig.parameters[n].kind == inspect.Parameter.KEYWORD_ONLY
+                for n in ("qty", "price", "status")
+            )
+            telegram[name].bind(**{n: object() for n in sig.parameters})
+        else:
+            assert _shape(sig) == _shape(telegram[name]), name
 
     # DryRunNotifier ends its two alerts in catch-alls; compare the parameters it names and check
     # that it accepts the protocol's call shape.

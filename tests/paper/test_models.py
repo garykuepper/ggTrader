@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import get_type_hints
 from unittest.mock import patch
 
 import pytest
@@ -187,4 +188,5 @@ def test_cli_consumes_every_shape(shape: str) -> None:
 )
 def test_typed_dict_keys_are_the_documented_ones(record: type, keys: set[str]) -> None:
     assert set(record.__annotations__) == keys
+    assert set(get_type_hints(record)) == keys
     assert record.__total__ is False
