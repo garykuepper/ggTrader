@@ -35,6 +35,7 @@ from ggTrader.lab.wfo.breaker import (
     check_shadow_reentry,
     compute_wfe,
 )
+from ggTrader.lab.wfo.fold_record import FoldRecord
 from ggTrader.lab.wfo.folds import TEST_MONTHS, TRAIN_MONTHS, Fold, generate_folds
 from ggTrader.lab.wfo.gates import run_dsr, run_ndh
 from ggTrader.lab.wfo.report import WfoResult, anchor_history, curve_summary, format_wfo_table
@@ -375,38 +376,36 @@ def run_wfo(
             wfo_state = check_shadow_reentry(wfo_state, ndh.passed, dsr_passed, wfe_val)
 
         fold_results.append(
-            {
-                "fold_num": i + 1,
-                "train_start": fold.train_start,
-                "train_end": fold.train_end,
-                "test_start": fold.test_start,
-                "test_end": fold.test_end,
-                "winner_combo": winner["combo"],
-                "winner_params": winner["params"],
-                "train_score": scores[best_idx],
-                "oos_score": oos_score,
-                "ndh_passed": ndh.passed,
-                "dsr_passed": dsr_passed,
-                "gates_passed": gates_passed,
-                "ndh_density": ndh.density,
-                "dsr_value": dsr_value,
-                "wfe": wfe_val,
-                "is_sharpe": is_sharpe,
-                "oos_sharpe": oos_sharpe,
-                "halted": wfo_state.halted,
-                "halted_entering": halted_entering,
-                "used_anchor": used_anchor,
-                # the fallback parameter set of this fold (fit on data up to train_end) and
-                # what was deployed: the whole OOS book when the anchor is used (review MAJOR-3)
-                "anchor_combo": anchor.combo,
-                "anchor_params": anchor.params,
-                "anchor_reason": anchor_reason,
-                "deployed_combo": names[deploy_idx] if deploy_idx is not None else "none",
-                "halt_cleared": bool(halted_entering and not wfo_state.halted),
-                "winner_trades_in_window": winner["n_trades"],
-                "winner_trades_whole_simulation": int(whole[winner_idx]),
-                "od12_ndh_flip": od12_flip,
-            }
+            FoldRecord(
+                fold_num=i + 1,
+                train_start=fold.train_start,
+                train_end=fold.train_end,
+                test_start=fold.test_start,
+                test_end=fold.test_end,
+                winner_combo=winner["combo"],
+                winner_params=winner["params"],
+                train_score=scores[best_idx],
+                oos_score=oos_score,
+                ndh_passed=ndh.passed,
+                dsr_passed=dsr_passed,
+                gates_passed=gates_passed,
+                ndh_density=ndh.density,
+                dsr_value=dsr_value,
+                wfe=wfe_val,
+                is_sharpe=is_sharpe,
+                oos_sharpe=oos_sharpe,
+                halted=wfo_state.halted,
+                halted_entering=halted_entering,
+                used_anchor=used_anchor,
+                anchor_combo=anchor.combo,
+                anchor_params=anchor.params,
+                anchor_reason=anchor_reason,
+                deployed_combo=names[deploy_idx] if deploy_idx is not None else "none",
+                halt_cleared=bool(halted_entering and not wfo_state.halted),
+                winner_trades_in_window=winner["n_trades"],
+                winner_trades_whole_simulation=int(whole[winner_idx]),
+                od12_ndh_flip=od12_flip,
+            ).as_dict()
         )
         fold_winners.append(winner)
         if verbose:
