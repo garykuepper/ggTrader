@@ -355,6 +355,11 @@ def test_build_diagnostics_stop_settings_drive_the_stop_keys() -> None:
     time_only = dict(STOP_SETTINGS, trailing_fraction=None)
     quiet = _diagnostics(_StubScorer(stop_settings=time_only, with_stops=True))
     assert quiet["stop_exit_price"] is None and quiet["stop_entry_price"] is None
+    explicit_quiet = _diagnostics(
+        _StubScorer(stop_settings=time_only, with_stops=True),
+        options=run.SignalSimOptions(stop_exit_price="stopmarket"),
+    )
+    assert explicit_quiet["stop_exit_price"] is None
     assert quiet["time_stop_warning"] == run.engine_portfolio.TIME_STOP_WARNING
     no_time = dict(STOP_SETTINGS, time_stop_bars=None)
     assert (
