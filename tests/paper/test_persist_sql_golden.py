@@ -527,6 +527,10 @@ _add(
     _case(persist.log_snapshot, ("2026-06-22", 101234.5, 5000.0, _POSITIONS), [None]),
 )
 _add(
+    "log_snapshot__integer_value",
+    _case(persist.log_snapshot, ("2026-06-22", 101234, 5000.0, _POSITIONS), [None]),
+)
+_add(
     "log_snapshot__nonfinite_position_value",
     _case(
         persist.log_snapshot,

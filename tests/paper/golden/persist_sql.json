@@ -2727,6 +2727,35 @@
    "returned": null,
    "raised": null
   },
+  "log_snapshot__integer_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) VALUES (:run_date, :pv, :cash, :pos) ON CONFLICT (run_date) DO UPDATE SET portfolio_value = EXCLUDED.portfolio_value, cash = EXCLUDED.cash, positions = EXCLUDED.positions",
+     "params": {
+      "cash": {
+       "$type": "float",
+       "v": "5000.0"
+      },
+      "pos": "{\"AAPL\": {\"qty\": 10.0, \"value\": 1000.0}, \"MSFT\": {\"qty\": 5.0, \"value\": 1500.5}}",
+      "pv": 101234,
+      "run_date": "2026-06-22"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
   "log_snapshot__nonfinite_position_value": {
    "events": [
     {
