@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.live.fetch_chain import fetch_stock_ohlcv
 from ggTrader.data.membership import (
     ENV_VAR as MEMBERSHIP_ENV_VAR,
 )
@@ -28,7 +29,6 @@ from ggTrader.data.membership_gate import (
     gate_applies,
 )
 from ggTrader.engine import selfcheck as engine_selfcheck
-from ggTrader.lab.data import fetch_stock_ohlcv
 from ggTrader.paper.constants import ET as _ET
 from ggTrader.paper.gates import (
     SanityConfig,

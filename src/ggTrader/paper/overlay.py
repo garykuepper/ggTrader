@@ -13,9 +13,10 @@ from __future__ import annotations
 import pandas as pd
 
 from ggTrader.data.core.index_constituents import normalize_yf_ticker, universe_members_asof
+from ggTrader.data.live.fetch_chain import fetch_stock_ohlcv
 from ggTrader.data.membership import MembershipSource
 from ggTrader.engine import portfolio as engine_portfolio
-from ggTrader.lab.data import STOCK_BASE_CONFIG, fetch_stock_ohlcv
+from ggTrader.lab.data import STOCK_BASE_CONFIG
 from ggTrader.paper.live_bars import bars_from_legacy_frame
 from ggTrader.paper.live_signals import (
     history_eligibility,

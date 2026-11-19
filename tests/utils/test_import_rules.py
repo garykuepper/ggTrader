@@ -174,3 +174,37 @@ def test_layer_scan_sees_every_import_form() -> None:
     } <= modules
     # `from a.b import x` yields the module `a.b`; `from ..lab import x` resolves to ggTrader.lab.
     assert len([m for _, m in _layer_imports("utils/sample.py", ast.parse(source))]) >= 8
+
+
+def test_paper_imports_only_the_config_constant_from_lab_data() -> None:
+    """The trader gets its price fetch from ``data/live``; only the config constant stays in lab."""
+    allowed = {"STOCK_BASE_CONFIG"}
+    lab_data = "ggTrader.lab.data"
+    hits: list[str] = []
+    for path in _files("paper"):
+        relative = path.relative_to(SRC).as_posix()
+        for node in ast.walk(ast.parse(path.read_text(), filename=str(path))):
+            if isinstance(node, ast.Import):
+                hits += [
+                    f"{relative}:{node.lineno} imports {alias.name}"
+                    for alias in node.names
+                    if alias.name == lab_data or alias.name.startswith(f"{lab_data}.")
+                ]
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                if node.module == lab_data or node.module.startswith(f"{lab_data}."):
+                    hits += [
+                        f"{relative}:{node.lineno} imports {alias.name} from {node.module}"
+                        for alias in node.names
+                        if alias.name not in allowed
+                    ]
+                elif node.module == "ggTrader.lab":
+                    hits += [
+                        f"{relative}:{node.lineno} imports {alias.name} from ggTrader.lab"
+                        for alias in node.names
+                        if alias.name in {"data", "negative_cache"}
+                    ]
+                if node.module == "ggTrader.lab.negative_cache" or node.module.startswith(
+                    "ggTrader.lab.negative_cache."
+                ):
+                    hits.append(f"{relative}:{node.lineno} imports {node.module}")
+    assert hits == []

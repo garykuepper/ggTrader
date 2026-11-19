@@ -12,6 +12,7 @@ from ggTrader.data.core.index_constituents import (
     universe_all_between,
     universe_members_asof,
 )
+from ggTrader.data.live import fetch_chain
 from ggTrader.data.membership import MembershipSource
 from ggTrader.lab.strategy import LabConfig
 
@@ -64,6 +65,26 @@ CRYPTO_BASE_CONFIG: dict[str, Any] = {
 DEFAULT_UNIVERSE = "sp500"
 
 
+class _LabNegativeCache:
+    """The lab's no-data list as the fetch chain's ``NegativeCache``.
+
+    The module is imported inside each method, so it is resolved when the chain calls it and
+    inside the chain's own guard, as before; an import error is "negative cache unavailable".
+    """
+
+    def load_skip(self, interval: str) -> set[str]:
+        """The symbols recorded as no-data for ``interval`` within the TTL window."""
+        from ggTrader.lab import negative_cache
+
+        return negative_cache.load_skip_symbols(interval)
+
+    def record(self, symbols: list[str], interval: str) -> None:
+        """Remember ``symbols`` as no-data for ``interval``."""
+        from ggTrader.lab import negative_cache
+
+        negative_cache.record_no_data(symbols, interval)
+
+
 def fetch_stock_ohlcv(
     symbols: list[str],
     start: str,
@@ -85,113 +106,16 @@ def fetch_stock_ohlcv(
     keep the default (always try) so a transient outage never silently drops
     an active symbol.
     """
-    tickers = sorted({normalize_yf_ticker(s) for s in symbols})
-    start_ts = pd.Timestamp(start, tz="UTC")
-    end_ts = pd.Timestamp(end, tz="UTC") if end else None
-
-    skip: set[str] = set()
-    if use_negative_cache:
-        try:
-            from ggTrader.lab.negative_cache import load_skip_symbols
-
-            skip = load_skip_symbols(interval)
-            if skip:
-                print(f"  [data] negative cache: skipping {len(skip)} known no-data symbols")
-        except Exception as exc:
-            print(f"  [data] negative cache unavailable ({exc!r}); fetching all")
-            skip = set()
-
-    from ggTrader.data.live.yfinance_loader import YFinanceDataLoader
-
-    loader: Any = None
-    df = pd.DataFrame()
-    if use_db_cache:
-        try:
-            from ggTrader.data.live.cached_yfinance_loader import CachedYFinanceLoader
-
-            loader = CachedYFinanceLoader()
-            df = loader.fetch_ohlcv(
-                tickers, interval, start_date=start_ts, end_date=end_ts, limit=None
-            )
-        except Exception as exc:
-            print(f"  [data] DB cache unavailable ({exc!r}); falling back to yfinance only")
-            loader = None
-
-    plain: YFinanceDataLoader | None = None
-    if df.empty:
-        plain = YFinanceDataLoader()
-        df = plain.fetch_ohlcv(tickers, interval, start_date=start_ts, end_date=end_ts)
-        if df.empty:
-            raise ValueError("yfinance returned no data for the requested universe")
-
-    have = set(df.columns.get_level_values(0).unique())
-    missing = [t for t in tickers if t not in have and t not in skip]
-    if missing:
-        print(f"  [data] fetching {len(missing)} symbols missing from cache...")
-        if plain is None:
-            plain = YFinanceDataLoader()
-        extra = plain.fetch_ohlcv(missing, interval, start_date=start_ts, end_date=end_ts)
-        if not extra.empty:
-            if loader is not None:
-                try:
-                    loader.persist(extra, interval)
-                except Exception as exc:
-                    print(f"  [data] failed to persist gap fetch: {exc!r}")
-            df = pd.concat([df, extra], axis=1)
-            df.sort_index(axis=1, inplace=True)
-
-    have = set(df.columns.get_level_values(0).unique())
-    still_missing = [t for t in tickers if t not in have and t not in skip]
-    if still_missing:
-        try:
-            from ggTrader.data.live.tiingo_loader import TiingoDataLoader
-
-            tiingo = TiingoDataLoader()
-            print(f"  [data] trying Tiingo for {len(still_missing)} symbols yfinance missed...")
-            tiingo_extra = tiingo.fetch_ohlcv(
-                still_missing, interval, start_date=start_ts, end_date=end_ts
-            )
-            if not tiingo_extra.empty:
-                if loader is not None:
-                    try:
-                        loader.persist(tiingo_extra, interval)
-                    except Exception as exc:
-                        print(f"  [data] failed to persist Tiingo data: {exc!r}")
-                df = pd.concat([df, tiingo_extra], axis=1)
-                df.sort_index(axis=1, inplace=True)
-        except Exception as exc:
-            print(f"  [data] Tiingo fallback unavailable: {exc!r}")
-
-    # Record symbols we tried (not skipped) that no provider could supply, so
-    # future opt-in runs skip them for the TTL window.
-    if use_negative_cache:
-        have = set(df.columns.get_level_values(0).unique())
-        newly_dead = [t for t in tickers if t not in have and t not in skip]
-        if newly_dead:
-            try:
-                from ggTrader.lab.negative_cache import record_no_data
-
-                record_no_data(newly_dead, interval)
-                print(f"  [data] negative cache: recorded {len(newly_dead)} no-data symbols")
-            except Exception as exc:
-                print(f"  [data] negative cache write failed ({exc!r})")
-
-    df = df[df.index >= start_ts]
-    if end_ts is not None:
-        df = df[df.index <= end_ts]
-
-    if min_coverage > 0.0:
-        keep = [
-            sym
-            for sym in df.columns.get_level_values(0).unique()
-            if df[sym]["close"].notna().mean() >= min_coverage
-        ]
-        df = df[keep]
-
-    n_syms = len(df.columns.get_level_values(0).unique())
-    print(f"  [data] {len(df)} rows x {n_syms} symbols ({interval})")
-    df.columns.names = ["symbol", "field"]
-    return df
+    negative_cache = _LabNegativeCache() if use_negative_cache else None
+    return fetch_chain.fetch_stock_ohlcv(
+        symbols,
+        start,
+        end,
+        interval=interval,
+        use_db_cache=use_db_cache,
+        min_coverage=min_coverage,
+        negative_cache=negative_cache,
+    )
 
 
 def collapse_daily_duplicates(wide: pd.DataFrame) -> pd.DataFrame:
