@@ -2,19 +2,37 @@
 
 CLAUDE.md: scripts need a ``main()`` guard, ``argparse`` and a graceful ``--help``. On
 2026-11-06 a loop that ran ``--help`` over the scripts started a real backfill in one that
-ignored the flag, so this file never runs a script it has not first proved safe:
+ignored the flag, so this file never runs a script it has not first checked:
 
 1. **Static (AST), no execution.** The script (or, for the four thin wrappers in
    ``DELEGATES``, the library function it hands over to) builds an ``ArgumentParser``; the
-   module top level calls nothing but a short list of harmless constructors; there is an
+   module top level calls nothing but a short list of harmless constructors (a list of names
+   trusted only while the module does not rebind them); there is an
    ``if __name__ == "__main__"`` guard; and the entry function reaches ``parse_args`` before
    any other call outside an argparse/path vocabulary. "Top level" means everything that runs
-   on import: class bodies, decorators, defaults and annotations, not function bodies. A script
-   that imports a ``LIBRARIES`` module (directly or through another) is safe only if that library
-   passes the same import-time check, since ``--help`` imports it.
-2. **Subprocess ``--help``,** only for scripts that pass step 1, with ``env -i`` style
-   isolation: no HOME, no database or broker variables, a scratch working directory, a 20 s
-   timeout. Exit code 0 and ``usage`` on stdout.
+   on import: class bodies, decorators, defaults and annotations, not function bodies.
+2. **Library importers are never executed.** A static check cannot prove that importing a
+   module is free of side effects (a descriptor default, a shadowed or monkeypatched wrapper,
+   an operator dunder, a ``__class_getitem__`` all run code without a visible call). So a script
+   that may import a ``LIBRARIES`` module, directly, through any other repository module, or
+   through a dynamic import whose target folds to a constant string, gets the static checks of
+   step 1 only. Its ``--help`` is not run: it is pinned in ``HELP_NOT_RUN`` and reported as a
+   skip, never as a pass.
+3. **Subprocess ``--help``,** only for scripts that pass step 1 and are not withheld by step 2,
+   with ``env -i`` style isolation (no HOME, no database or broker variables, a scratch working
+   directory, a 20 s timeout) under ``HELP_GUARD``: an audit hook that ends the process
+   (``os._exit``, which no ``except`` can swallow) before a module named like a library is
+   imported, before a file named like one (source or ``__pycache__`` bytecode) is opened, and
+   before any child process starts. That backs step 2 up for loads it cannot see, such as an
+   import whose module name comes from a variable. Exit code 0 and ``usage`` on stdout.
+
+Limits, on purpose: step 1 is a lint against accidental work, not a proof; an unrelated script
+can still run code on import by the routes listed in step 2, and its imported ``ggTrader`` and
+third-party modules are not checked at all. Step 2 finds imports by name (any dotted component
+equal to a library stem, any folded string naming one) and follows repository modules by
+suffix, so it over-approximates; it does not evaluate variables, ``sys.path`` edits or
+``sys.modules`` tricks. The tripwire matches file names, so a copy or hard link of a library
+under another name, or loading through ``ctypes``, is not caught.
 
 The scanned set is ``scripts/*.py`` plus every ``research/*/*/code/*.py`` and
 ``research/*/_lib/*.py`` that has an ``if __name__ == "__main__"`` guard (a library module without
@@ -28,6 +46,7 @@ from __future__ import annotations
 import ast
 import csv
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -60,10 +79,19 @@ DELEGATES = {
 }
 
 #: Import-only library modules in ``scripts/``: imported by a sibling script (the whole-job
-#: broker and driver, which are scanned), never run, so they get no fake CLI. Each is checked
-#: instead to have no main guard and to do no work at import time. Adding a guard to one means
-#: it became a command: remove it from this set so the parser checks apply.
+#: broker and driver), never run, so they get no fake CLI. Each is linted to have no main guard
+#: and no visible import-time work; that lint is not a proof, so a script that imports one never
+#: has its ``--help`` run (``HELP_NOT_RUN``). Adding a guard to one means it became a command:
+#: remove it from this set so the parser checks apply.
 LIBRARIES = frozenset({"scripts/whole_job_admission.py", "scripts/whole_job_prototype.py"})
+
+#: Scanned scripts whose ``--help`` is intentionally not executed, with the reason. They still get
+#: every static check. The test that pins this set fails when a script starts or stops importing a
+#: library, so the list is always the current one.
+HELP_NOT_RUN = {
+    "scripts/whole_job_broker.py": "imports scripts/whole_job_admission.py",
+    "scripts/whole_job_driver.py": "imports scripts/whole_job_prototype.py",
+}
 
 #: Calls a module may make on import (top level, class bodies, decorators, defaults): constants,
 #: paths, regexes, loggers, sys.path set-up, standard-library decorators.
@@ -82,6 +110,21 @@ MODULE_CALLS = frozenset(
     }
 )  # fmt: skip
 
+#: Allowlisted standard-library names, trusted only as the object of that name: the module may
+#: bind one at module or class scope only by ``import <module>`` or ``from <module> import <name>``
+#: with the module given here (``None``: a builtin, which it may not bind at all). Any other binding
+#: (def, class, assignment, another import, a star import, ``global``, an attribute store on the
+#: module or on ``builtins``) shadows the name, and its calls count as work.
+STDLIB_ORIGINS: dict[str, str | None] = {
+    "dataclass": "dataclasses", "field": "dataclasses", "contextmanager": "contextlib",
+    "lru_cache": "functools", "cache": "functools", "Path": "pathlib", "date": "datetime",
+    "ZoneInfo": "zoneinfo", "dataclasses": "dataclasses", "contextlib": "contextlib",
+    "functools": "functools", "re": "re", "sys": "sys", "os": "os", "logging": "logging",
+    "tempfile": "tempfile", "datetime": "datetime",
+    "property": None, "classmethod": None, "staticmethod": None, "str": None,
+    "frozenset": None, "set": None, "tuple": None, "dict": None, "any": None,
+}  # fmt: skip
+
 #: Calls allowed in the entry function before ``parse_args`` (building the parser, not working).
 PRE_PARSE_CALLS = frozenset(
     {
@@ -96,6 +139,70 @@ PRE_PARSE_CALLS = frozenset(
         "add_membership_argument",
     }
 )  # fmt: skip
+
+#: Calls that load a module by name (first argument) or by file path.
+NAME_LOADERS = frozenset({"import_module", "__import__", "find_spec", "run_module"})
+PATH_LOADERS = frozenset(
+    {
+        "spec_from_file_location",
+        "run_path",
+        "SourceFileLoader",
+        "load_source",
+        "SourcelessFileLoader",
+    }
+)
+
+#: Directories never searched for repository modules.
+PRUNED_DIRS = frozenset({".git", ".venv", "venv", "node_modules", "__pycache__"})
+
+#: Exit status of a ``--help`` run that ``HELP_GUARD`` stopped.
+TRIPWIRE_EXIT = 97
+
+#: ``python -c HELP_GUARD <script> --help`` runs the script as ``python <script> --help`` would
+#: (``sys.argv``, ``sys.path[0]``, ``__main__``), after installing an audit hook that ends the
+#: process before a library is imported or opened (by name, so ``__pycache__`` bytecode too) or a
+#: child process starts. ``os._exit`` cannot be caught, so a script cannot turn a trip into a pass.
+HELP_GUARD = """\
+import os, sys
+
+STEMS = frozenset({stems!r})
+SPAWN = frozenset({{
+    "subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.fork",
+    "os.forkpty",
+}})
+
+
+def trip(event, detail):
+    os.write(2, ("help tripwire: %s %r\\n" % (event, detail)).encode())
+    os._exit({exit_code})
+
+
+def hook(event, args):
+    if event == "import":
+        if args[0] and args[0].rsplit(".", 1)[-1] in STEMS:
+            trip(event, args[0])
+    elif event == "open":
+        target = args[0]
+        if isinstance(target, int):
+            return
+        try:
+            name = os.path.basename(os.fsdecode(target))
+        except TypeError:
+            trip(event, target)
+        if name.split(".", 1)[0] in STEMS:
+            trip(event, name)
+    elif event in SPAWN:
+        trip(event, args[:1])
+
+
+sys.addaudithook(hook)
+script = sys.argv[1]
+sys.argv = sys.argv[1:]
+sys.path[0] = os.path.dirname(os.path.realpath(script))
+import runpy
+
+runpy.run_path(script, run_name="__main__")
+"""
 
 
 def _is_main_guard(node: ast.stmt) -> bool:
@@ -175,8 +282,9 @@ class _ImportTimeCalls(ast.NodeVisitor):
     ``@name`` is a call of ``name``), default values and annotations of functions and methods,
     lambda defaults, class bases and keywords (``metaclass=M`` is a call of ``M``), the context
     managers of a ``with``, and a class's ``__init_subclass__`` hook. Deferred: the bodies of
-    functions, methods and lambdas, and the ``if __name__ == "__main__"`` block. Operator and
-    attribute dunders are not modelled; the call names are matched against ``MODULE_CALLS``.
+    functions, methods and lambdas, and the ``if __name__ == "__main__"`` block. Operator,
+    attribute and descriptor dunders are not modelled; the call names are matched against
+    ``MODULE_CALLS``.
     """
 
     def __init__(self) -> None:
@@ -242,53 +350,96 @@ class _ImportTimeCalls(ast.NodeVisitor):
     visit_AsyncWith = visit_With  # noqa: N815
 
 
+class _ShadowedNames(ast.NodeVisitor):
+    """``STDLIB_ORIGINS`` names that a module rebinds at module or class scope (see there)."""
+
+    def __init__(self) -> None:
+        self.names: set[str] = set()
+
+    def _bind(self, name: str | None) -> None:
+        if name in STDLIB_ORIGINS:
+            self.names.add(name)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self._bind(node.id)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            root = node.value
+            while isinstance(root, ast.Attribute):
+                root = root.value
+            if isinstance(root, ast.Name) and root.id in {"builtins", "__builtins__"}:
+                self.names.update(n for n, origin in STDLIB_ORIGINS.items() if origin is None)
+            elif isinstance(root, ast.Name):
+                self._bind(root.id)
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        self._bind(node.name)
+        for expr in [*node.decorator_list, *node.args.defaults, *node.args.kw_defaults]:
+            if expr is not None:
+                self.visit(expr)
+        for inner in ast.walk(node):  # ``global cache`` in a body rebinds the module's name
+            if isinstance(inner, ast.Global):
+                for name in inner.names:
+                    self._bind(name)
+
+    visit_AsyncFunctionDef = visit_FunctionDef  # noqa: N815
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._bind(node.name)
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        self._bind(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:
+        self._bind(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:
+        self._bind(node.name)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            bound = alias.asname or alias.name.split(".")[0]
+            trusted = alias.asname is None and STDLIB_ORIGINS.get(bound) == bound
+            if not trusted:
+                self._bind(bound)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        module = node.module if node.level == 0 else None
+        for alias in node.names:
+            if alias.name == "*":
+                self.names.update(n for n, origin in STDLIB_ORIGINS.items() if origin != module)
+                continue
+            bound = alias.asname or alias.name
+            trusted = alias.name == bound and module is not None
+            if not (trusted and STDLIB_ORIGINS.get(bound) == module):
+                self._bind(bound)
+
+
 def _module_level_work(tree: ast.Module) -> list[str]:
-    """Import-time calls outside ``MODULE_CALLS`` (work that would run on import)."""
+    """Import-time calls outside ``MODULE_CALLS``, or of an allowlisted name the module shadows."""
     visitor = _ImportTimeCalls()
+    shadows = _ShadowedNames()
     for node in tree.body:
         visitor.visit(node)
-    return [f"module-level call {c}" for c in visitor.calls if c not in MODULE_CALLS]
+        shadows.visit(node)
+    work = []
+    for call in visitor.calls:
+        root = re.match(r"[A-Za-z_]\w*", call)
+        if call not in MODULE_CALLS:
+            work.append(f"module-level call {call}")
+        elif root is not None and root.group() in shadows.names:
+            work.append(f"module-level call {call} (shadows the standard-library name)")
+    return work
 
 
-def _imported_libraries(tree: ast.Module, libraries: frozenset[str]) -> list[str]:
-    """``libraries`` entries the module imports, by any import form, anywhere in the file.
-
-    A library is matched by its module name (the file stem) as the last part of an imported
-    dotted name, an imported name (``from scripts import lib``), or a string constant naming it
-    (``importlib.import_module("scripts.lib")``). Matching is deliberately loose: a false match
-    only withholds a ``--help`` run, a miss would let one import an unvalidated library.
-    """
-    stems = {Path(lib).stem: lib for lib in libraries}
-    found: set[str] = set()
-
-    def match(dotted: str | None) -> None:
-        if dotted and dotted.rsplit(".", 1)[-1] in stems:
-            found.add(stems[dotted.rsplit(".", 1)[-1]])
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                match(alias.name)
-        elif isinstance(node, ast.ImportFrom):
-            match(node.module)
-            for alias in node.names:
-                match(alias.name)
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            match(node.value)
-    return sorted(found)
-
-
-def _library_problems(
-    library: str,
-    root: Path = ROOT,
-    libraries: frozenset[str] = LIBRARIES,
-    seen: set[str] | None = None,
-) -> list[str]:
-    """Why ``library`` is not a safe import-only module, including the libraries it imports."""
-    seen = set() if seen is None else seen
-    if library in seen:
-        return []
-    seen.add(library)
+def _library_problems(library: str, root: Path = ROOT) -> list[str]:
+    """Lint findings that make ``library`` not an import-only module. A lint, not a proof."""
     path = root / library
     if not path.is_file():
         return [f"{library}: listed in LIBRARIES but missing"]
@@ -296,14 +447,10 @@ def _library_problems(
     problems = [f"{library}: {p}" for p in _module_level_work(tree)]
     if any(_is_main_guard(n) for n in tree.body):
         problems.append(f"{library}: has a main guard: it is a command, remove it from LIBRARIES")
-    for other in _imported_libraries(tree, libraries):
-        problems += _library_problems(other, root, libraries, seen)
     return problems
 
 
-def _static_problems(
-    path: Path, root: Path = ROOT, libraries: frozenset[str] = LIBRARIES
-) -> list[str]:
+def _static_problems(path: Path, root: Path = ROOT) -> list[str]:
     tree = ast.parse(path.read_text())
     if not any(_is_main_guard(n) for n in tree.body):
         return ['no `if __name__ == "__main__":` guard']
@@ -314,14 +461,6 @@ def _static_problems(
         entry_tree = ast.parse(lib_path.read_text())
     else:
         entry_tree = tree
-        entry_name = ""
-    # An importer of a library that fails validation is unsafe too: running its --help would
-    # import (and so run) the library, whatever the library's own test reported.
-    imported = {*_imported_libraries(tree, libraries), *_imported_libraries(entry_tree, libraries)}
-    seen: set[str] = set()
-    for library in sorted(imported):
-        problems += [f"imports {p}" for p in _library_problems(library, root, libraries, seen)]
-    if not entry_name:
         try:
             entry_name = _entry_name(tree)
         except AssertionError as exc:
@@ -335,6 +474,169 @@ def _static_problems(
     if work is not None:
         problems.append(f"{work} runs before parse_args in {entry_name}()")
     return problems
+
+
+def _repo_modules(root: Path) -> dict[tuple[str, ...], list[Path]]:
+    """Every repository ``.py`` file under each dotted-name suffix it could be imported as.
+
+    ``a/b/c.py`` is filed under ``c``, ``b.c`` and ``a.b.c``; a package ``a/b/__init__.py`` under
+    ``b`` and ``a.b``. Matching suffixes rather than resolving ``sys.path`` over-approximates, which
+    is the safe direction here: a spurious match can only withhold a ``--help`` run.
+    """
+    index: dict[tuple[str, ...], list[Path]] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in PRUNED_DIRS and not d.startswith(".")]
+        for filename in filenames:
+            if not filename.endswith(".py"):
+                continue
+            path = Path(dirpath, filename)
+            parts = path.relative_to(root).with_suffix("").parts
+            if parts[-1] == "__init__":
+                parts = parts[:-1]
+            for start in range(len(parts)):
+                index.setdefault(parts[start:], []).append(path)
+    return index
+
+
+def _fold(node: ast.AST) -> str | None:
+    """The value of a string expression built only from constants (``+``, f-string, ``join``)."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left, right = _fold(node.left), _fold(node.right)
+        return None if left is None or right is None else left + right
+    if isinstance(node, ast.JoinedStr):
+        pieces = [_fold(v.value if isinstance(v, ast.FormattedValue) else v) for v in node.values]
+        return None if None in pieces else "".join(pieces)  # type: ignore[arg-type]
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "join"
+        and len(node.args) == 1
+        and isinstance(node.args[0], (ast.List, ast.Tuple))
+    ):
+        sep = _fold(node.func.value)
+        items = [_fold(e) for e in node.args[0].elts]
+        return None if sep is None or None in items else sep.join(items)  # type: ignore[arg-type]
+    return None
+
+
+def _imports(path: Path, tree: ast.Module) -> tuple[list[str], list[Path]]:
+    """Dotted names ``path`` imports (statements and constant dynamic loads), and the files it
+    names by relative import or by a constant loader path."""
+    names: list[str] = []
+    files: list[Path] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            names += [node.module, *(f"{node.module}.{a.name}" for a in node.names)]
+        elif isinstance(node, ast.ImportFrom):
+            base = path.parent
+            for _ in range(node.level - 1):
+                base = base.parent
+            module = base.joinpath(*node.module.split(".")) if node.module else base
+            files += [base / "__init__.py", module.with_suffix(".py"), module / "__init__.py"]
+            for alias in node.names:
+                files += [
+                    (module / alias.name).with_suffix(".py"),
+                    module / alias.name / "__init__.py",
+                ]
+                names.append(alias.name)  # matched against library stems only
+            names += node.module.split(".") if node.module else []
+        elif isinstance(node, ast.Call):
+            func = ast.unparse(node.func).rsplit(".", 1)[-1]
+            folded = [_fold(arg) for arg in node.args]
+            if func in NAME_LOADERS and folded and folded[0]:
+                names.append(folded[0])
+            elif func in PATH_LOADERS:
+                for sub in node.args:
+                    for piece in ast.walk(sub):
+                        value = _fold(piece)
+                        if value and value.endswith(".py"):
+                            names.append(Path(value).stem)
+                            files.append(path.parent / value)
+    return names, [f for f in files if f.is_file()]
+
+
+def _library_imports(
+    script: Path,
+    root: Path = ROOT,
+    libraries: frozenset[str] = LIBRARIES,
+    index: dict[tuple[str, ...], list[Path]] | None = None,
+) -> list[str]:
+    """Why ``script`` may import a ``libraries`` module, following repository modules it imports.
+
+    A file in the closure gates the script when it is a library, imports a dotted name with a
+    component equal to a library stem, or holds a constant (folded) string naming one. Empty
+    means none was found, not that none is imported: see the module docstring for what is missed.
+    """
+    index = _repo_modules(root) if index is None else index
+    stems = {Path(lib).stem for lib in libraries}
+    library_files = {(root / lib).resolve(): lib for lib in libraries}
+    named = re.compile(r"(?<![\w])(" + "|".join(map(re.escape, sorted(stems))) + r")(?![\w])")
+    parent: dict[Path, Path | None] = {script.resolve(): None}
+    queue = [script.resolve()]
+    reasons: set[str] = set()
+
+    def via(path: Path) -> str:
+        chain = []
+        node: Path | None = path
+        while node is not None:
+            chain.append(
+                node.relative_to(root).as_posix() if node.is_relative_to(root) else str(node)
+            )
+            node = parent[node]
+        return " -> ".join(reversed(chain))
+
+    while queue:
+        path = queue.pop(0)
+        if path in library_files:
+            reasons.add(f"{via(path)}: imports {library_files[path]}")
+            continue
+        try:
+            tree = ast.parse(path.read_text())
+        except (SyntaxError, UnicodeDecodeError, ValueError) as exc:
+            reasons.add(f"{via(path)}: cannot be parsed ({type(exc).__name__})")
+            continue
+        names, files = _imports(path, tree)
+        for name in names:
+            if stems & set(name.split(".")):
+                reasons.add(f"{via(path)}: imports {name}")
+        for node in ast.walk(tree):
+            value = _fold(node)
+            if value is not None and named.search(value):
+                reasons.add(f"{via(path)}: names {named.search(value).group()} in a string")
+        candidates = list(files)
+        for name in names:
+            parts = tuple(name.split("."))
+            for end in range(1, len(parts) + 1):
+                candidates += index.get(parts[:end], [])
+        for candidate in candidates:
+            candidate = candidate.resolve()
+            if candidate not in parent:
+                parent[candidate] = path
+                queue.append(candidate)
+    return sorted(reasons)
+
+
+def _help_withheld(
+    scripts: list[Path], root: Path = ROOT, libraries: frozenset[str] = LIBRARIES
+) -> dict[Path, list[str]]:
+    """The scripts whose ``--help`` must not run because they may import a library, and why."""
+    index = _repo_modules(root)
+    found = {p: _library_imports(p, root, libraries, index) for p in scripts}
+    return {p: reasons for p, reasons in found.items() if reasons}
+
+
+def _help_runnable(
+    scripts: list[Path], root: Path = ROOT, libraries: frozenset[str] = LIBRARIES
+) -> list[Path]:
+    """The scripts whose ``--help`` may run: no static problem and no possible library import."""
+    safe = [p for p in scripts if not _static_problems(p, root)]
+    withheld = _help_withheld(safe, root, libraries)
+    pinned = {root / rel for rel in HELP_NOT_RUN} if root == ROOT else set()
+    return [p for p in safe if p not in withheld and p not in pinned]
 
 
 SCRIPTS = scanned_scripts(ROOT)
@@ -351,8 +653,11 @@ def test_script_has_a_parser_a_main_guard_and_parses_first(script: Path) -> None
 
 
 @pytest.mark.parametrize("library", sorted(LIBRARIES))
-def test_script_library_is_import_only(library: str) -> None:
-    """A ``LIBRARIES`` module exists, is not a command, and does no work when imported."""
+def test_script_library_passes_the_import_time_lint(library: str) -> None:
+    """A ``LIBRARIES`` module exists, is not a command, and shows no import-time work.
+
+    A lint only: passing it does not make the library safe to import, and it gates nothing.
+    """
     assert _library_problems(library) == []
 
 
@@ -399,6 +704,31 @@ def test_import_time_work_is_found(source: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("def cache(f):\n    return f\n\n\n@cache\ndef g():\n    pass\n", "cache"),
+        ("from evil import cache\n\n\n@cache\ndef g():\n    pass\n", "cache"),
+        ("from evil import dataclass\n\n\n@dataclass\nclass A:\n    pass\n", "dataclass"),
+        ("import evil as dataclasses\n\n\n@dataclasses.dataclass\nclass A:\n    pass\n",
+         "dataclasses.dataclass"),
+        ("from functools import lru_cache as cache\n\n\n@cache\ndef g():\n    pass\n", "cache"),
+        ("from evil import *\n\n\n@dataclass\nclass A:\n    pass\n", "dataclass"),
+        ("dataclass = hooks.run\n\n\n@dataclass\nclass A:\n    pass\n", "dataclass"),
+        ("class property:\n    pass\n\n\nclass A:\n    x = property(1)\n", "property"),
+        ("import builtins\nbuiltins.str = hooks.run\nX = str(1)\n", "str"),
+        ("import functools\nfunctools.cache = hooks.run\n\n\n@functools.cache\ndef g():\n"
+         "    pass\n", "functools.cache"),
+        ("def f():\n    global cache\n    cache = hooks.run\n\n\n@cache\ndef g():\n    pass\n",
+         "cache"),
+        ("class A:\n    field = hooks.run\n    x: int = field()\n", "field"),
+    ],
+)  # fmt: skip
+def test_a_shadowed_standard_library_name_is_import_time_work(source: str, expected: str) -> None:
+    """An allowlisted name trusts the standard-library object, not whatever the module bound."""
+    assert any(p.startswith(f"module-level call {expected} (shadows") for p in _work(source))
+
+
+@pytest.mark.parametrize(
     "source",
     [
         "def f():\n    connect()\n",
@@ -410,6 +740,12 @@ def test_import_time_work_is_found(source: str, expected: str) -> None:
         "def f():\n    @register\n    def g():\n        pass\n",
         "@dataclass(frozen=True)\nclass A:\n    x: int = 0\n",
         "class P(Protocol):\n    def run(self) -> None: ...\n",
+        "from dataclasses import dataclass, field\n\n\n@dataclass\nclass A:\n"
+        "    x: list = field(default_factory=list)\n",
+        "import functools\n\n\n@functools.cache\ndef g():\n    pass\n",
+        "from functools import cache\n\n\n@cache\ndef g():\n    pass\n",
+        "def f():\n    field = 1\n    str = 2\n    return field, str\n",
+        "from dataclasses import *\n\n\n@dataclass\nclass A:\n    pass\n",
     ],
 )
 def test_deferred_bodies_are_not_import_time_work(source: str) -> None:
@@ -423,11 +759,15 @@ def _write(path: Path, source: str) -> Path:
     return path
 
 
-#: A command that builds its parser first and imports the synthetic library ``scripts/lib.py``.
+#: The synthetic library of the fixtures below, and the stem its importers name.
+LIB = "scripts/job_lib.py"
+LIBS = frozenset({LIB})
+
+#: A command that builds its parser first and imports the synthetic library ``scripts/job_lib.py``.
 IMPORTER = """\
     import argparse
 
-    from scripts.lib import VALUE
+    from scripts.job_lib import VALUE
 
 
     def main() -> None:
@@ -440,73 +780,259 @@ IMPORTER = """\
 """
 
 
-@pytest.mark.parametrize(
-    "library_source",
-    [
-        "VALUE = open({sentinel!r}, 'w')\n",
-        "class Holder:\n    VALUE = open({sentinel!r}, 'w')\n",
-        "def touch(x=open({sentinel!r}, 'w')):\n    pass\n",
-        "VALUE = 1\nif __name__ == '__main__':\n    pass\n",
-    ],
-)
-def test_an_unsafe_library_gates_its_importer(tmp_path: Path, library_source: str) -> None:
-    """An importer of a library that fails validation is not statically safe, so no --help runs.
+def _importer(tmp_path: Path, import_line: str, name: str = "cmd.py") -> Path:
+    lines = import_line.replace("\n", "\n    ")
+    return _write(
+        tmp_path / "scripts" / name, IMPORTER.replace("from scripts.job_lib import VALUE", lines)
+    )
 
-    The fixtures are only parsed: the sentinel file would exist if any of them were executed.
-    """
+
+def _assert_withheld(tmp_path: Path, importer: Path, sentinel: Path | None = None) -> list[str]:
+    assert _static_problems(importer, tmp_path) == []  # the static checks alone would pass it
+    reasons = _help_withheld([importer], tmp_path, LIBS).get(importer, [])
+    assert reasons, "the importer was not withheld"
+    assert _help_runnable([importer], tmp_path, LIBS) == []
+    if sentinel is not None:
+        assert not sentinel.exists(), "a fixture was executed"
+    return reasons
+
+
+#: Library bodies that run code on import without a call the lint can attribute to them. The
+#: ``{sentinel}`` file would exist if any were executed; they are only parsed.
+BYPASSES = {
+    "shadowed cache": """\
+        def cache(func):
+            open({sentinel!r}, "w").close()
+            return func
+
+
+        @cache
+        def value():
+            return 1
+    """,
+    "shadowed dataclass": """\
+        from scripts.helper import hook as dataclass
+
+
+        @dataclass
+        class Config:
+            x: int = 0
+    """,
+    "dataclass descriptor": """\
+        from dataclasses import dataclass
+
+        from scripts.helper import DEFAULT
+
+
+        @dataclass
+        class Config:
+            x: int = DEFAULT
+    """,
+}
+
+#: The unlisted helper the bypasses import: ``hook`` and ``DEFAULT.__get__`` / ``__set_name__``
+#: run when ``@dataclass`` processes ``Config``.
+HELPER = """\
+    class Hook:
+        def __set_name__(self, owner, name):
+            open({sentinel!r}, "w").close()
+
+        def __get__(self, obj, owner):
+            open({sentinel!r}, "w").close()
+            return 0
+
+
+    DEFAULT = Hook()
+
+
+    def hook(cls):
+        open({sentinel!r}, "w").close()
+        return cls
+"""
+
+
+@pytest.mark.parametrize("bypass", sorted(BYPASSES))
+def test_a_lint_bypassing_library_still_withholds_its_importer(tmp_path: Path, bypass: str) -> None:
+    """Sol's bypasses: whatever the lint says about the library, its importer is never executed."""
     sentinel = tmp_path / "ran"
-    _write(tmp_path / "scripts/lib.py", library_source.format(sentinel=str(sentinel)))
+    _write(tmp_path / LIB, BYPASSES[bypass].format(sentinel=str(sentinel)))
+    _write(tmp_path / "scripts/helper.py", HELPER.format(sentinel=str(sentinel)))
     importer = _write(tmp_path / "scripts/cmd.py", IMPORTER)
-    libraries = frozenset({"scripts/lib.py"})
-    problems = _static_problems(importer, tmp_path, libraries)
-    assert any(p.startswith("imports scripts/lib.py:") for p in problems), problems
-    assert _statically_safe([importer], tmp_path, libraries) == []
-    assert not sentinel.exists()
+    _assert_withheld(tmp_path, importer, sentinel)
+    lint = _library_problems(LIB, tmp_path)
+    if bypass == "dataclass descriptor":
+        assert lint == []  # the lint cannot see it, which is why the lint gates nothing
+    else:
+        assert lint, "the shadowed decorator should be reported by the lint"
+
+
+def test_a_clean_library_still_withholds_its_importer(tmp_path: Path) -> None:
+    """Passing the lint is not proof: no importer of a library has its --help run."""
+    _write(
+        tmp_path / LIB,
+        "from dataclasses import dataclass\n\n\n@dataclass\nclass VALUE:\n    x: int = 0\n",
+    )
+    importer = _write(tmp_path / "scripts/cmd.py", IMPORTER)
+    assert _library_problems(LIB, tmp_path) == []
+    _assert_withheld(tmp_path, importer)
 
 
 @pytest.mark.parametrize(
     "import_line",
     [
-        "from scripts.lib import VALUE",
-        "from scripts import lib",
-        "import scripts.lib",
-        "import lib",
-        "from . import lib",
-        "from .lib import VALUE",
-        "import importlib\nMOD = 'scripts.lib'",
+        "from scripts.job_lib import VALUE",
+        "from scripts import job_lib",
+        "import scripts.job_lib",
+        "import job_lib",
+        "from . import job_lib",
+        "from .job_lib import VALUE",
+        "import importlib\nMOD = 'scripts.job_lib'",
     ],
 )
-def test_every_import_form_of_a_library_is_gated(tmp_path: Path, import_line: str) -> None:
-    _write(tmp_path / "scripts/lib.py", "VALUE = work()\n")
+def test_every_import_form_of_a_library_is_withheld(tmp_path: Path, import_line: str) -> None:
+    _write(tmp_path / LIB, "VALUE = 1\n")
+    _assert_withheld(tmp_path, _importer(tmp_path, import_line))
+
+
+def test_a_missing_library_still_withholds_its_importer(tmp_path: Path) -> None:
+    _assert_withheld(tmp_path, _write(tmp_path / "scripts/cmd.py", IMPORTER))
+
+
+@pytest.mark.parametrize(
+    ("files", "import_line"),
+    [
+        ({"scripts/helper.py": "from scripts.job_lib import VALUE\n"}, "import scripts.helper"),
+        ({"scripts/helper.py": "from job_lib import VALUE\n"}, "import helper"),
+        ({"scripts/helper.py": "from scripts.deeper import X\n", "scripts/deeper.py":
+          "import scripts.job_lib\nX = 1\n"}, "from scripts.helper import X"),
+        ({"scripts/pkg/__init__.py": "from scripts.job_lib import VALUE\n",
+          "scripts/pkg/sub.py": "Y = 1\n"}, "from scripts.pkg.sub import Y"),
+        ({"scripts/pkg/__init__.py": "", "scripts/pkg/sub.py": "from ..job_lib import VALUE\n"},
+         "from scripts.pkg import sub"),
+        ({"research/a/_lib/shared.py": "import job_lib\n"}, "import shared"),
+        ({"scripts/helper.py": "import importlib\nM = importlib.import_module('scripts.' + "
+          "'job_' + 'lib')\n"}, "import helper"),
+        ({"scripts/helper.py": "import runpy\nrunpy.run_path('deeper.py')\n",
+          "scripts/deeper.py": "from scripts.job_lib import VALUE\n"}, "import helper"),
+    ],
+)  # fmt: skip
+def test_a_library_reached_through_an_unlisted_module_is_withheld(
+    tmp_path: Path, files: dict[str, str], import_line: str
+) -> None:
+    """Unlisted intermediaries (modules, packages, relative imports, other directories)."""
+    _write(tmp_path / LIB, "VALUE = 1\n")
+    for rel, source in files.items():
+        _write(tmp_path / rel, source)
+    reasons = _assert_withheld(tmp_path, _importer(tmp_path, import_line))
+    assert any(" -> " in r for r in reasons), reasons
+
+
+@pytest.mark.parametrize(
+    "import_line",
+    [
+        "import importlib\nMOD = importlib.import_module('scripts.' + 'job_' + 'lib')",
+        "import importlib\nMOD = importlib.import_module(f\"scripts.{'job_lib'}\")",
+        "import importlib\nMOD = importlib.import_module('.'.join(['scripts', 'job_lib']))",
+        "MOD = __import__('scripts.job' + '_lib')",
+        "import importlib.util\n"
+        "SPEC = importlib.util.spec_from_file_location('m', 'job_' + 'lib.py')",
+        "import runpy\nNS = runpy.run_path('job_lib' + '.py')",
+    ],
+)
+def test_a_computed_dynamic_import_of_a_library_is_withheld(
+    tmp_path: Path, import_line: str
+) -> None:
+    """A loader whose argument folds to a constant naming a library gates the script."""
+    sentinel = tmp_path / "ran"
+    _write(tmp_path / LIB, f"open({str(sentinel)!r}, 'w').close()\n")
     importer = _write(
         tmp_path / "scripts/cmd.py",
-        IMPORTER.replace("from scripts.lib import VALUE", import_line.replace("\n", "\n    ")),
+        IMPORTER.replace(
+            "from scripts.job_lib import VALUE\n", import_line.replace("\n", "\n    ")
+        ),
     )
-    assert _statically_safe([importer], tmp_path, frozenset({"scripts/lib.py"})) == []
+    # The loader runs at module level, so the static check fails as well; the point here is that
+    # the library gate sees through the computed name on its own.
+    assert _help_withheld([importer], tmp_path, LIBS).get(importer)
+    assert _help_runnable([importer], tmp_path, LIBS) == []
+    assert not sentinel.exists()
 
 
-def test_a_library_imported_through_another_library_gates_the_importer(tmp_path: Path) -> None:
-    _write(tmp_path / "scripts/lib.py", "from scripts.deep import Y\nVALUE = 1\n")
-    _write(tmp_path / "scripts/deep.py", "Y = work()\n")
-    importer = _write(tmp_path / "scripts/cmd.py", IMPORTER)
-    libraries = frozenset({"scripts/lib.py", "scripts/deep.py"})
-    problems = _static_problems(importer, tmp_path, libraries)
-    assert "imports scripts/deep.py: module-level call work" in problems, problems
-    assert _statically_safe([importer], tmp_path, libraries) == []
-
-
-def test_a_missing_library_gates_its_importer(tmp_path: Path) -> None:
-    importer = _write(tmp_path / "scripts/cmd.py", IMPORTER)
-    assert _statically_safe([importer], tmp_path, frozenset({"scripts/lib.py"})) == []
-
-
-def test_a_clean_library_leaves_its_importer_safe(tmp_path: Path) -> None:
+def test_a_computed_import_of_another_module_is_not_withheld(tmp_path: Path) -> None:
+    """The folding is specific: a computed name that is not a library leaves the script runnable."""
+    _write(tmp_path / LIB, "VALUE = 1\n")
     _write(
-        tmp_path / "scripts/lib.py",
-        "from dataclasses import dataclass\n\n\n@dataclass\nclass VALUE:\n    x: int = 0\n",
+        tmp_path / "scripts/helper.py",
+        "import importlib\nM = importlib.import_module('scripts.' + 'other')\n",
     )
-    importer = _write(tmp_path / "scripts/cmd.py", IMPORTER)
-    assert _statically_safe([importer], tmp_path, frozenset({"scripts/lib.py"})) == [importer]
+    importer = _importer(tmp_path, "import helper")
+    assert _help_withheld([importer], tmp_path, LIBS) == {}
+    assert _help_runnable([importer], tmp_path, LIBS) == [importer]
+
+
+def _guarded_help(
+    script: Path, cwd: Path, stems: frozenset[str], **env: str
+) -> subprocess.CompletedProcess:
+    guard = HELP_GUARD.format(stems=sorted(stems), exit_code=TRIPWIRE_EXIT)
+    return subprocess.run(
+        [sys.executable, "-c", guard, str(script), "--help"],
+        env={**_clean_env(), **env},
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+
+
+#: Unlisted helpers that load the library by a name the static gate cannot evaluate.
+TRIPWIRE_HELPERS = {
+    "import by variable name": "import importlib\nimport os\n\n"
+    "M = importlib.import_module(os.environ['FIXTURE_MODULE'])\n",
+    "load by variable path": "import importlib.util\nimport os\n\n"
+    "S = importlib.util.spec_from_file_location('m', os.environ['FIXTURE_PATH'])\n"
+    "S.loader.exec_module(importlib.util.module_from_spec(S))\n",
+    "exec of the source": "import os\n\nexec(open(os.environ['FIXTURE_PATH']).read())\n",
+    "swallowed failure": "import importlib\nimport os\n\ntry:\n"
+    "    importlib.import_module(os.environ['FIXTURE_MODULE'])\nexcept BaseException:\n    pass\n",
+    "child process": "import os\nimport subprocess\nimport sys\n\n"
+    "subprocess.run([sys.executable, os.environ['FIXTURE_PATH']], check=False)\n",
+}
+
+
+@pytest.mark.parametrize("case", sorted(TRIPWIRE_HELPERS))
+def test_the_tripwire_stops_a_library_load_the_static_gate_misses(
+    tmp_path: Path, case: str
+) -> None:
+    """The guard ends --help before the library's file is read; the library never runs.
+
+    This runs the synthetic importer (in tmp_path, under the clean environment), never the
+    library: the sentinel proves it. The static gate is blind to these by design (documented).
+    """
+    sentinel = tmp_path / "ran"
+    library = _write(tmp_path / LIB, f"open({str(sentinel)!r}, 'w').close()\n")
+    _write(tmp_path / "scripts/helper.py", TRIPWIRE_HELPERS[case])
+    importer = _importer(tmp_path, "import helper")
+    assert _help_runnable([importer], tmp_path, LIBS) == [importer]  # the static gate misses it
+    work = tmp_path / "work"
+    work.mkdir()
+    result = _guarded_help(
+        importer, work, frozenset({"job_lib"}), FIXTURE_MODULE="job_lib", FIXTURE_PATH=str(library)
+    )
+    assert result.returncode == TRIPWIRE_EXIT, (result.returncode, result.stderr[-800:])
+    assert "help tripwire" in result.stderr
+    assert not sentinel.exists(), "the library ran"
+
+
+def test_the_tripwire_lets_a_plain_help_through(tmp_path: Path) -> None:
+    _write(tmp_path / LIB, "VALUE = 1\n")
+    _write(tmp_path / "scripts/helper.py", "import json\n\nX = json.dumps({})\n")
+    importer = _importer(tmp_path, "import helper")
+    work = tmp_path / "work"
+    work.mkdir()
+    result = _guarded_help(importer, work, frozenset({"job_lib"}))
+    assert result.returncode == 0, result.stderr[-800:]
+    assert "usage: cmd.py" in result.stdout
 
 
 def test_every_moved_script_is_still_scanned() -> None:
@@ -544,14 +1070,23 @@ def test_study_drivers_are_scanned_only_with_a_main_guard(tmp_path: Path) -> Non
     assert found == ["research/a/_lib/tool.py", "research/a/s/code/run.py", "scripts/s.py"]
 
 
-def _statically_safe(
-    scripts: list[Path], root: Path = ROOT, libraries: frozenset[str] = LIBRARIES
-) -> list[Path]:
-    """The scripts whose ``--help`` may run: no static problem, own or of a library they import."""
-    return [p for p in scripts if not _static_problems(p, root, libraries)]
+WITHHELD = _help_withheld(SCRIPTS)
+RUNNABLE = _help_runnable(SCRIPTS)
 
 
-SAFE = _statically_safe(SCRIPTS)
+def test_help_not_run_lists_exactly_the_library_importers() -> None:
+    """The pinned list matches what the gate finds, so a new importer is named in a commit."""
+    found = {p.relative_to(ROOT).as_posix(): r for p, r in WITHHELD.items()}
+    assert sorted(found) == sorted(HELP_NOT_RUN), found
+    for rel, reason in HELP_NOT_RUN.items():
+        assert any(reason.split()[-1] in r for r in found[rel]), (rel, found[rel])
+    assert not {ROOT / rel for rel in HELP_NOT_RUN} & set(RUNNABLE)
+
+
+@pytest.mark.parametrize("script", sorted(HELP_NOT_RUN))
+def test_help_not_run_is_reported(script: str) -> None:
+    """Reported, not passed: these scripts get the static checks only."""
+    pytest.skip(f"--help intentionally not executed for {script}: {HELP_NOT_RUN[script]}")
 
 
 def _clean_env() -> dict[str, str]:
@@ -565,19 +1100,14 @@ def _clean_env() -> dict[str, str]:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("script", SAFE, ids=_ids(SAFE))
+@pytest.mark.parametrize("script", RUNNABLE, ids=_ids(RUNNABLE))
 def test_script_help_exits_zero_with_usage(script: Path, tmp_path: Path) -> None:
-    # Re-checked at run time too, in case a script or library changed after collection.
+    # Re-checked at run time too, in case a script or a module it imports changed after collection.
     assert _static_problems(script) == []
-    result = subprocess.run(
-        [sys.executable, str(script), "--help"],
-        env=_clean_env(),
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        timeout=20,
-        check=False,
-    )
+    assert _library_imports(script) == []
+    stems = frozenset(Path(lib).stem for lib in LIBRARIES)
+    result = _guarded_help(script, tmp_path, stems)
+    assert result.returncode != TRIPWIRE_EXIT, f"tripwire: {result.stderr[-800:]}"
     assert result.returncode == 0, result.stderr[-800:]
     assert "usage" in result.stdout.lower(), result.stdout[:300]
     assert not os.listdir(tmp_path), "--help wrote into its working directory"
