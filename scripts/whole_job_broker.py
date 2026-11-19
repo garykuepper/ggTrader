@@ -247,6 +247,7 @@ class Broker:
         self.reported: int | None = None
         self.outcome = ""
         self.retry_at: float | None = None
+        self.stop_retry = False
 
     # Startup ------------------------------------------------------------------------------
 
@@ -439,6 +440,7 @@ class Broker:
         self.record = None
         self.phases, self.reported, self.deadline, self.outcome = [], None, None, ""
         self.retry_at = None
+        self.stop_retry = False
         try:
             self.system.start_unit(TEST_UNIT)
         except BaseException:
@@ -569,7 +571,7 @@ class Broker:
             return
         if self.retry_at is not None and now < self.retry_at:
             return
-        if self.mode == "held" and self.retry_at is not None:
+        if self.mode == "held" and self.stop_retry:
             self._stop_quietly("retry incomplete stop")
             return
         try:
@@ -578,6 +580,7 @@ class Broker:
             self.log(f"cannot read pinned cgroup events: {exc}")
             self.retry_at = now + STOP_RETRY_SECONDS
             return
+        self.retry_at = None
         if not populated:
             self._stop_quietly(self._ended_reason())
 
@@ -616,11 +619,13 @@ class Broker:
             self.state.clear(job, self.boot, self.state.epoch)
         except BaseException:
             self.mode = "held"
+            self.stop_retry = True
             self.retry_at = self.system.now() + STOP_RETRY_SECONDS
             self.outcome = f"stop incomplete ({reason}); admission held"
             raise
         handles.close()
         self.handles, self.retry_at = None, None
+        self.stop_retry = False
         self.mode, self.driver, self.outcome = "idle", None, reason
         self.log(f"attempt {record.attempt}: {reason}; cleared")
 

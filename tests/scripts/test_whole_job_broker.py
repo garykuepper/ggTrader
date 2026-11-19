@@ -884,6 +884,27 @@ def test_failed_kill_is_retried_when_job_remains_populated(env, monkeypatch) -> 
     assert broker.mode == "idle"
 
 
+def test_held_job_is_not_killed_after_events_read_error(env, monkeypatch) -> None:
+    system, _, _, _ = env
+    broker = make(env)
+    broker.startup({})
+    broker.start()
+    broker.register(DRIVER_PIDFD, lambda: None)
+    broker.mode = "held"
+    populated = system.populated
+
+    def fail(_handles):
+        raise OSError("temporary read error")
+
+    monkeypatch.setattr(system, "populated", fail)
+    broker.tick()
+    monkeypatch.setattr(system, "populated", populated)
+    system.clock += STOP_RETRY_SECONDS + 1
+    broker.tick()
+    assert not system.kills
+    assert broker.mode == "held"
+
+
 def test_server_ignores_ready_cgroup_events_during_stop_cooldown(env, monkeypatch) -> None:
     system, _, _, _ = env
     broker = make(env)
