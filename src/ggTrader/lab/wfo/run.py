@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping, Sequence
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -171,6 +172,180 @@ def _scorer_for(strategy: Any, inputs: ScoringInputs, options: SignalSimOptions)
     return WeightScorer.from_inputs(inputs)
 
 
+@dataclass(frozen=True, eq=False)
+class _FoldContext:
+    """The per-run constants ``_score_fold`` reads (nothing in it changes from fold to fold)."""
+
+    scorer: Scorer
+    strategy_name: str
+    names: Sequence[str]
+    name_to_idx: Mapping[str, int]
+    combos: Sequence[Mapping[str, Any]]
+    ndh_threshold: float
+    dsr_threshold: float
+    policy: WfoPolicy
+    n_folds: int
+    verbose: bool
+
+
+class _FoldOutcome(NamedTuple):
+    """What the fold loop needs back from ``_score_fold``."""
+
+    anchor: AnchorSet
+    record: FoldRecord | None  # None when the train window had no metrics
+    skipped: dict[str, Any] | None  # the skipped_folds entry when record is None
+    winner: dict[str, Any] | None
+    oos_curve: pd.Series | None
+    running_value: float
+    ran_test: bool
+    od12_flip: bool
+    state: WfoState
+
+
+def _score_fold(
+    ctx: _FoldContext, i: int, fold: Fold, state: WfoState, running_value: float
+) -> _FoldOutcome:
+    """Score one fold: anchor, train, gates, the deployed combination's test window, breaker.
+
+    It prints the two verbose fragments itself (the header with ``end=""`` before the train
+    window is read, the result line at the end): the interleaving with the scorer calls is part
+    of the behavior. It appends to ``state.wfe_history`` and ``state.oos_sharpes`` **in place**
+    and returns the breaker's copy as ``outcome.state``. A skipped fold (no train metrics)
+    returns the state and the running value it was given, with the anchor picked for it.
+    ``run_dsr``, ``run_ndh`` and the other helpers are looked up in this module at call time, so
+    tests and frozen studies can replace them.
+    """
+    scorer = ctx.scorer
+    # Anchor: fit only on data available as of this fold's train_end (expanding window).
+    anchor_req = WindowReq("anchor", i, None, fold.train_end)
+    train_req = WindowReq("train", i, fold.train_start, fold.train_end)
+    test_req = WindowReq("test", i, fold.test_start, fold.test_end)
+    anchor = pick_anchor(scorer.metrics(anchor_req))
+    if ctx.verbose:
+        print(
+            f"  Fold {i + 1}/{ctx.n_folds}: train {fold.train_start.date()}→"
+            f"{fold.train_end.date()} | test {fold.test_start.date()}→{fold.test_end.date()}"
+            f" | anchor {anchor.combo} (MaxDD {anchor.max_drawdown_pct:.1f}%,"
+            f" CAGR {anchor.cagr_pct:.1f}%)",
+            end="",
+            flush=True,
+        )
+    train_metrics = scorer.metrics(train_req)
+    if not train_metrics:
+        skipped = {"fold_num": i + 1, **fold._asdict(), "reason": "no_train_metrics"}
+        return _FoldOutcome(anchor, None, skipped, None, None, running_value, False, False, state)
+
+    scores = composite_score(train_metrics)
+    best_idx = best_index(scores)
+    winner = train_metrics[best_idx]
+    winner_idx = ctx.name_to_idx[winner["combo"]]
+
+    ndh = run_ndh(train_metrics, ctx.combos, best_idx, ctx.ndh_threshold)
+    dsr_passed, dsr_value = run_dsr(
+        scorer.returns(train_req, winner_idx), len(ctx.combos), ctx.dsr_threshold
+    )
+    gates_passed = ndh.passed and dsr_passed
+
+    # OD12: the NDH expectancy divides by trades; compare the legacy whole-simulation count
+    # with the per-window count (only the sign reaches the gate, so no flip is expected).
+    whole = scorer.trade_counts(train_req, cumulative=True)
+    legacy_metrics = [dict(m, n_trades=int(whole[j])) for j, m in enumerate(train_metrics)]
+    ndh_whole = run_ndh(legacy_metrics, ctx.combos, best_idx, ctx.ndh_threshold)
+    od12_flip = ndh_whole.passed != ndh.passed
+
+    halted_entering = state.halted
+    deploy_params = winner["params"]
+    used_anchor = False
+    anchor_reason: str | None = None
+    if not gates_passed or state.halted:
+        deploy_params = anchor.params
+        used_anchor = True
+        anchor_reason = "halted" if state.halted else "gates_failed"
+
+    # Test: the deployed combination's test window, from the same simulation.
+    deploy_idx = ctx.name_to_idx.get(inputs.combo_name(ctx.strategy_name, deploy_params))
+    test_metrics = scorer.metrics(test_req, [deploy_idx]) if deploy_idx is not None else []
+    oos_score = 0.0
+    ran_test = False
+    oos_curve: pd.Series | None = None
+    if test_metrics:
+        ran_test = True
+        oos_score = composite_score(test_metrics)[0]
+        eq_test = scorer.equity(test_req, deploy_idx)
+        if len(eq_test) > 0:
+            normalized = running_value * (eq_test / eq_test.iloc[0])
+            oos_curve = normalized
+            running_value = float(normalized.iloc[-1])
+    elif deploy_idx is None:
+        # No anchor exists (no combination had traded by train_end): the book stays in cash,
+        # a flat curve, so the out-of-sample record and the SPY comparison keep their days.
+        dates = scorer.window_dates(test_req)
+        if len(dates) > 0:
+            oos_curve = pd.Series(running_value, index=dates)
+
+    is_sharpe = winner.get("sharpe", float("nan"))
+    oos_sharpe = float("nan")
+    if test_metrics:
+        oos_sharpe = test_metrics[0].get("sharpe", float("nan"))
+
+    wfe_val = compute_wfe(is_sharpe, oos_sharpe)
+    state.wfe_history.append(
+        None if used_anchor and ctx.policy.anchor_fold_wfe == "exclude_from_breaker" else wfe_val
+    )
+    if np.isfinite(oos_sharpe):
+        state.oos_sharpes.append(oos_sharpe)
+
+    if not state.halted:
+        if ctx.policy.nan_wfe == "legacy":
+            new_state = check_circuit_breaker(state)
+        else:
+            new_state = check_circuit_breaker(state, nan_policy=ctx.policy.nan_wfe)
+    else:
+        new_state = check_shadow_reentry(state, ndh.passed, dsr_passed, wfe_val)
+
+    record = FoldRecord(
+        fold_num=i + 1,
+        train_start=fold.train_start,
+        train_end=fold.train_end,
+        test_start=fold.test_start,
+        test_end=fold.test_end,
+        winner_combo=winner["combo"],
+        winner_params=winner["params"],
+        train_score=scores[best_idx],
+        oos_score=oos_score,
+        ndh_passed=ndh.passed,
+        dsr_passed=dsr_passed,
+        gates_passed=gates_passed,
+        ndh_density=ndh.density,
+        dsr_value=dsr_value,
+        wfe=wfe_val,
+        is_sharpe=is_sharpe,
+        oos_sharpe=oos_sharpe,
+        halted=new_state.halted,
+        halted_entering=halted_entering,
+        used_anchor=used_anchor,
+        anchor_combo=anchor.combo,
+        anchor_params=anchor.params,
+        anchor_reason=anchor_reason,
+        deployed_combo=ctx.names[deploy_idx] if deploy_idx is not None else "none",
+        halt_cleared=bool(halted_entering and not new_state.halted),
+        winner_trades_in_window=winner["n_trades"],
+        winner_trades_whole_simulation=int(whole[winner_idx]),
+        od12_ndh_flip=od12_flip,
+    )
+    if ctx.verbose:
+        oos_s = f" OOS Sharpe {oos_sharpe:.2f}" if np.isfinite(oos_sharpe) else ""
+        wfe_s = f" WFE {wfe_val:.2f}" if wfe_val is not None else ""
+        gate_s = (
+            f" [NDH dens {ndh.density:.2f} var {ndh.variance_ratio:.2f}/0.20 "
+            f"{'✓' if ndh.passed else '✗'} DSR {dsr_value:.2f}{'✓' if dsr_passed else '✗'}]"
+        )
+        print(f" → done{oos_s}{wfe_s}{gate_s}", flush=True)
+    return _FoldOutcome(
+        anchor, record, None, winner, oos_curve, running_value, ran_test, od12_flip, new_state
+    )
+
+
 def run_wfo(
     strategy_name: str,
     strategy_cls: Any,
@@ -285,137 +460,33 @@ def run_wfo(
     n_test_runs = 0
     fold_started = time.time()
 
+    ctx = _FoldContext(
+        scorer=scorer,
+        strategy_name=strategy_name,
+        names=names,
+        name_to_idx=name_to_idx,
+        combos=combos,
+        ndh_threshold=ndh_threshold,
+        dsr_threshold=dsr_threshold,
+        policy=policy,
+        n_folds=len(folds),
+        verbose=verbose,
+    )
     for i, fold in enumerate(folds):
-        # Anchor: fit only on data available as of this fold's train_end (expanding window).
-        anchor_req = WindowReq("anchor", i, None, fold.train_end)
-        train_req = WindowReq("train", i, fold.train_start, fold.train_end)
-        test_req = WindowReq("test", i, fold.test_start, fold.test_end)
-        anchor = pick_anchor(scorer.metrics(anchor_req))
-        if verbose:
-            print(
-                f"  Fold {i + 1}/{len(folds)}: train {fold.train_start.date()}→"
-                f"{fold.train_end.date()} | test {fold.test_start.date()}→{fold.test_end.date()}"
-                f" | anchor {anchor.combo} (MaxDD {anchor.max_drawdown_pct:.1f}%,"
-                f" CAGR {anchor.cagr_pct:.1f}%)",
-                end="",
-                flush=True,
-            )
-        train_metrics = scorer.metrics(train_req)
-        if not train_metrics:
-            skipped_folds.append(
-                {"fold_num": i + 1, **fold._asdict(), "reason": "no_train_metrics"}
-            )
+        out = _score_fold(ctx, i, fold, wfo_state, oos_running_value)
+        anchor = out.anchor
+        if out.record is None:
+            skipped_folds.append(out.skipped)
             continue
-
-        scores = composite_score(train_metrics)
-        best_idx = best_index(scores)
-        winner = train_metrics[best_idx]
-        winner_idx = name_to_idx[winner["combo"]]
-
-        ndh = run_ndh(train_metrics, combos, best_idx, ndh_threshold)
-        dsr_passed, dsr_value = run_dsr(
-            scorer.returns(train_req, winner_idx), len(combos), dsr_threshold
-        )
-        gates_passed = ndh.passed and dsr_passed
-
-        # OD12: the NDH expectancy divides by trades; compare the legacy whole-simulation count
-        # with the per-window count (only the sign reaches the gate, so no flip is expected).
-        whole = scorer.trade_counts(train_req, cumulative=True)
-        legacy_metrics = [dict(m, n_trades=int(whole[j])) for j, m in enumerate(train_metrics)]
-        ndh_whole = run_ndh(legacy_metrics, combos, best_idx, ndh_threshold)
-        od12_flip = ndh_whole.passed != ndh.passed
-        if od12_flip:
+        n_test_runs += int(out.ran_test)
+        if out.od12_flip:
             od12_flips.append(i + 1)
-
-        halted_entering = wfo_state.halted
-        deploy_params = winner["params"]
-        used_anchor = False
-        anchor_reason: str | None = None
-        if not gates_passed or wfo_state.halted:
-            deploy_params = anchor.params
-            used_anchor = True
-            anchor_reason = "halted" if wfo_state.halted else "gates_failed"
-
-        # Test: the deployed combination's test window, from the same simulation.
-        deploy_idx = name_to_idx.get(inputs.combo_name(strategy_name, deploy_params))
-        test_metrics = scorer.metrics(test_req, [deploy_idx]) if deploy_idx is not None else []
-        oos_score = 0.0
-        if test_metrics:
-            n_test_runs += 1
-            oos_score = composite_score(test_metrics)[0]
-            eq_test = scorer.equity(test_req, deploy_idx)
-            if len(eq_test) > 0:
-                normalized = oos_running_value * (eq_test / eq_test.iloc[0])
-                oos_curves.append(normalized)
-                oos_running_value = float(normalized.iloc[-1])
-        elif deploy_idx is None:
-            # No anchor exists (no combination had traded by train_end): the book stays in cash,
-            # a flat curve, so the out-of-sample record and the SPY comparison keep their days.
-            dates = scorer.window_dates(test_req)
-            if len(dates) > 0:
-                oos_curves.append(pd.Series(oos_running_value, index=dates))
-
-        is_sharpe = winner.get("sharpe", float("nan"))
-        oos_sharpe = float("nan")
-        if test_metrics:
-            oos_sharpe = test_metrics[0].get("sharpe", float("nan"))
-
-        wfe_val = compute_wfe(is_sharpe, oos_sharpe)
-        wfo_state.wfe_history.append(
-            None if used_anchor and policy.anchor_fold_wfe == "exclude_from_breaker" else wfe_val
-        )
-        if np.isfinite(oos_sharpe):
-            wfo_state.oos_sharpes.append(oos_sharpe)
-
-        if not wfo_state.halted:
-            if policy.nan_wfe == "legacy":
-                wfo_state = check_circuit_breaker(wfo_state)
-            else:
-                wfo_state = check_circuit_breaker(wfo_state, nan_policy=policy.nan_wfe)
-        else:
-            wfo_state = check_shadow_reentry(wfo_state, ndh.passed, dsr_passed, wfe_val)
-
-        fold_results.append(
-            FoldRecord(
-                fold_num=i + 1,
-                train_start=fold.train_start,
-                train_end=fold.train_end,
-                test_start=fold.test_start,
-                test_end=fold.test_end,
-                winner_combo=winner["combo"],
-                winner_params=winner["params"],
-                train_score=scores[best_idx],
-                oos_score=oos_score,
-                ndh_passed=ndh.passed,
-                dsr_passed=dsr_passed,
-                gates_passed=gates_passed,
-                ndh_density=ndh.density,
-                dsr_value=dsr_value,
-                wfe=wfe_val,
-                is_sharpe=is_sharpe,
-                oos_sharpe=oos_sharpe,
-                halted=wfo_state.halted,
-                halted_entering=halted_entering,
-                used_anchor=used_anchor,
-                anchor_combo=anchor.combo,
-                anchor_params=anchor.params,
-                anchor_reason=anchor_reason,
-                deployed_combo=names[deploy_idx] if deploy_idx is not None else "none",
-                halt_cleared=bool(halted_entering and not wfo_state.halted),
-                winner_trades_in_window=winner["n_trades"],
-                winner_trades_whole_simulation=int(whole[winner_idx]),
-                od12_ndh_flip=od12_flip,
-            ).as_dict()
-        )
-        fold_winners.append(winner)
-        if verbose:
-            oos_s = f" OOS Sharpe {oos_sharpe:.2f}" if np.isfinite(oos_sharpe) else ""
-            wfe_s = f" WFE {wfe_val:.2f}" if wfe_val is not None else ""
-            gate_s = (
-                f" [NDH dens {ndh.density:.2f} var {ndh.variance_ratio:.2f}/0.20 "
-                f"{'✓' if ndh.passed else '✗'} DSR {dsr_value:.2f}{'✓' if dsr_passed else '✗'}]"
-            )
-            print(f" → done{oos_s}{wfe_s}{gate_s}", flush=True)
+        if out.oos_curve is not None:
+            oos_curves.append(out.oos_curve)
+        oos_running_value = out.running_value
+        wfo_state = out.state
+        fold_results.append(out.record.as_dict())
+        fold_winners.append(out.winner)
 
     nan_metrics = {
         "sharpe": float("nan"),
