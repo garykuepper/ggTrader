@@ -267,7 +267,8 @@ delegate prompts and goldens. Phase 5 adds:
   root** before the first seed: `ggTrader.__file__` and `tests.paper.equivalence.runner.__file__` lie under the
   worktree it was told to use; that worktree holds no `.env` file (only `.env.example`); `load_dotenv("<any
   path>")` returns `False` and leaves `os.environ` unchanged; and none of the variable names the harness
-  scrubs (`ENV_VARS` in `tests/paper/transcript/harness.py`) or `offline.sh` scrubs is set in the process; and
+  scrubs (`ENV_VARS` in `tests/paper/transcript/harness.py`) or `offline.sh` scrubs is set in the process,
+  except `GGT_MEMBERSHIP`, which must equal exactly `fixture:sp500_v1_2026-06-02`; and
   (4) wraps the work of **each process** in `tests.netguard.blocked_connections()` (the guard does not cover
   child processes, so a script spawns none) and exits non-zero if the guard recorded an attempt. The
   assertions of (2) and (3) are in addition to `blocked_connections()`, not instead of it: the guard stops a
@@ -1284,9 +1285,11 @@ never defines behavior:
   `("new",)`: `run_with("legacy", ...)` raises `ValueError`) and `test_impl_py_holds_only_impls` (an AST scan of
   `impl.py` finds one assignment and no function) in `test_run_legacy_frozen.py`'s sibling
   `tests/paper/test_run_with.py` (**immutable**, hash-recorded; add it to the behavioral set list in Task 51);
-  and, in the same file, `test_implementation_legacy_selects_run_legacy_and_restores_the_class` (inside
+  and, in `test_run_legacy_frozen.py` (retired with the legacy copy),
+  `test_implementation_legacy_selects_run_legacy_and_restores_the_class` (inside
   `with implementation("legacy")` `PaperTrader._run is PaperTrader._run_legacy`, outside it is the original
-  `_run`, also after an exception raised inside the `with`), `test_implementation_new_changes_nothing` and
+  `_run`, also after an exception raised inside the `with`); in the immutable `test_run_with.py`,
+  `test_implementation_new_changes_nothing` and
   `test_implementation_rejects_an_impl_not_in_impls` (patch `IMPLS` to `("new",)`: `implementation("legacy")`
   raises `ValueError` on entry), `test_run_with_is_run_scenario_under_implementation` (a counting wrapper on the
   harness's `run_scenario` and on `implementation` sees `run_with` call each once, in that nesting).
@@ -1590,7 +1593,7 @@ update) and invariant (e) would fail for a reason that is not a bug. Read replie
   `cache.computed` holds exactly the seeds 0-599, every value `1`, and `sum(cache.computed.values()) ==
   len(cache)`; a second `fill` of the same seeds leaves the counter unchanged), `test_the_cache_stops_at_its_deadline`
   (a cache built with a tiny deadline and a slow stand-in summarizer raises `SeedBudgetExceeded` between seeds
-  and keeps the seeds it finished), and, **parametrized over `IMPLS`**,
+  and keeps the seeds it finished), and, **as one stable test node that iterates over `IMPLS`**,
   `test_both_implementations_share_one_execution_environment` (a `Case` with `lock_fails_on=2`, a second `Case`
   with a `membership_error`, and a seed that logs, run through `run_recorded` for each implementation in
   `IMPLS`: a counting wrapper on the harness's `_Run` constructor sees **exactly one** construction per call;
