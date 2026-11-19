@@ -5,6 +5,7 @@
 # (31 GB RAM; a past incident reached ~10 GB and froze the machine, see
 # scripts/run_tests.sh). MemorySwapMax=0 matters most: swap thrashing, not the
 # allocation itself, is what made the box unreachable.
+# The scope inherits the caller's slice (systemd >= 246); direct commands do not.
 #
 # Usage:
 #   scripts/run_capped.sh <command...>
@@ -70,7 +71,7 @@ heavy_job_enter run_capped "$MEM_MAX"
 echo "running under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s" >&2
 
 set +e
-systemd-run --user --scope -q --collect \
+systemd-run --user --scope -q --collect --slice-inherit \
     -p MemoryMax="$MEM_MAX" \
     -p MemorySwapMax=0 \
     -p RuntimeMaxSec="$MAX_SECONDS" \

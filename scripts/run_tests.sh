@@ -9,6 +9,7 @@
 #
 # MemorySwapMax=0 is the important half: swap-file thrashing, not the
 # allocation itself, is what made the box unreachable.
+# Scopes inherit the caller's slice (systemd >= 246); direct pytest and older wrappers do not.
 #
 # Tiers (the marker expression of each lives in tests/tiers.py, the one source CI uses too):
 #   scripts/run_tests.sh                 FAST CORE: the developer loop, about a minute and a half.
@@ -103,11 +104,23 @@ run_pytest() {
     if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
         env PYTHONPATH=src "$PYTHON" -m pytest "$@"
     else
-        systemd-run --user --scope -q --collect \
+        # A missing marker distinguishes a failed scope launch from a pytest assertion failure.
+        local marker_dir phase_status=0
+        marker_dir="$(mktemp -d /tmp/ggtrader-test.XXXXXXXX)" || return 125
+        systemd-run --user --scope -q --collect --slice-inherit \
             -p MemoryMax="$MEM_MAX" \
             -p MemorySwapMax=0 \
             -p RuntimeMaxSec="$MAX_SECONDS" \
-            env PYTHONPATH=src "$PYTHON" -m pytest "$@"
+            bash -c 'printf started > "$1" || exit 125; shift; exec "$@"' _ \
+            "$marker_dir/started" env PYTHONPATH=src "$PYTHON" -m pytest "$@" \
+            || phase_status=$?
+        if [[ ! -f "$marker_dir/started" || $phase_status -eq 126 || $phase_status -eq 127 ]]; then
+            echo "error: test scope could not start; stopping the test job" >&2
+            phase_status=125
+        fi
+        rm -f "$marker_dir/started"
+        rmdir "$marker_dir"
+        return "$phase_status"
     fi
 }
 
