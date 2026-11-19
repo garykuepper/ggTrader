@@ -1552,6 +1552,834 @@ class PaperTrader:
             skipped_writes=list(self.skipped_writes),
         ).as_dict()
 
+    def _run_legacy(self, *, stop_threshold: float | None) -> dict:
+        """Frozen oracle copy of `_run` at 73c35417; deleted in Task 74; never edited."""
+        cfg = self._cfg
+        if cfg is None:
+            raise RuntimeError("_run needs the settings snapshot that run() takes first")
+        try:
+            self._ledger.init_paper_schema()
+        except Exception as exc:
+            _log.warning("DB schema init failed (non-fatal): %s", exc)
+
+        # Settle any orders that filled after a prior run exited, and note
+        # which symbols still have an order open so we don't double up on
+        # them below.
+        if not self._dry_run:
+            self._reconcile_order_intents()
+        pending_symbols = self._reconcile_pending_orders()
+
+        # Market-open gate: cron has no calendar awareness, so a holiday or
+        # half-day would otherwise submit DAY orders into a closed market.
+        # Fail open (assume the market is open) on a get_clock() error, same
+        # non-fatal-degrade convention used elsewhere in this file.
+        market_open = True
+        next_close: str | None = None
+        try:
+            clock: MarketClock = self._broker.get_clock()
+            market_open = clock.get("is_open", True)
+            next_close = clock.get("next_close")
+        except Exception as exc:
+            _log.warning("get_clock() failed (non-fatal, assuming market open): %s", exc)
+        if not market_open:
+            _log.info("Market closed; skipping run")
+            self._notifier.send("<b>ℹ️ Market closed</b> — no trading this run.")
+            return RunResult([], [], []).as_dict()
+
+        try:
+            blend: SignalBundle = generate_core_signals(
+                persist_tape=not self._read_only,
+                membership=live_membership_source(self._membership),
+            )
+        except SignalGateError as exc:
+            # Fail closed: a failed engine self-check or sanity gate means no orders at all.
+            self._notifier.send(f"<b>🛑 Signal gate — no orders placed:</b>\n{exc}")
+            raise
+        except Exception as exc:
+            self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
+            raise
+
+        for universe, sleeve in blend["sleeves"].items():
+            _log.info(
+                "signals %s: engine=%s bars=%s buys=%d sells=%d as_of=%s",
+                universe,
+                sleeve.get("engine"),
+                sleeve.get("bars"),
+                len(sleeve["buys"]),
+                len(sleeve["sells"]),
+                sleeve["as_of"],
+            )
+            membership_gate = sleeve.get("membership_gate") or {}
+            if membership_gate.get("level") == "warn":
+                self._notifier.send(f"<b>⚠️ Membership list:</b> {membership_gate['message']}")
+
+        # Late-run gate: a DAY order sent after the close queues to the next open, the
+        # overnight-gap slippage the 12:45 schedule exists to avoid. A dry run only warns, so
+        # the owner can rehearse the path at any hour.
+        late = late_run_reason(_now_pt(), next_close)
+        if late is not None:
+            if not self._dry_run:
+                self._notifier.send(f"<b>⏰ Late run — no orders placed:</b> {late}")
+                return RunResult([], [], [], gate="late_run").as_dict()
+            _log.warning("dry run past the late-run cutoff (a live run would stop): %s", late)
+            self._notifier.send(f"<b>⏰ DRY RUN late-run notice:</b> {late}")
+
+        # Side job: keep SPY and the macro ETFs' tape current for the lab (an `ohlcv`
+        # write, so a read-only run skips it). Wrapped inside the function; a failure here
+        # logs and moves on.
+        if self._read_only:
+            self.skipped_writes.append("refresh_benchmark_tape")
+            _log.info("read-only: skipped write refresh_benchmark_tape")
+        else:
+            refreshed = refresh_benchmark_tape()
+            if not refreshed:
+                _log.warning("benchmark tape refresh returned no symbols")
+
+        if blend["fallback_used"]:
+            self._notifier.send(
+                "<b>⚠️ Overlay fallback:</b> rebalance-day data fetch failed; "
+                "reusing last month's sleeve weights."
+            )
+
+        weights, scale = blend["weights"], blend["scale"]
+        all_buys: list[tuple[str, str]] = []  # (symbol, sleeve)
+        all_sells: list[str] = []
+        last_exit: dict[str, str] = {}
+        for universe, sleeve_signals in blend["sleeves"].items():
+            for sym in sleeve_signals["buys"]:
+                all_buys.append((sym, universe))
+            all_sells.extend(sleeve_signals["sells"])
+            last_exit.update(sleeve_signals.get("last_exit", {}))
+
+        signals = {
+            "buys": [sym for sym, _u in all_buys],
+            "sells": sorted(set(all_sells)),
+            "as_of": next(iter(blend["sleeves"].values()))["as_of"],
+        }
+
+        # Freshness gate: refuse to trade on data that is stale beyond the
+        # normal one-completed-session lag (see _MAX_SIGNAL_AGE_DAYS).
+        today_et = _today_et()
+        for universe, sleeve in blend["sleeves"].items():
+            as_of = sleeve.get("as_of")
+            try:
+                as_of_date = date.fromisoformat(as_of)
+            except (TypeError, ValueError):
+                as_of_date = None
+            age_days = None if as_of_date is None else (today_et - as_of_date).days
+            if age_days is None or not 0 <= age_days <= _MAX_SIGNAL_AGE_DAYS:
+                if age_days is None:
+                    age_description = "unparseable"
+                elif age_days < 0:
+                    age_description = f"{-age_days}d in the future"
+                else:
+                    age_description = f"{age_days}d old"
+                self._notifier.send(
+                    f"<b>⚠️ Stale signal data:</b> {universe} as_of={as_of} is "
+                    f"{age_description} "
+                    f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
+                    f"no trades submitted this run."
+                )
+                return RunResult([], [], []).as_dict()
+
+        try:
+            account: Account = self._broker.get_account()
+        except Exception as exc:
+            _account_read_halt(self._notifier, exc)
+            raise
+        try:
+            positions: dict[str, Position] = self._broker.get_positions()
+        except Exception as exc:
+            _log.error("Position read failed (%s); stopping before orders", type(exc).__name__)
+            try:
+                self._notifier.send(
+                    "<b>🛑 HALTED:</b> Position data unavailable; no orders submitted"
+                )
+            except Exception:
+                _log.exception("Could not send position read failure notice")
+            raise
+        portfolio_value = account["portfolio_value"]
+
+        # Cash sweep (feature-flagged, default OFF -- see cash_sweep.py). The
+        # sweep ETF position (if any) must be invisible to the strategy: not a
+        # strategy position, not counted against RiskGuard slot caps, and not
+        # sellable by strategy exit signals. `strategy_positions` is what all
+        # downstream slot/count/sell logic uses instead of the raw `positions`
+        # from the broker; when the flag is off this is just `positions`
+        # unchanged, so behavior is identical to before this feature existed.
+        sweep_on = cfg.sweep_enabled
+        sweep_sym = cfg.sweep_symbol
+        strategy_positions = (
+            {sym: pos for sym, pos in positions.items() if sym != sweep_sym}
+            if sweep_on
+            else positions
+        )
+
+        # Holdings the broker won't trade (merger/delisting, e.g. AVB -> EQR)
+        # can't be sold, so they must not take a slot or draw a rejected sell
+        # every run (OD17). The set is the owner's UNTRADABLE_SYMBOLS plus the broker's
+        # tradable=false status for held names AND buy candidates (a dead ticker can still
+        # produce a buy signal from a stale tape). Fails soft: on a lookup error only the
+        # configured set is excluded.
+        untradable_seen = resolve_untradable(
+            self._broker,
+            set(strategy_positions) | {sym for sym, _u in all_buys},
+            cfg.untradable,
+        )
+        frozen = untradable_seen & set(strategy_positions)
+        if frozen:
+            _log.warning("Untradable holdings excluded from strategy: %s", sorted(frozen))
+            self._notifier.send(
+                "<b>⚠️ Untradable holdings:</b> "
+                f"{', '.join(sorted(frozen))} (broker tradable=false; excluded from "
+                "slots and sells — resolve manually)"
+            )
+            strategy_positions = {s: p for s, p in strategy_positions.items() if s not in frozen}
+        buy_symbols = {sym for sym, _u in all_buys}
+        blocked_buys = sorted((untradable_seen & buy_symbols) - frozen)
+        if blocked_buys:
+            _log.warning("Untradable buy candidates skipped: %s", blocked_buys)
+            self._notifier.send(
+                f"<b>⚠️ Untradable buy candidates skipped:</b> {', '.join(blocked_buys)} "
+                "(asset not tradable at the broker)"
+            )
+        # Also drops a held-but-frozen name's own buy signal: it is no longer in
+        # `strategy_positions`, so the buy loop's "already held" check would not catch it.
+        all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
+
+        # Determine unapplied-split corrections for currently-held symbols.
+        # Primary evidence is paper_snapshots/paper_trades history (see
+        # _compute_split_corrections and split_check.py's module docstring);
+        # the broker's own SPLIT activities feed is kept only as a secondary
+        # signal, since it is a no-op on this paper account. Fails soft
+        # internally -- an API or DB error here degrades toward {} ("no
+        # corrections known"), never an exception.
+        split_since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
+        split_corrections = self._compute_split_corrections(positions, split_since, today_et)
+        if split_corrections:
+            _log.warning("Unapplied broker split corrections: %s", split_corrections)
+        # Concentration checks (below, in the buy loop) must see true
+        # economic exposure -- the corrected market_value -- not the
+        # broker's uncorrected figure for a split-flagged holding. Built from
+        # `strategy_positions`, not raw `positions`: the sweep ETF position is
+        # invisible to all strategy signal/slot logic, and that includes the
+        # concentration check (its exposure is cash-in-waiting, not a
+        # strategy bet).
+        corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
+
+        # Catch up exits the last-bar check missed (see _missed_exits). Added
+        # here, before the sweep's anticipated_sells, so freed slots count.
+        missed = self._missed_exits(strategy_positions, last_exit, set(signals["sells"]))
+        if missed:
+            _log.info("Catching up missed exits: %s", missed)
+            signals["sells"] = sorted(set(signals["sells"]) | set(missed))
+
+        # Cross-reference the broker's corporate-actions feed against this
+        # account's DIV activities to credit (as a reporting-only accrual --
+        # see dividend_check.py) cash dividends the broker never paid out.
+        # Fails soft internally, same convention as the split check above.
+        dividend_info = self._accrue_dividends(positions)
+
+        # Seed the risk guard's peak from what was persisted by a prior
+        # process (each cron run constructs a fresh PaperTrader, so without
+        # this the halt below always compares against a same-run peak and
+        # can never fire).
+        try:
+            persisted_peak = self._ledger.get_peak_value()
+        except Exception as exc:
+            _log.warning("Could not load persisted peak: %s", exc)
+            reason = "Risk history unavailable: could not read persisted peak"
+            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+            return RunResult([], [], [reason]).as_dict()
+        if persisted_peak is not None:
+            try:
+                self._risk.update_peak(persisted_peak)
+            except ValueError as exc:
+                reason = f"Invalid stored risk peak: {exc}"
+                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+                return RunResult([], [], [reason]).as_dict()
+
+        # Check max drawdown halt BEFORE updating the peak with today's
+        # value, so a real drawdown against the persisted peak is actually
+        # measured (updating first would always show 0% drawdown).
+        halted, halt_reason = self._risk.check_drawdown_halt(portfolio_value)
+        loss_halts: list[str] = []
+        if halted:
+            if (
+                portfolio_value is None
+                or not math.isfinite(portfolio_value)
+                or portfolio_value <= 0
+            ):
+                self._notifier.send(f"<b>🛑 HALTED:</b> {halt_reason}")
+                return RunResult([], [], [halt_reason]).as_dict()
+            loss_halts.append(halt_reason)
+
+        if not loss_halts:
+            self._risk.update_peak(portfolio_value)
+            try:
+                if self._risk.peak_value is not None:
+                    self._ledger.save_peak_value(self._risk.peak_value)
+            except Exception as exc:
+                _log.warning("Could not persist peak value: %s", exc)
+                reason = "Risk history unavailable: could not persist drawdown peak"
+                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+                return RunResult([], [], [reason]).as_dict()
+
+        # Booked equity can understate a holding whose split the broker has not applied yet,
+        # so a harmless split can look like a loss. That false halt is accepted on purpose: it
+        # only blocks buys and sweeps for the day (exits stay allowed), while adding the
+        # correction back could hide a real loss when the stored correction is stale.
+        last_equity = account.get("last_equity")
+        if last_equity is None:
+            reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
+            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
+            return RunResult([], [], [reason]).as_dict()
+        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
+        if daily_halted:
+            if not math.isfinite(last_equity) or last_equity <= 0:
+                self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
+                return RunResult([], [], [daily_reason]).as_dict()
+            if split_corrections:
+                symbols = ", ".join(sorted(map(str, split_corrections)))
+                daily_reason += (
+                    f" (split correction on record for {symbols}: it may explain part of the "
+                    "drop, but a real loss cannot be ruled out; buys stay blocked today)"
+                )
+            loss_halts.append(daily_reason)
+
+        if loss_halts:
+            all_buys = []
+            try:
+                self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {'; '.join(loss_halts)}")
+            except Exception:
+                _log.exception("Could not send loss-halt notice")
+            if pending_symbols:
+                try:
+                    self._notifier.send(
+                        "<b>⚠️ Pending orders may still fill:</b> no cancellations were attempted."
+                    )
+                except Exception:
+                    _log.exception("Could not send pending-order notice")
+
+        # Prior reporting snapshot is used only for the daily summary, not the risk check.
+        try:
+            prev_snapshot_value = self._ledger.get_latest_snapshot(before=today_et)
+        except Exception as exc:
+            _log.warning("Could not load prior reporting snapshot: %s", exc)
+            prev_snapshot_value = None
+        if prev_snapshot_value is not None and (
+            not math.isfinite(prev_snapshot_value) or prev_snapshot_value <= 0
+        ):
+            _log.warning("Invalid prior reporting snapshot; daily P&L is unavailable")
+            prev_snapshot_value = None
+
+        executed_sells: list[str] = []
+        executed_buys: list[str] = []
+        errors: list[str] = []
+        pending_orders: list[SubmittedOrder] = []
+
+        # Catastrophe stop (feature-flagged, default OFF -- see
+        # catastrophe_stop.py). A position the strategy's own RSI exit never
+        # fires on can otherwise decay indefinitely (see the module
+        # docstring for the NXPI incident); this is a risk backstop,
+        # evaluated BEFORE any strategy buy/sell signal below, so a stop-out
+        # frees its slot/cash the same run. Reads `corrected_positions`
+        # (split-corrected via cost_basis, built from `strategy_positions`
+        # above -- the sweep ETF position is never in it), so an unapplied
+        # broker split can't fake a phantom loss and the sweep symbol can
+        # never be stopped out. Stopped symbols are removed from
+        # `strategy_positions` immediately after, so the sells loop below
+        # sees them as no longer held and never submits a second, coincident
+        # strategy-exit sell for the same symbol.
+        # Hoisted out of the flag check: the buy loop below consults this set
+        # so a just-stopped symbol can never be re-bought in the same run.
+        stopped_symbols: set[str] = set()
+        invalid_exit_symbols: set[str] = set()
+        if stop_threshold is not None:
+            unassessable = set()
+            for symbol, position in corrected_positions.items():
+                try:
+                    if catastrophe_stop.unrealized_pct(position) is None:
+                        unassessable.add(symbol)
+                except ValueError:
+                    unassessable.add(symbol)
+            if unassessable:
+                reason = "Cannot assess catastrophe stop for: " + ", ".join(sorted(unassessable))
+                loss_halts.append(reason)
+                all_buys = []
+                _log.warning("%s; new buys and sweeps blocked", reason)
+                try:
+                    self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {reason}")
+                except Exception:
+                    _log.exception("Could not send unassessable catastrophe-stop alert")
+                if pending_symbols:
+                    try:
+                        self._notifier.send(
+                            "<b>⚠️ Pending orders may still fill:</b> "
+                            "no cancellations were attempted."
+                        )
+                    except Exception:
+                        _log.exception("Could not send pending-order notice")
+            assessable = {
+                symbol: position
+                for symbol, position in corrected_positions.items()
+                if symbol not in unassessable
+            }
+            for symbol in catastrophe_stop.find_catastrophe_stops(assessable, stop_threshold):
+                qty = strategy_positions[symbol]["qty"]
+                if qty is None or not math.isfinite(qty) or qty <= 0:
+                    errors.append(
+                        f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
+                        "new strategy buys blocked"
+                    )
+                    invalid_exit_symbols.add(symbol)
+                    continue
+                if symbol in pending_symbols:
+                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
+                    continue
+                pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
+                if self._dry_run:
+                    stopped_symbols.add(symbol)
+                    executed_sells.append(symbol)
+                    self._notifier.send(
+                        f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
+                        f"unrealized {pct:.1%} breached {stop_threshold:.1%} floor)"
+                    )
+                    continue
+                oid = self._submit_order(
+                    "SELL", symbol, qty, catastrophe_stop.CATASTROPHE_STOP_REASON
+                )
+                stopped_symbols.add(symbol)
+                executed_sells.append(symbol)
+                pending_orders.append(
+                    SubmittedOrder(
+                        oid,
+                        "SELL",
+                        symbol,
+                        strategy_positions[symbol]["market_value"],
+                        catastrophe_stop.CATASTROPHE_STOP_REASON,
+                    )
+                )
+                self._notifier.send(
+                    f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
+                    f"breached {stop_threshold:.1%} floor — selling qty {qty}."
+                )
+            if stopped_symbols:
+                strategy_positions = {
+                    sym: pos
+                    for sym, pos in strategy_positions.items()
+                    if sym not in stopped_symbols
+                }
+
+        # Check requested strategy exits before estimating sweep funding for buys.
+        for symbol in signals["sells"]:
+            # A pending order does not excuse an invalid quantity: the account state is
+            # still untrusted, so it must still block new buys.
+            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
+                continue
+            qty = strategy_positions[symbol]["qty"]
+            if qty is None or not math.isfinite(qty) or qty <= 0:
+                errors.append(
+                    f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
+                    "new strategy buys blocked"
+                )
+                invalid_exit_symbols.add(symbol)
+        if invalid_exit_symbols:
+            all_buys = []
+
+        # Buys — respect global + per-sleeve position limits. Computed here
+        # (before the sells loop) rather than just before the buy loop below,
+        # because the cash-sweep funding check needs the same sleeve notional
+        # sizing to estimate how much cash the day's strategy buys could
+        # consume. Each position is sized as a fixed fraction of its own
+        # sleeve's allocated capital (weight * scale * portfolio_value),
+        # independent of how many signals fire that day within the sleeve —
+        # sleeve_slot_caps governs sleeve concurrency, sleeve_position_notional
+        # governs per-trade size.
+        slot_caps = self._risk.sleeve_slot_caps(weights)
+        sleeve_open_count = {u: 0 for u in weights}
+        buys_by_sleeve: dict[str, list[str]] = {}
+        for symbol, universe in all_buys:
+            buys_by_sleeve.setdefault(universe, []).append(symbol)
+        sleeve_notional_by_universe = {
+            universe: self._risk.sleeve_position_notional(
+                portfolio_value, weights.get(universe, 0.0), scale
+            )
+            for universe in buys_by_sleeve
+        }
+
+        if sweep_on and not loss_halts:
+            # Sell the sweep position down FIRST (before strategy sells/buys
+            # execute) if the day's anticipated strategy buys would need more
+            # cash than is currently on hand. `prospective_buy_notional` is a
+            # deliberate upper-bound estimate (see
+            # cash_sweep.estimate_prospective_buy_notional) computed BEFORE
+            # the sells loop runs, so it conservatively assumes the slots that
+            # today's sells will free are already free.
+            anticipated_sells = [
+                s for s in signals["sells"] if s in strategy_positions and s not in pending_symbols
+            ]
+            slots_estimate = self._risk.max_new_positions(
+                len(strategy_positions) - len(anticipated_sells)
+            )
+            prospective_buy_notional = cash_sweep.estimate_prospective_buy_notional(
+                buys_by_sleeve, sleeve_notional_by_universe, slot_caps, slots_estimate
+            )
+            sweep_position = positions.get(sweep_sym)
+            sweep_position_value = sweep_position["market_value"] if sweep_position else 0.0
+            sell_action = cash_sweep.compute_sweep_sell_for_funding(
+                cash_available=account["cash"],
+                portfolio_value=portfolio_value,
+                prospective_buy_notional=prospective_buy_notional,
+                current_sweep_position_value=sweep_position_value,
+                reserve_pct=cfg.reserve_pct(),
+            )
+            if sell_action.side == "sell" and sweep_position:
+                sweep_price = sweep_position["current_price"]
+                sell_qty = round(sell_action.notional / sweep_price, 4) if sweep_price > 0 else 0.0
+                if sell_qty > 0:
+                    if self._dry_run:
+                        self._notifier.send(
+                            f"<b>🔍 DRY RUN sweep sell:</b> {sweep_sym} "
+                            f"(${sell_action.notional:.0f}, funding strategy buys)"
+                        )
+                    else:
+                        # Alpaca paper credits a market sell's proceeds to
+                        # cash immediately (no T+1/T+2 settlement lag), so
+                        # it's safe to treat this cash as available to the
+                        # strategy buys submitted later in this same run.
+                        # A same-run sell -> buy sequence would NOT be
+                        # safe on a broker with real settlement delay.
+                        oid = self._submit_order(
+                            "SELL", sweep_sym, sell_qty, cash_sweep.SWEEP_TRADE_REASON
+                        )
+                        pending_orders.append(
+                            SubmittedOrder(
+                                oid,
+                                "SELL",
+                                sweep_sym,
+                                sell_action.notional,
+                                cash_sweep.SWEEP_TRADE_REASON,
+                            )
+                        )
+
+        # Sells first — free up position slots. `regular_sell_count` (not
+        # `executed_sells`) is what feeds the slots_available math below: a
+        # catastrophe stop already shrank `strategy_positions` by removing
+        # its symbol (see the block above), so that freed slot is already
+        # reflected there. `executed_sells` also records catastrophe-stop
+        # sells (for the return value / reporting), so subtracting its full
+        # length here would count every stop's freed slot twice -- once via
+        # the shrunken `strategy_positions`, again via `executed_sells` --
+        # letting the buy loop open one extra position per stop and breach
+        # `max_positions`.
+        regular_sell_count = 0
+        for symbol in signals["sells"]:
+            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
+                continue
+            if symbol in pending_symbols:
+                _log.info("Skipping SELL %s: order already pending", symbol)
+                continue
+            qty = strategy_positions[symbol]["qty"]
+            if self._dry_run:
+                executed_sells.append(symbol)
+                regular_sell_count += 1
+                self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
+                continue
+            oid = self._submit_order("SELL", symbol, qty, None)
+            executed_sells.append(symbol)
+            regular_sell_count += 1
+            pending_orders.append(
+                SubmittedOrder(
+                    oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None
+                )
+            )
+
+        # Wait for every sell submitted so far (catastrophe stop, sweep funding,
+        # strategy exits) to fill before buying: Alpaca credits proceeds only on
+        # fill, and on 2026-09-25 buys sent while the funding sell was still
+        # working were rejected for insufficient buying power (6 of 8).
+        filled_orders: dict[str, OrderStatus] = self._poll_orders(
+            [o for o in pending_orders if o.side == "SELL"]
+        )
+
+        if filled_orders and not self._dry_run:
+            self._reconcile_order_intents()
+
+        # A submitted exit does not free a position slot unless it fully fills.
+        if not self._dry_run:
+            for order in pending_orders:
+                oid, side, symbol, reason = order.order_id, order.side, order.symbol, order.reason
+                if side != "SELL" or reason == cash_sweep.SWEEP_TRADE_REASON:
+                    continue
+                info = filled_orders.get(oid, {})
+                qty = info.get("filled_qty")
+                expected = positions[symbol]["qty"]
+                if (
+                    info.get("status") != "filled"
+                    or qty is None
+                    or not math.isfinite(qty)
+                    or not math.isclose(qty, expected, rel_tol=1e-12, abs_tol=1e-9)
+                ):
+                    errors.append(
+                        f"SELL {symbol} not fully filled ({info.get('status', 'unknown')}); "
+                        "new strategy buys blocked"
+                    )
+                    buys_by_sleeve.clear()
+
+        slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
+        buys_attempted = 0
+        for universe, syms in buys_by_sleeve.items():
+            sleeve_notional = sleeve_notional_by_universe[universe]
+            sleeve_cap = slot_caps.get(universe, 0)
+            for symbol in syms:
+                if symbol in strategy_positions:
+                    continue
+                # A symbol the catastrophe stop just sold is gone from
+                # `strategy_positions`, so the held-check above can't see it —
+                # without this guard a coincident buy signal would re-open the
+                # position the backstop just closed, in the same run.
+                if symbol in stopped_symbols:
+                    _log.info("Skipping BUY %s: catastrophe-stopped this run", symbol)
+                    continue
+                if symbol in pending_symbols:
+                    _log.info("Skipping BUY %s: order already pending", symbol)
+                    continue
+                if buys_attempted >= slots_available:
+                    _log.info(
+                        "Max positions reached (%d), skipping %s",
+                        self._risk.cfg.max_positions,
+                        symbol,
+                    )
+                    break
+                if sleeve_open_count[universe] >= sleeve_cap:
+                    _log.info("Sleeve %s slot cap reached, skipping %s", universe, symbol)
+                    break
+                if self._risk.check_concentration(
+                    symbol,
+                    corrected_positions,
+                    portfolio_value,
+                    prospective_notional=sleeve_notional,
+                ):
+                    _log.info("Concentration limit for %s, skipping", symbol)
+                    continue
+                if self._dry_run:
+                    executed_buys.append(symbol)
+                    buys_attempted += 1
+                    sleeve_open_count[universe] += 1
+                    self._notifier.send(
+                        f"<b>🔍 DRY RUN buy:</b> {symbol} "
+                        f"(${sleeve_notional:.0f}, sleeve={universe})"
+                    )
+                    continue
+                oid = self._submit_order("BUY", symbol, sleeve_notional, None)
+                executed_buys.append(symbol)
+                buys_attempted += 1
+                sleeve_open_count[universe] += 1
+                pending_orders.append(SubmittedOrder(oid, "BUY", symbol, sleeve_notional, None))
+
+        # Poll the remaining (buy) orders until they fill (or timeout)
+        filled_orders.update(
+            self._poll_orders([o for o in pending_orders if o.order_id not in filled_orders])
+        )
+
+        if pending_orders and not self._dry_run:
+            self._reconcile_order_intents()
+
+        # An invalid exit quantity means the account state is not trusted: no sweep buy either.
+        if sweep_on and not loss_halts and not invalid_exit_symbols:
+            # Sweep BUY: deploy whatever cash is left over after the strategy's
+            # own orders for the day, using the account's REAL post-trade cash
+            # (not an estimate) now that strategy sells/buys above have been
+            # submitted and polled to a terminal status.
+            try:
+                mid_account = self._broker.get_account()
+                buy_action = cash_sweep.compute_sweep_buy(
+                    cash_after_strategy_orders=mid_account["cash"],
+                    portfolio_value=mid_account["portfolio_value"],
+                    reserve_pct=cfg.reserve_pct(),
+                    min_clip=cfg.min_clip_usd(),
+                    buy_trigger_pct=cfg.buy_trigger_pct(),
+                )
+            except Exception as exc:
+                _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
+                buy_action = cash_sweep.SweepAction(None, 0.0)
+            if buy_action.side == "buy":
+                if self._dry_run:
+                    self._notifier.send(
+                        f"<b>🔍 DRY RUN sweep buy:</b> {sweep_sym} (${buy_action.notional:.0f})"
+                    )
+                else:
+                    oid = self._submit_order(
+                        "BUY", sweep_sym, buy_action.notional, cash_sweep.SWEEP_TRADE_REASON
+                    )
+                    sweep_buy_order = SubmittedOrder(
+                        oid,
+                        "BUY",
+                        sweep_sym,
+                        buy_action.notional,
+                        cash_sweep.SWEEP_TRADE_REASON,
+                    )
+                    filled_orders.update(self._poll_orders([sweep_buy_order]))
+                    pending_orders.append(sweep_buy_order)
+                    self._reconcile_order_intents()
+
+        # Alert on every submitted order, but only book the trade ledger at a
+        # real executed value — never the intended notional. Orders still
+        # working at run end (queued after the close, or a partial fill not yet
+        # complete) are persisted so the next run reconciles their final fill;
+        # terminally-failed orders are simply dropped.
+        for order in pending_orders:
+            oid, side, symbol, amount = order.order_id, order.side, order.symbol, order.amount
+            info = filled_orders.get(oid, {})
+            status = info.get("status", "pending")
+            filled_qty = info.get("filled_qty") or 0.0
+            filled_price = info.get("filled_avg_price") or 0.0
+            filled = filled_qty > 0 and filled_price > 0
+            trade_amount = filled_qty * filled_price if filled else amount
+            self._notifier.trade_alert(
+                side,
+                symbol,
+                trade_amount,
+                oid,
+                qty=filled_qty if filled else None,
+                price=filled_price if filled else None,
+                status=status,
+            )
+            # Leave durable intents for the next reconciliation pass; do not
+            # create a second legacy representation or book a separate trade.
+
+        if errors:
+            self._notifier.send(f"<b>❌ {len(errors)} order(s) failed:</b>\n" + "\n".join(errors))
+
+        try:
+            new_account = self._broker.get_account()
+            updated_positions = self._broker.get_positions()
+        except Exception as exc:
+            _log.error(
+                "Post-trade account or positions read failed (%s); snapshot not saved",
+                type(exc).__name__,
+            )
+            try:
+                self._notifier.send(
+                    "<b>⚠️ Account or positions data unavailable after trading:</b> "
+                    + (
+                        "dry run; no orders submitted"
+                        if self._dry_run
+                        else "orders may have been submitted"
+                    )
+                    + "; snapshot not saved."
+                )
+            except Exception:
+                _log.exception("Could not send post-trade data failure notice")
+            raise
+        new_value = new_account["portfolio_value"]  # broker's own ("booked") figure, uncorrected
+
+        # Re-apply the same split_corrections computed at the top of this
+        # run (the correction factor doesn't change intra-run) to the
+        # post-trade position snapshot, so every downstream reporting number
+        # -- unrealized P&L, daily/total P&L, and the persisted snapshot --
+        # reflects true economic value rather than the broker's uncorrected
+        # figures. NOTE: `updated_positions` (uncorrected) is what must be
+        # used for anything that actually transacts against the broker (see
+        # submit_sell above, which already ran against the broker's real
+        # qty) -- never replace that with the corrected numbers below.
+        corrected_updated_positions = apply_corrections_to_positions(
+            updated_positions, split_corrections
+        )
+        correction_delta = sum(
+            corrected_updated_positions[sym]["market_value"]
+            - updated_positions[sym]["market_value"]
+            for sym in split_corrections
+            if sym in updated_positions
+        )
+        # dividend_info["total"] is the cumulative (all-time) accrual, a
+        # reporting-only correction for cash the broker never credited (see
+        # dividend_check.py) -- it is NOT part of new_value/new_account["cash"]
+        # and never will be, so it must be added back here for every equity
+        # figure reported downstream.
+        corrected_value = new_value + correction_delta + dividend_info["total"]
+        if not math.isfinite(corrected_value) or corrected_value <= 0:
+            corrected_value = None
+            message = "Invalid post-trade portfolio value; snapshot not saved"
+            _log.warning(message)
+            errors.append(message)
+
+        daily_pnl = (
+            corrected_value - prev_snapshot_value
+            if corrected_value is not None and prev_snapshot_value is not None
+            else None
+        )
+
+        pnl_values = [
+            json_safe(p.get("unrealized_pl")) for p in corrected_updated_positions.values()
+        ]
+        unrealized_pnl = (
+            sum(pnl_values)
+            if all(isinstance(p, (int, float)) and not isinstance(p, bool) for p in pnl_values)
+            else None
+        )
+        if unrealized_pnl is not None and not math.isfinite(unrealized_pnl):
+            unrealized_pnl = None
+        try:
+            starting_capital = self._ledger.get_earliest_snapshot()
+        except Exception as exc:
+            _log.warning("Starting snapshot read failed (%s)", type(exc).__name__)
+            errors.append("Starting snapshot unavailable; total P&L unavailable")
+            starting_capital = None
+        total_pnl = (
+            corrected_value - starting_capital
+            if corrected_value is not None and starting_capital
+            else None
+        )
+
+        weight_str = ", ".join(f"{u}={w:.0%}" for u, w in weights.items())
+        risk_line = (
+            f"Positions: {len(updated_positions)}/{self._risk.cfg.max_positions} | "
+            f"Scale: {scale:.2f}x | Weights: {weight_str}"
+        )
+        self._notifier.daily_summary(
+            corrected_value,
+            daily_pnl,
+            corrected_updated_positions,
+            total_pnl=total_pnl,
+            unrealized_pnl=unrealized_pnl,
+            split_corrections=split_corrections,
+            booked_equity=new_value if split_corrections else None,
+            dividend_total=dividend_info["total"],
+            new_dividend_accruals=dividend_info["new_accruals"],
+            errors=loss_halts + errors,
+            starting_capital=starting_capital,
+        )
+        self._notifier.send(f"<b>📊 Risk:</b> {risk_line}")
+
+        try:
+            # stamp the actual ET session date of this run, not the lagged
+            # signals["as_of"] date.
+            if corrected_value is not None:
+                self._ledger.log_snapshot(
+                    today_et.isoformat(),
+                    corrected_value,
+                    new_account["cash"],
+                    corrected_updated_positions,
+                )
+        except Exception as exc:
+            _log.warning("DB snapshot failed (non-fatal): %s", exc)
+            message = "Daily snapshot could not be saved"
+            errors.append(message)
+            try:
+                self._notifier.send(f"<b>⚠️ {message}.</b>")
+            except Exception:
+                _log.exception("Could not send snapshot failure notice")
+
+        return RunResult(
+            executed_buys,
+            executed_sells,
+            loss_halts + errors,
+            untradable=sorted(untradable_seen),
+            skipped_writes=list(self.skipped_writes),
+        ).as_dict()
+
 
 def run_paper_trading(
     dry_run: bool = True,
