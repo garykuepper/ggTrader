@@ -303,7 +303,7 @@ def test_run_tests_time_limit_stops_a_hang(tmp_path: Path) -> None:
         timeout=60,
     )
     assert result.returncode == 143, result.stderr
-    assert "STOPPED AT THE TIME LIMIT" in result.stderr
+    assert "time limit or another signal" in result.stderr
     assert time.monotonic() - started < 15
 
 

@@ -55,9 +55,9 @@
 # GGT_HEAVY_MARGIN (default 4G). The lock is held across both pytest runs of --full and --studies.
 # Details and the exceptions (CI, nested runs, dry runs) are in scripts/_heavy_job.sh.
 #   GGT_TEST_MAX_SECONDS  wall-clock limit of each pytest run (default 1800; a healthy full gate
-#                         takes about 8 minutes in all). Exit 143 means the limit stopped it.
-#   Exit 75: busy or short of memory, pytest never started. Exit 137 or 143: a hang, not a big
-#   suite: look for a test that touches a real DB, network or clock; never raise the cap or limit.
+#                         takes about 8 minutes in all).
+#   Exit 75: busy or short of memory, pytest never started. Exit 137 or 143 indicates a kill or
+#   termination; the exit code alone cannot identify its cause.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -177,7 +177,8 @@ if [[ "$TIER" == "studies" && $has_path -eq 0 && $status -eq 5 ]]; then
     status=0
 fi
 
-if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 ]]; then
+if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 \
+    && $status -ne 137 && $status -ne 143 ]]; then
     mapfile -t plan < <(study_plan)
     min_collected="${plan[0]}"
     study_dirs=()
@@ -197,7 +198,7 @@ if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 ]]; then
         if [[ $half -eq 5 && "$min_collected" -eq 0 ]]; then
             half=0
         fi
-        status=$(( status == 0 ? half : status ))
+        status=$(( status == 0 || half == 137 || half == 143 ? half : status ))
     fi
 fi
 
@@ -205,17 +206,15 @@ if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
     exit "$status"
 fi
 
-# 137 = SIGKILL, which from inside this scope means the cap was hit.
+# Exit codes alone do not establish why a process was killed.
 if [[ $status -eq 137 ]]; then
     echo >&2
-    echo "pytest was killed at the $MEM_MAX cap -- the suite outgrew its budget." >&2
-    echo "Raise it deliberately with GGT_TEST_MEM_MAX, or fix the leak." >&2
+    echo "pytest was killed (exit 137); the cause, including a memory cap, is unverified." >&2
 fi
 
-# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
 if [[ $status -eq 143 ]]; then
     echo >&2
-    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long suite; report it" >&2
+    echo "pytest was terminated (exit 143); a time limit or another signal may be responsible." >&2
 fi
 
 if [[ "$TIER" == "fast" ]]; then
