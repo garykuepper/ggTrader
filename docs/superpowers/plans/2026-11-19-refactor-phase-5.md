@@ -338,7 +338,7 @@ delegate prompts and goldens. Phase 5 adds:
   `ggTrader.paper.untradable` and `ggTrader.paper.notifier` (the four modules of `paper/` that call
   `getLogger` and run during a trader run; `ReadOnlyLedger` logs through the trader's logger) at level
   DEBUG, one tuple per record: `(transcript calls so far, logger name, levelno, record.getMessage(),
-  exception type name or None)`, in emission order, so both the records and their position between calls are
+  exception type name or None, exception text or None)`, in emission order, so both the records and their position between calls are
   pinned. Any record from another `ggTrader*` logger fails the test. What is nondeterministic (object
   addresses, set order, exception text carrying either) is decided in Task 49 after an investigation, before
   any digest is recorded (Task 49 Step 3a).
@@ -1516,6 +1516,10 @@ be overwritten by the harness's own replacement, which is entered later, so the 
 copy's own replacements); (4) the same `HarnessError`/`TypeError` handling as the harness. A submit failing on
 order k needs no wrapper: the scenario's `replies["submit_buy"]` is an ordered list whose last entry repeats.
 
+The generator reserves deterministic slots 0–16 in each block of 80 for structured cases; the remaining
+seeds draw the scenarios below. Distinct projections of the structured cases demonstrate variation,
+not independent evidence. Mutation sensitivity is established by the matrix.
+
 The generator samples (bounded ranges, valid harness inputs only): mode (live 60%, read-only dry 25%,
 dry with writes 10%, dry-run-with-late-clock 5%); the sweep on or off; the stop on or off with a threshold in
 -0.10..-0.40; `MAX_POSITIONS` in {2, 3, 5}; one or two sleeves with weights and a scale (**always positive**: each weight drawn from 0.05 to 1.0 and the
@@ -1530,7 +1534,7 @@ failure on order k (the `Case`); scripted notifier failures; a clock failure; a 
 `as_of`; the overlay fallback flag; **a failing `live_membership_source`** (`Case.membership_error`, drawn with a fixed
 probability so that W19 is reached more than five times in 600 seeds, and injected by `run_recorded` inside the
 harness's own event environment, see above); and **the late-stage planner
-failures of Review Focus 7**, each drawn on its own with a fixed probability so each is reached more than
+failures of Review Focus 7**, each assigned deterministic seed slots so each is reached more than
 five times in 600 seeds: (L1) two or more breaching positions of which a **later one (in sorted symbol order)
 has no `qty` key**, so the run raises `KeyError` after the first stop order went out; (L2) a stop that
 submits followed by an **exit signal on a held position without `qty`**, so the exit validation raises after the
@@ -1574,7 +1578,7 @@ update) and invariant (e) would fail for a reason that is not a bug. Read replie
   `test_safety_invariants_for_100_seeds` and `..._for_600_seeds` (slow; assertions that `violations` is empty
   over the cache; the invariants are computed inside `summarize_seed`): (a) a dry run has no
   `submit_*` and no `create_order_intent`, `attach_broker_order` or `settle_order_intent`; (b) every
-  `submit_*` is preceded in order by `create_order_intent` and a `lock.verify` and followed by
+  `submit_*` is immediately preceded by `create_order_intent` and `lock.verify` and immediately followed by
   `attach_broker_order` unless it raised (the lock call carries no client id, so the pairing is by position);
   (c) after a raised `submit_*` or a raised `lock.verify` there is no later `create_order_intent` or
   `submit_*`; (d) once a `HALTED buys` notice is sent no `submit_buy` follows; (e) in a **single-sleeve** seed no
@@ -1627,6 +1631,8 @@ update) and invariant (e) would fail for a reason that is not a bug. Read replie
   committed) with the recorder of Step 7 pointed at the working tree (`--worktree /home/flynn/ggTrader-refactor`,
   the same offline, `PYTHONPATH`, cap, `blocked_connections()` and serialization wrapper as Step 7), so Step 4 can
   exercise the digest tests.
+- [ ] Each witness must also have at least five distinct projections over the full corpus. These projections
+  establish input variation, not independent evidence; the mutation matrix tests their sensitivity.
 - [ ] **Step 4: Mutation matrix (not committed), reach map first.** Apply SM 1-8, 10, 11, 13a, 13b, 14, 15, 16a,
   16b and 17 at their sites in `_run` and the shared helpers. **N sites** (1-5, 8, 11, 13a, 14, 15, 16a, 16b, 17): the
   differential test and the digest tests both fail. **S sites** (6, 7, 10, 13b): the digest tests fail and so
@@ -1653,11 +1659,12 @@ update) and invariant (e) would fail for a reason that is not a bug. Read replie
   that the frozen-copy hash test passes.
 - [ ] **Step 7: Record the digests once, from commit A, not from `BASE5`.** `BASE5` has no runner, so a
   scratch checkout of `73c35417` cannot record anything; the **recorder commit is A**. A one-off script outside the
-  repository (`$E/p5/record_digests.py`, its own sha256 written next to it, taking `--worktree` and `--out`) is run
-  against a scratch checkout of A (`git worktree add $E/p5/record-A A`; it is removed afterwards) as
+  repository (`$E/p5/record_digests.py`, its own sha256 written next to it) is run
+  against a scratch checkout of A (`git -c gc.auto=0 worktree add --detach $E/p5/record-A A`; it is removed afterwards) as
   `./offline.sh env PYTHONPATH=$E/p5/record-A:$E/p5/record-A/src PYTHONHASHSEED=<n> GGT_RUN_MEM_MAX=3G
   GGT_RUN_MAX_SECONDS=1800 scripts/run_capped.sh .venv/bin/python $E/p5/record_digests.py --worktree
-  $E/p5/record-A --out $E/p5/digests-<n>.json` (capped, scrubbed, one heavy job, **`blocked_connections()` around
+  $E/p5/record-A --out $E/p5/digests-<n>.json --recorder-commit <A-full-sha> --map-sha
+  $E/p5/digests-map-<n>.sha256 --review-gate $E/p5/review-gate.txt` (capped, scrubbed, one heavy job, **`blocked_connections()` around
   the whole process**). The script follows the "Standalone scripts" rules of Global Constraints in full: it first
   **neutralizes dotenv the way the root `conftest.py` does and sets the fixture membership**, then asserts the
   **controlled root** (`ggTrader.__file__` and `tests.paper.equivalence.runner.__file__` lie under `--worktree`
@@ -1666,8 +1673,10 @@ update) and invariant (e) would fail for a reason that is not a bug. Read replie
   names is set), and only then that the source of `PaperTrader._run` hashes to `run_legacy.sha256`. It calls
   `summarize_seed(s).digest` for seeds 0-599 and writes `generator_sha256`, `witnesses_sha256`, `runner_sha256`,
   `production_base: 73c35417`, `recorder_commit: <A full hash>`, the seed count and the normalization version, and
-  writes `$E/p5/digests-map.sha256` (the sha256 of the canonical JSON of the `digests` object alone, which Task 75
-  uses to prove an amendment changed no digest).
+  writes the per-run map hash (the sha256 of the canonical JSON of the `digests` object alone). Compare both
+  per-run hashes and copy the matching value to `$E/p5/digests-map.sha256`, which Task 75 uses to prove an
+  amendment changed no digest. Use `git -c gc.auto=0` for commit A and scratch checkout creation because the
+  recorder fails closed if a required Git object has been packed.
   **No recording switch is committed** and the file is never re-recorded to make a test pass: a digest mismatch is
   investigated as a behavior change first, and only an amendment (authority: Opus, Codex-built; reason in
   `$E/p5/amendments.md`) may re-record, again from a scratch checkout of the recorder commit (commit A, or the
