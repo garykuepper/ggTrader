@@ -164,7 +164,7 @@ def test_transcripts_stable_across_hash_seeds() -> None:
 
 
 def test_every_scenario_has_a_golden() -> None:
-    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 96
+    assert len(SCENARIOS) == EXPECTED_SCENARIO_COUNT == 103
     missing = sorted(name for name in SCENARIOS if not _golden_path(name).exists())
     assert not missing, f"scenarios without a golden: {missing}"
 
@@ -1003,6 +1003,59 @@ def _check_recovery_notice_fails(t: dict) -> None:
     assert settled == [] and unresolved == ["prev-1"]
 
 
+def _sweep_float_fail_soft(t: dict) -> None:
+    """A bad sweep-buy float is logged and skipped: three clean account reads, no order."""
+    accounts = _calls(t, "broker.get_account")
+    assert [c["raised"] for c in accounts] == [None, None, None]
+    assert _submits(t) == [] and t["raised"] is None and t["result"]["errors"] == []
+
+
+def _check_sweep_reserve_invalid_ends_run(t: dict) -> None:
+    assert t["raised"] == "ValueError: could not convert string to float: 'abc'"
+    assert t["result"] is None and len(_calls(t, "broker.get_account")) == 1
+    assert _submits(t) == [] and _calls(t, "persist.log_snapshot") == []
+
+
+def _check_sweep_reserve_invalid_but_sweep_off(t: dict) -> None:
+    assert t["raised"] is None and t["result"]["buys"] == ["MSFT"]
+    assert t["result"]["errors"] == [] and _submits(t) == [("BUY", "MSFT", 3300.0)]
+
+
+def _check_untradable_symbols_from_env(t: dict) -> None:
+    assert _calls(t, "broker.get_untradable")[0]["args"] == [["NVDA"]]
+    assert t["result"]["untradable"] == ["AAPL", "MSFT"] and t["result"]["sells"] == []
+    assert _submits(t) == [("BUY", "NVDA", 3300.0)]
+    assert any("Untradable holdings:</b> AAPL, MSFT" in s for s in _sends(t))
+
+
+def _check_catastrophe_enabled_pct_blank(t: dict) -> None:
+    assert _submits(t) == [("SELL", "NXPI", 100.0), ("BUY", "MSFT", 3300.0)]
+    assert any("-30.0% breached -25.0% floor" in s for s in _sends(t))
+    assert t["result"]["sells"] == ["NXPI"] and t["result"]["buys"] == ["MSFT"]
+
+
+def _check_pending_order_all_five_fields(t: dict) -> None:
+    assert _submits(t) == [
+        ("SELL", "NXPI", 100.0),
+        ("SELL", "SPY", 18.25),
+        ("SELL", "AAPL", 10.0),
+        ("BUY", "MSFT", 3300.0),
+    ]
+    reasons = [c["args"][6] for c in _calls(t, "persist.create_order_intent")]
+    assert reasons == ["catastrophe_stop", "cash_sweep", None, None]
+    pending = {
+        c["args"][1]: c["args"][:3] + [c["kwargs"]["status"]]
+        for c in _calls(t, "notifier.trade_alert")
+        if c["kwargs"]["status"] == "pending"
+    }
+    assert pending == {
+        "SPY": ["SELL", "SPY", 7300.0, "pending"],
+        "MSFT": ["BUY", "MSFT", 3300.0, "pending"],
+    }
+    assert t["result"]["sells"] == ["NXPI", "AAPL"] and t["result"]["buys"] == ["MSFT"]
+    assert t["result"]["errors"] == []
+
+
 BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
     "plain_buys_and_sells": _both(_check_plain_buys_and_sells, _check_plain_reporting),
     "market_closed": _check_market_closed,
@@ -1118,6 +1171,14 @@ BEHAVIOR_CHECKS: dict[str, Callable[[dict], None]] = {
     "unresolved_intents_read_failure": _check_unresolved_intents_read_failure,
     "recovery_notice_fails": _check_recovery_notice_fails,
     "recovery_filled_zero_quantity": _recovery_stops("ValueError: Filled order has no fill"),
+    # Phase 4 pins (Task 32)
+    "sweep_min_clip_invalid_fail_soft": _sweep_float_fail_soft,
+    "sweep_buy_trigger_invalid_fail_soft": _sweep_float_fail_soft,
+    "sweep_reserve_invalid_ends_run": _check_sweep_reserve_invalid_ends_run,
+    "sweep_reserve_invalid_but_sweep_off": _check_sweep_reserve_invalid_but_sweep_off,
+    "untradable_symbols_from_env": _check_untradable_symbols_from_env,
+    "catastrophe_enabled_pct_blank": _check_catastrophe_enabled_pct_blank,
+    "pending_order_all_five_fields": _check_pending_order_all_five_fields,
 }
 
 
@@ -1186,6 +1247,11 @@ EXPECTED_INTENT_ROWS: dict[str, tuple[int, int]] = {
     "trade_alert_returns_false": (1, 0),
     "daily_summary_returns_false": (1, 0),
     "intent_settle_failure": (0, 1),
+    # Phase 4 pins (Task 32)
+    "sweep_reserve_invalid_but_sweep_off": (1, 0),
+    "untradable_symbols_from_env": (1, 0),
+    "catastrophe_enabled_pct_blank": (2, 0),
+    "pending_order_all_five_fields": (4, 0),
 }
 
 
