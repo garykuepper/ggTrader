@@ -74,6 +74,38 @@ def build_case(seed: int) -> Case:
             },
         )
         return Case(scenario, None, None)
+    if special in (6, 7):
+        price = rng.choice((80.0, 100.0, 120.0))
+        positions = {symbol: _pos(10.0, price) for symbol in ("AAPL", "KO")}
+        if special == 7:
+            positions["KO"]["cost_basis"] = float("nan")
+        scenario = Scenario(
+            name=f"{'sell_failure' if special == 6 else 'unassessable_stop'}_{seed}",
+            env={"MAX_POSITIONS": "5", "CATASTROPHE_STOP_ENABLED": "true"},
+            signals={
+                "sleeves": {
+                    "sleeve0": {
+                        "buys": ["MSFT"],
+                        "sells": ["AAPL", "KO"] if special == 6 else ["AAPL"],
+                        "as_of": "2026-06-19",
+                        "universe_size": 100,
+                        "last_exit": {},
+                    }
+                },
+                "weights": {"sleeve0": 1.0},
+                "scale": 1.0,
+                "rebalanced_today": False,
+                "fallback_used": False,
+            },
+            persist={**PERSIST_DEFAULTS},
+            replies={
+                "get_account": [_acct()],
+                "get_positions": [positions],
+                "get_clock": [{"is_open": True, "next_close": "2026-06-19 16:00:00-04:00"}],
+                **({"submit_sell": [None, RuntimeError("submit failed")]} if special == 6 else {}),
+            },
+        )
+        return Case(scenario, None, None)
     dry_run = mode >= 60
     read_only = 60 <= mode < 85 or mode >= 95
     env = {

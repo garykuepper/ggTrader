@@ -147,3 +147,26 @@ def test_scenario_distribution():
     templates = Counter(case.scenario.name.rsplit("_", 1)[0] for case in cases)
     print(f"modes={dict(modes)} templates={dict(templates)}")
     assert sum(modes.values()) == 600
+
+
+@pytest.mark.parametrize("seed", [6, 86])
+def test_second_sell_failure_follows_successful_first_submit(seed):
+    from tests.paper.transcript.harness import run_scenario
+
+    transcript = run_scenario(build_case(seed).scenario)
+    sells = [call for call in transcript["calls"] if call["target"] == "broker.submit_sell"]
+    assert len(sells) == 2, transcript
+    assert sells[0]["args"][0] == "AAPL" and sells[0]["raised"] is None
+    assert sells[1]["args"][0] == "KO" and sells[1]["raised"] == "RuntimeError: submit failed"
+
+
+@pytest.mark.parametrize("seed", [7, 87])
+def test_unassessable_stop_halts_buys_but_allows_exit(seed):
+    from tests.paper.transcript.harness import run_scenario
+
+    transcript = run_scenario(build_case(seed).scenario)
+    assert transcript["result"]["errors"] == ["Cannot assess catastrophe stop for: KO"]
+    submits = [call for call in transcript["calls"] if call["target"].startswith("broker.submit_")]
+    assert [(call["target"], call["args"][0]) for call in submits] == [
+        ("broker.submit_sell", "AAPL")
+    ]
