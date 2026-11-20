@@ -98,9 +98,16 @@ flatters SPY slightly. That cannot close a gap of 18.7 percentage points a year.
     registered days.
   - Alpaca's 41 dividends match State Street's at 6 decimals. The two Alpaca lacks
     (2016-03-18 and 2018-06-15) came from the issuer file.
-- **The two excluded days** (2019-08-12 and 2019-08-13) are 0.07% of the sample and cannot
-  account for the result. Their effect cannot be measured without prices, so they remain a
-  named limitation.
+- **The two excluded days** (2019-08-12 and 2019-08-13) are 0.07% of the sample. They were
+  left out because bars were missing, which can happen in stressed markets, so the omission
+  is not random. Their effect cannot be measured without prices, so they remain a named
+  limitation. This report does not claim they are too few to matter.
+- **A reading made after the data were seen.** r9 asks for "positive per-share cash amounts"
+  in the issuer dividend file. The workbook has six SPY rows with a 0.000000 capital-gain
+  leg (2020-12 to 2025-12). The code applies the positivity test to the dividend only and
+  accepts those legs. This was an interpretation made after the workbook was inspected. It
+  changes no scored number, because every in-window capital-gain leg is zero. A strict
+  reading would have stopped the study as UNRESOLVED (data).
 - **What this does not show.**
   - Whether the effect existed in the original sample.
   - Anything about other intraday rules, other symbols, or futures.
@@ -140,7 +147,9 @@ flatters SPY slightly. That cannot close a gap of 18.7 percentage points a year.
   - Validation: `_intraday_momentum_r9_validation.json`.
   - Vendor documentation review: `_intraday_r9_vendor_adjustment_review.json`.
   - Gap count: `../artifacts-2026-11-15-spy-minute-gap-count/`.
-  - Prices: `data/external/intraday_momentum_r9/`, not tracked by git.
+  - Prices: `data/external/intraday_momentum_r9/`, not tracked by git. Since 2026-11-16 this
+    is a link to `/media/thesix/ggTrader-data/intraday_momentum_r9/` (every file hash checked
+    on the move; the data check re-passed through the link).
 - **Fingerprints (SHA-256)**
   - Protocol `222521ce…`
   - Code `ebef81e1…`

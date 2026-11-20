@@ -81,3 +81,5 @@ backups/
 
 # graphify knowledge-graph output (regenerable: graph.json, graph.html, cache, manifest)
 graphify-out/
+# Raw market data lives on /media/thesix/ggTrader-data/; these are symlinks there.
+data/external/intraday_momentum_r9

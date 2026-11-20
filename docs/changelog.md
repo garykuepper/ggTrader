@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-20 (intraday SPY half-hour rule, r9)
+
+- Research only; no engine, strategy or live change. The single scheduled r9 score of the SPY
+  last-half-hour rule is closed: neither preset threshold met (Newey-West t −3.48 against a bar
+  of +3.0; −3.7% a year after the illustrative tax ledger against +3.0%), 2,677 scored days.
+  Report: `research/intraday/spy-momentum-feasibility/2026-11-15-intraday-half-hour-rule-result.md`.
+- New data source for this study only: Alpaca free SIP minute bars plus the State Street
+  dividend workbook, kept on `/media/thesix/ggTrader-data/intraday_momentum_r9/` and linked
+  from `data/external/intraday_momentum_r9` (git-ignored).
+- The report discloses two readings made after the data were seen: the positive-amount check
+  applies to the dividend only, and the two excluded days (2019-08-12/13) have an unmeasured
+  effect. The scorer's write-once files still print "NO-GO"; the label amendment explains it.
+
 ## 2026-11-11 (paper signal dates)
 
 - Reject future-dated bars before signal generation and reject future, stale or
