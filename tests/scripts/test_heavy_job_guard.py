@@ -23,12 +23,16 @@ FLOCK = shutil.which("flock")
 
 
 def _systemd_scope_available() -> bool:
-    """Return True only if a user-session transient scope can actually be started."""
+    """Return True only if a user-session transient scope can actually be started.
+
+    The probe uses the same flags as the scripts under test (including --slice-inherit, which
+    GitHub runners reject with "Failed to get PID slice"); a plain scope can succeed there.
+    """
     if shutil.which("systemd-run") is None:
         return False
     try:
         probe = subprocess.run(
-            ["systemd-run", "--user", "--scope", "-q", "--collect", "true"],
+            ["systemd-run", "--user", "--scope", "-q", "--collect", "--slice-inherit", "true"],
             capture_output=True,
             timeout=10,
         )
