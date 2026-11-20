@@ -11,7 +11,7 @@ import pytest
 
 from ggTrader.paper.gates import SignalGateError
 from ggTrader.paper.ledger import InMemoryLedger
-from tests.paper.support import make_trader
+from tests.paper.support import make_trader, seed_pending_orders, seed_snapshots
 
 # Fixed "today" every test's signals["as_of"] defaults to, so the Item-4
 # freshness gate (as_of must equal today in ET) doesn't need to be
@@ -754,9 +754,6 @@ class TestFillLogging:
         )
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestRunDateIsSessionDateNotAsOf:
     """Regression coverage for the paper-tables day-shift (2026-08-22).
 
@@ -771,9 +768,8 @@ class TestRunDateIsSessionDateNotAsOf:
     exercised without any dependency on the real wall clock.
     """
 
-    @patch("ggTrader.paper.trader.log_trade")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_log_trade_stamps_today_et_not_as_of(self, mock_signals, mock_log_trade, *_):
+    def test_log_trade_stamps_today_et_not_as_of(self, mock_signals):
         # Tuesday 2026-06-23, run fires at 19:45 UTC (12:45 PT) -- same
         # calendar day in UTC/ET/PT, so no wall-clock ambiguity here. The
         # signal's as_of is the PRIOR session (Monday), which is the normal,
@@ -783,11 +779,11 @@ class TestRunDateIsSessionDateNotAsOf:
         monday = date(2026, 6, 22)
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
         with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
-            trader, broker, _notifier = _make_trader(portfolio_value=100000.0)
-            with _intent_store(trader, broker) as (_, settled):
-                trader.run()
-        mock_log_trade.assert_not_called()
-        logged_run_date = settled[0][0]["run_date"]
+            trader, broker, _notifier, ledger = make_trader(portfolio_value=100000.0)
+            _real_submission(trader, broker, ledger)
+            trader.run()
+        assert not ledger.calls("log_trade")
+        logged_run_date = ledger.trades[0]["run_date"]
         assert logged_run_date == tuesday.isoformat()
         assert logged_run_date != monday.isoformat()
 
@@ -795,15 +791,12 @@ class TestRunDateIsSessionDateNotAsOf:
     # (as the sibling poll tests do) instead of burning 15 real seconds.
     @patch("ggTrader.paper.trader.time.sleep")
     @patch("ggTrader.paper.trader.time.time", side_effect=_clock_after(2))
-    @patch("ggTrader.paper.trader.log_trade")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_log_pending_order_stamps_today_et_not_as_of(
-        self, mock_signals, _log_trade, _time, _sleep, *_
-    ):
+    def test_log_pending_order_stamps_today_et_not_as_of(self, mock_signals, _time, _sleep):
         tuesday = date(2026, 6, 23)
         monday = date(2026, 6, 22)
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[], as_of=monday.isoformat())
-        trader, broker, _notifier = _make_trader(portfolio_value=100000.0)
+        trader, broker, _notifier, ledger = make_trader(portfolio_value=100000.0)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -814,47 +807,34 @@ class TestRunDateIsSessionDateNotAsOf:
             "filled_avg_price": 0.0,
             "status": "accepted",
         }
+        _real_submission(trader, broker, ledger)
         with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
-            with (
-                _intent_store(trader, broker) as (intents, _),
-                patch("ggTrader.paper.trader.log_pending_order") as mock_pending,
-                pytest.raises(RuntimeError, match="working orders"),
-            ):
+            with pytest.raises(RuntimeError, match="working orders"):
                 trader.run()
-        mock_pending.assert_not_called()
-        logged_run_date = next(iter(intents.values()))["run_date"]
+        assert not ledger.calls("log_pending_order")
+        logged_run_date = InMemoryLedger.get_unresolved_order_intents(ledger)[0]["run_date"]
         assert logged_run_date == tuesday.isoformat()
         assert logged_run_date != monday.isoformat()
 
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_log_snapshot_stamps_today_et_not_as_of(
-        self, mock_signals, _mock_schema, mock_log_snapshot, *_
-    ):
+    def test_log_snapshot_stamps_today_et_not_as_of(self, mock_signals):
         tuesday = date(2026, 6, 23)
         monday = date(2026, 6, 22)
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=monday.isoformat())
         with patch("ggTrader.paper.trader._today_et", return_value=tuesday):
-            trader, _broker, _notifier = _make_trader(portfolio_value=100000.0)
+            trader, _broker, _notifier, ledger = make_trader(portfolio_value=100000.0)
             trader.run()
-        mock_log_snapshot.assert_called_once()
-        logged_run_date = mock_log_snapshot.call_args[0][0]
+        assert len(ledger.calls("log_snapshot")) == 1
+        logged_run_date = ledger.calls("log_snapshot")[0][1][0]
         assert logged_run_date == tuesday.isoformat()
         assert logged_run_date != monday.isoformat()
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestReconciliation:
-    @patch("ggTrader.paper.trader.settle_legacy_pending_order")
-    @patch("ggTrader.paper.trader.log_trade")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_filled_pending_order_booked_and_cleared(
-        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
-    ):
+    def test_filled_pending_order_booked_and_cleared(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-19",
@@ -863,7 +843,8 @@ class TestReconciliation:
                 "notional": 3300.0,
             }
         ]
-        trader, broker, notifier = _make_trader()
+        trader, broker, notifier, ledger = make_trader()
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -876,18 +857,18 @@ class TestReconciliation:
         }
         trader.run()
         # Booked at the real fill value, under the original order date.
-        mock_log_trade.assert_not_called()
-        mock_clear.assert_called_once_with("buy-order-99", 22.0, 150.0, "filled")
+        assert not ledger.calls("log_trade")
+        assert ledger.calls("settle_legacy_pending_order") == [
+            ("settle_legacy_pending_order", ("buy-order-99", 22.0, 150.0, "filled"), {})
+        ]
+        assert ledger.trades[0]["run_date"] == "2026-06-19"
+        assert ledger.trades[0]["amount"] == 3300.0
+        assert not InMemoryLedger.get_pending_orders(ledger)
 
-    @patch("ggTrader.paper.trader.settle_legacy_pending_order")
-    @patch("ggTrader.paper.trader.log_trade")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_canceled_pending_order_dropped_without_booking(
-        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
-    ):
+    def test_canceled_pending_order_dropped_without_booking(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-19",
@@ -896,7 +877,8 @@ class TestReconciliation:
                 "notional": 3300.0,
             }
         ]
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -908,18 +890,17 @@ class TestReconciliation:
             "status": "canceled",
         }
         trader.run()
-        mock_log_trade.assert_not_called()
-        mock_clear.assert_called_once_with("buy-order-99", 0.0, 0.0, "canceled")
+        assert not ledger.calls("log_trade")
+        assert ledger.calls("settle_legacy_pending_order") == [
+            ("settle_legacy_pending_order", ("buy-order-99", 0.0, 0.0, "canceled"), {})
+        ]
+        assert not ledger.trades
+        assert not InMemoryLedger.get_pending_orders(ledger)
 
-    @patch("ggTrader.paper.trader.clear_pending_order")
-    @patch("ggTrader.paper.trader.log_trade")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_still_working_pending_order_left_alone(
-        self, mock_signals, mock_get_pending, mock_log_trade, mock_clear, *_
-    ):
+    def test_still_working_pending_order_left_alone(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of=_TEST_TODAY)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-19",
@@ -928,7 +909,8 @@ class TestReconciliation:
                 "notional": 3300.0,
             }
         ]
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -940,39 +922,31 @@ class TestReconciliation:
             "status": "accepted",
         }
         trader.run()
-        mock_log_trade.assert_not_called()
-        mock_clear.assert_not_called()
+        assert not ledger.calls("log_trade")
+        assert not ledger.calls("clear_pending_order")
+        assert InMemoryLedger.get_pending_orders(ledger)[0]["order_id"] == "buy-order-99"
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot")
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestDailyPnl:
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_uses_previous_snapshot_for_pnl(self, mock_signals, _schema, _trade, _snap, mock_prev):
-        mock_prev.return_value = 99000.0
+    def test_uses_previous_snapshot_for_pnl(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
-        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        trader, broker, notifier, ledger = make_trader(portfolio_value=100000.0)
+        seed_snapshots(ledger, [("2026-05-01", 99000.0, 50000.0, {})])
         trader.run()
         pnl_arg = notifier.daily_summary.call_args[0][1]
         assert pnl_arg == 1000.0
 
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_missing_prior_snapshot_marks_daily_pnl_unavailable(
-        self, mock_signals, _schema, _trade, _snap, mock_prev
-    ):
-        mock_prev.return_value = None
+    def test_missing_prior_snapshot_marks_daily_pnl_unavailable(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[], as_of="2026-06-19")
-        trader, _, notifier = _make_trader(portfolio_value=100000.0)
+        trader, _, notifier, ledger = make_trader(portfolio_value=100000.0)
         trader.run()
         pnl_arg = notifier.daily_summary.call_args[0][1]
         assert pnl_arg is None
 
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_unapplied_split_corrects_the_daily_summary(
-        self, mock_signals, _schema, _trade, _snap, mock_prev
-    ):
+    def test_unapplied_split_corrects_the_daily_summary(self, mock_signals):
         # Real MNST numbers from the 2026-08-19 incident: broker qty
         # (20.80410098) never doubled for the 2-for-1 split, so the broker's
         # own unrealized_pl (-893.30) is phantom -- the true corrected
@@ -980,13 +954,12 @@ class TestDailyPnl:
         # here via AlpacaBroker.get_split_corrections) reports the factor;
         # the trader must apply it to positions/P&L before reporting, not
         # hide the position's P&L.
-        mock_prev.return_value = 99000.0
         mock_signals.return_value = _blend(buys=[], sells=[])
         mnst_qty = 20.80410098
         mnst_cost_basis = 1887.11
         mnst_broker_market_value = mnst_qty * 47.77  # 993.81..., broker's bogus (pre-split) value
         mnst_broker_pl = mnst_broker_market_value - mnst_cost_basis  # -893.30...
-        trader, broker, notifier = _make_trader(
+        trader, broker, notifier, ledger = make_trader(
             portfolio_value=100000.0,
             positions={
                 "MNST": {
@@ -1009,6 +982,7 @@ class TestDailyPnl:
             "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
             "activity_applied": set(),
         }
+        seed_snapshots(ledger, [("2026-05-01", 99000.0, 50000.0, {})])
         trader.run()
 
         kwargs = notifier.daily_summary.call_args[1]
@@ -1026,36 +1000,29 @@ class TestDailyPnl:
         assert reported_positions["MNST"]["unrealized_pl"] == pytest.approx(mnst_true_pl, abs=0.01)
 
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_no_split_corrections_reports_broker_values_unchanged(
-        self, mock_signals, _schema, _trade, _snap, mock_prev
-    ):
-        mock_prev.return_value = 99000.0
+    def test_no_split_corrections_reports_broker_values_unchanged(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, notifier = _make_trader(
+        trader, broker, notifier, ledger = make_trader(
             portfolio_value=100000.0,
             positions={"VZ": {"qty": 77.05, "market_value": 3743.85, "unrealized_pl": 365.22}},
         )
         broker.get_split_corrections.return_value = {}
+        seed_snapshots(ledger, [("2026-05-01", 99000.0, 50000.0, {})])
         trader.run()
         kwargs = notifier.daily_summary.call_args[1]
         assert kwargs["split_corrections"] == {}
         assert kwargs["booked_equity"] is None
         assert kwargs["unrealized_pnl"] == 365.22
 
-    @patch("ggTrader.paper.trader.get_trade_history_dates")
-    @patch("ggTrader.paper.trader.get_snapshot_history")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_snapshot_confirmed_split_suppresses_the_correction(
-        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev
-    ):
+    def test_snapshot_confirmed_split_suppresses_the_correction(self, mock_signals):
         # Primary evidence (paper_snapshots qty doubling across the ex-date,
         # no trade to explain it another way) confirms the broker DID apply
         # MNST's split -- unlike the never-exercised activities-feed guard,
         # this must actually suppress the correction rather than double it.
-        mock_prev.return_value = 99000.0
         mock_signals.return_value = _blend(buys=[], sells=[])
         mnst_qty = 41.60820196  # already split-adjusted -- broker applied it
-        trader, broker, notifier = _make_trader(
+        trader, broker, notifier, ledger = make_trader(
             portfolio_value=100000.0,
             positions={
                 "MNST": {
@@ -1074,12 +1041,15 @@ class TestDailyPnl:
             "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
             "activity_applied": set(),
         }
-        mock_snap_hist.return_value = [
-            (date(2026, 5, 28), {"MNST": {"qty": 20.80410098}}),
-            (date(2026, 6, 3), {"MNST": {"qty": mnst_qty}}),
-        ]
-        mock_trades.return_value = []
+        seed_snapshots(
+            ledger,
+            [
+                ("2026-05-28", 99000.0, 0.0, {"MNST": {"qty": 20.80410098}}),
+                ("2026-06-03", 99000.0, 0.0, {"MNST": {"qty": mnst_qty}}),
+            ],
+        )
 
+        seed_snapshots(ledger, [("2026-05-01", 99000.0, 50000.0, {})])
         trader.run()
 
         kwargs = notifier.daily_summary.call_args[1]
@@ -1088,23 +1058,18 @@ class TestDailyPnl:
         # Untouched -- the broker's own (already-correct) numbers stand.
         assert reported_positions["MNST"]["qty"] == mnst_qty
 
-    @patch("ggTrader.paper.trader.get_trade_history_dates")
-    @patch("ggTrader.paper.trader.get_snapshot_history")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_missing_snapshot_evidence_falls_back_to_correcting(
-        self, mock_signals, mock_snap_hist, mock_trades, _schema, _trade, _snap, mock_prev, caplog
-    ):
-        # No paper_snapshots history at all to compare across the ex-date
-        # (e.g. a fresh account, or history that doesn't reach far enough
-        # back) -- with no evidence either way, this must fall back to the
+    def test_missing_snapshot_evidence_falls_back_to_correcting(self, mock_signals, caplog):
+        # No paper_snapshots history brackets the ex-date
+        # (e.g. history that doesn't reach far enough back). With no evidence either way,
+        # this must fall back to the
         # pre-hardening default of correcting the position, not silently
         # assume the split was applied.
-        mock_prev.return_value = 99000.0
         mock_signals.return_value = _blend(buys=[], sells=[])
         mnst_qty = 20.80410098
         mnst_cost_basis = 1887.11
         mnst_broker_market_value = mnst_qty * 47.77
-        trader, broker, notifier = _make_trader(
+        trader, broker, notifier, ledger = make_trader(
             portfolio_value=100000.0,
             positions={
                 "MNST": {
@@ -1124,9 +1089,8 @@ class TestDailyPnl:
             "corp_splits": {"MNST": [(date(2026, 6, 1), 2.0)]},
             "activity_applied": set(),
         }
-        mock_snap_hist.return_value = []  # no history to bracket the ex-date
-        mock_trades.return_value = []
 
+        seed_snapshots(ledger, [("2026-06-18", 99000.0, 50000.0, {})])
         with caplog.at_level("WARNING", logger="ggTrader.paper.trader"):
             trader.run()
 
@@ -1137,116 +1101,86 @@ class TestDailyPnl:
             for record in caplog.records
         )
 
-    def test_split_correction_persists_past_lookback_window(
-        self, _schema, _trade, _snap, mock_prev
-    ):
+    def test_split_correction_persists_past_lookback_window(self):
         """A split whose ex_date is now outside the broker-feed lookback
         window (corp_splits comes back empty) must still be corrected if it
         was previously detected and persisted -- the MNST bug."""
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
         positions = {"MNST": {"qty": 20.8041, "cost_basis": 1887.11, "market_value": 986.67}}
 
-        with patch(
-            "ggTrader.paper.trader.get_open_split_states",
-            return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
-        ):
-            result = trader._compute_split_corrections(
-                positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
-            )
+        InMemoryLedger.save_split_correction(ledger, "MNST", "2026-08-11", 2.0)
+        result = trader._compute_split_corrections(
+            positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+        )
 
         assert result == {"MNST": 2.0}
 
-    def test_persisted_split_still_reverified_once_broker_feed_forgets_it(
-        self, _schema, _trade, _snap, mock_prev
-    ):
+    def test_persisted_split_still_reverified_once_broker_feed_forgets_it(self):
         """A persisted correction outside the broker feed's own lookback
         window (`corp_splits` comes back empty, Finding 1) is still checked
         against snapshot evidence using its *persisted* ex_date/factor, and
         cleared once that evidence confirms the broker applied it -- so a
         belated broker-side apply can no longer double-count forever."""
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
         mnst_qty = 41.6082  # already split-adjusted -- broker belatedly applied it
         positions = {
             "MNST": {"qty": mnst_qty, "cost_basis": 1887.11, "market_value": mnst_qty * 47.77}
         }
 
-        with (
-            patch(
-                "ggTrader.paper.trader.get_open_split_states",
-                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 6, 1)}},
-            ),
-            patch(
-                "ggTrader.paper.trader.get_snapshot_history",
-                return_value=[
-                    (date(2026, 5, 28), {"MNST": {"qty": 20.8041}}),
-                    (date(2026, 6, 3), {"MNST": {"qty": mnst_qty}}),
-                ],
-            ),
-            patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]),
-            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
-        ):
-            result = trader._compute_split_corrections(
-                positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
-            )
+        InMemoryLedger.save_split_correction(ledger, "MNST", "2026-06-01", 2.0)
+        seed_snapshots(
+            ledger,
+            [
+                ("2026-05-28", 99000.0, 0.0, {"MNST": {"qty": 20.8041}}),
+                ("2026-06-03", 99000.0, 0.0, {"MNST": {"qty": mnst_qty}}),
+            ],
+        )
+        result = trader._compute_split_corrections(
+            positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+        )
+        assert ledger.calls("clear_split_correction") == [("clear_split_correction", ("MNST",), {})]
+        assert InMemoryLedger.get_open_split_states(ledger) == {}
 
-        mock_clear.assert_called_once_with("MNST")
         assert result == {}
 
-    def test_split_correction_clears_persisted_state_once_applied(
-        self, _schema, _trade, _snap, mock_prev
-    ):
+    def test_split_correction_clears_persisted_state_once_applied(self):
         """Once snapshot history confirms the broker applied the split (qty
         jumped ~factor), persisted state for that symbol is cleared."""
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.get_split_evidence.return_value = {
             "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
             "activity_applied": set(),
         }
         positions = {"MNST": {"qty": 41.6082, "cost_basis": 1887.11, "market_value": 1973.5}}
 
-        with (
-            patch(
-                "ggTrader.paper.trader.get_open_split_states",
-                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
-            ),
-            patch("ggTrader.paper.trader.get_snapshot_history", return_value=[]),
-            patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]),
-            patch(
-                "ggTrader.paper.trader.find_split_applied_symbols",
-                return_value=({"MNST"}, set()),
-            ) as mock_find,
-            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
-        ):
+        InMemoryLedger.save_split_correction(ledger, "MNST", "2026-08-11", 2.0)
+        with patch(
+            "ggTrader.paper.trader.find_split_applied_symbols", return_value=({"MNST"}, set())
+        ) as mock_find:
             result = trader._compute_split_corrections(
                 positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
             )
-
         assert mock_find.called
-        mock_clear.assert_called_once_with("MNST")
+        assert ledger.calls("clear_split_correction") == [("clear_split_correction", ("MNST",), {})]
+        assert InMemoryLedger.get_open_split_states(ledger) == {}
+
         assert result == {}
 
-    def test_split_correction_drops_persisted_state_for_closed_position(
-        self, _schema, _trade, _snap, mock_prev
-    ):
+    def test_split_correction_drops_persisted_state_for_closed_position(self):
         """A symbol no longer held has nothing left to correct; its persisted
         row is cleaned up."""
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
 
-        with (
-            patch(
-                "ggTrader.paper.trader.get_open_split_states",
-                return_value={"MNST": {"factor": 2.0, "ex_date": date(2026, 8, 11)}},
-            ),
-            patch("ggTrader.paper.trader.clear_split_correction") as mock_clear,
-        ):
-            result = trader._compute_split_corrections(
-                {}, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
-            )
+        InMemoryLedger.save_split_correction(ledger, "MNST", "2026-08-11", 2.0)
+        result = trader._compute_split_corrections(
+            {}, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
+        )
+        assert ledger.calls("clear_split_correction") == [("clear_split_correction", ("MNST",), {})]
+        assert InMemoryLedger.get_open_split_states(ledger) == {}
 
-        mock_clear.assert_called_once_with("MNST")
         assert result == {}
 
 
