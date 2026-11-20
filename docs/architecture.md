@@ -98,7 +98,7 @@ src/ggTrader/
 │   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
 │   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
 │   ├── ports.py                 # Broker and Notifier protocols (AlpacaBroker, TelegramNotifier and DryRunNotifier satisfy them)
-│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger (the old `ModuleLedger` string-patch adapter was retired in Phase 5 and no longer exists)
+│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger, NonDurableLedgerError (the old `ModuleLedger` string-patch adapter was retired in Phase 5 and no longer exists)
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
 │   └── persist.py               # Saves daily paper trading logs and portfolio balances (PgPaperLedger holds the SQL; the module functions delegate to it)
@@ -421,8 +421,8 @@ result is built as a `RunResult` and returned as `.as_dict()`, so `run()` still 
 with the same key order. A test can build a trader on `InMemoryLedger` and needs no persist patch;
 that covers the **ledger only**: the signal, membership, benchmark-refresh, date, uuid and clock
 collaborators are still patched in the trader module.
-`InMemoryLedger` is a test double without durable storage or a cross-process lock; injecting it
-into a live trader would not provide production order-intent safety.
+`InMemoryLedger` is a test double without durable storage or a cross-process lock; a live run
+refuses it (see "Live runs need a durable ledger" below).
 
 **Intended behavior change: one settings snapshot per run.** The run-time environment settings used
 to be read at several points of a run. `TraderConfig.from_env()` now reads them all once, at the top
@@ -471,8 +471,16 @@ stops earlier, such as a stale signal date or an unreadable peak, never reads th
 covered cases the log comparison pins logger name, level and rendered message, not raw `LogRecord`
 template, arguments or source metadata.
 The eight private compatibility seams were retired on 2026-11-20 (see "Seam rules" below).
-A live caller can still explicitly inject an in-memory ledger, so durable-state protection there
-is a static production-import guard rather than a runtime refusal.
+A live run now refuses a non-durable ledger at run time (2026-11-20, decision D4): the first
+statement of `PaperTrader.run()` calls `require_durable_for_live` (`paper/ledger.py`), which raises
+`NonDurableLedgerError(RuntimeError)` for a live run (not `dry_run`) whose ledger has
+`durable` false, before any clock, environment, broker, ledger or notifier call. Every ledger
+carries a class attribute `durable`: `PgPaperLedger` True, `InMemoryLedger` and the tests'
+`SpyLedger` False, `ReadOnlyLedger` follows its inner ledger, and a ledger with no attribute counts
+as non-durable. Dry runs, read-only or not, are never refused. The module flag
+`ggTrader.paper.ledger.ALLOW_NON_DURABLE_LEDGER` (default False, read at call time) lifts the
+refusal; only `tests/paper/conftest.py` sets it, per test. The static production-import guard that
+keeps `InMemoryLedger` out of production code stays as a second layer.
 
 ### 4b. The run as step objects (refactor phase 5)
 
@@ -568,8 +576,10 @@ patches at the start of the phase, none now; all 277 test node ids are kept). Ea
 `InMemoryLedger` or `SpyLedger` (`tests/paper/support.py`). An autouse guard patches
 `ggTrader.paper.trader.PgPaperLedger` with a ledger whose every method records the call and raises
 `UnstubbedPersistCall`, and fails the test at teardown if anything was recorded, even when the trader
-swallowed the error. A static check keeps `InMemoryLedger` out of production code; a live run still
-accepts an injected ledger (a runtime refusal would change behavior and is the owner's call).
+swallowed the error. A static check keeps `InMemoryLedger` out of production code, and a live run now refuses a
+non-durable ledger at run time (D4, 2026-11-20); the paper tests' autouse fixture in
+`tests/paper/conftest.py` lifts that refusal per test (`ALLOW_NON_DURABLE_LEDGER`), and
+`tests/paper/test_durable_ledger.py` turns it back on to prove it.
 
 **Not changed:** `persist.py` (no SQL, transaction mode or bind dictionary), `risk.py`, `cash_sweep.py`,
 `catastrophe_stop.py`, `gates.py`, `notifier.py`, `alpaca_broker.py`, `signal_runner.py`, `overlay.py`,

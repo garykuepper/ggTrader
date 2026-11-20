@@ -1,7 +1,8 @@
 """The paper ledger protocol, its read-only form and its in-memory test double.
 
-Public names: ``RunLock``, ``PaperLedger``, ``WRITE_METHODS``,
-``ReadOnlyLedger`` and ``InMemoryLedger``.
+Public names: ``RunLock``, ``PaperLedger``, ``WRITE_METHODS``, ``ReadOnlyLedger``,
+``InMemoryLedger``, ``NonDurableLedgerError``, ``ALLOW_NON_DURABLE_LEDGER`` and
+``require_durable_for_live``.
 
 ``PaperLedger`` has one method per public function of ``paper/persist.py``: same name, same
 parameters, same return annotation (``log_snapshot`` takes ``dict[str, Position]`` and
@@ -47,10 +48,19 @@ WRITE_METHODS: frozenset[str] = frozenset(
     }
 )
 
+#: Lifts the live-run refusal of a non-durable ledger. Only the tests turn it on (the paper
+#: tests' ``conftest.py`` sets it per test and restores it); production code never does. It is
+#: read through this module at call time, so a fixture that rebinds it takes effect.
+ALLOW_NON_DURABLE_LEDGER: bool = False
+
 _TERMINAL_STATUSES = frozenset(TERMINAL_STATUSES)
 
 #: The keys of a stored trade that follow ``run_date`` in the tuple a fill is compared with.
 _TRADE_TAIL: tuple[str, ...] = ("side", "symbol", "amount", "reason")
+
+
+class NonDurableLedgerError(RuntimeError):
+    """A live run was given a ledger whose state does not outlive the process."""
 
 
 class RunLock(Protocol):
@@ -64,7 +74,9 @@ class PaperLedger(Protocol):
     """Durable paper-trading state: order intents, trades, snapshots and risk state.
 
     ``persist.py`` holds the SQL implementation. The signatures below are the ones of the 31
-    public persist functions.
+    public persist functions. Every implementation also carries a class attribute
+    ``durable: bool`` (True only when its state survives the process); it is not a protocol member
+    because a ledger without it is treated as non-durable (``require_durable_for_live``).
     """
 
     def init_paper_schema(self) -> None: ...
@@ -188,6 +200,11 @@ class ReadOnlyLedger:
         self._skipped = skipped
         self._log = log
 
+    @property
+    def durable(self) -> bool:
+        """Whether the wrapped ledger is durable (the wrapper adds nothing of its own)."""
+        return bool(getattr(self._inner, "durable", False))
+
     def __getattr__(self, name: str) -> Any:
         state = self.__dict__
         if "_inner" not in state:
@@ -203,6 +220,21 @@ class ReadOnlyLedger:
 
         skip.__name__ = name
         return skip
+
+
+def require_durable_for_live(ledger: Any, *, dry_run: bool) -> None:
+    """Raise ``NonDurableLedgerError`` for a live run on a ledger that is not durable.
+
+    A dry run (read-only or not) is never refused. The flag ``ALLOW_NON_DURABLE_LEDGER`` is read
+    from this module at call time. A ledger with no ``durable`` attribute counts as non-durable.
+    """
+    if dry_run or ALLOW_NON_DURABLE_LEDGER or getattr(ledger, "durable", False):
+        return
+    raise NonDurableLedgerError(
+        f"a live run needs a durable ledger, got {type(ledger).__name__}: it would trade with "
+        "no state that survives the process (ggTrader.paper.ledger.ALLOW_NON_DURABLE_LEDGER is "
+        "for tests only)"
+    )
 
 
 class _MemoryRunLock:
@@ -272,7 +304,10 @@ class InMemoryLedger:
         lock_entries: How many times ``paper_run_lock`` was entered.
         lock_verifications: How many times a lock object's ``verify`` was called.
         schema_initialized: Whether ``init_paper_schema`` has run.
+        durable: Always False: nothing here outlives the process, so a live run refuses it.
     """
+
+    durable: bool = False
 
     def __init__(self) -> None:
         self.schema_initialized = False

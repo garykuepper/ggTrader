@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 2: a live run refuses a non-durable ledger, D4)
+
+- **Intended behavior change.** `PaperTrader.run()` now raises `NonDurableLedgerError` (a
+  `RuntimeError`, in `paper/ledger.py`) as its very first statement when the run is live (not
+  `dry_run`) and its ledger is not durable, before any clock read, environment read, or broker,
+  ledger or notifier call. The message names the ledger class. The production path is unaffected:
+  `ggt paper --live` builds a `PgPaperLedger`, which is durable. A caller that injected an
+  `InMemoryLedger` (or any ledger without `durable = True`) into a live trader used to trade with
+  no state that survives the process; it is now refused. Dry runs (read-only or with
+  `--dry-run-writes`) are never refused.
+- Every ledger class has a class attribute `durable: bool` (`PgPaperLedger` True, `InMemoryLedger`
+  and the tests' `SpyLedger` False; `ReadOnlyLedger.durable` follows its inner ledger; a ledger with
+  no attribute counts as non-durable). The module flag
+  `ggTrader.paper.ledger.ALLOW_NON_DURABLE_LEDGER` (default False) lifts the refusal and is read at
+  call time; only `tests/paper/conftest.py` sets it (autouse, per test, restored afterwards).
+- No golden changed: the 103 transcript goldens, `run_equivalence_digests.json`, `persist_sql.json`
+  and every `tests/paper/golden/**` file are byte-identical, and the clock/environment read order
+  of a permitted run is unchanged. `tests/paper/test_durable_ledger.py` holds the tests (the frozen
+  `test_trader_ledger.py` is untouched). Docs: `docs/architecture.md` no longer says the protection
+  is only a static guard.
+
 ## 2026-11-20 (refactor completion II, task 1: the eight private seam forwards are retired, D3)
 
 - `PaperTrader` no longer has `_submit_order`, `_poll_orders`, `_reconcile_order_intents`,

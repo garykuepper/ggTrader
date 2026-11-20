@@ -138,8 +138,11 @@ class PgPaperLedger:
 
     Each method is the body of the module function of the same name in this file, moved
     unchanged: same SQL, binds and transaction shape. It is stateless and reads the engine
-    through `_get_engine()` at every call, never caching it.
+    through `_get_engine()` at every call, never caching it. ``durable`` is True: the state is in
+    PostgreSQL, so a live run accepts this ledger.
     """
+
+    durable: bool = True
 
     def init_paper_schema(self) -> None:
         with _get_engine().connect() as conn:

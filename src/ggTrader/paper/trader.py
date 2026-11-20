@@ -21,7 +21,7 @@ from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS  
 from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - compatibility alias
 from ggTrader.paper.corporate_actions import CorporateActions
 from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
-from ggTrader.paper.ledger import PaperLedger, ReadOnlyLedger
+from ggTrader.paper.ledger import PaperLedger, ReadOnlyLedger, require_durable_for_live
 from ggTrader.paper.models import RunContext, RunResult
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.order_flow import OrderFlow
@@ -176,6 +176,8 @@ class PaperTrader:
 
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
+        # Before any clock, environment, broker or ledger call: a live run needs durable state.
+        require_durable_for_live(self._ledger, dry_run=self._dry_run)
         # One snapshot of the environment for the whole run, taken here (not at construction)
         # so a setting changed between runs applies to the next one.
         cfg = TraderConfig.from_env(dry_run=self._dry_run, read_only=self._read_only)
