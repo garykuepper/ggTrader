@@ -259,11 +259,12 @@ def test_stage_two_polls_sells_and_blocks_buys_on_unfilled_exit():
     )
 
 
-def test_sweep_sell_is_planned_after_the_stops_were_executed(monkeypatch):
+def _check_stop_sweep_and_regular_sells(monkeypatch):
     from ggTrader.paper import order_flow
     from ggTrader.paper.models import IntentKind, OrderIntent
 
     flow, view, signals = make_flow({"A": position(), "B": position()}, sells=("B",))
+    flow.executor.submit.side_effect = ["stop-oid", "sweep-oid", "sell-oid"]
     view.corrected_positions = {"A": position()}
     view.sweep_on = True
     view.positions = view.strategy_positions
@@ -281,6 +282,15 @@ def test_sweep_sell_is_planned_after_the_stops_were_executed(monkeypatch):
     assert state.book.sells == ["A", "B"]
     assert state.regular_sell_count == 1
     assert [o.symbol for o in state.book.orders] == ["A", "SGOV", "B"]
+    assert state.book.orders[1].order_id == "sweep-oid"
+
+
+def test_sweep_sell_is_planned_after_the_stops_were_executed(monkeypatch):
+    _check_stop_sweep_and_regular_sells(monkeypatch)
+
+
+def test_regular_sell_count_excludes_stop_and_sweep_sells(monkeypatch):
+    _check_stop_sweep_and_regular_sells(monkeypatch)
 
 
 def test_a_working_exit_raises_in_reconciliation_before_any_error_is_built():
@@ -389,7 +399,9 @@ def test_unfilled_exit_errors_are_given_the_raw_broker_positions():
 
 
 @pytest.mark.parametrize("dry", [False, True])
-def test_the_flow_builds_each_sell_order_after_its_counters_and_market_value_read(dry):
+def test_the_flow_builds_each_sell_order_after_its_counters_and_its_market_value_read(dry):
+    from ggTrader.paper.models import SubmittedOrder
+
     events = []
     flow, view, signals = make_flow({}, dry=dry, sells=("A",))
     flow.stop_threshold = None
@@ -412,7 +424,7 @@ def test_the_flow_builds_each_sell_order_after_its_counters_and_market_value_rea
 
     def announce(_):
         assert state.book.sells == ["A"] and state.regular_sell_count == 1
-        assert [o.order_id for o in state.book.orders] == ([] if dry else ["oid"])
+        assert state.book.orders == ([] if dry else [SubmittedOrder("oid", "SELL", "A", 10, None)])
         events.append("announce")
 
     flow.executor.announce.side_effect = announce
