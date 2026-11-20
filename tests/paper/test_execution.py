@@ -413,14 +413,19 @@ def test_unfilled_exit_errors_use_the_raw_broker_positions():
     orders = [
         SubmittedOrder("one", "SELL", "ABC", 10, None),
         SubmittedOrder("two", "SELL", "XYZ", 10, None),
+        SubmittedOrder("full", "SELL", "FULL", 10, None),
         SubmittedOrder("sweep", "SELL", "SGOV", 10, SWEEP_TRADE_REASON),
     ]
     filled = {
         "one": {"status": "filled", "filled_qty": 2},
+        "full": {"status": "filled", "filled_qty": 2},
         "sweep": {"status": "new", "filled_qty": 0},
     }
     assert executor.unfilled_exit_errors(
-        orders, filled, {"ABC": {"qty": 3}, "XYZ": {"qty": 1}}
+        # FULL's broker quantity is 2; a corrected quantity of 3 would report a shortfall.
+        orders,
+        filled,
+        {"ABC": {"qty": 3}, "XYZ": {"qty": 1}, "FULL": {"qty": 2}},
     ) == [
         "SELL ABC not fully filled (filled); new strategy buys blocked",
         "SELL XYZ not fully filled (unknown); new strategy buys blocked",

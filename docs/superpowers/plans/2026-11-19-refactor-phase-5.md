@@ -969,7 +969,7 @@ by design** and the digests, the transcripts and the named test must fail instea
 | 4b | drop `not invalid_exit_symbols` from the sweep-buy condition | N | rule 4 sweep-buy case; `test_invalid_exit_does_not_sell_sweep_to_fund_blocked_buy[...-50000.0-None]`; `strategy_exit_invalid_qty`; D | must fail |
 | 5 | submit the split-corrected quantity | N | rule 5; `test_sell_submits_brokers_uncorrected_qty_not_split_adjusted`; `split_correction_held`; D | must fail |
 | 6 | do not wrap the ledger read-only (writes happen) | **S** (`__init__`) | rule 6; `dry_run_read_only` golden; the read-only batch (M6); D. Live-sell tests (`TestSellExits`) cannot reach it | blind |
-| 7 | swallow the submit exception and continue | **S** (`submit_order`) | rule 7a; `submit_error` golden; `test_order_failure_stops_later_buys`; `test_run_stops_after_ambiguous_order_failure`; D | blind |
+| 7 | swallow the submit exception and continue | **S** (`submit_order`) | rule 7a; `submit_error` golden; `test_run_stops_after_ambiguous_order_failure`; D. `test_order_failure_stops_later_buys` mocks the submit seam and cannot reach this body. | blind |
 | 8 | drop the intent reconcile after the buys | N | rule 7b (rejected-buy case); `plain_buys_and_sells`, `sweep_buy_after_strategy_orders`; D | must fail |
 | 9 | read `now_pt` before generating signals | N | event-order tests only (the harness pins both clocks and does not record them) | not applicable |
 | 10 | poll sleep 1.0 to 0.5 | **S** (`poll_orders`) | T (`clock.sleep` calls); `test_poll_orders_reads_the_clock_through_the_hooks_and_sleeps_one_second`; D | blind |
