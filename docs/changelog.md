@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-20 (docs audit after the refactor)
+
+- Swept `docs/`, `README.md`, `AGENTS.md` (and its symlink `CLAUDE.md`), `src/`, `tests/` and `scripts/` for the
+  names the refactor retired (`ModuleLedger`, `_run_legacy`, `RunHalted`, `lab/simulate.py`, `lab/replica.py`,
+  `trader.py:NNN` references, the old 1,600-line and 826-line trader descriptions, "not wired"). Current docs
+  already describe them as retired; the remaining hits are changelog history, the superseded design and plans,
+  or test and source comments, which this audit does not edit.
+- `AGENTS.md` section 1 now lists every module of `src/ggTrader/paper/` that the Phase 5 run split added
+  (`preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`, `order_flow.py`, `execution.py`,
+  `corporate_actions.py`, `reporter.py`, `seams.py`, `run_helpers.py`, `ledger.py`, `ports.py`, `models.py`,
+  `config.py`, `constants.py`) and says `trader.py` is now a short orchestrator. Its test-run rules (4G cap, one
+  heavy job at a time) were already current and are unchanged. No owner instruction was altered.
+- `docs/cli_reference.md` now says `ggt db clean` and `ggt db truncate` exit with code 2 (and delete nothing)
+  when their confirmation flag (`--yes`, `--yes-wipe-ohlcv`) is missing, matching `cli/cmd_db.py`.
+- `docs/next_steps.md` has one status row for the refactor: phases 0 to 5 merged to local main, not pushed, the
+  trader stays stopped, nothing deployed, and the owner-gated items still open.
+- Moved the point-in-time note `where-we-left-it-2026-11-12.md` to `docs/archive/` and fixed its inbound links
+  in `next_steps.md` and `working_task_list.md`, and its own relative links.
+
 ## 2026-11-20 (refactor phase 5: the paper trader run split into step objects)
 
 - Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls

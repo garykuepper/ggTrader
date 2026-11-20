@@ -11,7 +11,7 @@ Development and research are paused as of 2026-11-12 with a clean slate.
 | Done | The exits-only halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). The branch `feature/verdict-register` was merged and pushed to `main` the same day. The code is not deployed and the trader stays stopped. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](#open-decisions)). |
-| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
+| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](archive/where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -36,7 +36,7 @@ Terms:
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
 
-Full state: [where we left it](where-we-left-it-2026-11-12.md). Detail is in the sections below and in [next steps](next_steps.md).
+Full state: [where we left it](archive/where-we-left-it-2026-11-12.md). Detail is in the sections below and in [next steps](next_steps.md).
 
 **Updated:** 2026-11-12 · **Status:** paused, clean slate. The immediate actions are in [next steps](next_steps.md); evidence stays in the linked reports.
 

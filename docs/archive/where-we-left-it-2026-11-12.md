@@ -10,7 +10,7 @@ Development and research are paused. Everything is committed. The branch was mer
 | Engine changes (intraday and time-stop inputs, safe hashing) | Branch `feature/verdict-register`, commit `acb4eac5` | Merged |
 | Paper-trader changes and the proposed halt policy | Same branch, commit `47d8a3c9`, plus review fixes `f3d39310`, `c66b18e0`, `b41cf239` | Merged, not deployed |
 | Verdict register, eight stock screens, input pilot, drafts | Same branch, commit `51b55492` | Merged |
-| [Strategy category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) | Same branch, commit `0ae8739f` | Merged |
+| [Strategy category report](../../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) | Same branch, commit `0ae8739f` | Merged |
 | Refreshed documents and this note | Same branch | Merged |
 | Paper-order recovery fix | `main`, commit `783c7267` | Pushed with the merge, not deployed |
 
@@ -77,6 +77,6 @@ This is what you are asked to approve. It changes nothing today, because the tra
 
 ## First three things to do on return
 
-1. Read [next steps](next_steps.md) and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
+1. Read [next steps](../next_steps.md) and the [category report](../../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md).
 2. Nothing to decide on the merge; it is done.
 3. Decide on the two unsent drafts, and look for Saturday's weekly heartbeat message.
