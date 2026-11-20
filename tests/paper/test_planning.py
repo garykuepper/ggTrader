@@ -23,7 +23,12 @@ def test_strategy_signals_merges_sleeves_in_order_and_sorts_sells():
         "weights": {"a": 0.5},
         "scale": 1.0,
         "sleeves": {
-            "a": {"buys": ["Z", "A"], "sells": ["Z", "B"], "as_of": "first"},
+            "a": {
+                "buys": ["Z", "A"],
+                "sells": ["Z", "B"],
+                "as_of": "first",
+                "last_exit": {"B": "old"},
+            },
             "b": {"buys": ["Z"], "sells": ["B", "A"], "as_of": "second", "last_exit": {"B": "x"}},
         },
     }
@@ -214,7 +219,7 @@ def test_no_planner_reads_market_value(monkeypatch):
             assert key != "market_value"
             return super().get(key, default)
 
-    position = Position(qty=3, cost_basis=100, unrealized_pl=-30)
+    position = Position(qty=3, cost_basis=100, unrealized_pl=-30, market_value=999)
     positions = {"a": position}
     monkeypatch.setattr(catastrophe_stop, "find_catastrophe_stops", lambda *_: ["a"])
     stop = planning.plan_stops(
@@ -239,7 +244,7 @@ def test_no_planner_reads_market_value(monkeypatch):
     assert stop.advance().book_amount is None
     assert validation.advance() is None
     assert exits.advance().book_amount is None
-    assert position == {"qty": 3, "cost_basis": 100, "unrealized_pl": -30}
+    assert position == {"qty": 3, "cost_basis": 100, "unrealized_pl": -30, "market_value": 999}
 
 
 def test_assess_stops_propagates_stop_iteration(monkeypatch):
@@ -298,3 +303,33 @@ def test_invalid_stop_takes_precedence_over_pending(monkeypatch):
         pending_symbols=frozenset({"a"}),
     )
     assert isinstance(planner.advance(), InvalidExit)
+
+
+@pytest.mark.parametrize("qty", [None, 0, -1, float("nan"), float("inf")])
+def test_invalid_quantities_are_rejected_by_stop_and_exit_validation(monkeypatch, qty):
+    monkeypatch.setattr(catastrophe_stop, "find_catastrophe_stops", lambda *_: ["a"])
+    positions = {"a": {"qty": qty}}
+    stop = planning.plan_stops(
+        assessable={},
+        strategy_positions=positions,
+        corrected_positions={},
+        threshold=-0.25,
+        pending_symbols=frozenset(),
+    )
+    validation = planning.validate_exits(
+        sells=["a"],
+        strategy_positions=positions,
+        invalid_symbols=frozenset(),
+    )
+    assert isinstance(stop.advance(), InvalidExit)
+    assert isinstance(validation.advance(), InvalidExit)
+
+
+def test_pending_exit_is_skipped_before_quantity_is_read():
+    planner = planning.plan_exits(
+        sells=["a"],
+        strategy_positions={"a": {}},
+        invalid_symbols=frozenset(),
+        pending_symbols=frozenset({"a"}),
+    )
+    assert planner.advance() == Skip(logging.INFO, "Skipping SELL a: order already pending")
