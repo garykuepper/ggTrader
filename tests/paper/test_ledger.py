@@ -1,11 +1,10 @@
-"""Tests of the `PaperLedger` protocol and its in-memory, read-only and module-lookup forms."""
+"""Tests of the `PaperLedger` protocol and its in-memory and read-only forms."""
 
 from __future__ import annotations
 
 import inspect
 import json
 import logging
-import types
 from datetime import date
 from pathlib import Path
 
@@ -13,27 +12,13 @@ import pytest
 
 from ggTrader.paper import ledger, persist
 from ggTrader.paper.ledger import (
-    TRADER_NAMES,
     WRITE_METHODS,
     InMemoryLedger,
-    ModuleLedger,
     PaperLedger,
     ReadOnlyLedger,
 )
 
 GOLDEN_PATH = Path(__file__).parent / "golden" / "persist_sql.json"
-
-#: The five persist functions `trader.py` does not import; `ModuleLedger` serves them from the
-#: fallback module.
-NOT_BOUND_BY_TRADER = frozenset(
-    {
-        "get_latest_snapshot_positions",
-        "get_latest_snapshot_run_date",
-        "get_open_split_corrections",
-        "get_rebalance_state",
-        "save_rebalance_state",
-    }
-)
 
 
 def _public_persist_functions() -> dict[str, object]:
@@ -90,73 +75,6 @@ def test_protocol_parameters_and_returns_follow_the_persist_functions() -> None:
     )
     log_snapshot = inspect.signature(_protocol_methods()["log_snapshot"])
     assert log_snapshot.parameters["positions"].annotation == "dict[str, Position]"
-
-
-def test_trader_names_are_the_26_names_trader_imports() -> None:
-    from ggTrader.paper import trader
-
-    bound = {
-        name
-        for name, value in vars(trader).items()
-        if callable(value) and getattr(value, "__module__", None) == "ggTrader.paper.persist"
-    }
-    assert len(TRADER_NAMES) == 26
-    assert set(TRADER_NAMES) == bound
-    assert set(TRADER_NAMES) | NOT_BOUND_BY_TRADER == set(_public_persist_functions())
-
-
-# --------------------------------------------------------------------------- ModuleLedger
-
-
-def _namespace(**names: object) -> types.ModuleType:
-    module = types.ModuleType("stand_in")
-    for name, value in names.items():
-        setattr(module, name, value)
-    return module
-
-
-def test_module_ledger_resolves_the_trader_module_at_call_time() -> None:
-    namespace = _namespace(get_peak_value=lambda: 1.0)
-    ledger_ = ModuleLedger(namespace, _namespace())
-    assert ledger_.get_peak_value() == 1.0
-    namespace.get_peak_value = lambda: 2.0  # a patch applied after construction
-    assert ledger_.get_peak_value() == 2.0
-    namespace.get_peak_value = lambda: 3.0  # and again between two calls
-    assert ledger_.get_peak_value() == 3.0
-
-
-def test_module_ledger_covers_all_26_trader_names_and_falls_back_for_the_other_five() -> None:
-    namespace = _namespace(**{name: (lambda n=name: ("trader", n)) for name in TRADER_NAMES})
-    fallback = _namespace(
-        **{name: (lambda n=name: ("fallback", n)) for name in NOT_BOUND_BY_TRADER}
-    )
-    # A name in both modules must come from the trader namespace.
-    fallback.get_peak_value = lambda: ("fallback", "get_peak_value")
-    ledger_ = ModuleLedger(namespace, fallback)
-    for name in TRADER_NAMES:
-        assert getattr(ledger_, name)() == ("trader", name), name
-    for name in NOT_BOUND_BY_TRADER:
-        assert getattr(ledger_, name)() == ("fallback", name), name
-
-
-def test_module_ledger_serves_the_real_persist_module_for_every_ledger_name() -> None:
-    ledger_ = ModuleLedger(persist, persist)
-    for name in _public_persist_functions():
-        assert getattr(ledger_, name) is getattr(persist, name)
-
-
-def test_module_ledger_unknown_name_raises_attribute_error() -> None:
-    ledger_ = ModuleLedger(_namespace(), _namespace())
-    with pytest.raises(AttributeError):
-        ledger_.no_such_function
-    with pytest.raises(AttributeError):
-        ledger_.get_peak_value  # a trader name the namespace lacks is not papered over
-
-
-def test_module_ledger_does_not_recurse_when_copied_without_init() -> None:
-    bare = ModuleLedger.__new__(ModuleLedger)
-    with pytest.raises(AttributeError):
-        bare.get_peak_value
 
 
 # --------------------------------------------------------------------------- ReadOnlyLedger
@@ -449,8 +367,6 @@ def test_module_exposes_its_public_names() -> None:
         "RunLock",
         "PaperLedger",
         "WRITE_METHODS",
-        "TRADER_NAMES",
-        "ModuleLedger",
         "ReadOnlyLedger",
         "InMemoryLedger",
     ):

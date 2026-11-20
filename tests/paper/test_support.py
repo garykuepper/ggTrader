@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 
 import pytest
 
-from ggTrader.paper import persist
 from ggTrader.paper.ledger import InMemoryLedger
 from tests.paper.support import (
     SpyLedger,
@@ -56,13 +55,13 @@ def test_guard_reports_swallowed_calls_from_both_namespaces():
     with pytest.raises(UnstubbedPersistCall, match="get_rebalance_state"):
         with persist_guard():
             try:
-                persist.get_rebalance_state()
+                trader.PgPaperLedger().get_rebalance_state()
             except UnstubbedPersistCall:
                 pass
     with pytest.raises(UnstubbedPersistCall, match="log_snapshot"):
         with persist_guard():
             try:
-                trader.log_snapshot()
+                trader.PgPaperLedger().log_snapshot()
             except UnstubbedPersistCall:
                 pass
 
@@ -73,7 +72,7 @@ def test_guard_chains_a_preexisting_exception():
     with pytest.raises(UnstubbedPersistCall) as exc:
         with persist_guard():
             try:
-                trader.log_snapshot()
+                trader.PgPaperLedger().log_snapshot()
             except UnstubbedPersistCall:
                 raise RuntimeError("original failure") from None
     assert isinstance(exc.value.__cause__, RuntimeError)

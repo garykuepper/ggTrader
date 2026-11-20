@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 import time
 from datetime import date, datetime, timezone
 from uuid import uuid4
@@ -12,7 +11,6 @@ from ggTrader.paper import (
     cash_sweep,  # noqa: F401 - patch target
     catastrophe_stop,  # noqa: F401 - patch target
 )
-from ggTrader.paper import persist as _persist
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.config import TraderConfig
 from ggTrader.paper.constants import ET as _ET
@@ -23,7 +21,7 @@ from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS  
 from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - compatibility alias
 from ggTrader.paper.corporate_actions import CorporateActions, missed_exits
 from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
-from ggTrader.paper.ledger import ModuleLedger, PaperLedger, ReadOnlyLedger
+from ggTrader.paper.ledger import PaperLedger, ReadOnlyLedger
 from ggTrader.paper.models import (
     OrderStatus,
     RunContext,
@@ -32,34 +30,7 @@ from ggTrader.paper.models import (
 )
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.order_flow import OrderFlow
-from ggTrader.paper.persist import (
-    attach_broker_order,  # noqa: F401 - looked up by ModuleLedger at call time
-    clear_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time; legacy test compatibility
-    clear_split_correction,  # noqa: F401 - looked up by ModuleLedger at call time
-    create_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_accrued_dividend_keys,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_earliest_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_last_buy_dates,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_latest_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_open_split_states,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_peak_value,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_pending_orders,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_snapshot_history,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_total_dividend_accrual,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_trade_history_dates,  # noqa: F401 - looked up by ModuleLedger at call time
-    get_unresolved_order_intents,  # noqa: F401 - looked up by ModuleLedger at call time
-    init_paper_schema,  # noqa: F401 - looked up by ModuleLedger at call time
-    log_dividend_accrual,  # noqa: F401 - looked up by ModuleLedger at call time
-    log_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time; compatibility for existing test patches
-    log_snapshot,  # noqa: F401 - looked up by ModuleLedger at call time
-    log_trade,  # noqa: F401 - looked up by ModuleLedger at call time; legacy test compatibility
-    mark_pending_order_stale,  # noqa: F401 - looked up by ModuleLedger at call time
-    paper_run_lock,  # noqa: F401 - looked up by ModuleLedger at call time
-    save_peak_value,  # noqa: F401 - looked up by ModuleLedger at call time
-    save_split_correction,  # noqa: F401 - looked up by ModuleLedger at call time
-    settle_legacy_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time
-    settle_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
-)
+from ggTrader.paper.persist import PgPaperLedger
 from ggTrader.paper.portfolio import PortfolioView
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.preflight import Halted, PreflightGate
@@ -153,8 +124,7 @@ class PaperTrader:
             membership: membership spec for the S&P 500 list (``fixture:<name>``, ``db``,
                 ``db:<id>``); ``None`` defers to ``GGT_MEMBERSHIP`` and fails if that is unset.
                 ``run_paper_trading`` always passes one.
-            ledger: where durable state lives (default: the persist functions, looked up in this
-                module at each call so a patch applied by name, even after construction, wins).
+            ledger: where durable state lives (default: the PostgreSQL-backed ledger).
                 Injecting a ledger replaces only the database; the broker, notifier, signals and
                 clock are still the caller's to provide. A read-only run wraps whichever ledger
                 it is given.
@@ -170,7 +140,7 @@ class PaperTrader:
             raise ValueError("read_only requires dry_run: a live run must book its trades")
         #: Names of the persistence calls a read-only run skipped (for the run record).
         self.skipped_writes: list[str] = []
-        base = ledger if ledger is not None else ModuleLedger(sys.modules[__name__], _persist)
+        base = ledger if ledger is not None else PgPaperLedger()
         # One list: the ledger fills what the run record later returns.
         self._ledger = ReadOnlyLedger(base, self.skipped_writes, _log) if self._read_only else base
         self._paper_lock = None

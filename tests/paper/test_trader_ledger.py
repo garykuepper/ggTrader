@@ -1,9 +1,7 @@
 """The trader reaches the database only through a `PaperLedger` (Phase 4, Task 39).
 
-The tests pin the wiring: the 26 persist names stay bound in the trader module (the harness and
-about 440 string patches rely on it), no direct persist call or `_write` remains, a patch applied
-after construction still wins, a read-only run records the same skipped names through the same
-logger as before, and a trader can run on an `InMemoryLedger` with no persist patch at all.
+The tests pin the default ledger factory, late-bound injected methods, read-only logging and a
+complete run against an `InMemoryLedger` without persistence patches.
 """
 
 from __future__ import annotations
@@ -20,10 +18,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ggTrader.paper import trader as trader_module
-from ggTrader.paper.ledger import TRADER_NAMES, InMemoryLedger
+from ggTrader.paper.ledger import InMemoryLedger, PaperLedger
+from ggTrader.paper.persist import PgPaperLedger
 from ggTrader.paper.trader import PaperTrader
 from tests.paper.transcript import harness
 from tests.paper.transcript.harness import ENV_VARS, run_scenario
+from tests.paper.transcript.injected import HarnessLedger
 from tests.paper.transcript.scenarios import SCENARIOS
 
 TRADER_SOURCE = Path(trader_module.__file__)
@@ -48,9 +48,8 @@ INTENT_AND_LEGACY_WRITES = (
 def _trader_environment(scenario_name: str, *, wrap_persist: bool) -> Iterator[harness._Run]:
     """Patch what `harness._run_scenario` patches in the trader module, for one scenario.
 
-    With ``wrap_persist`` the 25 persist names get the harness wrappers (and the lock its fake);
-    without it no persist function is touched, so a ledger injected into the trader is the only
-    thing between the trader and storage.
+    With ``wrap_persist`` the default factory returns a recording ledger; otherwise the caller
+    injects its own ledger.
     """
     s = SCENARIOS[scenario_name]
     run = harness._Run(s)
@@ -70,11 +69,7 @@ def _trader_environment(scenario_name: str, *, wrap_persist: bool) -> Iterator[h
             "datetime": harness._pinned_datetime(s.now_pt),
         }
         if wrap_persist:
-            for name in harness.persist_function_names():
-                if name == "paper_run_lock":
-                    replacements[name] = run.paper_run_lock
-                else:
-                    replacements[name] = run.persist_wrapper(name)
+            replacements["PgPaperLedger"] = lambda: HarnessLedger(run)
         for name, replacement in replacements.items():
             stack.enter_context(patch.object(trader_module, name, replacement))
         yield run
@@ -98,12 +93,19 @@ def _is_read_only(name: str) -> bool:
 
 
 def test_trader_module_binds_the_26_ledger_names() -> None:
-    assert len(TRADER_NAMES) == 26
-    for name in TRADER_NAMES:
-        obj = getattr(trader_module, name, None)
-        assert callable(obj), f"trader module no longer binds {name}"
-        assert obj.__module__ == "ggTrader.paper.persist", name
-    assert sorted(TRADER_NAMES) == harness.persist_function_names()
+    assert trader_module.PgPaperLedger is PgPaperLedger
+    with patch("ggTrader.paper.persist._get_engine", side_effect=AssertionError("database read")):
+        assert isinstance(PgPaperLedger(), PgPaperLedger)
+    assert all(
+        callable(getattr(PgPaperLedger, name, None))
+        for name in PaperLedger.__dict__
+        if not name.startswith("_") and callable(PaperLedger.__dict__[name])
+    )
+    with patch.object(trader_module, "PgPaperLedger") as factory:
+        trader = PaperTrader(MagicMock(), MagicMock(), dry_run=False, membership="db")
+    factory.assert_called_once_with()
+    assert trader._ledger is factory.return_value
+    assert not factory.return_value.mock_calls
 
 
 def test_trader_has_no_write_method_and_no_direct_persist_call() -> None:
@@ -116,7 +118,7 @@ def test_trader_has_no_write_method_and_no_direct_persist_call() -> None:
             for node in ast.walk(tree)
             if isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
-            and node.func.id in TRADER_NAMES
+            and node.func.id in PaperLedger.__dict__
         }
     )
     assert direct == []
@@ -125,11 +127,10 @@ def test_trader_has_no_write_method_and_no_direct_persist_call() -> None:
 def test_string_patch_after_construction_still_wins() -> None:
     with _trader_environment("plain_buys_and_sells", wrap_persist=True) as run:
         trader = _build_trader(run)
-        # Use the name once before the patch: a ledger that cached what it found would keep the
-        # harness wrapper from here on.
+        # A method replaced after construction must be read from the injected ledger.
         assert trader._ledger.get_peak_value() is None
         late = MagicMock(return_value=123.0)
-        with patch("ggTrader.paper.trader.get_peak_value", late):
+        with patch.object(trader._ledger, "get_peak_value", late):
             assert trader._ledger.get_peak_value() == 123.0
             trader.run()
     assert late.call_count == 2  # the direct call and the one inside the run

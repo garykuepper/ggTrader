@@ -1,6 +1,6 @@
-"""The paper ledger as a protocol, with a module-lookup form, a read-only form and a test double.
+"""The paper ledger protocol, its read-only form and its in-memory test double.
 
-Public names: ``RunLock``, ``PaperLedger``, ``WRITE_METHODS``, ``TRADER_NAMES``, ``ModuleLedger``,
+Public names: ``RunLock``, ``PaperLedger``, ``WRITE_METHODS``,
 ``ReadOnlyLedger`` and ``InMemoryLedger``.
 
 ``PaperLedger`` has one method per public function of ``paper/persist.py``: same name, same
@@ -19,7 +19,6 @@ import math
 from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from datetime import date
-from types import ModuleType
 from typing import Any, Protocol, runtime_checkable
 
 from ggTrader.paper.constants import TERMINAL_STATUSES
@@ -46,37 +45,6 @@ WRITE_METHODS: frozenset[str] = frozenset(
         "save_split_correction",
         "clear_split_correction",
     }
-)
-
-#: The 26 persist names ``paper/trader.py`` binds in its own namespace. The trader's tests patch
-#: them there by dotted string, so ``ModuleLedger`` looks these up in the trader's namespace.
-TRADER_NAMES: tuple[str, ...] = (
-    "attach_broker_order",
-    "clear_pending_order",
-    "clear_split_correction",
-    "create_order_intent",
-    "get_accrued_dividend_keys",
-    "get_earliest_snapshot",
-    "get_last_buy_dates",
-    "get_latest_snapshot",
-    "get_open_split_states",
-    "get_peak_value",
-    "get_pending_orders",
-    "get_snapshot_history",
-    "get_total_dividend_accrual",
-    "get_trade_history_dates",
-    "get_unresolved_order_intents",
-    "init_paper_schema",
-    "log_dividend_accrual",
-    "log_pending_order",
-    "log_snapshot",
-    "log_trade",
-    "mark_pending_order_stale",
-    "paper_run_lock",
-    "save_peak_value",
-    "save_split_correction",
-    "settle_legacy_pending_order",
-    "settle_order_intent",
 )
 
 _TERMINAL_STATUSES = frozenset(TERMINAL_STATUSES)
@@ -204,34 +172,6 @@ class PaperLedger(Protocol):
     def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None: ...
 
     def clear_split_correction(self, symbol: str) -> None: ...
-
-
-class ModuleLedger:
-    """A ledger that looks each function up in a module namespace at the moment it is used.
-
-    The trader's tests patch the persist functions by name in the trader module
-    (``patch("ggTrader.paper.trader.log_trade")``). Resolving ``TRADER_NAMES`` in that namespace at
-    every access, never caching, keeps those patches working however late they are applied. The
-    five persist names the trader module does not bind come from ``fallback``. A name neither
-    module has raises ``AttributeError``.
-
-    ``isinstance(x, PaperLedger)`` is false for this class on Python 3.12 and later, which check
-    the class for the methods without calling ``__getattr__``.
-    """
-
-    def __init__(self, namespace: ModuleType, fallback: ModuleType) -> None:
-        self._namespace = namespace
-        self._fallback = fallback
-
-    def __getattr__(self, name: str) -> Any:
-        # `__dict__` is found by ordinary lookup, so a copy made without `__init__` raises
-        # `AttributeError` below instead of recursing into this method.
-        state = self.__dict__
-        if "_namespace" not in state:
-            raise AttributeError(name)
-        if name in TRADER_NAMES:
-            return getattr(state["_namespace"], name)
-        return getattr(state["_fallback"], name)
 
 
 class ReadOnlyLedger:

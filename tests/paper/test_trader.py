@@ -28,7 +28,7 @@ _TEST_TODAY = "2026-06-19"
 
 @pytest.fixture(autouse=True)
 def _unstubbed_persist_guard():
-    """Guard 26 trader bindings and five fallback persist names.
+    """Guard the default ledger factory against unstubbed persistence calls.
 
     Separately imported signal_runner names are outside this guard. All
     run_paper_trading tests mock PaperTrader or stop before constructing it.

@@ -2,26 +2,23 @@
 
 import sys
 from collections.abc import Iterable, Iterator, Mapping
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager
 from copy import deepcopy
 from functools import wraps
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-from ggTrader.paper import persist
-from ggTrader.paper.ledger import TRADER_NAMES, InMemoryLedger, PaperLedger
+from ggTrader.paper.ledger import InMemoryLedger, PaperLedger
 
 if TYPE_CHECKING:
     from ggTrader.paper.trader import PaperTrader
 
 Call = tuple[str, tuple[Any, ...], dict[str, Any]]
-PERSIST_NAMES = TRADER_NAMES
 LEDGER_NAMES = frozenset(
     name
     for name, value in PaperLedger.__dict__.items()
     if not name.startswith("_") and callable(value)
 )
-FALLBACK_NAMES = LEDGER_NAMES - frozenset(PERSIST_NAMES)
 
 
 class SpyLedger(InMemoryLedger):
@@ -88,12 +85,16 @@ def persist_guard() -> Iterator[list[Call]]:
 
         return fail
 
+    class GuardedLedger:
+        """Reject ledger operations attempted without an injected test ledger."""
+
+        def __getattr__(self, name: str) -> Any:
+            if name not in LEDGER_NAMES:
+                raise AttributeError(name)
+            return guard(name)
+
     try:
-        with ExitStack() as stack:
-            for name in PERSIST_NAMES:
-                stack.enter_context(patch(f"ggTrader.paper.trader.{name}", guard(name)))
-            for name in FALLBACK_NAMES:
-                stack.enter_context(patch.object(persist, name, guard(name)))
+        with patch("ggTrader.paper.trader.PgPaperLedger", GuardedLedger):
             yield calls
     finally:
         if calls:
