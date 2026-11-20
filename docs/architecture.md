@@ -456,11 +456,10 @@ reach probes cover a broader entry point than their mutation condition. Opus fou
 blocker in a static cross-family review; Sol conditionally approved the behavioral-pin slice, with
 the gate record expanded afterwards. The logs do not independently embed their commit hash.
 
-The signal generator supplies mapping weights. If another integration supplies malformed weights,
-`None` or a number fails earlier than before, while an empty sequence or a sequence of pairs can be
-accepted, allowing exits or a sweep sell that the old code would not have submitted. Validate that
-boundary before relying on such an integration. For covered cases the log comparison pins logger
-name, level and rendered message, not raw `LogRecord` template, arguments or source metadata.
+The signal generator supplies mapping weights. Malformed weights (an empty sequence, a list of
+pairs, `None`) fail as they did before the split, with `AttributeError` at the slot-cap step. For
+covered cases the log comparison pins logger name, level and rendered message, not raw `LogRecord`
+template, arguments or source metadata.
 The eight private compatibility seams remain; retiring them requires a separate owner decision.
 A live caller can still explicitly inject an in-memory ledger, so durable-state protection there
 is a static production-import guard rather than a runtime refusal.

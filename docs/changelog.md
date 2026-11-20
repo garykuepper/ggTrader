@@ -59,9 +59,9 @@
   Sol conditionally approved the behavioral pins, and the gate evidence was expanded afterwards.
   Driver logs do not embed the commit hash. The legacy differential was retired after Phase D;
   some mutation probes are broad, and some submit-failure checks detect a strict harness error.
-- Outside the signal-generator contract, non-mapping weights can behave differently: an empty
-  sequence may allow exits or a sweep sell before an error or normal completion, and a sequence of
-  pairs can be accepted. Validate that boundary before using a source that can emit such values.
+- Non-mapping weights from a signal source (an empty sequence, a list of pairs, `None`) fail as they
+  did before the split: `AttributeError` at the slot-cap step, with the same calls and orders;
+  restored in `fix(paper): malformed weights fail as they did before the phase 5 split`.
   The trader stays stopped and cron stays off.
 
 ## 2026-11-19 (refactor phase 4: paper trader interfaces and records, price-loader chain)

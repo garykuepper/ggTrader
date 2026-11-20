@@ -208,7 +208,11 @@ class StrategySignals:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "last_exit", MappingProxyType(dict(self.last_exit)))
-        object.__setattr__(self, "weights", MappingProxyType(dict(self.weights)))
+        # A non-mapping value stays as the signal source returned it: the code before the
+        # phase 5 split failed with AttributeError at the first `weights.items()` (the slot-cap
+        # step), after any stop-loss sells, and coercing it here would change that outcome.
+        if isinstance(self.weights, Mapping):
+            object.__setattr__(self, "weights", MappingProxyType(dict(self.weights)))
 
 
 @dataclass

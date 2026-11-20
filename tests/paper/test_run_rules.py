@@ -972,3 +972,116 @@ def test_late_run_gate_reads_the_clock_after_signal_generation(impl_name, name):
     assert targets.count("hook.now_pt") == 1
     assert targets.index("hook.now_pt") > targets.index("signals.generate_core_signals")
     assert targets.index("hook.membership_source") < targets.index("signals.generate_core_signals")
+
+
+# ----------------------------------------------------------------------- malformed weights
+# Measured on `1c7a3138`, the commit before the phase 5 split (record: weights-base.json): a signal
+# source that returns non-mapping `weights` fails with `AttributeError` at the first
+# `weights.items()`, the slot-cap step, after the account, positions, split, dividend and peak reads
+# and before every sell and buy except a catastrophe stop. A run that stops earlier never reads
+# the weights, so the malformed value is harmless there.
+
+_MALFORMED_WEIGHTS = [
+    pytest.param([], "'list' object has no attribute 'items'", id="empty-sequence"),
+    pytest.param([("sp500", 1.0)], "'list' object has no attribute 'items'", id="pair-sequence"),
+    pytest.param(None, "'NoneType' object has no attribute 'items'", id="none"),
+]
+_PRE_SLOT_CAP_CALLS = [
+    "lock.enter",
+    "persist.init_paper_schema",
+    "persist.get_unresolved_order_intents",
+    "persist.get_pending_orders",
+    "persist.get_pending_orders",
+    "broker.get_clock",
+    "membership.live_membership_source",
+    "signals.generate_core_signals",
+    "tape.refresh_benchmark_tape",
+    "broker.get_account",
+    "broker.get_positions",
+    "broker.get_untradable",
+    "persist.get_open_split_states",
+    "broker.get_split_evidence",
+    "persist.get_total_dividend_accrual",
+    "persist.get_snapshot_history",
+    "broker.get_dividend_corrections",
+    "persist.get_peak_value",
+    "persist.save_peak_value",
+    "persist.get_latest_snapshot",
+]
+_STOP_ONLY_CALLS = [
+    *_PRE_SLOT_CAP_CALLS,
+    "persist.create_order_intent",
+    "lock.verify",
+    "broker.submit_sell",
+    "persist.attach_broker_order",
+    "notifier.send",
+]
+
+
+def _with_weights(name: str, weights: object):
+    """The named scenario with its signal bundle's `weights` replaced."""
+    base = SCENARIOS[name]
+    return rs.from_scenario(name, signals={**copy.deepcopy(base.signals), "weights": weights})
+
+
+def _assert_fails_at_slot_caps(impl_name, name, weights, message, calls):
+    t = rs.run(impl_name, _with_weights(name, weights))
+    assert t["raised"] == f"AttributeError: {message}"
+    assert t["result"] is None
+    assert rs.targets(t) == [*calls, "lock.exit"]
+    return t
+
+
+def test_empty_sequence_weights_match_base(impl_name):
+    """`[]` fails at the slot-cap step with no order submitted, as `1c7a3138` did."""
+    t = _assert_fails_at_slot_caps(
+        impl_name,
+        "plain_buys_and_sells",
+        [],
+        "'list' object has no attribute 'items'",
+        _PRE_SLOT_CAP_CALLS,
+    )
+    assert rs.submissions(t) == []
+
+
+def test_pair_sequence_weights_match_base(impl_name):
+    """A list of pairs is not accepted: same failure, same point, no order submitted."""
+    t = _assert_fails_at_slot_caps(
+        impl_name,
+        "plain_buys_and_sells",
+        [("sp500", 1.0)],
+        "'list' object has no attribute 'items'",
+        _PRE_SLOT_CAP_CALLS,
+    )
+    assert rs.submissions(t) == []
+
+
+def test_none_weights_match_base(impl_name):
+    """`None` fails at the slot-cap step, not while the signals are collected."""
+    t = _assert_fails_at_slot_caps(
+        impl_name,
+        "plain_buys_and_sells",
+        None,
+        "'NoneType' object has no attribute 'items'",
+        _PRE_SLOT_CAP_CALLS,
+    )
+    assert rs.submissions(t) == []
+
+
+@pytest.mark.parametrize(
+    "weights, message", [(w.values[0], w.values[1]) for w in _MALFORMED_WEIGHTS]
+)
+def test_malformed_weights_keep_the_catastrophe_stop_sell(impl_name, weights, message):
+    """The stop-loss sell goes out before the slot-cap step, so it is still submitted."""
+    t = _assert_fails_at_slot_caps(
+        impl_name, "catastrophe_stop", weights, message, _STOP_ONLY_CALLS
+    )
+    assert rs.submissions(t) == [("SELL", "NXPI", 100.0)]
+
+
+@pytest.mark.parametrize("name", ["stale_as_of", "peak_unreadable"])
+def test_none_weights_are_unused_when_the_run_stops_before_the_slot_caps(impl_name, name):
+    """A run that stops earlier never reads the weights, so `None` does not change its outcome."""
+    expected = rs.run(impl_name, SCENARIOS[name])
+    t = rs.run(impl_name, _with_weights(name, None))
+    assert t == expected
