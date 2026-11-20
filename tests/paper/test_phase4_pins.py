@@ -2,7 +2,7 @@
 
 The transcript goldens sort keys (``to_json``), so they cannot see the order of the result dict;
 and they never read the fallback record `_poll_orders` builds from the order tuple. The tests here
-pin both, plus the way the harness finds the persist functions it wraps.
+pin both, plus the ledger the harness injects.
 """
 
 from __future__ import annotations
@@ -10,22 +10,20 @@ from __future__ import annotations
 import copy
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from types import SimpleNamespace
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ggTrader.paper import persist
 from ggTrader.paper import trader as trader_module
+from ggTrader.paper.ledger import PaperLedger
 from ggTrader.paper.models import SubmittedOrder
 from ggTrader.paper.trader import PaperTrader
-from tests.paper.transcript import harness
-from tests.paper.transcript.harness import persist_function_names, run_scenario
+from tests.paper.transcript import harness, injected
+from tests.paper.transcript.harness import run_scenario
 from tests.paper.transcript.scenarios import FIXTURE_SPEC, SCENARIOS
 
-#: The 26 names `persist_function_names()` returns on unchanged code (sorted): the 25 the harness
-#: wraps one by one, plus `paper_run_lock`, which it replaces with a context manager.
+#: The 26 legacy trader persistence bindings, retained as a protocol coverage baseline.
 PERSIST_NAMES_26 = [
     "attach_broker_order",
     "clear_pending_order",
@@ -102,40 +100,40 @@ def test_early_returns_carry_neither_untradable_nor_skipped_writes(name: str) ->
 
 
 def test_harness_finds_the_26_persist_names() -> None:
-    assert persist_function_names() == PERSIST_NAMES_26
-    assert trader_module.paper_run_lock.__module__ == "ggTrader.paper.persist"
-    assert persist.paper_run_lock is trader_module.paper_run_lock
+    ledger_names = {name for name in PaperLedger.__dict__ if not name.startswith("_")}
+    assert set(PERSIST_NAMES_26) <= ledger_names
+    assert all(callable(getattr(persist, name)) for name in PERSIST_NAMES_26)
 
 
 def test_harness_wraps_25_names_and_replaces_the_lock_separately(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """`run_scenario` patches the trader namespace: 25 persist wrappers and one lock manager."""
-    recorded: list[tuple[object, str, object]] = []
-    real_patch = harness.patch
+    """The harness injects all protocol methods and its scenario lock."""
+    made = []
+    real = injected.HarnessLedger
 
-    def recording_object(
-        target: object, attribute: str, new: object, *a: object, **k: object
-    ) -> Any:
-        recorded.append((target, attribute, new))
-        return real_patch.object(target, attribute, new, *a, **k)
+    def capture(run: harness._Run) -> injected.HarnessLedger:
+        ledger = real(run)
+        made.append((run, ledger))
+        return ledger
 
-    spy = SimpleNamespace(object=recording_object, dict=real_patch.dict)
-    monkeypatch.setattr(harness, "patch", spy)
+    monkeypatch.setattr(injected, "HarnessLedger", capture)
     run_scenario(SCENARIOS["market_closed"])
-
-    in_trader = {attr: new for target, attr, new in recorded if target is trader_module}
-    wrapped = sorted(name for name in PERSIST_NAMES_26 if name in in_trader)
-    assert wrapped == PERSIST_NAMES_26  # every persist name is replaced, one way or another
-    ordinary = [n for n in PERSIST_NAMES_26 if n != "paper_run_lock"]
-    assert len(ordinary) == 25
-    for name in ordinary:
-        assert in_trader[name].__name__ == name  # the wrapper `_write` records by name
-        assert in_trader[name].__module__ != "ggTrader.paper.persist"
-    lock = in_trader["paper_run_lock"]
-    assert lock.__name__ == "paper_run_lock"
-    assert lock.__qualname__.startswith("_Run.")  # the context manager of the run
-    assert not any(in_trader[n] is lock for n in ordinary)
+    assert len(made) == 1
+    run, ledger = made[0]
+    names = {
+        name
+        for name, value in PaperLedger.__dict__.items()
+        if not name.startswith("_") and callable(value)
+    }
+    assert set(vars(ledger)) == names
+    for name in names - {"paper_run_lock"}:
+        assert getattr(ledger, name).__name__ == name
+        assert getattr(ledger, name) is not getattr(persist, name)
+    assert ledger.paper_run_lock == run.paper_run_lock
+    targets = {call["target"] for call in run.recorder.calls}
+    assert "lock.enter" in targets
+    assert any(target.startswith("persist.") for target in targets)
 
 
 @pytest.mark.parametrize(
