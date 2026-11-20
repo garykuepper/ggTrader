@@ -2183,15 +2183,11 @@ def test_invalid_risk_state_still_blocks_all_orders(failure):
 @patch("ggTrader.paper.trader.log_trade")
 @patch("ggTrader.paper.trader.init_paper_schema")
 class TestStalePendingOrders:
-    @patch("ggTrader.paper.trader.mark_pending_order_stale")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_stale_pending_order_flagged_once(
-        self, mock_signals, mock_get_pending, mock_mark_stale, *_
-    ):
+    def test_stale_pending_order_flagged_once(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
         old_created = datetime.now(timezone.utc) - timedelta(days=6)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-01",
@@ -2202,7 +2198,8 @@ class TestStalePendingOrders:
                 "flagged_stale": False,
             }
         ]
-        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        trader, broker, notifier, ledger = make_trader(portfolio_value=100000.0)
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -2214,18 +2211,16 @@ class TestStalePendingOrders:
             "status": "accepted",
         }
         trader.run()
-        mock_mark_stale.assert_called_once_with("buy-order-99")
+        assert ledger.calls("mark_pending_order_stale") == [
+            ("mark_pending_order_stale", ("buy-order-99",), {})
+        ]
         assert any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
 
-    @patch("ggTrader.paper.trader.mark_pending_order_stale")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_already_flagged_stale_order_not_re_alerted(
-        self, mock_signals, mock_get_pending, mock_mark_stale, *_
-    ):
+    def test_already_flagged_stale_order_not_re_alerted(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
         old_created = datetime.now(timezone.utc) - timedelta(days=6)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-01",
@@ -2236,7 +2231,8 @@ class TestStalePendingOrders:
                 "flagged_stale": True,
             }
         ]
-        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        trader, broker, notifier, ledger = make_trader(portfolio_value=100000.0)
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -2248,18 +2244,14 @@ class TestStalePendingOrders:
             "status": "accepted",
         }
         trader.run()
-        mock_mark_stale.assert_not_called()
+        assert not ledger.calls("mark_pending_order_stale")
         assert not any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
 
-    @patch("ggTrader.paper.trader.mark_pending_order_stale")
-    @patch("ggTrader.paper.trader.get_pending_orders")
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_fresh_pending_order_not_flagged(
-        self, mock_signals, mock_get_pending, mock_mark_stale, *_
-    ):
+    def test_fresh_pending_order_not_flagged(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
         recent_created = datetime.now(timezone.utc) - timedelta(hours=2)
-        mock_get_pending.return_value = [
+        pending = [
             {
                 "order_id": "buy-order-99",
                 "run_date": "2026-06-19",
@@ -2270,7 +2262,8 @@ class TestStalePendingOrders:
                 "flagged_stale": False,
             }
         ]
-        trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+        trader, broker, notifier, ledger = make_trader(portfolio_value=100000.0)
+        seed_pending_orders(ledger, pending)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT",
@@ -2282,19 +2275,15 @@ class TestStalePendingOrders:
             "status": "accepted",
         }
         trader.run()
-        mock_mark_stale.assert_not_called()
+        assert not ledger.calls("mark_pending_order_stale")
         assert not any("Stale pending order" in c.args[0] for c in notifier.send.call_args_list)
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestOrderErrorAlerting:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_order_failure_propagates(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=["MSFT", "AAPL"], sells=[])
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.submit_buy.side_effect = RuntimeError("submit failed")
         with pytest.raises(RuntimeError, match="submit failed"):
             trader.run()
@@ -2303,7 +2292,7 @@ class TestOrderErrorAlerting:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_order_failure_stops_later_buys(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=["MSFT", "AAPL"], sells=[])
-        trader, broker, _ = _make_trader()
+        trader, broker, _, ledger = make_trader()
         broker.submit_buy.side_effect = RuntimeError("submit failed")
         with pytest.raises(RuntimeError, match="submit failed"):
             trader.run()
@@ -2323,10 +2312,6 @@ def _spy_position(qty=50.0, price=400.0):
     }
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestCashSweepFlagOff:
     """The sweep must be a strict no-op when CASH_SWEEP_ENABLED is unset."""
 
@@ -2335,7 +2320,7 @@ class TestCashSweepFlagOff:
     def test_disabled_by_default_no_sweep_sizing_called(self, mock_signals, *_):
         os.environ.pop("CASH_SWEEP_ENABLED", None)
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=1_000.0
         )
         with patch("ggTrader.paper.trader.cash_sweep.compute_sweep_buy") as mock_buy:
@@ -2357,7 +2342,7 @@ class TestCashSweepFlagOff:
         from ggTrader.paper.risk import RiskConfig, RiskGuard
 
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position()}, portfolio_value=100_000.0
         )
         trader._risk = RiskGuard(RiskConfig(max_positions=1))
@@ -2365,10 +2350,6 @@ class TestCashSweepFlagOff:
         broker.submit_buy.assert_not_called()
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestCashSweepEnabled:
     @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_core_signals")
@@ -2379,7 +2360,7 @@ class TestCashSweepEnabled:
         from ggTrader.paper.risk import RiskConfig, RiskGuard
 
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
         )
         trader._risk = RiskGuard(RiskConfig(max_positions=1))
@@ -2394,7 +2375,7 @@ class TestCashSweepEnabled:
         sweep symbol, it must never be sold as a strategy exit -- it's not a
         strategy position."""
         mock_signals.return_value = _blend(buys=[], sells=["SPY"])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position()}, portfolio_value=100_000.0, cash=50_000.0
         )
         result = trader.run()
@@ -2413,7 +2394,7 @@ class TestCashSweepEnabled:
         mock_signals.return_value = _blend(buys=["SPY"], sells=[])
         # 50 shares x $400 = $20,000 = 20% of the $100k portfolio; counted,
         # this trips any sane max_concentration_pct and the buy is skipped.
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position(qty=50.0, price=400.0)},
             portfolio_value=100_000.0,
             cash=50_000.0,
@@ -2432,7 +2413,7 @@ class TestCashSweepEnabled:
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
         # cash 1000 is far short of the 3300 buy + 5000 reserve (5% of 100k);
         # the 20000-notional SPY holding must be sold down to cover it.
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position(qty=50.0, price=400.0)},
             portfolio_value=100_000.0,
             cash=1_000.0,
@@ -2458,7 +2439,7 @@ class TestCashSweepEnabled:
         insufficient buying power (6 of 8), so the sell must be polled to a
         terminal status before any buy goes out."""
         mock_signals.return_value = _blend(buys=["MSFT"], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _spy_position(qty=50.0, price=400.0)},
             portfolio_value=100_000.0,
             cash=1_000.0,
@@ -2479,7 +2460,9 @@ class TestCashSweepEnabled:
         """After strategy orders, leftover cash above the reserve gets swept
         into the sweep ETF as a BUY."""
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=50_000.0)
+        trader, broker, _, ledger = make_trader(
+            positions={}, portfolio_value=100_000.0, cash=50_000.0
+        )
         # Post-trade account (fetched fresh for the sweep-buy sizing, and
         # again afterward for the run's own snapshot) reflects the same
         # unchanged cash since there were no strategy orders this run.
@@ -2500,7 +2483,9 @@ class TestCashSweepEnabled:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_sweep_buy_skipped_below_min_clip(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(positions={}, portfolio_value=100_000.0, cash=5_100.0)
+        trader, broker, _, ledger = make_trader(
+            positions={}, portfolio_value=100_000.0, cash=5_100.0
+        )
         broker.get_account.return_value = {
             "cash": 5_100.0,
             "portfolio_value": 100_000.0,
@@ -2530,10 +2515,6 @@ def _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30):
     }
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestCatastropheStopFlagOff:
     """The stop must be a strict no-op when CATASTROPHE_STOP_ENABLED is unset
     -- zero behavior change for a live-money production path."""
@@ -2543,7 +2524,7 @@ class TestCatastropheStopFlagOff:
     def test_disabled_by_default_no_stop_sell(self, mock_signals, *_):
         os.environ.pop("CATASTROPHE_STOP_ENABLED", None)
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(loss_pct=-0.50)}, portfolio_value=100_000.0
         )
         result = trader.run()
@@ -2551,15 +2532,12 @@ class TestCatastropheStopFlagOff:
         assert result["sells"] == []
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestCatastropheStopEnabled:
     @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_fires_at_exactly_threshold_sells_full_position(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.25)},
             portfolio_value=100_000.0,
         )
@@ -2574,7 +2552,7 @@ class TestCatastropheStopEnabled:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_does_not_fire_one_point_above_threshold(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.24)},
             portfolio_value=100_000.0,
         )
@@ -2588,7 +2566,7 @@ class TestCatastropheStopEnabled:
         # NXPI both breaches the catastrophe floor AND has a strategy exit
         # signal this run -- it must be sold exactly once, by the stop.
         mock_signals.return_value = _blend(buys=[], sells=["NXPI"])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
             portfolio_value=100_000.0,
         )
@@ -2607,7 +2585,7 @@ class TestCatastropheStopEnabled:
         # concentration cap cannot incidentally block the re-buy — only the
         # stopped_symbols guard prevents it.
         mock_signals.return_value = _blend(buys=["NXPI"], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(qty=20.0, cost_basis=2000.0, loss_pct=-0.30)},
             portfolio_value=100_000.0,
         )
@@ -2625,7 +2603,7 @@ class TestCatastropheStopEnabled:
         # corrected_positions (what the stop check reads) from
         # strategy_positions, which already excludes it.
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"SPY": _losing_position(qty=50.0, cost_basis=20000.0, loss_pct=-0.90)},
             portfolio_value=100_000.0,
             cash=50_000.0,  # generous cash: no sweep buy/sell action this run either
@@ -2634,12 +2612,11 @@ class TestCatastropheStopEnabled:
         broker.submit_sell.assert_not_called()
         assert result["sells"] == []
 
-    @patch("ggTrader.paper.trader.log_trade")
     @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_core_signals")
-    def test_reason_tagged_catastrophe_stop(self, mock_signals, mock_log_trade, *_):
+    def test_reason_tagged_catastrophe_stop(self, mock_signals, *_):
         mock_signals.return_value = _blend(buys=[], sells=[])
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)},
             portfolio_value=100_000.0,
         )
@@ -2653,10 +2630,12 @@ class TestCatastropheStopEnabled:
             "filled_avg_price": 60.0,
             "status": "filled",
         }
-        with _intent_store(trader, broker) as (_, settled):
-            trader.run()
-        mock_log_trade.assert_not_called()
-        assert settled[0][0]["reason"] == "catastrophe_stop"
+        _real_submission(trader, broker, ledger)
+        trader.run()
+        assert not ledger.calls("log_trade")
+        assert (
+            ledger.calls("settle_order_intent") and ledger.trades[0]["reason"] == "catastrophe_stop"
+        )
 
     @patch.dict("os.environ", {"CATASTROPHE_STOP_ENABLED": "true"})
     @patch("ggTrader.paper.trader.generate_core_signals")
@@ -2680,7 +2659,7 @@ class TestCatastropheStopEnabled:
         }
         positions["NXPI"] = _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.30)
         mock_signals.return_value = _blend(buys=["MSFT", "GOOGL"], sells=[])
-        trader, broker, _ = _make_trader(positions=positions, portfolio_value=100_000.0)
+        trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100_000.0)
         broker.get_order.side_effect = lambda oid: {
             "id": oid,
             "symbol": "MSFT" if "buy" in oid else "NXPI",
@@ -2705,7 +2684,7 @@ class TestCatastropheStopEnabled:
         mnst_qty = 20.80410098
         mnst_cost_basis = 1887.11
         mnst_broker_market_value = mnst_qty * 47.77  # 993.81..., bogus pre-correction value
-        trader, broker, _ = _make_trader(
+        trader, broker, _, ledger = make_trader(
             positions={
                 "MNST": {
                     "qty": mnst_qty,
