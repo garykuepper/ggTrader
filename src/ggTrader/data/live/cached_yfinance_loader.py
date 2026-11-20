@@ -14,6 +14,7 @@ ticker newly added to an existing cache.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -32,7 +33,7 @@ def _default_connection_string() -> str:
     return get_db_connection_string()
 
 
-def _as_utc(value) -> pd.Timestamp:
+def _as_utc(value: Any) -> pd.Timestamp:
     """A DB timestamp as tz-aware UTC, whether the driver returned it naive or aware."""
     ts = pd.Timestamp(value)
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
@@ -144,7 +145,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             # cache and re-fetched every young listing in full on every run.
             return {sym: _as_utc(dt) for sym, dt in rows}
         except Exception as e:
-            self.logger.error(f"Inception lookup failed ({e}); treating as unknown")
+            self.logger.error("Inception lookup failed (%s); treating as unknown", e)
             return {}
 
     def _record_inceptions(self, inceptions: dict[str, pd.Timestamp], interval: str) -> None:
@@ -166,7 +167,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                 execute_values(cur, query, records)
                 conn.commit()
         except Exception as e:
-            self.logger.error(f"Failed to record symbol inception ({e})")
+            self.logger.error("Failed to record symbol inception (%s)", e)
 
     def _db_fetch(
         self,
@@ -272,7 +273,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
             with conn.cursor() as cur:
                 execute_values(cur, query, records, page_size=5000)
         except Exception as e:
-            self.logger.error(f"Failed to cache stock data to DB: {e}")
+            self.logger.error("Failed to cache stock data to DB: %s", e)
         finally:
             if conn is not None:
                 try:
@@ -319,7 +320,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         try:
             coverage = self._db_coverage(symbols, interval)
         except Exception as e:
-            self.logger.error(f"DB coverage query failed ({e}); fetching all from yfinance")
+            self.logger.error("DB coverage query failed (%s); fetching all from yfinance", e)
 
         # Only symbols with a real start-date gap need the inception lookup.
         gap_candidates = [
@@ -358,7 +359,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
 
         fetched_frames: list[pd.DataFrame] = []
         if full_fetch:
-            self.logger.info(f"Full-range yfinance fetch for {len(full_fetch)} symbols")
+            self.logger.info("Full-range yfinance fetch for %s symbols", len(full_fetch))
             live = super().fetch_ohlcv(full_fetch, interval, start_date, end_date)
             if not live.empty:
                 self._cache_to_db(live, interval)
@@ -378,7 +379,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
                     self._record_inceptions(new_inceptions, interval)
         if incr_fetch:
             self.logger.info(
-                f"Incremental yfinance fetch for {len(incr_fetch)} symbols from {incr_start}"
+                "Incremental yfinance fetch for %s symbols from %s", len(incr_fetch), incr_start
             )
             live = super().fetch_ohlcv(incr_fetch, interval, incr_start, end_date)
             if not live.empty:
@@ -388,7 +389,7 @@ class CachedYFinanceLoader(YFinanceDataLoader):
         try:
             db_df = self._db_fetch(symbols, interval, start_date, end_date)
         except Exception as e:
-            self.logger.error(f"DB read failed ({e}); using live data only")
+            self.logger.error("DB read failed (%s); using live data only", e)
             db_df = pd.DataFrame()
 
         if db_df.empty:

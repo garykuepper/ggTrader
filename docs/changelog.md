@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
+
+- `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for
+  `src/ggTrader/` only (one negated glob in `per-file-ignores`; scripts, tests and research are
+  outside it). Hits on the repo config before the change: `DTZ` 1, `G004` 7, `ARG001` 5, `ARG002` 6,
+  `ANN001` 26, `ANN201` 4, `T201` 170. `BLE001` and `PLR2004` stay off; docstring rules are deferred.
+- Fixed by hand: the one naive `datetime.now()` (db export folder name, now `.astimezone()`); seven
+  f-string log calls in `cached_yfinance_loader.py` (same rendered text, `%s` arguments); two unused
+  arguments of the membership check handlers; 30 missing annotations; two library `print` calls in
+  the TimescaleDB loader (now `logging`).
+- `cached_yfinance_loader.py` is a pinned file and was edited (the `G004` and annotation commits). The pin still
+  resolves through history to the earlier commit `17b0971f`, so the counts in `.github/workflows/ci.yml` did not
+  change: `verify_pins.py` prints MATCH=0 MOVED-MATCH=4 HISTORY-MATCH=18 FAIL=0 after the edit.
+- `tests/engine/test_boundary.py`: the synthetic module it lints gained a return annotation (`-> tuple`), because
+  `ANN201` now applies to files under `src/ggTrader/engine/`; the test still checks the vectorbt ban (`TID251`).
+- Listed with a reason in `ruff.toml`: nine unused arguments fixed by a base class, protocol or
+  keyword caller, and the `print` calls that are a command's terminal output (`cli/**`, the
+  `ggt lab` run, `fetch_chain` progress, `selfcheck`, `create_db_engine_or_exit`). Behavior is
+  otherwise unchanged; no golden or pin changed.
+- `C901`, `PLR0912`, `PLR0915` and `PLR0913` now apply to all of `src/ggTrader/`, not only `paper/` (the negated
+  glob for `paper/` is gone). Hits outside `paper/` before the change: 42 (`C901` 6, `PLR0912` 12, `PLR0913` 16,
+  `PLR0915` 8) at 29 definitions in 18 files. A per-file survivor entry exempts the whole file, not only the named function, so a new offender in one of those files is not caught. All 42 are survivors listed per file in `ruff.toml` with a reason;
+  no function was split and no production file changed (the pinned `cached_yfinance_loader.py`, `wfo/run.py` and
+  `engine/portfolio.py` are untouched). With the 18 `paper/` survivors the rules now fail only on a new offender.
+
 ## 2026-11-20 (docs audit after the refactor)
 
 - Swept `docs/`, `README.md`, `AGENTS.md` (and its symlink `CLAUDE.md`), `src/`, `tests/` and `scripts/` for the
@@ -36,6 +61,7 @@
   The trader stays stopped, nothing is deployed, and the owner-gated items are still open.
 - Moved the point-in-time note `where-we-left-it-2026-11-12.md` to `docs/archive/` and fixed its inbound links
   in `next_steps.md` and `working_task_list.md`, and its own relative links.
+
 
 ## 2026-11-20 (refactor phase 5: the paper trader run split into step objects)
 

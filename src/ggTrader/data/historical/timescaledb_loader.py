@@ -1,10 +1,15 @@
 """TimescaleDB historical data loader."""
 
+import logging
+
 import pandas as pd
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 
 from ggTrader.data.core.base_loader import BaseDataLoader
 from ggTrader.utils.config import get_db_connection_string
+
+_log = logging.getLogger(__name__)
 
 
 class TimescaleDBLoader(BaseDataLoader):
@@ -20,7 +25,7 @@ class TimescaleDBLoader(BaseDataLoader):
         self._engine = None
 
     @property
-    def engine(self):
+    def engine(self) -> Engine:
         """Lazy engine initialization."""
         if self._engine is None:
             self._engine = create_engine(self.connection_string)
@@ -82,7 +87,7 @@ class TimescaleDBLoader(BaseDataLoader):
                     parse_dates=["datetime"],
                 )
         except Exception as e:
-            print(f"Failed to read OHLCV from Postgres: {e}")
+            _log.error("Failed to read OHLCV from Postgres: %s", e)
             return pd.DataFrame()
 
         if df.empty:
@@ -125,10 +130,10 @@ class TimescaleDBLoader(BaseDataLoader):
                 return [s for s in symbols if s.endswith(f"-{quote}")]
             return symbols
         except Exception as e:
-            print(f"Error listing symbols: {e}")
+            _log.error("Error listing symbols: %s", e)
             return []
 
-    def close(self):
+    def close(self) -> None:
         if self._engine is not None:
             self._engine.dispose()
             self._engine = None
