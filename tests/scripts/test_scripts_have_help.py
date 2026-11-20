@@ -1099,14 +1099,35 @@ def _clean_env() -> dict[str, str]:
     }
 
 
+@pytest.fixture(scope="session")
+def mpl_config_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A matplotlib config directory whose font cache is already built.
+
+    ``_clean_env`` has no HOME, so a script that imports matplotlib would build the font cache
+    inside its guarded ``--help`` run, and on a fresh runner that spawns ``fc-list`` (the tripwire
+    stops it). Building the cache here, outside the guard, keeps the tripwire strict.
+    """
+    path = tmp_path_factory.mktemp("mplconfig")
+    subprocess.run(
+        [sys.executable, "-c", "import matplotlib.font_manager"],
+        env={**_clean_env(), "MPLCONFIGDIR": str(path)},
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    return path
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("script", RUNNABLE, ids=_ids(RUNNABLE))
-def test_script_help_exits_zero_with_usage(script: Path, tmp_path: Path) -> None:
+def test_script_help_exits_zero_with_usage(
+    script: Path, tmp_path: Path, mpl_config_dir: Path
+) -> None:
     # Re-checked at run time too, in case a script or a module it imports changed after collection.
     assert _static_problems(script) == []
     assert _library_imports(script) == []
     stems = frozenset(Path(lib).stem for lib in LIBRARIES)
-    result = _guarded_help(script, tmp_path, stems)
+    result = _guarded_help(script, tmp_path, stems, MPLCONFIGDIR=str(mpl_config_dir))
     assert result.returncode != TRIPWIRE_EXIT, f"tripwire: {result.stderr[-800:]}"
     assert result.returncode == 0, result.stderr[-800:]
     assert "usage" in result.stdout.lower(), result.stdout[:300]
