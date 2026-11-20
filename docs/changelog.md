@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 7: persist writers use `engine.begin()`)
+
+- **Behavior-preserving in the database** (decision D7c; design 5.2: the persist writers always use
+  `engine.begin()`). In `paper/persist.py` the 11 writers that opened `connect()` and called `conn.commit()`
+  by hand now use `with _get_engine().begin() as conn:`: `init_paper_schema`, `log_trade`,
+  `log_pending_order`, `clear_pending_order`, `mark_pending_order_stale`, `log_snapshot`, `save_peak_value`,
+  `log_dividend_accrual`, `save_rebalance_state`, `save_split_correction`, `clear_split_correction`. SQL text and
+  bind values are unchanged. `paper_run_lock` and the 15 readers keep a plain `connect()`.
+- Proof on a real database first: 23 integration tests (`tests/paper/test_persist_real_db.py`, a throwaway
+  `ggt_scratch_*` database created and dropped by `tests/paper/persist_scratch_db.py`) record what every writer
+  commits and what rolls back on failure. They were run on the unchanged code and again after each of the 11
+  conversions, one writer at a time; the observation file was byte-identical every time.
+- **`tests/paper/golden/persist_sql.json` was revised on 2026-11-20, by owner-approved decision, for event
+  labels only.** The golden records the transaction events, and those differ by construction between the two
+  styles: `connect, ..., commit, close{committed: true}` became `begin, ..., commit`, and a case that raises ends
+  in `rollback` instead of `close{committed: false}`. `log_trade`'s early return on an identical replay now
+  ends in `commit` (it wrote nothing either way). 34 of the 131 cases changed (the 11 writers); the other 97
+  are byte-identical. A checker (`golden_event_rule.py`) applies that one mechanical rule to the old file and
+  found the regenerated file EQUAL: no SQL text, bind value, returned value or other case differs. The 4
+  `test_case_shows_what_its_name_claims` cases of `log_trade` were updated to the new last event. No other
+  golden (transcripts, equivalence digests) was touched.
+
 ## 2026-11-20 (refactor completion II, task 6: the weekly membership job in ordered steps)
 
 - **Behavior-preserving** (decision D7b). `data/membership_weekly.py`: `run_weekly` (149 lines, McCabe 19)

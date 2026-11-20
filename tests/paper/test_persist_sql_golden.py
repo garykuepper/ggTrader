@@ -1,11 +1,17 @@
 """Golden record of the SQL, bind dictionaries and transaction events of `paper/persist.py`.
 
 Each case runs one persist function against a recording engine (`sql_recorder.py`) and compares
-the events, the returned value and the raised exception with the immutable pre-extraction
-`golden/persist_sql.json`. Regeneration is refused to preserve the original evidence. The events
-are modeled context events, not
-SQLAlchemy's real transaction semantics (see the recorder's docstring). Bind dictionary insertion
-order is not part of the contract.
+the events, the returned value and the raised exception with `golden/persist_sql.json`.
+Regeneration from the test run is refused. The file was revised ONCE, on 2026-11-20, by
+owner-approved decision (design 5.2: the persist writers always use `engine.begin()`): the 34
+cases of the 11 writers that used `connect()` + `commit()` changed their event labels only.
+`connect ... commit, close{committed}` became `begin ... commit`, or `... rollback` when the case
+raises, and `log_trade`'s early return on an identical replay now ends in `commit`. SQL text, bind
+values, returned values and the 97 other cases are untouched; the checker
+`golden_event_rule.py` (in the refactor evidence folder, p6) proves that. Real-database tests
+(`test_persist_real_db.py`) showed the committed data is the same. The
+events are modeled context events, not SQLAlchemy's real transaction semantics (see the recorder's
+docstring). Bind dictionary insertion order is not part of the contract.
 """
 
 from __future__ import annotations
@@ -948,10 +954,11 @@ def test_case_shows_what_its_name_claims(name: str) -> None:
     assert rec["raised"] is None, f"{name} raised {rec['raised']}"
     if name.startswith("log_trade__new_trade"):
         assert ops.count("commit") == 1 and _writes(rec, "INSERT") == 1
-        assert rec["events"][-1] == {"op": "close", "committed": True}
+        assert rec["events"][-1] == {"op": "commit"}
     if name.startswith("log_trade__identical_existing"):
-        assert "commit" not in ops and _writes(rec, "INSERT") == 0
-        assert rec["events"][-1] == {"op": "close", "committed": False}
+        # An identical replay writes nothing; `begin()` still ends the transaction with a commit.
+        assert _writes(rec, "INSERT") == 0 and _writes(rec, "UPDATE") == 0
+        assert rec["events"][-1] == {"op": "commit"}
     if name == "init_paper_schema":
         assert ops.count("execute") == 11 and ops.count("commit") == 1
     if name.endswith("__fill_inserts_trade_then_updates") or name.endswith(

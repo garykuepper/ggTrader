@@ -3,7 +3,7 @@
   "init_paper_schema": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -62,10 +62,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -74,7 +70,7 @@
   "init_paper_schema__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -82,8 +78,7 @@
      "params": null
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -92,7 +87,7 @@
   "init_paper_schema__execute_fails_at_6": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -125,8 +120,7 @@
      "params": null
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2033,7 +2027,7 @@
   "log_trade__new_trade": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2066,10 +2060,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2078,7 +2068,7 @@
   "log_trade__new_trade_with_reason": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2111,10 +2101,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2123,7 +2109,7 @@
   "log_trade__identical_existing": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2140,8 +2126,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "commit"
     }
    ],
    "returned": null,
@@ -2150,7 +2135,7 @@
   "log_trade__identical_existing_with_reason": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2167,8 +2152,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "commit"
     }
    ],
    "returned": null,
@@ -2177,7 +2161,7 @@
   "log_trade__conflicting_trade": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2194,8 +2178,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2204,7 +2187,7 @@
   "log_trade__conflicting_reason": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2221,8 +2204,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2231,7 +2213,7 @@
   "log_trade__two_existing_rows": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2248,8 +2230,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2258,7 +2239,7 @@
   "log_trade__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2268,8 +2249,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2278,7 +2258,7 @@
   "log_trade__insert_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2310,8 +2290,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2320,7 +2299,7 @@
   "log_pending_order": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2339,10 +2318,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2351,7 +2326,7 @@
   "log_pending_order__with_reason": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2370,10 +2345,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2382,7 +2353,7 @@
   "log_pending_order__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2400,8 +2371,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2485,7 +2455,7 @@
   "clear_pending_order": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2496,10 +2466,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2508,7 +2474,7 @@
   "clear_pending_order__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2518,8 +2484,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2528,7 +2493,7 @@
   "mark_pending_order_stale": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2539,10 +2504,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2551,7 +2512,7 @@
   "mark_pending_order_stale__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2561,8 +2522,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -2698,7 +2658,7 @@
   "log_snapshot": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2718,10 +2678,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2730,7 +2686,7 @@
   "log_snapshot__integer_value": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2747,10 +2703,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2759,7 +2711,7 @@
   "log_snapshot__nonfinite_position_value": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2779,10 +2731,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -2791,7 +2739,7 @@
   "log_snapshot__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -2810,8 +2758,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -3076,7 +3023,7 @@
   "save_peak_value": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3090,10 +3037,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3102,7 +3045,7 @@
   "save_peak_value__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3115,8 +3058,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -3211,7 +3153,7 @@
   "save_rebalance_state": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3227,10 +3169,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3239,7 +3177,7 @@
   "save_rebalance_state__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3254,8 +3192,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -3392,7 +3329,7 @@
   "log_dividend_accrual": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3419,10 +3356,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3431,7 +3364,7 @@
   "log_dividend_accrual__string_ex_date": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3455,10 +3388,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3467,7 +3396,7 @@
   "log_dividend_accrual__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3493,8 +3422,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -3668,7 +3596,7 @@
   "save_split_correction": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3684,10 +3612,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3696,7 +3620,7 @@
   "save_split_correction__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3711,8 +3635,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,
@@ -3721,7 +3644,7 @@
   "clear_split_correction": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3732,10 +3655,6 @@
     },
     {
      "op": "commit"
-    },
-    {
-     "op": "close",
-     "committed": true
     }
    ],
    "returned": null,
@@ -3744,7 +3663,7 @@
   "clear_split_correction__execute_fails": {
    "events": [
     {
-     "op": "connect"
+     "op": "begin"
     },
     {
      "op": "execute",
@@ -3754,8 +3673,7 @@
      }
     },
     {
-     "op": "close",
-     "committed": false
+     "op": "rollback"
     }
    ],
    "returned": null,

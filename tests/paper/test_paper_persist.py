@@ -12,8 +12,8 @@ import pytest
 class TestInitSchema:
     def test_creates_tables(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import init_paper_schema
 
@@ -29,8 +29,8 @@ class TestInitSchema:
 class TestLogTrade:
     def test_inserts_trade_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         mock_conn.execute.return_value.all.return_value = []
         from ggTrader.paper.persist import log_trade
@@ -73,8 +73,8 @@ class TestLogSnapshot:
 
     def test_inserts_snapshot_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import log_snapshot
 
@@ -174,8 +174,8 @@ class TestGetLatestSnapshotPositions:
 class TestRebalanceState:
     def test_save_rebalance_state_inserts_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import save_rebalance_state
 
@@ -221,8 +221,8 @@ class TestRebalanceState:
 class TestPeakValue:
     def test_save_peak_value_upserts_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import save_peak_value
 
@@ -273,8 +273,8 @@ class TestPendingOrderStaleness:
 
     def test_mark_pending_order_stale_updates_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import mark_pending_order_stale
 
@@ -291,8 +291,8 @@ class TestPendingOrderStaleness:
 class TestInitSchemaIncludesDividendAccruals:
     def test_creates_dividend_accrual_table(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import init_paper_schema
 
@@ -357,8 +357,8 @@ class TestDividendAccruals:
         from datetime import date
 
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import log_dividend_accrual
 
@@ -495,8 +495,8 @@ class TestGetTradeHistoryDates:
 class TestSplitState:
     def test_creates_split_state_table(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import init_paper_schema
 
@@ -557,8 +557,8 @@ class TestSplitState:
 
     def test_save_split_correction_upserts(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import save_split_correction
 
@@ -570,12 +570,14 @@ class TestSplitState:
         assert "ON CONFLICT (symbol)" in sql_str
         params = mock_conn.execute.call_args[0][1]
         assert params == {"symbol": "MNST", "ex_date": "2026-08-11", "factor": 2.0}
-        mock_conn.commit.assert_called_once()
+        # `begin()` commits when the block ends; no hand-written commit is left.
+        mock_engine.return_value.begin.assert_called_once()
+        mock_conn.commit.assert_not_called()
 
     def test_clear_split_correction_deletes_row(self, mock_engine):
         mock_conn = MagicMock()
-        mock_engine.return_value.connect.return_value.__enter__ = lambda s: mock_conn
-        mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+        mock_engine.return_value.begin.return_value.__enter__ = lambda s: mock_conn
+        mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
         from ggTrader.paper.persist import clear_split_correction
 
@@ -585,7 +587,9 @@ class TestSplitState:
         sql_str = str(mock_conn.execute.call_args[0][0])
         assert "DELETE FROM paper_split_state" in sql_str
         assert mock_conn.execute.call_args[0][1] == {"symbol": "MNST"}
-        mock_conn.commit.assert_called_once()
+        # `begin()` commits when the block ends; no hand-written commit is left.
+        mock_engine.return_value.begin.assert_called_once()
+        mock_conn.commit.assert_not_called()
 
 
 def test_settlement_rejects_invalid_fill_before_database_access():
@@ -905,7 +909,7 @@ def test_legacy_trade_checks_existing_rows_under_lock():
         ([(date(2026, 1, 2), "BUY", "ABC", 25.0, None)], True, 0),
     ]:
         with patch("ggTrader.paper.persist._get_engine") as engine:
-            conn = engine.return_value.connect.return_value.__enter__.return_value
+            conn = engine.return_value.begin.return_value.__enter__.return_value
             conn.execute.return_value.all.return_value = rows
             if error:
                 with pytest.raises(ValueError, match="Conflicting"):
