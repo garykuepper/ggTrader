@@ -67,7 +67,11 @@ class RunLock(Protocol):
     """A held run lock whose ownership can be checked before an order is submitted."""
 
     def verify(self) -> None:
-        """Raise if the caller no longer owns the lock (the SQL lock raises ``RuntimeError``)."""
+        """Check that the caller still owns the lock.
+
+        The SQL lock raises ``RuntimeError`` when it does not. The in-memory lock only counts
+        the call.
+        """
         ...
 
 
@@ -128,7 +132,8 @@ class PaperLedger(Protocol):
         Raise ``ValueError`` for an invalid fill, a missing or conflicting intent, a conflicting
         trade or an order id that is also a legacy pending order. A trade is booked only for a
         positive fill quantity, and an identical trade or identical earlier settlement is kept as it
-        is.
+        is. The SQL ledger's unique broker-id column also refuses an id already held by another
+        intent.
         """
         ...
 
@@ -151,8 +156,8 @@ class PaperLedger(Protocol):
     ) -> None:
         """Record a trade under its order id.
 
-        A repeat of an identical trade changes nothing; a different trade under the same order id
-        raises ``ValueError``.
+        A repeat of an identical trade changes nothing. A different trade, or several rows already
+        stored under the order id, raises ``ValueError``.
         """
         ...
 
@@ -505,8 +510,8 @@ class InMemoryLedger:
 
         Raise ``ValueError`` for an invalid fill, a pending order with this id, a missing or
         conflicting intent, a conflicting settlement or a conflicting trade. A trade is booked only
-        for a positive fill quantity. Settling an already resolved intent with the same fill changes
-        nothing.
+        for a positive fill quantity. Settling a resolved intent again changes nothing when the
+        broker id, quantity, price and terminal status all match.
         """
         amount = _validate_terminal_fill(filled_qty, filled_avg_price, terminal_status)
         self._reject_pending(order_id)
@@ -576,7 +581,7 @@ class InMemoryLedger:
     ) -> None:
         """Append the trade unless an identical one exists under the order id.
 
-        A different trade under the same order id raises ``ValueError``.
+        A different trade, or several rows already under the order id, raises ``ValueError``.
         """
         existing = self._trades_of(order_id)
         expected = (_iso(run_date), side, symbol, amount, reason)

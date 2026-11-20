@@ -56,8 +56,8 @@ class AlpacaBroker:
         """Return the open positions keyed by symbol, with their values and P&L as floats.
 
         unrealized_pl, unrealized_plpc and change_today are None when the broker omits them. A
-        missing qty, market_value, current_price, avg_entry_price or cost_basis raises, and the
-        trader then halts before any order.
+        missing qty, market_value, current_price, avg_entry_price or cost_basis raises. The first
+        read of a run then stops it before any order; a failed post-trade read skips the snapshot.
         """
         positions = self._client.get_all_positions()
         return {
@@ -178,7 +178,7 @@ class AlpacaBroker:
     def get_split_evidence(
         self, symbols: list[str], since: date
     ) -> dict[str, dict[str, list[tuple[date, float]]] | set[str]]:
-        """Return the raw ingredients behind a split-correction decision for
+        """Return the ingredients behind a split-correction decision for
         `symbols`: the broker's corporate-actions feed (`corp_splits`) and,
         as a secondary signal only, this account's own SPLIT activities
         (`activity_applied`) -- see `split_check`'s module docstring for why
@@ -205,8 +205,9 @@ class AlpacaBroker:
 
     def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
         """Cross-reference the broker's corporate-actions feed against this
-        account's own SPLIT activities to find splits the broker knows about
-        for `symbols` but never applied to this account.
+        account's own SPLIT activities to propose a correction for each symbol
+        in `symbols` that has split events but no SPLIT activity. That absence
+        is a signal, not proof that the split went unapplied.
 
         Returns `{symbol: correction_factor}` (see
         `split_check.compute_split_corrections`). Built on `get_split_evidence`,
@@ -259,9 +260,9 @@ class AlpacaBroker:
     def get_dividend_corrections(
         self, symbols: list[str], since: date | str
     ) -> dict[str, dict[str, list[tuple[date, float]]] | set[tuple[str, date]]]:
-        """Cross-reference the broker's corporate-actions feed against this
-        account's own DIV activities to find cash dividends the broker knows
-        about for `symbols` but never credited to this account.
+        """Return the broker's cash-dividend events for `symbols` together with
+        this account's own credited DIV activities; the caller compares the two
+        to find dividends never credited to this account.
 
         `since` is coerced via `dividend_check.normalize_since` *before* the
         fail-soft boundary below, so a caller passing the wrong type (e.g.

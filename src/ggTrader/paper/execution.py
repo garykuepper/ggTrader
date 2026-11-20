@@ -36,13 +36,18 @@ class Executor(Protocol):
     def submit(self, intent: OrderIntent) -> str | None:
         """Submit the intent's order; return the broker order id, or None when none is sent.
 
-        Live: commits the intent, verifies the run lock, submits, then attaches the broker id; a
-        failure at any stage alerts and raises, even after the broker accepted the order.
+        Live: an invalid side or a read-only trader raises first, with no alert. Otherwise it
+        commits the intent, verifies the run lock, submits, then attaches the broker id; a failure
+        in those stages attempts an alert (a failed alert is only logged) and re-raises, even
+        after the broker accepted the order.
         """
         ...
 
     def announce(self, intent: OrderIntent) -> None:
-        """Alert the operator: live only for a catastrophe stop; dry run for every intent kind."""
+        """Send a notifier message: live only for a catastrophe stop, dry run for every intent kind.
+
+        A dry-run notifier may only log the message.
+        """
         ...
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
@@ -52,14 +57,18 @@ class Executor(Protocol):
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
         """Follow up after the sell orders have been polled.
 
-        Live: reconciles the intents when there are results. Dry run: no-op.
+        Live: when there are results, reconciles the intents (attaches broker ids, books terminal
+        fills); it raises after an alert attempt on working orders or a recovery error, and
+        earlier writes may already be committed. Dry run: no-op.
         """
         ...
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
-        """Follow up after the strategy order batch has been polled, before any trailing sweep buy.
+        """Follow up after the main order batch has been polled, before any trailing sweep buy.
 
-        Live: reconciles the intents when there are orders. Dry run: no-op.
+        The batch holds the strategy orders and any funding sweep sell. Live: when there are
+        orders, reconciles the intents; it raises after an alert attempt on working orders or a
+        recovery error, and earlier writes may already be committed. Dry run: no-op.
         """
         ...
 
@@ -121,8 +130,10 @@ class OrderExecutor:
     def submit(self, intent: OrderIntent) -> str | None:
         """Submit the intent's order through the current executor; return the broker order id.
 
-        Commits the intent, verifies the run lock, submits, then attaches the id. A failure at any
-        stage alerts and raises; attachment can fail after the broker accepted the order.
+        An invalid side or a read-only trader raises first, with no alert. Otherwise it commits the
+        intent, verifies the run lock, submits, then attaches the id; a failure in those stages
+        attempts an alert (a failed alert is only logged) and re-raises. Attachment can fail after
+        the broker accepted the order.
         """
         return self._current().submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
@@ -133,7 +144,8 @@ class OrderExecutor:
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
         """Reconcile the order intents when there are sell results; do nothing if there are none.
 
-        Reconciliation attaches broker ids, books terminal fills and can raise after an alert.
+        Reconciliation attaches broker ids and books terminal fills; it raises after an alert
+        attempt on working orders or a recovery error, with earlier writes possibly committed.
         """
         if filled:
             self._current().reconcile_order_intents()
@@ -141,7 +153,8 @@ class OrderExecutor:
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
         """Reconcile the order intents when there are orders; do nothing for an empty sequence.
 
-        Reconciliation attaches broker ids, books terminal fills and can raise after an alert.
+        Reconciliation attaches broker ids and books terminal fills; it raises after an alert
+        attempt on working orders or a recovery error, with earlier writes possibly committed.
         """
         if orders:
             self._current().reconcile_order_intents()
@@ -487,9 +500,9 @@ class DryRunExecutor(OrderExecutor):
         return []
 
     def announce(self, intent: OrderIntent) -> None:
-        """Send a DRY RUN alert that describes the intent by kind.
+        """Send a DRY RUN message through the notifier, worded by the intent kind.
 
-        The kinds are stop, exit, sweep sell, buy and sweep buy.
+        The kinds are stop, exit, sweep sell, buy and sweep buy. A dry-run notifier may only log it.
         """
         symbol, size = intent.symbol, intent.size
         if intent.kind == IntentKind.STOP:

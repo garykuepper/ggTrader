@@ -60,19 +60,21 @@ class Broker(Protocol):
         ...
 
     def get_split_evidence(self, symbols: list[str], since: date) -> dict[str, Any]:
-        """Return the broker's raw split evidence for ``symbols`` since ``since``.
+        """Return the broker's split evidence for ``symbols`` since ``since``.
 
-        The Alpaca result holds ``corp_splits`` (split events for ``symbols``) and
-        ``activity_applied`` (symbols with a SPLIT activity on the whole account, so it may name
-        others). An API error returns empty evidence instead of raising.
+        The Alpaca result holds ``corp_splits`` (parsed ``(ex_date, factor)`` tuples per symbol,
+        from a query limited to ``symbols``) and ``activity_applied`` (symbols with a SPLIT
+        activity on the whole account, so it may name others). An API error returns empty
+        evidence instead of raising.
         """
         ...
 
     def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
-        """Return a correction factor per symbol with a split event but no SPLIT account activity.
+        """Return each unbooked symbol's combined split factor (the product of its event factors).
 
-        That absence is only a signal: it does not prove the split went unapplied. An API error
-        returns an empty dict.
+        Only symbols with split events and no SPLIT account activity qualify, and a product of
+        exactly 1.0 is omitted. The missing activity is only a signal: it does not prove the split
+        went unapplied. An API error returns an empty dict.
         """
         ...
 
@@ -91,10 +93,11 @@ class Notifier(Protocol):
     """Alerts and the daily summary (``TelegramNotifier`` is the implementation)."""
 
     def send(self, message: str) -> bool:
-        """Send a message; return True only if delivery was confirmed.
+        """Send a message; return the implementation's success flag.
 
-        Telegram confirms with an HTTP 200; False covers a disabled or failed send and a message
-        a dry run suppresses.
+        The Telegram implementation returns True on an HTTP 200 response and False when it is
+        disabled or the request fails. Other implementations decide their own meaning; the dry-run
+        wrapper returns False for a message it only logs.
         """
         ...
 
@@ -109,7 +112,7 @@ class Notifier(Protocol):
         price: float | None = None,
         status: str | None = None,
     ) -> bool:
-        """Send an alert for one order; return whether it was delivered (False if suppressed)."""
+        """Send an alert for one order; return the implementation's success flag, as ``send``."""
         ...
 
     def daily_summary(
@@ -126,5 +129,5 @@ class Notifier(Protocol):
         errors: list[str] | None = None,
         starting_capital: float | None = None,
     ) -> bool:
-        """Send the end-of-run summary; return whether it was delivered (False if suppressed)."""
+        """Send the end-of-run summary; return the implementation's success flag, as ``send``."""
         ...
