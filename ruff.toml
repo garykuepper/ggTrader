@@ -127,7 +127,7 @@ max-args = 8
 # RiskAssessor.assess: peak seed, drawdown and daily-loss halts, moved from _run (R4).
 "src/ggTrader/paper/risk_assessor.py" = ["C901", "PLR0912", "PLR0915"]
 # Survivors of the refactor phase 6 sweep outside paper/ (`ruff check --select C901,PLR0912,PLR0915,
-# PLR0913 src/ggTrader`: 42 findings at 23 definitions in 18 files; none split, because the only
+# PLR0913 src/ggTrader`: 42 findings at 29 definitions in 18 files; none split, because the only
 # allowed split is a pure helper under an existing test and the bodies below are ordered pipelines,
 # frozen oracle code or keyword APIs that studies and tests call by name). One entry per file, only
 # the rules that file still trips. A survivor is a known shape, not a defect; the rules now block
@@ -135,14 +135,14 @@ max-args = 8
 # (run_wfo, _make_scorer, _score_fold; run_vbt_wfo takes the ``ggt lab --wfo`` options).
 # ggt db membership dispatcher: one branch per subcommand (apply-ddl, verify, status, diff, ...).
 "src/ggTrader/cli/cmd_membership.py" = ["PLR0912"]
-# load_bars is the research data API: a keyword-only signature of 10 options, called by name.
+# load_bars is the research data API: 3 positional and 7 keyword-only options, called by name.
 "src/ggTrader/data/bars.py" = ["PLR0913"]
-# fetch_ohlcv: the DB-first, gap-fill, split-and-dividend sequence; a HISTORY-MATCH pin, not reshaped.
+# fetch_ohlcv: the DB-first, gap-fill, split-and-dividend sequence; not a pure function (it reads and writes the database cache), so the brief's split rule excludes it.
 "src/ggTrader/data/live/cached_yfinance_loader.py" = ["C901", "PLR0912", "PLR0915"]
 # parse_events_csv validates a curated CSV row by row; plan_events turns events into a plan in
 # date order; prepare_events_load carries the 13 inputs of one vintage write.
 "src/ggTrader/data/membership_events.py" = ["C901", "PLR0912", "PLR0913"]
-# parse_holdings reads the fund-holdings file layout in one pass (header scan, rows, totals).
+# parse_holdings reads the fund-holdings file layout in one pass (header, as-of date, rows, duplicate and count checks).
 "src/ggTrader/data/membership_holdings.py" = ["C901", "PLR0912"]
 # build_proposal takes each proposal input as a keyword-only argument.
 "src/ggTrader/data/membership_proposal.py" = ["PLR0913"]
@@ -158,13 +158,13 @@ max-args = 8
 "src/ggTrader/engine/portfolio.py" = ["PLR0912", "PLR0913"]
 # compare checks each provenance field in turn; one branch per field.
 "src/ggTrader/engine/provenance.py" = ["PLR0912"]
-# check_rebalance applies the 70/30 band rule lot by lot with its tax-lot cases; studies call it.
+# check_rebalance applies the 70/30 band rule lot by lot with its tax-lot cases; called by scripts/a23_rebalance_check.py, tests and a study-library parity test.
 "src/ggTrader/lab/a23_rebalance.py" = ["C901", "PLR0912", "PLR0913", "PLR0915"]
 # run_blend takes the ``ggt lab --blend`` options by keyword.
 "src/ggTrader/lab/blend.py" = ["PLR0913"]
 # simulate_signal_out is the engine contract's simulate call; callers pass its options by name.
 "src/ggTrader/lab/strategies/contract.py" = ["PLR0913"]
-# format_wfo_table takes the fold table's columns as arguments.
+# format_wfo_table takes the results and the metrics it prints.
 "src/ggTrader/lab/wfo/report.py" = ["PLR0913"]
 # The fold scorers (oracle-pinned): window metrics inputs, two constructors that take the
 # simulation inputs, and the one grouped simulate step.

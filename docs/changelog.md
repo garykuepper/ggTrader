@@ -21,7 +21,7 @@
   otherwise unchanged; no golden or pin changed.
 - `C901`, `PLR0912`, `PLR0915` and `PLR0913` now apply to all of `src/ggTrader/`, not only `paper/` (the negated
   glob for `paper/` is gone). Hits outside `paper/` before the change: 42 (`C901` 6, `PLR0912` 12, `PLR0913` 16,
-  `PLR0915` 8) at 23 definitions in 18 files. All 42 are survivors listed per file in `ruff.toml` with a reason;
+  `PLR0915` 8) at 29 definitions in 18 files. A per-file survivor entry exempts the whole file, not only the named function, so a new offender in one of those files is not caught. All 42 are survivors listed per file in `ruff.toml` with a reason;
   no function was split and no production file changed (the pinned `cached_yfinance_loader.py`, `wfo/run.py` and
   `engine/portfolio.py` are untouched). With the 18 `paper/` survivors the rules now fail only on a new offender.
 
