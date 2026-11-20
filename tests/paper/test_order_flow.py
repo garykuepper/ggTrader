@@ -486,7 +486,7 @@ def test_stage_three_buys_then_settles_all_orders_and_preserves_open_counts():
 
 def test_live_sweep_is_polled_before_appending_and_reconciled(monkeypatch):
     from ggTrader.paper import order_flow
-    from ggTrader.paper.models import IntentKind, OrderIntent
+    from ggTrader.paper.models import IntentKind, OrderIntent, SubmittedOrder
 
     flow, view, signals = make_flow({}, buys=())
     view.sweep_on = True
@@ -499,10 +499,13 @@ def test_live_sweep_is_polled_before_appending_and_reconciled(monkeypatch):
         lambda **_: OrderIntent(IntentKind.SWEEP_BUY, "BUY", "SGOV", 100, "sweep", 100),
     )
     events = []
+    polled = []
+    fill = {"sweep-id": {"status": "filled"}}
 
     def poll(orders):
         events.append(("poll", len(state.book.orders), len(orders)))
-        return {}
+        polled.extend(orders)
+        return fill if orders else {}
 
     flow.executor.poll.side_effect = poll
     flow.executor.recover_intents.side_effect = lambda: events.append(
@@ -510,6 +513,9 @@ def test_live_sweep_is_polled_before_appending_and_reconciled(monkeypatch):
     )
     flow.run_stage_three(view, state)
     assert events == [("poll", 0, 0), ("poll", 0, 1), ("recover", 1)]
+    assert polled == [SubmittedOrder("sweep-id", "BUY", "SGOV", 100, "cash_sweep")]
+    assert state.book.orders[0] is polled[0]
+    assert state.book.filled == fill
 
 
 def test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy():
@@ -683,7 +689,12 @@ def test_submit_failure_after_saving_intent_stops_later_buys():
     flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
     executor, broker, _, ledger, _, seams, _ = make_executor()
     seams.submit_order.side_effect = executor.submit_order
-    broker.submit_buy.side_effect = RuntimeError("submit failed")
+
+    def fail_submit(*_args):
+        ledger.create_order_intent.assert_called_once()
+        raise RuntimeError("submit failed")
+
+    broker.submit_buy.side_effect = fail_submit
     flow.executor = executor
     view.sweep_on = False
     flow.risk.max_new_positions.return_value = 2
