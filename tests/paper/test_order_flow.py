@@ -1,4 +1,4 @@
-"""Stage-one order flow behavior."""
+"""Order flow behavior across execution stages."""
 
 from unittest.mock import MagicMock
 
@@ -512,7 +512,7 @@ def test_live_sweep_is_polled_before_appending_and_reconciled(monkeypatch):
     assert events == [("poll", 0, 0), ("poll", 0, 1), ("recover", 1)]
 
 
-def test_later_missing_sleeve_fails_after_earlier_buy():
+def test_a_later_sleeve_missing_from_the_open_counts_raises_after_an_earlier_buy():
     flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "missing")))
     view.sweep_on = False
     flow.risk.sleeve_slot_caps.return_value = {"s": 2, "missing": 2}
@@ -523,6 +523,46 @@ def test_later_missing_sleeve_fails_after_earlier_buy():
         flow.run_stage_three(view, state)
     assert state.book.buys == ["A"]
     flow.executor.submit.assert_called_once()
+
+
+def test_buy_count_and_sleeve_open_count_follow_yielded_intents(monkeypatch):
+    from ggTrader.paper import order_flow
+
+    flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
+    view.sweep_on = False
+    flow.risk.sleeve_slot_caps.return_value = {"s": 2}
+    flow.risk.max_new_positions.return_value = 2
+    flow.risk.check_concentration.return_value = False
+    flow.executor.poll.return_value = {}
+    original = order_flow.plan_buys
+    planners = []
+
+    def record_planner(**kwargs):
+        planner = original(**kwargs)
+        planners.append(planner)
+        return planner
+
+    monkeypatch.setattr(order_flow, "plan_buys", record_planner)
+    counts = []
+    flow.executor.submit.side_effect = lambda _: counts.append(
+        (planners[0].buys_attempted, planners[0].open_by_sleeve["s"])
+    )
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_three(view, state)
+    assert counts == [(1, 1), (2, 2)]
+    assert state.sleeve_open_initial == {"s": 0}
+
+
+def test_a_halted_run_submits_no_buys_and_no_sweep_buy():
+    flow, view, signals = make_flow({}, buys=(("A", "s"),))
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    flow.executor.poll.return_value = {}
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ("loss halt",)))
+    flow.run_stage_three(view, state)
+    assert state.book.buys == []
+    flow.executor.submit.assert_not_called()
+    flow.broker.get_account.assert_not_called()
 
 
 @pytest.mark.parametrize("blocked", ["halt", "invalid"])
