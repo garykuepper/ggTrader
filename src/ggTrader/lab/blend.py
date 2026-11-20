@@ -73,7 +73,7 @@ def _engine_curves(
     """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
     from ggTrader.engine.provenance import provenance as build_provenance
     from ggTrader.lab.strategies import registry
-    from ggTrader.lab.wfo import WfoResult, run_wfo
+    from ggTrader.lab.wfo import WfoNotRun, run_wfo
     from ggTrader.lab.wfo.cli_support import load_run_bars, sleeve_inputs
 
     es = pd.Timestamp(eval_start, tz="UTC")
@@ -98,21 +98,24 @@ def _engine_curves(
             raise SystemExit(
                 f"blend sleeve {label!r}: no symbols available for universe {universe!r}"
             )
-        result = run_wfo(
-            strategy,
-            cls,
-            cfg,
-            sleeve,
-            spy_close,
-            eval_start=eval_start,
-            eval_end=eval_end,
-            market=market,
-            base_config=base_config,
-            grid=cls.grid,
-            mask=mask,
-        )
-        if not isinstance(result, WfoResult):
-            raise SystemExit(f"blend sleeve {label!r}: WFO produced no valid folds ({result})")
+        try:
+            result = run_wfo(
+                strategy,
+                cls,
+                cfg,
+                sleeve,
+                spy_close,
+                eval_start=eval_start,
+                eval_end=eval_end,
+                market=market,
+                base_config=base_config,
+                grid=cls.grid,
+                mask=mask,
+            )
+        except WfoNotRun as exc:
+            raise SystemExit(
+                f"blend sleeve {label!r}: WFO produced no valid folds ({exc})"
+            ) from None
         curves[label] = result.oos_equity
     tape = (bars.provenance or {}).get("snapshot") or {}
     stamp = build_provenance(

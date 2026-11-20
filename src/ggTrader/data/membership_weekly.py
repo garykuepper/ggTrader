@@ -35,7 +35,7 @@ import hashlib
 import html
 import json
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -314,6 +314,25 @@ def _source_row(
 # --------------------------------------------------------------------------- the run
 
 
+@dataclass
+class _Inputs:
+    """What one run fetched and parsed; handed from step to step of ``run_weekly``."""
+
+    today: date
+    clock: Callable[[], datetime]
+    spy: HoldingsResult
+    fetched: dict[str, SourceFetch]
+    press_fetch: PressFetch
+    parsed: dict[str, Any] = field(default_factory=dict)
+    structure: dict[str, SourceStructureError] = field(default_factory=dict)
+    last_change: dict[str, date | None] = field(default_factory=dict)
+
+    @property
+    def ledger(self) -> Ledger | None:
+        """The parsed ledger, when it was fetched and read."""
+        return self.parsed.get(LEDGER)
+
+
 def run_weekly(
     store: WeeklyStore,
     notifier: Notifier,
@@ -328,6 +347,9 @@ def run_weekly(
     ``get`` is ``requests.get``-compatible (all five sources go through it), ``now`` the clock.
     Raises nothing for a bad source or a failed record; a database that cannot be read ends the
     run with status ``error`` and an alert.
+
+    The steps, in order: read our latest list; fetch every source; parse; archive each source as
+    a snapshot row; collect the findings and any proposal; decide the status, record, message.
     """
     clock = now or (lambda: datetime.now(timezone.utc))
     today = clock().astimezone(timezone.utc).date()
@@ -336,22 +358,45 @@ def run_weekly(
         limit = max_holdings_age_days()
         latest = store.latest(index_name)
     except Exception as exc:  # noqa: BLE001 - alert on anything that stops the comparison
-        first = (str(exc).strip().splitlines() or [""])[0]
-        run.status = STATUS_ERROR
-        run.findings.append(
-            Finding(
-                "refuse",
-                "job_error",
-                f"cannot start: {type(exc).__name__}: {redact(first, None)[:200]}",
-            )
-        )
-        run.message = compose_message(run, today)
-        _deliver(run, notifier)
-        return run
+        return _stop_before_start(run, exc, today, notifier)
     if latest is None:
         run.findings.append(Finding("refuse", "no_vintage", "no vintage of the index is loaded"))
+    inputs = _fetch_inputs(run, latest, get, clock, today, limit)
+    _parse_sources(inputs)
+    _archive_sources(run, inputs)
+    _press_sources(run, inputs.press_fetch)
+    _collect_findings(run, inputs, latest, store, proposal_dir)
+    _record_and_report(run, inputs, store, notifier, index_name)
+    return run
 
-    # --- fetch everything; each source on its own
+
+def _stop_before_start(
+    run: WeeklyRun, exc: Exception, today: date, notifier: Notifier
+) -> WeeklyRun:
+    """End the run with one alert when our own list cannot be read."""
+    first = (str(exc).strip().splitlines() or [""])[0]
+    run.status = STATUS_ERROR
+    run.findings.append(
+        Finding(
+            "refuse",
+            "job_error",
+            f"cannot start: {type(exc).__name__}: {redact(first, None)[:200]}",
+        )
+    )
+    run.message = compose_message(run, today)
+    _deliver(run, notifier)
+    return run
+
+
+def _fetch_inputs(
+    run: WeeklyRun,
+    latest: VintageData | None,
+    get: GetFn | None,
+    clock: Callable[[], datetime],
+    today: date,
+    limit: int,
+) -> _Inputs:
+    """Fetch everything; each source on its own (the SPY holdings first, then the rest)."""
     try:
         spy_file = fetch_holdings(get=get, now=clock)
         spy = compare_holdings(spy_file, latest, today=today, max_age_days=limit)
@@ -360,11 +405,14 @@ def run_weekly(
     run.spy = spy
     fetched = fetch_sources(get=get, now=clock)
     press_fetch = fetch_press(get=get, now=clock)
+    return _Inputs(today, clock, spy, fetched, press_fetch)
 
-    # --- parse
-    parsed: dict[str, Any] = {}
-    structure: dict[str, SourceStructureError] = {}
-    parsers = {
+
+def _parse_sources(inputs: _Inputs) -> None:
+    """Parse each fetched source, keep structure errors, and read the sources' own change dates."""
+    fetched = inputs.fetched
+    # looked up by module name at call time, as it always was (tests replace a parser)
+    parsers: dict[str, Callable[[bytes], Any]] = {
         LEDGER: parse_ledger,
         CURRENT: parse_current_list,
         COMPONENTS: parse_chino_components,
@@ -375,42 +423,54 @@ def run_weekly(
         if not source.ok or source.raw is None:
             continue
         try:
-            parsed[name] = parsers[name](source.raw)
+            inputs.parsed[name] = parsers[name](source.raw)
         except SourceStructureError as exc:
-            structure[name] = exc
+            inputs.structure[name] = exc
         except Exception as exc:  # noqa: BLE001 - a parser bug must read as "cannot parse"
-            structure[name] = SourceStructureError("internal", f"{type(exc).__name__}: {exc}")
-    components = parsed.get(COMPONENTS)
-
-    # --- the sources' own last-change dates
-    last_change = {name: fetched[name].last_change for name in FETCHED_SOURCES}
+            inputs.structure[name] = SourceStructureError(
+                "internal", f"{type(exc).__name__}: {exc}"
+            )
+    inputs.last_change.update({name: fetched[name].last_change for name in FETCHED_SOURCES})
+    components = inputs.parsed.get(COMPONENTS)
     if components is not None:
-        last_change[COMPONENTS] = components.day  # its own newest daily row
-    ledger: Ledger | None = parsed.get(LEDGER)
+        inputs.last_change[COMPONENTS] = components.day  # its own newest daily row
+
+
+def _source_extra(name: str, inputs: _Inputs) -> dict[str, Any]:
+    """The parse facts of one source that are stored in its snapshot row's detail."""
+    parsed, structure = inputs.parsed, inputs.structure
+    ledger = inputs.ledger
+    components = parsed.get(COMPONENTS)
+    if name in structure:
+        return {"structure_error": structure[name].code, "problems": structure[name].problems}
+    if name == LEDGER and ledger is not None:
+        return {
+            "n_rows": len(ledger.rows),
+            "newest_effective": ledger.newest_effective.isoformat(),
+            "revid": ledger.revid,
+            "warnings": ledger.warnings,
+        }
+    if name == CURRENT and CURRENT in parsed:
+        return {"n_tickers": len(parsed[CURRENT].tickers), "revid": parsed[CURRENT].revid}
+    if name == COMPONENTS and components is not None:
+        return {"newest_snapshot": components.day.isoformat(), "n_rows": components.n_rows}
+    if name == CHANGES and CHANGES in parsed:
+        return {"n_rows": len(parsed[CHANGES]), "newest": parsed[CHANGES][-1].day.isoformat()}
+    return {}
+
+
+def _archive_sources(run: WeeklyRun, inputs: _Inputs) -> None:
+    """One snapshot row per fetched source, then the SPY row (its workbook is in check_blobs)."""
     for name in FETCHED_SOURCES:
-        source = fetched[name]
-        extra: dict[str, Any] = {}
-        if name in structure:
-            extra = {"structure_error": structure[name].code, "problems": structure[name].problems}
-        elif name == LEDGER and ledger is not None:
-            extra = {
-                "n_rows": len(ledger.rows),
-                "newest_effective": ledger.newest_effective.isoformat(),
-                "revid": ledger.revid,
-                "warnings": ledger.warnings,
-            }
-        elif name == CURRENT and CURRENT in parsed:
-            extra = {"n_tickers": len(parsed[CURRENT].tickers), "revid": parsed[CURRENT].revid}
-        elif name == COMPONENTS and components is not None:
-            extra = {"newest_snapshot": components.day.isoformat(), "n_rows": components.n_rows}
-        elif name == CHANGES and CHANGES in parsed:
-            extra = {"n_rows": len(parsed[CHANGES]), "newest": parsed[CHANGES][-1].day.isoformat()}
-        run.sources[name] = _source_row(source, last_change[name], extra)
+        run.sources[name] = _source_row(
+            inputs.fetched[name], inputs.last_change[name], _source_extra(name, inputs)
+        )
+    spy = inputs.spy
     run.sources[SPY] = SnapshotRow(
         source=SPY,
         url=spy.detail.get("source_url", ""),
         status="failed" if spy.outcome == "fetch_failed" else "ok",
-        fetched_at=clock(),
+        fetched_at=inputs.clock(),
         last_change=spy.holdings_as_of,
         raw=None,  # the workbook is in check_blobs
         raw_sha256=spy.raw_sha256,
@@ -418,12 +478,25 @@ def run_weekly(
         detail={"stored_in": "check_blobs", "outcome": spy.outcome, **_spy_summary(spy)},
     )
 
-    _press_sources(run, press_fetch)
 
-    # --- findings
-    _spy_findings(run, spy)
+def _collect_findings(
+    run: WeeklyRun,
+    inputs: _Inputs,
+    latest: VintageData | None,
+    store: WeeklyStore,
+    proposal_dir: Path | None,
+) -> None:
+    """The refusals and warnings of every source, then the comparison with our list."""
+    _spy_findings(run, inputs.spy)
     for name in FETCHED_SOURCES:
-        _source_findings(run, fetched[name], structure.get(name), last_change[name], today)
+        _source_findings(
+            run,
+            inputs.fetched[name],
+            inputs.structure.get(name),
+            inputs.last_change[name],
+            inputs.today,
+        )
+    ledger = inputs.ledger
     if ledger is not None and ledger.warnings:
         run.findings.append(
             Finding(
@@ -434,35 +507,45 @@ def run_weekly(
             )
         )
     if latest is not None:
-        _compare_and_propose(
-            run,
-            latest,
-            store,
-            spy,
-            parsed,
-            ledger,
-            today,
-            clock,
-            proposal_dir or DEFAULT_PROPOSAL_DIR,
-        )
+        # resolved here, after the findings above and only with a vintage (as it always was)
+        _compare_and_propose(run, latest, store, inputs, proposal_dir or DEFAULT_PROPOSAL_DIR)
 
-    run.status = (
-        STATUS_REFUSE
-        if any(f.severity == "refuse" for f in run.findings)
-        else STATUS_WARN
-        if run.findings
-        else STATUS_OK
-    )
-    spy.detail["weekly"] = _weekly_detail(run, today)
+
+def _status_of(findings: list[Finding]) -> str:
+    """``refuse`` when any finding refuses, ``warn`` when there are only warnings, else ``ok``."""
+    if any(f.severity == "refuse" for f in findings):
+        return STATUS_REFUSE
+    return STATUS_WARN if findings else STATUS_OK
+
+
+def _record_and_report(
+    run: WeeklyRun,
+    inputs: _Inputs,
+    store: WeeklyStore,
+    notifier: Notifier,
+    index_name: str,
+) -> None:
+    """Fix the status, append the check row, then compose and send the one message."""
+    run.status = _status_of(run.findings)
+    inputs.spy.detail["weekly"] = _weekly_detail(run, inputs.today)
     try:
-        run.check_id = store.record_run(index_name, spy, list(run.sources.values()))
+        run.check_id = store.record_run(index_name, inputs.spy, list(run.sources.values()))
     except Exception as exc:  # noqa: BLE001 - report, do not hide the comparison
         run.record_error = f"{type(exc).__name__}: could not record the check row"
         run.status = STATUS_ERROR
         run.findings.append(Finding("refuse", "record_failed", run.record_error))
-    run.message = compose_message(run, today)
+    run.message = compose_message(run, inputs.today)
     _deliver(run, notifier)
-    return run
+
+
+def _not_fetched(severity: str, code: str, source: SourceFetch) -> Finding:
+    """The finding for a source that did not arrive: which one, and why."""
+    return Finding(severity, code, f"{source.name}: not fetched ({source.reason}: {source.error})")
+
+
+def _press_structure(source: SourceFetch, exc: SourceStructureError) -> Finding:
+    """The warning for a press page whose layout changed (never a refusal)."""
+    return Finding("warn", "press_structure", f"{source.name}: {exc.code}: {str(exc)[:200]}")
 
 
 def _spy_summary(spy: HoldingsResult) -> dict[str, Any]:
@@ -500,11 +583,7 @@ def _source_findings(
 ) -> None:
     name = source.name
     if not source.ok:
-        run.findings.append(
-            Finding(
-                "refuse", "source_missing", f"{name}: not fetched ({source.reason}: {source.error})"
-            )
-        )
+        run.findings.append(_not_fetched("refuse", "source_missing", source))
         return
     if error is not None:
         run.findings.append(
@@ -551,17 +630,9 @@ def _press_sources(run: WeeklyRun, fetched: PressFetch) -> None:
             extra = {"n_sp500_releases": len(releases), "n_fetched": len(fetched.releases)}
         except SourceStructureError as exc:
             extra = {"structure_error": exc.code, "problems": exc.problems}
-            run.findings.append(
-                Finding("warn", "press_structure", f"{listing.name}: {exc.code}: {str(exc)[:200]}")
-            )
+            run.findings.append(_press_structure(listing, exc))
     else:
-        run.findings.append(
-            Finding(
-                "warn",
-                "press_unavailable",
-                f"{listing.name}: not fetched ({listing.reason}: {listing.error})",
-            )
-        )
+        run.findings.append(_not_fetched("warn", "press_unavailable", listing))
     run.sources[listing.name] = _source_row(listing, newest, extra)
     for release, source in fetched.releases:
         detail: dict[str, Any] = {"title": release.title, "published": release.published}
@@ -572,21 +643,9 @@ def _press_sources(run: WeeklyRun, fetched: PressFetch) -> None:
                 detail["n_sp500_rows"] = len(changes)
             except SourceStructureError as exc:
                 detail.update({"structure_error": exc.code, "problems": exc.problems})
-                run.findings.append(
-                    Finding(
-                        "warn",
-                        "press_structure",
-                        f"{source.name}: {exc.code}: {str(exc)[:200]}",
-                    )
-                )
+                run.findings.append(_press_structure(source, exc))
         else:
-            run.findings.append(
-                Finding(
-                    "warn",
-                    "press_unavailable",
-                    f"{source.name}: not fetched ({source.reason}: {source.error})",
-                )
-            )
+            run.findings.append(_not_fetched("warn", "press_unavailable", source))
         run.sources[source.name] = _source_row(source, release.published, detail)
 
 
@@ -623,13 +682,11 @@ def _compare_and_propose(
     run: WeeklyRun,
     latest: VintageData,
     store: WeeklyStore,
-    spy: HoldingsResult,
-    parsed: Mapping[str, Any],
-    ledger: Ledger | None,
-    today: date,
-    clock: Callable[[], datetime],
+    inputs: _Inputs,
     proposal_dir: Path,
 ) -> None:
+    spy, parsed, ledger = inputs.spy, inputs.parsed, inputs.ledger
+    today, clock = inputs.today, inputs.clock
     load = latest.load
     run.load_id = int(load["load_id"])
     history = latest.history()

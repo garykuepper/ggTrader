@@ -1,5 +1,67 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 6: the weekly membership job in ordered steps)
+
+- **Behavior-preserving** (decision D7b). `data/membership_weekly.py`: `run_weekly` (149 lines, McCabe 19)
+  is now a short list of private steps in the same module and the same order: stop before start (the
+  database cannot be read), `_fetch_inputs`, `_parse_sources`, `_archive_sources`, `_press_sources`,
+  `_collect_findings`, `_record_and_report`. What one run fetched and parsed travels in a small
+  `_Inputs` object, so `_compare_and_propose` takes 5 arguments, not 9. The three "not fetched"
+  findings (ledger and the two press sites) are built by `_not_fetched`, the two press "structure"
+  warnings by `_press_structure`; the status fold is `_status_of`. Public names and signatures
+  (`run_weekly`, `WeeklyRun`, `PgWeeklyStore`, `plain_text`, ...) are unchanged; no finding code, severity,
+  message or stored detail changed, and no other source file was touched.
+- Pinned first, on the unchanged code: `tests/data/test_membership_weekly_pins.py` runs 28 paths on the
+  offline fakes and compares the full finding list, the Telegram text, the stored `weekly` detail and the
+  snapshot rows with `tests/data/golden/membership_weekly_pins.json` (the SPY workbook's hash is left out
+  because the fake workbook is a zip stamped with the build time). The golden was written once before the
+  refactor and is unchanged by it.
+- `ruff.toml`: the `membership_weekly.py` survivor entry (`C901`, `PLR0912`, `PLR0913`, `PLR0915`) is gone;
+  none of the four rules fires there any more (checked with a copy of the config without the entry).
+  The 42/29/18 survivor counts quoted for the phase 6 sweep are history and are not rewritten.
+
+## 2026-11-20 (refactor completion II, task 5: membership CLI tidy-up, D7a)
+
+- `src/ggTrader/cli/cmd_membership.py`: the repeated `connect()` / `try` / `finally: conn.close()` blocks of
+  `apply-ddl`, `verify` and `diff` became one private context manager `_connection(read_only=False)`, and the
+  three identical `REFUSED: <error>` exits became one helper `_refused(exc)`. The events load, the file load
+  and `reinstate` keep their original `connect()` / `try` / `except` / `finally: close()` shape on purpose:
+  the refusal prints before the connection closes, a failing `close()` still propagates after the refusal,
+  and a `LoadRefused` raised by `connect()` or `close()` still escapes instead of becoming exit 2.
+  Behavior-preserving: every printed byte, the stdout/stderr split, every exit code (0/1/2, read by the
+  systemd unit), the order of the output and the close, and the connection mode (`verify` and `diff` still open
+  read-only) are unchanged; `connect` is still looked up in the module at call time, so the existing tests
+  that patch `cmd_membership.connect` and the other module names work unedited.
+- New `tests/data/test_membership_cli_pin.py` (written first and run green on the unchanged code): a table
+  test of every `ggt db membership` subcommand and `load-sp500` (exit code, first stderr line, first stdout
+  line, connection mode, connection closed), the `apply-ddl` CLI test that did not exist, and the ordering
+  and cleanup-exception cases of the three load paths. All of it passes on the original code (000eefc0).
+- `ruff.toml`: the `PLR0912` survivor entry for `cmd_membership.py` is gone; `run_membership` fell from 14
+  to 12 branches, so the rule no longer fires. No golden or pin changed.
+
+## 2026-11-20 (refactor completion II, task 3: `run_wfo` raises instead of returning a string)
+
+- **Intended behavior change (decision D5).** `run_wfo` used to return the text
+  `"WFO: <strategy> | no valid folds (need >= 15 months)"` when the evaluation window yields no fold.
+  It now raises `WfoNotRun(RuntimeError)` (`ggTrader.lab.wfo.WfoNotRun`, defined in
+  `lab/wfo/run.py`) with exactly that text as `str(exc)`; the return annotation is `WfoResult`.
+  It was the only string-return branch. Nothing has been computed when it fires.
+- Callers keep their observable output: `ggt lab --wfo` (`run_vbt_wfo`) catches it, prints the
+  message and returns it as before (no JSON written, `lab/cli.py` unchanged); `--blend`
+  (`lab/blend.py`) catches it and exits with the same `blend sleeve '<label>': WFO produced no
+  valid folds (<message>)` text.
+- Frozen callers are not edited. The oracle driver `scripts/p5_wfo_validation.py` had
+  `isinstance(result, str)` then `RuntimeError(result)`; with the exception it fails with the
+  same text through the same per-run `except Exception` of its `main`. The branch is unreachable
+  on its windows (2 and 17 folds); if a short window were supplied programmatically it would record and print `WfoNotRun: ...` instead of `RuntimeError: ...` (same message, same handler). `research/.../p10-evidence/dsr_one_combo.py` never checked for
+  the string (it would have crashed on it) and now raises with the message. The legacy-scripts
+  callers cannot import today. No `research/` file changed.
+- Tests: `test_run_wfo_raises_wfo_not_run_with_the_old_message` replaces
+  `test_no_valid_folds_returns_the_legacy_string`; `tests/lab/test_blend.py` now fakes a raising
+  `run_wfo`; two new `tests/lab/test_cli.py` cases cover `run_vbt_wfo` and `ggt lab --wfo`. The
+  characterization scenario `toy_no_valid_folds` records the exception's message in the old
+  shape, so `characterization/run_wfo.json` is byte-identical.
+
 ## 2026-11-20 (refactor completion II, task 2: a live run refuses a non-durable ledger, D4)
 
 - **Intended behavior change.** `PaperTrader.run()` now raises `NonDurableLedgerError` (a
@@ -48,6 +110,7 @@
   `.claude/skills/ggtrader-deploy/scripts/verify_live_path.py` now calls `missed_exits` from
   `corporate_actions` instead of a method that no longer exists.
 - Docs: `docs/architecture.md` "Seam rules" replaces "Seams that stay, and why".
+
 
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
