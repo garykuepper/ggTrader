@@ -3263,6 +3263,24 @@ def test_submit_order_persists_intent_before_broker_call():
     trader._paper_lock.verify.assert_called_once()
 
 
+def test_read_only_trader_refuses_a_direct_order_submission():
+    """Fail closed: a read-only trader never submits, never writes an intent, never reads a uuid."""
+    from ggTrader.paper.trader import PaperTrader
+
+    broker, ledger = MagicMock(), MagicMock()
+    trader = PaperTrader(broker, MagicMock(), dry_run=True, ledger=ledger)
+    trader._paper_lock = MagicMock()
+    hooks = MagicMock()
+    with patch.object(trader, "_hooks", return_value=hooks):
+        with pytest.raises(RuntimeError, match="read-only trader must not submit orders"):
+            trader._submit_order("BUY", "SPY", 100.0, None)
+    broker.submit_buy.assert_not_called()
+    broker.submit_sell.assert_not_called()
+    ledger.create_order_intent.assert_not_called()
+    hooks.new_uuid.assert_not_called()
+    trader._paper_lock.verify.assert_not_called()
+
+
 @patch("ggTrader.paper.trader.generate_core_signals")
 def test_submit_seam_failure_aborts_before_later_orders(mock_signals):
     mock_signals.return_value = _blend(buys=["MSFT", "AAPL"], sells=[])

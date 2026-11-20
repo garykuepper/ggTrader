@@ -20,11 +20,20 @@ from ggTrader.paper.models import Account, MarketClock, OrderStatus, Position
 
 @runtime_checkable
 class Broker(Protocol):
-    """Order, account and corporate-action access (``AlpacaBroker`` is the implementation)."""
+    """Order, account and corporate-action access (``AlpacaBroker`` is the implementation).
 
-    def get_account(self) -> Account: ...
+    Port contract: ``get_account`` and ``get_positions`` return fresh objects that the caller
+    may keep. ``PortfolioView`` holds frozen copies of them for the whole run, so a broker must
+    not return a shared dictionary that it mutates afterwards.
+    """
 
-    def get_positions(self) -> dict[str, Position]: ...
+    def get_account(self) -> Account:
+        """Return a fresh account record the caller may keep (never a shared, mutated one)."""
+        ...
+
+    def get_positions(self) -> dict[str, Position]:
+        """Return fresh position records the caller may keep (never a shared, mutated dict)."""
+        ...
 
     def get_untradable(self, symbols: list[str]) -> set[str]: ...
 

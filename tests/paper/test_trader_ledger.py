@@ -93,6 +93,8 @@ def _is_read_only(name: str) -> bool:
 
 
 def test_trader_module_binds_the_26_ledger_names() -> None:
+    # The name is pinned by the phase 4 required-node list, so it stays; what it asserts now is
+    # that the trader module binds PgPaperLedger and builds it lazily as the default ledger.
     assert trader_module.PgPaperLedger is PgPaperLedger
     with patch("ggTrader.paper.persist._get_engine", side_effect=AssertionError("database read")):
         assert isinstance(PgPaperLedger(), PgPaperLedger)

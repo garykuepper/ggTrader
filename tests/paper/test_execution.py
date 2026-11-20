@@ -139,6 +139,17 @@ def test_submit_order_names_the_failing_stage_in_the_notice_and_reraises(stage):
     )
 
 
+def test_read_only_executor_refuses_to_submit_before_any_side_effect():
+    executor, broker, notifier, ledger, hooks, _, lock = make_executor(read_only=True)
+    with pytest.raises(RuntimeError, match="read-only trader must not submit orders"):
+        executor.submit_order("BUY", "ABC", 12, None)
+    broker.submit_buy.assert_not_called()
+    broker.submit_sell.assert_not_called()
+    ledger.create_order_intent.assert_not_called()
+    hooks.new_uuid.assert_not_called()
+    lock.verify.assert_not_called()
+
+
 def test_submit_order_rejects_a_side_other_than_buy_or_sell():
     executor, broker, _, ledger, _, _, _ = make_executor()
     with pytest.raises(ValueError, match="Invalid order side"):

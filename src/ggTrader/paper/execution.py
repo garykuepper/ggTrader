@@ -122,6 +122,10 @@ class OrderExecutor:
         """Persist the identity before submitting an order under the run lock."""
         if side not in ("BUY", "SELL"):
             raise ValueError("Invalid order side")
+        if self._read_only:
+            # Fail closed: a read-only ledger would skip the intent write, so the order would
+            # reach the broker with no durable identity. Nothing below may run.
+            raise RuntimeError("read-only trader must not submit orders")
         client_id = str(self._hooks.new_uuid())
         submit = self._broker.submit_buy if side == "BUY" else self._broker.submit_sell
         stage = "intent"
