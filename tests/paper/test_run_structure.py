@@ -133,3 +133,19 @@ def test_the_listed_generator_expressions_come_from_the_run_being_replaced():
                         ast.unparse(n) for n in ast.walk(member) if isinstance(n, ast.GeneratorExp)
                     ]
     assert sorted(found) == sorted(text for text, _line in GENEXP_ALLOWED)
+
+
+def test_trader_has_no_run_legacy():
+    """The frozen oracle has been retired."""
+    from ggTrader.paper.trader import PaperTrader
+
+    assert not hasattr(PaperTrader, "_run_legacy")
+
+
+def test_every_noqa_f401_in_trader_names_its_reason():
+    """Each retained unused import explains why it is kept."""
+    import re
+
+    for line in _trader_source().splitlines():
+        if "# noqa: F401" in line:
+            assert re.search(r"# noqa: F401\s+-\s+\S", line), line
