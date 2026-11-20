@@ -34,6 +34,7 @@ from ggTrader.paper.models import (
     SubmittedOrder,
 )
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
+from ggTrader.paper.order_flow import OrderFlow
 from ggTrader.paper.persist import (
     attach_broker_order,  # noqa: F401 - looked up by ModuleLedger at call time
     clear_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time; legacy test compatibility
@@ -382,140 +383,25 @@ class PaperTrader:
             _log.warning("Invalid prior reporting snapshot; daily P&L is unavailable")
             prev_snapshot_value = None
 
-        executed_sells: list[str] = []
-        executed_buys: list[str] = []
-        errors: list[str] = []
-        pending_orders: list[SubmittedOrder] = []
-
-        # Catastrophe stop (feature-flagged, default OFF -- see
-        # catastrophe_stop.py). A position the strategy's own RSI exit never
-        # fires on can otherwise decay indefinitely (see the module
-        # docstring for the NXPI incident); this is a risk backstop,
-        # evaluated BEFORE any strategy buy/sell signal below, so a stop-out
-        # frees its slot/cash the same run. Reads `corrected_positions`
-        # (split-corrected via cost_basis, built from `strategy_positions`
-        # above -- the sweep ETF position is never in it), so an unapplied
-        # broker split can't fake a phantom loss and the sweep symbol can
-        # never be stopped out. Stopped symbols are removed from
-        # `strategy_positions` immediately after, so the sells loop below
-        # sees them as no longer held and never submits a second, coincident
-        # strategy-exit sell for the same symbol.
-        # Hoisted out of the flag check: the buy loop below consults this set
-        # so a just-stopped symbol can never be re-bought in the same run.
-        stopped_symbols: set[str] = set()
-        invalid_exit_symbols: set[str] = set()
-        if stop_threshold is not None:
-            unassessable = set()
-            for symbol, position in corrected_positions.items():
-                try:
-                    if catastrophe_stop.unrealized_pct(position) is None:
-                        unassessable.add(symbol)
-                except ValueError:
-                    unassessable.add(symbol)
-            if unassessable:
-                reason = "Cannot assess catastrophe stop for: " + ", ".join(sorted(unassessable))
-                loss_halts.append(reason)
-                all_buys = []
-                _log.warning("%s; new buys and sweeps blocked", reason)
-                try:
-                    self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {reason}")
-                except Exception:
-                    _log.exception("Could not send unassessable catastrophe-stop alert")
-                if pending_symbols:
-                    try:
-                        self._notifier.send(
-                            "<b>⚠️ Pending orders may still fill:</b> "
-                            "no cancellations were attempted."
-                        )
-                    except Exception:
-                        _log.exception("Could not send pending-order notice")
-            assessable = {
-                symbol: position
-                for symbol, position in corrected_positions.items()
-                if symbol not in unassessable
-            }
-            for symbol in catastrophe_stop.find_catastrophe_stops(assessable, stop_threshold):
-                qty = strategy_positions[symbol]["qty"]
-                if qty is None or not math.isfinite(qty) or qty <= 0:
-                    errors.append(
-                        f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
-                        "new strategy buys blocked"
-                    )
-                    invalid_exit_symbols.add(symbol)
-                    continue
-                if symbol in pending_symbols:
-                    _log.info("Skipping catastrophe stop %s: order already pending", symbol)
-                    continue
-                pct = catastrophe_stop.unrealized_pct(corrected_positions[symbol])
-                if self._dry_run:
-                    stopped_symbols.add(symbol)
-                    executed_sells.append(symbol)
-                    self._notifier.send(
-                        f"<b>🛑 DRY RUN catastrophe stop:</b> {symbol} (qty {qty}, "
-                        f"unrealized {pct:.1%} breached {stop_threshold:.1%} floor)"
-                    )
-                    continue
-                oid = self._submit_order(
-                    "SELL", symbol, qty, catastrophe_stop.CATASTROPHE_STOP_REASON
-                )
-                stopped_symbols.add(symbol)
-                executed_sells.append(symbol)
-                pending_orders.append(
-                    SubmittedOrder(
-                        oid,
-                        "SELL",
-                        symbol,
-                        strategy_positions[symbol]["market_value"],
-                        catastrophe_stop.CATASTROPHE_STOP_REASON,
-                    )
-                )
-                self._notifier.send(
-                    f"<b>🛑 Catastrophe stop:</b> {symbol} unrealized {pct:.1%} "
-                    f"breached {stop_threshold:.1%} floor — selling qty {qty}."
-                )
-            if stopped_symbols:
-                strategy_positions = {
-                    sym: pos
-                    for sym, pos in strategy_positions.items()
-                    if sym not in stopped_symbols
-                }
-
-        # Check requested strategy exits before estimating sweep funding for buys.
-        for symbol in signals["sells"]:
-            # A pending order does not excuse an invalid quantity: the account state is
-            # still untrusted, so it must still block new buys.
-            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
-                continue
-            qty = strategy_positions[symbol]["qty"]
-            if qty is None or not math.isfinite(qty) or qty <= 0:
-                errors.append(
-                    f"Cannot submit risk-reducing SELL {symbol}: invalid long quantity; "
-                    "new strategy buys blocked"
-                )
-                invalid_exit_symbols.add(symbol)
-        if invalid_exit_symbols:
-            all_buys = []
-
-        # Buys — respect global + per-sleeve position limits. Computed here
-        # (before the sells loop) rather than just before the buy loop below,
-        # because the cash-sweep funding check needs the same sleeve notional
-        # sizing to estimate how much cash the day's strategy buys could
-        # consume. Each position is sized as a fixed fraction of its own
-        # sleeve's allocated capital (weight * scale * portfolio_value),
-        # independent of how many signals fire that day within the sleeve —
-        # sleeve_slot_caps governs sleeve concurrency, sleeve_position_notional
-        # governs per-trade size.
-        slot_caps = self._risk.sleeve_slot_caps(weights)
-        sleeve_open_count = {u: 0 for u in weights}
-        buys_by_sleeve: dict[str, list[str]] = {}
-        for symbol, universe in all_buys:
-            buys_by_sleeve.setdefault(universe, []).append(symbol)
-        sleeve_notional_by_universe = {
-            universe: self._risk.sleeve_position_notional(
-                portfolio_value, weights.get(universe, 0.0), scale
-            )
-            for universe in buys_by_sleeve
-        }
+        state = OrderFlow(
+            executor=self._executor_for_call(),
+            broker=self._broker,
+            notifier=self._notifier,
+            risk=self._risk,
+            ctx=ctx,
+            stop_threshold=stop_threshold,
+        ).run_stage_one(view, derived, verdict)
+        strategy_positions = state.strategy_positions
+        stopped_symbols = state.stopped
+        invalid_exit_symbols = state.invalid_exit_symbols
+        all_buys = state.all_buys
+        loss_halts = state.loss_halts
+        slot_caps = state.slot_caps
+        sleeve_open_count = dict(state.sleeve_open_initial)
+        buys_by_sleeve = state.buys_by_sleeve
+        sleeve_notional_by_universe = state.sleeve_notional_by_universe
+        executed_sells, executed_buys = state.book.sells, state.book.buys
+        errors, pending_orders = state.book.errors, state.book.orders
 
         if sweep_on and not loss_halts:
             # Sell the sweep position down FIRST (before strategy sells/buys

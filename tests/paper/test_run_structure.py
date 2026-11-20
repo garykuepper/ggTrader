@@ -22,7 +22,7 @@ from tests.paper.test_seam_contract import GENEXP_ALLOWED
 TRADER_SOURCE = Path(__file__).resolve().parents[2] / "src" / "ggTrader" / "paper" / "trader.py"
 
 #: Upper bound on `PaperTrader._run`, in lines. 826 at 73c35417.
-RUN_MAX_LINES = 585
+RUN_MAX_LINES = 470
 #: Upper bound on `PaperTrader.run`, in lines. 22 at 73c35417.
 RUN_METHOD_MAX_LINES = 25
 RATCHET_STEP = 5
