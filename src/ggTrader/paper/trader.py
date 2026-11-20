@@ -53,7 +53,7 @@ _log = logging.getLogger(__name__)
 # a window wide enough to survive a missed run or two.
 
 # A pending order still open this many days after submission gets a one-time
-# "stale" alert (see _flag_if_stale) instead of being silently re-polled
+# "stale" alert (see OrderExecutor.flag_if_stale) instead of being silently re-polled
 # forever with no visibility. Reconciliation itself keeps retrying past this
 # point -- only the repeated Telegram noise is capped.
 
@@ -169,6 +169,10 @@ class PaperTrader:
             read_only=self._read_only,
         )
 
+    def _corporate_actions(self) -> CorporateActions:
+        """Build the corporate-actions step from current collaborators."""
+        return CorporateActions(broker=self._broker, ledger=self._ledger, hooks=self._hooks())
+
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
         # One snapshot of the environment for the whole run, taken here (not at construction)
@@ -213,10 +217,7 @@ class PaperTrader:
         ctx = RunContext(pre.today_et, cfg, frozenset(pending_symbols))
         view = PortfolioView.load(
             broker=self._broker, notifier=self._notifier,
-            corporate_actions=CorporateActions(
-                broker=self._broker, ledger=self._ledger, hooks=self._hooks()
-            ),
-            ctx=ctx, signals=pre.signals,
+            corporate_actions=self._corporate_actions(), ctx=ctx, signals=pre.signals,
         )  # fmt: skip
         verdict = RiskAssessor(
             risk=self._risk, ledger=self._ledger, notifier=self._notifier

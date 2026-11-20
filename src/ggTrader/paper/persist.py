@@ -759,7 +759,7 @@ class PgPaperLedger:
         persisted correction can be re-verified against snapshot evidence using
         its *own* ex_date even once the broker's live corporate-actions feed
         stops mentioning it (the feed only reports events inside its own
-        rolling lookback window -- see `trader._compute_split_corrections`).
+        rolling lookback window -- see `CorporateActions.split_corrections`).
         `ex_date` comes back as a real `datetime.date` (the column type), same
         convention as `get_snapshot_history`.
         """
@@ -789,7 +789,7 @@ class PgPaperLedger:
         """Remove a symbol's persisted split-correction state. Call once the
         broker's own snapshot history confirms the split was actually applied
         (qty jumped by ~factor) or the position is fully closed -- see
-        `trader._compute_split_corrections`."""
+        `CorporateActions.split_corrections`."""
         with _get_engine().connect() as conn:
             conn.execute(
                 text("DELETE FROM paper_split_state WHERE symbol = :symbol"),
@@ -1049,7 +1049,7 @@ def get_open_split_states() -> dict[str, dict]:
     persisted correction can be re-verified against snapshot evidence using
     its *own* ex_date even once the broker's live corporate-actions feed
     stops mentioning it (the feed only reports events inside its own
-    rolling lookback window -- see `trader._compute_split_corrections`).
+    rolling lookback window -- see `CorporateActions.split_corrections`).
     `ex_date` comes back as a real `datetime.date` (the column type), same
     convention as `get_snapshot_history`.
     """
@@ -1066,5 +1066,5 @@ def clear_split_correction(symbol: str) -> None:
     """Remove a symbol's persisted split-correction state. Call once the
     broker's own snapshot history confirms the split was actually applied
     (qty jumped by ~factor) or the position is fully closed -- see
-    `trader._compute_split_corrections`."""
+    `CorporateActions.split_corrections`."""
     return _pg().clear_split_correction(symbol)

@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 1: the eight private seam forwards are retired, D3)
+
+- `PaperTrader` no longer has `_submit_order`, `_poll_orders`, `_reconcile_order_intents`,
+  `_reconcile_pending_orders`, `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections` and
+  `_accrue_dividends`, and `TraderSeams` (in `paper/seams.py`) and `PaperTrader._seams()` are gone
+  (`RunHooks` stays). The step objects own the bodies and call each other directly:
+  `OrderExecutor` calls its own `submit_order`, `poll_orders`, `reconcile_order_intents` and
+  `flag_if_stale` (its `seams` constructor argument is removed); the run reads pending orders and
+  recovers intents through `_executor_for_call()`; `PortfolioView.load` takes a `corporate_actions`
+  argument (a `CorporateActions`) instead of `seams`. `CorporateActions` gained one method,
+  `missed_exits`, that wraps the existing pure function of the same name.
+- Behavior is unchanged: the 103 transcript goldens, `run_equivalence_digests.json` (600 digests, its
+  runner/generator/witness hashes untouched), `persist_sql.json` and every other file under
+  `tests/paper/golden/` are byte-identical, and no frozen harness file (`transcript/harness.py`,
+  `injected.py`, `equivalence/*`) needed an edit.
+- Tests moved from the old names to the step objects. A run-level test replaces the method on the
+  class (`patch.object(OrderExecutor, "submit_order", ...)`, `CorporateActions.split_corrections`);
+  `tests/paper/support.py` has `stub_submit_order` / `restore_submit_order` for the old "submit
+  straight to the broker" stand-in `make_trader` installs. `tests/paper/test_seam_retirement.py`
+  proves, per seam, that the new injection point intercepts the call and the old attribute is gone.
+  Edited hash-pinned test files (owner-approved for this task only): `test_seam_contract.py`,
+  `test_phase4_pins.py` (same test names, same assertions). The deploy skill's read-only script
+  `.claude/skills/ggtrader-deploy/scripts/verify_live_path.py` now calls `missed_exits` from
+  `corporate_actions` instead of a method that no longer exists.
+- Docs: `docs/architecture.md` "Seam rules" replaces "Seams that stay, and why".
+
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
 - `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for

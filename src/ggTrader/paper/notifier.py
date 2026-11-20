@@ -82,7 +82,7 @@ class TelegramNotifier:
         """`portfolio_value`/`positions`/`total_pnl`/`unrealized_pnl` are all
         expected to already be split-corrected AND dividend-accrual-adjusted
         by the caller (see `split_check.apply_corrections_to_positions` and
-        `trader.PaperTrader._accrue_dividends`) -- this only adds a note
+        `corporate_actions.CorporateActions.accrue_dividends`) -- this only adds a note
         calling out which symbols were corrected and, when the broker's own
         (uncorrected) equity figure is supplied via `booked_equity`, both
         numbers side by side so a reader can see exactly what changed and

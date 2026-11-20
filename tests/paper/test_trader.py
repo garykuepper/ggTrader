@@ -659,7 +659,8 @@ class TestRunDateIsSessionDateNotAsOf:
         assert logged_run_date == tuesday.isoformat()
         assert logged_run_date != monday.isoformat()
 
-    # The order stays "accepted", so _poll_orders waits out its budget: stub the clock and the sleep
+    # The order stays "accepted", so OrderExecutor.poll_orders waits out its budget: stub the
+    # clock and the sleep
     # (as the sibling poll tests do) instead of burning 15 real seconds.
     @patch("ggTrader.paper.trader.time.sleep")
     @patch("ggTrader.paper.trader.time.time", side_effect=_clock_after(2))

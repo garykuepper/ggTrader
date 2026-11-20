@@ -4,7 +4,7 @@ Every gate answers one question: is it safe to turn these signals into orders? A
 raises :class:`SignalGateError` (or returns a reason, for the late-run gate), and the trader
 places **no orders** and sends a notifier message. There is no fallback engine and no repair:
 a bad input stops the run, because a wrong order is worse than a missed one (missed exits
-self-heal through ``_missed_exits``; a wrong order does not).
+self-heal through ``CorporateActions.missed_exits``; a wrong order does not).
 
 The bounds below are ESTIMATES tuned on the 120-session live golden (P0): the universe is
 500-502 loaded symbols, a session has at most 37 buys and 127 sells, and the last bar of a

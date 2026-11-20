@@ -84,7 +84,7 @@ src/ggTrader/
 │   ├── gates.py                 # Input/output sanity gates and the 12:55 PT late-run cutoff
 │   ├── untradable.py            # UNTRADABLE_SYMBOLS, broker status and the "asset is not active" 422
 │   ├── overlay.py               # Blend sleeve curves through engine.run_signals
-│   ├── trader.py                # PaperTrader: a short orchestrator (run, _run) calling the step objects below in order; the private seams stay as forwards
+│   ├── trader.py                # PaperTrader: a short orchestrator (run, _run) calling the step objects below in order; the eight private seam forwards were retired on 2026-11-20
 │   ├── preflight.py             # PreflightGate, PreflightResult, Halted: market, signal, late-run and freshness gates
 │   ├── portfolio.py             # PortfolioView.load: account, positions, splits, dividends, untradable set, sweep position
 │   ├── risk_assessor.py         # RiskAssessor: peak seed, drawdown and daily-loss halts -> RiskVerdict
@@ -93,7 +93,7 @@ src/ggTrader/
 │   ├── execution.py             # Executor protocol, OrderExecutor, DryRunExecutor (submit, poll, reconcile)
 │   ├── corporate_actions.py     # CorporateActions (split corrections, dividend accruals) and missed_exits
 │   ├── reporter.py              # RunReporter: alerts, corrected value, profit figures, daily summary, snapshot
-│   ├── seams.py                 # RunHooks, TraderSeams: module collaborators and private trader methods, resolved at call time
+│   ├── seams.py                 # RunHooks: module collaborators (clock, uuid, signals, membership, tape, split lookup), resolved at call time
 │   ├── run_helpers.py           # as_date, account_read_halt (a home the step modules share without importing trader)
 │   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
 │   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
@@ -461,7 +461,7 @@ behavioral-pin slice, with the gate record expanded afterwards. The P5 and P7 ou
 **Phase 3 to 5 reviews.** Phases 3 and 4 had no recorded Sol or Opus code review before 2026-11-20; phase 5 had an Opus production-code review on 2026-11-19 (`527ae843`, before the default ledger changed) and Sol and Opus reviews of its behavioral pins. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
 and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`; their files are
 in `/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`. Opus and Fable reported no blockers; Sol reported two Important findings (verdict BLOCKERS), resolved as follows: a broker must not return a shared, later-mutated dictionary (now a documented port contract (`Broker` in `paper/ports.py`: `get_account` and
-`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen copies), and a direct `_submit_order` call on a read-only trader with a valid side now fails closed with `RuntimeError("read-only trader must not submit orders")` (an invalid side still raises `ValueError`) before any intent, uuid, lock check or
+`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen copies), and a direct `OrderExecutor.submit_order` call on a read-only trader with a valid side now fails closed with `RuntimeError("read-only trader must not submit orders")` (an invalid side still raises `ValueError`) before any intent, uuid, lock check or
 broker call. The minor findings that were parked are listed in the changelog under
 "Preserved, not fixed".
 
@@ -470,7 +470,7 @@ pairs, `None`) fail as they did before the split, with `AttributeError` at the s
 stops earlier, such as a stale signal date or an unreadable peak, never reads the weights). For
 covered cases the log comparison pins logger name, level and rendered message, not raw `LogRecord`
 template, arguments or source metadata.
-The eight private compatibility seams remain; retiring them requires a separate owner decision.
+The eight private compatibility seams were retired on 2026-11-20 (see "Seam rules" below).
 A live caller can still explicitly inject an in-memory ledger, so durable-state protection there
 is a static production-import guard rather than a runtime refusal.
 
@@ -518,14 +518,21 @@ run()   TraderConfig.from_env() once; live runs hold ledger.paper_run_lock()
 raise and catch, a returned value cannot. The reasons and the results are the design's. Only the
 preflight gate returns `Halted`; the later hard stops return their `RunResult` directly.
 
-**Seams that stay, and why.** Tests assign and patch private pieces after construction, so each
-stays reachable by its old name and is looked up on the instance at call time:
-- Eight private `PaperTrader` methods stay as one- or two-line forwards to the moved bodies:
-  `_submit_order`, `_poll_orders`, `_reconcile_order_intents`, `_reconcile_pending_orders`,
-  `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections`, `_accrue_dividends`. The step
-  objects reach them through `TraderSeams` (`seams.py`), so `trader._submit_order = MagicMock(...)`
-  or `patch.object(PaperTrader, "_poll_orders", ...)` still intercepts. Retiring them is a separate,
-  owner-approved slice.
+**Seam rules.** Tests assign and patch pieces after construction, so each reachable point is named
+here:
+- The eight private `PaperTrader` forwards (`_submit_order`, `_poll_orders`,
+  `_reconcile_order_intents`, `_reconcile_pending_orders`, `_flag_if_stale`, `_missed_exits`,
+  `_compute_split_corrections`, `_accrue_dividends`) and the `TraderSeams` container were
+  **retired** (owner decision D3, 2026-11-20). The step objects own the bodies and call each other
+  directly: `OrderExecutor` calls its own `submit_order`, `poll_orders`, `reconcile_order_intents`,
+  `reconcile_pending_orders` and `flag_if_stale`; `PortfolioView.load` takes a `CorporateActions`
+  (`split_corrections`, `missed_exits`, `accrue_dividends`). The injection point is the method of
+  the step object: a run-level test replaces it on the class (`patch.object(OrderExecutor,
+  "submit_order", ...)`), a step-level test on the instance. The trader builds a fresh executor
+  through `_executor_for_call()` (and the corporate-actions step through `_corporate_actions()`), so an instance assignment on the trader no longer intercepts
+  anything (`tests/paper/test_seam_retirement.py` proves each replacement point and that the old
+  attributes are gone; `tests/paper/support.py` has `stub_submit_order` for tests that need the old
+  "submit straight to the broker" stand-in).
 - Module-level collaborators (`generate_core_signals`, `live_membership_source`,
   `refresh_benchmark_tape`, the date and clock reads, `uuid4`, `time`, `find_split_applied_symbols`)
   are named in `trader.py` only and reach the step objects as `RunHooks` lambdas that read the module
@@ -548,7 +555,7 @@ stays reachable by its old name and is looked up on the instance at call time:
 | An invalid exit quantity blocks buys and the sweep buy | `validate_exits`, `OrderFlow` | `test_rule4_...` (and the sweep sell is not blocked) |
 | Orders use the broker's uncorrected quantity; split-corrected positions are for reporting and concentration | `PortfolioView` keeps both | `test_rule5_...` |
 | A read-only run writes nothing and records what it skipped | `ReadOnlyLedger` over the run's ledger | `test_rule6_...` |
-| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally; a direct `_submit_order` on a read-only trader is refused (fails closed) since 2026-11-20 | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
+| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally; a direct `OrderExecutor.submit_order` on a read-only trader is refused (fails closed) since 2026-11-20 | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
 
 Beyond those, the same file characterizes late failures that leave earlier orders live and the exact
 exception types, and the hook call order of a live run.
