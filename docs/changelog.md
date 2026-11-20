@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 5: membership CLI tidy-up, D7a)
+
+- `src/ggTrader/cli/cmd_membership.py`: the repeated `connect()` / `try` / `finally: conn.close()` blocks of
+  `apply-ddl`, `verify` and `diff` became one private context manager `_connection(read_only=False)`, and the
+  three identical `REFUSED: <error>` exits became one helper `_refused(exc)`. The events load, the file load
+  and `reinstate` keep their original `connect()` / `try` / `except` / `finally: close()` shape on purpose:
+  the refusal prints before the connection closes, a failing `close()` still propagates after the refusal,
+  and a `LoadRefused` raised by `connect()` or `close()` still escapes instead of becoming exit 2.
+  Behavior-preserving: every printed byte, the stdout/stderr split, every exit code (0/1/2, read by the
+  systemd unit), the order of the output and the close, and the connection mode (`verify` and `diff` still open
+  read-only) are unchanged; `connect` is still looked up in the module at call time, so the existing tests
+  that patch `cmd_membership.connect` and the other module names work unedited.
+- New `tests/data/test_membership_cli_pin.py` (written first and run green on the unchanged code): a table
+  test of every `ggt db membership` subcommand and `load-sp500` (exit code, first stderr line, first stdout
+  line, connection mode, connection closed), the `apply-ddl` CLI test that did not exist, and the ordering
+  and cleanup-exception cases of the three load paths. All of it passes on the original code (000eefc0).
+- `ruff.toml`: the `PLR0912` survivor entry for `cmd_membership.py` is gone; `run_membership` fell from 14
+  to 12 branches, so the rule no longer fires. No golden or pin changed.
+
 ## 2026-11-20 (refactor completion II, task 3: `run_wfo` raises instead of returning a string)
 
 - **Intended behavior change (decision D5).** `run_wfo` used to return the text
@@ -22,6 +41,7 @@
   `run_wfo`; two new `tests/lab/test_cli.py` cases cover `run_vbt_wfo` and `ggt lab --wfo`. The
   characterization scenario `toy_no_valid_folds` records the exception's message in the old
   shape, so `characterization/run_wfo.json` is byte-identical.
+
 
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
