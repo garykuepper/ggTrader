@@ -202,3 +202,99 @@ def test_stop_planner_defers_finder_and_next_position(monkeypatch):
     with pytest.raises(ValueError):
         planner.advance()
     assert calls == ["find", "a", "b"]
+
+
+def test_no_planner_reads_market_value(monkeypatch):
+    class Position(dict):
+        def __getitem__(self, key):
+            assert key != "market_value"
+            return super().__getitem__(key)
+
+        def get(self, key, default=None):
+            assert key != "market_value"
+            return super().get(key, default)
+
+    position = Position(qty=3, cost_basis=100, unrealized_pl=-30)
+    positions = {"a": position}
+    monkeypatch.setattr(catastrophe_stop, "find_catastrophe_stops", lambda *_: ["a"])
+    stop = planning.plan_stops(
+        assessable=positions,
+        strategy_positions=positions,
+        corrected_positions=positions,
+        threshold=-0.25,
+        pending_symbols=frozenset(),
+    )
+    validation = planning.validate_exits(
+        sells=["a"],
+        strategy_positions=positions,
+        invalid_symbols=frozenset(),
+    )
+    exits = planning.plan_exits(
+        sells=["a"],
+        strategy_positions=positions,
+        invalid_symbols=frozenset(),
+        pending_symbols=frozenset(),
+    )
+    assert not any(inspect.isgenerator(p) for p in (stop, validation, exits))
+    assert stop.advance().book_amount is None
+    assert validation.advance() is None
+    assert exits.advance().book_amount is None
+    assert position == {"qty": 3, "cost_basis": 100, "unrealized_pl": -30}
+
+
+def test_assess_stops_propagates_stop_iteration(monkeypatch):
+    error = StopIteration("scan")
+    monkeypatch.setattr(catastrophe_stop, "unrealized_pct", Mock(side_effect=error))
+    with pytest.raises(StopIteration) as caught:
+        planning.assess_stops({"a": {}})
+    assert caught.value is error
+
+
+def test_later_stop_missing_qty_raises_after_first_decision(monkeypatch):
+    monkeypatch.setattr(catastrophe_stop, "find_catastrophe_stops", lambda *_: ["a", "b"])
+    corrected = {"a": {"cost_basis": 100, "unrealized_pl": -30}, "b": {}}
+    positions = {"a": {"qty": 2}, "b": {}}
+    planner = planning.plan_stops(
+        assessable=corrected,
+        strategy_positions=positions,
+        corrected_positions=corrected,
+        threshold=-0.25,
+        pending_symbols=frozenset(),
+    )
+    assert planner.advance().symbol == "a"
+    with pytest.raises(KeyError, match="qty"):
+        planner.advance()
+    assert positions == {"a": {"qty": 2}, "b": {}}
+
+
+def test_exit_validation_is_lazy_and_skips_already_invalid():
+    positions = {"invalid": {}, "bad": {"qty": 0}, "later": {}}
+    invalid = frozenset({"invalid"})
+    planner = planning.validate_exits(
+        sells=["missing", "invalid", "bad", "later"],
+        strategy_positions=positions,
+        invalid_symbols=invalid,
+    )
+    assert planner.advance().symbol == "bad"
+    with pytest.raises(KeyError, match="qty"):
+        planner.advance()
+    assert invalid == frozenset({"invalid"})
+    assert positions == {"invalid": {}, "bad": {"qty": 0}, "later": {}}
+    finished = planning.validate_exits(
+        sells=["missing", "invalid"],
+        strategy_positions=positions,
+        invalid_symbols=invalid,
+    )
+    assert finished.advance() is None and finished.advance() is None
+
+
+def test_invalid_stop_takes_precedence_over_pending(monkeypatch):
+    monkeypatch.setattr(catastrophe_stop, "find_catastrophe_stops", lambda *_: ["a"])
+    planner = planning.plan_stops(
+        assessable={},
+        strategy_positions={"a": {"qty": 0}},
+        corrected_positions={},
+        threshold=-0.25,
+        pending_symbols=frozenset({"a"}),
+    )
+    assert isinstance(planner.advance(), InvalidExit)
