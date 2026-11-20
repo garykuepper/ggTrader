@@ -2,6 +2,7 @@
 
 import logging
 
+from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 from ggTrader.paper.constants import TRADER_LOGGER_NAME
 from ggTrader.paper.execution import Executor
 from ggTrader.paper.models import (
@@ -15,8 +16,10 @@ from ggTrader.paper.models import (
 )
 from ggTrader.paper.planning import (
     assess_stops,
+    plan_buys,
     plan_exits,
     plan_stops,
+    plan_sweep_buy,
     plan_sweep_sell,
     validate_exits,
 )
@@ -178,4 +181,57 @@ class OrderFlow:
             ):
                 state.book.errors.append(error)
                 state.buys_by_sleeve.clear()
+        return state
+
+    def run_stage_three(self, view: PortfolioView, state: FlowState) -> FlowState:
+        """Execute strategy buys, settle the batch, and invest remaining cash."""
+        planner = plan_buys(
+            buys_by_sleeve=state.buys_by_sleeve,
+            notional_by_sleeve=state.sleeve_notional_by_universe,
+            slot_caps=state.slot_caps,
+            strategy_positions=state.strategy_positions,
+            corrected_positions=view.corrected_positions,
+            stopped=frozenset(state.stopped),
+            pending_symbols=self.ctx.pending_symbols,
+            slots_available=self.risk.max_new_positions(
+                len(state.strategy_positions) - state.regular_sell_count
+            ),
+            max_positions=self.risk.cfg.max_positions,
+            risk=self.risk,
+            portfolio_value=view.portfolio_value,
+            open_by_sleeve=state.sleeve_open_initial,
+        )
+        while (decision := planner.advance()) is not None:
+            if isinstance(decision, Skip):
+                _log.log(decision.level, decision.message)
+                continue
+            oid = self.executor.submit(decision)
+            state.book.buys.append(decision.symbol)
+            if self.executor.submits_orders:
+                state.book.orders.append(
+                    SubmittedOrder(oid, "BUY", decision.symbol, decision.book_amount, None)
+                )
+            self.executor.announce(decision)
+        state.book.filled.update(
+            self.executor.poll(
+                [o for o in state.book.orders if o.order_id not in state.book.filled]
+            )
+        )
+        self.executor.after_orders(state.book.orders)
+        if view.sweep_on and not state.loss_halts and not state.invalid_exit_symbols:
+            try:
+                intent = plan_sweep_buy(cfg=self.ctx.config, mid_account=self.broker.get_account())
+            except Exception as exc:
+                _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
+                intent = None
+            if intent is not None:
+                oid = self.executor.submit(intent)
+                if self.executor.submits_orders:
+                    order = SubmittedOrder(
+                        oid, "BUY", intent.symbol, intent.book_amount, SWEEP_TRADE_REASON
+                    )
+                    state.book.filled.update(self.executor.poll([order]))
+                    state.book.orders.append(order)
+                    self.executor.recover_intents()
+                self.executor.announce(intent)
         return state

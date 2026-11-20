@@ -350,9 +350,6 @@ class PaperTrader:
             ctx=ctx,
             signals=derived,
         )
-        portfolio_value = view.portfolio_value
-        sweep_on, sweep_sym = view.sweep_on, view.sweep_symbol
-        corrected_positions = {s: dict(p) for s, p in view.corrected_positions.items()}
         split_corrections = dict(view.split_corrections)
         untradable_seen = set(view.untradable_seen)
         signals["sells"] = list(view.sells)
@@ -385,117 +382,11 @@ class PaperTrader:
         )
         state = flow.run_stage_one(view, derived, verdict)
         flow.run_stage_two(view, state)
-        strategy_positions = state.strategy_positions
-        stopped_symbols = state.stopped
-        invalid_exit_symbols = state.invalid_exit_symbols
-        all_buys = state.all_buys
+        flow.run_stage_three(view, state)
         loss_halts = state.loss_halts
-        slot_caps = state.slot_caps
-        sleeve_open_count = dict(state.sleeve_open_initial)
-        buys_by_sleeve = state.buys_by_sleeve
-        sleeve_notional_by_universe = state.sleeve_notional_by_universe
         executed_sells, executed_buys = state.book.sells, state.book.buys
         errors, pending_orders = state.book.errors, state.book.orders
-
-        regular_sell_count = state.regular_sell_count
         filled_orders = state.book.filled
-
-        slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
-        buys_attempted = 0
-        for universe, syms in buys_by_sleeve.items():
-            sleeve_notional = sleeve_notional_by_universe[universe]
-            sleeve_cap = slot_caps.get(universe, 0)
-            for symbol in syms:
-                if symbol in strategy_positions:
-                    continue
-                # A symbol the catastrophe stop just sold is gone from
-                # `strategy_positions`, so the held-check above can't see it —
-                # without this guard a coincident buy signal would re-open the
-                # position the backstop just closed, in the same run.
-                if symbol in stopped_symbols:
-                    _log.info("Skipping BUY %s: catastrophe-stopped this run", symbol)
-                    continue
-                if symbol in pending_symbols:
-                    _log.info("Skipping BUY %s: order already pending", symbol)
-                    continue
-                if buys_attempted >= slots_available:
-                    _log.info(
-                        "Max positions reached (%d), skipping %s",
-                        self._risk.cfg.max_positions,
-                        symbol,
-                    )
-                    break
-                if sleeve_open_count[universe] >= sleeve_cap:
-                    _log.info("Sleeve %s slot cap reached, skipping %s", universe, symbol)
-                    break
-                if self._risk.check_concentration(
-                    symbol,
-                    corrected_positions,
-                    portfolio_value,
-                    prospective_notional=sleeve_notional,
-                ):
-                    _log.info("Concentration limit for %s, skipping", symbol)
-                    continue
-                if self._dry_run:
-                    executed_buys.append(symbol)
-                    buys_attempted += 1
-                    sleeve_open_count[universe] += 1
-                    self._notifier.send(
-                        f"<b>🔍 DRY RUN buy:</b> {symbol} "
-                        f"(${sleeve_notional:.0f}, sleeve={universe})"
-                    )
-                    continue
-                oid = self._submit_order("BUY", symbol, sleeve_notional, None)
-                executed_buys.append(symbol)
-                buys_attempted += 1
-                sleeve_open_count[universe] += 1
-                pending_orders.append(SubmittedOrder(oid, "BUY", symbol, sleeve_notional, None))
-
-        # Poll the remaining (buy) orders until they fill (or timeout)
-        filled_orders.update(
-            self._poll_orders([o for o in pending_orders if o.order_id not in filled_orders])
-        )
-
-        if pending_orders and not self._dry_run:
-            self._reconcile_order_intents()
-
-        # An invalid exit quantity means the account state is not trusted: no sweep buy either.
-        if sweep_on and not loss_halts and not invalid_exit_symbols:
-            # Sweep BUY: deploy whatever cash is left over after the strategy's
-            # own orders for the day, using the account's REAL post-trade cash
-            # (not an estimate) now that strategy sells/buys above have been
-            # submitted and polled to a terminal status.
-            try:
-                mid_account = self._broker.get_account()
-                buy_action = cash_sweep.compute_sweep_buy(
-                    cash_after_strategy_orders=mid_account["cash"],
-                    portfolio_value=mid_account["portfolio_value"],
-                    reserve_pct=cfg.reserve_pct(),
-                    min_clip=cfg.min_clip_usd(),
-                    buy_trigger_pct=cfg.buy_trigger_pct(),
-                )
-            except Exception as exc:
-                _log.warning("Cash sweep buy sizing failed (non-fatal): %s", exc)
-                buy_action = cash_sweep.SweepAction(None, 0.0)
-            if buy_action.side == "buy":
-                if self._dry_run:
-                    self._notifier.send(
-                        f"<b>🔍 DRY RUN sweep buy:</b> {sweep_sym} (${buy_action.notional:.0f})"
-                    )
-                else:
-                    oid = self._submit_order(
-                        "BUY", sweep_sym, buy_action.notional, cash_sweep.SWEEP_TRADE_REASON
-                    )
-                    sweep_buy_order = SubmittedOrder(
-                        oid,
-                        "BUY",
-                        sweep_sym,
-                        buy_action.notional,
-                        cash_sweep.SWEEP_TRADE_REASON,
-                    )
-                    filled_orders.update(self._poll_orders([sweep_buy_order]))
-                    pending_orders.append(sweep_buy_order)
-                    self._reconcile_order_intents()
 
         # Alert on every submitted order, but only book the trade ledger at a
         # real executed value — never the intended notional. Orders still

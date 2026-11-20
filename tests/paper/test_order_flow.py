@@ -460,3 +460,235 @@ def test_an_unfilled_exit_leaves_the_sweep_buy_enabled():
     assert transcript["result"]["errors"] == [
         "SELL AAPL not fully filled (rejected); new strategy buys blocked"
     ]
+
+
+def test_stage_three_buys_then_settles_all_orders_and_preserves_open_counts():
+    from ggTrader.paper.models import SubmittedOrder
+
+    flow, view, signals = make_flow({})
+    view.sweep_on = False
+    flow.risk.max_new_positions.return_value = 2
+    flow.risk.check_concentration.return_value = False
+    flow.executor.poll.return_value = {}
+    flow.executor.submit.return_value = "buy-id"
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    sell = SubmittedOrder("sell-id", "SELL", "OLD", 10, None)
+    state.book.orders.append(sell)
+    state.book.filled = {"sell-id": {"status": "filled"}}
+    flow.run_stage_three(view, state)
+    assert state.book.buys == ["BUY"]
+    assert state.sleeve_open_initial == {"s": 0}
+    assert not hasattr(state, "buys_attempted")
+    assert flow.executor.poll.call_args.args[0] == [state.book.orders[1]]
+    flow.executor.after_orders.assert_called_once_with(state.book.orders)
+    assert state.book.orders[0] == sell
+
+
+def test_live_sweep_is_polled_before_appending_and_reconciled(monkeypatch):
+    from ggTrader.paper import order_flow
+    from ggTrader.paper.models import IntentKind, OrderIntent
+
+    flow, view, signals = make_flow({}, buys=())
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    flow.executor.submit.return_value = "sweep-id"
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    monkeypatch.setattr(
+        order_flow,
+        "plan_sweep_buy",
+        lambda **_: OrderIntent(IntentKind.SWEEP_BUY, "BUY", "SGOV", 100, "sweep", 100),
+    )
+    events = []
+
+    def poll(orders):
+        events.append(("poll", len(state.book.orders), len(orders)))
+        return {}
+
+    flow.executor.poll.side_effect = poll
+    flow.executor.recover_intents.side_effect = lambda: events.append(
+        ("recover", len(state.book.orders))
+    )
+    flow.run_stage_three(view, state)
+    assert events == [("poll", 0, 0), ("poll", 0, 1), ("recover", 1)]
+
+
+def test_later_missing_sleeve_fails_after_earlier_buy():
+    flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "missing")))
+    view.sweep_on = False
+    flow.risk.sleeve_slot_caps.return_value = {"s": 2, "missing": 2}
+    flow.risk.max_new_positions.return_value = 2
+    flow.risk.check_concentration.return_value = False
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    with pytest.raises(KeyError, match="missing"):
+        flow.run_stage_three(view, state)
+    assert state.book.buys == ["A"]
+    flow.executor.submit.assert_called_once()
+
+
+@pytest.mark.parametrize("blocked", ["halt", "invalid"])
+def test_halt_or_invalid_exit_blocks_sweep_buy(blocked):
+    flow, view, signals = make_flow({}, buys=())
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    flow.executor.poll.return_value = {}
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    if blocked == "halt":
+        state.loss_halts.append("halt")
+    else:
+        state.invalid_exit_symbols.add("A")
+    flow.run_stage_three(view, state)
+    flow.broker.get_account.assert_not_called()
+    flow.executor.submit.assert_not_called()
+
+
+@pytest.mark.parametrize("source", ["broker", "reserve_pct", "min_clip_usd", "buy_trigger_pct"])
+def test_sweep_buy_sizing_failure_logs_and_buys_nothing(source, caplog):
+    flow, view, signals = make_flow({}, buys=())
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    flow.executor.poll.return_value = {}
+    flow.broker.get_account.return_value = {"cash": 1000, "portfolio_value": 1000}
+    for name in ("reserve_pct", "min_clip_usd", "buy_trigger_pct"):
+        getattr(flow.ctx.config, name).return_value = 0.1
+    if source == "broker":
+        flow.broker.get_account.side_effect = ValueError("bad value")
+    else:
+        getattr(flow.ctx.config, source).side_effect = ValueError("bad value")
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_three(view, state)
+    assert "Cash sweep buy sizing failed (non-fatal): bad value" in caplog.text
+    flow.executor.submit.assert_not_called()
+
+
+def test_three_held_one_stopped_one_sold_permits_two_buys():
+    flow, view, signals = make_flow(
+        {"A": position(), "B": position(), "C": position()},
+        sells=("B",),
+        buys=(("X", "s"), ("Y", "s")),
+    )
+    view.corrected_positions = {"A": position()}
+    view.sweep_on = False
+    view.positions = view.strategy_positions
+    flow.risk.sleeve_slot_caps.return_value = {"s": 2}
+    flow.risk.max_new_positions.return_value = 2
+    flow.risk.check_concentration.return_value = False
+    flow.executor.poll.return_value = {}
+    flow.executor.unfilled_exit_errors.return_value = []
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    flow.run_stage_three(view, state)
+    flow.risk.max_new_positions.assert_called_with(1)
+    assert state.book.buys == ["X", "Y"]
+
+
+def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
+    from ggTrader.paper import order_flow
+    from ggTrader.paper.execution import DryRunExecutor
+    from ggTrader.paper.models import IntentKind, OrderIntent
+    from tests.paper.test_execution import make_executor
+
+    flow, view, signals = make_flow({}, dry=True, buys=())
+    executor, _, notifier, _, _, seams, _ = make_executor(DryRunExecutor)
+    seams.poll_orders.return_value = {}
+    flow.executor = executor
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    monkeypatch.setattr(
+        order_flow,
+        "plan_sweep_buy",
+        lambda **_: OrderIntent(IntentKind.SWEEP_BUY, "BUY", "SGOV", 100, "sweep", 100),
+    )
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_three(view, state)
+    notifier.send.assert_called_once_with("<b>🔍 DRY RUN sweep buy:</b> SGOV ($100)")
+    assert state.book.orders == [] and state.book.buys == []
+    seams.submit_order.assert_not_called()
+    seams.reconcile_intents.assert_not_called()
+    seams.poll_orders.assert_called_once_with([])
+
+
+@pytest.mark.parametrize("dry", [False, True])
+def test_buy_and_sweep_announcements_use_executor_mode(monkeypatch, dry):
+    from ggTrader.paper import order_flow
+    from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
+    from ggTrader.paper.models import IntentKind, OrderIntent
+    from tests.paper.test_execution import make_executor
+
+    flow, view, signals = make_flow({}, dry=dry)
+    executor, _, notifier, _, _, seams, _ = make_executor(DryRunExecutor if dry else OrderExecutor)
+    seams.submit_order.side_effect = ["buy-id", "sweep-id"]
+    seams.poll_orders.return_value = {}
+    flow.executor = executor
+    view.sweep_on = True
+    flow.risk.max_new_positions.return_value = 1
+    flow.risk.check_concentration.return_value = False
+    monkeypatch.setattr(
+        order_flow,
+        "plan_sweep_buy",
+        lambda **_: OrderIntent(IntentKind.SWEEP_BUY, "BUY", "SGOV", 200, "sweep", 200),
+    )
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_three(view, state)
+    assert [call.args[0] for call in notifier.send.call_args_list] == (
+        ["<b>🔍 DRY RUN buy:</b> BUY ($100, sleeve=s)", "<b>🔍 DRY RUN sweep buy:</b> SGOV ($200)"]
+        if dry
+        else []
+    )
+
+
+def test_submit_failure_after_saving_intent_stops_later_buys():
+    from tests.paper.test_execution import make_executor
+
+    flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
+    executor, broker, _, ledger, _, seams, _ = make_executor()
+    seams.submit_order.side_effect = executor.submit_order
+    broker.submit_buy.side_effect = RuntimeError("submit failed")
+    flow.executor = executor
+    view.sweep_on = False
+    flow.risk.max_new_positions.return_value = 2
+    flow.risk.sleeve_slot_caps.return_value = {"s": 2}
+    flow.risk.check_concentration.return_value = False
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    with pytest.raises(RuntimeError, match="submit failed"):
+        flow.run_stage_three(view, state)
+    ledger.create_order_intent.assert_called_once()
+    assert ledger.create_order_intent.call_args.args[3] == "A"
+    broker.submit_buy.assert_called_once()
+    ledger.attach_broker_order.assert_not_called()
+    assert state.book.buys == []
+    seams.poll_orders.assert_not_called()
+
+
+def test_rejected_buy_reaches_normal_settlement():
+    from tests.paper.test_execution import make_executor
+
+    flow, view, signals = make_flow({})
+    executor, _, _, _, _, seams, _ = make_executor()
+    seams.submit_order.return_value = "buy-id"
+    seams.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
+    flow.executor = executor
+    view.sweep_on = False
+    flow.risk.max_new_positions.return_value = 1
+    flow.risk.check_concentration.return_value = False
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_three(view, state)
+    assert state.book.filled["buy-id"]["status"] == "rejected"
+    seams.reconcile_intents.assert_called_once_with()
+
+
+@pytest.mark.parametrize("has_sell", [False, True])
+def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell):
+    from ggTrader.paper.models import SubmittedOrder
+    from tests.paper.test_execution import make_executor
+
+    flow, view, signals = make_flow({}, buys=())
+    executor, _, _, _, _, seams, _ = make_executor()
+    seams.poll_orders.return_value = {}
+    flow.executor = executor
+    view.sweep_on = False
+    flow.risk.max_new_positions.return_value = 1
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    if has_sell:
+        state.book.orders.append(SubmittedOrder("sell-id", "SELL", "OLD", 10, None))
+    flow.run_stage_three(view, state)
+    assert seams.reconcile_intents.call_count == int(has_sell)
