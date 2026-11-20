@@ -188,3 +188,18 @@ def test_gate_uses_the_shared_constants_not_trader(setup_gate, monkeypatch):
     _, _, _, bundle, _, make = setup_gate
     bundle["sleeves"]["core"]["as_of"] = "2026-11-18"
     assert make().check().reason == "stale_signals"
+
+
+@pytest.mark.parametrize("reason", ["market_closed", "late_run", "stale_signals"])
+def test_check_never_raises_for_a_halt(setup_gate, reason):
+    broker, _, hooks, bundle, _, make = setup_gate
+    if reason == "market_closed":
+        broker.get_clock.return_value = {"is_open": False}
+    elif reason == "late_run":
+        hooks.now_pt.return_value = datetime(
+            2026, 11, 19, 13, 0, tzinfo=ZoneInfo("America/Los_Angeles")
+        )
+    else:
+        bundle["sleeves"]["core"]["as_of"] = "2026-11-01"
+    result = make(dry_run=False, read_only=False).check()
+    assert isinstance(result, Halted) and result.reason == reason
