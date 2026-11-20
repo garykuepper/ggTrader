@@ -1,5 +1,6 @@
 """Tests for the portfolio read and filtering step."""
 
+import logging
 from dataclasses import FrozenInstanceError, replace
 from datetime import date
 from types import SimpleNamespace
@@ -64,7 +65,7 @@ def test_load_reads_in_todays_order(portfolio):
     assert events[5:] == ["splits", "missed", "dividends"]
 
 
-def test_account_failure_halts_with_the_old_notice(portfolio):
+def test_account_failure_halts_with_the_old_notice(portfolio, caplog):
     _, broker, notifier, _, _, _, load = portfolio
     broker.get_account.side_effect = ValueError("bad")
     with pytest.raises(ValueError, match="bad"):
@@ -73,14 +74,21 @@ def test_account_failure_halts_with_the_old_notice(portfolio):
         "<b>🛑 HALTED:</b> Account data unavailable; no orders submitted"
     )
     broker.get_positions.assert_not_called()
+    assert "Account read failed (ValueError); stopping before orders" in caplog.text
 
 
-def test_position_failure_halts_even_if_the_notice_fails(portfolio):
-    _, broker, notifier, _, _, _, load = portfolio
+def test_position_failure_halts_even_if_the_notice_fails(portfolio, caplog):
+    _, broker, notifier, seams, _, _, load = portfolio
     broker.get_positions.side_effect = ValueError("positions")
     notifier.send.side_effect = RuntimeError("notice")
     with pytest.raises(ValueError, match="positions"):
         load()
+    assert "Position read failed (ValueError); stopping before orders" in caplog.text
+    assert "Could not send position read failure notice" in caplog.text
+    broker.get_untradable.assert_not_called()
+    seams.split_corrections.assert_not_called()
+    seams.missed_exits.assert_not_called()
+    seams.accrue_dividends.assert_not_called()
 
 
 def test_sweep_position_is_invisible_to_strategy_positions(portfolio):
@@ -105,6 +113,43 @@ def test_orders_use_uncorrected_positions_and_reports_use_corrected(portfolio):
     assert view.strategy_positions["HELD"]["qty"] == 2
     assert view.strategy_positions["HELD"]["market_value"] == 100
     assert view.corrected_positions["HELD"]["market_value"] == 200
+    assert set(view.corrected_positions) == {"HELD"}
+
+
+def test_portfolio_routes_raw_and_filtered_positions_to_their_collaborators(portfolio):
+    _, broker, _, seams, positions, _, load = portfolio
+    view = load()
+    broker.get_untradable.assert_called_once_with(["BLOCKED", "BUY", "HELD"])
+    seams.split_corrections.assert_called_once_with(
+        positions, date(2026, 11, 5), date(2026, 11, 19)
+    )
+    seams.accrue_dividends.assert_called_once_with(positions)
+    seams.missed_exits.assert_called_once_with({"HELD": positions["HELD"]}, {}, {"Z"})
+    assert set(view.strategy_positions) == set(view.corrected_positions) == {"HELD"}
+
+
+def test_missing_portfolio_value_fails_before_downstream_reads_and_writes(portfolio):
+    _, broker, _, seams, _, _, load = portfolio
+    broker.get_account.side_effect = lambda: {}
+    with pytest.raises(KeyError, match="portfolio_value"):
+        load()
+    broker.get_positions.assert_called_once()
+    broker.get_untradable.assert_not_called()
+    seams.split_corrections.assert_not_called()
+    seams.missed_exits.assert_not_called()
+    seams.accrue_dividends.assert_not_called()
+
+
+def test_load_logs_filtering_corrections_and_missed_exits(portfolio, caplog):
+    with caplog.at_level(logging.INFO, logger="ggTrader.paper.trader"):
+        portfolio[-1]()
+    for message in (
+        "Untradable holdings excluded from strategy: ['FROZEN']",
+        "Untradable buy candidates skipped: ['BLOCKED']",
+        "Unapplied broker split corrections: {'HELD': 2}",
+        "Catching up missed exits: ['Z', 'A']",
+    ):
+        assert message in caplog.text
 
 
 def test_missed_exits_are_merged_into_the_sells_sorted(portfolio):
@@ -112,10 +157,26 @@ def test_missed_exits_are_merged_into_the_sells_sorted(portfolio):
 
 
 def test_the_view_is_frozen_and_shares_no_mutable_state_with_the_broker_reply(portfolio):
-    _, _, _, _, positions, _, load = portfolio
+    _, broker, _, seams, positions, _, load = portfolio
+    account = {"portfolio_value": 500}
+    corrections = {"HELD": 2}
+    dividends = {"total": 1, "items": ["original"]}
+    broker.get_account.side_effect = lambda: account
+    seams.split_corrections.side_effect = lambda *_: corrections
+    seams.accrue_dividends.side_effect = lambda *_: dividends
     view = load()
     positions["HELD"]["qty"] = 42
+    account["portfolio_value"] = 999
+    corrections["HELD"] = 5
+    dividends["items"].append("later")
     assert view.positions["HELD"]["qty"] == 2
+    assert view.strategy_positions["HELD"]["qty"] == 2
+    assert view.corrected_positions["HELD"]["market_value"] == 200
+    assert view.account["portfolio_value"] == 500
+    assert view.split_corrections["HELD"] == 2
+    assert view.dividends["items"] == ["original"]
+    with pytest.raises(FrozenInstanceError):
+        view.sells = ()
     with pytest.raises((TypeError, FrozenInstanceError)):
         view.positions["HELD"]["qty"] = 3
 

@@ -70,7 +70,7 @@ class PortfolioView:
             except Exception:
                 _log.exception("Could not send position read failure notice")
             raise
-        account["portfolio_value"]
+        account["portfolio_value"]  # Preserve the failure before dividend persistence.
         cfg = ctx.config
         sweep_on, sweep_sym = cfg.sweep_enabled, cfg.sweep_symbol
         strategy_positions = (
