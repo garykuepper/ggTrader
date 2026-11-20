@@ -10,6 +10,11 @@
   f-string log calls in `cached_yfinance_loader.py` (same rendered text, `%s` arguments); two unused
   arguments of the membership check handlers; 30 missing annotations; two library `print` calls in
   the TimescaleDB loader (now `logging`).
+- `cached_yfinance_loader.py` is a pinned file and was edited (the `G004` and annotation commits). The pin still
+  resolves through history to the earlier commit `17b0971f`, so the counts in `.github/workflows/ci.yml` did not
+  change: `verify_pins.py` prints MATCH=0 MOVED-MATCH=4 HISTORY-MATCH=18 FAIL=0 after the edit.
+- `tests/engine/test_boundary.py`: the synthetic module it lints gained a return annotation (`-> tuple`), because
+  `ANN201` now applies to files under `src/ggTrader/engine/`; the test still checks the vectorbt ban (`TID251`).
 - Listed with a reason in `ruff.toml`: nine unused arguments fixed by a base class, protocol or
   keyword caller, and the `print` calls that are a command's terminal output (`cli/**`, the
   `ggt lab` run, `fetch_chain` progress, `selfcheck`, `create_db_engine_or_exit`). Behavior is

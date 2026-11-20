@@ -79,7 +79,7 @@ max-args = 8
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.
 # YFinanceDataLoader.fetch_ohlcv: `limit` is the BaseDataLoader signature; yfinance uses start/end.
 "src/ggTrader/data/live/yfinance_loader.py" = ["ARG002"]
-# _TableParser.handle_starttag overrides HTMLParser and must accept `attrs`.
+# _Rows.handle_starttag overrides HTMLParser and must accept `attrs`.
 "src/ggTrader/data/membership_press.py" = ["ARG002"]
 # run_wfo(market=...) is a label no body uses, but the frozen oracle drivers, blend.py and the tests
 # pass it by keyword, so the parameter stays. Its prints are the ``ggt lab`` terminal output (T201
@@ -92,7 +92,7 @@ max-args = 8
 "src/ggTrader/paper/ledger.py" = ["ARG001"]
 # T201 (print): 170 findings in 10 files. Two prints in the timescaledb loader became log calls.
 # The rest is the terminal output of a ggt command, kept as print because the run configures no
-# logging handler (an INFO record would vanish) and tests pin the text on stdout.
+# logging reaches only stderr (the ggt CLI installs a stderr handler at INFO), and tests pin the text on stdout.
 # The ggt command modules print their own results and errors.
 "src/ggTrader/cli/**" = ["T201"]
 # fetch_chain's "  [data] ..." progress lines (tests/lab/test_fetch_stock_ohlcv_chain.py pins them).
