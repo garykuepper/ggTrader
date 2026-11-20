@@ -1658,9 +1658,12 @@ class TestPersistedDrawdown:
         seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
         broker.get_account.return_value["last_equity"] = 100000.0
         assert "daily loss" in trader.run()["errors"][0].lower()
+        # Keep the prior reporting value at 100000, as in the original mock.
+        seed_snapshots(ledger, [("2026-06-19", 100000.0, 0.0, {})])
         broker.get_account.return_value.update(portfolio_value=95000.0, last_equity=96000.0)
         with patch("ggTrader.paper.trader._today_et", return_value=date(2026, 6, 20)):
             assert not trader.run()["errors"]
+        assert ledger.calls("get_latest_snapshot")[-1][2] == {"before": date(2026, 6, 20)}
 
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_missing_broker_previous_close_halts(self, mock_signals):
