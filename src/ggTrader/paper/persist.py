@@ -137,7 +137,10 @@ class PgPaperLedger:
     """The PostgreSQL implementation of the paper ledger.
 
     Each method is the body of the module function of the same name in this file, moved
-    unchanged: same SQL, binds and transaction shape. It is stateless and reads the engine
+    unchanged: same SQL and binds. Since 2026-11-20 the writers that once opened ``connect()`` and
+    committed by hand use ``engine.begin()``, which commits on a clean exit and rolls back on an
+    exception; what is committed is the same, except that an identical ``log_trade`` replay now
+    commits on exit with nothing written. It is stateless and reads the engine
     through `_get_engine()` at every call, never caching it. ``durable`` is True: the state is in
     PostgreSQL, so a live run accepts this ledger.
     """

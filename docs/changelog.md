@@ -8,10 +8,13 @@
   `log_pending_order`, `clear_pending_order`, `mark_pending_order_stale`, `log_snapshot`, `save_peak_value`,
   `log_dividend_accrual`, `save_rebalance_state`, `save_split_correction`, `clear_split_correction`. SQL text and
   bind values are unchanged. `paper_run_lock` and the 15 readers keep a plain `connect()`.
-- Proof on a real database first: 23 integration tests (`tests/paper/test_persist_real_db.py`, a throwaway
-  `ggt_scratch_*` database created and dropped by `tests/paper/persist_scratch_db.py`) record what every writer
-  commits and what rolls back on failure. They were run on the unchanged code and again after each of the 11
-  conversions, one writer at a time; the observation file was byte-identical every time.
+- Proof on a real database first, kept outside the repository: every one of the 11 writers was characterized against a
+  throwaway `ggt_scratch_*` database (rows written on success; a trigger-forced or statement-forced real failure for each,
+  with the row state checked from a fresh connection), on the unchanged code and again after each conversion, one writer
+  at a time. The observation files were byte-identical every time (27 observations, original code and converted code).
+  The evidence and the test code are in the refactor evidence folder (`p6/t7/`, copied to
+  `/media/thesix/ggTrader-data/refactor-evidence/`). The fixture needs a superuser database URL and four review
+  rounds kept finding safety gaps in it, so it and its integration tests are deliberately NOT part of the repository.
 - **`tests/paper/golden/persist_sql.json` was revised on 2026-11-20, by owner-approved decision, for event
   labels only.** The golden records the transaction events, and those differ by construction between the two
   styles: `connect, ..., commit, close{committed: true}` became `begin, ..., commit`, and a case that raises ends
