@@ -192,43 +192,78 @@ def test_typed_dict_keys_are_the_documented_ones(record: type, keys: set[str]) -
     assert record.__total__ is False
 
 
-def test_new_run_records():
-    from dataclasses import FrozenInstanceError
-
-    from ggTrader.paper.models import (
-        ExecutionBook,
-        FlowState,
-        IntentKind,
-        InvalidExit,
-        OrderIntent,
-        RiskVerdict,
-        RunContext,
-        Skip,
-        StrategySignals,
-    )
+def test_order_intent_is_frozen_and_slotted():
+    from ggTrader.paper.models import IntentKind, OrderIntent
 
     intent = OrderIntent(IntentKind.BUY, "BUY", "ABC", 5.0, None, None)
-    with pytest.raises((FrozenInstanceError, AttributeError)):
+    with pytest.raises(dataclasses.FrozenInstanceError):
         intent.symbol = "DEF"
     assert not hasattr(intent, "__dict__")
-    for value, name in (
-        (Skip(20, "skip"), "message"),
-        (InvalidExit("ABC", "error"), "error"),
-        (RunContext(None, None, frozenset()), "today_et"),
-    ):
-        with pytest.raises(FrozenInstanceError):
+
+
+def test_order_intent_book_amount_is_optional():
+    from ggTrader.paper.models import IntentKind, OrderIntent
+
+    assert OrderIntent(IntentKind.EXIT, "SELL", "ABC", 5.0, None, None).book_amount is None
+
+
+def test_skip_and_invalid_exit_are_frozen():
+    from ggTrader.paper.models import InvalidExit, Skip
+
+    for value, name in ((Skip(20, "skip"), "message"), (InvalidExit("ABC", "error"), "error")):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             setattr(value, name, "changed")
-    first = ExecutionBook()
-    second = ExecutionBook()
+        assert not hasattr(value, "__dict__")
+
+
+def test_execution_book_lists_are_not_shared_between_books():
+    from ggTrader.paper.models import ExecutionBook
+
+    first, second = ExecutionBook(), ExecutionBook()
     first.buys.append("ABC")
     assert second.buys == []
-    a, b = FlowState(), FlowState()
-    a.all_buys.append(("ABC", "one"))
-    assert b.all_buys == []
+
+
+def test_flow_state_lists_are_not_shared_between_states():
+    from ggTrader.paper.models import FlowState
+
+    first, second = FlowState(), FlowState()
+    first.all_buys.append(("ABC", "one"))
+    assert second.all_buys == []
+
+
+def test_risk_verdict_with_halt_returns_a_new_verdict_and_keeps_order():
+    from ggTrader.paper.models import RiskVerdict
+
     verdict = RiskVerdict(None, ("first",))
-    assert verdict.with_halt("second").buy_halts == ("first", "second")
+    updated = verdict.with_halt("second")
+    assert updated is not verdict and updated.buy_halts == ("first", "second")
     assert verdict.buy_halts == ("first",)
-    signals = StrategySignals((("ABC", "one"), ("ABC", "two")), (), {}, "", {}, 1.0)
-    assert signals.buys == (("ABC", "one"), ("ABC", "two"))
+
+
+def test_run_context_is_frozen():
+    from ggTrader.paper.models import RunContext
+
+    context = RunContext(None, None, frozenset())
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        context.today_et = None
+
+
+def test_strategy_signals_fields_are_immutable_views():
+    from ggTrader.paper.models import StrategySignals
+
+    exits, weights = {"ABC": "2026-01-01"}, {"one": 0.5}
+    signals = StrategySignals((), (), exits, "", weights, 1.0)
+    exits["ABC"], weights["one"] = "changed", 1.0
+    assert signals.last_exit["ABC"] == "2026-01-01" and signals.weights["one"] == 0.5
+    with pytest.raises(TypeError):
+        signals.last_exit["ABC"] = "changed"
     with pytest.raises(TypeError):
         signals.weights["one"] = 1.0
+
+
+def test_strategy_signals_keeps_buy_order_and_cross_sleeve_duplicates():
+    from ggTrader.paper.models import StrategySignals
+
+    buys = (("ABC", "one"), ("ABC", "two"))
+    assert StrategySignals(buys, (), {}, "", {}, 1.0).buys == buys
