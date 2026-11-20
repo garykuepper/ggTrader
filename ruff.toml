@@ -37,9 +37,9 @@ exclude = [
 ]
 
 # Complexity limits (design 5.4): complexity 15 and 8 arguments; the branch (12) and statement (50)
-# limits stay at ruff's defaults. The four rules are enforced for src/ggTrader/paper only (the
-# negated glob in per-file-ignores below switches them off everywhere else); the rest of the tree
-# is enabled later, each when its hits are zero or listed.
+# limits stay at ruff's defaults. The four rules apply to all of src/ggTrader (refactor phase 6);
+# every remaining finding is a listed survivor in per-file-ignores below, so a new offender fails.
+# scripts, tests and research are outside them (the "!src/ggTrader/**" glob below).
 [lint.mccabe]
 max-complexity = 15
 
@@ -69,11 +69,12 @@ max-args = 8
 "scripts/verdict_register.py" = ["UP006", "UP035", "UP045", "B", "S110"]
 "scripts/study.py" = ["UP006", "UP035", "UP045", "B", "S110"]
 "scripts/vbt_latest.py" = ["UP006", "UP035", "UP045", "B", "S110"]
-# Complexity rules are on for src/ggTrader/paper only.
-"!src/ggTrader/paper/**" = ["C901", "PLR0912", "PLR0915", "PLR0913"]
 # Rules enabled for src/ggTrader only (refactor phase 6); scripts, tests and research are outside
 # them. Each rule is added to the select list and to this one negated glob together.
-"!src/ggTrader/**" = ["DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201", "T201"]
+"!src/ggTrader/**" = [
+    "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201",
+    "T201",
+]
 # ARG001/ARG002 survivors (`ruff check --select ARG001,ARG002 src/ggTrader`: 11 findings, 2 fixed by
 # dropping the unused parameter of the two membership check handlers; 9 listed here). An unused
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.
@@ -84,7 +85,7 @@ max-args = 8
 # run_wfo(market=...) is a label no body uses, but the frozen oracle drivers, blend.py and the tests
 # pass it by keyword, so the parameter stays. Its prints are the ``ggt lab`` terminal output (T201
 # below).
-"src/ggTrader/lab/wfo/run.py" = ["ARG001", "T201"]
+"src/ggTrader/lab/wfo/run.py" = ["ARG001", "T201", "PLR0912", "PLR0913", "PLR0915"]
 # DryRunExecution implements the Execution protocol: its no-op submit, after_orders and
 # unfilled_exit_errors keep the protocol's parameters (intent, orders, filled, broker_positions).
 "src/ggTrader/paper/execution.py" = ["ARG002"]
@@ -100,7 +101,7 @@ max-args = 8
 # The ``ggt lab`` run: blend result, the WFO banner, per-fold progress (run.py, listed with its
 # ARG001 entry above), the fold table, the result path.
 "src/ggTrader/lab/cli.py" = ["T201"]
-"src/ggTrader/lab/wfo/cli_support.py" = ["T201"]
+"src/ggTrader/lab/wfo/cli_support.py" = ["T201", "PLR0913"]
 # selfcheck is a build-time command: JSON on stdout, the failure on stderr, exit code 1.
 "src/ggTrader/engine/selfcheck.py" = ["T201"]
 # create_db_engine_or_exit tells the person at the terminal why it exits with status 1.
@@ -125,6 +126,49 @@ max-args = 8
 "src/ggTrader/paper/reporter.py" = ["PLR0915"]
 # RiskAssessor.assess: peak seed, drawdown and daily-loss halts, moved from _run (R4).
 "src/ggTrader/paper/risk_assessor.py" = ["C901", "PLR0912", "PLR0915"]
+# Survivors of the refactor phase 6 sweep outside paper/ (`ruff check --select C901,PLR0912,PLR0915,
+# PLR0913 src/ggTrader`: 42 findings at 23 definitions in 18 files; none split, because the only
+# allowed split is a pure helper under an existing test and the bodies below are ordered pipelines,
+# frozen oracle code or keyword APIs that studies and tests call by name). One entry per file, only
+# the rules that file still trips. A survivor is a known shape, not a defect; the rules now block
+# new offenders. lab/wfo/run.py and lab/wfo/cli_support.py are listed with their entries above
+# (run_wfo, _make_scorer, _score_fold; run_vbt_wfo takes the ``ggt lab --wfo`` options).
+# ggt db membership dispatcher: one branch per subcommand (apply-ddl, verify, status, diff, ...).
+"src/ggTrader/cli/cmd_membership.py" = ["PLR0912"]
+# load_bars is the research data API: a keyword-only signature of 10 options, called by name.
+"src/ggTrader/data/bars.py" = ["PLR0913"]
+# fetch_ohlcv: the DB-first, gap-fill, split-and-dividend sequence; a HISTORY-MATCH pin, not reshaped.
+"src/ggTrader/data/live/cached_yfinance_loader.py" = ["C901", "PLR0912", "PLR0915"]
+# parse_events_csv validates a curated CSV row by row; plan_events turns events into a plan in
+# date order; prepare_events_load carries the 13 inputs of one vintage write.
+"src/ggTrader/data/membership_events.py" = ["C901", "PLR0912", "PLR0913"]
+# parse_holdings reads the fund-holdings file layout in one pass (header scan, rows, totals).
+"src/ggTrader/data/membership_holdings.py" = ["C901", "PLR0912"]
+# build_proposal takes each proposal input as a keyword-only argument.
+"src/ggTrader/data/membership_proposal.py" = ["PLR0913"]
+# split_cells and parse_ledger walk wikitext and fail closed on any unexpected shape; the
+# branches are the grammar.
+"src/ggTrader/data/membership_sources.py" = ["PLR0912", "PLR0915"]
+# run_weekly is the weekly job's ordered steps; _compare_and_propose takes the run state plus inputs.
+"src/ggTrader/data/membership_weekly.py" = ["C901", "PLR0912", "PLR0913", "PLR0915"]
+# _write_vintage carries one vintage's columns; reinstate_vintage is the ordered reinstate steps.
+"src/ggTrader/data/universe_db.py" = ["PLR0913", "PLR0915"]
+# run_signals takes the 16 options of one grouped vectorbt call; _validate_intraday_stops checks each
+# stop input in turn. Phase 3 settled this file; it is not reshaped here.
+"src/ggTrader/engine/portfolio.py" = ["PLR0912", "PLR0913"]
+# compare checks each provenance field in turn; one branch per field.
+"src/ggTrader/engine/provenance.py" = ["PLR0912"]
+# check_rebalance applies the 70/30 band rule lot by lot with its tax-lot cases; studies call it.
+"src/ggTrader/lab/a23_rebalance.py" = ["C901", "PLR0912", "PLR0913", "PLR0915"]
+# run_blend takes the ``ggt lab --blend`` options by keyword.
+"src/ggTrader/lab/blend.py" = ["PLR0913"]
+# simulate_signal_out is the engine contract's simulate call; callers pass its options by name.
+"src/ggTrader/lab/strategies/contract.py" = ["PLR0913"]
+# format_wfo_table takes the fold table's columns as arguments.
+"src/ggTrader/lab/wfo/report.py" = ["PLR0913"]
+# The fold scorers (oracle-pinned): window metrics inputs, two constructors that take the
+# simulation inputs, and the one grouped simulate step.
+"src/ggTrader/lab/wfo/scorers.py" = ["PLR0913", "PLR0915"]
 # Study code (research/<category>/<study>/code/) calls its bootstrap before the ggTrader imports so
 # it runs from any checkout, which is what E402 (import not at top of file) flags.
 "research/**/code/*.py" = ["E402"]
