@@ -4,14 +4,14 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 
-from ggTrader.paper.constants import MAX_SIGNAL_AGE_DAYS
+from ggTrader.paper.constants import MAX_SIGNAL_AGE_DAYS, TRADER_LOGGER_NAME
 from ggTrader.paper.gates import SignalGateError, late_run_reason
 from ggTrader.paper.models import MarketClock, RunResult, SignalBundle, StrategySignals
 from ggTrader.paper.planning import strategy_signals
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.seams import RunHooks
 
-_log = logging.getLogger("ggTrader.paper.trader")
+_log = logging.getLogger(TRADER_LOGGER_NAME)
 
 
 @dataclass(frozen=True)
