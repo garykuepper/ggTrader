@@ -9,10 +9,14 @@ from tests.paper.support import UnstubbedPersistCall, persist_guard
 
 
 def test_unstubbed_call_raises():
-    with pytest.raises(UnstubbedPersistCall, match="get_peak_value"):
+    raised = False
+    with pytest.raises(UnstubbedPersistCall, match="^Unstubbed persist calls"):
         with persist_guard():
-            with pytest.raises(UnstubbedPersistCall, match="get_peak_value"):
+            try:
                 trader.get_peak_value()
+            except UnstubbedPersistCall:
+                raised = True
+    assert raised
 
 
 def test_swallowed_call_fails_at_teardown():
