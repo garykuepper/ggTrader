@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
+
+- `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for
+  `src/ggTrader/` only (one negated glob in `per-file-ignores`; scripts, tests and research are
+  outside it). Hits on the repo config before the change: `DTZ` 1, `G004` 7, `ARG001` 5, `ARG002` 6,
+  `ANN001` 26, `ANN201` 4, `T201` 170. `BLE001` and `PLR2004` stay off; docstring rules are deferred.
+- Fixed by hand: the one naive `datetime.now()` (db export folder name, now `.astimezone()`); seven
+  f-string log calls in `cached_yfinance_loader.py` (same rendered text, `%s` arguments); two unused
+  arguments of the membership check handlers; 30 missing annotations; two library `print` calls in
+  the TimescaleDB loader (now `logging`).
+- Listed with a reason in `ruff.toml`: nine unused arguments fixed by a base class, protocol or
+  keyword caller, and the `print` calls that are a command's terminal output (`cli/**`, the
+  `ggt lab` run, `fetch_chain` progress, `selfcheck`, `create_db_engine_or_exit`). Behavior is
+  otherwise unchanged; no golden or pin changed.
+
 ## 2026-11-20 (refactor phase 5: the paper trader run split into step objects)
 
 - Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls
