@@ -168,7 +168,6 @@ class PaperTrader:
             submit_order=lambda *args: self._submit_order(*args),
             poll_orders=lambda orders: self._poll_orders(orders),
             reconcile_intents=lambda: self._reconcile_order_intents(),
-            reconcile_pending=lambda: self._reconcile_pending_orders(),
             missed_exits=lambda *args: self._missed_exits(*args),
             split_corrections=lambda *args: self._compute_split_corrections(*args),
             accrue_dividends=lambda positions: self._accrue_dividends(positions),
@@ -200,20 +199,6 @@ class PaperTrader:
     ) -> list[str]:
         """Find held symbols with unacted-on exit signals."""
         return missed_exits(self._ledger, positions, last_exit, already)
-
-    def _reconcile_pending_orders(self) -> set[str]:
-        """Settle orders that were still working at the end of a prior run.
-
-        Orders queued after the close may fill at the next session, long after
-        that run exited. Each run re-checks them: a completed fill is booked at
-        its real executed value under the original order date; a terminally-failed order is
-        dropped; anything still working is left for a later run.
-
-        Returns the set of symbols that remain pending after this pass, so
-        the caller can avoid submitting a duplicate/conflicting order for
-        them this run.
-        """
-        return self._executor_for_call().reconcile_pending_orders()
 
     def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, OrderStatus]:
         """Poll submitted orders until they reach a terminal status (or a
@@ -273,7 +258,7 @@ class PaperTrader:
             _log.warning("DB schema init failed (non-fatal): %s", exc)
         if not self._dry_run:
             self._reconcile_order_intents()
-        pending_symbols = self._reconcile_pending_orders()
+        pending_symbols = self._executor_for_call().reconcile_pending_orders()
         pre = PreflightGate(
             broker=self._broker, notifier=self._notifier, hooks=self._hooks(),
             membership=self._membership, read_only=self._read_only, dry_run=self._dry_run,

@@ -30,7 +30,6 @@ class TraderSeams:
     submit_order: Callable[[str, str, float, str | None], str]
     poll_orders: Callable[[list[SubmittedOrder]], dict[str, OrderStatus]]
     reconcile_intents: Callable[[], set[str]]
-    reconcile_pending: Callable[[], set[str]]
     missed_exits: Callable[[dict, dict[str, str], set[str]], list[str]]
     split_corrections: Callable[[dict, date, date], dict[str, float]]
     accrue_dividends: Callable[[dict], dict]

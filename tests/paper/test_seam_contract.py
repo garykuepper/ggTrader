@@ -159,7 +159,6 @@ STEP_OWNERS: dict[str, type] = {
 PRIVATE_SEAMS = (
     "_submit_order",
     "_reconcile_order_intents",
-    "_reconcile_pending_orders",
     "_poll_orders",
     "_missed_exits",
     "_compute_split_corrections",
@@ -757,7 +756,10 @@ class TestLegacySeamsInterceptTheRun:
         pytest.param("_submit_order", "instance", "plain_buys_and_sells", id="submit_order"),
         pytest.param("_reconcile_order_intents", "instance", "plain_buys_and_sells", id="intents"),
         pytest.param(
-            "_reconcile_pending_orders", "instance", "plain_buys_and_sells", id="pending_orders"
+            "OrderExecutor.reconcile_pending_orders",
+            "step",
+            "plain_buys_and_sells",
+            id="pending_orders",
         ),
         pytest.param("_poll_orders", "class", "plain_buys_and_sells", id="poll_orders"),
         pytest.param(
@@ -831,7 +833,7 @@ class TestLegacySeamsInterceptTheRun:
         assert _same_run(baseline, intercepted)
 
     def test_reconcile_pending_orders_replacement_decides_the_pending_symbols(self, impl_name):
-        """A replacement of `_reconcile_pending_orders` is the source of the symbols skipped."""
+        """A replacement of `reconcile_pending_orders` is the source of the symbols skipped."""
         scenario = SCENARIOS["plain_buys_and_sells"]
         baseline = drive(impl_name, scenario)
         bought = [s for side, s, _ in rs.submissions(_transcript_of(baseline)) if side == "BUY"]
@@ -839,8 +841,10 @@ class TestLegacySeamsInterceptTheRun:
         blocked = bought[0]
         replacement = Mock(return_value={blocked})
 
-        def configure(trader: PaperTrader, _run: harness._Run, _stack: ExitStack) -> None:
-            trader._reconcile_pending_orders = replacement  # type: ignore[method-assign]
+        def configure(_trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
+            stack.enter_context(
+                patch.object(OrderExecutor, "reconcile_pending_orders", replacement)
+            )
 
         intercepted = drive(impl_name, scenario, configure)
         replacement.assert_called_once_with()

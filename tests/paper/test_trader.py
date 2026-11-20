@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ggTrader.paper.execution import OrderExecutor
 from ggTrader.paper.gates import SignalGateError
 from ggTrader.paper.ledger import InMemoryLedger
 from tests.paper.support import (
@@ -1803,7 +1804,7 @@ def test_unassessable_stop_still_attempts_pending_warning_when_halt_notice_fails
 
     notifier.send.side_effect = send
     with (
-        patch.object(trader, "_reconcile_pending_orders", return_value={"OTHER"}),
+        patch.object(OrderExecutor, "reconcile_pending_orders", return_value={"OTHER"}),
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
@@ -1980,10 +1981,10 @@ def test_loss_halt_skips_pending_exit_and_cash_sweep():
     positions = dict(_AAPL_POS)
     positions["SPY"] = {"qty": 2.0, "market_value": 1000.0, "current_price": 500.0}
     trader, broker, notifier, ledger = make_trader(positions=positions, portfolio_value=100000.0)
-    trader._reconcile_pending_orders = MagicMock(return_value={"AAPL"})
     seed_peak(ledger, 120000.0)
     seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
+        patch.object(OrderExecutor, "reconcile_pending_orders", return_value={"AAPL"}),
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
@@ -3749,7 +3750,7 @@ def test_loss_halt_notice_failure_does_not_block_exit(failed_notice, halt_kind, 
     notifier.send.side_effect = send
     seed_peak(ledger, 120000.0 if halt_kind == "drawdown" else 100000.0)
     with (
-        patch.object(trader, "_reconcile_pending_orders", return_value={"OTHER"}),
+        patch.object(OrderExecutor, "reconcile_pending_orders", return_value={"OTHER"}),
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
@@ -3935,9 +3936,9 @@ def test_a_pending_order_does_not_excuse_an_invalid_exit_quantity(exit_kind):
         "SPY": _spy_position(qty=50.0, price=400.0),
     }
     trader, broker, _, ledger = make_trader(positions=positions, cash=50000.0)
-    trader._reconcile_pending_orders = MagicMock(return_value={"AAPL"})
     seed_peak(ledger, 100000.0)
     with (
+        patch.object(OrderExecutor, "reconcile_pending_orders", return_value={"AAPL"}),
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL"] if exit_kind == "signal" else []),
