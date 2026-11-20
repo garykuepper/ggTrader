@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from ggTrader.paper import catastrophe_stop, planning
+from ggTrader.paper import cash_sweep, catastrophe_stop, planning
 from ggTrader.paper.models import IntentKind, InvalidExit, Skip
 
 
@@ -384,9 +384,16 @@ def test_plan_sweep_sell_returns_none_when_cash_covers_the_buys():
 
 def test_plan_sweep_sell_sizes_qty_from_price_and_rounds_to_four_places():
     intent = planning.plan_sweep_sell(
-        **sweep_args(positions={"SPY": {"market_value": 1000, "current_price": 31}})
+        **sweep_args(positions={"SPY": {"market_value": 1000, "current_price": 7}})
     )
-    assert (intent.kind, intent.size, intent.book_amount) == (IntentKind.SWEEP_SELL, 19.3548, 600)
+    assert (
+        intent.kind,
+        intent.side,
+        intent.symbol,
+        intent.size,
+        intent.book_amount,
+        intent.reason,
+    ) == (IntentKind.SWEEP_SELL, "SELL", "SPY", 85.7143, 600, cash_sweep.SWEEP_TRADE_REASON)
 
 
 @pytest.mark.parametrize("price", [0, -1, float("inf")])
@@ -428,10 +435,10 @@ def test_plan_buys_follows_held_stopped_pending_slots_sleeve_cap_concentration_i
     )
     args["risk"].check_concentration.side_effect = lambda symbol, *a, **kw: symbol == "C"
     decisions = drain(planning.plan_buys(**args))
-    assert [d.message for d in decisions[:-1]] == [
-        "Skipping BUY S: catastrophe-stopped this run",
-        "Skipping BUY P: order already pending",
-        "Concentration limit for C, skipping",
+    assert decisions[:-1] == [
+        Skip(logging.INFO, "Skipping BUY S: catastrophe-stopped this run"),
+        Skip(logging.INFO, "Skipping BUY P: order already pending"),
+        Skip(logging.INFO, "Concentration limit for C, skipping"),
     ]
     assert decisions[-1].symbol == "B"
 
@@ -499,7 +506,10 @@ def test_a_symbol_bought_by_two_sleeves_is_planned_twice_as_today():
         slot_caps={"a": 1, "b": 1},
         open_by_sleeve={"a": 0, "b": 0},
     )
-    assert [d.symbol for d in drain(planning.plan_buys(**args))] == ["X", "X"]
+    first, second = drain(planning.plan_buys(**args))
+    assert [
+        (d.side, d.symbol, d.size, d.book_amount, d.sleeve, d.reason) for d in (first, second)
+    ] == [("BUY", "X", 1, 1, "a", None), ("BUY", "X", 2, 2, "b", None)]
 
 
 def test_a_buy_signal_for_the_sweep_symbol_is_an_ordinary_candidate():
@@ -515,14 +525,70 @@ def test_plan_buys_raises_key_error_for_a_sleeve_missing_from_the_open_counts_at
     assert not args["risk"].check_concentration.called
 
 
+@pytest.mark.parametrize("case", ["held", "stopped", "pending", "slots"])
+def test_missing_open_count_is_read_after_earlier_guards(case):
+    changes = {"open_by_sleeve": {}}
+    if case == "held":
+        changes["strategy_positions"] = {"X": {}}
+        changes["stopped"] = frozenset({"X"})
+        changes["pending_symbols"] = frozenset({"X"})
+        changes["slots_available"] = 0
+    elif case == "stopped":
+        changes["stopped"] = frozenset({"X"})
+        changes["pending_symbols"] = frozenset({"X"})
+        changes["slots_available"] = 0
+    elif case == "pending":
+        changes["pending_symbols"] = frozenset({"X"})
+        changes["slots_available"] = 0
+    else:
+        changes["slots_available"] = 0
+    decisions = drain(planning.plan_buys(**buy_args(**changes)))
+    expected = {
+        "held": [],
+        "stopped": [Skip(logging.INFO, "Skipping BUY X: catastrophe-stopped this run")],
+        "pending": [Skip(logging.INFO, "Skipping BUY X: order already pending")],
+        "slots": [Skip(logging.INFO, "Max positions reached (10), skipping X")],
+    }
+    assert decisions == expected[case]
+
+
+def test_global_slot_limit_breaks_each_sleeve_and_precedes_sleeve_cap():
+    args = buy_args(
+        buys_by_sleeve={"a": ["X", "Y", "Z"], "b": ["Q", "R"]},
+        notional_by_sleeve={"a": 1, "b": 1},
+        slot_caps={"a": 1, "b": 0},
+        open_by_sleeve={"a": 0, "b": 0},
+        slots_available=1,
+    )
+    first, second, third = drain(planning.plan_buys(**args))
+    assert first.symbol == "X"
+    assert second == Skip(logging.INFO, "Max positions reached (10), skipping Y")
+    assert third == Skip(logging.INFO, "Max positions reached (10), skipping Q")
+
+
+def test_first_buy_counts_toward_sleeve_cap_before_next_advance():
+    planner = planning.plan_buys(**buy_args(buys_by_sleeve={"a": ["X", "Y"]}, slot_caps={"a": 1}))
+    assert planner.advance().symbol == "X"
+    assert planner.advance() == Skip(logging.INFO, "Sleeve a slot cap reached, skipping Y")
+
+
 def test_plan_sweep_buy_matches_compute_sweep_buy_for_valid_settings():
     cfg = sweep_args()["cfg"]
     intent = planning.plan_sweep_buy(cfg=cfg, mid_account={"cash": 2000, "portfolio_value": 10000})
-    assert (intent.kind, intent.symbol, intent.size, intent.book_amount) == (
+    assert (
+        intent.kind,
+        intent.side,
+        intent.symbol,
+        intent.size,
+        intent.book_amount,
+        intent.reason,
+    ) == (
         IntentKind.SWEEP_BUY,
+        "BUY",
         "SPY",
         1500,
         1500,
+        cash_sweep.SWEEP_TRADE_REASON,
     )
 
 
