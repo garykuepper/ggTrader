@@ -424,9 +424,9 @@ def run_membership(args: argparse.Namespace) -> int:
         print("schema universe is up to date")
         return 0
     if args.membership_command == "check-upstream":
-        return run_check_upstream(args)
+        return run_check_upstream()
     if args.membership_command == "check-holdings":
-        return run_check_holdings(args)
+        return run_check_holdings()
     if args.membership_command == "weekly":
         return run_weekly_command(args)
     if args.membership_command == "proposal":
@@ -501,7 +501,7 @@ def _print_check(run: CheckRun) -> None:
         print(f"  NOT RECORDED: {run.record_error}", file=sys.stderr)
 
 
-def run_check_upstream(args: argparse.Namespace) -> int:
+def run_check_upstream() -> int:
     """Run ``ggt db membership check-upstream``; returns the process exit code."""
     store = PgCheckStore()
     try:
@@ -548,7 +548,7 @@ def _print_holdings(run: HoldingsRun) -> None:
         print(f"  NOT RECORDED: {run.record_error}", file=sys.stderr)
 
 
-def run_check_holdings(args: argparse.Namespace) -> int:
+def run_check_holdings() -> int:
     """Run ``ggt db membership check-holdings``; returns the process exit code."""
     store = PgHoldingsStore()
     try:
