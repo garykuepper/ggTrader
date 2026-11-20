@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from ggTrader.paper import cash_sweep, catastrophe_stop, planning
-from ggTrader.paper.models import IntentKind, InvalidExit, Skip
+from ggTrader.paper.models import IntentKind, InvalidExit, OrderIntent, Skip
 
 
 def drain(planner):
@@ -382,18 +382,14 @@ def test_plan_sweep_sell_returns_none_when_cash_covers_the_buys():
     assert planning.plan_sweep_sell(**sweep_args(account={"cash": 1000})) is None
 
 
-def test_plan_sweep_sell_sizes_qty_from_price_and_rounds_to_four_places():
+@pytest.mark.parametrize(("price", "quantity"), [(7, 85.7143), (13, 46.1538)])
+def test_plan_sweep_sell_sizes_qty_from_price_and_rounds_to_four_places(price, quantity):
     intent = planning.plan_sweep_sell(
-        **sweep_args(positions={"SPY": {"market_value": 1000, "current_price": 7}})
+        **sweep_args(positions={"SPY": {"market_value": 1000, "current_price": price}})
     )
-    assert (
-        intent.kind,
-        intent.side,
-        intent.symbol,
-        intent.size,
-        intent.book_amount,
-        intent.reason,
-    ) == (IntentKind.SWEEP_SELL, "SELL", "SPY", 85.7143, 600, cash_sweep.SWEEP_TRADE_REASON)
+    assert intent == OrderIntent(
+        IntentKind.SWEEP_SELL, "SELL", "SPY", quantity, cash_sweep.SWEEP_TRADE_REASON, 600
+    )
 
 
 @pytest.mark.parametrize("price", [0, -1, float("inf")])
@@ -506,10 +502,10 @@ def test_a_symbol_bought_by_two_sleeves_is_planned_twice_as_today():
         slot_caps={"a": 1, "b": 1},
         open_by_sleeve={"a": 0, "b": 0},
     )
-    first, second = drain(planning.plan_buys(**args))
-    assert [
-        (d.side, d.symbol, d.size, d.book_amount, d.sleeve, d.reason) for d in (first, second)
-    ] == [("BUY", "X", 1, 1, "a", None), ("BUY", "X", 2, 2, "b", None)]
+    assert drain(planning.plan_buys(**args)) == [
+        OrderIntent(IntentKind.BUY, "BUY", "X", 1, None, 1, sleeve="a"),
+        OrderIntent(IntentKind.BUY, "BUY", "X", 2, None, 2, sleeve="b"),
+    ]
 
 
 def test_a_buy_signal_for_the_sweep_symbol_is_an_ordinary_candidate():
@@ -572,23 +568,16 @@ def test_first_buy_counts_toward_sleeve_cap_before_next_advance():
     assert planner.advance() == Skip(logging.INFO, "Sleeve a slot cap reached, skipping Y")
 
 
+def test_missing_sleeve_cap_defaults_to_zero():
+    planner = planning.plan_buys(**buy_args(slot_caps={}))
+    assert planner.advance() == Skip(logging.INFO, "Sleeve a slot cap reached, skipping X")
+
+
 def test_plan_sweep_buy_matches_compute_sweep_buy_for_valid_settings():
     cfg = sweep_args()["cfg"]
     intent = planning.plan_sweep_buy(cfg=cfg, mid_account={"cash": 2000, "portfolio_value": 10000})
-    assert (
-        intent.kind,
-        intent.side,
-        intent.symbol,
-        intent.size,
-        intent.book_amount,
-        intent.reason,
-    ) == (
-        IntentKind.SWEEP_BUY,
-        "BUY",
-        "SPY",
-        1500,
-        1500,
-        cash_sweep.SWEEP_TRADE_REASON,
+    assert intent == OrderIntent(
+        IntentKind.SWEEP_BUY, "BUY", "SPY", 1500, cash_sweep.SWEEP_TRADE_REASON, 1500
     )
 
 
