@@ -406,7 +406,7 @@ split here; Phase 5 did that, building on these pieces (section 4b).
 | `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py` | `paper/persist.py` | permanent |
 | `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **retired in Phase 5** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
 | `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
-| `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live` | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
+| `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live`. The chain is wired: `lab.data.fetch_stock_ohlcv`, `paper/signal_runner.py` and `paper/overlay.py` all call it | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
 | `CachedYFinanceLoader.persist(df, interval)`: public writer that delegates to `_cache_to_db`, so callers stop reaching for the private method | `data/live/cached_yfinance_loader.py` | permanent |
 
 How the trader uses them. `PaperTrader.__init__(broker, notifier, risk_cfg=None, dry_run=True,
@@ -453,8 +453,23 @@ unchanged. All 21 final mutation forms failed at least one reach-qualified test;
 legacy differential was last exercised before its removal. Some shared submit-failure cases fail
 through the strict harness; a bounded submit-failure test also fails on its own assertion. Several
 reach probes cover a broader entry point than their mutation condition. Opus found no production-wiring
-blocker in a static cross-family review; Sol conditionally approved the behavioral-pin slice, with
-the gate record expanded afterwards. The logs do not independently embed their commit hash.
+blocker in a static cross-family review made before the default ledger changed to `PgPaperLedger`;
+the 2026-11-20 review repeated the wiring check at `f081228b`. Sol conditionally approved the
+behavioral-pin slice, with the gate record expanded afterwards. The P5 and P7 output JSON record
+`git_sha` `3475f405` and the phase F logs start with a HEAD line; only the pytest logs and the
+JUnit XML carry no commit.
+
+**Phase 3 to 5 reviews.** Phases 3, 4 and 5 had no recorded Sol or Opus code review before
+2026-11-20. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`; their files are
+in `/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`. None found a blocker. Sol's two
+Important findings are resolved as follows: a broker that returns a shared, later-mutated
+dictionary is now a documented port contract (`Broker` in `paper/ports.py`: `get_account` and
+`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen
+copies), and a direct `_submit_order` call on a read-only trader now fails closed with
+`RuntimeError("read-only trader must not submit orders")` before any intent, uuid, lock check or
+broker call. The minor findings that were parked are listed in the changelog under
+"Preserved, not fixed".
 
 The signal generator supplies mapping weights. Malformed weights (an empty sequence, a list of
 pairs, `None`) fail as they did before the split, with `AttributeError` at the slot-cap step (a run that
@@ -468,7 +483,7 @@ is a static production-import guard rather than a runtime refusal.
 ### 4b. The run as step objects (refactor phase 5)
 
 Phase 5 split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` is 22) that
-calls one step object at a time, in the order the old code ran. `trader.py` went from 1,600 to 357
+calls one step object at a time, in the order the old code ran. `trader.py` went from 1,584 (at `1c7a3138`) to 357
 lines. The design aim was to preserve orders, SQL, Telegram messages, rendered log messages, clock
 read positions and price rows; the verification above describes the scope and known limits.
 The order of the steps is behavior (the sweep sell is sized after the stop orders, buys wait for the
@@ -523,7 +538,8 @@ stays reachable by its old name and is looked up on the instance at call time:
   global when called, so the existing patches still work. New step modules import none of them.
 - `_risk`, `_dry_run` and `_paper_lock` are read when the run starts (the executor is chosen then),
   never at construction.
-- The clock reads: `today_et` is read once, at the freshness gate where it was read before; `now_pt` is
+- The clock reads: `today_et` is read once, at the freshness gate where it was read before, and
+  once more for each order intent, so a successful run with N submissions reads it N+1 times; `now_pt` is
   read at the late-run gate, after signal generation. `RunContext` therefore holds `today_et`, the
   settings and the pending symbols, not `now_pt` (a deviation from the design's wording).
 - The string-patch adapter is **not** kept: `ModuleLedger` is retired (4a).
@@ -534,11 +550,11 @@ stays reachable by its old name and is looked up on the instance at call time:
 |---|---|---|
 | A catastrophe-stopped symbol leaves the strategy positions at once and is neither sold twice nor re-bought | `OrderFlow` stage 1 (`FlowState.stopped`) | `test_rule1_...` |
 | Slot arithmetic counts the regular sells, not all sells | `FlowState.regular_sell_count`, owned by the flow | `test_rule2_...` |
-| A sell that does not fully fill blocks all buys | `OrderFlow` stage 2 settlement | `test_rule3_...` (terminal, and still working at the poll deadline) |
+| A regular sell that does not fully fill clears the strategy buys; a terminal canceled regular sell still lets a sweep buy follow, and a terminal failed funding-sweep sale is excluded from the full-exit check | `OrderFlow` stage 2 settlement | `test_rule3_...` (terminal, and still working at the poll deadline) |
 | An invalid exit quantity blocks buys and the sweep buy | `validate_exits`, `OrderFlow` | `test_rule4_...` (and the sweep sell is not blocked) |
 | Orders use the broker's uncorrected quantity; split-corrected positions are for reporting and concentration | `PortfolioView` keeps both | `test_rule5_...` |
 | A read-only run writes nothing and records what it skipped | `ReadOnlyLedger` over the run's ledger | `test_rule6_...` |
-| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
+| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally; a direct `_submit_order` on a read-only trader is refused (fails closed) since 2026-11-20 | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
 
 Beyond those, the same file characterizes late failures that leave earlier orders live and the exact
 exception types, and the hook call order of a live run.

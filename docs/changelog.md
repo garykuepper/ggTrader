@@ -5,7 +5,7 @@
 - Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls
   nine step objects in the old order: `PreflightGate`, `PortfolioView`, `RiskAssessor`, the pure
   planners in `paper/planning.py`, `OrderFlow`, `OrderExecutor`, `DryRunExecutor`, `CorporateActions`
-  and `RunReporter`. `trader.py` went from 1,600 to 357 lines. The refactor was designed to preserve
+  and `RunReporter`. `trader.py` went from 1,584 (at `1c7a3138`) to 357 lines. The refactor was designed to preserve
   orders, SQL, Telegram messages and clock timing. Log comparisons cover logger name, level and
   rendered message; raw record templates, arguments and source metadata can differ.
   `persist.py`, `risk.py`, `cash_sweep.py`, `catastrophe_stop.py`, `gates.py`, `notifier.py`,
@@ -41,8 +41,8 @@
   `if not dry_run`, so a dry run past 12:55 PT warns and continues; a malformed
   `SWEEP_CASH_RESERVE_PCT` ends the run after the peak write and the stop orders; the pending-order
   alert can say "pending" for an order reconciliation has since filled; an untradable holding is
-  announced as "broker tradable=false"; `_submit_order` called directly on a read-only trader with a
-  hand-injected lock can submit without a durable intent; the same symbol in two sleeves is bought
+  announced as "broker tradable=false"; a direct `_submit_order` on a read-only trader, once
+  preserved here, is refused (fails closed) since 2026-11-20; the same symbol in two sleeves is bought
   twice; the hard stops send `HALTED` outside any `try`; an invalid exit blocks strategy buys and the
   sweep buy but not a sweep sell; an exit submitted but not fully filled clears strategy buys only; a
   sell still working at the poll deadline ends the run in reconciliation; a sell's `market_value` is
@@ -55,10 +55,31 @@
 - Phase 5 verification at `3475f405`: the oracle and outcome comparisons passed; the full tier had
   4,967 passed, one skipped and five expected failures, and the study tier had 1,144 passed. All
   103 transcript goldens and the 600-seed digest map remain unchanged; 21 mutation forms were
-  detected by reach-qualified tests. Opus found no production-wiring blocker in a static review;
-  Sol conditionally approved the behavioral pins, and the gate evidence was expanded afterwards.
-  Driver logs do not embed the commit hash. The legacy differential was retired after Phase D;
+  detected by reach-qualified tests. Opus found no production-wiring blocker in a review before the
+  default ledger changed to `PgPaperLedger`; the 2026-11-20 review repeated the wiring check at
+  `f081228b`. Sol conditionally approved the behavioral pins, and the gate evidence was expanded
+  afterwards. The P5 and P7 output JSON record `git_sha` `3475f405` and the phase F logs start with
+  a HEAD line; only the pytest logs and JUnit XML carry no commit. The legacy differential was retired after Phase D;
   some mutation probes are broad, and some submit-failure checks detect a strict harness error.
+- Phase 3 to 5 reviews: phases 3, 4 and 5 had no recorded Sol or Opus code review before
+  2026-11-20. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+  and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`
+  (`/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`). None found a blocker. Sol's two
+  Important findings are resolved as: the shared-dict broker case is a documented port contract
+  (`paper/ports.py`), and a direct `_submit_order` on a read-only trader now fails closed
+  (`RuntimeError`, before any intent, uuid, lock check or broker call). The parked minors follow
+  in the next entry.
+- Preserved, not fixed (parked review findings, one line each): a literal `None` candidate in a
+  sleeve is skipped silently by the buy planner; the sweep-buy guard logs and continues if a
+  substituted sizing helper returns `None`; the WFO diagnostic stop price reads the scorer's copied
+  config; the sweep and untradable settings are read at construction, before `.env` is loaded, when
+  a non-Alpaca broker is used (`AlpacaBroker` and `TelegramNotifier` load `.env` first); a
+  non-mapping position value fails early with `TypeError` in `PortfolioView.load`; a guard returning
+  `(True, None)` is treated as no stop; the legacy module aliases `_MAX_SIGNAL_AGE_DAYS`,
+  `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS` and `TERMINAL_STATUSES` in `trader.py` are inert if
+  patched; the in-memory ledger fakes do not enforce `amount > 0`, NaN rejection or lock
+  contention; the 600 digests' `production_base` is `73c35417`, so they tie phase 5 to post-phase-4
+  code, and phase 4 is tied to `1c7a3138` by the 103 transcripts and unit tests only.
 - Non-mapping weights from a signal source (an empty sequence, a list of pairs, `None`) fail as they
   did before the split: `AttributeError` at the slot-cap step, with the same calls and orders (runs that
   stop earlier never read the weights);
@@ -112,7 +133,8 @@
 - Verification: full core and study tests, baseline outcome comparison, fixed hashes and research
   pins passed. P5 and P7 matched the baseline, including 13 equity CSVs. The disposable PostgreSQL
   test was skipped because its test DSN was not configured. `ggt paper` output did not change;
-  the trader stays stopped and cron stays off.
+  the trader stays stopped and cron stays off. The phase 4 hash, pin and outcome-compare checks
+  have no saved log in the evidence folder; they were run and reported in the hand-backs.
 ## 2026-11-19 (refactor phase 3: research engine helpers and fold records)
 
 - Structure only; no strategy, data source or result was intentionally changed. `engine.run_signals`
@@ -126,7 +148,10 @@
   diagnostics keys in order, scorer and gate seams) and helper unit tests for each new piece.
 - Verification: characterization pins, full test and study tiers, test-outcome comparison, research
   pin verification and Ruff passed. P5 and P7 matched the baseline, including all 13 equity CSVs.
-  A P5 attempt at 3G hit its cap; the owner approved the successful 6G oracle run.
+  A P5 attempt at 3G hit its cap; the owner approved the successful 6G oracle run. The phase 3 pin,
+  Ruff and outcome-compare checks have no saved log in the evidence folder; they were run and
+  reported in the hand-backs. The saved "owner approved 6G" file says "Phase 5" and postdates the
+  phase 3 runs.
 
 ## 2026-11-18 (refactor phases 0–2)
 
