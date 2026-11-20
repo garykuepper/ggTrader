@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 3: `run_wfo` raises instead of returning a string)
+
+- **Intended behavior change (decision D5).** `run_wfo` used to return the text
+  `"WFO: <strategy> | no valid folds (need >= 15 months)"` when the evaluation window yields no fold.
+  It now raises `WfoNotRun(RuntimeError)` (`ggTrader.lab.wfo.WfoNotRun`, defined in
+  `lab/wfo/run.py`) with exactly that text as `str(exc)`; the return annotation is `WfoResult`.
+  It was the only string-return branch. Nothing has been computed when it fires.
+- Callers keep their observable output: `ggt lab --wfo` (`run_vbt_wfo`) catches it, prints the
+  message and returns it as before (no JSON written, `lab/cli.py` unchanged); `--blend`
+  (`lab/blend.py`) catches it and exits with the same `blend sleeve '<label>': WFO produced no
+  valid folds (<message>)` text.
+- Frozen callers are not edited. The oracle driver `scripts/p5_wfo_validation.py` had
+  `isinstance(result, str)` then `RuntimeError(result)`; with the exception it fails with the
+  same text through the same per-run `except Exception` of its `main`. The branch is unreachable
+  on its windows (2 and 17 folds); if a short window were supplied programmatically it would record and print `WfoNotRun: ...` instead of `RuntimeError: ...` (same message, same handler). `research/.../p10-evidence/dsr_one_combo.py` never checked for
+  the string (it would have crashed on it) and now raises with the message. The legacy-scripts
+  callers cannot import today. No `research/` file changed.
+- Tests: `test_run_wfo_raises_wfo_not_run_with_the_old_message` replaces
+  `test_no_valid_folds_returns_the_legacy_string`; `tests/lab/test_blend.py` now fakes a raising
+  `run_wfo`; two new `tests/lab/test_cli.py` cases cover `run_vbt_wfo` and `ggt lab --wfo`. The
+  characterization scenario `toy_no_valid_folds` records the exception's message in the old
+  shape, so `characterization/run_wfo.json` is byte-identical.
+
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
 - `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for

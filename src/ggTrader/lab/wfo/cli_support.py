@@ -18,7 +18,7 @@ from ggTrader.lab.data import equity_universe_between
 from ggTrader.lab.strategy import LabConfig
 from ggTrader.lab.wfo import inputs
 from ggTrader.lab.wfo.report import WfoResult, result_payload
-from ggTrader.lab.wfo.run import run_wfo
+from ggTrader.lab.wfo.run import WfoNotRun, run_wfo
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_RESULTS_DIR = REPO_ROOT / "results" / "lab"
@@ -115,22 +115,25 @@ def run_vbt_wfo(
     sleeve, mask = sleeve_inputs(bars, universe, cfg, eval_start, eval_end, membership=membership)
     grid = cls.grid.override(overrides) if overrides else cls.grid
     print(f"  [universe] {universe}: {len(sleeve.symbols)} symbols (engine vbt)", flush=True)
-    result = run_wfo(
-        strategy,
-        cls,
-        cfg,
-        sleeve,
-        spy_close,
-        eval_start=str(eval_start.date()),
-        eval_end=str(eval_end.date()),
-        market=market,
-        base_config=dict(base_config),
-        grid=grid,
-        mask=mask,
-    )
-    if isinstance(result, str):
-        print(result)
-        return result
+    try:
+        result = run_wfo(
+            strategy,
+            cls,
+            cfg,
+            sleeve,
+            spy_close,
+            eval_start=str(eval_start.date()),
+            eval_end=str(eval_end.date()),
+            market=market,
+            base_config=dict(base_config),
+            grid=grid,
+            mask=mask,
+        )
+    except WfoNotRun as exc:
+        # `ggt lab --wfo` prints and returns the message for a window with no fold, as it
+        # did when run_wfo returned it; nothing is written.
+        print(exc)
+        return str(exc)
     write_wfo_json(
         result,
         bars,

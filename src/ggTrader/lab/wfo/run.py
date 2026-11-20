@@ -51,6 +51,14 @@ from ggTrader.lab.wfo.scorers import (
 from ggTrader.lab.wfo.select import best_index, composite_score, pick_live_winner
 from ggTrader.utils.json_safe import canonical_hash
 
+
+class WfoNotRun(RuntimeError):
+    """The walk-forward could not start: the evaluation window yields no fold.
+
+    ``str(exc)`` is the text ``run_wfo`` used to return (the legacy "no valid folds" string).
+    """
+
+
 #: Config keys of ``LabConfig`` a strategy may take as defaults (the legacy merged config).
 CFG_DEFAULT_KEYS = ("top_n", "lookback", "skip")
 
@@ -490,7 +498,7 @@ def run_wfo(
     order_sequence: str | None = None,
     stop_exit_price: str | None = None,
     verbose: bool = True,
-) -> WfoResult | str:
+) -> WfoResult:
     """Main WFO entry point: fold, train, test, concatenate, report.
 
     Args:
@@ -527,14 +535,18 @@ def run_wfo(
         verbose: print the per-fold progress and the table, as the legacy run did.
 
     Returns:
-        A :class:`WfoResult`, or the legacy "no valid folds" string.
+        A :class:`WfoResult`.
+
+    Raises:
+        WfoNotRun: the window yields no fold (under ``TRAIN_MONTHS + TEST_MONTHS`` months); the
+            message is the legacy "no valid folds" text. Nothing has been computed by then.
     """
     started = time.time()
     eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
     folds = generate_folds(eval_start_ts, eval_end_ts)
     if not folds:
-        return (
+        raise WfoNotRun(
             f"WFO: {strategy_name} | no valid folds (need >= {TRAIN_MONTHS + TEST_MONTHS} months)"
         )
 
@@ -668,4 +680,4 @@ def _select_live_params(
     }
 
 
-__all__ = ["Fold", "WfoPolicy", "WfoResult", "run_wfo"]
+__all__ = ["Fold", "WfoNotRun", "WfoPolicy", "WfoResult", "run_wfo"]

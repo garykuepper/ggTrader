@@ -19,7 +19,7 @@ from ggTrader.lab.wfo.breaker import (
 from ggTrader.lab.wfo.folds import TEST_MONTHS, TRAIN_MONTHS, Fold, generate_folds
 from ggTrader.lab.wfo.inputs import combo_name
 from ggTrader.lab.wfo.report import WfoResult, format_wfo_table, result_payload
-from ggTrader.lab.wfo.run import run_wfo
+from ggTrader.lab.wfo.run import WfoNotRun, run_wfo
 from ggTrader.lab.wfo.select import composite_score
 
 __all__ = [
@@ -27,6 +27,7 @@ __all__ = [
     "Fold",
     "TEST_MONTHS",
     "TRAIN_MONTHS",
+    "WfoNotRun",
     "WfoPolicy",
     "WfoResult",
     "WfoState",

@@ -211,23 +211,29 @@ def test_table_and_diagnostics(toy) -> None:
     assert d["definitions"] == "vbt" and d["engine"] == "rust"
 
 
-def test_no_valid_folds_returns_the_legacy_string() -> None:
+def test_run_wfo_raises_wfo_not_run_with_the_old_message() -> None:
+    """A window under 15 months has no fold: WfoNotRun carries the text run_wfo used to return."""
+    import ggTrader.lab.wfo as wfo_pkg
+    from ggTrader.lab.wfo.run import WfoNotRun
+
+    assert wfo_pkg.WfoNotRun is WfoNotRun and issubclass(WfoNotRun, RuntimeError)
     bars = h.toy_bars()
-    out = run_wfo(
-        "toy",
-        h.ToyHold,
-        LabConfig(),
-        bars,
-        bars.close["X"],
-        "2021-01-01",
-        "2021-06-01",
-        "t",
-        dict(h.TOY_CONFIG),
-        h.ToyHold.grid,
-        verbose=False,
-        allow_unmasked=True,
-    )
-    assert isinstance(out, str) and "no valid folds" in out
+    with pytest.raises(WfoNotRun) as caught:
+        run_wfo(
+            "toy",
+            h.ToyHold,
+            LabConfig(),
+            bars,
+            bars.close["X"],
+            "2021-01-01",
+            "2021-06-01",
+            "t",
+            dict(h.TOY_CONFIG),
+            h.ToyHold.grid,
+            verbose=False,
+            allow_unmasked=True,
+        )
+    assert str(caught.value) == "WFO: toy | no valid folds (need >= 15 months)"
 
 
 def test_list_grids_and_legacy_frames_are_accepted() -> None:

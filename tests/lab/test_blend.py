@@ -124,16 +124,26 @@ def test_run_blend_orchestrates_and_persists(monkeypatch):
 
 
 def test_run_blend_raises_on_wfo_no_folds(monkeypatch):
-    """run_wfo returning a bare str (the no-folds path) must raise SystemExit."""
+    """run_wfo raising WfoNotRun (the no-folds path) exits with the message the str path gave."""
+    from ggTrader.lab.wfo import WfoNotRun
+
     idx = _idx(400)
     spy = _equity_from_returns(
         pd.Series(np.random.default_rng(3).normal(0.0003, 0.01, 400), index=idx)
     )
     _patch_inputs(monkeypatch, idx, spy)
     _patch_persist(monkeypatch)
-    monkeypatch.setattr(wfo_pkg, "run_wfo", lambda *a, **k: "no valid folds")
-    with pytest.raises(SystemExit, match="no valid folds"):
+    text = "WFO: ensemble | no valid folds (need >= 15 months)"
+
+    def _no_folds(*a, **k):
+        raise WfoNotRun(text)
+
+    monkeypatch.setattr(wfo_pkg, "run_wfo", _no_folds)
+    with pytest.raises(SystemExit) as caught:
         _run([("ensemble", "sp500")])
+    assert (
+        str(caught.value) == f"blend sleeve 'ensemble@sp500': WFO produced no valid folds ({text})"
+    )
 
 
 def test_run_blend_gives_each_sleeve_its_own_universe_and_mask(monkeypatch):
