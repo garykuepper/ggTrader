@@ -156,7 +156,14 @@ STEP_OWNERS: dict[str, type] = {
     "OrderExecutor": OrderExecutor,
     "CorporateActions": CorporateActions,
 }
-PRIVATE_SEAMS = (
+#: The eight private `PaperTrader` methods that tests used to assign or patch by name. They are
+#: gone; the step objects above own the bodies.
+RETIRED_SEAMS = (
+    "_submit_order",
+    "_reconcile_order_intents",
+    "_flag_if_stale",
+    "_reconcile_pending_orders",
+    "_poll_orders",
     "_missed_exits",
     "_compute_split_corrections",
     "_accrue_dividends",
@@ -711,11 +718,11 @@ def test_the_patch_target_scanner_finds_each_form():
 
 
 def test_required_trader_names_stay_bound():
-    """The names the plan lists as patchable are still bound, and the private seams are methods."""
+    """The names the plan lists as patchable are still bound; the eight private seams are gone."""
     missing = [name for name in REQUIRED_TRADER_NAMES if not hasattr(trader_module, name)]
     assert not missing, missing
-    for name in PRIVATE_SEAMS:
-        assert callable(getattr(PaperTrader, name, None)), name
+    for name in RETIRED_SEAMS:
+        assert not hasattr(PaperTrader, name), name
 
 
 def test_trader_persist_names_unchanged():
@@ -750,65 +757,42 @@ class TestLegacySeamsInterceptTheRun:
     """
 
     SEAMS = (
-        pytest.param(
-            "OrderExecutor.submit_order", "step", "plain_buys_and_sells", id="submit_order"
-        ),
-        pytest.param(
-            "OrderExecutor.reconcile_order_intents", "step", "plain_buys_and_sells", id="intents"
-        ),
+        pytest.param("OrderExecutor.submit_order", "plain_buys_and_sells", id="submit_order"),
+        pytest.param("OrderExecutor.reconcile_order_intents", "plain_buys_and_sells", id="intents"),
         pytest.param(
             "OrderExecutor.reconcile_pending_orders",
-            "step",
             "plain_buys_and_sells",
             id="pending_orders",
         ),
-        pytest.param("OrderExecutor.poll_orders", "step", "plain_buys_and_sells", id="poll_orders"),
+        pytest.param("OrderExecutor.poll_orders", "plain_buys_and_sells", id="poll_orders"),
+        pytest.param("OrderExecutor.flag_if_stale", "legacy_pending_stale", id="flag_if_stale"),
+        pytest.param("CorporateActions.missed_exits", "missed_exit_catch_up", id="missed_exits"),
         pytest.param(
-            "OrderExecutor.flag_if_stale", "step", "legacy_pending_stale", id="flag_if_stale"
+            "CorporateActions.split_corrections", "split_correction", id="split_corrections"
         ),
-        pytest.param("_missed_exits", "instance", "missed_exit_catch_up", id="missed_exits"),
-        pytest.param(
-            "_compute_split_corrections", "instance", "split_correction", id="split_corrections"
-        ),
-        pytest.param("_accrue_dividends", "instance", "new_dividend_accrual", id="dividends"),
+        pytest.param("CorporateActions.accrue_dividends", "new_dividend_accrual", id="dividends"),
     )
 
-    @pytest.mark.parametrize(("method", "how", "scenario_name"), SEAMS)
-    def test_private_method_seam(self, impl_name, method, how, scenario_name):
+    @pytest.mark.parametrize(("method", "scenario_name"), SEAMS)
+    def test_private_method_seam(self, impl_name, method, scenario_name):
+        """Replacing a step method on its class (`Owner.method`) intercepts the run."""
         scenario = SCENARIOS[scenario_name]
         baseline = drive(impl_name, scenario)
         calls: list[tuple] = []
 
-        def configure(trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
-            if how == "step":
-                owner_name, _, attr = method.partition(".")
-                owner = STEP_OWNERS[owner_name]
-                step_function = getattr(owner, attr)
+        def configure(_trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
+            owner_name, _, attr = method.partition(".")
+            owner = STEP_OWNERS[owner_name]
+            step_function = getattr(owner, attr)
 
-                def step_spy(self: Any, *args: Any, **kwargs: Any) -> Any:
-                    calls.append((args, kwargs))
-                    return step_function(self, *args, **kwargs)
+            def step_spy(self: Any, *args: Any, **kwargs: Any) -> Any:
+                calls.append((args, kwargs))
+                return step_function(self, *args, **kwargs)
 
-                stack.enter_context(patch.object(owner, attr, step_spy))
-            elif how == "instance":
-                real = getattr(trader, method)
-
-                def spy(*args: Any, **kwargs: Any) -> Any:
-                    calls.append((args, kwargs))
-                    return real(*args, **kwargs)
-
-                setattr(trader, method, spy)
-            else:
-                real_function = getattr(PaperTrader, method)
-
-                def class_spy(self: PaperTrader, *args: Any, **kwargs: Any) -> Any:
-                    calls.append((args, kwargs))
-                    return real_function(self, *args, **kwargs)
-
-                stack.enter_context(patch.object(PaperTrader, method, class_spy))
+            stack.enter_context(patch.object(owner, attr, step_spy))
 
         intercepted = drive(impl_name, scenario, configure)
-        assert calls, f"{method} ({how}) was never reached through the seam"
+        assert calls, f"{method} was never reached through the step object"
         assert _same_run(baseline, intercepted)
 
     def test_submit_order_seam_sees_every_order_and_replaces_the_broker_call(self, impl_name):

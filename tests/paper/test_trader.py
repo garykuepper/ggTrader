@@ -13,6 +13,7 @@ from ggTrader.paper.gates import SignalGateError
 from ggTrader.paper.ledger import InMemoryLedger
 from tests.paper.support import (
     SpyLedger,
+    corporate_actions_of,
     forward_to_broker,
     make_trader,
     persist_guard,
@@ -979,7 +980,7 @@ class TestDailyPnl:
         positions = {"MNST": {"qty": 20.8041, "cost_basis": 1887.11, "market_value": 986.67}}
 
         InMemoryLedger.save_split_correction(ledger, "MNST", "2026-08-11", 2.0)
-        result = trader._compute_split_corrections(
+        result = corporate_actions_of(trader).split_corrections(
             positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
         )
 
@@ -1006,7 +1007,7 @@ class TestDailyPnl:
                 ("2026-06-03", 99000.0, 0.0, {"MNST": {"qty": mnst_qty}}),
             ],
         )
-        result = trader._compute_split_corrections(
+        result = corporate_actions_of(trader).split_corrections(
             positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
         )
         assert ledger.calls("clear_split_correction") == [("clear_split_correction", ("MNST",), {})]
@@ -1028,7 +1029,7 @@ class TestDailyPnl:
         with patch(
             "ggTrader.paper.trader.find_split_applied_symbols", return_value=({"MNST"}, set())
         ) as mock_find:
-            result = trader._compute_split_corrections(
+            result = corporate_actions_of(trader).split_corrections(
                 positions, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
             )
         assert mock_find.called
@@ -1044,7 +1045,7 @@ class TestDailyPnl:
         broker.get_split_evidence.return_value = {"corp_splits": {}, "activity_applied": set()}
 
         InMemoryLedger.save_split_correction(ledger, "MNST", "2026-08-11", 2.0)
-        result = trader._compute_split_corrections(
+        result = corporate_actions_of(trader).split_corrections(
             {}, date(2026, 9, 8) - timedelta(days=14), date(2026, 9, 8)
         )
         assert ledger.calls("clear_split_correction") == [("clear_split_correction", ("MNST",), {})]
@@ -1138,7 +1139,7 @@ class TestDividendAccrual:
         broker.get_dividend_corrections.side_effect = Exception("API down")
 
         # Must not raise -- the broker call itself failing soft is the
-        # broker's job, but _accrue_dividends must also tolerate the
+        # broker's job, but accrue_dividends must also tolerate the
         # underlying persistence calls failing.
         with patch.object(ledger, "get_snapshot_history", side_effect=Exception("DB down")):
             result = trader.run()
@@ -3894,7 +3895,7 @@ class TestUnappliedSplitAndDailyLoss:
         seed_peak(ledger, 100000.0)
         with (
             patch(
-                "ggTrader.paper.trader.PaperTrader._compute_split_corrections",
+                "ggTrader.paper.corporate_actions.CorporateActions.split_corrections",
                 return_value=corrections,
             ),
             # A buy signal makes "no buy submitted" a real assertion, not an empty one.

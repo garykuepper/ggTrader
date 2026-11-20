@@ -54,6 +54,13 @@ def stub_submit_order(trader: "PaperTrader", stub: MagicMock) -> MagicMock:
     return stub
 
 
+def corporate_actions_of(trader: "PaperTrader") -> Any:
+    """The `CorporateActions` step a run of `trader` would build (same broker, ledger, hooks)."""
+    from ggTrader.paper.corporate_actions import CorporateActions
+
+    return CorporateActions(broker=trader._broker, ledger=trader._ledger, hooks=trader._hooks())
+
+
 def restore_submit_order(trader: "PaperTrader") -> None:
     """Undo `stub_submit_order`: the trader's executors submit through the real method again."""
     trader.__dict__.pop(_REAL_BUILDER, None)

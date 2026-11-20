@@ -21,12 +21,3 @@ class RunHooks:
     membership_source: Callable[[str | None], object]
     refresh_tape: Callable[[], list[str]]
     find_split_applied: Callable[[dict, list, dict, date], tuple[set[str], set[str]]]
-
-
-@dataclass(frozen=True)
-class TraderSeams:
-    """Private trader methods resolved on their instance when called."""
-
-    missed_exits: Callable[[dict, dict[str, str], set[str]], list[str]]
-    split_corrections: Callable[[dict, date, date], dict[str, float]]
-    accrue_dividends: Callable[[dict], dict]

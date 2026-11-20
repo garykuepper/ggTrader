@@ -8,6 +8,7 @@ import pytest
 
 from ggTrader.paper.corporate_actions import CorporateActions, missed_exits
 from ggTrader.paper.trader import PaperTrader
+from tests.paper.support import corporate_actions_of
 
 
 @pytest.fixture
@@ -120,7 +121,10 @@ def test_split_check_reaches_the_patched_trader_name(collaborators):
         "ggTrader.paper.trader.find_split_applied_symbols", return_value=({"A"}, set())
     ) as find:
         assert (
-            trader._compute_split_corrections({"A": {}}, date(2025, 1, 1), date(2026, 2, 1)) == {}
+            corporate_actions_of(trader).split_corrections(
+                {"A": {}}, date(2025, 1, 1), date(2026, 2, 1)
+            )
+            == {}
         )
     find.assert_called_once()
 

@@ -1,5 +1,6 @@
 """Tests for order execution boundaries."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -78,7 +79,8 @@ def make_executor(cls=OrderExecutor, *, read_only=False, stub=()):
     """
     from datetime import date, datetime, timezone
 
-    broker, notifier, ledger, hooks, seams, lock = (MagicMock() for _ in range(6))
+    broker, notifier, ledger, hooks, lock = (MagicMock() for _ in range(5))
+    stubs = SimpleNamespace()
     hooks.today_et.return_value = date(2026, 1, 2)
     hooks.utcnow.return_value = datetime(2026, 1, 10, tzinfo=timezone.utc)
     hooks.new_uuid.return_value = "client-1"
@@ -89,13 +91,12 @@ def make_executor(cls=OrderExecutor, *, read_only=False, stub=()):
         hooks=hooks,
         lock=lambda: lock,
         read_only=read_only,
-        seams=seams,
     )
     for name in stub:
         mock = MagicMock(name=name)
         setattr(executor, name, mock)
-        setattr(seams, name, mock)
-    return executor, broker, notifier, ledger, hooks, seams, lock
+        setattr(stubs, name, mock)
+    return executor, broker, notifier, ledger, hooks, stubs, lock
 
 
 @pytest.mark.parametrize("stage", ["intent", "lock", "submit", "attach"])

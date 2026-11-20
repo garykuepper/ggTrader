@@ -19,7 +19,7 @@ from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import SPLIT_LOOKBACK_DAYS as _SPLIT_LOOKBACK_DAYS  # noqa: F401 - compatibility alias
 from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS  # noqa: F401 - compatibility alias
 from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - compatibility alias
-from ggTrader.paper.corporate_actions import CorporateActions, missed_exits
+from ggTrader.paper.corporate_actions import CorporateActions
 from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
 from ggTrader.paper.ledger import PaperLedger, ReadOnlyLedger
 from ggTrader.paper.models import RunContext, RunResult
@@ -34,7 +34,7 @@ from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
 from ggTrader.paper.risk_assessor import RiskAssessor
 from ggTrader.paper.run_helpers import account_read_halt as _account_read_halt
 from ggTrader.paper.run_helpers import as_date as _as_date  # noqa: F401 - compatibility alias
-from ggTrader.paper.seams import RunHooks, TraderSeams
+from ggTrader.paper.seams import RunHooks
 from ggTrader.paper.signal_runner import (
     generate_core_signals,
     live_membership_source,
@@ -157,14 +157,6 @@ class PaperTrader:
             find_split_applied=lambda *args: find_split_applied_symbols(*args),
         )
 
-    def _seams(self) -> TraderSeams:
-        """Resolve private methods on this instance at call time."""
-        return TraderSeams(
-            missed_exits=lambda *args: self._missed_exits(*args),
-            split_corrections=lambda *args: self._compute_split_corrections(*args),
-            accrue_dividends=lambda positions: self._accrue_dividends(positions),
-        )
-
     def _executor_for_call(self) -> OrderExecutor:
         """Build an executor from current collaborators."""
         cls = DryRunExecutor if self._dry_run else OrderExecutor
@@ -175,28 +167,7 @@ class PaperTrader:
             hooks=self._hooks(),
             lock=lambda: self._paper_lock,
             read_only=self._read_only,
-            seams=self._seams(),
         )
-
-    def _missed_exits(
-        self, positions: dict, last_exit: dict[str, str], already: set[str]
-    ) -> list[str]:
-        """Find held symbols with unacted-on exit signals."""
-        return missed_exits(self._ledger, positions, last_exit, already)
-
-    def _compute_split_corrections(
-        self, positions: dict[str, dict], split_since: date, today: date
-    ) -> dict[str, float]:
-        """Determine unapplied split corrections."""
-        return CorporateActions(
-            broker=self._broker, ledger=self._ledger, hooks=self._hooks()
-        ).split_corrections(positions, split_since, today)
-
-    def _accrue_dividends(self, positions: dict[str, dict]) -> dict:
-        """Accrue uncredited dividends."""
-        return CorporateActions(
-            broker=self._broker, ledger=self._ledger, hooks=self._hooks()
-        ).accrue_dividends(positions)
 
     def run(self) -> dict:
         """Hold the live lock; returned buy/sell lists are submitted or dry-run plans."""
@@ -241,7 +212,10 @@ class PaperTrader:
             return pre.result.as_dict()
         ctx = RunContext(pre.today_et, cfg, frozenset(pending_symbols))
         view = PortfolioView.load(
-            broker=self._broker, notifier=self._notifier, seams=self._seams(),
+            broker=self._broker, notifier=self._notifier,
+            corporate_actions=CorporateActions(
+                broker=self._broker, ledger=self._ledger, hooks=self._hooks()
+            ),
             ctx=ctx, signals=pre.signals,
         )  # fmt: skip
         verdict = RiskAssessor(

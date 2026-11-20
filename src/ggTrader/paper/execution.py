@@ -15,7 +15,7 @@ from ggTrader.paper.constants import TERMINAL_STATUSES, TRADER_LOGGER_NAME
 from ggTrader.paper.ledger import PaperLedger, RunLock
 from ggTrader.paper.models import IntentKind, OrderIntent, OrderStatus, Position, SubmittedOrder
 from ggTrader.paper.ports import Broker, Notifier
-from ggTrader.paper.seams import RunHooks, TraderSeams
+from ggTrader.paper.seams import RunHooks
 
 _log = logging.getLogger(TRADER_LOGGER_NAME)
 
@@ -53,7 +53,6 @@ class OrderExecutor:
         hooks: RunHooks,
         lock: Callable[[], RunLock | None],
         read_only: bool,
-        seams: TraderSeams,
     ) -> None:
         self._broker = broker
         self._notifier = notifier
@@ -61,7 +60,6 @@ class OrderExecutor:
         self._hooks = hooks
         self._lock = lock
         self._read_only = read_only
-        self._seams = seams
 
     def recover_intents(self) -> None:
         self.reconcile_order_intents()

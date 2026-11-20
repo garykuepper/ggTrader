@@ -59,20 +59,3 @@ def test_default_hooks_read_nothing_at_construction(monkeypatch):
     monkeypatch.setattr(trader, "datetime", MagicMock(now=replacement))
     monkeypatch.setattr(trader, "time", MagicMock(time=replacement, sleep=replacement))
     trader.PaperTrader.__new__(trader.PaperTrader)._hooks()
-
-
-@pytest.mark.parametrize(
-    ("field", "target", "args"),
-    [
-        ("missed_exits", "_missed_exits", ({}, {}, set())),
-        ("split_corrections", "_compute_split_corrections", ({}, None, None)),
-        ("accrue_dividends", "_accrue_dividends", ({},)),
-    ],
-)
-def test_other_seams_resolve_instance_attributes_at_call_time(field, target, args):
-    instance = trader.PaperTrader.__new__(trader.PaperTrader)
-    seams = instance._seams()
-    replacement = MagicMock(return_value="patched")
-    setattr(instance, target, replacement)
-    assert getattr(seams, field)(*args) == "patched"
-    replacement.assert_called_once_with(*args)

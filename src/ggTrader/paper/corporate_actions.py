@@ -22,6 +22,12 @@ class CorporateActions:
         self._ledger = ledger
         self._hooks = hooks
 
+    def missed_exits(
+        self, positions: dict, last_exit: dict[str, str], already: set[str]
+    ) -> list[str]:
+        """Held symbols with an exit signal the run never acted on (see `missed_exits`)."""
+        return missed_exits(self._ledger, positions, last_exit, already)
+
     def split_corrections(
         self, positions: dict[str, dict], split_since: date, today: date
     ) -> dict[str, float]:

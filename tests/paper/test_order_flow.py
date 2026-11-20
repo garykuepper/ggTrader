@@ -635,10 +635,10 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, dry=True, buys=())
-    executor, _, notifier, _, _, seams, _ = make_executor(
+    executor, _, notifier, _, _, stubs, _ = make_executor(
         DryRunExecutor, stub=("reconcile_order_intents", "poll_orders", "submit_order")
     )
-    seams.poll_orders.return_value = {}
+    stubs.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = True
     flow.risk.max_new_positions.return_value = 1
@@ -651,9 +651,9 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
     flow.run_stage_three(view, state)
     notifier.send.assert_called_once_with("<b>🔍 DRY RUN sweep buy:</b> SGOV ($100)")
     assert state.book.orders == [] and state.book.buys == []
-    seams.submit_order.assert_not_called()
-    seams.reconcile_order_intents.assert_not_called()
-    seams.poll_orders.assert_called_once_with([])
+    stubs.submit_order.assert_not_called()
+    stubs.reconcile_order_intents.assert_not_called()
+    stubs.poll_orders.assert_called_once_with([])
 
 
 @pytest.mark.parametrize("dry", [False, True])
@@ -664,11 +664,11 @@ def test_buy_and_sweep_announcements_use_executor_mode(monkeypatch, dry):
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, dry=dry)
-    executor, _, notifier, _, _, seams, _ = make_executor(
+    executor, _, notifier, _, _, stubs, _ = make_executor(
         DryRunExecutor if dry else OrderExecutor, stub=("poll_orders", "submit_order")
     )
-    seams.submit_order.side_effect = ["buy-id", "sweep-id"]
-    seams.poll_orders.return_value = {}
+    stubs.submit_order.side_effect = ["buy-id", "sweep-id"]
+    stubs.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = True
     flow.risk.max_new_positions.return_value = 1
@@ -691,7 +691,7 @@ def test_submit_failure_after_saving_intent_stops_later_buys():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
-    executor, broker, _, ledger, _, seams, _ = make_executor(stub=("poll_orders",))
+    executor, broker, _, ledger, _, stubs, _ = make_executor(stub=("poll_orders",))
 
     def fail_submit(*_args):
         ledger.create_order_intent.assert_called_once()
@@ -711,18 +711,18 @@ def test_submit_failure_after_saving_intent_stops_later_buys():
     broker.submit_buy.assert_called_once()
     ledger.attach_broker_order.assert_not_called()
     assert state.book.buys == []
-    seams.poll_orders.assert_not_called()
+    stubs.poll_orders.assert_not_called()
 
 
 def test_rejected_buy_reaches_normal_settlement():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({})
-    executor, _, _, _, _, seams, _ = make_executor(
+    executor, _, _, _, _, stubs, _ = make_executor(
         stub=("reconcile_order_intents", "poll_orders", "submit_order")
     )
-    seams.submit_order.return_value = "buy-id"
-    seams.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
+    stubs.submit_order.return_value = "buy-id"
+    stubs.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
     flow.executor = executor
     view.sweep_on = False
     flow.risk.max_new_positions.return_value = 1
@@ -730,7 +730,7 @@ def test_rejected_buy_reaches_normal_settlement():
     state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
     flow.run_stage_three(view, state)
     assert state.book.filled["buy-id"]["status"] == "rejected"
-    seams.reconcile_order_intents.assert_called_once_with()
+    stubs.reconcile_order_intents.assert_called_once_with()
 
 
 @pytest.mark.parametrize("has_sell", [False, True])
@@ -739,8 +739,8 @@ def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, buys=())
-    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents", "poll_orders"))
-    seams.poll_orders.return_value = {}
+    executor, _, _, _, _, stubs, _ = make_executor(stub=("reconcile_order_intents", "poll_orders"))
+    stubs.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = False
     flow.risk.max_new_positions.return_value = 1
@@ -748,4 +748,4 @@ def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell
     if has_sell:
         state.book.orders.append(SubmittedOrder("sell-id", "SELL", "OLD", 10, None))
     flow.run_stage_three(view, state)
-    assert seams.reconcile_order_intents.call_count == int(has_sell)
+    assert stubs.reconcile_order_intents.call_count == int(has_sell)

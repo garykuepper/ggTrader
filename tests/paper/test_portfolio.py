@@ -27,7 +27,7 @@ def portfolio(monkeypatch):
     broker.get_untradable.side_effect = lambda symbols: events.append("untradable") or ["BLOCKED"]
     notifier = Mock()
     notifier.send.side_effect = lambda message: events.append(message)
-    seams = SimpleNamespace(
+    corporate_actions = SimpleNamespace(
         split_corrections=Mock(side_effect=lambda *args: events.append("splits") or {"HELD": 2}),
         missed_exits=Mock(side_effect=lambda *args: events.append("missed") or ["Z", "A"]),
         accrue_dividends=Mock(side_effect=lambda *args: events.append("dividends") or {"total": 1}),
@@ -50,10 +50,14 @@ def portfolio(monkeypatch):
 
     def load():
         return PortfolioView.load(
-            broker=broker, notifier=notifier, seams=seams, ctx=ctx, signals=signals
+            broker=broker,
+            notifier=notifier,
+            corporate_actions=corporate_actions,
+            ctx=ctx,
+            signals=signals,
         )
 
-    return events, broker, notifier, seams, positions, ctx, load
+    return events, broker, notifier, corporate_actions, positions, ctx, load
 
 
 def test_load_reads_in_todays_order(portfolio):
@@ -78,7 +82,7 @@ def test_account_failure_halts_with_the_old_notice(portfolio, caplog):
 
 
 def test_position_failure_halts_even_if_the_notice_fails(portfolio, caplog):
-    _, broker, notifier, seams, _, _, load = portfolio
+    _, broker, notifier, corporate_actions, _, _, load = portfolio
     broker.get_positions.side_effect = ValueError("positions")
     notifier.send.side_effect = RuntimeError("notice")
     with pytest.raises(ValueError, match="positions"):
@@ -86,9 +90,9 @@ def test_position_failure_halts_even_if_the_notice_fails(portfolio, caplog):
     assert "Position read failed (ValueError); stopping before orders" in caplog.text
     assert "Could not send position read failure notice" in caplog.text
     broker.get_untradable.assert_not_called()
-    seams.split_corrections.assert_not_called()
-    seams.missed_exits.assert_not_called()
-    seams.accrue_dividends.assert_not_called()
+    corporate_actions.split_corrections.assert_not_called()
+    corporate_actions.missed_exits.assert_not_called()
+    corporate_actions.accrue_dividends.assert_not_called()
 
 
 def test_sweep_position_is_invisible_to_strategy_positions(portfolio):
@@ -117,29 +121,29 @@ def test_orders_use_uncorrected_positions_and_reports_use_corrected(portfolio):
 
 
 def test_portfolio_routes_raw_and_filtered_positions_to_their_collaborators(portfolio):
-    _, broker, _, seams, positions, _, load = portfolio
+    _, broker, _, corporate_actions, positions, _, load = portfolio
     view = load()
     broker.get_untradable.assert_called_once_with(["BLOCKED", "BUY", "HELD"])
-    seams.split_corrections.assert_called_once_with(
+    corporate_actions.split_corrections.assert_called_once_with(
         positions, date(2026, 11, 5), date(2026, 11, 19)
     )
-    seams.accrue_dividends.assert_called_once_with(positions)
-    seams.missed_exits.assert_called_once_with(
+    corporate_actions.accrue_dividends.assert_called_once_with(positions)
+    corporate_actions.missed_exits.assert_called_once_with(
         {"HELD": positions["HELD"]}, {"HELD": "2026-11-17"}, {"Z"}
     )
     assert set(view.strategy_positions) == set(view.corrected_positions) == {"HELD"}
 
 
 def test_missing_portfolio_value_fails_before_downstream_reads_and_writes(portfolio):
-    _, broker, _, seams, _, _, load = portfolio
+    _, broker, _, corporate_actions, _, _, load = portfolio
     broker.get_account.side_effect = lambda: {}
     with pytest.raises(KeyError, match="portfolio_value"):
         load()
     broker.get_positions.assert_called_once()
     broker.get_untradable.assert_not_called()
-    seams.split_corrections.assert_not_called()
-    seams.missed_exits.assert_not_called()
-    seams.accrue_dividends.assert_not_called()
+    corporate_actions.split_corrections.assert_not_called()
+    corporate_actions.missed_exits.assert_not_called()
+    corporate_actions.accrue_dividends.assert_not_called()
 
 
 def test_load_logs_filtering_corrections_and_missed_exits(portfolio, caplog):
@@ -159,13 +163,13 @@ def test_missed_exits_are_merged_into_the_sells_sorted(portfolio):
 
 
 def test_the_view_is_frozen_and_shares_no_mutable_state_with_the_broker_reply(portfolio):
-    _, broker, _, seams, positions, _, load = portfolio
+    _, broker, _, corporate_actions, positions, _, load = portfolio
     account = {"portfolio_value": 500}
     corrections = {"HELD": 2}
     dividends = {"total": 1, "items": ["original"]}
     broker.get_account.side_effect = lambda: account
-    seams.split_corrections.side_effect = lambda *_: corrections
-    seams.accrue_dividends.side_effect = lambda *_: dividends
+    corporate_actions.split_corrections.side_effect = lambda *_: corrections
+    corporate_actions.accrue_dividends.side_effect = lambda *_: dividends
     view = load()
     positions["HELD"]["qty"] = 42
     account["portfolio_value"] = 999

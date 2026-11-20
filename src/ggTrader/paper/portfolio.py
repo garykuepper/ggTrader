@@ -8,10 +8,10 @@ from datetime import timedelta
 from types import MappingProxyType
 
 from ggTrader.paper.constants import SPLIT_LOOKBACK_DAYS, TRADER_LOGGER_NAME
+from ggTrader.paper.corporate_actions import CorporateActions
 from ggTrader.paper.models import Account, Position, RunContext, StrategySignals
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.run_helpers import account_read_halt
-from ggTrader.paper.seams import TraderSeams
 from ggTrader.paper.split_check import apply_corrections_to_positions
 from ggTrader.paper.untradable import resolve_untradable
 
@@ -51,7 +51,7 @@ class PortfolioView:
         *,
         broker: Broker,
         notifier: Notifier,
-        seams: TraderSeams,
+        corporate_actions: CorporateActions,
         ctx: RunContext,
         signals: StrategySignals,
     ) -> "PortfolioView":
@@ -101,16 +101,20 @@ class PortfolioView:
             )
         all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
         split_since = ctx.today_et - timedelta(days=SPLIT_LOOKBACK_DAYS)
-        split_corrections = seams.split_corrections(positions, split_since, ctx.today_et)
+        split_corrections = corporate_actions.split_corrections(
+            positions, split_since, ctx.today_et
+        )
         if split_corrections:
             _log.warning("Unapplied broker split corrections: %s", split_corrections)
         corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
         sells = list(signals.sells)
-        missed = seams.missed_exits(strategy_positions, dict(signals.last_exit), set(sells))
+        missed = corporate_actions.missed_exits(
+            strategy_positions, dict(signals.last_exit), set(sells)
+        )
         if missed:
             _log.info("Catching up missed exits: %s", missed)
             sells = sorted(set(sells) | set(missed))
-        dividends = seams.accrue_dividends(positions)
+        dividends = corporate_actions.accrue_dividends(positions)
         return cls(
             MappingProxyType(deepcopy(account)),
             _positions_copy(positions),
