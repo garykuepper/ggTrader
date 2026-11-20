@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 4 part 1: docstring rules D100-D104, outside paper/)
+
+- **Docstrings only** (decision D6, part 1). 33 public modules, packages, classes, methods and
+  functions in `src/ggTrader/` outside `paper/` gained a one-line docstring (`cli`, `data`, `lab`,
+  `utils` packages and modules, `lab/persist.py`, `lab/a23_rebalance.py`, `lab/blend.py`, ...). No code,
+  signature or import changed; the hash pins are unchanged (MATCH=0, MOVED-MATCH=4, HISTORY-MATCH=18, FAIL=0).
+- `ruff.toml`: `D100`-`D104` join `select` for `src/ggTrader` only (google convention; `D107` is not
+  selected). `src/ggTrader/paper/**` carries a TEMPORARY per-file ignore until part 2 writes its docstrings.
+- `tests/engine/test_boundary.py`: the ruff snippet that checks the vectorbt ban gained a module and a
+  function docstring, so the new rules do not mask the `TID251` result it asserts.
+
 ## 2026-11-20 (refactor completion II, task 6: the weekly membership job in ordered steps)
 
 - **Behavior-preserving** (decision D7b). `data/membership_weekly.py`: `run_weekly` (149 lines, McCabe 19)

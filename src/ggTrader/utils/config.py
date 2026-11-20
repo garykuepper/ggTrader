@@ -1,3 +1,5 @@
+"""Database connection settings read from the environment and ``.env``."""
+
 import os
 
 from dotenv import load_dotenv

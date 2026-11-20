@@ -1,3 +1,5 @@
+"""``ggt db``: database administration and S&P 500 membership commands."""
+
 import argparse
 import os
 import shutil

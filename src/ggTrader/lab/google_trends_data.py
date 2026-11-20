@@ -87,6 +87,7 @@ def available_as_of(
 
 
 def ensure_schema() -> None:
+    """Create the ``google_trends_interest`` table if it does not exist."""
     with get_engine().begin() as conn:
         conn.execute(text(_SCHEMA))
 

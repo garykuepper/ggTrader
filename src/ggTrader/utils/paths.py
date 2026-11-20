@@ -1,3 +1,5 @@
+"""Project root discovery and the pinned evaluation-window constants."""
+
 import os
 from pathlib import Path
 

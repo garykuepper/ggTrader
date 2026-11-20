@@ -16,6 +16,8 @@ WASH_LOSS_MIN_DOLLARS = 0.01
 
 @dataclass
 class Lot:
+    """One purchase lot: acquisition date, share count and cost basis per share."""
+
     date: pd.Timestamp
     qty: float
     basis: float  # per share
@@ -23,6 +25,8 @@ class Lot:
 
 @dataclass
 class Book:
+    """Simulated account: tax lots, cash, realized gains, tax due and wash-sale tracking."""
+
     st_rate: float
     lt_rate: float
     wash: bool
@@ -41,14 +45,17 @@ class Book:
     disallowed: float = 0.0
 
     def value(self, px: pd.Series) -> float:
+        """Return cash plus the market value of the open lots at prices ``px``."""
         return self.cash + sum(
             lot.qty * px[s] for s, ls in self.lots.items() for lot in ls if lot.qty > 0
         )
 
     def qty(self, s: str) -> float:
+        """Return the total shares held in symbol ``s``."""
         return sum(lot.qty for lot in self.lots[s])
 
     def buy(self, s: str, dollars: float, px: float, date: pd.Timestamp) -> None:
+        """Buy ``dollars`` of ``s`` at ``px`` plus the per-side cost as a new lot."""
         if dollars <= 0:
             return
         fill = px * (1 + COST_BPS / 1e4)
@@ -100,6 +107,7 @@ class Book:
     def distributions(
         self, s: str, per_share: float, px: float, date: pd.Timestamp, taxed_as: str = "lt"
     ) -> None:
+        """Credit a per-share distribution on held shares as income and reinvest it."""
         if taxed_as not in ("lt", "st"):
             raise ValueError(f"Invalid tax label: {taxed_as!r}")
         q = self.qty(s)
@@ -114,6 +122,7 @@ class Book:
         self.buy(s, amt, px, date)  # reinvest
 
     def year_end(self) -> None:
+        """Net the year's gains against the loss carry-forward and add the tax to the tax due."""
         net = self.year_st + self.year_lt - self.loss_cf
         if net <= 0:
             self.loss_cf = -net
@@ -128,6 +137,7 @@ class Book:
         self.year_st = self.year_lt = 0.0
 
     def pay_tax(self, px: pd.Series, date: pd.Timestamp) -> None:
+        """Pay the tax due from cash, selling SPY, SSO and BIL pro rata first if cash is short."""
         due = self.tax_due
         if due <= 0:
             return
@@ -142,6 +152,7 @@ class Book:
         self.tax_due = 0.0
 
     def liquidate(self, px: pd.Series, date: pd.Timestamp) -> float:
+        """Sell every position, settle the year's tax and return the cash left."""
         for s in ("SPY", "SSO", "BIL"):
             self.sell(s, 1e18, px[s], date)
         self.year_end()
