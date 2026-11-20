@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 6: the weekly membership job in ordered steps)
+
+- **Behavior-preserving** (decision D7b). `data/membership_weekly.py`: `run_weekly` (149 lines, McCabe 19)
+  is now a short list of private steps in the same module and the same order: stop before start (the
+  database cannot be read), `_fetch_inputs`, `_parse_sources`, `_archive_sources`, `_press_sources`,
+  `_collect_findings`, `_record_and_report`. What one run fetched and parsed travels in a small
+  `_Inputs` object, so `_compare_and_propose` takes 5 arguments, not 9. The three "not fetched"
+  findings (ledger and the two press sites) are built by `_not_fetched`, the two press "structure"
+  warnings by `_press_structure`; the status fold is `_status_of`. Public names and signatures
+  (`run_weekly`, `WeeklyRun`, `PgWeeklyStore`, `plain_text`, ...) are unchanged; no finding code, severity,
+  message or stored detail changed, and no other source file was touched.
+- Pinned first, on the unchanged code: `tests/data/test_membership_weekly_pins.py` runs 28 paths on the
+  offline fakes and compares the full finding list, the Telegram text, the stored `weekly` detail and the
+  snapshot rows with `tests/data/golden/membership_weekly_pins.json` (the SPY workbook's hash is left out
+  because the fake workbook is a zip stamped with the build time). The golden was written once before the
+  refactor and is unchanged by it.
+- `ruff.toml`: the `membership_weekly.py` survivor entry (`C901`, `PLR0912`, `PLR0913`, `PLR0915`) is gone;
+  none of the four rules fires there any more (checked with a copy of the config without the entry).
+  The 42/29/18 survivor counts quoted for the phase 6 sweep are history and are not rewritten.
+
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
 - `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for
