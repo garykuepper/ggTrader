@@ -1825,17 +1825,17 @@ def test_loss_limit_allows_protective_exit_but_blocks_new_buys(halt, exit_path):
     positions = {
         "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": -400}
     }
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     peak = 120000.0 if halt == "drawdown" else 100000.0
     previous = 104000.0 if halt == "daily" else 100000.0
     broker.get_account.return_value["last_equity"] = previous
+    seed_peak(ledger, peak)
+    seed_snapshots(ledger, [("2026-06-18", previous, 0.0, {})])
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL"] if exit_path == "signal" else []),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=peak),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=previous),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "true"}),
         patch(
             "ggTrader.paper.trader.catastrophe_stop.find_catastrophe_stops",
@@ -1855,7 +1855,7 @@ def test_loss_limit_allows_protective_exit_but_blocks_new_buys(halt, exit_path):
 def test_invalid_catastrophe_threshold_stops_before_orders(monkeypatch, dry_run):
     monkeypatch.setenv("CATASTROPHE_STOP_ENABLED", "true")
     monkeypatch.setenv("CATASTROPHE_STOP_PCT", "nan")
-    trader, broker, notifier = _make_trader(
+    trader, broker, notifier, ledger = make_trader(
         positions={
             "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": -400}
         }
@@ -1863,13 +1863,12 @@ def test_invalid_catastrophe_threshold_stops_before_orders(monkeypatch, dry_run)
     trader._dry_run = dry_run
     with (
         patch("ggTrader.paper.trader.generate_core_signals") as signals,
-        patch("ggTrader.paper.trader.init_paper_schema") as schema,
         patch("ggTrader.paper.trader.paper_run_lock") as lock,
     ):
         with pytest.raises(ValueError, match="CATASTROPHE_STOP_PCT"):
             trader.run()
     lock.assert_not_called()
-    schema.assert_not_called()
+    assert not ledger.calls("init_paper_schema")
     signals.assert_not_called()
     broker.get_account.assert_not_called()
     broker.submit_buy.assert_not_called()
@@ -1881,7 +1880,7 @@ def test_invalid_catastrophe_threshold_stops_before_orders(monkeypatch, dry_run)
 def test_invalid_catastrophe_threshold_remains_fatal_if_alert_fails(monkeypatch):
     monkeypatch.setenv("CATASTROPHE_STOP_ENABLED", "true")
     monkeypatch.setenv("CATASTROPHE_STOP_PCT", "nan")
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, _ = make_trader()
     notifier.send.side_effect = RuntimeError("notification unavailable")
     with pytest.raises(ValueError, match="CATASTROPHE_STOP_PCT"):
         trader.run()
@@ -1901,7 +1900,7 @@ def test_invalid_catastrophe_threshold_remains_fatal_if_alert_fails(monkeypatch)
 )
 def test_invalid_stop_position_blocks_buys_but_allows_signal_exit(monkeypatch, position):
     monkeypatch.setenv("CATASTROPHE_STOP_ENABLED", "true")
-    trader, broker, notifier = _make_trader(positions={"AAPL": position})
+    trader, broker, notifier, _ = make_trader(positions={"AAPL": position})
     with patch(
         "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
     ):
@@ -1919,7 +1918,7 @@ def test_invalid_stop_position_does_not_block_other_catastrophe_exits(monkeypatc
         "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": float("nan")},
         "NVDA": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": -400},
     }
-    trader, broker, _ = _make_trader(positions=positions)
+    trader, broker, _, _ = make_trader(positions=positions)
     with patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], [])):
         trader.run()
     broker.submit_sell.assert_called_once_with("NVDA", 10)
@@ -1931,7 +1930,7 @@ def test_unassessable_stop_still_attempts_pending_warning_when_halt_notice_fails
     positions = {
         "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": None}
     }
-    trader, broker, notifier = _make_trader(positions=positions)
+    trader, broker, notifier, _ = make_trader(positions=positions)
 
     def send(message):
         if "HALTED buys" in message:
@@ -1956,7 +1955,7 @@ def test_invalid_position_pnl_makes_portfolio_pnl_unavailable(monkeypatch, bad_p
     positions = {
         "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": bad_pnl}
     }
-    trader, broker, notifier = _make_trader(positions=positions)
+    trader, broker, notifier, _ = make_trader(positions=positions)
     with patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])):
         trader.run()
     broker.submit_buy.assert_not_called()
@@ -1966,15 +1965,14 @@ def test_invalid_position_pnl_makes_portfolio_pnl_unavailable(monkeypatch, bad_p
 @pytest.mark.parametrize("bad_equity", [float("nan"), float("inf"), 0.0, -1.0])
 def test_invalid_post_trade_equity_is_not_stored_in_snapshot(monkeypatch, bad_equity):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     initial = broker.get_account.return_value.copy()
     broker.get_account.side_effect = [initial, {**initial, "portfolio_value": bad_equity}]
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])),
-        patch("ggTrader.paper.trader.log_snapshot") as snapshot,
     ):
         result = trader.run()
-    snapshot.assert_not_called()
+    assert not ledger.calls("log_snapshot")
     assert notifier.daily_summary.call_args.args[0] is None
     assert any("snapshot" in error.lower() for error in result["errors"])
 
@@ -1982,17 +1980,16 @@ def test_invalid_post_trade_equity_is_not_stored_in_snapshot(monkeypatch, bad_eq
 @pytest.mark.parametrize("failed_read", ["account", "positions"])
 def test_post_trade_read_failure_reports_orders_may_have_been_submitted(monkeypatch, failed_read):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS))
+    trader, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS))
     read = broker.get_account if failed_read == "account" else broker.get_positions
     read.side_effect = [read.return_value, RuntimeError(f"{failed_read} down")]
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.log_snapshot") as snapshot,
         pytest.raises(RuntimeError, match=f"{failed_read} down"),
     ):
         trader.run()
     broker.submit_sell.assert_called_once()
-    snapshot.assert_not_called()
+    assert not ledger.calls("log_snapshot")
     messages = " ".join(str(call) for call in notifier.send.call_args_list).lower()
     assert failed_read in messages and "orders may have been submitted" in messages
     assert "snapshot" in messages
@@ -2000,7 +1997,7 @@ def test_post_trade_read_failure_reports_orders_may_have_been_submitted(monkeypa
 
 def test_post_trade_account_error_survives_notification_failure(monkeypatch):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, _ = make_trader()
     broker.get_account.side_effect = [broker.get_account.return_value, RuntimeError("account down")]
     notifier.send.side_effect = RuntimeError("notification down")
     with (
@@ -2013,7 +2010,7 @@ def test_post_trade_account_error_survives_notification_failure(monkeypatch):
 
 def test_dry_run_post_trade_read_failure_says_no_orders_were_submitted(monkeypatch):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, _ = make_trader()
     trader._dry_run = True
     broker.get_account.side_effect = [broker.get_account.return_value, RuntimeError("account down")]
     with (
@@ -2028,15 +2025,14 @@ def test_dry_run_post_trade_read_failure_says_no_orders_were_submitted(monkeypat
 
 def test_starting_snapshot_failure_keeps_summary_and_attempts_snapshot(monkeypatch):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS))
+    trader, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS))
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.get_earliest_snapshot", side_effect=RuntimeError("DB down")),
-        patch("ggTrader.paper.trader.log_snapshot") as snapshot,
+        patch.object(ledger, "get_earliest_snapshot", side_effect=RuntimeError("DB down")),
     ):
         result = trader.run()
     broker.submit_sell.assert_called_once()
-    snapshot.assert_called_once()
+    assert len(ledger.calls("log_snapshot")) == 1
     assert notifier.daily_summary.call_args.kwargs["total_pnl"] is None
     assert any("total p&l unavailable" in error.lower() for error in result["errors"])
 
@@ -2049,7 +2045,7 @@ def test_reporting_pnl_does_not_change_signal_orders_when_stop_disabled(monkeypa
         positions = {
             "AAPL": {"qty": 10, "market_value": 600, "cost_basis": 1000, "unrealized_pl": pnl}
         }
-        trader, broker, _ = _make_trader(positions=positions)
+        trader, broker, _, _ = make_trader(positions=positions)
         with patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ):
@@ -2061,11 +2057,13 @@ def test_reporting_pnl_does_not_change_signal_orders_when_stop_disabled(monkeypa
 
 
 def test_drawdown_with_missing_previous_close_only_reports_full_halt():
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(
+        positions=dict(_AAPL_POS), portfolio_value=100000.0
+    )
     broker.get_account.return_value["last_equity"] = None
+    seed_peak(ledger, 120000.0)
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
     ):
         result = trader.run()
     assert result["errors"]
@@ -2077,11 +2075,11 @@ def test_drawdown_with_missing_previous_close_only_reports_full_halt():
 @pytest.mark.parametrize("qty", [None, 0.0, -10.0, float("nan"), float("inf")])
 def test_loss_halt_does_not_sell_invalid_or_short_position(qty):
     positions = {"AAPL": {"qty": qty, "market_value": 100.0, "unrealized_pl": 0.0}}
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
     ):
         result = trader.run()
@@ -2091,16 +2089,16 @@ def test_loss_halt_does_not_sell_invalid_or_short_position(qty):
 
 
 def test_both_loss_limits_allow_exit_and_preserve_peak():
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(
+        positions=dict(_AAPL_POS), portfolio_value=100000.0
+    )
     broker.get_account.return_value["last_equity"] = 104000.0
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
-        patch("ggTrader.paper.trader.save_peak_value") as save_peak,
-        patch("ggTrader.paper.trader.log_snapshot") as snapshot,
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
     ):
         result = trader.run()
@@ -2109,21 +2107,21 @@ def test_both_loss_limits_allow_exit_and_preserve_peak():
     assert len([c for c in notifier.send.call_args_list if "exits only" in str(c)]) == 1
     broker.submit_sell.assert_called_once()
     broker.submit_buy.assert_not_called()
-    save_peak.assert_not_called()
-    snapshot.assert_called_once()
+    assert not ledger.calls("save_peak_value")
+    assert len(ledger.calls("log_snapshot")) == 1
 
 
 def test_loss_halt_skips_pending_exit_and_cash_sweep():
     positions = dict(_AAPL_POS)
     positions["SPY"] = {"qty": 2.0, "market_value": 1000.0, "current_price": 500.0}
-    trader, broker, notifier = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     trader._reconcile_pending_orders = MagicMock(return_value={"AAPL"})
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false", "CASH_SWEEP_ENABLED": "true"}),
     ):
         result = trader.run()
@@ -2138,14 +2136,14 @@ def test_loss_halt_skips_pending_exit_and_cash_sweep():
 def test_loss_halt_dry_run_reports_exit_without_submitting_orders():
     from ggTrader.paper.trader import PaperTrader
 
-    _, broker, notifier = _make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
-    trader = PaperTrader(broker, notifier, dry_run=True)
+    _, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
+    trader = PaperTrader(broker, notifier, dry_run=True, ledger=ledger)
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
     ):
         result = trader.run()
@@ -2158,7 +2156,7 @@ def test_loss_halt_dry_run_reports_exit_without_submitting_orders():
 
 @pytest.mark.parametrize("failure", ["equity", "previous_close", "peak", "peak_read", "peak_write"])
 def test_invalid_risk_state_still_blocks_all_orders(failure):
-    trader, broker, _ = _make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
     if failure == "equity":
         broker.get_account.return_value["portfolio_value"] = float("nan")
     if failure == "previous_close":
@@ -2167,8 +2165,8 @@ def test_invalid_risk_state_still_blocks_all_orders(failure):
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=90000.0) as peak,
-        patch("ggTrader.paper.trader.save_peak_value") as save,
+        patch.object(ledger, "get_peak_value", return_value=90000.0) as peak,
+        patch.object(ledger, "save_peak_value", wraps=ledger.save_peak_value) as save,
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "true"}),
     ):
         if failure == "peak":
