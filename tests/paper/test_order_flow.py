@@ -557,6 +557,7 @@ def test_a_halted_run_submits_no_buys_and_no_sweep_buy():
     flow, view, signals = make_flow({}, buys=(("A", "s"),))
     view.sweep_on = True
     flow.risk.max_new_positions.return_value = 1
+    flow.risk.check_concentration.return_value = False
     flow.executor.poll.return_value = {}
     state = flow.run_stage_one(view, signals, RiskVerdict(None, ("loss halt",)))
     flow.run_stage_three(view, state)
