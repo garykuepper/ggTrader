@@ -9,9 +9,10 @@ Development and research are paused as of 2026-11-12 with a clean slate. Nothing
 | Done | Membership database, weekly check, press-release source and price backfill are merged on main. All 503 members have bars. |
 | Done | Eight stock screens, the verdict register and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) are merged on main (2026-11-12). |
 | Done | The exits-only halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). The branch `feature/verdict-register` was merged and pushed to `main` the same day. The code is not deployed and the trader stays stopped. |
+| Done, owner decisions open | The refactor: phases 0 to 2 are merged and pushed (`abe8cefa`, 2026-11-18, in `origin/main`); phases 3 to 5 are merged to local main (`77ef2932`, 2026-11-20) and not pushed. The trader stays stopped and nothing is deployed. Left for the owner: whether to retire the eight private seams (D3: keep them for now), whether a live run should refuse an in-memory ledger (D4: no runtime refusal today), the one `run_wfo` string-return exception (D5), the docstring rules (D6), the phase 6 tidy-ups (D7), and the deploy itself. See the [refactor design](superpowers/specs/2026-11-17-refactor-design.md) and the [changelog](changelog.md). |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
-| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
+| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](archive/where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -36,7 +37,7 @@ Terms:
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
 
-Full state: [where we left it](where-we-left-it-2026-11-12.md). Detail is in the sections below and in the [working task list](working_task_list.md).
+Full state: [where we left it](archive/where-we-left-it-2026-11-12.md). Detail is in the sections below and in the [working task list](working_task_list.md).
 
 ## Intraday observer: checkpoint on 2026-11-30 (activated 2026-10-27)
 
