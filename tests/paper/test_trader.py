@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
@@ -14,6 +13,7 @@ from ggTrader.paper.ledger import InMemoryLedger
 from tests.paper.support import (
     SpyLedger,
     make_trader,
+    persist_guard,
     seed_peak,
     seed_pending_orders,
     seed_snapshots,
@@ -27,17 +27,13 @@ _TEST_TODAY = "2026-06-19"
 
 
 @pytest.fixture(autouse=True)
-def _stub_intent_db():
-    """Never connect trader unit tests to the paper database."""
-    with (
-        patch("ggTrader.paper.trader.paper_run_lock") as lock,
-        patch("ggTrader.paper.trader.get_unresolved_order_intents", return_value=[]),
-        patch("ggTrader.paper.trader.create_order_intent"),
-        patch("ggTrader.paper.trader.attach_broker_order"),
-        patch("ggTrader.paper.trader.settle_order_intent"),
-        patch("ggTrader.paper.trader.settle_legacy_pending_order"),
-    ):
-        lock.return_value.__enter__.return_value = MagicMock()
+def _unstubbed_persist_guard():
+    """Guard 26 trader bindings and five fallback persist names.
+
+    Separately imported signal_runner names are outside this guard. All
+    run_paper_trading tests mock PaperTrader or stop before constructing it.
+    """
+    with persist_guard():
         yield
 
 
@@ -61,75 +57,6 @@ def _stub_now_pt():
 
 
 @pytest.fixture(autouse=True)
-def _stub_write_path_db():
-    """Keep the schema/snapshot/trade write path off the real DB.
-
-    These five were the only persist functions `trader.py` imports that no
-    autouse fixture stubbed. Locally that went unnoticed: `utils/config.py`
-    `_load_env()` reads the `.env` FILE from the project root, so a developer
-    machine always resolves a connection string and the tests look hermetic.
-    On a clean checkout with no `.env` -- i.e. CI -- 42 of them died in
-    `get_db_connection_string()` before reaching any assertion.
-
-    Tests that need to assert on these still patch them individually; a
-    test-level `@patch` applies inside this fixture and wins.
-    """
-    with patch("ggTrader.paper.trader.init_paper_schema"):
-        with patch("ggTrader.paper.trader.log_trade"):
-            with patch("ggTrader.paper.trader.log_snapshot"):
-                with patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None):
-                    with patch("ggTrader.paper.trader.get_earliest_snapshot", return_value=None):
-                        yield
-
-
-@pytest.fixture(autouse=True)
-def _stub_pending_order_db():
-    """Keep the pending-order reconciliation off the real DB by default.
-    Individual tests override these patches to exercise reconciliation."""
-    with patch("ggTrader.paper.trader.get_pending_orders", return_value=[]):
-        with patch("ggTrader.paper.trader.log_pending_order"):
-            with patch("ggTrader.paper.trader.clear_pending_order"):
-                with patch("ggTrader.paper.trader.mark_pending_order_stale"):
-                    yield
-
-
-@pytest.fixture(autouse=True)
-def _stub_risk_state_db():
-    """Keep persisted-peak reads/writes off the real DB by default.
-    Individual tests override to exercise cross-run drawdown halts."""
-    with patch("ggTrader.paper.trader.get_peak_value", return_value=None):
-        with patch("ggTrader.paper.trader.save_peak_value"):
-            yield
-
-
-@pytest.fixture(autouse=True)
-def _stub_dividend_db():
-    """Keep dividend accrual reads/writes off the real DB by default.
-    Individual tests override these patches to exercise accrual."""
-    with patch("ggTrader.paper.trader.get_total_dividend_accrual", return_value=0.0):
-        with patch("ggTrader.paper.trader.get_snapshot_history", return_value=[]):
-            with patch("ggTrader.paper.trader.get_accrued_dividend_keys", return_value=set()):
-                with patch("ggTrader.paper.trader.log_dividend_accrual"):
-                    yield
-
-
-@pytest.fixture(autouse=True)
-def _stub_split_trade_db():
-    """Keep the split-check's paper_trades lookup off the real DB by
-    default. `get_snapshot_history` (also read by `_compute_split_corrections`)
-    is already stubbed to `[]` by `_stub_dividend_db` above, so with both
-    stubbed the default is "no snapshot evidence" -- individual split tests
-    override one or both to exercise the applied/unapplied/traded paths.
-
-    `get_open_split_states` must be stubbed too: unstubbed, every run()-level
-    test queried the production DB, and the connection pool's `time.time()`
-    calls consumed `_clock_after`'s ticks so `_poll_orders` spun forever."""
-    with patch("ggTrader.paper.trader.get_trade_history_dates", return_value=[]):
-        with patch("ggTrader.paper.trader.get_open_split_states", return_value={}):
-            yield
-
-
-@pytest.fixture(autouse=True)
 def _stub_benchmark_tape():
     """Keep the benchmark/ETF tape keepalive off yfinance and the real DB by
     default. It is a side job of `run()`, so every run()-level test would
@@ -148,65 +75,6 @@ def _stub_live_membership_guard():
     tests in `test_live_membership_guard.py`, which do not use this stub."""
     with patch("ggTrader.paper.trader.require_live_membership_spec"):
         yield
-
-
-@pytest.fixture(autouse=True)
-def _stub_last_buy_dates():
-    """Keep the missed-exit catch-up's paper_trades lookup off the real DB.
-    Default `{}` means "no entry dates known", which disables the catch-up."""
-    with patch("ggTrader.paper.trader.get_last_buy_dates", return_value={}):
-        yield
-
-
-@contextmanager
-def _intent_store(trader, broker):
-    """Exercise submission and recovery using an in-memory intent store."""
-    from ggTrader.paper.trader import PaperTrader
-
-    intents = {}
-    settled = []
-
-    def create(client_id, run_date, side, symbol, amount, kind, reason):
-        intents[client_id] = dict(
-            client_order_id=client_id,
-            run_date=run_date,
-            side=side,
-            symbol=symbol,
-            amount=amount,
-            amount_kind=kind,
-            reason=reason,
-            broker_order_id=None,
-        )
-
-    def attach(client_id, order_id):
-        intents[client_id]["broker_order_id"] = order_id
-
-    def lookup(client_id):
-        intent = intents[client_id]
-        info = dict(broker.get_order(intent["broker_order_id"]))
-        info.update(
-            client_order_id=client_id,
-            symbol=intent["symbol"],
-            side=intent["side"].lower(),
-            **{intent["amount_kind"]: intent["amount"]},
-        )
-        return info
-
-    def settle(client_id, order_id, qty, price, status):
-        settled.append((intents.pop(client_id), order_id, qty, price, status))
-
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
-    with (
-        patch("ggTrader.paper.trader.create_order_intent", side_effect=create),
-        patch("ggTrader.paper.trader.attach_broker_order", side_effect=attach),
-        patch(
-            "ggTrader.paper.trader.get_unresolved_order_intents",
-            side_effect=lambda: list(intents.values()),
-        ),
-        patch("ggTrader.paper.trader.settle_order_intent", side_effect=settle),
-        patch.object(broker, "get_order_by_client_id", side_effect=lookup),
-    ):
-        yield intents, settled
 
 
 def _blend(buys, sells, as_of=_TEST_TODAY, universe="sp500", last_exit=None):
@@ -2178,10 +2046,6 @@ def test_invalid_risk_state_still_blocks_all_orders(failure):
     broker.submit_buy.assert_not_called()
 
 
-@patch("ggTrader.paper.trader.get_latest_snapshot", return_value=None)
-@patch("ggTrader.paper.trader.log_snapshot")
-@patch("ggTrader.paper.trader.log_trade")
-@patch("ggTrader.paper.trader.init_paper_schema")
 class TestStalePendingOrders:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_stale_pending_order_flagged_once(self, mock_signals, *_):
@@ -3609,7 +3473,7 @@ def test_loss_halt_reconciles_rejected_exit_and_submits_other_exit():
         "AAPL": {"qty": 10, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
         "MSFT": {"qty": 5, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
     }
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     broker.submit_sell.side_effect = ["rejected-order", "filled-order"]
     broker.get_order.side_effect = lambda oid: {
         "id": oid,
@@ -3617,18 +3481,18 @@ def test_loss_halt_reconciles_rejected_exit_and_submits_other_exit():
         "filled_qty": 0 if oid == "rejected-order" else 5,
         "filled_avg_price": None if oid == "rejected-order" else 200,
     }
+    seed_peak(ledger, 120000.0)
+    _real_submission(trader, broker, ledger)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL", "MSFT"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
-        _intent_store(trader, broker) as (intents, settled),
     ):
         trader.run()
     assert [c.args[:2] for c in broker.submit_sell.call_args_list] == [("AAPL", 10), ("MSFT", 5)]
-    assert not intents
-    assert {item[4] for item in settled} == {"rejected", "filled"}
+    assert not InMemoryLedger.get_unresolved_order_intents(ledger)
+    assert {call[1][4] for call in ledger.calls("settle_order_intent")} == {"rejected", "filled"}
     broker.submit_buy.assert_not_called()
 
 
@@ -3641,7 +3505,7 @@ def test_exit_must_fill_to_free_a_position_slot(exit_kind, status, filled_qty, b
     from ggTrader.paper.risk import RiskConfig, RiskGuard
 
     positions = {"AAPL": {"qty": 10, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0}}
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     trader._risk = RiskGuard(RiskConfig(max_positions=1))
     broker.submit_sell.return_value = "rejected-order"
     broker.get_order.side_effect = lambda oid: {
@@ -3650,12 +3514,13 @@ def test_exit_must_fill_to_free_a_position_slot(exit_kind, status, filled_qty, b
         "filled_qty": filled_qty if oid == "rejected-order" else 10,
         "filled_avg_price": 100 if oid != "rejected-order" or filled_qty else None,
     }
+    seed_peak(ledger, 100000.0)
+    _real_submission(trader, broker, ledger)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL"] if exit_kind == "signal" else []),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
         patch.dict(
             os.environ, {"CATASTROPHE_STOP_ENABLED": str(exit_kind == "catastrophe").lower()}
         ),
@@ -3663,7 +3528,6 @@ def test_exit_must_fill_to_free_a_position_slot(exit_kind, status, filled_qty, b
             "ggTrader.paper.trader.catastrophe_stop.find_catastrophe_stops", return_value=["AAPL"]
         ),
         patch("ggTrader.paper.trader.catastrophe_stop.unrealized_pct", return_value=-0.4),
-        _intent_store(trader, broker),
     ):
         result = trader.run()
     broker.submit_sell.assert_called_once()
@@ -3672,11 +3536,11 @@ def test_exit_must_fill_to_free_a_position_slot(exit_kind, status, filled_qty, b
 
 
 def test_drawdown_with_missing_baseline_only_reports_full_halt():
-    trader, broker, notifier = _make_trader(portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(portfolio_value=100000.0)
     broker.get_account.return_value["last_equity"] = None
+    seed_peak(ledger, 120000.0)
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
     ):
         trader.run()
     assert not any("exits only" in str(c) for c in notifier.send.call_args_list)
@@ -3684,11 +3548,11 @@ def test_drawdown_with_missing_baseline_only_reports_full_halt():
 
 
 def test_loss_halt_summary_includes_reason():
-    trader, _, notifier = _make_trader(portfolio_value=100000.0)
+    trader, _, notifier, ledger = make_trader(portfolio_value=100000.0)
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], [])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
     ):
         trader.run()
     assert any("drawdown" in e.lower() for e in notifier.daily_summary.call_args.kwargs["errors"])
@@ -3696,11 +3560,11 @@ def test_loss_halt_summary_includes_reason():
 
 def test_normal_run_refuses_short_exit_quantity():
     positions = {"AAPL": {"qty": -10.0, "market_value": 100.0, "unrealized_pl": 0.0}}
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
+    seed_peak(ledger, 100000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
     ):
         result = trader.run()
@@ -3715,7 +3579,7 @@ def test_invalid_exit_quantity_blocks_buys_but_allows_other_exits(exit_kind, dry
         "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
         "NVDA": {"qty": 5.0, "market_value": 500.0, "cost_basis": 500.0, "unrealized_pl": 0.0},
     }
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     trader._dry_run = dry_run
     broker.get_order.side_effect = lambda oid: {
         "id": oid,
@@ -3723,12 +3587,12 @@ def test_invalid_exit_quantity_blocks_buys_but_allows_other_exits(exit_kind, dry
         "filled_qty": 5.0,
         "filled_avg_price": 100.0,
     }
+    seed_peak(ledger, 100000.0)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL", "NVDA"] if exit_kind == "signal" else ["NVDA"]),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
         patch.dict(
             os.environ, {"CATASTROPHE_STOP_ENABLED": str(exit_kind == "catastrophe").lower()}
         ),
@@ -3758,13 +3622,13 @@ def test_invalid_exit_does_not_sell_sweep_to_fund_blocked_buy(exit_kind, cash, r
         "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
         "SPY": _spy_position(qty=50.0, price=400.0),
     }
-    trader, broker, _ = _make_trader(positions=positions, cash=cash)
+    trader, broker, _, ledger = make_trader(positions=positions, cash=cash)
+    seed_peak(ledger, 100000.0)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL"] if exit_kind == "signal" else []),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
         patch.dict(
             os.environ,
             {
@@ -3792,19 +3656,20 @@ def test_invalid_exit_blocks_buy_with_real_intent_submission(exit_kind):
         "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
         "NVDA": {"qty": 5.0, "market_value": 500.0, "cost_basis": 500.0, "unrealized_pl": 0.0},
     }
-    trader, broker, _ = _make_trader(positions=positions)
+    trader, broker, _, ledger = make_trader(positions=positions)
     broker.get_order.side_effect = lambda oid: {
         "id": oid,
         "status": "filled",
         "filled_qty": 5.0,
         "filled_avg_price": 100.0,
     }
+    seed_peak(ledger, 100000.0)
+    _real_submission(trader, broker, ledger)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL", "NVDA"] if exit_kind == "signal" else ["NVDA"]),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
         patch.dict(
             os.environ, {"CATASTROPHE_STOP_ENABLED": str(exit_kind == "catastrophe").lower()}
         ),
@@ -3812,27 +3677,31 @@ def test_invalid_exit_blocks_buy_with_real_intent_submission(exit_kind):
             "ggTrader.paper.trader.catastrophe_stop.find_catastrophe_stops", return_value=["AAPL"]
         ),
         patch("ggTrader.paper.trader.catastrophe_stop.unrealized_pct", return_value=-0.4),
-        _intent_store(trader, broker) as (intents, settled),
     ):
         result = trader.run()
     assert [call.args[:2] for call in broker.submit_sell.call_args_list] == [("NVDA", 5.0)]
     broker.submit_buy.assert_not_called()
-    assert not intents
-    assert [(row[0]["symbol"], row[4]) for row in settled] == [("NVDA", "filled")]
+    assert not InMemoryLedger.get_unresolved_order_intents(ledger)
+    assert [
+        (intent[1][3], settlement[1][4])
+        for intent, settlement in zip(
+            ledger.calls("create_order_intent"), ledger.calls("settle_order_intent"), strict=True
+        )
+    ] == [("NVDA", "filled")]
     assert any("invalid long quantity" in error for error in result["errors"])
 
 
 @pytest.mark.parametrize("exit_kind", ["signal", "catastrophe"])
 def test_loss_halt_allows_each_exit_path(exit_kind):
-    trader, broker, _ = _make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=dict(_AAPL_POS), portfolio_value=100000.0)
     signal_sells = ["AAPL"] if exit_kind == "signal" else []
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], signal_sells),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(
             os.environ, {"CATASTROPHE_STOP_ENABLED": str(exit_kind == "catastrophe").lower()}
         ),
@@ -3851,7 +3720,7 @@ def test_loss_halt_allows_each_exit_path(exit_kind):
 def test_loss_halt_notice_failure_does_not_block_exit(failed_notice, halt_kind, monkeypatch):
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "true")
     positions = {**_AAPL_POS, "SPY": _spy_position()}
-    trader, broker, notifier = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     if halt_kind == "daily":
         broker.get_account.return_value["last_equity"] = 104000.0
 
@@ -3860,14 +3729,11 @@ def test_loss_halt_notice_failure_does_not_block_exit(failed_notice, halt_kind, 
             raise RuntimeError("notification down")
 
     notifier.send.side_effect = send
+    seed_peak(ledger, 120000.0 if halt_kind == "drawdown" else 100000.0)
     with (
         patch.object(trader, "_reconcile_pending_orders", return_value={"OTHER"}),
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], ["AAPL"])
-        ),
-        patch(
-            "ggTrader.paper.trader.get_peak_value",
-            return_value=120000.0 if halt_kind == "drawdown" else 100000.0,
         ),
     ):
         result = trader.run()
@@ -3878,7 +3744,7 @@ def test_loss_halt_notice_failure_does_not_block_exit(failed_notice, halt_kind, 
 
 
 def test_account_read_failure_halts_with_notice_before_orders():
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS))
+    trader, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS))
     broker.get_account.side_effect = TypeError("missing equity")
     with (
         patch(
@@ -3893,7 +3759,7 @@ def test_account_read_failure_halts_with_notice_before_orders():
 
 
 def test_account_read_error_survives_notification_failure():
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     broker.get_account.side_effect = TypeError("missing equity")
     notifier.send.side_effect = RuntimeError("notification down")
     with (
@@ -3906,7 +3772,7 @@ def test_account_read_error_survives_notification_failure():
 
 
 def test_position_read_failure_halts_with_notice_before_orders():
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS))
+    trader, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS))
     broker.get_positions.side_effect = TypeError("position data missing")
     with (
         patch(
@@ -3922,7 +3788,7 @@ def test_position_read_failure_halts_with_notice_before_orders():
 
 
 def test_position_read_error_survives_notification_failure():
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     broker.get_positions.side_effect = TypeError("position data missing")
     notifier.send.side_effect = RuntimeError("notification down")
     with (
@@ -3937,7 +3803,7 @@ def test_position_read_error_survives_notification_failure():
 def test_missing_broker_equity_halts_with_notice_before_orders():
     from ggTrader.paper.alpaca_broker import AlpacaBroker
 
-    trader, broker, notifier = _make_trader(positions=dict(_AAPL_POS))
+    trader, broker, notifier, ledger = make_trader(positions=dict(_AAPL_POS))
     account = MagicMock(
         cash="1000", portfolio_value=None, last_equity="1000", buying_power="1000", multiplier="1"
     )
@@ -3959,11 +3825,11 @@ def test_missing_broker_equity_halts_with_notice_before_orders():
 
 def test_invalid_exit_quantity_reported_once_for_both_exit_paths():
     positions = {"AAPL": {"qty": -10.0, "market_value": 100.0, "unrealized_pl": 0.0}}
-    trader, broker, _ = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=100000.0)
+    seed_peak(ledger, 120000.0)
+    seed_snapshots(ledger, [("2026-06-18", 100000.0, 0.0, {})])
     with (
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL"])),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
-        patch("ggTrader.paper.trader.get_latest_snapshot", return_value=100000.0),
         patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "true"}),
         patch(
             "ggTrader.paper.trader.catastrophe_stop.find_catastrophe_stops", return_value=["AAPL"]
@@ -3978,15 +3844,16 @@ def test_invalid_exit_quantity_reported_once_for_both_exit_paths():
 def test_presubmission_failure_notifies_and_submits_nothing(stage):
     from ggTrader.paper.trader import PaperTrader
 
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     trader._submit_order = PaperTrader._submit_order.__get__(trader)
     trader._paper_lock = MagicMock()
     if stage == "lock":
         trader._paper_lock.verify.side_effect = RuntimeError("lock lost")
     with (
         patch("ggTrader.paper.trader.uuid4", return_value="client-fixed"),
-        patch(
-            "ggTrader.paper.trader.create_order_intent",
+        patch.object(
+            ledger,
+            "create_order_intent",
             side_effect=RuntimeError("db down") if stage == "intent" else None,
         ),
         pytest.raises(RuntimeError),
@@ -4010,8 +3877,9 @@ class TestUnappliedSplitAndDailyLoss:
                 "unrealized_pl": 0.0,
             }
         }
-        trader, broker, _ = _make_trader(positions=positions, portfolio_value=95000.0)
+        trader, broker, _, ledger = make_trader(positions=positions, portfolio_value=95000.0)
         broker.get_account.return_value["last_equity"] = 100000.0
+        seed_peak(ledger, 100000.0)
         with (
             patch(
                 "ggTrader.paper.trader.PaperTrader._compute_split_corrections",
@@ -4019,7 +3887,6 @@ class TestUnappliedSplitAndDailyLoss:
             ),
             # A buy signal makes "no buy submitted" a real assertion, not an empty one.
             patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], [])),
-            patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
             patch.dict(os.environ, {"CATASTROPHE_STOP_ENABLED": "false"}),
         ):
             return trader.run(), broker
@@ -4049,14 +3916,14 @@ def test_a_pending_order_does_not_excuse_an_invalid_exit_quantity(exit_kind):
         "AAPL": {"qty": -10.0, "market_value": 1000.0, "cost_basis": 1000.0, "unrealized_pl": 0.0},
         "SPY": _spy_position(qty=50.0, price=400.0),
     }
-    trader, broker, _ = _make_trader(positions=positions, cash=50000.0)
+    trader, broker, _, ledger = make_trader(positions=positions, cash=50000.0)
     trader._reconcile_pending_orders = MagicMock(return_value={"AAPL"})
+    seed_peak(ledger, 100000.0)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals",
             return_value=_blend(["MSFT"], ["AAPL"] if exit_kind == "signal" else []),
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=100000.0),
         patch.dict(
             os.environ,
             {
