@@ -234,7 +234,11 @@ def write_returns_equity(
     equity: pd.Series,
     benchmark_equity: pd.Series | None = None,
 ) -> None:
-    """Upsert a run's daily returns and equity, plus the benchmark equity when given."""
+    """Upsert a run's daily returns and equity with the benchmark equity aligned to its dates.
+
+    The benchmark column is written as NULL when no benchmark is given or it has no value on a
+    date, which overwrites any benchmark value already stored for that row.
+    """
     bench = benchmark_equity.reindex(equity.index) if benchmark_equity is not None else None
     with get_engine().begin() as conn:
         ret_rows = [

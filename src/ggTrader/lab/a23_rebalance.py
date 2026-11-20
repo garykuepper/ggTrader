@@ -137,7 +137,11 @@ class Book:
         self.year_st = self.year_lt = 0.0
 
     def pay_tax(self, px: pd.Series, date: pd.Timestamp) -> None:
-        """Pay the tax due from cash, selling SPY, SSO and BIL pro rata first if cash is short."""
+        """Pay the tax due from cash; if cash is short, first sell SPY, SSO and BIL in that order.
+
+        Each sale is sized from the remaining shortfall in proportion to that holding's value
+        (plus a 0.2% allowance), so the sales depend on order and cash can end negative.
+        """
         due = self.tax_due
         if due <= 0:
             return
@@ -152,7 +156,7 @@ class Book:
         self.tax_due = 0.0
 
     def liquidate(self, px: pd.Series, date: pd.Timestamp) -> float:
-        """Sell every position, settle the year's tax and return the cash left."""
+        """Sell the SPY, SSO and BIL holdings, settle the year's tax and return the cash left."""
         for s in ("SPY", "SSO", "BIL"):
             self.sell(s, 1e18, px[s], date)
         self.year_end()
