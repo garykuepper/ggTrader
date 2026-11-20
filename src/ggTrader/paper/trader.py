@@ -62,6 +62,7 @@ from ggTrader.paper.persist import (
     settle_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
 )
 from ggTrader.paper.ports import Broker, Notifier
+from ggTrader.paper.preflight import Halted, PreflightGate
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
 from ggTrader.paper.run_helpers import account_read_halt as _account_read_halt
 from ggTrader.paper.run_helpers import as_date as _as_date  # noqa: F401 - compatibility alias
@@ -316,118 +317,26 @@ class PaperTrader:
             self._reconcile_order_intents()
         pending_symbols = self._reconcile_pending_orders()
 
-        # Market-open gate: cron has no calendar awareness, so a holiday or
-        # half-day would otherwise submit DAY orders into a closed market.
-        # Fail open (assume the market is open) on a get_clock() error, same
-        # non-fatal-degrade convention used elsewhere in this file.
-        market_open = True
-        next_close: str | None = None
-        try:
-            clock: MarketClock = self._broker.get_clock()
-            market_open = clock.get("is_open", True)
-            next_close = clock.get("next_close")
-        except Exception as exc:
-            _log.warning("get_clock() failed (non-fatal, assuming market open): %s", exc)
-        if not market_open:
-            _log.info("Market closed; skipping run")
-            self._notifier.send("<b>ℹ️ Market closed</b> — no trading this run.")
-            return RunResult([], [], []).as_dict()
-
-        try:
-            blend: SignalBundle = generate_core_signals(
-                persist_tape=not self._read_only,
-                membership=live_membership_source(self._membership),
-            )
-        except SignalGateError as exc:
-            # Fail closed: a failed engine self-check or sanity gate means no orders at all.
-            self._notifier.send(f"<b>🛑 Signal gate — no orders placed:</b>\n{exc}")
-            raise
-        except Exception as exc:
-            self._notifier.send(f"Paper trading failed: signal generation error\n{exc}")
-            raise
-
-        for universe, sleeve in blend["sleeves"].items():
-            _log.info(
-                "signals %s: engine=%s bars=%s buys=%d sells=%d as_of=%s",
-                universe,
-                sleeve.get("engine"),
-                sleeve.get("bars"),
-                len(sleeve["buys"]),
-                len(sleeve["sells"]),
-                sleeve["as_of"],
-            )
-            membership_gate = sleeve.get("membership_gate") or {}
-            if membership_gate.get("level") == "warn":
-                self._notifier.send(f"<b>⚠️ Membership list:</b> {membership_gate['message']}")
-
-        # Late-run gate: a DAY order sent after the close queues to the next open, the
-        # overnight-gap slippage the 12:45 schedule exists to avoid. A dry run only warns, so
-        # the owner can rehearse the path at any hour.
-        late = late_run_reason(_now_pt(), next_close)
-        if late is not None:
-            if not self._dry_run:
-                self._notifier.send(f"<b>⏰ Late run — no orders placed:</b> {late}")
-                return RunResult([], [], [], gate="late_run").as_dict()
-            _log.warning("dry run past the late-run cutoff (a live run would stop): %s", late)
-            self._notifier.send(f"<b>⏰ DRY RUN late-run notice:</b> {late}")
-
-        # Side job: keep SPY and the macro ETFs' tape current for the lab (an `ohlcv`
-        # write, so a read-only run skips it). Wrapped inside the function; a failure here
-        # logs and moves on.
-        if self._read_only:
-            self.skipped_writes.append("refresh_benchmark_tape")
-            _log.info("read-only: skipped write refresh_benchmark_tape")
-        else:
-            refreshed = refresh_benchmark_tape()
-            if not refreshed:
-                _log.warning("benchmark tape refresh returned no symbols")
-
-        if blend["fallback_used"]:
-            self._notifier.send(
-                "<b>⚠️ Overlay fallback:</b> rebalance-day data fetch failed; "
-                "reusing last month's sleeve weights."
-            )
-
-        weights, scale = blend["weights"], blend["scale"]
-        all_buys: list[tuple[str, str]] = []  # (symbol, sleeve)
-        all_sells: list[str] = []
-        last_exit: dict[str, str] = {}
-        for universe, sleeve_signals in blend["sleeves"].items():
-            for sym in sleeve_signals["buys"]:
-                all_buys.append((sym, universe))
-            all_sells.extend(sleeve_signals["sells"])
-            last_exit.update(sleeve_signals.get("last_exit", {}))
-
+        pre = PreflightGate(
+            broker=self._broker,
+            notifier=self._notifier,
+            hooks=self._hooks(),
+            membership=self._membership,
+            read_only=self._read_only,
+            dry_run=self._dry_run,
+            skipped_writes=self.skipped_writes,
+        ).check()
+        if isinstance(pre, Halted):
+            return pre.result.as_dict()
+        today_et = pre.today_et
+        derived = pre.signals
+        weights, scale = derived.weights, derived.scale
+        all_buys, last_exit = list(derived.buys), dict(derived.last_exit)
         signals = {
-            "buys": [sym for sym, _u in all_buys],
-            "sells": sorted(set(all_sells)),
-            "as_of": next(iter(blend["sleeves"].values()))["as_of"],
+            "buys": [symbol for symbol, _ in all_buys],
+            "sells": list(derived.sells),
+            "as_of": derived.as_of,
         }
-
-        # Freshness gate: refuse to trade on data that is stale beyond the
-        # normal one-completed-session lag (see _MAX_SIGNAL_AGE_DAYS).
-        today_et = _today_et()
-        for universe, sleeve in blend["sleeves"].items():
-            as_of = sleeve.get("as_of")
-            try:
-                as_of_date = date.fromisoformat(as_of)
-            except (TypeError, ValueError):
-                as_of_date = None
-            age_days = None if as_of_date is None else (today_et - as_of_date).days
-            if age_days is None or not 0 <= age_days <= _MAX_SIGNAL_AGE_DAYS:
-                if age_days is None:
-                    age_description = "unparseable"
-                elif age_days < 0:
-                    age_description = f"{-age_days}d in the future"
-                else:
-                    age_description = f"{age_days}d old"
-                self._notifier.send(
-                    f"<b>⚠️ Stale signal data:</b> {universe} as_of={as_of} is "
-                    f"{age_description} "
-                    f"(today {today_et.isoformat()}, max {_MAX_SIGNAL_AGE_DAYS}d); "
-                    f"no trades submitted this run."
-                )
-                return RunResult([], [], []).as_dict()
 
         try:
             account: Account = self._broker.get_account()
