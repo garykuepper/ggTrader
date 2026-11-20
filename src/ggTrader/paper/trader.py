@@ -354,11 +354,9 @@ class PaperTrader:
         positions = {s: dict(p) for s, p in view.positions.items()}
         portfolio_value = view.portfolio_value
         sweep_on, sweep_sym = view.sweep_on, view.sweep_symbol
-        strategy_positions = {s: dict(p) for s, p in view.strategy_positions.items()}
         corrected_positions = {s: dict(p) for s, p in view.corrected_positions.items()}
         split_corrections = dict(view.split_corrections)
         untradable_seen = set(view.untradable_seen)
-        all_buys = list(view.buy_candidates)
         signals["sells"] = list(view.sells)
         dividend_info = dict(view.dividends)
 
@@ -367,10 +365,6 @@ class PaperTrader:
         ).assess(ctx, view)
         if verdict.hard_stop is not None:
             return RunResult([], [], [verdict.hard_stop]).as_dict()
-        loss_halts = list(verdict.buy_halts)
-        if loss_halts:
-            all_buys = []
-
         # Prior reporting snapshot is used only for the daily summary, not the risk check.
         try:
             prev_snapshot_value = self._ledger.get_latest_snapshot(before=today_et)

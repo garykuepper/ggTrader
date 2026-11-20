@@ -150,7 +150,8 @@ def test_limits_are_computed_after_validation_and_in_order():
 
 def test_the_flow_builds_the_submitted_order_from_the_returned_id_after_the_counters(monkeypatch):
     from ggTrader.paper import order_flow
-    from ggTrader.paper.models import FlowState
+    from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
+    from ggTrader.paper.models import FlowState, SubmittedOrder
 
     made = []
     events = []
@@ -170,13 +171,69 @@ def test_the_flow_builds_the_submitted_order_from_the_returned_id_after_the_coun
 
     monkeypatch.setattr(order_flow, "FlowState", new_state)
     flow, view, signals = make_flow({"A": Position(position())})
-    flow.executor.submit.side_effect = lambda intent: events.append("submit")
+    flow.executor.submit.side_effect = lambda intent: events.append("submit") or "oid-1"
 
     def announce(intent):
         assert len(made[0].book.orders) == 1
-        assert made[0].book.orders[0].order_id is None
+        assert made[0].book.orders[0] == SubmittedOrder(
+            "oid-1", "SELL", "A", 10, CATASTROPHE_STOP_REASON
+        )
         events.append("announce")
 
     flow.executor.announce.side_effect = announce
     flow.run_stage_one(view, signals, RiskVerdict(None, ()))
     assert events == ["submit", "market_value", "announce"]
+
+
+@pytest.mark.parametrize("dry", [False, True])
+def test_stop_is_recorded_before_announcement(monkeypatch, dry):
+    from ggTrader.paper import order_flow
+    from ggTrader.paper.models import FlowState
+
+    states = []
+
+    def new_state(**kwargs):
+        state = FlowState(**kwargs)
+        states.append(state)
+        return state
+
+    monkeypatch.setattr(order_flow, "FlowState", new_state)
+    flow, view, signals = make_flow({"A": position()}, dry=dry)
+
+    def announce(_intent):
+        assert states[0].stopped == {"A"}
+        assert states[0].book.sells == ["A"]
+        assert len(states[0].book.orders) == (0 if dry else 1)
+
+    flow.executor.announce.side_effect = announce
+    flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.executor.announce.assert_called_once()
+
+
+@pytest.mark.parametrize("failing", ["sleeve_slot_caps", "sleeve_position_notional"])
+def test_limit_failure_occurs_after_the_stop_was_submitted(failing):
+    flow, view, signals = make_flow({"A": position()})
+    getattr(flow.risk, failing).side_effect = ValueError("limits")
+    with pytest.raises(ValueError, match="limits"):
+        flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.executor.submit.assert_called_once()
+    flow.executor.announce.assert_called_once()
+
+
+def test_unassessable_and_pending_notices_precede_stop_even_if_first_fails():
+    flow, view, signals = make_flow({"A": position(), "B": position(cost_basis=0)})
+    flow.ctx.pending_symbols = frozenset({"P"})
+    events = []
+
+    def notify(message):
+        events.append(message)
+        if len(events) == 1:
+            raise RuntimeError("notice")
+
+    flow.notifier.send.side_effect = notify
+    flow.executor.submit.side_effect = lambda _intent: events.append("submit") or "oid-1"
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    assert "HALTED buys" in events[0]
+    assert "Pending orders may still fill" in events[1]
+    assert events[2] == "submit"
+    assert state.stopped == {"A"} and state.all_buys == []
