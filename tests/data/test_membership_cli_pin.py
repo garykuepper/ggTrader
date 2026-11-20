@@ -9,6 +9,7 @@ Every collaborator is a fake: no database, no network, no file outside ``tmp_pat
 from __future__ import annotations
 
 import argparse
+import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -559,3 +560,197 @@ def test_the_status_command_exit_codes_for_a_gate_configuration_error(
     monkeypatch.setattr(cmd_membership, "max_verify_age_days", _raise(MembershipError("bad env")))
     assert cmd_membership.run_membership(_parse("membership", "status")) == 1
     assert capsys.readouterr().err == "gate configuration error: bad env\n"
+
+
+# --- Ordering and exception semantics of the three load paths (fix round 1) ---------------------
+# The events load, the file load and the reinstatement print REFUSED *before* the connection is
+# closed, let an error from close() propagate over a refusal, and let a LoadRefused raised by
+# connect() or close() itself escape instead of turning into exit 2. These were recorded from the
+# original code (commit 000eefc0) and must hold byte for byte.
+
+
+class Journal:
+    """One ordered list of everything the command prints on stderr and does to the connection."""
+
+    def __init__(self) -> None:
+        self.events: list[str] = []
+
+    def print(self, *args: object, file: object = None, **_kwargs: object) -> None:
+        if file is sys.stderr:
+            self.events.append("err:" + " ".join(str(a) for a in args))
+
+
+@dataclass
+class Door:
+    """What the fake database door does when the command opens or closes a connection."""
+
+    connect_raises: BaseException | None = None
+    close_raises: BaseException | None = None
+
+
+@pytest.fixture
+def journal(monkeypatch: pytest.MonkeyPatch) -> tuple[Journal, Door]:
+    log = Journal()
+    door = Door()
+
+    class Conn:
+        def close(self) -> None:
+            log.events.append("close")
+            if door.close_raises is not None:
+                raise door.close_raises
+
+    def connect(read_only: bool = False) -> Conn:
+        if door.connect_raises is not None:
+            raise door.connect_raises
+        return Conn()
+
+    monkeypatch.setattr(cmd_membership, "connect", connect)
+    monkeypatch.setattr(cmd_membership, "git_sha", lambda: "abc")
+    # pytest swaps sys.stderr for each phase, so the module-level name is replaced instead.
+    monkeypatch.setattr(cmd_membership, "print", log.print, raising=False)
+    return log, door
+
+
+def _events_prepared(problems: list[str]) -> SimpleNamespace:
+    return SimpleNamespace(
+        plan=SimpleNamespace(parent_last_day=None, days=[], symbol_changes=[]),
+        parent_load_id=2,
+        request=SimpleNamespace(evidence=[]),
+        warnings=[],
+        problems=problems,
+    )
+
+
+def _refusing(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "prepare_events_load", _raise(LoadRefused(["stale", "again"])))
+
+
+def _file_refusing(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "load_vintage", _raise(LoadRefused(["stale", "again"])))
+    mp.setattr(cmd_membership, "_read_input", lambda path: b"bytes")
+
+
+def _reinstate_refusing(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "reinstate_vintage", _raise(LoadRefused(["stale", "again"])))
+
+
+def _events_ok(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "prepare_events_load", lambda conn, **kw: _events_prepared([]))
+    mp.setattr(cmd_membership, "load_vintage", lambda conn, request: _report())
+
+
+def _file_ok(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "load_vintage", lambda conn, request: _report())
+    mp.setattr(cmd_membership, "_read_input", lambda path: b"bytes")
+
+
+def _reinstate_ok(mp: pytest.MonkeyPatch) -> None:
+    mp.setattr(cmd_membership, "reinstate_vintage", lambda conn, **kw: _report())
+
+
+_RETRIEVED = ["--retrieved-at", "2026-06-09T00:00:00Z"]
+# path -> (argv, work that refuses, work that succeeds)
+LOAD_PATHS = {
+    "events": (["load-sp500", "--from-events", "e.csv"], _refusing, _events_ok),
+    "file": (["load-sp500", "--from-file", "f.csv", *_RETRIEVED], _file_refusing, _file_ok),
+    "reinstate": (
+        ["membership", "reinstate", "--load-id", "1", "--reason", "undo"],
+        _reinstate_refusing,
+        _reinstate_ok,
+    ),
+}
+
+
+def _run(argv: list[str]) -> int:
+    args = _parse(*argv)
+    run = (
+        cmd_membership.run_membership
+        if hasattr(args, "membership_command")
+        else cmd_membership.run_load_sp500
+    )
+    return run(args)
+
+
+@pytest.mark.parametrize("path", list(LOAD_PATHS))
+def test_the_refusal_is_printed_before_the_connection_is_closed(
+    path: str, journal: tuple[Journal, Door], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    argv, refusing, _ = LOAD_PATHS[path]
+    refusing(monkeypatch)
+    assert _run(argv) == 2
+    assert journal[0].events == ["err:REFUSED: stale; again", "close"]
+
+
+def test_the_events_problems_are_printed_before_the_connection_is_closed(
+    journal: tuple[Journal, Door], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    prepared = _events_prepared(["first problem", "second problem"])
+    monkeypatch.setattr(cmd_membership, "prepare_events_load", lambda conn, **kw: prepared)
+    assert _run(["load-sp500", "--from-events", "e.csv"]) == 2
+    assert journal[0].events == [
+        "err:REFUSED: first problem",
+        "err:REFUSED: second problem",
+        "close",
+    ]
+
+
+@pytest.mark.parametrize("path", list(LOAD_PATHS))
+def test_a_failing_close_propagates_after_the_refusal_was_printed(
+    path: str, journal: tuple[Journal, Door], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    argv, refusing, _ = LOAD_PATHS[path]
+    refusing(monkeypatch)
+    journal[1].close_raises = RuntimeError("close failed")
+    with pytest.raises(RuntimeError, match="close failed"):
+        _run(argv)
+    assert journal[0].events == ["err:REFUSED: stale; again", "close"]
+
+
+@pytest.mark.parametrize("path", list(LOAD_PATHS))
+def test_a_refusal_raised_by_connect_propagates_instead_of_returning_2(
+    path: str, journal: tuple[Journal, Door], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    argv, refusing, _ = LOAD_PATHS[path]
+    refusing(monkeypatch)
+    journal[1].connect_raises = LoadRefused(["no door"])
+    with pytest.raises(LoadRefused):
+        _run(argv)
+    assert journal[0].events == []
+
+
+@pytest.mark.parametrize("path", list(LOAD_PATHS))
+def test_a_refusal_raised_by_close_after_a_good_load_propagates_instead_of_returning_2(
+    path: str, journal: tuple[Journal, Door], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    argv, _, working = LOAD_PATHS[path]
+    working(monkeypatch)
+    journal[1].close_raises = LoadRefused(["close refused"])
+    with pytest.raises(LoadRefused):
+        _run(argv)
+    assert journal[0].events == ["close"]
+
+
+def _fake_diff(monkeypatch: pytest.MonkeyPatch, same: bool) -> None:
+    report = {
+        "from_load_id": 1, "to_load_id": 2, "same_content": same,
+        "coverage_from": "a", "coverage_to": "b", "dates_only_in_from": [],
+        "dates_only_in_to": [1], "dates_changed": [], "intervals_only_in_from": 0,
+        "intervals_only_in_to": 3, "historical_rewrites": [], "tail_changes": [],
+        "renames": [], "would_need_force": ["why"],
+    }  # fmt: skip
+    monkeypatch.setattr(cmd_membership, "read_vintage", lambda cur, load_id: object())
+    monkeypatch.setattr(cmd_membership, "diff_vintages", lambda older, newer: report)
+
+
+@pytest.mark.parametrize("same", [True, False])
+def test_a_successful_diff_returns_0_whether_or_not_the_content_differs(
+    same: bool, env: Env, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _fake_diff(monkeypatch, same)
+    assert (
+        cmd_membership.run_membership(_parse("membership", "diff", "--from", "1", "--to", "2")) == 0
+    )
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == f"load 1 -> 2: {'same content' if same else 'content differs'}"
+    assert out[-1] == "  as a successor it would need --force: why"
+    assert [c.read_only for c in env.conns] == [True] and env.conns[0].closed

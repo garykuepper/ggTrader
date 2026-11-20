@@ -365,29 +365,31 @@ def run_load_from_events(args: argparse.Namespace) -> int:
     if args.force:
         print("REFUSED: --force does not apply to an events file", file=sys.stderr)
         return EXIT_REFUSED
+    conn = connect()
     try:
-        with _connection() as conn:
-            prepared = prepare_events_load(
-                conn,
-                events_path=args.from_events,
-                evidence_dir=args.evidence_dir,
-                parent=_parent_pin(args.parent),  # type: ignore[arg-type]
-                retrieved_at=args.retrieved_at,
-                commit=args.commit,
-                loader_git_sha=git_sha(),
-                note=args.note,
-                source_url=args.source_url,
-                expect_sha256=args.expect_sha256,
-                allow_count_change=args.allow_count_change,
-            )
-            _print_events_plan(prepared)
-            if prepared.problems:
-                for problem in prepared.problems:
-                    print(f"REFUSED: {problem}", file=sys.stderr)
-                return EXIT_REFUSED
-            report = load_vintage(conn, prepared.request)
+        prepared = prepare_events_load(
+            conn,
+            events_path=args.from_events,
+            evidence_dir=args.evidence_dir,
+            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+            retrieved_at=args.retrieved_at,
+            commit=args.commit,
+            loader_git_sha=git_sha(),
+            note=args.note,
+            source_url=args.source_url,
+            expect_sha256=args.expect_sha256,
+            allow_count_change=args.allow_count_change,
+        )
+        _print_events_plan(prepared)
+        if prepared.problems:
+            for problem in prepared.problems:
+                print(f"REFUSED: {problem}", file=sys.stderr)
+            return EXIT_REFUSED
+        report = load_vintage(conn, prepared.request)
     except (LoadRefused, HistoryValidationError, EventsFileError) as exc:
         return _refused(exc)
+    finally:
+        conn.close()
     print_load_report(report)
     if not report.committed:
         print("  (dry run: add --commit to write it)")
@@ -419,11 +421,13 @@ def run_load_sp500(args: argparse.Namespace) -> int:
         commit=args.commit,
         loader_git_sha=git_sha(),
     )
+    conn = connect()
     try:
-        with _connection() as conn:
-            report = load_vintage(conn, request)
+        report = load_vintage(conn, request)
     except (LoadRefused, HistoryValidationError) as exc:
         return _refused(exc)
+    finally:
+        conn.close()
     print_load_report(report)
     if args.report_json is not None:
         report.save(args.report_json)
@@ -739,18 +743,20 @@ def run_export(args: argparse.Namespace) -> int:
 
 def run_reinstate(args: argparse.Namespace) -> int:
     """Run ``ggt db membership reinstate --load-id N --reason ...``; dry run unless ``--commit``."""
+    conn = connect()
     try:
-        with _connection() as conn:
-            report = reinstate_vintage(
-                conn,
-                load_id=args.load_id,
-                reason=args.reason,
-                commit=args.commit,
-                parent=_parent_pin(args.parent),  # type: ignore[arg-type]
-                loader_git_sha=git_sha(),
-            )
+        report = reinstate_vintage(
+            conn,
+            load_id=args.load_id,
+            reason=args.reason,
+            commit=args.commit,
+            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+            loader_git_sha=git_sha(),
+        )
     except (LoadRefused, HistoryValidationError) as exc:
         return _refused(exc)
+    finally:
+        conn.close()
     print(f"reinstating load {args.load_id} as a new vintage")
     print_load_report(report)
     if not report.committed:
