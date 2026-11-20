@@ -86,10 +86,3 @@ graphify-out/
 /.ggtrader-heavy.lock*
 # Raw market data lives on /media/thesix/ggTrader-data/; these are symlinks there.
 data/external/intraday_momentum_r9
-
-# Generated or imported working files that live at the repo root and are not part of the code:
-# graph-build candidates and gg-library import records (kept on disk, never committed).
-graphify-refresh/
-graphify-*-candidate/
-gglibrary-*.json
-library-search-review.json
