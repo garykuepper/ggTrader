@@ -137,7 +137,10 @@ class PgPaperLedger:
     """The PostgreSQL implementation of the paper ledger.
 
     Each method is the body of the module function of the same name in this file, moved
-    unchanged: same SQL, binds and transaction shape. It is stateless and reads the engine
+    unchanged: same SQL and binds. Since 2026-11-20 the writers that once opened ``connect()`` and
+    committed by hand use ``engine.begin()``, which commits on a clean exit and rolls back on an
+    exception; what is committed is the same, except that an identical ``log_trade`` replay now
+    commits on exit with nothing written. It is stateless and reads the engine
     through `_get_engine()` at every call, never caching it. ``durable`` is True: the state is in
     PostgreSQL, so a live run accepts this ledger.
     """
@@ -145,12 +148,11 @@ class PgPaperLedger:
     durable: bool = True
 
     def init_paper_schema(self) -> None:
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             for stmt in _SCHEMA.strip().split(";"):
                 stmt = stmt.strip()
                 if stmt:
                     conn.execute(text(stmt))
-            conn.commit()
 
     def create_order_intent(
         self,
@@ -344,7 +346,7 @@ class PgPaperLedger:
         order -- see `cash_sweep.SWEEP_TRADE_REASON`); NULL/omitted means an
         ordinary strategy trade, preserving the historical meaning of this
         ledger for every caller that doesn't pass it."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
             )
@@ -375,7 +377,6 @@ class PgPaperLedger:
                     "reason": reason,
                 },
             )
-            conn.commit()
 
     def settle_legacy_pending_order(
         self, order_id: str, filled_qty: float, filled_avg_price: float | None, terminal_status: str
@@ -459,7 +460,7 @@ class PgPaperLedger:
         `reason` mirrors `log_trade`'s tag (e.g. "cash_sweep"), NULL for an
         ordinary strategy order.
         """
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_pending_orders "
@@ -476,7 +477,6 @@ class PgPaperLedger:
                     "reason": reason,
                 },
             )
-            conn.commit()
 
     def get_pending_orders(self) -> list[dict]:
         """Return all unresolved pending orders awaiting reconciliation."""
@@ -492,19 +492,18 @@ class PgPaperLedger:
 
     def clear_pending_order(self, order_id: str) -> None:
         """Remove a pending order once it has reached a terminal status."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text("DELETE FROM paper_pending_orders WHERE order_id = :order_id"),
                 {"order_id": order_id},
             )
-            conn.commit()
 
     def mark_pending_order_stale(self, order_id: str) -> None:
         """Flag a pending order as having already triggered a staleness alert.
 
         The row is left in place (reconciliation keeps polling it) -- this only
         stops the notifier from re-alerting on it every run."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "UPDATE paper_pending_orders SET flagged_stale = TRUE "
@@ -512,7 +511,6 @@ class PgPaperLedger:
                 ),
                 {"order_id": order_id},
             )
-            conn.commit()
 
     def get_latest_snapshot(self, *, before: date | None = None) -> float | None:
         """Return the latest portfolio value, optionally strictly before a date."""
@@ -544,7 +542,7 @@ class PgPaperLedger:
     def log_snapshot(
         self, run_date: str, portfolio_value: float, cash: float, positions: dict
     ) -> None:
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) "
@@ -561,7 +559,6 @@ class PgPaperLedger:
                     "pos": json.dumps(json_safe(positions), allow_nan=False),
                 },
             )
-            conn.commit()
 
     def get_latest_snapshot_positions(self) -> dict | None:
         """Return the most recent snapshot's positions dict, or None if none exist.
@@ -600,7 +597,7 @@ class PgPaperLedger:
 
     def save_peak_value(self, peak_value: float) -> None:
         """Upsert the single current peak-value row (id=1)."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) "
@@ -609,7 +606,6 @@ class PgPaperLedger:
                 ),
                 {"peak": peak_value},
             )
-            conn.commit()
 
     def get_rebalance_state(self) -> dict | None:
         """Return the current sleeve weights/scale, or None if never set."""
@@ -693,7 +689,7 @@ class PgPaperLedger:
     ) -> None:
         """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
         a conflicting insert is a no-op, never a double-credit."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) "
@@ -708,7 +704,6 @@ class PgPaperLedger:
                     "amount": amount,
                 },
             )
-            conn.commit()
 
     def get_total_dividend_accrual(self) -> float:
         """Cumulative dollar total of all persisted dividend accruals -- a
@@ -723,7 +718,7 @@ class PgPaperLedger:
         self, rebalance_date: str, weights: dict[str, float], scale: float
     ) -> None:
         """Upsert the single current rebalance-state row (id=1)."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) "
@@ -735,7 +730,6 @@ class PgPaperLedger:
                 ),
                 {"rd": rebalance_date, "w": json.dumps(weights), "s": scale},
             )
-            conn.commit()
 
     def get_open_split_corrections(self) -> dict[str, float]:
         """Return `{symbol: factor}` for every split this account has detected
@@ -776,7 +770,7 @@ class PgPaperLedger:
     def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None:
         """Upsert a detected-unapplied split for `symbol`. Idempotent -- calling
         again for the same symbol just refreshes `factor`/`updated_at`."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text(
                     "INSERT INTO paper_split_state (symbol, ex_date, factor) "
@@ -786,19 +780,17 @@ class PgPaperLedger:
                 ),
                 {"symbol": symbol, "ex_date": ex_date, "factor": factor},
             )
-            conn.commit()
 
     def clear_split_correction(self, symbol: str) -> None:
         """Remove a symbol's persisted split-correction state. Call once the
         broker's own snapshot history confirms the split was actually applied
         (qty jumped by ~factor) or the position is fully closed -- see
         `CorporateActions.split_corrections`."""
-        with _get_engine().connect() as conn:
+        with _get_engine().begin() as conn:
             conn.execute(
                 text("DELETE FROM paper_split_state WHERE symbol = :symbol"),
                 {"symbol": symbol},
             )
-            conn.commit()
 
 
 _LEDGER: PgPaperLedger | None = None

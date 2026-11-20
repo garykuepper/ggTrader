@@ -403,7 +403,7 @@ split here; Phase 5 did that, building on these pieces (section 4b).
 | Eight records: `Account`, `Position`, `OrderStatus`, `MarketClock`, `SleeveSignals`, `SignalBundle` (`TypedDict`s, so the JSON-shaped mappings are unchanged) and `SubmittedOrder`, `RunResult` (frozen dataclasses the trader builds) | `paper/models.py` | permanent |
 | `Broker` and `Notifier` protocols (the 11 broker methods and 3 notifier methods the trader calls) | `paper/ports.py` | permanent |
 | `PaperLedger` protocol, one method per public function of `paper/persist.py`, plus `InMemoryLedger` (a test double: no database) and `ReadOnlyLedger` (skips every write, records the method name in `skipped_writes`) | `paper/ledger.py` | permanent |
-| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py` | `paper/persist.py` | permanent |
+| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py`. Since 2026-11-20 (completion II, task 7, D7c; design 5.2) **every writer uses `with engine.begin() as conn:`**: the 11 that opened `connect()` and called `conn.commit()` by hand were converted, so a transaction commits when the block ends and rolls back when it raises. SQL text and bind values are unchanged. `paper_run_lock` and the 15 readers still use a plain `connect()` (the lock needs one session; readers write nothing) | `paper/persist.py` | permanent |
 | `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **history: retired in Phase 5, no longer in the code** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
 | `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
 | `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live`. The chain is wired: `lab.data.fetch_stock_ohlcv`, `paper/signal_runner.py` and `paper/overlay.py` all call it | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
@@ -438,7 +438,9 @@ not claimed to be identical.
 **Pins that make the changes provable** (tests, not behavior): the transcripts now cover 103
 scenarios (the original 96 stay byte-identical; seven were added); `tests/paper/golden/persist_sql.json`
 records every SQL text, bind dictionary and commit, rollback and close event of the 31 persist
-functions through a recording engine; `tests/paper/test_phase4_pins.py` pins result key order,
+functions through a recording engine (revised once, on 2026-11-20, by owner-approved decision: the
+event labels of the 34 cases of the 11 converted writers changed from `connect ... commit, close` to
+`begin ... commit` or `rollback`; nothing else in the file changed); `tests/paper/test_phase4_pins.py` pins result key order,
 tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py` gains a rule that
 `paper/` imports nothing from `lab.data` except `STOCK_BASE_CONFIG`.
 
