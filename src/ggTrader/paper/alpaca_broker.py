@@ -36,7 +36,8 @@ class AlpacaBroker:
     def get_account(self) -> dict:
         """Return cash, portfolio value, last equity, buying power and multiplier as floats.
 
-        last_equity is None when the broker gives no usable value.
+        last_equity is None when it is missing or does not convert to a float; NaN, infinity,
+        zero and negative values pass through, and the later risk check halts on all of them.
         """
         acct = self._client.get_account()
         try:
@@ -54,7 +55,9 @@ class AlpacaBroker:
     def get_positions(self) -> dict[str, dict]:
         """Return the open positions keyed by symbol, with their values and P&L as floats.
 
-        unrealized_pl, unrealized_plpc and change_today are None when the broker omits them.
+        unrealized_pl, unrealized_plpc and change_today are None when the broker omits them. A
+        missing qty, market_value, current_price, avg_entry_price or cost_basis raises, and the
+        trader then halts before any order.
         """
         positions = self._client.get_all_positions()
         return {

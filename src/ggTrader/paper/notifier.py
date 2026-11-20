@@ -59,7 +59,8 @@ class TelegramNotifier:
         """Send a paper trade alert for an order and return the result of ``send``.
 
         The alert shows the share count and price when both are positive and the dollar amount
-        otherwise. The upper-cased status joins the title unless it is filled or partially_filled.
+        otherwise. The upper-cased status joins the title unless it is None, empty, filled or
+        partially_filled.
         """
         status_suffix = ""
         if status and status not in ("filled", "partially_filled"):

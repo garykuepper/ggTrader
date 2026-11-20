@@ -60,15 +60,29 @@ class Broker(Protocol):
         ...
 
     def get_split_evidence(self, symbols: list[str], since: date) -> dict[str, Any]:
-        """Return the broker's raw split evidence for ``symbols`` since ``since``."""
+        """Return the broker's raw split evidence for ``symbols`` since ``since``.
+
+        The Alpaca result holds ``corp_splits`` (split events for ``symbols``) and
+        ``activity_applied`` (symbols with a SPLIT activity on the whole account, so it may name
+        others). An API error returns empty evidence instead of raising.
+        """
         ...
 
     def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
-        """Return a correction factor per symbol whose split was never applied to the account."""
+        """Return a correction factor per symbol with a split event but no SPLIT account activity.
+
+        That absence is only a signal: it does not prove the split went unapplied. An API error
+        returns an empty dict.
+        """
         ...
 
     def get_dividend_corrections(self, symbols: list[str], since: date | str) -> dict[str, Any]:
-        """Return the cash-dividend evidence for ``symbols`` since ``since``."""
+        """Return the cash-dividend evidence for ``symbols`` since ``since``.
+
+        The Alpaca result pairs dividend events for ``symbols`` with account-wide credited DIV
+        activity. A ``since`` that is not a date or ISO date string raises; an API error returns
+        empty evidence.
+        """
         ...
 
 
@@ -77,7 +91,11 @@ class Notifier(Protocol):
     """Alerts and the daily summary (``TelegramNotifier`` is the implementation)."""
 
     def send(self, message: str) -> bool:
-        """Send a message and return whether it was delivered."""
+        """Send a message; return True only if delivery was confirmed.
+
+        Telegram confirms with an HTTP 200; False covers a disabled or failed send and a message
+        a dry run suppresses.
+        """
         ...
 
     def trade_alert(
@@ -91,7 +109,7 @@ class Notifier(Protocol):
         price: float | None = None,
         status: str | None = None,
     ) -> bool:
-        """Send an alert for one order and return whether it was delivered."""
+        """Send an alert for one order; return whether it was delivered (False if suppressed)."""
         ...
 
     def daily_summary(
@@ -108,5 +126,5 @@ class Notifier(Protocol):
         errors: list[str] | None = None,
         starting_capital: float | None = None,
     ) -> bool:
-        """Send the end-of-run summary and return whether it was delivered."""
+        """Send the end-of-run summary; return whether it was delivered (False if suppressed)."""
         ...

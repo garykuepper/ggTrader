@@ -543,7 +543,11 @@ class PgPaperLedger:
     def log_snapshot(
         self, run_date: str, portfolio_value: float, cash: float, positions: dict
     ) -> None:
-        """Insert the snapshot of a run date, or overwrite the one already stored for that date."""
+        """Insert the snapshot of a run date, or overwrite the one already stored for that date.
+
+        An overwrite replaces the portfolio value, cash and the whole positions record; non-finite
+        numbers in positions are stored as null, which can replace previously stored numbers.
+        """
         with _get_engine().begin() as conn:
             conn.execute(
                 text(
@@ -926,7 +930,11 @@ def get_earliest_snapshot() -> float | None:
 
 
 def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: dict) -> None:
-    """Insert the snapshot of a run date, or overwrite the one already stored for that date."""
+    """Insert the snapshot of a run date, or overwrite the one already stored for that date.
+
+    An overwrite replaces the portfolio value, cash and the whole positions record; non-finite
+    numbers in positions are stored as null, which can replace previously stored numbers.
+    """
     return _pg().log_snapshot(run_date, portfolio_value, cash, positions)
 
 

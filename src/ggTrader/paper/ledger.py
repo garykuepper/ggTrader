@@ -108,9 +108,10 @@ class PaperLedger(Protocol):
     def attach_broker_order(self, client_order_id: str, order_id: str) -> None:
         """Attach a broker order id to an intent and mark it submitted.
 
-        Raise ``ValueError`` for a missing intent, another broker id on the intent, an intent not in
-        state ``intent``, or an order id that is also a legacy pending order. Attaching the same id
-        again changes nothing.
+        Raise ``ValueError`` for an order id that is also a legacy pending order (checked first), a
+        missing intent, another broker id on the intent, or, on a first attachment, an intent not in
+        state ``intent``. Attaching the same id again changes nothing. The SQL ledger's unique
+        broker-id column also refuses an id already attached to another intent.
         """
         ...
 
@@ -134,7 +135,8 @@ class PaperLedger(Protocol):
     def paper_run_lock(self) -> AbstractContextManager[RunLock]:
         """Return a context manager that holds the run lock and yields a ``RunLock``.
 
-        The SQL ledger raises ``RuntimeError`` when another run holds the lock.
+        The SQL ledger raises ``RuntimeError`` when another run holds the lock; the in-memory
+        ledger only counts entries and ``verify`` calls and never refuses.
         """
         ...
 
@@ -178,7 +180,7 @@ class PaperLedger(Protocol):
         order_id: str,
         reason: str | None = None,
     ) -> None:
-        """Record an order that had not filled by run end; a repeat of the order id is ignored."""
+        """Record an order still working at run end, maybe part-filled; a repeat id is ignored."""
         ...
 
     def get_pending_orders(self) -> list[dict]:
@@ -267,7 +269,10 @@ class PaperLedger(Protocol):
         ...
 
     def get_open_split_states(self) -> dict[str, dict]:
-        """Return each symbol's stored split correction as ``{"factor", "ex_date"}``."""
+        """Return each symbol's stored split correction.
+
+        The result maps each symbol to a dict with a float ``factor`` and a date ``ex_date``.
+        """
         ...
 
     def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None:
@@ -474,9 +479,9 @@ class InMemoryLedger:
     def attach_broker_order(self, client_order_id: str, order_id: str) -> None:
         """Attach a broker order id to an intent and mark it submitted.
 
-        Raise ``ValueError`` when the order id is a pending order, the intent is missing, it has
-        another broker id, or it is not in state ``intent``. Attaching the same id again changes
-        nothing.
+        Raise ``ValueError`` when the order id is a pending order (checked first), the intent is
+        missing, it has another broker id, or, on a first attachment, it is not in state
+        ``intent``. Attaching the same id again changes nothing.
         """
         self._reject_pending(order_id)
         row = self._intents.get(client_order_id)
@@ -704,7 +709,10 @@ class InMemoryLedger:
     def save_rebalance_state(
         self, rebalance_date: str, weights: dict[str, float], scale: float
     ) -> None:
-        """Store the rebalance date (as an ISO string), a copy of the weights and the scale."""
+        """Replace all earlier rebalance state with the date (as an ISO string), weights and scale.
+
+        The weights are stored as a copy.
+        """
         self._rebalance = {
             "rebalance_date": _iso(rebalance_date),
             "weights": copy.deepcopy(weights),
@@ -760,7 +768,10 @@ class InMemoryLedger:
         return {symbol: float(row["factor"]) for symbol, row in self._splits.items()}
 
     def get_open_split_states(self) -> dict[str, dict]:
-        """Return each symbol's stored split correction as ``{"factor", "ex_date"}``."""
+        """Return each symbol's stored split correction.
+
+        The result maps each symbol to a dict with a float ``factor`` and a date ``ex_date``.
+        """
         return {
             symbol: {"factor": float(row["factor"]), "ex_date": _as_date(row["ex_date"])}
             for symbol, row in self._splits.items()

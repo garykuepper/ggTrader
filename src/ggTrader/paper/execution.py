@@ -26,15 +26,23 @@ class Executor(Protocol):
     submits_orders: bool
 
     def recover_intents(self) -> None:
-        """Resolve the order intents a previous run left unresolved."""
+        """Resolve the order intents a previous run left unresolved.
+
+        Live: attaches broker ids, books terminal fills, and raises (after an alert attempt) on
+        working orders or a recovery error; earlier writes may already be committed. Dry run: no-op.
+        """
         ...
 
     def submit(self, intent: OrderIntent) -> str | None:
-        """Submit the intent's order; return the broker order id, or None when none is sent."""
+        """Submit the intent's order; return the broker order id, or None when none is sent.
+
+        Live: commits the intent, verifies the run lock, submits, then attaches the broker id; a
+        failure at any stage alerts and raises, even after the broker accepted the order.
+        """
         ...
 
     def announce(self, intent: OrderIntent) -> None:
-        """Tell the operator about an intent."""
+        """Alert the operator: live only for a catastrophe stop; dry run for every intent kind."""
         ...
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
@@ -42,11 +50,17 @@ class Executor(Protocol):
         ...
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
-        """Follow up after the sell orders have been polled."""
+        """Follow up after the sell orders have been polled.
+
+        Live: reconciles the intents when there are results. Dry run: no-op.
+        """
         ...
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
-        """Follow up after the whole order batch has been polled."""
+        """Follow up after the strategy order batch has been polled, before any trailing sweep buy.
+
+        Live: reconciles the intents when there are orders. Dry run: no-op.
+        """
         ...
 
     def unfilled_exit_errors(
@@ -55,7 +69,11 @@ class Executor(Protocol):
         filled: Mapping[str, OrderStatus],
         broker_positions: Mapping[str, Position],
     ) -> list[str]:
-        """Return an error message for each sell that did not fill in full."""
+        """Return an error message for each sell that did not fill in full.
+
+        Any message blocks the run's strategy buys. Live skips the cash-sweep sell; dry run
+        returns none.
+        """
         ...
 
 
@@ -93,11 +111,19 @@ class OrderExecutor:
         self._current = current if current is not None else lambda: self
 
     def recover_intents(self) -> None:
-        """Reconcile the order intents through the current executor."""
+        """Reconcile the order intents through the current executor.
+
+        Attaches broker ids and books terminal fills; raises, after an alert attempt, on working
+        orders or a recovery error, with earlier writes possibly already committed.
+        """
         self._current().reconcile_order_intents()
 
     def submit(self, intent: OrderIntent) -> str | None:
-        """Submit the intent's order through the current executor; return the broker order id."""
+        """Submit the intent's order through the current executor; return the broker order id.
+
+        Commits the intent, verifies the run lock, submits, then attaches the id. A failure at any
+        stage alerts and raises; attachment can fail after the broker accepted the order.
+        """
         return self._current().submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
@@ -105,12 +131,18 @@ class OrderExecutor:
         return self._current().poll_orders(list(orders))
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
-        """Reconcile the order intents when there are sell results; do nothing if there are none."""
+        """Reconcile the order intents when there are sell results; do nothing if there are none.
+
+        Reconciliation attaches broker ids, books terminal fills and can raise after an alert.
+        """
         if filled:
             self._current().reconcile_order_intents()
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
-        """Reconcile the order intents when there are orders; do nothing for an empty sequence."""
+        """Reconcile the order intents when there are orders; do nothing for an empty sequence.
+
+        Reconciliation attaches broker ids, books terminal fills and can raise after an alert.
+        """
         if orders:
             self._current().reconcile_order_intents()
 
@@ -132,7 +164,8 @@ class OrderExecutor:
         """Return a message for each sell that is not filled in full.
 
         The cash-sweep sell is skipped. A sell counts as filled only when its status is "filled" and
-        its filled quantity equals the broker position quantity.
+        its filled quantity is within a `math.isclose` tolerance of the broker position quantity.
+        Any message blocks the run's strategy buys.
         """
         errors = []
         for order in orders:
