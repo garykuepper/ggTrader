@@ -17,7 +17,7 @@ force-exclude = true
 select = [
     "E", "F", "W", "I", "TID251", "UP006", "UP035", "UP045", "B", "S110",
     "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002",
-    "ANN001", "ANN201",
+    "ANN001", "ANN201", "T201",
 ]
 ignore = []
 
@@ -73,7 +73,7 @@ max-args = 8
 "!src/ggTrader/paper/**" = ["C901", "PLR0912", "PLR0915", "PLR0913"]
 # Rules enabled for src/ggTrader only (refactor phase 6); scripts, tests and research are outside
 # them. Each rule is added to the select list and to this one negated glob together.
-"!src/ggTrader/**" = ["DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201"]
+"!src/ggTrader/**" = ["DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201", "T201"]
 # ARG001/ARG002 survivors (`ruff check --select ARG001,ARG002 src/ggTrader`: 11 findings, 2 fixed by
 # dropping the unused parameter of the two membership check handlers; 9 listed here). An unused
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.
@@ -82,13 +82,29 @@ max-args = 8
 # _TableParser.handle_starttag overrides HTMLParser and must accept `attrs`.
 "src/ggTrader/data/membership_press.py" = ["ARG002"]
 # run_wfo(market=...) is a label no body uses, but the frozen oracle drivers, blend.py and the tests
-# pass it by keyword, so the parameter stays.
-"src/ggTrader/lab/wfo/run.py" = ["ARG001"]
+# pass it by keyword, so the parameter stays. Its prints are the ``ggt lab`` terminal output (T201
+# below).
+"src/ggTrader/lab/wfo/run.py" = ["ARG001", "T201"]
 # DryRunExecution implements the Execution protocol: its no-op submit, after_orders and
 # unfilled_exit_errors keep the protocol's parameters (intent, orders, filled, broker_positions).
 "src/ggTrader/paper/execution.py" = ["ARG002"]
 # The read-only ledger's skip(*args, **kwargs) stands in for any write method of the wrapped ledger.
 "src/ggTrader/paper/ledger.py" = ["ARG001"]
+# T201 (print): 170 findings in 10 files. Two prints in the timescaledb loader became log calls.
+# The rest is the terminal output of a ggt command, kept as print because the run configures no
+# logging handler (an INFO record would vanish) and tests pin the text on stdout.
+# The ggt command modules print their own results and errors.
+"src/ggTrader/cli/**" = ["T201"]
+# fetch_chain's "  [data] ..." progress lines (tests/lab/test_fetch_stock_ohlcv_chain.py pins them).
+"src/ggTrader/data/live/fetch_chain.py" = ["T201"]
+# The ``ggt lab`` run: blend result, the WFO banner, per-fold progress (run.py, listed with its
+# ARG001 entry above), the fold table, the result path.
+"src/ggTrader/lab/cli.py" = ["T201"]
+"src/ggTrader/lab/wfo/cli_support.py" = ["T201"]
+# selfcheck is a build-time command: JSON on stdout, the failure on stderr, exit code 1.
+"src/ggTrader/engine/selfcheck.py" = ["T201"]
+# create_db_engine_or_exit tells the person at the terminal why it exits with status 1.
+"src/ggTrader/utils/db_engine.py" = ["T201"]
 # Survivors of the refactor phase 5 inventory (`ruff check --select C901,PLR0912,PLR0915,PLR0913
 # src/ggTrader/paper`: 18 findings at 10 definitions in 8 files), one entry per file and only the
 # rules that file still trips. A survivor is not a defect: the order of these steps is behavior,
