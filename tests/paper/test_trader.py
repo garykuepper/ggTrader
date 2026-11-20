@@ -13,11 +13,14 @@ from ggTrader.paper.gates import SignalGateError
 from ggTrader.paper.ledger import InMemoryLedger
 from tests.paper.support import (
     SpyLedger,
+    forward_to_broker,
     make_trader,
     persist_guard,
+    restore_submit_order,
     seed_peak,
     seed_pending_orders,
     seed_snapshots,
+    stub_submit_order,
 )
 
 # Fixed "today" every test's signals["as_of"] defaults to, so the Item-4
@@ -138,13 +141,7 @@ def _make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     notifier.daily_summary.return_value = True
 
     trader = PaperTrader(broker, notifier, dry_run=False)
-    trader._submit_order = MagicMock(
-        side_effect=lambda side, symbol, amount, reason: (
-            broker.submit_buy(symbol, amount)
-            if side == "BUY"
-            else broker.submit_sell(symbol, amount)
-        )
-    )
+    stub_submit_order(trader, forward_to_broker(broker))
     return trader, broker, notifier
 
 
@@ -163,7 +160,7 @@ class TestSellExits:
             }
         )
         result = trader.run()
-        trader._submit_order.assert_called_once_with("SELL", "AAPL", 10.0, None)
+        trader.submit_order_mock.assert_called_once_with("SELL", "AAPL", 10.0, None)
         broker.submit_sell.assert_called_once_with("AAPL", 10.0)
         assert "AAPL" in result["sells"]
         assert result["errors"] == []
@@ -248,9 +245,8 @@ _AAPL_POS = {
 
 def _real_submission(trader, broker, ledger):
     """Use real submission and resolve broker lookups against the injected ledger."""
-    from ggTrader.paper.trader import PaperTrader
 
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
 
     def lookup(client_id):
         intent = next(
@@ -2288,9 +2284,9 @@ class TestCashSweepEnabled:
         order_calls = [c for c in broker.method_calls if c[0] in ("submit_sell", "submit_buy")]
         from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 
-        assert trader._submit_order.call_args_list[0].args[0:2] == ("SELL", "SPY")
-        assert trader._submit_order.call_args_list[0].args[3] == SWEEP_TRADE_REASON
-        assert trader._submit_order.call_args_list[1].args == ("BUY", "MSFT", 3300.0, None)
+        assert trader.submit_order_mock.call_args_list[0].args[0:2] == ("SELL", "SPY")
+        assert trader.submit_order_mock.call_args_list[0].args[3] == SWEEP_TRADE_REASON
+        assert trader.submit_order_mock.call_args_list[1].args == ("BUY", "MSFT", 3300.0, None)
         assert [c[0] for c in order_calls] == ["submit_sell", "submit_buy"]
         sell_call, buy_call = order_calls
         assert sell_call.args[0] == "SPY"
@@ -2341,7 +2337,7 @@ class TestCashSweepEnabled:
         # reserve = 5% * 100000 = 5000; sweep buy = 50000 - 5000 = 45000
         from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
 
-        trader._submit_order.assert_called_once_with("BUY", "SPY", 45_000.0, SWEEP_TRADE_REASON)
+        trader.submit_order_mock.assert_called_once_with("BUY", "SPY", 45_000.0, SWEEP_TRADE_REASON)
         broker.submit_buy.assert_called_once_with("SPY", 45_000.0)
 
     @patch.dict("os.environ", {"CASH_SWEEP_ENABLED": "true"})
@@ -2409,7 +2405,9 @@ class TestCatastropheStopEnabled:
         result = trader.run()
         from ggTrader.paper.catastrophe_stop import CATASTROPHE_STOP_REASON
 
-        trader._submit_order.assert_called_once_with("SELL", "NXPI", 100.0, CATASTROPHE_STOP_REASON)
+        trader.submit_order_mock.assert_called_once_with(
+            "SELL", "NXPI", 100.0, CATASTROPHE_STOP_REASON
+        )
         broker.submit_sell.assert_called_once_with("NXPI", 100.0)
         assert "NXPI" in result["sells"]
 
@@ -3234,7 +3232,7 @@ def test_submit_order_persists_intent_before_broker_call():
 
     broker = MagicMock()
     # `read_only=False`: a read-only trader's ledger would skip the intent writes, and the point
-    # here is the order of intent, submit and attach (a dry run never reaches `_submit_order`).
+    # here is the order of intent, submit and attach (a dry run never reaches `submit_order`).
     ledger = SpyLedger()
     trader = PaperTrader(broker, MagicMock(), dry_run=True, read_only=False, ledger=ledger)
     trader._paper_lock = MagicMock()
@@ -3258,7 +3256,7 @@ def test_submit_order_persists_intent_before_broker_call():
         ),
     ):
         broker.submit_buy.side_effect = lambda *a: events.append(("submit", a)) or "broker-1"
-        assert trader._submit_order("BUY", "SPY", 100.0, None) == "broker-1"
+        assert trader._executor_for_call().submit_order("BUY", "SPY", 100.0, None) == "broker-1"
     assert [event[0] for event in events] == ["intent", "submit", "attach"]
     assert events[0][1][0] == events[1][1][2] == events[2][1][0]
     trader._paper_lock.verify.assert_called_once()
@@ -3274,7 +3272,7 @@ def test_read_only_trader_refuses_a_direct_order_submission():
     hooks = MagicMock()
     with patch.object(trader, "_hooks", return_value=hooks):
         with pytest.raises(RuntimeError, match="read-only trader must not submit orders"):
-            trader._submit_order("BUY", "SPY", 100.0, None)
+            trader._executor_for_call().submit_order("BUY", "SPY", 100.0, None)
     broker.submit_buy.assert_not_called()
     broker.submit_sell.assert_not_called()
     ledger.create_order_intent.assert_not_called()
@@ -3286,10 +3284,10 @@ def test_read_only_trader_refuses_a_direct_order_submission():
 def test_submit_seam_failure_aborts_before_later_orders(mock_signals):
     mock_signals.return_value = _blend(buys=["MSFT", "AAPL"], sells=[])
     trader, broker, _, _ledger = make_trader()
-    trader._submit_order = MagicMock(side_effect=RuntimeError("ambiguous submit"))
+    submit = stub_submit_order(trader, MagicMock(side_effect=RuntimeError("ambiguous submit")))
     with pytest.raises(RuntimeError, match="ambiguous submit"):
         trader.run()
-    trader._submit_order.assert_called_once_with("BUY", "MSFT", 3300.0, None)
+    submit.assert_called_once_with("BUY", "MSFT", 3300.0, None)
     broker.submit_buy.assert_not_called()
 
 
@@ -3393,13 +3391,12 @@ def test_recovery_settles_partial_cancellation():
 
 
 def test_reconciliation_failure_after_submission_does_not_claim_no_orders():
-    from ggTrader.paper.trader import PaperTrader
 
     trader, broker, notifier, ledger = make_trader()
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
     trader._paper_lock = MagicMock()
     broker.submit_sell.return_value = "broker-order"
-    trader._submit_order("SELL", "AAPL", 10, None)
+    trader._executor_for_call().submit_order("SELL", "AAPL", 10, None)
     broker.get_order_by_client_id.side_effect = RuntimeError("order lookup failed")
     with pytest.raises(RuntimeError, match="lookup failed"):
         trader._executor_for_call().reconcile_order_intents()
@@ -3412,9 +3409,8 @@ def test_reconciliation_failure_after_submission_does_not_claim_no_orders():
 @pytest.mark.parametrize("stage", ["submit", "attach"])
 def test_submit_failure_notifies_client_id_and_stage(stage):
     trader, broker, notifier, ledger = make_trader()
-    from ggTrader.paper.trader import PaperTrader
 
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
     trader._paper_lock = MagicMock()
     broker.submit_buy.return_value = "broker-accepted"
     if stage == "submit":
@@ -3428,7 +3424,7 @@ def test_submit_failure_notifies_client_id_and_stage(stage):
         ),
         pytest.raises(RuntimeError),
     ):
-        trader._submit_order("BUY", "SPY", 100, None)
+        trader._executor_for_call().submit_order("BUY", "SPY", 100, None)
     message = str(notifier.send.call_args)
     assert "client-fixed" in message and stage in message.lower()
     broker.submit_buy.assert_called_once()
@@ -3436,10 +3432,9 @@ def test_submit_failure_notifies_client_id_and_stage(stage):
 
 @pytest.mark.parametrize("stage", ["submit", "attach"])
 def test_run_stops_after_ambiguous_order_failure(stage):
-    from ggTrader.paper.trader import PaperTrader
 
     trader, broker, notifier, ledger = make_trader()
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
     broker.submit_buy.return_value = "accepted"
     if stage == "submit":
         broker.submit_buy.side_effect = RuntimeError("accepted then disconnected")
@@ -3464,14 +3459,13 @@ def test_run_stops_after_ambiguous_order_failure(stage):
 
 def test_loss_halt_stops_after_ambiguous_exit_submission():
     """A disconnected exit may already exist; do not blindly submit more orders."""
-    from ggTrader.paper.trader import PaperTrader
 
     positions = {
         "AAPL": {"qty": 10, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
         "MSFT": {"qty": 5, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
     }
     trader, broker, notifier, ledger = make_trader(positions=positions, portfolio_value=100000.0)
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
     broker.submit_sell.side_effect = RuntimeError("accepted then disconnected")
     seed_peak(ledger, 120000.0)
     with (
@@ -3861,10 +3855,9 @@ def test_invalid_exit_quantity_reported_once_for_both_exit_paths():
 
 @pytest.mark.parametrize("stage", ["intent", "lock"])
 def test_presubmission_failure_notifies_and_submits_nothing(stage):
-    from ggTrader.paper.trader import PaperTrader
 
     trader, broker, notifier, ledger = make_trader()
-    trader._submit_order = PaperTrader._submit_order.__get__(trader)
+    restore_submit_order(trader)
     trader._paper_lock = MagicMock()
     if stage == "lock":
         trader._paper_lock.verify.side_effect = RuntimeError("lock lost")
@@ -3877,7 +3870,7 @@ def test_presubmission_failure_notifies_and_submits_nothing(stage):
         ),
         pytest.raises(RuntimeError),
     ):
-        trader._submit_order("SELL", "AAPL", 10, None)
+        trader._executor_for_call().submit_order("SELL", "AAPL", 10, None)
     assert "client-fixed" in str(notifier.send.call_args)
     assert stage in str(notifier.send.call_args).lower()
     broker.submit_sell.assert_not_called()

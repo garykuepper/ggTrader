@@ -1,6 +1,6 @@
 """Tests for order execution boundaries."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -8,34 +8,21 @@ from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
 from ggTrader.paper.models import IntentKind, OrderIntent
 
 
-def test_executor_submit_routes_through_the_instance_seam():
-    from ggTrader.paper.trader import PaperTrader
-
-    trader = PaperTrader(
-        MagicMock(), MagicMock(), dry_run=False, membership="db", ledger=MagicMock()
-    )
-    executor = trader._executor_for_call()
-    trader._submit_order = MagicMock(return_value="oid")
+def test_executor_submit_runs_the_executors_own_submit_order():
+    executor, *_, stubs, _ = make_executor(stub=("submit_order",))
+    stubs.submit_order.return_value = "oid"
     intent = OrderIntent(IntentKind.BUY, "BUY", "ABC", 42.0, None, 42.0)
     assert executor.submit(intent) == "oid"
-    trader._submit_order.assert_called_once_with("BUY", "ABC", 42.0, None)
+    stubs.submit_order.assert_called_once_with("BUY", "ABC", 42.0, None)
 
 
 def test_dry_run_executor_never_reaches_submit():
-    seams = MagicMock()
-    seams.submit_order.side_effect = AssertionError
-    broker = MagicMock()
+    executor, broker, *_, stubs, _ = make_executor(
+        DryRunExecutor, read_only=True, stub=("submit_order",)
+    )
+    stubs.submit_order.side_effect = AssertionError
     broker.submit_buy.side_effect = AssertionError
     broker.submit_sell.side_effect = AssertionError
-    executor = DryRunExecutor(
-        broker=broker,
-        notifier=MagicMock(),
-        ledger=MagicMock(),
-        hooks=MagicMock(),
-        lock=lambda: None,
-        read_only=True,
-        seams=seams,
-    )
     assert executor.submit(OrderIntent(IntentKind.BUY, "BUY", "ABC", 42.0, None, 42.0)) is None
 
 
@@ -53,7 +40,7 @@ def test_submit_order_saves_the_intent_then_verifies_the_lock_then_submits_then_
         return_value=MagicMock(today_et=lambda: date(2026, 1, 1), new_uuid=lambda: "uuid")
     )
     calls.broker.submit_buy.return_value = "oid"
-    assert trader._submit_order("BUY", "ABC", 10, None) == "oid"
+    assert trader._executor_for_call().submit_order("BUY", "ABC", 10, None) == "oid"
     assert [call[0] for call in calls.mock_calls] == [
         "ledger.create_order_intent",
         "lock.verify",
@@ -331,9 +318,9 @@ def test_the_default_seam_chain_reaches_the_moved_body_without_recursion():
 
 
 @pytest.mark.parametrize("value", ["oid-1", None, MagicMock(name="order-id")])
-def test_executor_submit_returns_the_seam_value_untouched(value):
-    executor, broker, _, ledger, _, seams, _ = make_executor()
-    seams.submit_order.return_value = value
+def test_executor_submit_returns_the_submit_order_value_untouched(value):
+    executor, broker, _, ledger, _, stubs, _ = make_executor(stub=("submit_order",))
+    stubs.submit_order.return_value = value
     assert executor.submit(OrderIntent(IntentKind.BUY, "BUY", "ABC", 12, None, 12)) is value
     assert broker.mock_calls == []
     assert ledger.mock_calls == []
@@ -439,15 +426,15 @@ def test_unfilled_exit_errors_is_empty_in_a_dry_run():
     )
 
 
-def test_full_dry_run_after_assignment_never_calls_submit_seam():
+def test_full_dry_run_after_assignment_never_calls_submit_order():
     from tests.paper.test_seam_contract import drive
     from tests.paper.transcript.scenarios import SCENARIOS
 
     submit = MagicMock(side_effect=AssertionError("dry run submitted"))
 
-    def configure(trader, _run, _stack):
+    def configure(trader, _run, stack):
         trader._dry_run = True
-        trader._submit_order = submit
+        stack.enter_context(patch.object(OrderExecutor, "submit_order", submit))
 
     driven = drive("new", SCENARIOS["plain_buys_and_sells"], configure)
     assert driven.error is None

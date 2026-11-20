@@ -44,13 +44,6 @@ def test_clock_hooks_are_late_bound(monkeypatch):
     clock.sleep.assert_called_once_with(2)
 
 
-def test_seams_resolve_instance_attributes_at_call_time():
-    instance = trader.PaperTrader.__new__(trader.PaperTrader)
-    seams = instance._seams()
-    instance._submit_order = lambda *args: "patched"
-    assert seams.submit_order("BUY", "ABC", 1, None) == "patched"
-
-
 def test_default_hooks_read_nothing_at_construction(monkeypatch):
     replacement = MagicMock(side_effect=AssertionError("called during construction"))
     for name in (

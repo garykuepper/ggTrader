@@ -160,7 +160,6 @@ class PaperTrader:
     def _seams(self) -> TraderSeams:
         """Resolve private methods on this instance at call time."""
         return TraderSeams(
-            submit_order=lambda *args: self._submit_order(*args),
             missed_exits=lambda *args: self._missed_exits(*args),
             split_corrections=lambda *args: self._compute_split_corrections(*args),
             accrue_dividends=lambda positions: self._accrue_dividends(positions),
@@ -178,10 +177,6 @@ class PaperTrader:
             read_only=self._read_only,
             seams=self._seams(),
         )
-
-    def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
-        """Persist the identity before submitting an order under the run lock."""
-        return self._executor_for_call().submit_order(side, symbol, amount, reason)
 
     def _missed_exits(
         self, positions: dict, last_exit: dict[str, str], already: set[str]

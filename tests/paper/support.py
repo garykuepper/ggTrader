@@ -21,6 +21,46 @@ LEDGER_NAMES = frozenset(
 )
 
 
+_REAL_BUILDER = "_real_executor_for_call"
+
+
+def forward_to_broker(broker: Any) -> MagicMock:
+    """A stand-in for `OrderExecutor.submit_order` that calls the broker and writes no intent."""
+    return MagicMock(
+        side_effect=lambda side, symbol, amount, reason: (
+            broker.submit_buy(symbol, amount)
+            if side == "BUY"
+            else broker.submit_sell(symbol, amount)
+        )
+    )
+
+
+def stub_submit_order(trader: "PaperTrader", stub: MagicMock) -> MagicMock:
+    """Make every executor `trader` builds from now on submit through `stub`.
+
+    The replacement point is `OrderExecutor.submit_order` on the executor instance the trader's
+    `_executor_for_call` builds; the stub is also kept as `trader.submit_order_mock` so a test can
+    assert the arguments of each order. `restore_submit_order` undoes it.
+    """
+    build = trader.__dict__.setdefault(_REAL_BUILDER, trader._executor_for_call)
+
+    def build_with_stub() -> Any:
+        executor = build()
+        executor.submit_order = stub
+        return executor
+
+    trader._executor_for_call = build_with_stub  # type: ignore[method-assign]
+    trader.submit_order_mock = stub  # type: ignore[attr-defined]
+    return stub
+
+
+def restore_submit_order(trader: "PaperTrader") -> None:
+    """Undo `stub_submit_order`: the trader's executors submit through the real method again."""
+    trader.__dict__.pop(_REAL_BUILDER, None)
+    trader.__dict__.pop("_executor_for_call", None)
+    trader.__dict__.pop("submit_order_mock", None)
+
+
 class SpyLedger(InMemoryLedger):
     """Record public ledger calls while retaining in-memory behavior."""
 
@@ -145,11 +185,5 @@ def make_trader(
 
     ledger = SpyLedger() if ledger is None else ledger
     trader = PaperTrader(broker, notifier, dry_run=dry_run, read_only=read_only, ledger=ledger)
-    trader._submit_order = MagicMock(
-        side_effect=lambda side, symbol, amount, reason: (
-            broker.submit_buy(symbol, amount)
-            if side == "BUY"
-            else broker.submit_sell(symbol, amount)
-        )
-    )
+    stub_submit_order(trader, forward_to_broker(broker))
     return trader, broker, notifier, ledger

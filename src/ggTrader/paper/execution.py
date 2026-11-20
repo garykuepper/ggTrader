@@ -67,7 +67,7 @@ class OrderExecutor:
         self.reconcile_order_intents()
 
     def submit(self, intent: OrderIntent) -> str | None:
-        return self._seams.submit_order(intent.side, intent.symbol, intent.size, intent.reason)
+        return self.submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
         return self.poll_orders(list(orders))

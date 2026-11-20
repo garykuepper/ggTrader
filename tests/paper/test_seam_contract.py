@@ -157,7 +157,6 @@ STEP_OWNERS: dict[str, type] = {
     "CorporateActions": CorporateActions,
 }
 PRIVATE_SEAMS = (
-    "_submit_order",
     "_missed_exits",
     "_compute_split_corrections",
     "_accrue_dividends",
@@ -751,7 +750,9 @@ class TestLegacySeamsInterceptTheRun:
     """
 
     SEAMS = (
-        pytest.param("_submit_order", "instance", "plain_buys_and_sells", id="submit_order"),
+        pytest.param(
+            "OrderExecutor.submit_order", "step", "plain_buys_and_sells", id="submit_order"
+        ),
         pytest.param(
             "OrderExecutor.reconcile_order_intents", "step", "plain_buys_and_sells", id="intents"
         ),
@@ -811,21 +812,23 @@ class TestLegacySeamsInterceptTheRun:
         assert _same_run(baseline, intercepted)
 
     def test_submit_order_seam_sees_every_order_and_replaces_the_broker_call(self, impl_name):
-        """An assigned `_submit_order` receives every order's arguments, one call per order."""
+        """A replaced `OrderExecutor.submit_order` gets every order's arguments, once per order."""
         scenario = SCENARIOS["plain_buys_and_sells"]
         baseline = drive(impl_name, scenario)
         expected = len(rs.submissions(_transcript_of(baseline)))
         assert expected >= 2
         seen: list[tuple] = []
 
-        def configure(trader: PaperTrader, run: harness._Run, _stack: ExitStack) -> None:
-            real = trader._submit_order
+        def configure(_trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
+            real = OrderExecutor.submit_order
 
-            def spy(side: str, symbol: str, amount: float, reason: str | None) -> str:
+            def spy(
+                self: OrderExecutor, side: str, symbol: str, amount: float, reason: str | None
+            ) -> str:
                 seen.append((side, symbol, amount, reason))
-                return real(side, symbol, amount, reason)
+                return real(self, side, symbol, amount, reason)
 
-            trader._submit_order = spy  # type: ignore[method-assign]
+            stack.enter_context(patch.object(OrderExecutor, "submit_order", spy))
 
         intercepted = drive(impl_name, scenario, configure)
         assert len(seen) == expected
@@ -894,14 +897,14 @@ class TestLegacySeamsInterceptTheRun:
         lock = MagicMock()
         scenario = SCENARIOS["plain_buys_and_sells"]
 
-        def configure(trader: PaperTrader, run: harness._Run, _stack: ExitStack) -> None:
-            real = trader._submit_order
+        def configure(trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
+            real = OrderExecutor.submit_order
 
-            def submit_with_the_mock(*args: Any, **kwargs: Any) -> str:
+            def submit_with_the_mock(self: OrderExecutor, *args: Any, **kwargs: Any) -> str:
                 trader._paper_lock = lock
-                return real(*args, **kwargs)
+                return real(self, *args, **kwargs)
 
-            trader._submit_order = submit_with_the_mock  # type: ignore[method-assign]
+            stack.enter_context(patch.object(OrderExecutor, "submit_order", submit_with_the_mock))
 
         driven = drive(impl_name, scenario, configure)
         orders = len(rs.submissions(_transcript_of(driven)))

@@ -636,7 +636,7 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
 
     flow, view, signals = make_flow({}, dry=True, buys=())
     executor, _, notifier, _, _, seams, _ = make_executor(
-        DryRunExecutor, stub=("reconcile_order_intents", "poll_orders")
+        DryRunExecutor, stub=("reconcile_order_intents", "poll_orders", "submit_order")
     )
     seams.poll_orders.return_value = {}
     flow.executor = executor
@@ -665,7 +665,7 @@ def test_buy_and_sweep_announcements_use_executor_mode(monkeypatch, dry):
 
     flow, view, signals = make_flow({}, dry=dry)
     executor, _, notifier, _, _, seams, _ = make_executor(
-        DryRunExecutor if dry else OrderExecutor, stub=("poll_orders",)
+        DryRunExecutor if dry else OrderExecutor, stub=("poll_orders", "submit_order")
     )
     seams.submit_order.side_effect = ["buy-id", "sweep-id"]
     seams.poll_orders.return_value = {}
@@ -692,7 +692,6 @@ def test_submit_failure_after_saving_intent_stops_later_buys():
 
     flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
     executor, broker, _, ledger, _, seams, _ = make_executor(stub=("poll_orders",))
-    seams.submit_order.side_effect = executor.submit_order
 
     def fail_submit(*_args):
         ledger.create_order_intent.assert_called_once()
@@ -719,7 +718,9 @@ def test_rejected_buy_reaches_normal_settlement():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({})
-    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents", "poll_orders"))
+    executor, _, _, _, _, seams, _ = make_executor(
+        stub=("reconcile_order_intents", "poll_orders", "submit_order")
+    )
     seams.submit_order.return_value = "buy-id"
     seams.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
     flow.executor = executor
