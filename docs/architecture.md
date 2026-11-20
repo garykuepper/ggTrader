@@ -479,7 +479,7 @@ carries a class attribute `durable`: `PgPaperLedger` True, `InMemoryLedger` and 
 `SpyLedger` False, `ReadOnlyLedger` follows its inner ledger, and a ledger with no attribute counts
 as non-durable. Dry runs, read-only or not, are never refused. The module flag
 `ggTrader.paper.ledger.ALLOW_NON_DURABLE_LEDGER` (default False, read at call time) lifts the
-refusal; only `tests/paper/conftest.py` sets it, per test. The static production-import guard that
+refusal; only the test package sets it: `tests/paper/__init__.py` turns it on when the package is imported (the session-scoped digest fixtures and the hash-seed child process need it) and `tests/paper/conftest.py` restores it per test; the refusal tests turn it off. The static production-import guard that
 keeps `InMemoryLedger` out of production code stays as a second layer.
 
 ### 4b. The run as step objects (refactor phase 5)

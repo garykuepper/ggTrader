@@ -160,7 +160,8 @@ def test_every_ledger_class_declares_durable() -> None:
 def test_the_flag_defaults_to_false_in_a_fresh_interpreter() -> None:
     code = (
         "import ggTrader.paper.ledger as m; "
-        "print(m.ALLOW_NON_DURABLE_LEDGER is False, m.NonDurableLedgerError.__mro__[1].__name__)"
+        "print(m.ALLOW_NON_DURABLE_LEDGER is False, "
+        "m.NonDurableLedgerError.__mro__[1].__name__, m.__file__)"
     )
     done = subprocess.run(
         [sys.executable, "-I", "-c", code],
@@ -170,4 +171,6 @@ def test_the_flag_defaults_to_false_in_a_fresh_interpreter() -> None:
         check=True,
         env={"PYTHONPATH": str(REPO_ROOT / "src")},
     )
-    assert done.stdout.split() == ["True", "RuntimeError"]
+    flag, base, path = done.stdout.split()
+    assert (flag, base) == ("True", "RuntimeError")
+    assert path.startswith(str(REPO_ROOT / "src")), "the child must import this checkout"

@@ -14,7 +14,7 @@
   and the tests' `SpyLedger` False; `ReadOnlyLedger.durable` follows its inner ledger; a ledger with
   no attribute counts as non-durable). The module flag
   `ggTrader.paper.ledger.ALLOW_NON_DURABLE_LEDGER` (default False) lifts the refusal and is read at
-  call time; only `tests/paper/conftest.py` sets it (autouse, per test, restored afterwards).
+  call time; only the test package sets it (`tests/paper/__init__.py` at import, which stays on for the rest of that interpreter; `tests/paper/conftest.py` restores it per test; the refusal tests turn it off).
 - No golden changed: the 103 transcript goldens, `run_equivalence_digests.json`, `persist_sql.json`
   and every `tests/paper/golden/**` file are byte-identical, and the clock/environment read order
   of a permitted run is unchanged. `tests/paper/test_durable_ledger.py` holds the tests (the frozen
