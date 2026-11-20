@@ -66,6 +66,7 @@ from ggTrader.paper.portfolio import PortfolioView
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.preflight import Halted, PreflightGate
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
+from ggTrader.paper.risk_assessor import RiskAssessor
 from ggTrader.paper.run_helpers import account_read_halt as _account_read_halt
 from ggTrader.paper.run_helpers import as_date as _as_date  # noqa: F401 - compatibility alias
 from ggTrader.paper.seams import RunHooks, TraderSeams
@@ -360,86 +361,14 @@ class PaperTrader:
         signals["sells"] = list(view.sells)
         dividend_info = dict(view.dividends)
 
-        # Seed the risk guard's peak from what was persisted by a prior
-        # process (each cron run constructs a fresh PaperTrader, so without
-        # this the halt below always compares against a same-run peak and
-        # can never fire).
-        try:
-            persisted_peak = self._ledger.get_peak_value()
-        except Exception as exc:
-            _log.warning("Could not load persisted peak: %s", exc)
-            reason = "Risk history unavailable: could not read persisted peak"
-            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-            return RunResult([], [], [reason]).as_dict()
-        if persisted_peak is not None:
-            try:
-                self._risk.update_peak(persisted_peak)
-            except ValueError as exc:
-                reason = f"Invalid stored risk peak: {exc}"
-                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-                return RunResult([], [], [reason]).as_dict()
-
-        # Check max drawdown halt BEFORE updating the peak with today's
-        # value, so a real drawdown against the persisted peak is actually
-        # measured (updating first would always show 0% drawdown).
-        halted, halt_reason = self._risk.check_drawdown_halt(portfolio_value)
-        loss_halts: list[str] = []
-        if halted:
-            if (
-                portfolio_value is None
-                or not math.isfinite(portfolio_value)
-                or portfolio_value <= 0
-            ):
-                self._notifier.send(f"<b>🛑 HALTED:</b> {halt_reason}")
-                return RunResult([], [], [halt_reason]).as_dict()
-            loss_halts.append(halt_reason)
-
-        if not loss_halts:
-            self._risk.update_peak(portfolio_value)
-            try:
-                if self._risk.peak_value is not None:
-                    self._ledger.save_peak_value(self._risk.peak_value)
-            except Exception as exc:
-                _log.warning("Could not persist peak value: %s", exc)
-                reason = "Risk history unavailable: could not persist drawdown peak"
-                self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-                return RunResult([], [], [reason]).as_dict()
-
-        # Booked equity can understate a holding whose split the broker has not applied yet,
-        # so a harmless split can look like a loss. That false halt is accepted on purpose: it
-        # only blocks buys and sweeps for the day (exits stay allowed), while adding the
-        # correction back could hide a real loss when the stored correction is stale.
-        last_equity = account.get("last_equity")
-        if last_equity is None:
-            reason = "Invalid broker previous-close equity; daily loss cannot be assessed"
-            self._notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-            return RunResult([], [], [reason]).as_dict()
-        daily_halted, daily_reason = self._risk.check_daily_loss(portfolio_value, last_equity)
-        if daily_halted:
-            if not math.isfinite(last_equity) or last_equity <= 0:
-                self._notifier.send(f"<b>🛑 HALTED:</b> {daily_reason}")
-                return RunResult([], [], [daily_reason]).as_dict()
-            if split_corrections:
-                symbols = ", ".join(sorted(map(str, split_corrections)))
-                daily_reason += (
-                    f" (split correction on record for {symbols}: it may explain part of the "
-                    "drop, but a real loss cannot be ruled out; buys stay blocked today)"
-                )
-            loss_halts.append(daily_reason)
-
+        verdict = RiskAssessor(
+            risk=self._risk, ledger=self._ledger, notifier=self._notifier
+        ).assess(ctx, view)
+        if verdict.hard_stop is not None:
+            return RunResult([], [], [verdict.hard_stop]).as_dict()
+        loss_halts = list(verdict.buy_halts)
         if loss_halts:
             all_buys = []
-            try:
-                self._notifier.send(f"<b>🛑 HALTED buys; exits only:</b> {'; '.join(loss_halts)}")
-            except Exception:
-                _log.exception("Could not send loss-halt notice")
-            if pending_symbols:
-                try:
-                    self._notifier.send(
-                        "<b>⚠️ Pending orders may still fill:</b> no cancellations were attempted."
-                    )
-                except Exception:
-                    _log.exception("Could not send pending-order notice")
 
         # Prior reporting snapshot is used only for the daily summary, not the risk check.
         try:
