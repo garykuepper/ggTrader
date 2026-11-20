@@ -10,9 +10,9 @@ raises, and `log_trade`'s early return on an identical replay now ends in `commi
 values, returned values and the 97 other cases are untouched: the new file equals the old one
 with exactly that label rule applied to the 11 writers' 34 cases and nothing else (the check was
 made against the file as it stood on `main` before this revision). A real-database
-characterization run outside the repository showed the committed data is the same. The
-events are modeled context events, not SQLAlchemy's real transaction semantics (see the recorder's
-docstring). Bind dictionary insertion order is not part of the contract.
+characterization (`test_persist_real_db.py`, integration, opt-in) showed the committed data is
+the same. The events are modeled context events, not SQLAlchemy's real transaction semantics
+(see the recorder's docstring). Bind dictionary insertion order is not part of the contract.
 """
 
 from __future__ import annotations

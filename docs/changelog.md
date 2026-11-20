@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-20 (the real-database persist test fixture is merged, inert and flagged)
+
+- By owner request the branch `refactor/ii-persist` is merged: `tests/paper/persist_scratch_db.py` (creates and drops a throwaway `ggt_scratch_<8 hex>` database), its no-database unit tests `tests/paper/test_persist_scratch_db.py`, and the 27 real-database characterization tests `tests/paper/test_persist_real_db.py` (marked `integration`, skipped unless `GGT_SCRATCH_DB_ADMIN_URL` is set, so no tier runs them). **Four security reviews still rated the fixture NOT SAFE** when it is given a superuser URL; its docstring says so. Run the real-database tests only against a disposable cluster with a dedicated CREATEDB role. This replaces the earlier statement that the fixture is kept outside the repository (the evidence copy and observation files stay in `p6/t7/`).
+
 ## 2026-11-20 (the whole-job broker prototype is merged, inert)
 
 - The 26-commit branch `chore/test-run-safety` (a whole-job admission/broker prototype: `scripts/whole_job_*.py`, `deploy/whole_job/`, `tests/scripts/test_whole_job_*.py`) is merged into `main` by owner request. It is **not wired in**: `scripts/run_tests.sh` and `scripts/_heavy_job.sh` keep `main`'s versions (the simple one-heavy-job lock); the conflicting hunks in those two scripts, in `AGENTS.md` and in `tests/scripts/test_test_runner_phases.py` were resolved by taking `main`'s side, and the prototype's five extra tests in `tests/scripts/test_heavy_job_guard.py` (which test its own guard variant) were dropped. `tests/scripts` passes (834 passed, 2 skipped). The prototype was never reviewed by Sol, Opus or Fable: read it before wiring any of it in.
