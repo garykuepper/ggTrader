@@ -2,7 +2,7 @@
 
 import logging
 
-from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
+from ggTrader.paper import cash_sweep
 from ggTrader.paper.constants import TRADER_LOGGER_NAME
 from ggTrader.paper.execution import Executor
 from ggTrader.paper.models import (
@@ -190,7 +190,7 @@ class OrderFlow:
             notional_by_sleeve=state.sleeve_notional_by_universe,
             slot_caps=state.slot_caps,
             strategy_positions=state.strategy_positions,
-            corrected_positions=view.corrected_positions,
+            corrected_positions={s: dict(p) for s, p in view.corrected_positions.items()},
             stopped=frozenset(state.stopped),
             pending_symbols=self.ctx.pending_symbols,
             slots_available=self.risk.max_new_positions(
@@ -228,7 +228,7 @@ class OrderFlow:
                 oid = self.executor.submit(intent)
                 if self.executor.submits_orders:
                     order = SubmittedOrder(
-                        oid, "BUY", intent.symbol, intent.book_amount, SWEEP_TRADE_REASON
+                        oid, "BUY", intent.symbol, intent.book_amount, cash_sweep.SWEEP_TRADE_REASON
                     )
                     state.book.filled.update(self.executor.poll([order]))
                     state.book.orders.append(order)
