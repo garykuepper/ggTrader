@@ -456,18 +456,12 @@ reach probes cover a broader entry point than their mutation condition. Opus fou
 blocker in a static cross-family review made before the default ledger changed to `PgPaperLedger`;
 the 2026-11-20 review repeated the wiring check at `f081228b`. Sol conditionally approved the
 behavioral-pin slice, with the gate record expanded afterwards. The P5 and P7 output JSON record
-`git_sha` `3475f405` and the phase F logs start with a HEAD line; only the pytest logs and the
-JUnit XML carry no commit.
+`git_sha` `3475f405` and the phase F logs start with a HEAD line; the P5 and P7 driver logs, the pytest logs and the JUnit XML carry no commit.
 
-**Phase 3 to 5 reviews.** Phases 3, 4 and 5 had no recorded Sol or Opus code review before
-2026-11-20. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+**Phase 3 to 5 reviews.** Phases 3 and 4 had no recorded Sol or Opus code review before 2026-11-20; phase 5 had an Opus production-code review on 2026-11-19 (`527ae843`, before the default ledger changed) and Sol and Opus reviews of its behavioral pins. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
 and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`; their files are
-in `/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`. None found a blocker. Sol's two
-Important findings are resolved as follows: a broker that returns a shared, later-mutated
-dictionary is now a documented port contract (`Broker` in `paper/ports.py`: `get_account` and
-`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen
-copies), and a direct `_submit_order` call on a read-only trader now fails closed with
-`RuntimeError("read-only trader must not submit orders")` before any intent, uuid, lock check or
+in `/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`. Opus and Fable reported no blockers; Sol reported two Important findings (verdict BLOCKERS), resolved as follows: a broker must not return a shared, later-mutated dictionary (now a documented port contract (`Broker` in `paper/ports.py`: `get_account` and
+`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen copies), and a direct `_submit_order` call on a read-only trader with a valid side now fails closed with `RuntimeError("read-only trader must not submit orders")` (an invalid side still raises `ValueError`) before any intent, uuid, lock check or
 broker call. The minor findings that were parked are listed in the changelog under
 "Preserved, not fixed".
 

@@ -59,21 +59,18 @@
   default ledger changed to `PgPaperLedger`; the 2026-11-20 review repeated the wiring check at
   `f081228b`. Sol conditionally approved the behavioral pins, and the gate evidence was expanded
   afterwards. The P5 and P7 output JSON record `git_sha` `3475f405` and the phase F logs start with
-  a HEAD line; only the pytest logs and JUnit XML carry no commit. The legacy differential was retired after Phase D;
+  a HEAD line; the P5 and P7 driver logs, the pytest logs and JUnit XML carry no commit. The legacy differential was retired after Phase D;
   some mutation probes are broad, and some submit-failure checks detect a strict harness error.
-- Phase 3 to 5 reviews: phases 3, 4 and 5 had no recorded Sol or Opus code review before
-  2026-11-20. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+- Integration gate on the merged tree (2026-11-20, `main` `8282d233` merged into the branch, head `04777536`): p5 and p7 oracles exit 0 (p5 at the 6 GB cap), oracle comparison against the baseline exit 0; full tier 5,000 passed, one skipped, five expected failures; study tier 1,198 passed. The outcome comparison uses a baseline with 21 study tests removed (`research/intraday/spy-momentum-feasibility/code/tests/test_intraday_momentum.py`, replaced by the r9 study on `main`; the branch has no difference from `main` under `research/intraday`). ruff and `verify_pins.py` clean (pins=22 MATCH=0 MOVED-MATCH=4 HISTORY-MATCH=18 FAIL=0). Evidence: `p6final2*` in the refactor evidence folder.
+- Phase 3 to 5 reviews: phases 3 and 4 had no recorded Sol or Opus code review before 2026-11-20; phase 5 had an Opus production-code review on 2026-11-19 (`527ae843`, before the default ledger changed) and Sol and Opus reviews of its behavioral pins. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
   and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`
-  (`/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`). None found a blocker. Sol's two
-  Important findings are resolved as: the shared-dict broker case is a documented port contract
+  (`/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`). Opus and Fable reported no blockers; Sol reported two Important findings (verdict BLOCKERS), resolved as: the shared-dict broker case is a documented port contract
   (`paper/ports.py`), and a direct `_submit_order` on a read-only trader now fails closed
   (`RuntimeError`, before any intent, uuid, lock check or broker call). The parked minors follow
   in the next entry.
-- Preserved, not fixed (parked review findings, one line each): a literal `None` candidate in a
-  sleeve is skipped silently by the buy planner; the sweep-buy guard logs and continues if a
+- Preserved, not fixed (parked review findings, one line each): a literal `None` in a sleeve's candidate list ends that sleeve silently in the buy planner, so later candidates in it are skipped too; the sweep-buy guard logs and continues if a
   substituted sizing helper returns `None`; the WFO diagnostic stop price reads the scorer's copied
-  config; the sweep and untradable settings are read at construction, before `.env` is loaded, when
-  a non-Alpaca broker is used (`AlpacaBroker` and `TelegramNotifier` load `.env` first); a
+  config; the sweep and untradable settings are snapshotted at the top of `run()`, so a `.env` not yet loaded is missed when no `AlpacaBroker` is used (`AlpacaBroker` and `TelegramNotifier` load `.env` at construction); a
   non-mapping position value fails early with `TypeError` in `PortfolioView.load`; a guard returning
   `(True, None)` is treated as no stop; the legacy module aliases `_MAX_SIGNAL_AGE_DAYS`,
   `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS` and `TERMINAL_STATUSES` in `trader.py` are inert if
