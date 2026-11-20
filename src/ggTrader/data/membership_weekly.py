@@ -313,14 +313,6 @@ def _source_row(
 
 # --------------------------------------------------------------------------- the run
 
-#: Parser of each fetched source's bytes; a name missing here is never parsed.
-_PARSERS: dict[str, Callable[[bytes], Any]] = {
-    LEDGER: parse_ledger,
-    CURRENT: parse_current_list,
-    COMPONENTS: parse_chino_components,
-    CHANGES: parse_chino_changes,
-}
-
 
 @dataclass
 class _Inputs:
@@ -373,7 +365,7 @@ def run_weekly(
     _parse_sources(inputs)
     _archive_sources(run, inputs)
     _press_sources(run, inputs.press_fetch)
-    _collect_findings(run, inputs, latest, store, proposal_dir or DEFAULT_PROPOSAL_DIR)
+    _collect_findings(run, inputs, latest, store, proposal_dir)
     _record_and_report(run, inputs, store, notifier, index_name)
     return run
 
@@ -419,12 +411,19 @@ def _fetch_inputs(
 def _parse_sources(inputs: _Inputs) -> None:
     """Parse each fetched source, keep structure errors, and read the sources' own change dates."""
     fetched = inputs.fetched
+    # looked up by module name at call time, as it always was (tests replace a parser)
+    parsers: dict[str, Callable[[bytes], Any]] = {
+        LEDGER: parse_ledger,
+        CURRENT: parse_current_list,
+        COMPONENTS: parse_chino_components,
+        CHANGES: parse_chino_changes,
+    }
     for name in FETCHED_SOURCES:
         source = fetched[name]
         if not source.ok or source.raw is None:
             continue
         try:
-            inputs.parsed[name] = _PARSERS[name](source.raw)
+            inputs.parsed[name] = parsers[name](source.raw)
         except SourceStructureError as exc:
             inputs.structure[name] = exc
         except Exception as exc:  # noqa: BLE001 - a parser bug must read as "cannot parse"
@@ -485,7 +484,7 @@ def _collect_findings(
     inputs: _Inputs,
     latest: VintageData | None,
     store: WeeklyStore,
-    proposal_dir: Path,
+    proposal_dir: Path | None,
 ) -> None:
     """The refusals and warnings of every source, then the comparison with our list."""
     _spy_findings(run, inputs.spy)
@@ -508,7 +507,8 @@ def _collect_findings(
             )
         )
     if latest is not None:
-        _compare_and_propose(run, latest, store, inputs, proposal_dir)
+        # resolved here, after the findings above and only with a vintage (as it always was)
+        _compare_and_propose(run, latest, store, inputs, proposal_dir or DEFAULT_PROPOSAL_DIR)
 
 
 def _status_of(findings: list[Finding]) -> str:

@@ -21,10 +21,12 @@ from typing import Any
 import pytest
 import requests
 
+from ggTrader.data import membership_weekly as mw
 from ggTrader.data.membership_holdings import HoldingsResult
 from ggTrader.data.membership_weekly import WeeklyRun
 from ggTrader.paper.notifier import TelegramNotifier
 from tests.data.membership_weekly_fakes import (
+    NOW,
     FakeWeeklyStore,
     RecordingNotifier,
     World,
@@ -421,3 +423,61 @@ def test_the_pinned_paths_include_the_repeated_not_fetched_and_structure_finding
     }
     names = {n for _, n in found}
     assert {"sp_press_listing", "sp_press_302925405", "wikipedia_ledger"} <= names
+
+
+# ------------------------------------------- evaluation order and call-time lookup (fix round 1)
+
+
+class _TruthRaises:
+    """A stand-in for a directory whose truthiness is never to be asked (it raises)."""
+
+    def __bool__(self) -> bool:
+        raise RuntimeError("the proposal directory was evaluated")
+
+
+def test_without_a_vintage_the_proposal_directory_is_never_evaluated(tmp_path):
+    """The directory default is resolved only when a vintage is compared, after the findings."""
+    world = World(base_ours())
+    store = FakeWeeklyStore(world.ours)
+    store._vintage = None
+    notifier = RecordingNotifier()
+    result = mw.run_weekly(store, notifier, get=world, now=lambda: NOW, proposal_dir=_TruthRaises())
+    assert "no_vintage" in {f.code for f in result.findings}
+    assert result.status == "refuse" and len(store.runs) == 1
+    assert len(notifier.messages) == 1
+
+
+@pytest.mark.parametrize("parser", ["parse_ledger", "parse_current_list"])
+def test_a_parser_is_looked_up_by_module_name_when_the_source_is_parsed(
+    parser, monkeypatch, tmp_path
+):
+    """A parser replaced after import is the one used; its failure reads as ``internal``."""
+
+    def boom(raw: bytes) -> Any:
+        raise RuntimeError("parser bug")
+
+    monkeypatch.setattr(mw, parser, boom)
+    result, _, _ = run(World(base_ours()), tmp_path=tmp_path)
+    structure = [f for f in result.findings if f.code == "source_structure"]
+    assert len(structure) == 1
+    assert "(internal): RuntimeError: parser bug" in structure[0].text
+
+
+def test_the_fetches_run_in_the_order_spy_then_sources_then_press(monkeypatch, tmp_path):
+    log: list[str] = []
+
+    def logged(name: str, original: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            log.append(name)
+            return original(*args, **kwargs)
+
+        return wrapper
+
+    for attr, name in (
+        ("fetch_holdings", "spy"),
+        ("fetch_sources", "sources"),
+        ("fetch_press", "press"),
+    ):
+        monkeypatch.setattr(mw, attr, logged(name, getattr(mw, attr)))
+    run(World(base_ours()), tmp_path=tmp_path)
+    assert log == ["spy", "sources", "press"]
