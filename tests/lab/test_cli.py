@@ -149,3 +149,54 @@ def test_lab_refuses_a_membership_that_does_not_match_the_pinned_hash():
 
     with pytest.raises(MembershipIntegrityError, match="expected"):
         run_lab(["--strategy", "ensemble", "--wfo", "--expect-membership-sha", "0" * 64])
+
+
+_NO_FOLDS = "WFO: ensemble | no valid folds (need >= 15 months)"
+
+
+def _patch_wfo_no_folds(monkeypatch):
+    """Everything ``run_vbt_wfo`` calls before ``run_wfo``, with ``run_wfo`` raising WfoNotRun."""
+    import types
+
+    import pandas as pd
+
+    import ggTrader.lab.wfo.cli_support as cli_support
+    from ggTrader.lab.wfo import WfoNotRun
+
+    idx = pd.date_range("2021-01-01", periods=5, freq="B", tz="UTC")
+    bars = types.SimpleNamespace(close=pd.DataFrame({"SPY": 1.0}, index=idx), provenance={})
+    sleeve = types.SimpleNamespace(symbols=["AAA"])
+    monkeypatch.setattr(cli_support, "load_run_bars", lambda *a, **k: bars)
+    monkeypatch.setattr(cli_support, "sleeve_inputs", lambda *a, **k: (sleeve, "mask"))
+
+    def _raise(*a, **k):
+        raise WfoNotRun(_NO_FOLDS)
+
+    monkeypatch.setattr(cli_support, "run_wfo", _raise)
+    return cli_support
+
+
+def test_run_vbt_wfo_still_prints_and_returns_the_message(monkeypatch, capsys):
+    import pandas as pd
+
+    from ggTrader.lab.strategy import LabConfig
+
+    cli_support = _patch_wfo_no_folds(monkeypatch)
+    out = cli_support.run_vbt_wfo(
+        "ensemble",
+        "sp500",
+        LabConfig(),
+        pd.Timestamp("2021-01-31", tz="UTC"),
+        pd.Timestamp("2021-06-30", tz="UTC"),
+        market="equity",
+        base_config={},
+    )
+    assert out == _NO_FOLDS
+    assert _NO_FOLDS in capsys.readouterr().out.splitlines()
+
+
+def test_lab_wfo_with_no_valid_folds_prints_and_returns_the_message(monkeypatch, capsys):
+    _patch_wfo_no_folds(monkeypatch)
+    out = run_lab(["--strategy", "ensemble", "--wfo", "--eval-end", "2021-06-30"])
+    assert out == _NO_FOLDS
+    assert capsys.readouterr().out.splitlines()[-1] == _NO_FOLDS

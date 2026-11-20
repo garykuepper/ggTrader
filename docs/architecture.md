@@ -63,7 +63,7 @@ src/ggTrader/
 │   │   ├── breaker.py           # circuit breaker, 2-of-3 shadow re-entry, WFE, WfoPolicy
 │   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows); ScoringInputs and SignalSimOptions carry their inputs
 │   │   ├── fold_record.py       # FOLD_KEYS (the 28 fold-dict keys, in order) and FoldRecord, whose as_dict() builds each fold row
-│   │   ├── run.py / report.py   # run_wfo (with private fold, stitch and diagnostics helpers), WfoResult, table, curve_summary, JSON payload
+│   │   ├── run.py / report.py   # run_wfo (with private fold, stitch and diagnostics helpers; raises `WfoNotRun` when the window has no fold), WfoResult, table, curve_summary, JSON payload
 │   │   └── inputs.py / cli_support.py  # Bars input, PIT masks, `ggt lab` glue
 │   ├── gates.py                 # NDH plateau check (the DSR gate is engine.stats.dsr)
 │   └── strategies/              # Strategies on the engine contract; any module dropped in here is found

@@ -182,19 +182,24 @@ def _toy_run(
     kwargs.setdefault("allow_unmasked", True)
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        result = run.run_wfo(
-            "toy",
-            h.ToyHold,
-            LabConfig(),
-            bars,
-            bars.close["X"],
-            eval_start,
-            eval_end,
-            "test",
-            dict(h.TOY_CONFIG) if base is None else base,
-            ParamGrid.from_sweep({"delay": list(delays)}),
-            **kwargs,
-        )
+        try:
+            result: Any = run.run_wfo(
+                "toy",
+                h.ToyHold,
+                LabConfig(),
+                bars,
+                bars.close["X"],
+                eval_start,
+                eval_end,
+                "test",
+                dict(h.TOY_CONFIG) if base is None else base,
+                ParamGrid.from_sweep({"delay": list(delays)}),
+                **kwargs,
+            )
+        except run.WfoNotRun as exc:
+            # run_wfo used to return this text; the golden keeps the record of its message
+            # (the type and message are pinned by test_toy_known_answers.py)
+            result = str(exc)
     return _record(result, out.getvalue())
 
 
