@@ -65,20 +65,11 @@ def test_submit_order_saves_the_intent_then_verifies_the_lock_then_submits_then_
 def test_after_orders_reconciles_for_a_list_holding_only_sells():
     from ggTrader.paper.models import SubmittedOrder
 
-    seams = MagicMock()
-    executor = OrderExecutor(
-        broker=MagicMock(),
-        notifier=MagicMock(),
-        ledger=MagicMock(),
-        hooks=MagicMock(),
-        lock=lambda: None,
-        read_only=False,
-        seams=seams,
-    )
+    executor, *_, stubs, _ = make_executor(stub=("reconcile_order_intents",))
     executor.after_orders([])
-    seams.reconcile_intents.assert_not_called()
+    stubs.reconcile_order_intents.assert_not_called()
     executor.after_orders([SubmittedOrder("oid", "SELL", "ABC", 1, None)])
-    seams.reconcile_intents.assert_called_once_with()
+    stubs.reconcile_order_intents.assert_called_once_with()
 
 
 def test_dry_run_executor_still_polls_through_the_seam_with_an_empty_list():
@@ -101,7 +92,12 @@ def test_executors_declare_submits_orders():
     assert DryRunExecutor.submits_orders is False
 
 
-def make_executor(cls=OrderExecutor, *, read_only=False):
+def make_executor(cls=OrderExecutor, *, read_only=False, stub=()):
+    """Build an executor over mocks; each name in `stub` becomes a MagicMock on the instance.
+
+    The sixth value holds those mocks by name, so a test can set a return value and assert calls
+    while every method not named stays the real one.
+    """
     from datetime import date, datetime, timezone
 
     broker, notifier, ledger, hooks, seams, lock = (MagicMock() for _ in range(6))
@@ -117,6 +113,10 @@ def make_executor(cls=OrderExecutor, *, read_only=False):
         read_only=read_only,
         seams=seams,
     )
+    for name in stub:
+        mock = MagicMock(name=name)
+        setattr(executor, name, mock)
+        setattr(seams, name, mock)
     return executor, broker, notifier, ledger, hooks, seams, lock
 
 
@@ -318,16 +318,10 @@ def test_executor_poll_routes_through_the_class_patched_seam(monkeypatch):
     patched.assert_called_once_with([])
 
 
-def test_executor_reconcile_routes_through_the_instance_seam():
-    from ggTrader.paper.trader import PaperTrader
-
-    trader = PaperTrader(
-        MagicMock(), MagicMock(), dry_run=False, membership="db", ledger=MagicMock()
-    )
-    executor = trader._executor_for_call()
-    trader._reconcile_order_intents = MagicMock(return_value=set())
+def test_recover_intents_runs_the_executors_own_reconcile_order_intents():
+    executor, *_, stubs, _ = make_executor(stub=("reconcile_order_intents",))
     executor.recover_intents()
-    trader._reconcile_order_intents.assert_called_once_with()
+    stubs.reconcile_order_intents.assert_called_once_with()
 
 
 def test_the_default_seam_chain_reaches_the_moved_body_without_recursion():
@@ -355,19 +349,21 @@ def test_executor_submit_returns_the_seam_value_untouched(value):
 
 
 def test_after_sells_reconciles_only_for_a_non_empty_filled_mapping():
-    executor, _, _, _, _, seams, _ = make_executor()
+    executor, _, _, _, _, stubs, _ = make_executor(stub=("reconcile_order_intents",))
     executor.after_sells({})
-    seams.reconcile_intents.assert_not_called()
+    stubs.reconcile_order_intents.assert_not_called()
     executor.after_sells({"oid": {"status": "filled"}})
-    seams.reconcile_intents.assert_called_once_with()
+    stubs.reconcile_order_intents.assert_called_once_with()
 
 
 def test_dry_run_after_hooks_do_nothing():
-    executor, _, _, _, _, seams, _ = make_executor(DryRunExecutor)
+    executor, _, _, _, _, stubs, _ = make_executor(
+        DryRunExecutor, stub=("reconcile_order_intents",)
+    )
     executor.recover_intents()
     executor.after_sells({"oid": {"status": "filled"}})
     executor.after_orders([MagicMock()])
-    seams.reconcile_intents.assert_not_called()
+    stubs.reconcile_order_intents.assert_not_called()
 
 
 def test_live_announce_sends_only_the_catastrophe_stop_notice():

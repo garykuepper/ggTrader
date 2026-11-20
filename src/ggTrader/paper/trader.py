@@ -167,7 +167,6 @@ class PaperTrader:
         return TraderSeams(
             submit_order=lambda *args: self._submit_order(*args),
             poll_orders=lambda orders: self._poll_orders(orders),
-            reconcile_intents=lambda: self._reconcile_order_intents(),
             missed_exits=lambda *args: self._missed_exits(*args),
             split_corrections=lambda *args: self._compute_split_corrections(*args),
             accrue_dividends=lambda positions: self._accrue_dividends(positions),
@@ -189,10 +188,6 @@ class PaperTrader:
     def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
         """Persist the identity before submitting an order under the run lock."""
         return self._executor_for_call().submit_order(side, symbol, amount, reason)
-
-    def _reconcile_order_intents(self) -> set[str]:
-        """Resolve terminal intents and block uncertain or working orders."""
-        return self._executor_for_call().reconcile_order_intents()
 
     def _missed_exits(
         self, positions: dict, last_exit: dict[str, str], already: set[str]
@@ -257,7 +252,7 @@ class PaperTrader:
         except Exception as exc:
             _log.warning("DB schema init failed (non-fatal): %s", exc)
         if not self._dry_run:
-            self._reconcile_order_intents()
+            self._executor_for_call().reconcile_order_intents()
         pending_symbols = self._executor_for_call().reconcile_pending_orders()
         pre = PreflightGate(
             broker=self._broker, notifier=self._notifier, hooks=self._hooks(),

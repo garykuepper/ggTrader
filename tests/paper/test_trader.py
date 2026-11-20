@@ -3301,7 +3301,7 @@ def test_unresolved_intent_lookup_error_aborts_before_submissions():
         ledger, "client-1", _TEST_TODAY, "BUY", "SPY", 100, "notional", None
     )
     with pytest.raises(RuntimeError):
-        trader._reconcile_order_intents()
+        trader._executor_for_call().reconcile_order_intents()
     broker.submit_buy.assert_not_called()
     notifier.send.assert_called()
 
@@ -3317,7 +3317,7 @@ def test_reconciliation_error_survives_notification_failure():
         ),
         pytest.raises(ValueError, match="db failed"),
     ):
-        trader._reconcile_order_intents()
+        trader._executor_for_call().reconcile_order_intents()
     broker.submit_buy.assert_not_called()
     broker.submit_sell.assert_not_called()
 
@@ -3386,7 +3386,7 @@ def test_recovery_settles_partial_cancellation():
     InMemoryLedger.create_order_intent(
         ledger, "c", _TEST_TODAY, "BUY", "SPY", 100, "notional", None
     )
-    trader._reconcile_order_intents()
+    trader._executor_for_call().reconcile_order_intents()
     assert ledger.calls("settle_order_intent") == [
         ("settle_order_intent", ("c", "b", 2.0, 10.0, "canceled"), {})
     ]
@@ -3402,7 +3402,7 @@ def test_reconciliation_failure_after_submission_does_not_claim_no_orders():
     trader._submit_order("SELL", "AAPL", 10, None)
     broker.get_order_by_client_id.side_effect = RuntimeError("order lookup failed")
     with pytest.raises(RuntimeError, match="lookup failed"):
-        trader._reconcile_order_intents()
+        trader._executor_for_call().reconcile_order_intents()
     broker.submit_sell.assert_called_once()
     message = str(notifier.send.call_args)
     assert "no orders placed" not in message.lower()

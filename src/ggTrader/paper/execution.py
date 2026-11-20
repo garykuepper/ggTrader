@@ -64,7 +64,7 @@ class OrderExecutor:
         self._seams = seams
 
     def recover_intents(self) -> None:
-        self._seams.reconcile_intents()
+        self.reconcile_order_intents()
 
     def submit(self, intent: OrderIntent) -> str | None:
         return self._seams.submit_order(intent.side, intent.symbol, intent.size, intent.reason)
@@ -74,11 +74,11 @@ class OrderExecutor:
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
         if filled:
-            self._seams.reconcile_intents()
+            self.reconcile_order_intents()
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
         if orders:
-            self._seams.reconcile_intents()
+            self.reconcile_order_intents()
 
     def announce(self, intent: OrderIntent) -> None:
         if intent.kind == IntentKind.STOP:

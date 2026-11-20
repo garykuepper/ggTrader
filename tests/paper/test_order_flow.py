@@ -635,7 +635,9 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, dry=True, buys=())
-    executor, _, notifier, _, _, seams, _ = make_executor(DryRunExecutor)
+    executor, _, notifier, _, _, seams, _ = make_executor(
+        DryRunExecutor, stub=("reconcile_order_intents",)
+    )
     seams.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = True
@@ -650,7 +652,7 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
     notifier.send.assert_called_once_with("<b>🔍 DRY RUN sweep buy:</b> SGOV ($100)")
     assert state.book.orders == [] and state.book.buys == []
     seams.submit_order.assert_not_called()
-    seams.reconcile_intents.assert_not_called()
+    seams.reconcile_order_intents.assert_not_called()
     seams.poll_orders.assert_called_once_with([])
 
 
@@ -715,7 +717,7 @@ def test_rejected_buy_reaches_normal_settlement():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({})
-    executor, _, _, _, _, seams, _ = make_executor()
+    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents",))
     seams.submit_order.return_value = "buy-id"
     seams.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
     flow.executor = executor
@@ -725,7 +727,7 @@ def test_rejected_buy_reaches_normal_settlement():
     state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
     flow.run_stage_three(view, state)
     assert state.book.filled["buy-id"]["status"] == "rejected"
-    seams.reconcile_intents.assert_called_once_with()
+    seams.reconcile_order_intents.assert_called_once_with()
 
 
 @pytest.mark.parametrize("has_sell", [False, True])
@@ -734,7 +736,7 @@ def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, buys=())
-    executor, _, _, _, _, seams, _ = make_executor()
+    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents",))
     seams.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = False
@@ -743,4 +745,4 @@ def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell
     if has_sell:
         state.book.orders.append(SubmittedOrder("sell-id", "SELL", "OLD", 10, None))
     flow.run_stage_three(view, state)
-    assert seams.reconcile_intents.call_count == int(has_sell)
+    assert seams.reconcile_order_intents.call_count == int(has_sell)

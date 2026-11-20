@@ -72,7 +72,6 @@ def test_default_hooks_read_nothing_at_construction(monkeypatch):
     ("field", "target", "args"),
     [
         ("poll_orders", "_poll_orders", ([],)),
-        ("reconcile_intents", "_reconcile_order_intents", ()),
         ("missed_exits", "_missed_exits", ({}, {}, set())),
         ("split_corrections", "_compute_split_corrections", ({}, None, None)),
         ("accrue_dividends", "_accrue_dividends", ({},)),

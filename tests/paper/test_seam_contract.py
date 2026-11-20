@@ -158,7 +158,6 @@ STEP_OWNERS: dict[str, type] = {
 }
 PRIVATE_SEAMS = (
     "_submit_order",
-    "_reconcile_order_intents",
     "_poll_orders",
     "_missed_exits",
     "_compute_split_corrections",
@@ -754,7 +753,9 @@ class TestLegacySeamsInterceptTheRun:
 
     SEAMS = (
         pytest.param("_submit_order", "instance", "plain_buys_and_sells", id="submit_order"),
-        pytest.param("_reconcile_order_intents", "instance", "plain_buys_and_sells", id="intents"),
+        pytest.param(
+            "OrderExecutor.reconcile_order_intents", "step", "plain_buys_and_sells", id="intents"
+        ),
         pytest.param(
             "OrderExecutor.reconcile_pending_orders",
             "step",
