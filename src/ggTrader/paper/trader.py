@@ -28,6 +28,7 @@ from ggTrader.paper.models import (
     MarketClock,
     OrderStatus,
     Position,
+    RunContext,
     RunResult,
     SignalBundle,
     SubmittedOrder,
@@ -61,6 +62,7 @@ from ggTrader.paper.persist import (
     settle_legacy_pending_order,  # noqa: F401 - looked up by ModuleLedger at call time
     settle_order_intent,  # noqa: F401 - looked up by ModuleLedger at call time
 )
+from ggTrader.paper.portfolio import PortfolioView
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.preflight import Halted, PreflightGate
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
@@ -331,110 +333,32 @@ class PaperTrader:
         today_et = pre.today_et
         derived = pre.signals
         weights, scale = derived.weights, derived.scale
-        all_buys, last_exit = list(derived.buys), dict(derived.last_exit)
+        all_buys = list(derived.buys)
         signals = {
             "buys": [symbol for symbol, _ in all_buys],
             "sells": list(derived.sells),
             "as_of": derived.as_of,
         }
 
-        try:
-            account: Account = self._broker.get_account()
-        except Exception as exc:
-            _account_read_halt(self._notifier, exc)
-            raise
-        try:
-            positions: dict[str, Position] = self._broker.get_positions()
-        except Exception as exc:
-            _log.error("Position read failed (%s); stopping before orders", type(exc).__name__)
-            try:
-                self._notifier.send(
-                    "<b>🛑 HALTED:</b> Position data unavailable; no orders submitted"
-                )
-            except Exception:
-                _log.exception("Could not send position read failure notice")
-            raise
-        portfolio_value = account["portfolio_value"]
-
-        # Cash sweep (feature-flagged, default OFF -- see cash_sweep.py). The
-        # sweep ETF position (if any) must be invisible to the strategy: not a
-        # strategy position, not counted against RiskGuard slot caps, and not
-        # sellable by strategy exit signals. `strategy_positions` is what all
-        # downstream slot/count/sell logic uses instead of the raw `positions`
-        # from the broker; when the flag is off this is just `positions`
-        # unchanged, so behavior is identical to before this feature existed.
-        sweep_on = cfg.sweep_enabled
-        sweep_sym = cfg.sweep_symbol
-        strategy_positions = (
-            {sym: pos for sym, pos in positions.items() if sym != sweep_sym}
-            if sweep_on
-            else positions
+        ctx = RunContext(today_et, cfg, frozenset(pending_symbols))
+        view = PortfolioView.load(
+            broker=self._broker,
+            notifier=self._notifier,
+            seams=self._seams(),
+            ctx=ctx,
+            signals=derived,
         )
-
-        # Holdings the broker won't trade (merger/delisting, e.g. AVB -> EQR)
-        # can't be sold, so they must not take a slot or draw a rejected sell
-        # every run (OD17). The set is the owner's UNTRADABLE_SYMBOLS plus the broker's
-        # tradable=false status for held names AND buy candidates (a dead ticker can still
-        # produce a buy signal from a stale tape). Fails soft: on a lookup error only the
-        # configured set is excluded.
-        untradable_seen = resolve_untradable(
-            self._broker,
-            set(strategy_positions) | {sym for sym, _u in all_buys},
-            cfg.untradable,
-        )
-        frozen = untradable_seen & set(strategy_positions)
-        if frozen:
-            _log.warning("Untradable holdings excluded from strategy: %s", sorted(frozen))
-            self._notifier.send(
-                "<b>⚠️ Untradable holdings:</b> "
-                f"{', '.join(sorted(frozen))} (broker tradable=false; excluded from "
-                "slots and sells — resolve manually)"
-            )
-            strategy_positions = {s: p for s, p in strategy_positions.items() if s not in frozen}
-        buy_symbols = {sym for sym, _u in all_buys}
-        blocked_buys = sorted((untradable_seen & buy_symbols) - frozen)
-        if blocked_buys:
-            _log.warning("Untradable buy candidates skipped: %s", blocked_buys)
-            self._notifier.send(
-                f"<b>⚠️ Untradable buy candidates skipped:</b> {', '.join(blocked_buys)} "
-                "(asset not tradable at the broker)"
-            )
-        # Also drops a held-but-frozen name's own buy signal: it is no longer in
-        # `strategy_positions`, so the buy loop's "already held" check would not catch it.
-        all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
-
-        # Determine unapplied-split corrections for currently-held symbols.
-        # Primary evidence is paper_snapshots/paper_trades history (see
-        # _compute_split_corrections and split_check.py's module docstring);
-        # the broker's own SPLIT activities feed is kept only as a secondary
-        # signal, since it is a no-op on this paper account. Fails soft
-        # internally -- an API or DB error here degrades toward {} ("no
-        # corrections known"), never an exception.
-        split_since = today_et - timedelta(days=_SPLIT_LOOKBACK_DAYS)
-        split_corrections = self._compute_split_corrections(positions, split_since, today_et)
-        if split_corrections:
-            _log.warning("Unapplied broker split corrections: %s", split_corrections)
-        # Concentration checks (below, in the buy loop) must see true
-        # economic exposure -- the corrected market_value -- not the
-        # broker's uncorrected figure for a split-flagged holding. Built from
-        # `strategy_positions`, not raw `positions`: the sweep ETF position is
-        # invisible to all strategy signal/slot logic, and that includes the
-        # concentration check (its exposure is cash-in-waiting, not a
-        # strategy bet).
-        corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
-
-        # Catch up exits the last-bar check missed (see _missed_exits). Added
-        # here, before the sweep's anticipated_sells, so freed slots count.
-        missed = self._missed_exits(strategy_positions, last_exit, set(signals["sells"]))
-        if missed:
-            _log.info("Catching up missed exits: %s", missed)
-            signals["sells"] = sorted(set(signals["sells"]) | set(missed))
-
-        # Cross-reference the broker's corporate-actions feed against this
-        # account's DIV activities to credit (as a reporting-only accrual --
-        # see dividend_check.py) cash dividends the broker never paid out.
-        # Fails soft internally, same convention as the split check above.
-        dividend_info = self._accrue_dividends(positions)
+        account = dict(view.account)
+        positions = {s: dict(p) for s, p in view.positions.items()}
+        portfolio_value = view.portfolio_value
+        sweep_on, sweep_sym = view.sweep_on, view.sweep_symbol
+        strategy_positions = {s: dict(p) for s, p in view.strategy_positions.items()}
+        corrected_positions = {s: dict(p) for s, p in view.corrected_positions.items()}
+        split_corrections = dict(view.split_corrections)
+        untradable_seen = set(view.untradable_seen)
+        all_buys = list(view.buy_candidates)
+        signals["sells"] = list(view.sells)
+        dividend_info = dict(view.dividends)
 
         # Seed the risk guard's peak from what was persisted by a prior
         # process (each cron run constructs a fresh PaperTrader, so without
