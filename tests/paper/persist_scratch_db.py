@@ -6,22 +6,35 @@ an engine bound to that database, and drops it in `finally`.
 
 The administrator URL is a superuser credential, so the fixture fails closed:
 
-* The administrator connection issues exactly two kinds of statement, `CREATE DATABASE <name>` and
-  `DROP DATABASE <name> WITH (FORCE)`, on a name that matches `SCRATCH_NAME`. The name is checked
-  before every statement and before any connection is opened, so a bad name raises first.
+* The administrator connection runs exactly three statements, all on one validated name that matches
+  `SCRATCH_NAME`: `SELECT 1 FROM pg_database WHERE datname = <name>` (is the name free?),
+  `CREATE DATABASE <name>` and `DROP DATABASE <name> WITH (FORCE)`. The name is checked before every
+  statement and before any connection is opened, so a bad name raises first.
+* Ownership: the fixture drops only what it created. The name is `uuid4().hex[:8]`, checked free
+  first; the "created" flag is set only after `execute()` of CREATE has returned. If CREATE fails (a
+  name collision, SQLSTATE 42P04) or its outcome is unknown (the connection is lost while it runs),
+  nothing is dropped and a redacted error asks the operator to look for a leftover `ggt_scratch_%`
+  database by hand.
+* One administrator session lives for the whole fixture: CREATE and DROP run on the same connection.
+  If that session is lost before the DROP, one retry on a fresh connection to the same single host
+  follows; if it fails too the fixture fails loudly (a leftover) and never skips the DROP.
 * The URL comes only from the environment: never from `.env`, never printed, logged or written. It
   lives inside `_Secret` (its `repr` and `str` are `<redacted>`) and is unwrapped only in the call
-  that hands it to the driver, so a traceback with locals shown cannot expose it. No message the
-  fixture raises or skips with contains any part of the URL.
-* An administrator URL whose query names `dbname`, `database`, `host` (or `hostaddr`, `service`,
-  `port`, `user`, `password`) is refused before any connection: a query option is applied after
-  the path and would silently re-point the connection.
+  that hands it to the driver. Every place that opens a connection or builds an engine catches the
+  driver's exception and raises a NEW `ScratchDbError` (`from None`) with a fixed message, so no
+  psycopg2 or SQLAlchemy frame (and none of its locals or arguments) reaches pytest's output, even
+  with `--showlocals`. The test engine connects through a factory that does the same, so a failed
+  connection inside a test body is redacted too.
+* An administrator URL with any query string (a password in the query, `target_session_attrs`,
+  `dbname`, ...) or with more than one host is refused before any connection, with a message that
+  quotes none of it: one host and one database make CREATE and DROP reach the same server.
 * The scratch URL is the administrator URL with the driver and database name replaced and the
-  WHOLE query dropped (an exotic option fails closed rather than carrying over). It is checked
-  (database equals the validated name, query empty, same host, port and user) before the engine
-  exists.
-* If the server cannot be reached for the first connection the test skips. Once CREATE has been
-  sent, one `finally` always attempts the DROP, whatever else fails; every error then fails loudly.
+  query dropped. It is checked (database equals the validated name, same host, port and user) before
+  the engine exists.
+* The test skips ONLY for a positively identified connection failure (connection refused, timed out,
+  host name not resolved, no route, network unreachable, or a SQLSTATE of class 08). An
+  authentication failure (SQLSTATE class 28, "password authentication failed") and every
+  unclassified error fail with a redacted message.
 * Nothing here touches `ohlcv`, an existing `paper_*` table or an existing database.
 """
 
@@ -32,7 +45,7 @@ import re
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, TypeVar
 
 import psycopg2
 import pytest
@@ -43,10 +56,19 @@ from sqlalchemy.pool import NullPool
 ADMIN_URL_ENV = "GGT_SCRATCH_DB_ADMIN_URL"
 SCRATCH_NAME = re.compile(r"^ggt_scratch_[0-9a-f]{8}$")
 SCRATCH_DRIVER = "postgresql+psycopg2"
-# Query keys that can re-point or re-authenticate a connection after the URL path was read.
-FORBIDDEN_QUERY_KEYS = frozenset(
-    {"dbname", "database", "host", "hostaddr", "service", "port", "user", "password"}
+EXISTS_SQL = "SELECT 1 FROM pg_database WHERE datname = %s"
+# Driver-message fragments that positively identify "the server cannot be reached".
+UNREACHABLE_MESSAGES = (
+    "Connection refused",
+    "timeout expired",
+    "timed out",
+    "could not translate host name",
+    "No route to host",
+    "Network is unreachable",
 )
+LEFTOVER_HINT = "check for a leftover ggt_scratch_% database manually"
+_SQLSTATE = re.compile(r"[0-9A-Z]{5}")
+_T = TypeVar("_T")
 
 
 class ScratchNameError(ValueError):
@@ -55,6 +77,10 @@ class ScratchNameError(ValueError):
 
 class ScratchConfigError(ValueError):
     """The administrator URL is unusable or unsafe. Messages never quote the URL."""
+
+
+class ScratchDbError(RuntimeError):
+    """A scratch-database step failed. The message is fixed text: it never quotes driver output."""
 
 
 class _Secret:
@@ -113,26 +139,74 @@ def drop_sql(name: str) -> str:
     return f'DROP DATABASE "{assert_scratch_name(name)}" WITH (FORCE)'
 
 
+def exists_query(name: str) -> tuple[str, tuple[str]]:
+    """The one SELECT: is a database of this name already there? The name is a bound parameter."""
+    return EXISTS_SQL, (assert_scratch_name(name),)
+
+
 def psycopg_dsn(url: str) -> str:
     """The URL without a SQLAlchemy driver suffix, as libpq reads it."""
     return re.sub(r"^postgresql\+\w+://", "postgresql://", url)
+
+
+def _describe(exc: BaseException) -> str:
+    """A safe fragment for a message: the SQLSTATE if the driver gave one, never any text."""
+    code = getattr(exc, "pgcode", None) or getattr(getattr(exc, "orig", None), "pgcode", None)
+    return f" (SQLSTATE {code})" if isinstance(code, str) and _SQLSTATE.fullmatch(code) else ""
+
+
+def is_unreachable(exc: BaseException) -> bool:
+    """True only for a driver error that positively says the server could not be reached."""
+    if not isinstance(exc, psycopg2.OperationalError):
+        return False
+    code = getattr(exc, "pgcode", None)
+    text = str(exc)
+    if (
+        isinstance(code, str) and code.startswith("28")
+    ) or "password authentication failed" in text:
+        return False  # a wrong credential is a failure to fix, not a reason to skip
+    if isinstance(code, str) and code.startswith("08"):
+        return True
+    return any(fragment in text for fragment in UNREACHABLE_MESSAGES)
+
+
+def _guarded(what: str, call: Callable[[], _T]) -> _T:
+    """Run `call`; turn any failure into a fresh `ScratchDbError` that carries no driver frame.
+
+    The new error is raised outside the `except`, with `from None`, so the driver's exception, its
+    traceback and the locals of its frames are not part of the chain pytest prints.
+    """
+    failure: str | None = None
+    try:
+        return call()
+    except ScratchDbError:
+        raise
+    except Exception as exc:
+        failure = _describe(exc)
+        del exc
+    raise ScratchDbError(f"{what} failed{failure}, details withheld") from None
 
 
 def _parse_admin(admin: _Secret) -> Any:
     """Parse the administrator URL, refusing a bad one without quoting any of it."""
     if not isinstance(admin, _Secret):
         raise ScratchConfigError("the administrator URL must be held in a _Secret")
+    # Checked on the raw text, before any URL object exists: a parsed URL's repr shows its query.
+    if "?" in admin.reveal():
+        raise ScratchConfigError("the administrator URL carries a query string; refusing to use it")
+    url = None
     try:
         url = make_url(psycopg_dsn(admin.reveal()))
     except Exception:
+        pass
+    if url is None:
         raise ScratchConfigError("the administrator URL is not a parseable URL") from None
     if not url.drivername.startswith("postgresql"):
         raise ScratchConfigError("the administrator URL is not a PostgreSQL URL")
-    forbidden = sorted({str(k).lower() for k in url.query} & FORBIDDEN_QUERY_KEYS)
-    if forbidden:
-        raise ScratchConfigError(
-            f"the administrator URL query names {', '.join(forbidden)}; refusing to use it"
-        )
+    if len(url.query) != 0:
+        raise ScratchConfigError("the administrator URL carries a query string; refusing to use it")
+    if "," in (url.host or ""):
+        raise ScratchConfigError("the administrator URL names more than one host; refusing it")
     return url
 
 
@@ -141,55 +215,126 @@ def validate_admin_url(admin: _Secret) -> None:
     _parse_admin(admin)
 
 
-def _open_admin(admin: _Secret, connect: Callable[..., Any]) -> Any:
-    """Open the first administrator connection; an unreachable server skips the test."""
-    try:
-        return connect(psycopg_dsn(admin.reveal()))
-    except psycopg2.OperationalError:
-        pass
-    # Skipped outside the `except` so the driver's message cannot ride along as context.
-    pytest.skip("the scratch-database server is not reachable")
+class _Session:
+    """The one administrator connection of a fixture run; its repr shows nothing."""
+
+    __slots__ = ("conn",)
+
+    def __init__(self, conn: Any) -> None:
+        self.conn = conn
+
+    def __repr__(self) -> str:
+        return "<administrator session>"
 
 
-def _run_admin(admin: _Secret, statement: str, connect: Callable[..., Any]) -> None:
-    """Run one statement on an AUTOCOMMIT administrator connection, then close it."""
-    conn = connect(psycopg_dsn(admin.reveal()))
+def _close_quietly(conn: Any) -> None:
+    """Close a connection that may already be broken; a failure here leaves nothing behind."""
     try:
-        conn.autocommit = True
-        with conn.cursor() as cur:
-            cur.execute(statement)
-    finally:
         conn.close()
+    except Exception:
+        pass
+
+
+def _open_session(admin: _Secret, connect: Callable[..., Any], *, first: bool) -> _Session:
+    """Open an AUTOCOMMIT administrator connection.
+
+    Only the first connection may skip the test, and only for a positively identified
+    "server unreachable" error; anything else fails with a redacted message.
+    """
+    conn = None
+    failure: str | None = None
+    unreachable = False
+    try:
+        conn = connect(psycopg_dsn(admin.reveal()))
+        conn.autocommit = True
+    except Exception as exc:
+        failure = _describe(exc)
+        unreachable = is_unreachable(exc)
+        del exc
+    if failure is None:
+        return _Session(conn)
+    if conn is not None:
+        _close_quietly(conn)
+        conn = None
+    if unreachable and first:
+        pytest.skip("the scratch-database server is not reachable")
+    raise ScratchDbError(
+        f"opening the administrator connection failed{failure}, details withheld"
+    ) from None
+
+
+def _run(session: _Session, statement: str, params: tuple[str, ...] | None = None) -> Any:
+    """Run one statement on the administrator session; return the first row, if any."""
+    with session.conn.cursor() as cur:
+        if params is None:
+            cur.execute(statement)
+        else:
+            cur.execute(statement, params)
+            return cur.fetchone()
+    return None
+
+
+def _drop_with_retry(
+    session: _Session, admin: _Secret, connect: Callable[..., Any], drop: str
+) -> None:
+    """DROP on the open session; if it is lost, retry once on a fresh connection, then fail."""
+    for attempt in range(2):
+        try:
+            if attempt:
+                _close_quietly(session.conn)
+                session.conn = _open_session(admin, connect, first=False).conn
+            _run(session, drop)
+            return
+        except Exception as exc:
+            del exc
+    raise ScratchDbError(
+        f"DROP DATABASE failed twice; a scratch database may be left behind: {LEFTOVER_HINT}"
+    ) from None
 
 
 @contextmanager
 def scratch_database_name(
     admin: _Secret, connect: Callable[..., Any] = psycopg2.connect
 ) -> Iterator[str]:
-    """Create a scratch database, yield its name, and drop it in one `finally`.
+    """Create a scratch database, yield its name, and drop it (only if this run created it).
 
-    Nothing is opened until the URL and the generated name have both been checked. `created` is
-    set before CREATE is sent, so even a failure while sending it, or in the cleanup that follows
-    it, still reaches the DROP.
+    Nothing is opened until the URL and the generated name have both been checked. `created` is set
+    only after `execute()` of CREATE returned, so a collision or an unknown outcome never reaches
+    the DROP; once it is set, one `finally` always attempts the DROP, whatever else fails.
     """
     validate_admin_url(admin)
     name = new_scratch_name()
     create = create_sql(name)
     drop = drop_sql(name)
-    conn = _open_admin(admin, connect)
+    check, check_params = exists_query(name)
+    session = _open_session(admin, connect, first=True)
     created = False
     try:
+        taken = _guarded("the scratch-name check", lambda: _run(session, check, check_params))
+        if taken is not None:
+            raise ScratchDbError("the generated scratch name already exists; nothing was created")
+        failure: str | None = None
         try:
-            conn.autocommit = True
-            created = True
-            with conn.cursor() as cur:
+            with session.conn.cursor() as cur:
                 cur.execute(create)
-        finally:
-            conn.close()
+                created = True
+        except Exception as exc:
+            failure = _describe(exc)
+            del exc
+        if failure is not None and created:
+            raise ScratchDbError(f"cleaning up after CREATE DATABASE failed{failure}") from None
+        if failure is not None:
+            raise ScratchDbError(
+                f"CREATE DATABASE failed or its outcome is unknown{failure}; no DROP was issued: "
+                f"{LEFTOVER_HINT}, details withheld"
+            ) from None
         yield name
     finally:
-        if created:
-            _run_admin(admin, drop, connect)
+        try:
+            if created:
+                _drop_with_retry(session, admin, connect, drop)
+        finally:
+            _close_quietly(session.conn)
 
 
 def scratch_engine_url(admin: _Secret, name: str) -> Any:
@@ -207,6 +352,32 @@ def scratch_engine_url(admin: _Secret, name: str) -> Any:
     return url
 
 
+def _connection_factory(dsn: _Secret, connect: Callable[..., Any]) -> Callable[[], Any]:
+    """A pool `creator` whose failures are redacted, so a test body cannot leak the password."""
+
+    def creator() -> Any:
+        return _guarded("a scratch-database connection", lambda: connect(dsn.reveal()))
+
+    return creator
+
+
+def build_scratch_engine(
+    admin: _Secret, name: str, connect: Callable[..., Any] = psycopg2.connect
+) -> Engine:
+    """An engine on the scratch database. Its URL holds no password: the factory holds the DSN."""
+    dsn = _Secret(
+        psycopg_dsn(scratch_engine_url(admin, name).render_as_string(hide_password=False))
+    )
+    return _guarded(
+        "building the scratch engine",
+        lambda: create_engine(
+            f"{SCRATCH_DRIVER}://",
+            creator=_connection_factory(dsn, connect),
+            poolclass=NullPool,
+        ),
+    )
+
+
 def apply_paper_schema(engine: Engine) -> None:
     """Create the paper tables from the DDL the code itself carries."""
     from ggTrader.paper import persist
@@ -220,21 +391,25 @@ def apply_paper_schema(engine: Engine) -> None:
 
 @contextmanager
 def scratch_db(
-    *, schema: bool = True, connect: Callable[..., Any] = psycopg2.connect
+    *,
+    schema: bool = True,
+    connect: Callable[..., Any] = psycopg2.connect,
+    engine_connect: Callable[..., Any] = psycopg2.connect,
 ) -> Iterator[Engine]:
     """Yield an engine on a fresh scratch database; skip when no usable server is named.
 
     `NullPool` makes every connection a real one, so a transaction left open at block exit
-    reaches the server as a rollback exactly as it would in production.
+    reaches the server as a rollback exactly as it would in production. `connect` opens the
+    administrator session, `engine_connect` the engine's connections (both are for tests).
     """
     admin = read_admin_secret()
     if admin is None:
         pytest.skip(f"{ADMIN_URL_ENV} is not set")
     with scratch_database_name(admin, connect) as name:
-        engine = create_engine(scratch_engine_url(admin, name), poolclass=NullPool)
+        engine = build_scratch_engine(admin, name, engine_connect)
         try:
             if schema:
-                apply_paper_schema(engine)
+                _guarded("applying the paper schema", lambda: apply_paper_schema(engine))
             yield engine
         finally:
             engine.dispose()
