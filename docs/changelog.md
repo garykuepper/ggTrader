@@ -7,15 +7,33 @@
   `trader.py:NNN` references, the old 1,600-line and 826-line trader descriptions, "not wired"). Current docs
   already describe them as retired; the remaining hits are changelog history, the superseded design and plans,
   or test and source comments, which this audit does not edit.
-- `AGENTS.md` section 1 now lists every module of `src/ggTrader/paper/` that the Phase 5 run split added
-  (`preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`, `order_flow.py`, `execution.py`,
-  `corporate_actions.py`, `reporter.py`, `seams.py`, `run_helpers.py`, `ledger.py`, `ports.py`, `models.py`,
-  `config.py`, `constants.py`) and says `trader.py` is now a short orchestrator. Its test-run rules (4G cap, one
-  heavy job at a time) were already current and are unchanged. No owner instruction was altered.
+- `AGENTS.md` section 1 now lists every module of `src/ggTrader/paper/` (`cash_sweep.py`, `catastrophe_stop.py`,
+  `gates.py`, `live_bars.py`, `live_signals.py` and `untradable.py` included), marks the ten step modules and
+  helpers the Phase 5 run split added (`preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`,
+  `order_flow.py`, `execution.py`, `corporate_actions.py`, `reporter.py`, `seams.py`, `run_helpers.py`), and
+  names the shared pieces from earlier phases: `models.py`, `ports.py`, `ledger.py` and `config.py` (Phase 4,
+  2026-11-19) and `constants.py` (phases 0 to 2, 2026-11-18). It says `trader.py` is now a short orchestrator.
+  Its test-run rules (4G cap, one heavy job at a time) were already current and are unchanged. No owner
+  instruction was altered.
+- `AGENTS.md` section 3 and `docs/architecture.md` now say the live equity-price path is
+  `ggTrader.data.live.fetch_chain` (`OhlcvFetchChain`), imported directly by `paper/signal_runner.py` and
+  `paper/overlay.py`; `lab.data.fetch_stock_ohlcv` stays as a thin wrapper with the same signature. The
+  architecture notes that name `ModuleLedger`, the 826-line `_run` and `RunHalted` now state plainly that they
+  are history (retired, split, or never built).
+- Left on purpose: `lab/simulate.py` is still named in `src/ggTrader/engine/portfolio.py` comments (about lines
+  5 and 35) and in the `vol_target` `ValueError` text (about line 305). That text is pinned by the
+  characterization fixture `tests/engine/characterization/run_signals.json`, so changing it would break the pin.
+- Known stale, left on purpose (code and pinned test files, not edited by a docs audit):
+  `tests/paper/equivalence/run_with.py:30` patches `PaperTrader._run_legacy`, which no longer exists. The line
+  is unreachable today because the `legacy` implementation is no longer selectable (`impl.IMPLS` holds only
+  `new`). Comments in `tests/paper/test_constants.py`, `tests/paper/transcript/scenarios.py` and
+  `tests/paper/test_run_rules.py` still cite `trader.py:NNN` and `test_trader.py:NNN` line numbers that moved in
+  the run split; those files are hash-pinned or frozen harness files.
 - `docs/cli_reference.md` now says `ggt db clean` and `ggt db truncate` exit with code 2 (and delete nothing)
   when their confirmation flag (`--yes`, `--yes-wipe-ohlcv`) is missing, matching `cli/cmd_db.py`.
-- `docs/next_steps.md` has one status row for the refactor: phases 0 to 5 merged to local main, not pushed, the
-  trader stays stopped, nothing deployed, and the owner-gated items still open.
+- `docs/next_steps.md` has one status row for the refactor: phases 0 to 2 are merged and pushed (`abe8cefa`,
+  2026-11-18, in `origin/main`); phases 3 to 5 are merged to local main (`77ef2932`, 2026-11-20) and not pushed.
+  The trader stays stopped, nothing is deployed, and the owner-gated items are still open.
 - Moved the point-in-time note `where-we-left-it-2026-11-12.md` to `docs/archive/` and fixed its inbound links
   in `next_steps.md` and `working_task_list.md`, and its own relative links.
 
