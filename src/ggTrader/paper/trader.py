@@ -167,6 +167,7 @@ class PaperTrader:
             hooks=self._hooks(),
             lock=lambda: self._paper_lock,
             read_only=self._read_only,
+            current=lambda: self._executor_for_call(),
         )
 
     def _corporate_actions(self) -> CorporateActions:
@@ -217,7 +218,7 @@ class PaperTrader:
         ctx = RunContext(pre.today_et, cfg, frozenset(pending_symbols))
         view = PortfolioView.load(
             broker=self._broker, notifier=self._notifier,
-            corporate_actions=self._corporate_actions(), ctx=ctx, signals=pre.signals,
+            corporate_actions=self._corporate_actions, ctx=ctx, signals=pre.signals,
         )  # fmt: skip
         verdict = RiskAssessor(
             risk=self._risk, ledger=self._ledger, notifier=self._notifier

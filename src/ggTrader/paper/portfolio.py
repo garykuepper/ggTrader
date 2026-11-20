@@ -1,7 +1,7 @@
 """Read and prepare the portfolio for a paper-trading run."""
 
 import logging
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import timedelta
@@ -51,7 +51,7 @@ class PortfolioView:
         *,
         broker: Broker,
         notifier: Notifier,
-        corporate_actions: CorporateActions,
+        corporate_actions: Callable[[], CorporateActions],
         ctx: RunContext,
         signals: StrategySignals,
     ) -> "PortfolioView":
@@ -101,20 +101,20 @@ class PortfolioView:
             )
         all_buys = [(sym, u) for sym, u in all_buys if sym not in untradable_seen]
         split_since = ctx.today_et - timedelta(days=SPLIT_LOOKBACK_DAYS)
-        split_corrections = corporate_actions.split_corrections(
+        split_corrections = corporate_actions().split_corrections(
             positions, split_since, ctx.today_et
         )
         if split_corrections:
             _log.warning("Unapplied broker split corrections: %s", split_corrections)
         corrected_positions = apply_corrections_to_positions(strategy_positions, split_corrections)
         sells = list(signals.sells)
-        missed = corporate_actions.missed_exits(
+        missed = corporate_actions().missed_exits(
             strategy_positions, dict(signals.last_exit), set(sells)
         )
         if missed:
             _log.info("Catching up missed exits: %s", missed)
             sells = sorted(set(sells) | set(missed))
-        dividends = corporate_actions.accrue_dividends(positions)
+        dividends = corporate_actions().accrue_dividends(positions)
         return cls(
             MappingProxyType(deepcopy(account)),
             _positions_copy(positions),

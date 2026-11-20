@@ -525,8 +525,11 @@ here:
   `_compute_split_corrections`, `_accrue_dividends`) and the `TraderSeams` container were
   **retired** (owner decision D3, 2026-11-20). The step objects own the bodies and call each other
   directly: `OrderExecutor` calls its own `submit_order`, `poll_orders`, `reconcile_order_intents`,
-  `reconcile_pending_orders` and `flag_if_stale`; `PortfolioView.load` takes a `CorporateActions`
-  (`split_corrections`, `missed_exits`, `accrue_dividends`). The injection point is the method of
+  `reconcile_pending_orders` and `flag_if_stale`, each through the `current` factory the trader passes
+  (a fresh executor built from the trader's state at that call); `PortfolioView.load` takes a
+  factory for `CorporateActions` and builds the step at each of `split_corrections`,
+  `missed_exits` and `accrue_dividends`. Collaborators are therefore resolved when each call
+  happens, as the old forwards did (`tests/paper/test_seam_call_time_pins.py`). The injection point is the method of
   the step object: a run-level test replaces it on the class (`patch.object(OrderExecutor,
   "submit_order", ...)`), a step-level test on the instance. The trader builds a fresh executor
   through `_executor_for_call()` (and the corporate-actions step through `_corporate_actions()`), so an instance assignment on the trader no longer intercepts

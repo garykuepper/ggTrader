@@ -48,11 +48,11 @@ def portfolio(monkeypatch):
         1.0,
     )
 
-    def load():
+    def load(factory=None):
         return PortfolioView.load(
             broker=broker,
             notifier=notifier,
-            corporate_actions=corporate_actions,
+            corporate_actions=factory or (lambda: corporate_actions),
             ctx=ctx,
             signals=signals,
         )
@@ -199,3 +199,25 @@ def test_load_uses_the_per_run_config_not_the_environment(portfolio, monkeypatch
     monkeypatch.setenv("CASH_SWEEP_ENABLED", "false")
     view = portfolio[-1]()
     assert view.sweep_on and "SWEEP" not in view.strategy_positions
+
+
+def test_the_corporate_actions_step_is_built_at_each_use_after_the_account_reads(portfolio):
+    events, broker, _, corporate_actions, _, _, load = portfolio
+
+    def factory():
+        events.append("build")
+        return corporate_actions
+
+    load(factory)
+    assert events.index("build") > events.index("positions")
+    steps = [e for e in events if e in ("build", "splits", "missed", "dividends")]
+    assert steps == ["build", "splits", "build", "missed", "build", "dividends"]
+
+
+def test_a_failing_account_read_never_builds_the_corporate_actions_step(portfolio):
+    _, broker, _, _, _, _, load = portfolio
+    broker.get_account.side_effect = RuntimeError("down")
+    built = []
+    with pytest.raises(RuntimeError, match="down"):
+        load(lambda: built.append(1))
+    assert built == []

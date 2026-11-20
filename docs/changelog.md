@@ -6,10 +6,12 @@
   `_reconcile_pending_orders`, `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections` and
   `_accrue_dividends`, and `TraderSeams` (in `paper/seams.py`) and `PaperTrader._seams()` are gone
   (`RunHooks` stays). The step objects own the bodies and call each other directly:
-  `OrderExecutor` calls its own `submit_order`, `poll_orders`, `reconcile_order_intents` and
-  `flag_if_stale` (its `seams` constructor argument is removed); the run reads pending orders and
+  `OrderExecutor` calls `submit_order`, `poll_orders`, `reconcile_order_intents` and
+  `flag_if_stale` on an executor its `current` factory builds from the trader's state at each call
+  (its `seams` constructor argument is removed); the run reads pending orders and
   recovers intents through `_executor_for_call()`; `PortfolioView.load` takes a `corporate_actions`
-  argument (a `CorporateActions`) instead of `seams`. `CorporateActions` gained one method,
+  factory (a callable returning a `CorporateActions`, called at each of its three uses) instead of
+  `seams`. `CorporateActions` gained one method,
   `missed_exits`, that wraps the existing pure function of the same name.
 - Behavior is unchanged: the 103 transcript goldens, `run_equivalence_digests.json` (600 digests, its
   runner/generator/witness hashes untouched), `persist_sql.json` and every other file under

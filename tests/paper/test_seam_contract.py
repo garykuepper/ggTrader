@@ -717,6 +717,62 @@ def test_the_patch_target_scanner_finds_each_form():
     assert patch_targets("x = 1\n") == (set(), set())
 
 
+def retired_seam_uses(source: str) -> list[tuple[int, str]]:
+    """Lines that assign, patch or set a retired seam name on any object, as ``(line, name)``.
+
+    `patch.object(PaperTrader, "_poll_orders")` fails loudly (the class has no such attribute), but
+    `trader._poll_orders = Mock()` or `patch.object(trader, "_poll_orders", ...)` on an instance
+    silently intercepts nothing, so those forms are flagged wherever they appear.
+    """
+    hits: list[tuple[int, str]] = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Attribute) and target.attr in RETIRED_SEAMS:
+                    hits.append((node.lineno, target.attr))
+        elif isinstance(node, ast.Call) and len(node.args) >= 2:
+            name = node.args[1]
+            if (
+                _dotted(node.func) in (*_PATCH_CALLS, "patch.multiple", "mock.patch.object")
+                and isinstance(name, ast.Constant)
+                and name.value in RETIRED_SEAMS
+            ):
+                hits.append((node.lineno, name.value))
+    return sorted(hits)
+
+
+def test_no_test_assigns_or_patches_a_retired_seam_name():
+    """A leftover `trader._poll_orders = Mock()` would silently stop intercepting anything."""
+    found = {
+        str(path.relative_to(REPO)): hits
+        for path in sorted(TESTS_DIR.rglob("*.py"))
+        if (hits := retired_seam_uses(_read(path)))
+    }
+    assert not found, f"tests still assign or patch a retired seam name: {found}"
+
+
+def test_the_retired_seam_scanner_finds_each_form():
+    source = (
+        "from unittest.mock import patch\n"
+        "trader._poll_orders = 1\n"
+        "self.trader._missed_exits: object = 1\n"
+        'patch.object(trader, "_submit_order", 1)\n'
+        'monkeypatch.setattr(trader, "_flag_if_stale", 1)\n'
+        'setattr(trader, "_accrue_dividends", 1)\n'
+        "trader._other = 1\n"
+        'patch.object(trader, "_other", 1)\n'
+    )
+    assert retired_seam_uses(source) == [
+        (2, "_poll_orders"),
+        (3, "_missed_exits"),
+        (4, "_submit_order"),
+        (5, "_flag_if_stale"),
+        (6, "_accrue_dividends"),
+    ]
+    assert retired_seam_uses("x = 1\n") == []
+
+
 def test_required_trader_names_stay_bound():
     """The names the plan lists as patchable are still bound; the eight private seams are gone."""
     missing = [name for name in REQUIRED_TRADER_NAMES if not hasattr(trader_module, name)]

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from contextlib import ExitStack
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from ggTrader.paper.corporate_actions import CorporateActions
 from ggTrader.paper.execution import OrderExecutor
@@ -95,3 +95,56 @@ def test_step_objects_take_no_seams_argument():
     load = inspect.signature(PortfolioView.load).parameters
     assert "seams" not in load
     assert "corporate_actions" in load
+
+
+def _executor(**overrides: Any) -> OrderExecutor:
+    base: dict[str, Any] = dict(
+        broker=MagicMock(),
+        notifier=MagicMock(),
+        ledger=MagicMock(),
+        hooks=MagicMock(),
+        lock=lambda: None,
+        read_only=False,
+    )
+    return OrderExecutor(**{**base, **overrides})
+
+
+def test_executor_entry_points_run_on_the_executor_built_at_call_time():
+    """submit, poll and the reconcile hooks use `current()`'s executor, resolved on every call."""
+    built: list[MagicMock] = []
+
+    def current() -> MagicMock:
+        built.append(MagicMock())
+        return built[-1]
+
+    executor = _executor(current=current)
+    intent = MagicMock(side="BUY", symbol="MSFT", size=100.0, reason=None)
+    executor.submit(intent)
+    executor.poll([])
+    executor.recover_intents()
+    executor.after_sells({"o1": {}})
+    executor.after_orders([MagicMock()])
+    assert len(built) == 5  # one fresh executor per call, never one captured early
+    built[0].submit_order.assert_called_once_with("BUY", "MSFT", 100.0, None)
+    built[1].poll_orders.assert_called_once_with([])
+    for fresh in built[2:]:
+        fresh.reconcile_order_intents.assert_called_once_with()
+
+
+def test_stale_alert_comes_from_the_executor_current_when_the_order_is_flagged():
+    """The pending-order pass flags through a fresh executor, not through its own collaborators."""
+    own_notifier, current_notifier = MagicMock(), MagicMock()
+    ledger = MagicMock()
+    ledger.get_pending_orders.return_value = [{"order_id": "o1", "symbol": "MSFT"}]
+    broker = MagicMock()
+    broker.get_order.return_value = {"status": "new"}
+    hooks = MagicMock()
+    flagged = _executor(notifier=current_notifier)
+    flagged.flag_if_stale = MagicMock()  # type: ignore[method-assign]
+    executor = _executor(
+        broker=broker, ledger=ledger, hooks=hooks, notifier=own_notifier, current=lambda: flagged
+    )
+    assert executor.reconcile_pending_orders() == {"MSFT"}
+    flagged.flag_if_stale.assert_called_once_with(
+        {"order_id": "o1", "symbol": "MSFT"}, hooks.utcnow.return_value
+    )

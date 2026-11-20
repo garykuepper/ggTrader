@@ -53,30 +53,41 @@ class OrderExecutor:
         hooks: RunHooks,
         lock: Callable[[], RunLock | None],
         read_only: bool,
+        current: Callable[[], OrderExecutor] | None = None,
     ) -> None:
+        """Wire the executor.
+
+        Args:
+            current: builds a fresh executor from the trader's state at the moment it is called.
+                The submit, poll and reconcile entry points and the stale-order alert run on
+                what it returns, so a collaborator or flag the trader replaced mid-run applies to
+                the next call, as it did when each call went through a trader method that rebuilt
+                its executor. ``None`` (a hand-built executor) runs on itself.
+        """
         self._broker = broker
         self._notifier = notifier
         self._ledger = ledger
         self._hooks = hooks
         self._lock = lock
         self._read_only = read_only
+        self._current = current if current is not None else lambda: self
 
     def recover_intents(self) -> None:
-        self.reconcile_order_intents()
+        self._current().reconcile_order_intents()
 
     def submit(self, intent: OrderIntent) -> str | None:
-        return self.submit_order(intent.side, intent.symbol, intent.size, intent.reason)
+        return self._current().submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
-        return self.poll_orders(list(orders))
+        return self._current().poll_orders(list(orders))
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
         if filled:
-            self.reconcile_order_intents()
+            self._current().reconcile_order_intents()
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
         if orders:
-            self.reconcile_order_intents()
+            self._current().reconcile_order_intents()
 
     def announce(self, intent: OrderIntent) -> None:
         if intent.kind == IntentKind.STOP:
@@ -298,7 +309,7 @@ class OrderExecutor:
             terminal = status in TERMINAL_STATUSES
             if not terminal:
                 still_pending.add(po["symbol"])
-                self.flag_if_stale(po, now)
+                self._current().flag_if_stale(po, now)
                 continue  # still working — try again next run
 
             try:
