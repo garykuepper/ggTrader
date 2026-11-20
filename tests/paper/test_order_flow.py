@@ -237,3 +237,72 @@ def test_unassessable_and_pending_notices_precede_stop_even_if_first_fails():
     assert "Pending orders may still fill" in events[1]
     assert events[2] == "submit"
     assert state.stopped == {"A"} and state.all_buys == []
+
+
+def test_stage_two_polls_sells_and_blocks_buys_on_unfilled_exit():
+    flow, view, signals = make_flow({"A": position()}, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    view.positions = view.strategy_positions
+    flow.executor.poll.return_value = {"oid": {"status": "canceled"}}
+    flow.executor.submit.return_value = "oid"
+    flow.executor.unfilled_exit_errors.return_value = ["SELL A not fully filled (canceled)"]
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    assert state.regular_sell_count == 1
+    assert state.book.sells == ["A"]
+    assert state.buys_by_sleeve == {}
+    assert state.book.errors == ["SELL A not fully filled (canceled)"]
+    flow.executor.poll.assert_called_once_with(state.book.orders)
+    flow.executor.unfilled_exit_errors.assert_called_once_with(
+        state.book.orders, state.book.filled, view.positions
+    )
+
+
+def test_sweep_sell_is_planned_after_the_stops_were_executed(monkeypatch):
+    from ggTrader.paper import order_flow
+    from ggTrader.paper.models import IntentKind, OrderIntent
+
+    flow, view, signals = make_flow({"A": position(), "B": position()}, sells=("B",))
+    view.corrected_positions = {"A": position()}
+    view.sweep_on = True
+    view.positions = view.strategy_positions
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+
+    def sweep(**kwargs):
+        assert set(kwargs["strategy_positions"]) == {"B"}
+        assert state.book.sells == ["A"]
+        return OrderIntent(IntentKind.SWEEP_SELL, "SELL", "SGOV", 2, "sweep", 20)
+
+    monkeypatch.setattr(order_flow, "plan_sweep_sell", sweep)
+    flow.executor.poll.return_value = {}
+    flow.executor.unfilled_exit_errors.return_value = []
+    flow.run_stage_two(view, state)
+    assert state.book.sells == ["A", "B"]
+    assert state.regular_sell_count == 1
+    assert [o.symbol for o in state.book.orders] == ["A", "SGOV", "B"]
+
+
+def test_a_working_exit_raises_in_reconciliation_before_any_error_is_built():
+    flow, view, signals = make_flow({"A": position()}, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    flow.executor.poll.return_value = {"oid": {"status": "new"}}
+    flow.executor.after_sells.side_effect = RuntimeError("working")
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    with pytest.raises(RuntimeError, match="working"):
+        flow.run_stage_two(view, state)
+    flow.executor.unfilled_exit_errors.assert_not_called()
+
+
+def test_dry_run_polls_an_empty_list_and_reconciles_nothing():
+    flow, view, signals = make_flow({"A": position()}, dry=True, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    flow.executor.poll.return_value = {}
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    flow.executor.poll.assert_called_once_with([])
+    flow.executor.after_sells.assert_called_once_with({})
+    flow.executor.unfilled_exit_errors.assert_not_called()
+    assert state.regular_sell_count == 1

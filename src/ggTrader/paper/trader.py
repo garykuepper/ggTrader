@@ -350,8 +350,6 @@ class PaperTrader:
             ctx=ctx,
             signals=derived,
         )
-        account = dict(view.account)
-        positions = {s: dict(p) for s, p in view.positions.items()}
         portfolio_value = view.portfolio_value
         sweep_on, sweep_sym = view.sweep_on, view.sweep_symbol
         corrected_positions = {s: dict(p) for s, p in view.corrected_positions.items()}
@@ -377,14 +375,16 @@ class PaperTrader:
             _log.warning("Invalid prior reporting snapshot; daily P&L is unavailable")
             prev_snapshot_value = None
 
-        state = OrderFlow(
+        flow = OrderFlow(
             executor=self._executor_for_call(),
             broker=self._broker,
             notifier=self._notifier,
             risk=self._risk,
             ctx=ctx,
             stop_threshold=stop_threshold,
-        ).run_stage_one(view, derived, verdict)
+        )
+        state = flow.run_stage_one(view, derived, verdict)
+        flow.run_stage_two(view, state)
         strategy_positions = state.strategy_positions
         stopped_symbols = state.stopped
         invalid_exit_symbols = state.invalid_exit_symbols
@@ -397,124 +397,8 @@ class PaperTrader:
         executed_sells, executed_buys = state.book.sells, state.book.buys
         errors, pending_orders = state.book.errors, state.book.orders
 
-        if sweep_on and not loss_halts:
-            # Sell the sweep position down FIRST (before strategy sells/buys
-            # execute) if the day's anticipated strategy buys would need more
-            # cash than is currently on hand. `prospective_buy_notional` is a
-            # deliberate upper-bound estimate (see
-            # cash_sweep.estimate_prospective_buy_notional) computed BEFORE
-            # the sells loop runs, so it conservatively assumes the slots that
-            # today's sells will free are already free.
-            anticipated_sells = [
-                s for s in signals["sells"] if s in strategy_positions and s not in pending_symbols
-            ]
-            slots_estimate = self._risk.max_new_positions(
-                len(strategy_positions) - len(anticipated_sells)
-            )
-            prospective_buy_notional = cash_sweep.estimate_prospective_buy_notional(
-                buys_by_sleeve, sleeve_notional_by_universe, slot_caps, slots_estimate
-            )
-            sweep_position = positions.get(sweep_sym)
-            sweep_position_value = sweep_position["market_value"] if sweep_position else 0.0
-            sell_action = cash_sweep.compute_sweep_sell_for_funding(
-                cash_available=account["cash"],
-                portfolio_value=portfolio_value,
-                prospective_buy_notional=prospective_buy_notional,
-                current_sweep_position_value=sweep_position_value,
-                reserve_pct=cfg.reserve_pct(),
-            )
-            if sell_action.side == "sell" and sweep_position:
-                sweep_price = sweep_position["current_price"]
-                sell_qty = round(sell_action.notional / sweep_price, 4) if sweep_price > 0 else 0.0
-                if sell_qty > 0:
-                    if self._dry_run:
-                        self._notifier.send(
-                            f"<b>🔍 DRY RUN sweep sell:</b> {sweep_sym} "
-                            f"(${sell_action.notional:.0f}, funding strategy buys)"
-                        )
-                    else:
-                        # Alpaca paper credits a market sell's proceeds to
-                        # cash immediately (no T+1/T+2 settlement lag), so
-                        # it's safe to treat this cash as available to the
-                        # strategy buys submitted later in this same run.
-                        # A same-run sell -> buy sequence would NOT be
-                        # safe on a broker with real settlement delay.
-                        oid = self._submit_order(
-                            "SELL", sweep_sym, sell_qty, cash_sweep.SWEEP_TRADE_REASON
-                        )
-                        pending_orders.append(
-                            SubmittedOrder(
-                                oid,
-                                "SELL",
-                                sweep_sym,
-                                sell_action.notional,
-                                cash_sweep.SWEEP_TRADE_REASON,
-                            )
-                        )
-
-        # Sells first — free up position slots. `regular_sell_count` (not
-        # `executed_sells`) is what feeds the slots_available math below: a
-        # catastrophe stop already shrank `strategy_positions` by removing
-        # its symbol (see the block above), so that freed slot is already
-        # reflected there. `executed_sells` also records catastrophe-stop
-        # sells (for the return value / reporting), so subtracting its full
-        # length here would count every stop's freed slot twice -- once via
-        # the shrunken `strategy_positions`, again via `executed_sells` --
-        # letting the buy loop open one extra position per stop and breach
-        # `max_positions`.
-        regular_sell_count = 0
-        for symbol in signals["sells"]:
-            if symbol not in strategy_positions or symbol in invalid_exit_symbols:
-                continue
-            if symbol in pending_symbols:
-                _log.info("Skipping SELL %s: order already pending", symbol)
-                continue
-            qty = strategy_positions[symbol]["qty"]
-            if self._dry_run:
-                executed_sells.append(symbol)
-                regular_sell_count += 1
-                self._notifier.send(f"<b>🔍 DRY RUN sell:</b> {symbol} (qty {qty})")
-                continue
-            oid = self._submit_order("SELL", symbol, qty, None)
-            executed_sells.append(symbol)
-            regular_sell_count += 1
-            pending_orders.append(
-                SubmittedOrder(
-                    oid, "SELL", symbol, strategy_positions[symbol]["market_value"], None
-                )
-            )
-
-        # Wait for every sell submitted so far (catastrophe stop, sweep funding,
-        # strategy exits) to fill before buying: Alpaca credits proceeds only on
-        # fill, and on 2026-09-25 buys sent while the funding sell was still
-        # working were rejected for insufficient buying power (6 of 8).
-        filled_orders: dict[str, OrderStatus] = self._poll_orders(
-            [o for o in pending_orders if o.side == "SELL"]
-        )
-
-        if filled_orders and not self._dry_run:
-            self._reconcile_order_intents()
-
-        # A submitted exit does not free a position slot unless it fully fills.
-        if not self._dry_run:
-            for order in pending_orders:
-                oid, side, symbol, reason = order.order_id, order.side, order.symbol, order.reason
-                if side != "SELL" or reason == cash_sweep.SWEEP_TRADE_REASON:
-                    continue
-                info = filled_orders.get(oid, {})
-                qty = info.get("filled_qty")
-                expected = positions[symbol]["qty"]
-                if (
-                    info.get("status") != "filled"
-                    or qty is None
-                    or not math.isfinite(qty)
-                    or not math.isclose(qty, expected, rel_tol=1e-12, abs_tol=1e-9)
-                ):
-                    errors.append(
-                        f"SELL {symbol} not fully filled ({info.get('status', 'unknown')}); "
-                        "new strategy buys blocked"
-                    )
-                    buys_by_sleeve.clear()
+        regular_sell_count = state.regular_sell_count
+        filled_orders = state.book.filled
 
         slots_available = self._risk.max_new_positions(len(strategy_positions) - regular_sell_count)
         buys_attempted = 0

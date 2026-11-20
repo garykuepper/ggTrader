@@ -13,7 +13,13 @@ from ggTrader.paper.models import (
     StrategySignals,
     SubmittedOrder,
 )
-from ggTrader.paper.planning import assess_stops, plan_stops, validate_exits
+from ggTrader.paper.planning import (
+    assess_stops,
+    plan_exits,
+    plan_stops,
+    plan_sweep_sell,
+    validate_exits,
+)
 from ggTrader.paper.portfolio import PortfolioView
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.risk import RiskGuard
@@ -120,4 +126,56 @@ class OrderFlow:
             )
             for universe in state.buys_by_sleeve
         }
+        return state
+
+    def run_stage_two(self, view: PortfolioView, state: FlowState) -> FlowState:
+        """Execute the funding and strategy sells, then settle them."""
+        if view.sweep_on and not state.loss_halts:
+            intent = plan_sweep_sell(
+                cfg=self.ctx.config,
+                account=view.account,
+                positions=view.positions,
+                strategy_positions=state.strategy_positions,
+                sells=view.sells,
+                pending_symbols=self.ctx.pending_symbols,
+                risk=self.risk,
+                buys_by_sleeve=state.buys_by_sleeve,
+                notional_by_sleeve=state.sleeve_notional_by_universe,
+                slot_caps=state.slot_caps,
+                portfolio_value=view.portfolio_value,
+            )
+            if intent is not None:
+                oid = self.executor.submit(intent)
+                if self.executor.submits_orders:
+                    state.book.orders.append(
+                        SubmittedOrder(
+                            oid, "SELL", intent.symbol, intent.book_amount, intent.reason
+                        )
+                    )
+                self.executor.announce(intent)
+        planner = plan_exits(
+            sells=view.sells,
+            strategy_positions=state.strategy_positions,
+            invalid_symbols=frozenset(state.invalid_exit_symbols),
+            pending_symbols=self.ctx.pending_symbols,
+        )
+        while (decision := planner.advance()) is not None:
+            if isinstance(decision, Skip):
+                _log.log(decision.level, decision.message)
+                continue
+            oid = self.executor.submit(decision)
+            state.book.sells.append(decision.symbol)
+            state.regular_sell_count += 1
+            if self.executor.submits_orders:
+                amount = state.strategy_positions[decision.symbol]["market_value"]
+                state.book.orders.append(SubmittedOrder(oid, "SELL", decision.symbol, amount, None))
+            self.executor.announce(decision)
+        state.book.filled = self.executor.poll([o for o in state.book.orders if o.side == "SELL"])
+        self.executor.after_sells(state.book.filled)
+        if self.executor.submits_orders:
+            for error in self.executor.unfilled_exit_errors(
+                state.book.orders, state.book.filled, view.positions
+            ):
+                state.book.errors.append(error)
+                state.buys_by_sleeve.clear()
         return state
