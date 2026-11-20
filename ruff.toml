@@ -147,8 +147,6 @@ max-args = 8
 # split_cells and parse_ledger walk wikitext and fail closed on any unexpected shape; the
 # branches are the grammar.
 "src/ggTrader/data/membership_sources.py" = ["PLR0912", "PLR0915"]
-# run_weekly is the weekly job's ordered steps; _compare_and_propose takes the run state plus inputs.
-"src/ggTrader/data/membership_weekly.py" = ["C901", "PLR0912", "PLR0913", "PLR0915"]
 # _write_vintage carries one vintage's columns; reinstate_vintage is the ordered reinstate steps.
 "src/ggTrader/data/universe_db.py" = ["PLR0913", "PLR0915"]
 # run_signals takes the 16 options of one grouped vectorbt call; _validate_intraday_stops checks each
