@@ -42,7 +42,7 @@ def portfolio(monkeypatch):
     signals = StrategySignals(
         (("FROZEN", "core"), ("BLOCKED", "core"), ("BUY", "core")),
         ("Z",),
-        {},
+        {"HELD": "2026-11-17"},
         "2026-11-18",
         {},
         1.0,
@@ -124,7 +124,9 @@ def test_portfolio_routes_raw_and_filtered_positions_to_their_collaborators(port
         positions, date(2026, 11, 5), date(2026, 11, 19)
     )
     seams.accrue_dividends.assert_called_once_with(positions)
-    seams.missed_exits.assert_called_once_with({"HELD": positions["HELD"]}, {}, {"Z"})
+    seams.missed_exits.assert_called_once_with(
+        {"HELD": positions["HELD"]}, {"HELD": "2026-11-17"}, {"Z"}
+    )
     assert set(view.strategy_positions) == set(view.corrected_positions) == {"HELD"}
 
 
@@ -179,6 +181,14 @@ def test_the_view_is_frozen_and_shares_no_mutable_state_with_the_broker_reply(po
         view.sells = ()
     with pytest.raises((TypeError, FrozenInstanceError)):
         view.positions["HELD"]["qty"] = 3
+
+
+def test_corrected_view_copies_positions_without_a_split(portfolio):
+    _, _, _, _, positions, _, load = portfolio
+    positions["PLAIN"] = {"qty": 4, "market_value": 400}
+    view = load()
+    positions["PLAIN"]["qty"] = 99
+    assert view.corrected_positions["PLAIN"]["qty"] == 4
 
 
 def test_load_uses_the_per_run_config_not_the_environment(portfolio, monkeypatch):
