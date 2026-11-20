@@ -306,3 +306,145 @@ def test_dry_run_polls_an_empty_list_and_reconciles_nothing():
     flow.executor.after_sells.assert_called_once_with({})
     flow.executor.unfilled_exit_errors.assert_not_called()
     assert state.regular_sell_count == 1
+
+
+def sweep_view(flow, view):
+    """Set up a funded sweep position with cash below the reserve."""
+    view.sweep_on = True
+    view.positions = {**view.strategy_positions, "SGOV": {"market_value": 500, "current_price": 10}}
+    view.account = {"cash": 0}
+    flow.ctx.config.sweep_symbol = "SGOV"
+    flow.ctx.config.reserve_pct.return_value = 0.05
+    flow.risk.max_new_positions.return_value = 1
+
+
+def test_a_bad_reserve_raises_after_the_stop_orders_went_out():
+    flow, view, signals = make_flow({"A": position()})
+    sweep_view(flow, view)
+    flow.ctx.config.reserve_pct.side_effect = ValueError("bad reserve")
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    with pytest.raises(ValueError, match="bad reserve"):
+        flow.run_stage_two(view, state)
+    assert state.book.sells == ["A"]
+    flow.executor.submit.assert_called_once()
+    flow.executor.poll.assert_not_called()
+
+
+def test_an_invalid_exit_still_allows_a_reserve_restoring_sweep_sell():
+    from ggTrader.paper.cash_sweep import SWEEP_TRADE_REASON
+
+    flow, view, signals = make_flow({"A": position(qty=0)}, sells=("A",))
+    flow.stop_threshold = None
+    sweep_view(flow, view)
+    flow.executor.poll.return_value = {}
+    flow.executor.unfilled_exit_errors.return_value = []
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    assert not state.buys_by_sleeve
+    assert state.invalid_exit_symbols == {"A"}
+    assert len(state.book.orders) == 1
+    assert state.book.orders[0].symbol == "SGOV"
+    assert state.book.orders[0].amount == 50
+    assert state.book.orders[0].reason == SWEEP_TRADE_REASON
+    assert state.regular_sell_count == 0
+
+
+@pytest.mark.parametrize("status", ["canceled", "rejected", "expired"])
+def test_a_terminal_unfilled_exit_blocks_all_buys_and_names_the_status(status):
+    from ggTrader.paper.execution import OrderExecutor
+
+    flow, view, signals = make_flow({"A": position()}, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    view.positions = view.strategy_positions
+    flow.executor.submit.return_value = "oid"
+    flow.executor.poll.return_value = {"oid": {"status": status, "filled_qty": 0}}
+    flow.executor.unfilled_exit_errors.side_effect = lambda *args: (
+        OrderExecutor.unfilled_exit_errors(flow.executor, *args)
+    )
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    assert state.book.errors == [f"SELL A not fully filled ({status}); new strategy buys blocked"]
+    assert state.buys_by_sleeve == {}
+    assert state.loss_halts == []
+    assert not state.invalid_exit_symbols
+
+
+def test_unfilled_exit_errors_are_given_the_raw_broker_positions():
+    from ggTrader.paper.execution import OrderExecutor
+
+    flow, view, signals = make_flow({"A": position(qty=3)}, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    view.positions = {"A": position(qty=2)}
+    flow.executor.submit.return_value = "oid"
+    flow.executor.poll.return_value = {"oid": {"status": "filled", "filled_qty": 2}}
+    flow.executor.unfilled_exit_errors.side_effect = lambda *args: (
+        OrderExecutor.unfilled_exit_errors(flow.executor, *args)
+    )
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    flow.run_stage_two(view, state)
+    assert state.book.errors == []
+    assert state.buys_by_sleeve == {"s": ["BUY"]}
+
+
+@pytest.mark.parametrize("dry", [False, True])
+def test_the_flow_builds_each_sell_order_after_its_counters_and_market_value_read(dry):
+    events = []
+    flow, view, signals = make_flow({}, dry=dry, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    flow.executor.poll.return_value = {}
+    flow.executor.unfilled_exit_errors.return_value = []
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+
+    class Position(dict):
+        def __getitem__(self, key):
+            if key == "market_value":
+                assert state.book.sells == ["A"]
+                assert state.regular_sell_count == 1
+                assert state.book.orders == []
+                events.append("market_value")
+            return super().__getitem__(key)
+
+    state.strategy_positions["A"] = Position(position())
+    flow.executor.submit.side_effect = lambda _: events.append("submit") or "oid"
+
+    def announce(_):
+        assert state.book.sells == ["A"] and state.regular_sell_count == 1
+        assert [o.order_id for o in state.book.orders] == ([] if dry else ["oid"])
+        events.append("announce")
+
+    flow.executor.announce.side_effect = announce
+    flow.run_stage_two(view, state)
+    assert events == (["submit", "announce"] if dry else ["submit", "market_value", "announce"])
+
+
+def test_only_sells_are_polled_before_the_buys():
+    from ggTrader.paper.models import SubmittedOrder
+
+    flow, view, signals = make_flow({"A": position()}, sells=("A",))
+    flow.stop_threshold = None
+    view.sweep_on = False
+    flow.executor.poll.return_value = {}
+    flow.executor.unfilled_exit_errors.return_value = []
+    state = flow.run_stage_one(view, signals, RiskVerdict(None, ()))
+    state.book.orders.append(SubmittedOrder("buy", "BUY", "BUY", 10, None))
+    flow.run_stage_two(view, state)
+    assert [o.symbol for o in flow.executor.poll.call_args.args[0]] == ["A"]
+
+
+def test_an_unfilled_exit_leaves_the_sweep_buy_enabled():
+    from tests.paper import rules_support as rs
+
+    scenario = rs.from_scenario(
+        "sell_partial_fill_canceled",
+        env={**rs.LIVE_ENV, **rs.SWEEP_ENV},
+        fills={"AAPL": [{"status": "rejected", "filled_qty": 0, "filled_avg_price": None}]},
+    )
+    transcript = rs.run("new", scenario)
+    assert [symbol for _, symbol, _ in rs.submissions(transcript, "BUY")] == ["SPY"]
+    assert transcript["result"]["buys"] == []
+    assert transcript["result"]["errors"] == [
+        "SELL AAPL not fully filled (rejected); new strategy buys blocked"
+    ]
