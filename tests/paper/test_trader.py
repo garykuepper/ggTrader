@@ -1049,7 +1049,6 @@ class TestDailyPnl:
             ],
         )
 
-        seed_snapshots(ledger, [("2026-05-01", 99000.0, 50000.0, {})])
         trader.run()
 
         kwargs = notifier.daily_summary.call_args[1]
@@ -1060,9 +1059,9 @@ class TestDailyPnl:
 
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_missing_snapshot_evidence_falls_back_to_correcting(self, mock_signals, caplog):
-        # No paper_snapshots history brackets the ex-date
-        # (e.g. history that doesn't reach far enough back). With no evidence either way,
-        # this must fall back to the
+        # No paper_snapshots history at all to compare across the ex-date
+        # (e.g. a fresh account, or history that doesn't reach far enough
+        # back) -- with no evidence either way, this must fall back to the
         # pre-hardening default of correcting the position, not silently
         # assume the split was applied.
         mock_signals.return_value = _blend(buys=[], sells=[])
@@ -1090,7 +1089,6 @@ class TestDailyPnl:
             "activity_applied": set(),
         }
 
-        seed_snapshots(ledger, [("2026-06-18", 99000.0, 50000.0, {})])
         with caplog.at_level("WARNING", logger="ggTrader.paper.trader"):
             trader.run()
 
