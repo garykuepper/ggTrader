@@ -572,6 +572,7 @@ class TraderSeams:   # the private PaperTrader methods, looked up on the instanc
     submit_order: Callable[[str, str, float, str | None], str]
     poll_orders: Callable[[list[SubmittedOrder]], dict[str, OrderStatus]]
     reconcile_intents: Callable[[], set[str]];  reconcile_pending: Callable[[], set[str]]
+    flag_if_stale: Callable[[dict, datetime], None]
     missed_exits: Callable[[dict, dict[str, str], set[str]], list[str]]
     split_corrections: Callable[[dict, date, date], dict[str, float]]
     accrue_dividends: Callable[[dict], dict]
@@ -1941,7 +1942,8 @@ The bodies are `_submit_order` (193), `_reconcile_order_intents` (224), `_flag_i
 `_reconcile_pending_orders` (361), `_poll_orders` (428), moved unchanged except: `self._ledger` is the
 injected ledger, `self._notifier` and `self._broker` likewise, `uuid4()` is `hooks.new_uuid()`, `_today_et()` is
 `hooks.today_et()`, `time.time()`/`time.sleep()` are `hooks.clock_time()`/`hooks.sleep()`, `datetime.now(timezone.utc)` is
-`hooks.utcnow()`, the lock is `self._lock()` read at the moment of the call, and the `self._dry_run` branch of
+`hooks.utcnow()`, the lock is `self._lock()` read at the moment of the call, stale-order handling goes through
+`seams.flag_if_stale` to preserve instance and class patches, and the `self._dry_run` branch of
 `_reconcile_pending_orders` becomes the overridable `_pending_load_failed(exc) -> set[str]` (live: send the
 notice and raise; dry: warn and return `set()`). `PaperTrader._executor_for_call()` builds
 `DryRunExecutor` when `self._dry_run`, else `OrderExecutor`, from the current attributes (S4, S5), with
