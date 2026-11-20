@@ -48,19 +48,24 @@ def test_one_trade_alert_per_order_with_filled_or_intended_amount(rig):
     assert len(calls) == 2
     assert calls[0].args == ("BUY", "A", 60, "a")
     assert calls[1].args == ("BUY", "B", 90, "b")
+    assert calls[0].kwargs == {"qty": 2, "price": 30, "status": "filled"}
+    assert calls[1].kwargs == {"qty": None, "price": None, "status": "pending"}
 
 
 @pytest.mark.parametrize(
     "dry_run, text",
     [(True, "dry run; no orders submitted"), (False, "orders may have been submitted")],
 )
-def test_post_trade_read_failure_text_depends_on_dry_or_live(rig, dry_run, text):
+@pytest.mark.parametrize("read", ["get_account", "get_positions"])
+def test_post_trade_read_failure_text_depends_on_dry_or_live(rig, dry_run, text, read):
     reporter, ctx, view, signals, outcome = rig
     reporter.dry_run = dry_run
-    reporter.broker.get_account.side_effect = ValueError("unavailable")
+    getattr(reporter.broker, read).side_effect = ValueError("unavailable")
     with pytest.raises(ValueError):
         reporter.finish(ctx, view, signals, outcome, None)
     assert text in reporter.notifier.send.call_args.args[0]
+    reporter.notifier.daily_summary.assert_not_called()
+    reporter.ledger.log_snapshot.assert_not_called()
 
 
 def test_invalid_post_trade_value_is_reported_and_no_snapshot_is_written(rig):
@@ -89,6 +94,9 @@ def test_summary_errors_exclude_snapshot_failure_but_result_includes_it(rig):
         "starting_capital",
     }
     assert kwargs["starting_capital"] == 100.0
+    assert kwargs["total_pnl"] == 10.0
+    assert kwargs["booked_equity"] is None
+    assert kwargs["dividend_total"] == 0.0
     assert result.buys is outcome.book.buys and result.sells is outcome.book.sells
 
 
