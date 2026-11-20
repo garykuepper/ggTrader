@@ -151,6 +151,7 @@ def test_init_paper_schema_failing_late_statement_commits_nothing(bare_db, reque
         conn.execute(text("CREATE VIEW paper_pending_orders AS SELECT 1 AS order_id"))
     with pytest.raises(DBAPIError) as err:
         persist.init_paper_schema()
+    assert violation(err.value) == "ProgrammingError/42809"  # wrong object type
     assert tables(bare_db) == set()  # the view is not a BASE TABLE, and no paper table exists
     views = rows(
         bare_db, "SELECT table_name FROM information_schema.views WHERE table_schema='public'"
@@ -187,6 +188,7 @@ def test_log_trade_failing_insert_commits_nothing_and_frees_the_lock(db, request
     """Statement 3 (the INSERT) violates NOT NULL after the lock and the SELECT ran."""
     with pytest.raises(DBAPIError) as err:
         persist.log_trade(D1, "BUY", "AAPL", None, "ord-1")
+    assert violation(err.value) == "IntegrityError/23502"  # not_null_violation
     assert rows(db, "SELECT count(*) FROM paper_trades") == [(0,)]
     assert xact_lock_free(db, "ord-1")
     persist.log_trade(D1, "BUY", "AAPL", 1000.0, "ord-1")  # the ledger is usable afterwards
@@ -200,6 +202,7 @@ def test_log_trade_failing_second_statement_commits_nothing(db, request):
         conn.execute(text("ALTER TABLE paper_trades RENAME COLUMN reason TO reason_renamed"))
     with pytest.raises(DBAPIError) as err:
         persist.log_trade(D1, "BUY", "AAPL", 1000.0, "ord-1")
+    assert violation(err.value) == "ProgrammingError/42703"  # undefined_column
     assert rows(db, "SELECT count(*) FROM paper_trades") == [(0,)]
     assert xact_lock_free(db, "ord-1")
     observe(request, raised=violation(err.value), rows_after_failure=0)
@@ -344,6 +347,7 @@ def test_single_statement_writers_leave_nothing_when_the_statement_fails(
 ):
     with pytest.raises(DBAPIError) as err:
         call()
+    assert violation(err.value) == "IntegrityError/23502", name  # not_null_violation
     assert rows(db, f"SELECT count(*) FROM {table}") == [(0,)]
     observe(request, raised=violation(err.value), rows=0)
 
@@ -389,8 +393,33 @@ def test_order_intent_rejections_change_nothing(db, request):
         persist.create_order_intent(
             "cid-1", D1, "BUY", "AAPL", 1.0, "notional", None
         )  # duplicate PK
+    assert violation(err.value) == "IntegrityError/23505"  # unique_violation
     assert counts(db) == before
     observe(request, counts=before, duplicate=violation(err.value))
+
+
+def test_attach_broker_order_leaves_the_intent_untouched_when_its_update_fails(db, request):
+    """A refused UPDATE (a trigger raises) leaves the intent with no broker id and its state."""
+    persist.create_order_intent("cid-1", D1, "BUY", "AAPL", 1000.0, "notional", None)
+    with db.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE FUNCTION refuse() RETURNS trigger LANGUAGE plpgsql AS "
+                "$$ BEGIN RAISE EXCEPTION 'refused'; END $$"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TRIGGER refuse_update BEFORE UPDATE ON paper_order_intents "
+                "FOR EACH ROW EXECUTE FUNCTION refuse()"
+            )
+        )
+    with pytest.raises(DBAPIError) as err:
+        persist.attach_broker_order("cid-1", "ord-1")
+    assert violation(err.value) == "InternalError/P0001"  # the trigger's RAISE EXCEPTION
+    assert rows(db, "SELECT state, broker_order_id FROM paper_order_intents") == [("intent", None)]
+    assert xact_lock_free(db, "ord-1")
+    observe(request, raised=violation(err.value), state="intent", broker_order_id=None)
 
 
 def test_settle_order_intent_is_atomic_when_the_last_update_fails(db, request):
@@ -412,6 +441,7 @@ def test_settle_order_intent_is_atomic_when_the_last_update_fails(db, request):
         )
     with pytest.raises(DBAPIError) as err:
         persist.settle_order_intent("cid-1", "ord-1", 10.0, 100.0, "filled")
+    assert violation(err.value) == "InternalError/P0001"  # the trigger's RAISE EXCEPTION
     assert rows(db, "SELECT count(*) FROM paper_trades") == [(0,)]
     assert rows(db, "SELECT state FROM paper_order_intents") == [("submitted",)]
     assert xact_lock_free(db, "ord-1")
@@ -440,6 +470,7 @@ def test_legacy_pending_settlement_roundtrip_and_atomicity(db, request):
         )
     with pytest.raises(DBAPIError) as err:
         persist.settle_legacy_pending_order("ord-2", 5.0, 100.0, "filled")
+    assert violation(err.value) == "InternalError/P0001"  # the trigger's RAISE EXCEPTION
     assert rows(db, "SELECT symbol, order_id FROM paper_trades ORDER BY id") == [("AAPL", "ord-1")]
     assert [p["order_id"] for p in persist.get_pending_orders()] == ["ord-2"]
     observe(request, trades=trades, raised=violation(err.value), pending_left=["ord-2"])

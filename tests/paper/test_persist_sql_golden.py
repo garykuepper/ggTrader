@@ -7,8 +7,9 @@ owner-approved decision (design 5.2: the persist writers always use `engine.begi
 cases of the 11 writers that used `connect()` + `commit()` changed their event labels only.
 `connect ... commit, close{committed}` became `begin ... commit`, or `... rollback` when the case
 raises, and `log_trade`'s early return on an identical replay now ends in `commit`. SQL text, bind
-values, returned values and the 97 other cases are untouched; the checker
-`golden_event_rule.py` (in the refactor evidence folder, p6) proves that. Real-database tests
+values, returned values and the 97 other cases are untouched: the new file equals the old one
+with exactly that label rule applied to the 11 writers' 34 cases and nothing else (the check was
+made against the file as it stood on `main` before this revision). Real-database tests
 (`test_persist_real_db.py`) showed the committed data is the same. The
 events are modeled context events, not SQLAlchemy's real transaction semantics (see the recorder's
 docstring). Bind dictionary insertion order is not part of the contract.
