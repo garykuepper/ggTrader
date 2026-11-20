@@ -1,4 +1,4 @@
-"""Bounded, resumable, GET-only collection of the frozen r8 input manifest.
+"""Bounded, resumable, GET-only collection of the frozen r9 input manifest.
 
 Public interface:
 
@@ -8,6 +8,11 @@ Public interface:
   immutable ``chunks/<id>.json`` per completely paginated request and checkpoint
   ``progress.json`` atomically. Credentials come only from the inherited environment.
 
+The r9 pull still requests Alpaca corporate actions (protocol R3): the automatic in-window SPY
+split stop and the non-gating dividend cross-check need them. Every corporate-action page must
+still pass the schema as a whole, dividends included, because a malformed page cannot show that
+no split occurred; only Alpaca dividend values are non-gating. ``build_manifest`` also refuses
+unless the r9 vendor-adjustment review and the issuer workbook match their frozen hashes.
 Running this against the real vendor needs the owner's separate data-and-scoring approval.
 """
 

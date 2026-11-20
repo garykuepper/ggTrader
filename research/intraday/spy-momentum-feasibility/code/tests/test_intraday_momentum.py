@@ -1,4 +1,4 @@
-"""Synthetic tests for r8 signal-blind validation and single-shot scoring; no market data."""
+"""Synthetic tests for r9 signal-blind validation and single-shot scoring; no market data."""
 
 from __future__ import annotations
 
@@ -6,11 +6,14 @@ import hashlib
 import json
 from datetime import date, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import intraday_momentum as core
 import numpy as np
 import pytest
 from intraday_probe import atomic_checkpoint, utc_bounds
+
+from ggTrader.utils.study import load_driver
 
 pytestmark = pytest.mark.study
 
@@ -51,7 +54,13 @@ DAILY = {**CLOSES, "2024-12-03": 106.35}
 DIVIDEND = {"group": "cash_dividends", "symbol": "SPY", "ex_date": "2024-12-02", "rate": 1.5}
 
 
-REAL_REVIEW = core.VENDOR_REVIEW_PATH
+DEFAULT_REVIEW_PATH = core.VENDOR_REVIEW_PATH  # the registered r9 path, before any patching
+R8_REVIEW = core.STUDY_DIR / "_intraday_r8_vendor_adjustment_review_2026-10-25.json"
+REAL_ISSUER = core.ISSUER_WORKBOOK_PATH
+REAL_ISSUER_SHA256 = core.ISSUER_WORKBOOK_SHA256
+ISSUER_REFERENCE = core.PROJECT_ROOT / (
+    "research/intraday/artifacts-2026-10-25-intraday-gap/issuer_spy_distributions.json"
+)
 
 
 def write_review(path: Path, **overrides: object) -> Path:
@@ -68,10 +77,18 @@ def review(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFac
     return write_review(path)
 
 
+@pytest.fixture(autouse=True)
+def issuer(issuer_tools: SimpleNamespace) -> SimpleNamespace:
+    """Default synthetic issuer schedule: one quarterly ex-date, matching DIVIDEND, on 12-02."""
+    issuer_tools.install([issuer_tools.row("12/02/2024", "1.500000")])
+    return issuer_tools
+
+
 @pytest.fixture
 def window(monkeypatch: pytest.MonkeyPatch, review: Path) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-11-27")
     monkeypatch.setattr(core, "LAST", "2024-12-03")
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", ())  # R1 sessions are not in this window
     write_review(review)
 
 
@@ -299,43 +316,92 @@ def test_benchmark_underflow_cannot_report_nonpositive_wealth() -> None:
         core.benchmark({"a": 1e308, "b": 1e-308}, {})
 
 
-def test_validated_benchmark_overflow_is_a_named_failure_in_the_written_score(
-    tmp_path: Path,
-) -> None:
+def full_window_collection(
+    tmp_path: Path, issuer: SimpleNamespace, *, rate: str = "10000000000.000000"
+) -> tuple[Path, int]:
+    """A complete r9 collection over the registered window: the real calendar, both R1 sessions
+    missing exactly their registered bars, 43 issuer ex-dates. Returns (directory, scored)."""
     calendar = core.offline_schedule(core.ANCHOR, core.LAST)
     rows, closes, quarters = [], {}, {}
     scored = 0
     for session in calendar:
         day = session["date"]
         close = 100.0
+        clock = "12:59" if session["close"] == "13:00" else "15:59"
         if day != core.ANCHOR and session["close"] == "16:00":
             close *= 1 + (3.6 if scored % 2 else 5.6) * 1e-4
-            rows.extend([bar(day, "09:59", 101.0), bar(day, "15:30", 100.0)])
+            rows.append(bar(day, "09:59", 101.0))
+            if day == "2019-08-12":  # the registered absences, with interior bars as in the data
+                rows.append(bar(day, "14:00", 100.0))
+            else:
+                rows.append(bar(day, "15:30", 100.0))
             scored += 1
-        clock = "12:59" if session["close"] == "13:00" else "15:59"
-        rows.append(bar(day, clock, close))
+        if day != "2019-08-12":
+            rows.append(bar(day, clock, close))
         closes[day] = close
         if day != core.ANCHOR:
             quarters.setdefault((day[:4], (int(day[5:7]) - 1) // 3), day)
-    # All individual payouts and endpoints are finite and positive; only reinvestment overflows.
+    ex_dates = list(quarters.values())
+    issuer.install(
+        [issuer.row(f"{d[5:7]}/{d[8:]}/{d[:4]}", rate) for d in ex_dates],
+    )
     actions = [
-        {"group": "cash_dividends", "symbol": "SPY", "ex_date": day, "rate": 1e10}
-        for day in quarters.values()
+        {"group": "cash_dividends", "symbol": "SPY", "ex_date": d, "rate": float(rate)}
+        for d in ex_dates
     ]
     directory = write_collection(
         tmp_path / "collection", calendar=calendar, bars=rows, daily=closes, actions=actions
     )
+    return directory, scored
+
+
+def test_validated_benchmark_overflow_is_a_named_failure_in_the_written_score(
+    tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    directory, scored = full_window_collection(tmp_path, issuer)
     validation = tmp_path / "validation.json"
     report = core.run_validation(directory, validation)
     assert report["status"] == "PASS", report["defects"]
-    assert scored == 2679 and len(actions) == 43
+    # r8 scored 2,679 sessions; r9 removes the two registered ones entirely -> 2,677.
+    assert scored == 2679 and report["counts"]["scored_sessions"] == 2677
+    assert report["counts"]["excluded_sessions"] == 2
+    assert report["counts"]["issuer_ex_dates_in_window"] == 43
     output = tmp_path / "score.json"
     core.run_score(directory, validation, output)
     result = json.loads(output.read_text())
+    assert result["a1"]["sessions"] == 2677
     assert result["a1"]["status"] == result["a2"]["status"] == "PASS"
     assert result["verdict"] == "UNRESOLVED_DIAGNOSTICS"
     assert result["diagnostic_errors"] == ["spy_displacement:ValueError"]
     assert "spy_displacement" not in result["diagnostics"]
+    assert result["exclusions"]["sessions"] == ["2019-08-12", "2019-08-13"]
+    text = output.with_suffix(".md").read_text()
+    assert "2019-08-12" in text and "2019-08-13" in text and "before any price" in text
+
+
+def test_scorer_drops_both_excluded_sessions_instead_of_scoring_zeros(
+    tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    directory, _ = full_window_collection(tmp_path, issuer, rate="1.500000")
+    inputs, report = validate(directory)
+    assert report["status"] == "PASS", report["defects"]
+    assert len(inputs["dates"]) == 2677
+    assert "2019-08-12" not in inputs["dates"] and "2019-08-13" not in inputs["dates"]
+    assert "2019-08-12" not in inputs["closes"]  # that close does not exist
+    assert "2019-08-13" in inputs["closes"]  # 2019-08-14's prior close, validated normally
+    after = inputs["dates"].index("2019-08-14")
+    assert inputs["dates"][after - 1] == "2019-08-09"  # removed, not left as flat days
+    assert inputs["prior_close"][after] == inputs["closes"]["2019-08-13"]
+    result = core.score_inputs(inputs)
+    assert result["a1"]["sessions"] == 2677
+    signal = result["diagnostics"]["signal_counts"]
+    assert sum(signal[k] for k in ("positive_traded", "zero_flat", "negative_flat")) == 2677
+    assert result["exclusions"]["scored_sessions_after_exclusion"] == 2677
+    assert result["exclusions"]["tolerated_defects"] == [
+        {"session": "2019-08-12", "endpoint": "close", "status": "absent"},
+        {"session": "2019-08-12", "endpoint": "entry_1530", "status": "absent"},
+        {"session": "2019-08-13", "endpoint": "prior_close", "status": "absent"},
+    ]
 
 
 def test_nonfinite_computed_diagnostic_is_not_silently_serialized_as_null() -> None:
@@ -380,7 +446,8 @@ def test_finite_numpy_diagnostic_scalars_are_accepted(monkeypatch: pytest.Monkey
     result = core.score_inputs(synthetic_inputs(4.6))
     assert result["verdict"] == "GO" and result["diagnostic_errors"] == []
     serialized = json.loads(json.dumps(core._json_safe(result), allow_nan=False))
-    assert serialized["diagnostics"]["close_convention_comparison"]["sessions"] == 2000
+    # The two R1 sessions fall inside the synthetic span and are left out of this diagnostic.
+    assert serialized["diagnostics"]["close_convention_comparison"]["sessions"] == 1998
 
 
 # --- signal-blind validation -------------------------------------------------------------------
@@ -453,10 +520,12 @@ def test_duplicate_and_misaligned_endpoints_are_unresolved(window: None, tmp_pat
 
 
 def test_dst_transition_requires_new_york_minutes(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, review: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, review: Path, issuer: SimpleNamespace
 ) -> None:
     monkeypatch.setattr(core, "ANCHOR", "2024-03-07")
     monkeypatch.setattr(core, "LAST", "2024-03-11")
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", ())
+    issuer.install([issuer.row("03/08/2024", "1.500000")])
     write_review(review)
     calendar = [
         {"date": day, "open": "09:30", "close": "16:00"}
@@ -511,7 +580,7 @@ def test_malformed_calendar_is_unresolved(
 
 
 def test_dropping_an_internal_session_with_all_its_data_is_a_calendar_mismatch(
-    window: None, tmp_path: Path
+    window: None, tmp_path: Path, issuer: SimpleNamespace
 ) -> None:
     # Remove 2024-12-02 from the official calendar *and* its bars and daily close; without the
     # offline schedule this is a shorter, self-consistent series with the wrong prior anchor.
@@ -519,6 +588,7 @@ def test_dropping_an_internal_session_with_all_its_data_is_a_calendar_mismatch(
     bars = [row for row in thanksgiving_bars() if not row["t"].startswith("2024-12-02")]
     daily = {k: v for k, v in DAILY.items() if k != "2024-12-02"}
     actions = [{**DIVIDEND, "ex_date": "2024-12-03"}]
+    issuer.install([issuer.row("12/03/2024", "1.500000")])
     inputs, report = validate(
         write_collection(tmp_path, calendar=calendar, bars=bars, daily=daily, actions=actions)
     )
@@ -599,23 +669,37 @@ def test_interior_gaps_are_diagnostic_only(window: None, tmp_path: Path) -> None
     assert report["diagnostics"]["interior_missing_minutes_total"] == 3 * 390 + 210 - 8
 
 
-@pytest.mark.parametrize(
-    ("actions", "defect"),
-    [
-        (
-            [DIVIDEND, {"group": "forward_splits", "symbol": "SPY", "ex_date": "2024-12-03"}],
-            "corporate_action_stop:split:forward_splits:2024-12-03",
-        ),
-        ([], "dividend_coverage_missing:2024Q4"),  # empty is not verified absence
-        ([{**DIVIDEND, "ex_date": "2024-11-28"}], "dividend_ex_date_not_session:2024-11-28"),
-        ([{**DIVIDEND, "rate": 0}], "dividend_invalid_rate:2024-12-02"),
-    ],
-)
-def test_corporate_action_coverage_and_split_stops(
-    window: None, tmp_path: Path, actions: list, defect: str
+def test_in_window_spy_split_still_stops_the_study(window: None, tmp_path: Path) -> None:
+    # R3: the fresh pull keeps Alpaca corporate actions for exactly this automatic stop.
+    split = {"group": "forward_splits", "symbol": "SPY", "ex_date": "2024-12-03"}
+    inputs, report = validate(write_collection(tmp_path, actions=[DIVIDEND, split]))
+    assert inputs is None
+    assert report["defects"] == ["corporate_action_stop:split:forward_splits:2024-12-03"]
+    assert core.build_manifest()["requests"][2]["kind"] == "corporate_actions"
+
+
+ALPACA_VALUE_PROBLEMS = {
+    "bad_rate": ([{**DIVIDEND, "rate": 0}], ["dividend_invalid_rate:2024-12-02"]),
+    "not_session": (
+        [{**DIVIDEND, "ex_date": "2024-11-28"}],
+        ["dividend_ex_date_not_session:2024-11-28"],
+    ),
+    "currency": ([{**DIVIDEND, "currency": "CAD"}], ["dividend_currency_not_usd:2024-12-02"]),
+    "duplicate": ([DIVIDEND, DIVIDEND], ["dividend_duplicate_ex_date:2024-12-02"]),
+}
+
+
+@pytest.mark.parametrize("name", [*ALPACA_VALUE_PROBLEMS, "empty"])
+def test_alpaca_dividend_gaps_and_value_problems_never_block(
+    window: None, tmp_path: Path, name: str
 ) -> None:
-    _, report = validate(write_collection(tmp_path, actions=actions))
-    assert defect in report["defects"]
+    # r8 stopped on exactly these; r9 takes every distribution from the issuer schedule.
+    actions, issues = ALPACA_VALUE_PROBLEMS.get(name, ([], []))
+    inputs, report = validate(write_collection(tmp_path, actions=actions))
+    assert report["status"] == "PASS", report["defects"]
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
+    assert report["alpaca_dividend_cross_check"]["alpaca_record_issues"] == issues
+    assert report["alpaca_dividend_cross_check"]["gating"] is False
 
 
 # Stored records keep the official field names (see the Alpaca corporate-actions reference);
@@ -680,7 +764,7 @@ def test_split_effective_before_window_but_processed_inside_is_irrelevant(
     assert report["status"] == "PASS", report["defects"]
 
 
-def test_dividend_without_ex_date_never_falls_back_to_process_date(
+def test_alpaca_dividend_without_ex_date_is_never_placed_by_process_date(
     window: None, tmp_path: Path
 ) -> None:
     undated = {
@@ -690,19 +774,22 @@ def test_dividend_without_ex_date_never_falls_back_to_process_date(
         "process_date": "2024-12-02",
     }
     _, report = validate(write_collection(tmp_path, actions=[undated]))
-    assert report["defects"] == ["dividend_coverage_missing:2024Q4", "dividend_missing_ex_date:0"]
+    assert report["status"] == "PASS", report["defects"]
+    check = report["alpaca_dividend_cross_check"]
+    assert check["alpaca_record_issues"] == ["dividend_missing_ex_date:0"]
+    assert check["alpaca_ex_dates"] == 0 and check["missing_from_alpaca"] == ["2024-12-02"]
 
 
-@pytest.mark.parametrize(("currency", "ok"), [("USD", True), ("", True), ("CAD", False)])
-def test_dividend_currency_must_be_usd_or_documented_empty(
-    window: None, tmp_path: Path, currency: str, ok: bool
+@pytest.mark.parametrize("currency", ["USD", "", "CAD"])
+def test_alpaca_dividend_currency_is_cross_check_only(
+    window: None, tmp_path: Path, currency: str
 ) -> None:
     inputs, report = validate(
         write_collection(tmp_path, actions=[{**DIVIDEND, "currency": currency}])
     )
-    assert (inputs is not None) is ok
-    if not ok:
-        assert "dividend_currency_not_usd:2024-12-02" in report["defects"]
+    assert inputs is not None and report["status"] == "PASS"
+    issues = report["alpaca_dividend_cross_check"]["alpaca_record_issues"]
+    assert issues == (["dividend_currency_not_usd:2024-12-02"] if currency == "CAD" else [])
 
 
 @pytest.mark.parametrize(
@@ -744,6 +831,292 @@ def test_non_frozen_manifest_is_unresolved(window: None, tmp_path: Path) -> None
     assert "provenance:manifest_not_frozen_protocol_manifest" in report["defects"]
 
 
+# --- R1: the closed two-session exclusion list ---------------------------------------------------
+
+# A five-session stand-in for 2019-08-12/13: 12-04 lacks its 15:30 and 15:59 bars, so 12-05
+# lacks its prior close. Registered exactly like the real list, only on different dates.
+R1_DAYS = ("2024-12-02", "2024-12-03", "2024-12-04", "2024-12-05", "2024-12-06")
+R1_CALENDAR = [{"date": day, "open": "09:30", "close": "16:00"} for day in R1_DAYS]
+R1_DAILY = {day: 100.0 + i for i, day in enumerate(R1_DAYS)}
+R1_EXCLUDED = (("2024-12-04", ("entry_1530", "close")), ("2024-12-05", ("prior_close",)))
+
+
+def r1_bars() -> list[dict]:
+    """Complete bars except exactly the registered absences (12-04 keeps an interior bar)."""
+    rows = [bar("2024-12-02", "15:59", 100.0)]
+    for day, o, c, close in (
+        ("2024-12-03", 101.0, 102.0, 103.0),
+        ("2024-12-05", 104.0, 105.0, 106.0),
+        ("2024-12-06", 107.0, 108.0, 109.0),
+    ):
+        rows += [bar(day, "09:59", o), bar(day, "15:30", c), bar(day, "15:59", close)]
+    rows += [bar("2024-12-04", "09:59", 103.5), bar("2024-12-04", "14:00", 103.6)]
+    return rows
+
+
+@pytest.fixture
+def r1(window: None, monkeypatch: pytest.MonkeyPatch, review: Path, issuer: SimpleNamespace):
+    monkeypatch.setattr(core, "ANCHOR", "2024-12-02")
+    monkeypatch.setattr(core, "LAST", "2024-12-06")
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", R1_EXCLUDED)
+    issuer.install([issuer.row("12/03/2024", "1.500000")])
+    write_review(review)
+
+
+def r1_collection(tmp_path: Path, bars: list[dict] | None = None, **kwargs: object) -> Path:
+    return write_collection(
+        tmp_path,
+        calendar=R1_CALENDAR,
+        bars=r1_bars() if bars is None else bars,
+        daily=R1_DAILY,
+        actions=[{**DIVIDEND, "ex_date": "2024-12-03"}],
+        **kwargs,
+    )
+
+
+def test_registered_exclusion_list_is_exactly_the_two_sessions() -> None:
+    assert core.EXCLUDED_SESSIONS == (
+        ("2019-08-12", ("entry_1530", "close")),
+        ("2019-08-13", ("prior_close",)),
+    )
+    assert "before any price" in core.EXCLUSION_DISCLOSURE
+    assert "bias" in core.EXCLUSION_DISCLOSURE
+
+
+def test_tolerated_exclusion_passes_and_is_recorded(r1: None, tmp_path: Path) -> None:
+    inputs, report = validate(r1_collection(tmp_path))
+    assert report["status"] == "PASS", report["defects"]
+    # The two excluded sessions are removed from the series, not scored as flat days.
+    assert inputs["dates"] == ["2024-12-03", "2024-12-06"]
+    assert inputs["prior_close"] == [100.0, 106.0]  # 12-06 anchors on the validated 12-05 close
+    assert "2024-12-04" not in inputs["closes"] and "2024-12-05" in inputs["closes"]
+    assert report["counts"]["scored_sessions"] == 2 and report["counts"]["excluded_sessions"] == 2
+    exclusions = report["exclusions"]
+    assert exclusions["sessions"] == ["2024-12-04", "2024-12-05"]
+    assert exclusions["tolerated_defects"] == [
+        {"session": "2024-12-04", "endpoint": "close", "status": "absent"},
+        {"session": "2024-12-04", "endpoint": "entry_1530", "status": "absent"},
+        {"session": "2024-12-05", "endpoint": "prior_close", "status": "absent"},
+    ]
+    assert exclusions["scored_sessions_before_exclusion"] == 4
+    assert exclusions["scored_sessions_after_exclusion"] == 2
+    assert exclusions == inputs["exclusions"]
+
+
+@pytest.mark.parametrize(
+    ("day", "clock", "defect"),
+    [
+        ("2024-12-06", "09:59", "endpoint_missing:signal_0959:2024-12-06"),
+        ("2024-12-06", "15:30", "endpoint_missing:entry_1530:2024-12-06"),
+        ("2024-12-06", "15:59", "endpoint_missing:close:2024-12-06"),
+        ("2024-12-03", "09:59", "endpoint_missing:signal_0959:2024-12-03"),
+        ("2024-12-02", "15:59", "endpoint_missing:close:2024-12-02"),  # the anchor
+    ],
+)
+def test_any_other_missing_endpoint_is_still_unresolved(
+    r1: None, tmp_path: Path, day: str, clock: str, defect: str
+) -> None:
+    rows = [row for row in r1_bars() if row["t"] != utc(day, clock)]
+    inputs, report = validate(r1_collection(tmp_path, rows))
+    assert inputs is None and report["label"] == "UNRESOLVED (data)"
+    assert defect in report["defects"]
+
+
+@pytest.mark.parametrize(
+    ("day", "clock", "defect"),
+    [
+        # Excluded sessions keep every other required endpoint (r9 R1).
+        ("2024-12-04", "09:59", "endpoint_missing:signal_0959:2024-12-04"),
+        ("2024-12-05", "09:59", "endpoint_missing:signal_0959:2024-12-05"),
+        ("2024-12-05", "15:30", "endpoint_missing:entry_1530:2024-12-05"),
+        ("2024-12-05", "15:59", "endpoint_missing:close:2024-12-05"),  # 12-06's prior close
+    ],
+)
+def test_other_endpoints_of_an_excluded_session_must_still_validate(
+    r1: None, tmp_path: Path, day: str, clock: str, defect: str
+) -> None:
+    rows = [row for row in r1_bars() if row["t"] != utc(day, clock)]
+    inputs, report = validate(r1_collection(tmp_path, rows))
+    assert inputs is None
+    assert defect in report["defects"]
+
+
+@pytest.mark.parametrize(
+    ("extra", "defect"),
+    [
+        (bar("2024-12-04", "15:30", 1.0), "exclusion_basis_violated:entry_1530:2024-12-04"),
+        (bar("2024-12-04", "15:59", 1.0), "exclusion_basis_violated:close:2024-12-04"),
+        (
+            {**bar("2024-12-04", "15:30", 1.0), "t": utc("2024-12-04", "15:30:30")},
+            "exclusion_basis_violated:entry_1530:2024-12-04",  # misaligned still counts as present
+        ),
+    ],
+)
+def test_expected_missing_bars_present_ends_the_study(
+    r1: None, tmp_path: Path, extra: dict, defect: str
+) -> None:
+    inputs, report = validate(r1_collection(tmp_path, [*r1_bars(), extra]))
+    assert inputs is None and report["label"] == "UNRESOLVED (data)"
+    assert defect in report["defects"]
+
+
+def test_prior_close_listed_absent_but_present_means_the_list_basis_is_false(
+    r1: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", (R1_EXCLUDED[1],))
+    rows = [*r1_bars(), bar("2024-12-04", "15:30", 1.0), bar("2024-12-04", "15:59", 1.0)]
+    _, report = validate(r1_collection(tmp_path, rows))
+    assert report["defects"] == ["exclusion_basis_violated:prior_close:2024-12-05"]
+
+
+def test_a_session_after_an_excluded_one_cannot_borrow_its_missing_close(
+    window: None, monkeypatch: pytest.MonkeyPatch, r1: None, tmp_path: Path
+) -> None:
+    # Only 12-05 is registered to lack its prior close; if 12-06 did too, it is a plain defect.
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", (R1_EXCLUDED[0],))
+    _, report = validate(r1_collection(tmp_path))
+    assert "endpoint_missing:prior_close:2024-12-05" in report["defects"]
+
+
+def test_exclusions_are_never_added_at_runtime(r1: None, tmp_path: Path) -> None:
+    rows = [row for row in r1_bars() if row["t"] != utc("2024-12-06", "15:30")]
+    inputs, report = validate(r1_collection(tmp_path, rows))
+    assert inputs is None
+    assert report["exclusions"]["sessions"] == ["2024-12-04", "2024-12-05"]  # still the registered
+
+
+@pytest.mark.parametrize(
+    "excluded",
+    [
+        (("2024-12-09", ("entry_1530", "close")),),  # not in the calendar
+        (("2024-12-02", ("close",)),),  # the anchor is a session but is never scored
+    ],
+)
+def test_excluded_session_must_be_a_scored_calendar_session(
+    r1: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, excluded: tuple
+) -> None:
+    monkeypatch.setattr(core, "EXCLUDED_SESSIONS", excluded)
+    inputs, report = validate(r1_collection(tmp_path))
+    assert inputs is None
+    assert report["status"] == "UNRESOLVED"
+
+
+def test_full_pipeline_scores_without_the_excluded_sessions(r1: None, tmp_path: Path) -> None:
+    directory, validation = validated_r1(tmp_path)
+    result = core.run_score(directory, validation, tmp_path / "result.json")
+    assert result["a1"]["sessions"] == 2
+    assert result["exclusions"]["sessions"] == ["2024-12-04", "2024-12-05"]
+    text = (tmp_path / "result.json").with_suffix(".md").read_text()
+    assert "2024-12-04, 2024-12-05" in text and core.EXCLUSION_DISCLOSURE in text
+
+
+def validated_r1(tmp_path: Path) -> tuple[Path, Path]:
+    directory = r1_collection(tmp_path / "data")
+    validation = tmp_path / "validation.json"
+    core.run_validation(directory, validation)
+    return directory, validation
+
+
+def test_validation_artifact_states_the_exclusion(r1: None, tmp_path: Path) -> None:
+    _, validation = validated_r1(tmp_path)
+    saved = json.loads(validation.read_text())
+    assert saved["exclusions"]["tolerated_defects"][0]["session"] == "2024-12-04"
+    assert saved["ancillary_coverage"]["exclusions"] == core.EXCLUSION_DISCLOSURE
+
+
+# --- r9 binds nothing from r8 --------------------------------------------------------------------
+
+
+def test_every_schema_default_directory_and_output_name_is_r9() -> None:
+    assert set(core.SCHEMAS.values()) == {
+        f"intraday_momentum_r9_{name}"
+        for name in ("manifest", "chunk", "dataset", "validation", "score", "score_claim")
+    }
+    run = load_driver(core.STUDY_DIR / "code/run.py")
+    assert run.DEFAULT_COLLECTION.name == "intraday_momentum_r9"
+    assert "r9" in run.DEFAULT_VALIDATION.name and "r9" in run.DEFAULT_RESULT.name
+    assert "r8" not in run.DEFAULT_VALIDATION.name + run.DEFAULT_RESULT.name
+
+
+def rewrite_json(path: Path, change: object) -> None:
+    value = json.loads(path.read_text())
+    change(value)
+    path.write_text(json.dumps(value))
+
+
+def re_record(directory: Path, request_id: str) -> None:
+    path = core.chunk_path(directory, request_id)
+    progress = json.loads((directory / core.PROGRESS_FILE).read_text())
+    progress["chunks"][request_id] = core.file_sha256(path)
+    (directory / core.PROGRESS_FILE).write_text(json.dumps(progress))
+
+
+def test_r8_chunks_and_manifest_are_rejected(window: None, tmp_path: Path) -> None:
+    directory = write_collection(tmp_path)
+    request = "minute_bars:2024-12"
+    rewrite_json(
+        core.chunk_path(directory, request),
+        lambda chunk: chunk.update(schema="intraday_momentum_r8_chunk"),
+    )
+    re_record(directory, request)
+    inputs, report = validate(directory)
+    assert inputs is None and f"provenance_invalid:{request}" in report["defects"]
+
+    other = write_collection(tmp_path / "m")
+    rewrite_json(
+        other / core.MANIFEST_FILE,
+        lambda m: m.update(
+            schema="intraday_momentum_r8_manifest",
+            protocol_sha256="be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85",
+        ),
+    )
+    _, report = validate(other)
+    assert "provenance:manifest_not_frozen_protocol_manifest" in report["defects"]
+    assert "identity:manifest_protocol_mismatch" in report["defects"]
+
+
+def test_r8_validation_artifact_and_claim_cannot_score_r9(window: None, tmp_path: Path) -> None:
+    directory, validation = validated(tmp_path)
+    rewrite_json(validation, lambda v: v.update(schema="intraday_momentum_r8_validation"))
+    with pytest.raises(ValueError, match="^validation_not_pass$"):
+        core.run_score(directory, validation, tmp_path / "result.json")
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
+
+
+def test_r8_protocol_hash_in_the_validation_identities_is_refused(
+    window: None, tmp_path: Path
+) -> None:
+    directory, validation = validated(tmp_path)
+    r8 = "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85"
+    rewrite_json(validation, lambda v: v["identities"].update(protocol_sha256=r8))
+    with pytest.raises(ValueError, match="^validation_identity_mismatch$"):
+        core.run_score(directory, validation, tmp_path / "result.json")
+
+
+def test_the_closed_r8_collection_directory_name_is_not_the_default() -> None:
+    run = load_driver(core.STUDY_DIR / "code/run.py")
+    assert not str(run.DEFAULT_COLLECTION).endswith("intraday_momentum_r8")
+
+
+def test_the_issuer_workbook_is_bound_into_manifest_and_identities(
+    window: None, tmp_path: Path
+) -> None:
+    digest = core.ISSUER_WORKBOOK_SHA256
+    assert core.build_manifest()["issuer_workbook_sha256"] == digest
+    _, validation = validated(tmp_path)
+    assert json.loads(validation.read_text())["identities"]["issuer_workbook_sha256"] == digest
+
+
+def test_issuer_workbook_swapped_after_pass_refuses_to_score(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    directory, validation = validated(tmp_path)
+    issuer.install([issuer.row("12/02/2024", "1.500000"), issuer.row("12/03/2024", "2.0")])
+    with pytest.raises(ValueError, match="^validation_identity_mismatch$"):
+        core.run_score(directory, validation, tmp_path / "result.json")
+    assert not (directory / core.SCORE_CLAIM_FILE).exists()
+
+
 # --- single-shot scoring -----------------------------------------------------------------------
 
 
@@ -761,7 +1134,7 @@ def test_score_once_on_matching_pass_with_hand_checked_diagnostics(
     output = tmp_path / "result.json"
     result = core.run_score(directory, validation, output)
     assert json.loads(output.read_text())["verdict"] == result["verdict"]
-    assert output.with_suffix(".md").read_text().startswith("# Intraday r8")
+    assert output.with_suffix(".md").read_text().startswith("# Intraday r9")
     diag = result["diagnostics"]
     r_last = DEC2["15:59"] / DEC2["15:30"] - 1
     assert diag["signal_counts"] == {
@@ -918,85 +1291,287 @@ def test_symbol_identity_change_is_unsupported_valuation_not_a_split(
     assert report["counts"]["same_ticker_name_changes_non_gating"] == 0
 
 
-def test_capital_gain_legs_are_summed_and_aggregated_with_a_same_day_dividend(
-    window: None, tmp_path: Path
+def test_issuer_capital_gain_legs_are_summed_and_reach_the_benchmark(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
 ) -> None:
-    directory, validation = validated(tmp_path, actions=[DIVIDEND, CAPITAL_GAIN])
+    issuer.install([issuer.row("12/02/2024", "1.500000", "0.100000", "0.400000")])
+    directory, validation = validated(tmp_path, actions=[DIVIDEND])
     inputs, report = validate(directory)
     assert report["status"] == "PASS", report["defects"]
     assert inputs["distributions"] == {"2024-12-02": pytest.approx(1.5 + 0.4 + 0.1)}
-    assert report["counts"]["cash_dividends_in_window"] == 1
-    assert report["counts"]["capital_gains_distributions_in_window"] == 1
+    assert report["counts"]["issuer_capital_gain_legs_present"] == 2
     result = core.run_score(directory, validation, tmp_path / "result.json")
     spy = (106.31 / ANCHOR_CLOSE) * (1 + 2.0 / 104.23)
     assert result["diagnostics"]["spy_displacement"]["wealth_end"] == pytest.approx(spy)
     assert result["diagnostics"]["exdiv_flat"]["mean_bp"] == 0.0
+    # The Alpaca dividend (1.5) still matches the issuer's dividend column, not the total.
+    assert report["alpaca_dividend_cross_check"]["matches"] == 1
 
 
-def test_single_leg_capital_gain_counts_only_the_provided_leg(window: None, tmp_path: Path) -> None:
-    gain = {k: v for k, v in CAPITAL_GAIN.items() if k != "short_term_rate"}
-    inputs, report = validate(write_collection(tmp_path, actions=[DIVIDEND, gain]))
-    assert report["status"] == "PASS", report["defects"]
-    assert inputs["distributions"] == {"2024-12-02": pytest.approx(1.9)}
+def test_blank_capital_gain_is_no_data_never_zero_and_zero_is_a_value(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    issuer.install([issuer.row("12/02/2024", "1.500000", "", "")])
+    inputs, report = validate(write_collection(tmp_path / "blank"))
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
+    assert report["counts"]["issuer_capital_gain_legs_blank"] == 2
+    assert report["counts"]["issuer_capital_gain_legs_present"] == 0
+    issuer.install([issuer.row("12/02/2024", "1.500000", "0.000000", "")])
+    inputs, report = validate(write_collection(tmp_path / "zero"))
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
+    assert report["counts"]["issuer_capital_gain_legs_blank"] == 1
+    assert report["counts"]["issuer_capital_gain_legs_present"] == 1
+
+
+ISSUER_ROW_DEFECTS = [
+    ("wrong CUSIP", ("12/02/2024", "1.5", "", "", "SPY", "000000000"), "identity_mismatch:row_3"),
+    ("wrong ticker", ("12/02/2024", "1.5", "", "", "SPYG", "78462F103"), "identity_mismatch:row_3"),
+    ("malformed date", ("2024-12-02", "1.5"), "ex_date_malformed:row_3"),
+    ("impossible date", ("02/30/2024", "1.5"), "ex_date_malformed:row_3"),
+    ("non-session date", ("11/28/2024", "1.5"), "ex_date_not_session:2024-11-28"),
+    ("zero amount", ("12/03/2024", "0.000000"), "dividend_invalid:2024-12-03"),
+    ("negative amount", ("12/03/2024", "-1.5"), "dividend_invalid:2024-12-03"),
+    ("blank amount", ("12/03/2024", ""), "dividend_invalid:2024-12-03"),
+    ("text amount", ("12/03/2024", "n/a"), "dividend_invalid:2024-12-03"),
+    ("negative capital gain", ("12/03/2024", "1.5", "-0.1"), "capital_gain_invalid:2024-12-03"),
+    ("text capital gain", ("12/03/2024", "1.5", "", "n/a"), "capital_gain_invalid:2024-12-03"),
+    ("duplicate ex-date", ("12/02/2024", "1.6"), "duplicate_ex_date:2024-12-02"),
+]
+
+
+@pytest.mark.parametrize(("case", "fields", "defect"), ISSUER_ROW_DEFECTS)
+def test_issuer_row_checks_fixed_in_advance(
+    window: None,
+    tmp_path: Path,
+    issuer: SimpleNamespace,
+    case: str,
+    fields: tuple,
+    defect: str,
+) -> None:
+    issuer.install([issuer.row("12/02/2024", "1.500000"), issuer.row(*fields)])
+    inputs, report = validate(write_collection(tmp_path))
+    assert inputs is None and report["label"] == "UNRESOLVED (data)"
+    assert f"issuer_{defect}" in report["defects"]
+    assert "n/a" not in json.dumps(report["defects"])  # file text is never echoed
+
+
+def test_other_funds_in_the_workbook_are_ignored(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    other = issuer.row("12/02/2024", "9.999999", ticker="QQQ", cusip="46090E103")
+    issuer.install([issuer.row("12/02/2024", "1.500000"), other])
+    inputs, report = validate(write_collection(tmp_path))
+    assert inputs["distributions"] == {"2024-12-02": 1.5}
+    assert report["counts"]["issuer_spy_rows"] == 1
+
+
+def test_issuer_schedule_must_show_every_window_quarter(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    # Only Alpaca's matching dividend would have satisfied r8; the check now reads the issuer.
+    issuer.install([issuer.row("09/20/2024", "1.500000")])
+    inputs, report = validate(write_collection(tmp_path, actions=[DIVIDEND]))
+    assert inputs is None
+    assert report["defects"] == ["dividend_coverage_missing:2024Q4"]
+
+
+def test_issuer_rows_outside_the_window_are_checked_for_shape_not_sessions(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    old = issuer.row("03/19/1993", "0.213191")  # a valid 1993 ex-date: outside, never a session
+    issuer.install([issuer.row("12/02/2024", "1.500000"), old])
+    inputs, _ = validate(write_collection(tmp_path / "ok"))
+    assert inputs is not None
+    issuer.install([issuer.row("12/02/2024", "1.500000"), issuer.row("03/19/1993", "0")])
+    _, report = validate(write_collection(tmp_path / "bad"))
+    assert report["defects"] == ["issuer_dividend_invalid:1993-03-19"]
+
+
+def test_ex_date_on_the_anchor_is_not_a_window_distribution(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    issuer.install([issuer.row("11/27/2024", "1.4"), issuer.row("12/02/2024", "1.500000")])
+    inputs, report = validate(write_collection(tmp_path))
+    assert inputs["distributions"] == {"2024-12-02": 1.5}  # bought at the anchor close
+    assert report["counts"]["issuer_ex_dates_in_window"] == 1
+
+
+def test_issuer_workbook_hash_mismatch_and_missing_file_are_refused(
+    window: None, tmp_path: Path, issuer: SimpleNamespace, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    directory = write_collection(tmp_path)
+    issuer.install(
+        [issuer.row("12/02/2024", "1.500000"), issuer.row("12/03/2024", "1.6")], pin=False
+    )
+    with pytest.raises(ValueError, match="^issuer_workbook_hash_mismatch$"):
+        core.build_manifest()
+    inputs, report = validate(directory)
+    assert inputs is None
+    assert {
+        "identity:issuer_workbook_hash_mismatch",
+        "issuer_schedule:issuer_workbook_hash_mismatch",
+    } <= set(report["defects"])
+    full = core.validate_dataset(core.load_dataset(directory))
+    assert full["identities"]["issuer_workbook_sha256"] is None
+    monkeypatch.setattr(core, "ISSUER_WORKBOOK_PATH", tmp_path / "absent.xlsx")
+    with pytest.raises(ValueError, match="^issuer_workbook_missing$"):
+        core.issuer_workbook_sha256()
+
+
+def test_registered_issuer_hash_is_the_approved_one() -> None:
+    assert REAL_ISSUER_SHA256 == (
+        "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320"
+    )
+    assert REAL_ISSUER_SHA256 == hashlib.sha256(REAL_ISSUER.read_bytes()).hexdigest()
+    assert REAL_ISSUER.name == "spdr-etf-historical-distributions.xlsx"
+
+
+@pytest.mark.parametrize("damage", ["header", "garbage"])
+def test_unreadable_or_mislabelled_workbook_is_refused(
+    window: None,
+    tmp_path: Path,
+    issuer: SimpleNamespace,
+    monkeypatch: pytest.MonkeyPatch,
+    damage: str,
+) -> None:
+    if damage == "header":
+        header = ["FUND NAME", "TICKER", "CUSIP", "EX-DATE", "", "", "AMOUNT", "", "", ""]
+        issuer.install([issuer.row("12/02/2024", "1.5")], header=header)
+        reason = "issuer_workbook_header_mismatch"
+    else:
+        path = issuer.install([issuer.row("12/02/2024", "1.5")])
+        path.write_bytes(b"not a zip")
+        monkeypatch.setattr(
+            core, "ISSUER_WORKBOOK_SHA256", hashlib.sha256(b"not a zip").hexdigest()
+        )
+        reason = "issuer_workbook_unreadable"
+    _, report = validate(write_collection(tmp_path))
+    assert f"issuer_schedule:{reason}" in report["defects"]
+
+
+def test_parser_matches_the_verified_extraction_of_the_real_workbook(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(core, "ISSUER_WORKBOOK_PATH", REAL_ISSUER)
+    monkeypatch.setattr(core, "ISSUER_WORKBOOK_SHA256", REAL_ISSUER_SHA256)
+    reference = json.loads(ISSUER_REFERENCE.read_text())
+    rows = core.parse_issuer_workbook(REAL_ISSUER.read_bytes())
+    spy = {row["row"]: row for row in rows if row.get("B") == "SPY"}
+    assert len(spy) == reference["all_SPY_rows"] == 136
+    for record in reference["records"]:
+        row = spy[record["worksheet_row"]]
+        assert {col: row[col] for col in "BCDGHI"} == {col: record[col] for col in "BCDGHI"}
+        assert core._issuer_date(row["D"]) == record["ex_date"]
+    sessions = {s["date"]: s for s in core.offline_schedule(core.ANCHOR, core.LAST)}
+    defects: list[str] = []
+    payouts, dividends, info = core.issuer_distributions(sessions, defects)
+    assert defects == []
+    assert sorted(payouts) == sorted(r["ex_date"] for r in reference["records"])
+    assert info["issuer_ex_dates_in_window"] == 43 == len(dividends)
+    assert info["issuer_window_count_matches_expected"] is True
+    assert "2016-03-18" in dividends and "2018-06-15" in dividends  # Alpaca lacks both
+    assert dividends["2016-03-18"] == pytest.approx(1.049604)
+    assert dividends["2018-06-15"] == pytest.approx(1.245568)
+    assert info["issuer_capital_gain_legs_blank"] > 0  # blanks are counted, not zeroed
 
 
 @pytest.mark.parametrize(
-    ("actions", "defect"),
+    "actions",
     [
-        ([DIVIDEND, CAPITAL_GAIN, CAPITAL_GAIN], "capital_gain_duplicate_ex_date:2024-12-02"),
-        ([DIVIDEND, DIVIDEND], "dividend_duplicate_ex_date:2024-12-02"),
-        (
-            [DIVIDEND, {**CAPITAL_GAIN, "currency": "CAD"}],
-            "capital_gain_currency_not_usd:2024-12-02",
-        ),
-        (
-            [DIVIDEND, {**CAPITAL_GAIN, "short_term_rate": -0.1}],
-            "capital_gain_invalid_rate:2024-12-02",
-        ),
-        (
-            [DIVIDEND, {**CAPITAL_GAIN, "long_term_rate": 0, "short_term_rate": 0}],
-            "capital_gain_invalid_rate:2024-12-02",
-        ),
-        (
-            [DIVIDEND, {**CAPITAL_GAIN, "ex_date": "2024-11-28"}],
-            "capital_gain_ex_date_not_session:2024-11-28",
-        ),
-        (
-            [DIVIDEND, {k: v for k, v in CAPITAL_GAIN.items() if k != "ex_date"}],
-            "capital_gain_missing_ex_date:1",
-        ),
-        # A capital gain cannot stand in for a missing cash-dividend quarter.
-        ([CAPITAL_GAIN], "dividend_coverage_missing:2024Q4"),
+        [{**DIVIDEND, "rate": 1.366242}],  # equal
+        [{**DIVIDEND, "rate": 1.3662419}],  # the real 2020-06-19 case: differs only at 7 dp
     ],
 )
-def test_capital_gain_defects_and_dividend_quarter_presence(
-    window: None, tmp_path: Path, actions: list, defect: str
+def test_cross_check_compares_at_six_decimals_and_records_gaps(
+    window: None, tmp_path: Path, issuer: SimpleNamespace, actions: list
 ) -> None:
-    inputs, report = validate(write_collection(tmp_path, actions=actions))
-    assert inputs is None
-    assert defect in report["defects"]
+    issuer.install(
+        [
+            issuer.row("12/02/2024", "1.366242"),
+            issuer.row("12/03/2024", "1.000000"),
+        ]
+    )
+    extra = {**DIVIDEND, "ex_date": "2024-11-29", "rate": 0.7}  # Alpaca-only ex-date
+    differ = {**DIVIDEND, "ex_date": "2024-12-03", "rate": 1.000002}  # differs at 6 dp
+    inputs, report = validate(write_collection(tmp_path, actions=[*actions, extra, differ]))
+    assert inputs is not None and report["status"] == "PASS"
+    check = report["alpaca_dividend_cross_check"]
+    assert check["decimals"] == 6 and check["gating"] is False
+    assert check["shared_ex_dates"] == 2 and check["matches"] == 1
+    assert check["mismatches"] == [{"ex_date": "2024-12-03", "issuer": 1.0, "alpaca": 1.000002}]
+    assert check["missing_from_issuer"] == ["2024-11-29"]
+    assert check["missing_from_alpaca"] == []
 
 
-def test_missing_or_empty_payout_currency_is_a_counted_usd_assumption(
+def test_cross_check_records_an_unrepresentable_alpaca_rate_without_crashing(
+    window: None, tmp_path: Path, issuer: SimpleNamespace
+) -> None:
+    issuer.install([issuer.row("12/02/2024", "1.366242")])
+    huge = {**DIVIDEND, "ex_date": "2024-12-02", "rate": 1e30}
+    inputs, report = validate(write_collection(tmp_path, actions=[huge]))
+    assert inputs is not None and report["status"] == "PASS"
+    check = report["alpaca_dividend_cross_check"]
+    assert check["matches"] == 0 and check["mismatches"][0]["alpaca"] == 1e30
+
+
+def test_close_comparison_leaves_out_both_excluded_sessions() -> None:
+    closes = {"2019-08-09": 100.0, "2019-08-13": 150.0, "2019-08-14": 100.0}
+    daily = {"2019-08-09": 100.0, "2019-08-13": 100.0, "2019-08-14": 100.0}
+    result = core._close_comparison(closes, daily, [])
+    assert result["sessions"] == 2 and result["max_abs_bp"] == 0.0
+
+
+def test_cross_check_records_dates_missing_from_alpaca_without_blocking(
     window: None, tmp_path: Path
 ) -> None:
-    gain = {k: v for k, v in CAPITAL_GAIN.items() if k != "currency"}
-    _, report = validate(write_collection(tmp_path, actions=[{**DIVIDEND, "currency": ""}, gain]))
-    assert report["status"] == "PASS", report["defects"]
-    assert report["counts"]["cash_payouts_currency_assumed_usd"] == 2
-    assert any("USD" in line for line in core.ANCILLARY_COVERAGE["limitations"])
-    assert any("currency" in line and "USD" in line for line in core.ASSUMPTIONS)
+    inputs, report = validate(write_collection(tmp_path, actions=[]))
+    assert inputs is not None
+    check = report["alpaca_dividend_cross_check"]
+    assert check["missing_from_alpaca"] == ["2024-12-02"] and check["matches"] == 0
 
 
 # --- vendor adjustment review evidence ---------------------------------------------------------
 
 
-def test_registered_vendor_review_record_is_bound_to_the_frozen_protocol(
-    monkeypatch: pytest.MonkeyPatch,
+def test_registered_review_path_schema_and_binding_are_r9(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", REAL_REVIEW)
-    assert core.vendor_review_sha256() == hashlib.sha256(REAL_REVIEW.read_bytes()).hexdigest()
+    assert DEFAULT_REVIEW_PATH == core.STUDY_DIR / "_intraday_r9_vendor_adjustment_review.json"
+    assert core.VENDOR_REVIEW_SCHEMA == "intraday_r9_vendor_adjustment_review"
+    assert core.PROTOCOL_PATH.name == "2026-11-15-intraday-feasibility-r9.md"
+    assert core.PROTOCOL_SHA256 == (
+        "222521cebe23aed66f9a44672dd1645a210f0c545a7cfbd30482496922593ed3"
+    )
     assert core.protocol_sha256() == core.PROTOCOL_SHA256  # the protocol file is untouched
+    binding = core.vendor_review_binding()
+    assert binding["protocol_sha256"] == core.PROTOCOL_SHA256
+    assert binding["schema"] == "intraday_r9_vendor_adjustment_review"
+    # A synthetic record written exactly to the r9 binding is accepted at the registered path.
+    record = {**binding, "status": "reviewed", "known_unresolved_changes": []}
+    path = tmp_path / "r9_review.json"
+    path.write_text(json.dumps(record))
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", path)
+    assert core.vendor_review_sha256() == hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_the_r8_review_record_cannot_satisfy_r9(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert R8_REVIEW.exists()  # kept untouched as history
+    r8 = json.loads(R8_REVIEW.read_text())
+    assert r8["schema"] == "intraday_r8_vendor_adjustment_review"
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", R8_REVIEW)
+    with pytest.raises(ValueError, match="^vendor_review_binding_mismatch$"):
+        core.vendor_review_sha256()
+    with pytest.raises(ValueError, match="^vendor_review_binding_mismatch$"):
+        core.build_manifest()
+    # Even re-pointed at the r8 file's own fields, schema and protocol hash differ from r9's.
+    differing = {key for key, value in core.vendor_review_binding().items() if r8.get(key) != value}
+    assert {"schema", "protocol_sha256"} <= differing
+
+
+def test_missing_r9_review_is_required(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(core, "VENDOR_REVIEW_PATH", tmp_path / "absent.json")
+    with pytest.raises(ValueError, match="^vendor_review_missing$"):
+        core.build_manifest()
 
 
 def test_manifest_and_validation_identities_bind_the_review_file(
@@ -1026,6 +1601,16 @@ BAD_REVIEWS = [
         "vendor_review_binding_mismatch",
     ),
     ("other protocol", {"protocol_sha256": "0" * 64}, "vendor_review_binding_mismatch"),
+    (
+        "r8 protocol",
+        {"protocol_sha256": "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85"},
+        "vendor_review_binding_mismatch",
+    ),
+    (
+        "r8 schema",
+        {"schema": "intraday_r8_vendor_adjustment_review"},
+        "vendor_review_binding_mismatch",
+    ),
     ("price data", {"market_data_requested": True}, "vendor_review_binding_mismatch"),
 ]
 

@@ -5,6 +5,7 @@
 # (31 GB RAM; a past incident reached ~10 GB and froze the machine, see
 # scripts/run_tests.sh). MemorySwapMax=0 matters most: swap thrashing, not the
 # allocation itself, is what made the box unreachable.
+# The scope inherits the caller's slice (systemd >= 246); direct commands do not.
 #
 # Usage:
 #   scripts/run_capped.sh <command...>
@@ -21,9 +22,9 @@
 # waits on a lock in the repository's git directory, then exits 75. It also exits 75, at once,
 # when free memory is below the cap plus the margin. See scripts/_heavy_job.sh.
 #
-# Exit status is the command's own. Exit 137 means the cap was hit and exit 143 means the time
-# limit stopped it: this script never retries, and a retry with a higher cap or limit must be a
-# deliberate decision. Exit 75 means busy or short of memory, and the command never started.
+# Exit status is the command's own. Exit 137 or 143 alone does not establish the cause. This
+# script never retries; raising a cap or limit must be deliberate. Exit 75 means busy or short
+# of memory, and the command never started.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -45,9 +46,9 @@ Environment:
   GGT_HEAVY_WAIT       seconds to wait for another heavy job (default 1800)
   GGT_HEAVY_MARGIN     free memory required beyond the cap (default 4G)
 
-Exit 137 means the command was killed at the cap and exit 143 that the time limit
-stopped it; the script prints a message and does not retry. Exit 75 means another
-heavy job is running or free memory is short: the command never started.
+Exit 137 or 143 alone does not establish the cause; the script does not retry.
+Exit 75 means another heavy job is running or free memory is short: the command
+never started.
 EOF
 }
 
@@ -70,7 +71,7 @@ heavy_job_enter run_capped "$MEM_MAX"
 echo "running under MemoryMax=$MEM_MAX (no swap), time limit ${MAX_SECONDS}s" >&2
 
 set +e
-systemd-run --user --scope -q --collect \
+systemd-run --user --scope -q --collect --slice-inherit \
     -p MemoryMax="$MEM_MAX" \
     -p MemorySwapMax=0 \
     -p RuntimeMaxSec="$MAX_SECONDS" \
@@ -78,14 +79,13 @@ systemd-run --user --scope -q --collect \
 status=$?
 set -e
 
-# 137 = SIGKILL, which from inside this scope means the cap was hit.
+# Exit codes alone do not identify the cause.
 if [[ $status -eq 137 ]]; then
-    echo "KILLED AT MEMORY CAP ($MEM_MAX): do not retry with a higher cap; report it" >&2
+    echo "Killed (exit 137); a memory cap or another cause is unverified. Do not retry blindly." >&2
 fi
 
-# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
 if [[ $status -eq 143 ]]; then
-    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long job; report it" >&2
+    echo "Terminated (exit 143); a time limit or another signal may be responsible." >&2
 fi
 
 exit $status

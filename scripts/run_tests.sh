@@ -9,6 +9,7 @@
 #
 # MemorySwapMax=0 is the important half: swap-file thrashing, not the
 # allocation itself, is what made the box unreachable.
+# Scopes inherit the caller's slice (systemd >= 246); direct pytest and older wrappers do not.
 #
 # Tiers (the marker expression of each lives in tests/tiers.py, the one source CI uses too):
 #   scripts/run_tests.sh                 FAST CORE: the developer loop, about a minute and a half.
@@ -55,9 +56,9 @@
 # GGT_HEAVY_MARGIN (default 4G). The lock is held across both pytest runs of --full and --studies.
 # Details and the exceptions (CI, nested runs, dry runs) are in scripts/_heavy_job.sh.
 #   GGT_TEST_MAX_SECONDS  wall-clock limit of each pytest run (default 1800; a healthy full gate
-#                         takes about 8 minutes in all). Exit 143 means the limit stopped it.
-#   Exit 75: busy or short of memory, pytest never started. Exit 137 or 143: a hang, not a big
-#   suite: look for a test that touches a real DB, network or clock; never raise the cap or limit.
+#                         takes about 8 minutes in all).
+#   Exit 75: busy or short of memory, pytest never started. Exit 137 or 143 indicates a kill or
+#   termination; the exit code alone cannot identify its cause.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -94,7 +95,7 @@ cd "$REPO"
 # shellcheck source=scripts/_heavy_job.sh
 source "$REPO/scripts/_heavy_job.sh"
 
-run_pytest() {
+run_pytest() (
     # One pytest run, in the memory-capped scope unless GGT_TEST_NO_CGROUP=1. Returns its status.
     if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
         echo "$PYTHON -m pytest $*"
@@ -103,13 +104,36 @@ run_pytest() {
     if [[ "${GGT_TEST_NO_CGROUP:-}" == "1" ]]; then
         env PYTHONPATH=src "$PYTHON" -m pytest "$@"
     else
-        systemd-run --user --scope -q --collect \
+        # The marker records wrapper startup; it does not verify cgroup placement.
+        local marker_dir phase_status=0
+        marker_dir="$(mktemp -d /tmp/ggtrader-test.XXXXXXXX)" || return 125
+        cleanup_marker() {
+            local result=$?
+            trap - EXIT
+            if ! rm -f -- "$marker_dir/started" || ! rmdir -- "$marker_dir"; then
+                echo "error: test scope marker cleanup failed: $marker_dir" >&2
+                (( result >= 128 )) || result=125
+            fi
+            exit "$result"
+        }
+        trap cleanup_marker EXIT
+        trap 'exit 129' HUP
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
+        systemd-run --user --scope -q --collect --slice-inherit \
             -p MemoryMax="$MEM_MAX" \
             -p MemorySwapMax=0 \
             -p RuntimeMaxSec="$MAX_SECONDS" \
-            env PYTHONPATH=src "$PYTHON" -m pytest "$@"
+            bash -c 'printf started > "$1" || exit 125; shift; exec "$@"' _ \
+            "$marker_dir/started" env PYTHONPATH=src "$PYTHON" -m pytest "$@" \
+            || phase_status=$?
+        if [[ ! -f "$marker_dir/started" || $phase_status -eq 126 || $phase_status -eq 127 ]]; then
+            echo "error: test scope did not report startup; stopping the test job" >&2
+            (( phase_status >= 128 )) || phase_status=125
+        fi
+        return "$phase_status"
     fi
-}
+)
 
 study_plan() {
     # Prints the STUDIES_MIN_COLLECTED minimum, then each existing study test folder, one per
@@ -177,7 +201,8 @@ if [[ "$TIER" == "studies" && $has_path -eq 0 && $status -eq 5 ]]; then
     status=0
 fi
 
-if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 ]]; then
+if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 \
+    && $status -ne 125 && $status -ne 2 && $status -lt 128 ]]; then
     mapfile -t plan < <(study_plan)
     min_collected="${plan[0]}"
     study_dirs=()
@@ -197,7 +222,7 @@ if [[ ( "$TIER" == "full" || "$TIER" == "studies" ) && $has_path -eq 0 ]]; then
         if [[ $half -eq 5 && "$min_collected" -eq 0 ]]; then
             half=0
         fi
-        status=$(( status == 0 ? half : status ))
+        status=$(( status == 0 || half == 125 || half == 2 || half >= 128 ? half : status ))
     fi
 fi
 
@@ -205,17 +230,15 @@ if [[ "${GGT_TEST_DRY_RUN:-}" == "1" ]]; then
     exit "$status"
 fi
 
-# 137 = SIGKILL, which from inside this scope means the cap was hit.
+# Exit codes alone do not establish why a process was killed.
 if [[ $status -eq 137 ]]; then
     echo >&2
-    echo "pytest was killed at the $MEM_MAX cap -- the suite outgrew its budget." >&2
-    echo "Raise it deliberately with GGT_TEST_MEM_MAX, or fix the leak." >&2
+    echo "pytest was killed (exit 137); the cause, including a memory cap, is unverified." >&2
 fi
 
-# 143 = SIGTERM, which systemd sends when RuntimeMaxSec runs out.
 if [[ $status -eq 143 ]]; then
     echo >&2
-    echo "STOPPED AT THE TIME LIMIT (${MAX_SECONDS}s): a hang, not a long suite; report it" >&2
+    echo "pytest was terminated (exit 143); a time limit or another signal may be responsible." >&2
 fi
 
 if [[ "$TIER" == "fast" ]]; then

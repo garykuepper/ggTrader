@@ -1,0 +1,319 @@
+{
+  "a1": {
+    "mean_bp": -1.4594552979213342,
+    "nw5_t": -3.479259029171949,
+    "sessions": 2677,
+    "status": "FAIL",
+    "threshold": 3.0
+  },
+  "a2": {
+    "after_tax_cagr": -0.036758185289904044,
+    "annual_tax_ledger": [
+      {
+        "net_pnl": -0.02745197448506137,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.9725480255149389,
+        "year": 2016
+      },
+      {
+        "net_pnl": -0.04457580629023625,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.9279722192247025,
+        "year": 2017
+      },
+      {
+        "net_pnl": -0.06155516048480883,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.8664170587398938,
+        "year": 2018
+      },
+      {
+        "net_pnl": -0.018209882517682956,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.8482071762222102,
+        "year": 2019
+      },
+      {
+        "net_pnl": 0.02214271883711376,
+        "tax_debit": 0.005314252520907302,
+        "wealth_after_tax": 0.8650356425384169,
+        "year": 2020
+      },
+      {
+        "net_pnl": -0.09696026551926093,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.7680753770191561,
+        "year": 2021
+      },
+      {
+        "net_pnl": -0.045042630075056225,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.7230327469440996,
+        "year": 2022
+      },
+      {
+        "net_pnl": -0.0017645061982725593,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.7212682407458267,
+        "year": 2023
+      },
+      {
+        "net_pnl": -0.027664652290661333,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.6936035884551652,
+        "year": 2024
+      },
+      {
+        "net_pnl": -0.01496319891899721,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.6786403895361679,
+        "year": 2025
+      },
+      {
+        "net_pnl": -0.009753982234470712,
+        "tax_debit": 0.0,
+        "wealth_after_tax": 0.6688864073016967,
+        "year": 2026
+      }
+    ],
+    "status": "FAIL",
+    "threshold": 0.03,
+    "years": 10.737850787132102
+  },
+  "assumptions": [
+    "Idealized bar proxy: 09:59 close signal, 15:30 open entry, 15:59 close exit, prior close = last minute bar before the preceding session's official close (12:59 on early closes).",
+    "Costs 1 bp/side base (verdict) and 2 bp/side stress (reported only).",
+    "100% of after-tax equity per trade, zero return on idle cash, fractional sizing ceiling.",
+    "24% of each calendar year's positive net realized P&L debited after its last session; no loss benefit or carryforward; terminal partial year taxed at the end.",
+    "CAGR = (W_end/W_0)^(1/y) - 1, y = days(anchor -> last)/365.25.",
+    "SPY benchmark: same close-bar prices from the anchor, cash distributions from the issuer schedule (dividend plus any capital-gain legs present; a blank leg is no data, not zero) reinvested at the ex-date session close, no tax; the ex-dividend-flat diagnostic zeroes every issuer distribution ex-date. The rule's own returns use raw prices.",
+    "Issuer amounts are assumed USD per share. Alpaca cash dividends are a non-gating cross-check at 6 decimal places (recorded in the validation artifact).",
+    "R1: 2019-08-12 and 2019-08-13 are removed from the scored series, not scored as flat days, so every statistic below uses the validated sessions only; the CAGR year count, window and tax-ledger rules are unchanged. The close-convention comparison also leaves out both sessions. The SPY buy-and-hold comparison is not interrupted: it holds through both sessions and earns their price moves, because a continuous hold cannot drop a day without inventing a cash gap (r9 keeps the r8 comparison unchanged). Only the missing 2019-08-12 valuation point is absent from its path; the comparison is non-gating.",
+    "Losing streak counts consecutive losing traded sessions; flat sessions are skipped.",
+    "Worst month and drawdown use the pre-tax base-cost sleeve.",
+    "Hit rate is the share of traded sessions with a positive net return.",
+    "No in-window SPY split or unsupported action appeared in the corporate-actions response (same-ticker SPY name changes are counted metadata); that response is not certified complete. The vendor-adjustment review is a bounded documentation review bound by hash, not proof that no undocumented change exists (see ancillary_coverage).",
+    "R1 (r9 protocol section 3): 2019-08-12 and 2019-08-13 are removed from the scored series, not counted as flat days, because their required price bars do not exist in the data (2019-08-12 lacks the 15:30 entry bar and the 15:59 exit bar; 2019-08-13 consequently lacks its prior-close anchor). The list was chosen after the missing timestamps were known but before any price, signal or return was seen. Losing a day for a reason linked to how the market moved that day could bias the result; that effect cannot be measured without prices, so it is a named limitation."
+  ],
+  "diagnostic_errors": [],
+  "diagnostics": {
+    "always_long_net": {
+      "a1_pass": false,
+      "a2_pass": false,
+      "after_tax_cagr": -0.06085984890464635,
+      "mean_bp": -2.4704149344462745,
+      "nw5_t": -4.387853593256592
+    },
+    "attribution": {
+      "beta1": -3.825764220500752e-05,
+      "beta1_nw5_t": -0.3105040127291755,
+      "cov_term_bp": -0.09459026689927946,
+      "mean_d_times_r_bp": -0.3544870498824845,
+      "mean_product_term_bp": -0.25989678298320495
+    },
+    "break_even_one_way_cost_bp": -0.3208119785447637,
+    "close_convention_comparison": {
+      "half_day_sessions": 21,
+      "max_abs_bp": 279.7367183826992,
+      "mean_abs_bp": 1.5044217378756444,
+      "mean_signed_bp": -0.13513121514842943,
+      "median_abs_bp": 0.7911767963661965,
+      "p95_abs_bp": 3.679787110762353,
+      "sessions": 2699
+    },
+    "conditional_on_trading_mean_bp": -2.6416239570895277,
+    "exdiv_flat": {
+      "a1_pass": false,
+      "a2_pass": false,
+      "after_tax_cagr": -0.035953814459081634,
+      "mean_bp": -1.4220857920819843,
+      "nw5_t": -3.3990801896041076
+    },
+    "longest_losing_streak_traded_sessions": 19,
+    "max_drawdown_pre_tax": -0.3299500013734953,
+    "nw_lags": {
+      "0": -3.7857509200383106,
+      "10": -3.157310947750356,
+      "20": -2.8087201904866665
+    },
+    "signal_counts": {
+      "flat_sessions": 1198,
+      "negative_flat": 1193,
+      "positive_traded": 1479,
+      "zero_flat": 5
+    },
+    "spy_displacement": {
+      "cagr": 0.15068957827324403,
+      "distribution_dates_reinvested": 43,
+      "note": "A standalone A1/A2 pass says nothing about beating SPY going forward; SPY displacement is a mandatory non-gating diagnostic.",
+      "sleeve_after_tax_cagr": -0.036758185289904044,
+      "sleeve_minus_spy_cagr": -0.18744776356314807,
+      "wealth_end": 4.513982158758485
+    },
+    "stress": {
+      "a1_pass": false,
+      "a2_pass": false,
+      "after_tax_cagr": -0.06240581456888006,
+      "annual_tax_ledger": [
+        {
+          "net_pnl": -0.050712751122805634,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.9492872488771952,
+          "year": 2016
+        },
+        {
+          "net_pnl": -0.06764913126062944,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.8816381176165653,
+          "year": 2017
+        },
+        {
+          "net_pnl": -0.08154383997778701,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.8000942776387784,
+          "year": 2018
+        },
+        {
+          "net_pnl": -0.03799176936852575,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.7621025082702527,
+          "year": 2019
+        },
+        {
+          "net_pnl": -0.001543709510253916,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.7605587987599988,
+          "year": 2020
+        },
+        {
+          "net_pnl": -0.10509455702131157,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.6554642417386873,
+          "year": 2021
+        },
+        {
+          "net_pnl": -0.05344121615761169,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.6020230255810756,
+          "year": 2022
+        },
+        {
+          "net_pnl": -0.01817021095162883,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.583852814629446,
+          "year": 2023
+        },
+        {
+          "net_pnl": -0.03942931088145037,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.544423503747995,
+          "year": 2024
+        },
+        {
+          "net_pnl": -0.026249537950646454,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.5181739657973485,
+          "year": 2025
+        },
+        {
+          "net_pnl": -0.01756314862510009,
+          "tax_debit": 0.0,
+          "wealth_after_tax": 0.5006108171722478,
+          "year": 2026
+        }
+      ],
+      "cannot_change_verdict": true,
+      "mean_bp": -2.5644235459601834,
+      "nw5_t": -6.067339476333766
+    },
+    "subperiods": {
+      "2016-2019": {
+        "hit_rate": 0.44672897196261685,
+        "mean_bp": -1.6456138459262744,
+        "nw5_t": -3.5692988643306807,
+        "sessions": 994,
+        "traded": 535
+      },
+      "2020-2023": {
+        "hit_rate": 0.41304347826086957,
+        "mean_bp": -1.524926245815631,
+        "nw5_t": -1.6110980659040628,
+        "sessions": 1000,
+        "traded": 552
+      },
+      "2024-2026-09": {
+        "hit_rate": 0.42857142857142855,
+        "mean_bp": -1.092672655738015,
+        "nw5_t": -1.901208830902602,
+        "sessions": 683,
+        "traded": 392
+      }
+    },
+    "worst_month": {
+      "month": "2020-10",
+      "return": -0.025858684636059226
+    },
+    "yearly_mean_bp": {
+      "2016": -1.1073270069105103,
+      "2017": -1.880854914724205,
+      "2018": -2.742401215205518,
+      "2019": -0.8520649230194073,
+      "2020": 1.1103872797690983,
+      "2021": -4.721167776853109,
+      "2022": -2.3880002859886873,
+      "2023": -0.08717850625150055,
+      "2024": -1.5577055406913842,
+      "2025": -0.8700973104847901,
+      "2026": -0.7674476392896601
+    }
+  },
+  "exclusions": {
+    "disclosure": "R1 (r9 protocol section 3): 2019-08-12 and 2019-08-13 are removed from the scored series, not counted as flat days, because their required price bars do not exist in the data (2019-08-12 lacks the 15:30 entry bar and the 15:59 exit bar; 2019-08-13 consequently lacks its prior-close anchor). The list was chosen after the missing timestamps were known but before any price, signal or return was seen. Losing a day for a reason linked to how the market moved that day could bias the result; that effect cannot be measured without prices, so it is a named limitation.",
+    "protocol": "r9 R1",
+    "scored_sessions_after_exclusion": 2677,
+    "scored_sessions_before_exclusion": 2679,
+    "sessions": [
+      "2019-08-12",
+      "2019-08-13"
+    ],
+    "tolerated_defects": [
+      {
+        "endpoint": "close",
+        "session": "2019-08-12",
+        "status": "absent"
+      },
+      {
+        "endpoint": "entry_1530",
+        "session": "2019-08-12",
+        "status": "absent"
+      },
+      {
+        "endpoint": "prior_close",
+        "session": "2019-08-13",
+        "status": "absent"
+      }
+    ]
+  },
+  "identities": {
+    "code_sha256": "ebef81e13777e295474247c57e50fb094d374ab059d4f8cc9af0db4245f70612",
+    "data_manifest_sha256": "fec4cce762c65795c27d271974a552f690ff028da713cee764ff8bfd43d1359a",
+    "issuer_workbook_sha256": "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320",
+    "manifest_sha256": "cbdd63c82eb25d43b2c113c2309fcfbb9dc228ae5ffa77758626af570c08422a",
+    "protocol_sha256": "222521cebe23aed66f9a44672dd1645a210f0c545a7cfbd30482496922593ed3",
+    "runtime": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "pandas_market_calendars": "5.6.0",
+      "python": "3.12.13",
+      "requests": "2.34.2",
+      "statsmodels": "0.15.0"
+    },
+    "vendor_review_sha256": "30924032071c6a51cfd87a3e119671b1993bfb54c70bc966cef5d098083fcfbb"
+  },
+  "label": "Post-original-sample and single-shot proxy feasibility screen (not an untouched holdout)",
+  "run_utc": "2026-11-16T07:41:06.562534+00:00",
+  "schema": "intraday_momentum_r9_score",
+  "validation_sha256": "22b696ad22a3aa365800993e8a0e93e311136420cc89ab0c4152d293056cb212",
+  "verdict": "NO-GO",
+  "version": 1
+}

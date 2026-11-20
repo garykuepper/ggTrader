@@ -84,3 +84,5 @@ graphify-out/
 
 # Fallback heavy-job lock when there is no git directory (scripts/_heavy_job.sh)
 /.ggtrader-heavy.lock*
+# Raw market data lives on /media/thesix/ggTrader-data/; these are symlinks there.
+data/external/intraday_momentum_r9

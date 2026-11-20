@@ -1,19 +1,29 @@
-"""Signal-blind validation and single-shot scoring for the approved r8 intraday SPY screen.
+"""Signal-blind validation and single-shot scoring for the approved r9 intraday SPY screen.
+
+r9 is r8 plus two registered changes and a fresh-pull rule (protocol section 3): R1 a closed
+two-session exclusion list (2019-08-12 and 2019-08-13), R2 one issuer dividend schedule (State
+Street's workbook, hash-pinned) with Alpaca cash dividends demoted to a non-gating cross-check,
+and R3 a fresh pull that still includes Alpaca corporate actions (the automatic in-window SPY
+split stop is unchanged). Nothing from the closed r8 collection or its validation can satisfy
+this module: every schema identifier, the default directory and the vendor-review record are r9.
 
 Schema and public interface (all versions are 1):
 
 - ``build_manifest() -> dict``: the frozen input request manifest, derived from the protocol
   constants alone (official calendar, raw SIP minute bars, raw SIP daily bars, corporate actions),
-  bound before any request to the protocol, code, vendor-review and runtime identities.
-- ``vendor_review_sha256() -> str``: the hash of the local, reviewed vendor-adjustment record at
-  ``VENDOR_REVIEW_PATH``; refuses (ValueError) if it is missing, malformed, unbound, pending or
-  lists a known unresolved change (the r8 documented-adjustment-change stop).
+  bound before any request to the protocol, code, vendor-review, issuer-workbook and runtime
+  identities.
+- ``vendor_review_sha256() -> str``: the hash of the local, reviewed r9 vendor-adjustment record
+  at ``VENDOR_REVIEW_PATH``; refuses (ValueError) if it is missing, malformed, unbound, pending
+  or lists a known unresolved change (the r8 documented-adjustment-change stop, kept in r9).
+- ``issuer_workbook_sha256() -> str`` and ``parse_issuer_workbook(raw) -> list[dict]``: the
+  hash gate and the dependency-free reader of State Street's historical-distribution workbook.
 - Storage (written by ``intraday_momentum_data``): ``manifest.json``, ``progress.json`` and one
   write-once ``chunks/<id>.json`` per *completely paginated* logical request.
 - ``load_dataset(directory) -> dict``: rehash every stored file into the dataset schema
   ``{"schema", "version", "manifest", "chunks", "identities", "integrity_defects"}``.
-- ``validate_dataset(dataset) -> dict``: PASS or UNRESOLVED (data); counts and defects only, never
-  a signal, side or return.
+- ``validate_dataset(dataset) -> dict``: PASS or UNRESOLVED (data); counts, defects and the
+  recorded R1 exclusion only, never a signal, side or return.
 - ``run_validation(directory, output) -> dict``: write-once validation artifact.
 - ``score_inputs(inputs) -> dict``: pure scoring of extracted endpoint prices.
 - ``run_score(directory, validation_path, output) -> dict``: one score, only on a PASS artifact
@@ -31,8 +41,12 @@ import math
 import os
 import platform
 import re
+import xml.etree.ElementTree as ET
+import zipfile
 from collections import defaultdict
 from datetime import UTC, date, datetime, timedelta
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation, localcontext
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -54,13 +68,43 @@ from intraday_probe import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]  # root-ok: stdlib-only family
 STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
-PROTOCOL_PATH = STUDY_DIR / "2026-10-25-intraday-feasibility-r8.md"
-# SHA256 of the whole approved r8 file; any edit must be a deliberate, re-approved code change.
-PROTOCOL_SHA256 = "be395d950c1da7abf010acf90ffbe461db597672a21dd72b73c0294ba7b45b85"
-# Bounded human review of documented vendor adjustment changes (r8 D4.3). Local, non-price
-# evidence: it cannot prove that no undocumented change exists.
-VENDOR_REVIEW_PATH = STUDY_DIR / "_intraday_r8_vendor_adjustment_review_2026-10-25.json"
-VENDOR_REVIEW_SCHEMA = "intraday_r8_vendor_adjustment_review"
+PROTOCOL_PATH = STUDY_DIR / "2026-11-15-intraday-feasibility-r9.md"
+# SHA256 of the whole approved r9 file; any edit must be a deliberate, re-approved code change.
+PROTOCOL_SHA256 = "222521cebe23aed66f9a44672dd1645a210f0c545a7cfbd30482496922593ed3"
+# Bounded human review of documented vendor adjustment changes (r8 D4.3, kept by r9). Local,
+# non-price evidence: it cannot prove that no undocumented change exists. r9 needs its own
+# record, bound to the r9 protocol hash; the r8 record stays untouched as history and cannot
+# satisfy this check (its schema and protocol hash are r8's).
+VENDOR_REVIEW_PATH = STUDY_DIR / "_intraday_r9_vendor_adjustment_review.json"
+VENDOR_REVIEW_SCHEMA = "intraday_r9_vendor_adjustment_review"
+# R2: the single source of SPY cash distributions, a hash-pinned archived copy of State Street's
+# SPDR historical-distribution workbook.
+ISSUER_WORKBOOK_PATH = (
+    PROJECT_ROOT
+    / "research/intraday/artifacts-2026-10-25-intraday-gap/spdr-etf-historical-distributions.xlsx"
+)
+ISSUER_WORKBOOK_SHA256 = "6b65cbf956b5d25705d08470006a0e97e6a7d2a0d5cfd08b63f6f79783b06320"
+ISSUER_TICKER = "SPY"
+ISSUER_CUSIP = "78462F103"
+# The gap investigation counted 43 unique SPY ex-dates in (anchor, last]. Recorded, not gating.
+ISSUER_EXPECTED_WINDOW_EX_DATES = 43
+CROSS_CHECK_DECIMALS = 6  # fixed in advance (protocol R2)
+# R1: the closed exclusion list, as (session, endpoint roles whose bars must be absent). The
+# prior close of 2019-08-13 is the 15:59 bar of 2019-08-12, so it is absent as a consequence.
+# Everything else on both sessions validates as in r8. Never extended at runtime.
+EXCLUDED_SESSIONS = (
+    ("2019-08-12", ("entry_1530", "close")),
+    ("2019-08-13", ("prior_close",)),
+)
+EXCLUSION_DISCLOSURE = (
+    "R1 (r9 protocol section 3): 2019-08-12 and 2019-08-13 are removed from the scored series, "
+    "not counted as flat days, because their required price bars do not exist in the data "
+    "(2019-08-12 lacks the 15:30 entry bar and the 15:59 exit bar; 2019-08-13 consequently lacks "
+    "its prior-close anchor). The list was chosen after the missing timestamps were known but "
+    "before any price, signal or return was seen. Losing a day for a reason linked to how the "
+    "market moved that day could bias the result; that effect cannot be measured without "
+    "prices, so it is a named limitation."
+)
 CODE_FILES = (
     "research/intraday/spy-momentum-feasibility/code/intraday_momentum.py",
     "research/intraday/spy-momentum-feasibility/code/intraday_momentum_data.py",
@@ -106,8 +150,8 @@ ACTION_EFFECTIVE_DATE = {
     "unit_splits": "effective_date",
     "worthless_removals": None,
 }
-# Cash distributions valued by the total-return benchmark and ex-distribution diagnostic: the
-# payout per share is the sum of the documented legs present (capital gains need at least one).
+# Alpaca cash-distribution legs, parsed for the schema check and the non-gating issuer
+# cross-check only; r9 values distributions from the issuer schedule.
 CASH_PAYOUT_FIELDS = {
     "cash_dividends": ("rate",),
     "capital_gains_distributions": ("long_term_rate", "short_term_rate"),
@@ -132,22 +176,42 @@ ANCILLARY_COVERAGE = {
     "corporate_actions": (
         "One all-types SPY request, process_date filtered from anchor-31d to last+31d "
         "(default data_quality=complete). Actions are placed by their documented ex_date or "
-        "effective_date, never by process_date. Cash dividends and capital-gains distributions "
-        "(sum of the long/short-term legs provided) are reinvested by the benchmark and "
-        "flattened by the ex-distribution diagnostic; same-date payouts of the two types add. "
-        "A same-ticker name change (old and new symbol both SPY) changes no valuation and is "
-        "counted as non-gating metadata. Other non-cash SPY actions that cannot be placed, or "
-        "that take effect in the window, are UNRESOLVED as unsupported valuations."
+        "effective_date, never by process_date. r9 keeps the r8 automatic stop on an in-window "
+        "SPY split and the unsupported-valuation stop for other non-cash SPY actions. The whole "
+        "response must still pass the schema, because the same pages carry the split stop: a "
+        "malformed record of any group (for example a dividend with a null rate) ends the study "
+        "UNRESOLVED (data). Only Alpaca cash-distribution values are non-gating: they feed no "
+        "valuation and are compared with the issuer schedule as a cross-check. A "
+        "same-ticker name change (old and new symbol both SPY) changes no valuation and is "
+        "counted as non-gating metadata."
+    ),
+    "issuer_distribution_schedule": (
+        "Every SPY cash distribution comes from State Street's SPDR historical-distribution "
+        "workbook, refused unless its SHA256 equals ISSUER_WORKBOOK_SHA256. Rows are identified "
+        "by ticker SPY and CUSIP 78462F103; each needs one parseable ex-date (an official "
+        "calendar session inside the window), a positive per-share dividend and, when a "
+        "capital-gain field is filled, a non-negative finite value; a blank capital-gain field "
+        "is no data, never zero, and a filled 0.000000 capital-gain leg is accepted (the "
+        "workbook has such legs in window; r9's positive-amount check is read as applying to "
+        "the dividend). Row checks run on every SPY row in the pinned workbook, including rows "
+        "before the window. Per-ex-date payouts feed only the SPY total-return comparison "
+        "and the ex-dividend-flat sensitivity; the rule's returns use raw prices."
+    ),
+    "alpaca_cross_check": (
+        "Alpaca cash-dividend amounts are compared with the issuer's on shared ex-dates at 6 "
+        "decimal places; matches, mismatches and ex-dates missing from either side are "
+        "recorded and never gate."
     ),
     "vendor_adjustment_review": (
-        "Collection, PASS and scoring require the hash-bound local review record at "
-        "VENDOR_REVIEW_PATH (status reviewed, SPY, window and protocol hash bound, no known "
+        "Collection, PASS and scoring require the hash-bound local r9 review record at "
+        "VENDOR_REVIEW_PATH (status reviewed, SPY, window and r9 protocol hash bound, no known "
         "unresolved changes); its SHA256 is in the manifest and the validation identities."
     ),
     "dividend_quarter_presence": (
-        "Every window quarter must show a cash-dividend ex-date (SPY pays quarterly per its "
-        "issuer). This is a conservative coverage sanity check only."
+        "Every window quarter must show an issuer cash-dividend ex-date (SPY pays quarterly per "
+        "its issuer). This is a conservative coverage sanity check on the issuer schedule only."
     ),
+    "exclusions": EXCLUSION_DISCLOSURE,
     "limitations": [
         "Alpaca documents no guarantee on corporate-action creation or processing delay, so the "
         "31-day process_date margin is not a completeness bound.",
@@ -156,10 +220,9 @@ ANCILLARY_COVERAGE = {
         "Vendor adjustment changes have no machine-readable feed. The review record is a "
         "bounded human documentation review; it does not prove that no undocumented change "
         "exists.",
-        "A cash payout with a missing or empty currency is assumed to be USD (the vendor "
-        "documents empty as USD, n/a or unknown); SPY is a USD fund and the payout feeds only "
-        "the non-gating benchmark diagnostic. Such records are counted; any other currency is "
-        "UNRESOLVED, never converted.",
+        "The issuer workbook is a hash-pinned copy of one published file; it is not an audit of "
+        "the issuer's records. Its amounts are assumed USD per share (the column is labelled "
+        "DIVIDEND ($)).",
     ],
 }
 
@@ -185,12 +248,12 @@ CHUNK_DIR = "chunks"
 # The single-score claim lives with the collection it scores, so a new --output cannot re-score.
 SCORE_CLAIM_FILE = "score.claim"
 SCHEMAS = {
-    "manifest": "intraday_momentum_r8_manifest",
-    "chunk": "intraday_momentum_r8_chunk",
-    "dataset": "intraday_momentum_r8_dataset",
-    "validation": "intraday_momentum_r8_validation",
-    "score": "intraday_momentum_r8_score",
-    "claim": "intraday_momentum_r8_score_claim",
+    "manifest": "intraday_momentum_r9_manifest",
+    "chunk": "intraday_momentum_r9_chunk",
+    "dataset": "intraday_momentum_r9_dataset",
+    "validation": "intraday_momentum_r9_validation",
+    "score": "intraday_momentum_r9_score",
+    "claim": "intraday_momentum_r9_score_claim",
 }
 LABEL = "Post-original-sample and single-shot proxy feasibility screen (not an untouched holdout)"
 MISMATCH_NOTE = (
@@ -203,7 +266,7 @@ MISMATCH_NOTE = (
 
 
 def protocol_sha256() -> str:
-    """Hash the approved r8 file and refuse if it differs from the frozen identity."""
+    """Hash the approved r9 file and refuse if it differs from the frozen identity."""
     digest = hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest()
     if digest != PROTOCOL_SHA256:
         raise ValueError("protocol_hash_mismatch")
@@ -221,7 +284,7 @@ def code_sha256() -> str:
 
 
 def runtime_versions() -> dict:
-    """Record the execution runtime that the r8 evidence appendix requires."""
+    """Record the execution runtime that the r9 evidence appendix requires."""
     return {
         "python": platform.python_version(),
         "numpy": np.__version__,
@@ -264,6 +327,225 @@ def vendor_review_sha256() -> str:
     if record["known_unresolved_changes"]:
         raise ValueError("vendor_review_stop:documented_adjustment_change")
     return hashlib.sha256(raw).hexdigest()
+
+
+# --- issuer distribution workbook (R2) -----------------------------------------------------------
+
+ISSUER_HEADER = {
+    "B": "TICKER",
+    "C": "CUSIP",
+    "D": "EX-DATE",
+    "G": "DIVIDEND ($)",
+    "H": "SHORT TERM CAPITAL GAIN ($)",
+    "I": "LONG TERM CAPITAL GAIN ($)",
+}
+ISSUER_DATE = re.compile(r"(\d{2})/(\d{2})/(\d{4})\Z")
+_XLSX = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_CELL_COLUMN = re.compile(r"[A-Z]+")
+
+
+def _issuer_bytes() -> bytes:
+    """The workbook bytes, refused unless they hash to the frozen identity."""
+    try:
+        raw = ISSUER_WORKBOOK_PATH.read_bytes()
+    except OSError:
+        raise ValueError("issuer_workbook_missing") from None
+    if hashlib.sha256(raw).hexdigest() != ISSUER_WORKBOOK_SHA256:
+        raise ValueError("issuer_workbook_hash_mismatch")
+    return raw
+
+
+def issuer_workbook_sha256() -> str:
+    """Hash the issuer workbook and refuse anything but the frozen bytes."""
+    _issuer_bytes()
+    return ISSUER_WORKBOOK_SHA256
+
+
+def _cell_text(cell: ET.Element, strings: list[str]) -> str | None:
+    """Text of one cell: shared string, inline string or the stored value; None if absent."""
+    kind = cell.get("t")
+    if kind == "inlineStr":
+        return "".join(node.text or "" for node in cell.iter(f"{_XLSX}t"))
+    value = cell.find(f"{_XLSX}v")
+    if value is None or value.text is None:
+        return None
+    return strings[int(value.text)] if kind == "s" else value.text
+
+
+def parse_issuer_workbook(raw: bytes) -> list[dict]:
+    """Read every data row of the first worksheet as ``{"row": n, "B": text, ...}`` (stdlib only).
+
+    The caller verifies the hash first. Cells keep the text the workbook stores, so a blank
+    field stays blank ("") and is never turned into zero. The header row must name the columns
+    the checks use; anything unreadable is a message-free ``ValueError`` code.
+    """
+    try:
+        with zipfile.ZipFile(BytesIO(raw)) as book:
+            shared = ET.fromstring(book.read("xl/sharedStrings.xml"))
+            strings = [
+                "".join(node.text or "" for node in item.iter(f"{_XLSX}t"))
+                for item in shared.findall(f"{_XLSX}si")
+            ]
+            sheet = ET.fromstring(book.read("xl/worksheets/sheet1.xml"))
+    except (KeyError, zipfile.BadZipFile, ET.ParseError, ValueError):
+        raise ValueError("issuer_workbook_unreadable") from None
+    rows: list[dict] = []
+    for element in sheet.iter(f"{_XLSX}row"):
+        try:
+            number = int(element.get("r", ""))
+            cells = {}
+            for cell in element.findall(f"{_XLSX}c"):
+                match = _CELL_COLUMN.match(cell.get("r", ""))
+                text = _cell_text(cell, strings)
+                if match and text is not None:
+                    cells[match.group(0)] = text
+        except (ValueError, IndexError):
+            raise ValueError("issuer_workbook_unreadable") from None
+        rows.append({"row": number, **cells})
+    if not rows or any(rows[0].get(col) != name for col, name in ISSUER_HEADER.items()):
+        raise ValueError("issuer_workbook_header_mismatch")
+    return rows[1:]
+
+
+def _issuer_amount(text: str | None) -> float | None:
+    """A finite non-negative per-share amount; None if blank (no data) or not such a number."""
+    try:
+        value = float(Decimal((text or "").strip()))
+    except (InvalidOperation, ValueError):
+        return None
+    return value if math.isfinite(value) and value >= 0 else None
+
+
+def _issuer_date(text: str | None) -> str | None:
+    match = ISSUER_DATE.match((text or "").strip())
+    if not match:
+        return None
+    try:
+        return date(int(match[3]), int(match[1]), int(match[2])).isoformat()
+    except ValueError:
+        return None
+
+
+def issuer_distributions(session_days: dict, defects: list[str]) -> tuple[dict, dict, dict]:
+    """Return (payout by ex-date, dividend by ex-date, info) from the verified issuer workbook.
+
+    Identity (ticker SPY and CUSIP 78462F103), one parseable ex-date per row, no duplicate
+    ex-date, a positive dividend and a non-negative capital-gain leg when one is filled are
+    checked on every SPY row; an in-window ex-date must be an official session. The payout is
+    the dividend plus the capital-gain legs that are present: a blank leg is no data, never zero,
+    and is counted. Row defects are recorded by ex-date or row number and never echo the file's
+    text. The every-quarter-has-a-dividend check of r8 now applies to this schedule.
+    """
+    info: dict[str, Any] = {
+        "issuer_spy_rows": 0,
+        "issuer_ex_dates_in_window": 0,
+        "issuer_expected_ex_dates_in_window": ISSUER_EXPECTED_WINDOW_EX_DATES,
+        "issuer_window_count_matches_expected": False,
+        "issuer_capital_gain_legs_blank": 0,
+        "issuer_capital_gain_legs_present": 0,
+    }
+    try:
+        rows = parse_issuer_workbook(_issuer_bytes())
+    except ValueError as error:
+        defects.append(f"issuer_schedule:{error}")
+        return {}, {}, info
+    payouts: dict[str, float] = {}
+    dividends: dict[str, float] = {}
+    seen: set[str] = set()
+    for row in rows:
+        ticker, cusip = (row.get("B") or "").strip(), (row.get("C") or "").strip()
+        if ticker != ISSUER_TICKER and cusip != ISSUER_CUSIP:
+            continue
+        label = f"row_{row['row']}"
+        if ticker != ISSUER_TICKER or cusip != ISSUER_CUSIP:
+            defects.append(f"issuer_identity_mismatch:{label}")
+            continue
+        info["issuer_spy_rows"] += 1
+        day = _issuer_date(row.get("D"))
+        if day is None:
+            defects.append(f"issuer_ex_date_malformed:{label}")
+            continue
+        if day in seen:
+            defects.append(f"issuer_duplicate_ex_date:{day}")
+            continue
+        seen.add(day)
+        dividend = _issuer_amount(row.get("G"))
+        if dividend is None or dividend <= 0:
+            defects.append(f"issuer_dividend_invalid:{day}")
+            continue
+        legs, bad_leg = [], False
+        for column in ("H", "I"):
+            text = (row.get(column) or "").strip()
+            if not text:  # blank is no data: counted, never turned into zero
+                info["issuer_capital_gain_legs_blank"] += 1
+                continue
+            leg = _issuer_amount(text)
+            if leg is None:
+                bad_leg = True
+            else:
+                legs.append(leg)
+                info["issuer_capital_gain_legs_present"] += 1
+        if bad_leg:
+            defects.append(f"issuer_capital_gain_invalid:{day}")
+            continue
+        if not ANCHOR < day <= LAST:
+            continue  # the anchor close is bought after its ex-date repricing; others unplaced
+        if day not in session_days:
+            defects.append(f"issuer_ex_date_not_session:{day}")
+            continue
+        payouts[day] = dividend + sum(legs)
+        dividends[day] = dividend
+    info["issuer_ex_dates_in_window"] = len(payouts)
+    info["issuer_window_count_matches_expected"] = len(payouts) == ISSUER_EXPECTED_WINDOW_EX_DATES
+    _quarter_presence(dividends, defects)
+    return dict(sorted(payouts.items())), dict(sorted(dividends.items())), info
+
+
+def _quarter_presence(ex_dates: Any, defects: list[str]) -> None:
+    """Every calendar quarter of the window needs a cash-dividend ex-date (coverage sanity)."""
+    first, last = date.fromisoformat(ANCHOR), date.fromisoformat(LAST)
+    covered = {
+        (date.fromisoformat(day).year, (date.fromisoformat(day).month - 1) // 3) for day in ex_dates
+    }
+    year, quarter = first.year, (first.month - 1) // 3
+    while (year, quarter) <= (last.year, (last.month - 1) // 3):
+        if (year, quarter) not in covered:
+            defects.append(f"dividend_coverage_missing:{year}Q{quarter + 1}")
+        year, quarter = (year + 1, 0) if quarter == 3 else (year, quarter + 1)
+
+
+def _at_decimals(value: float) -> Decimal | None:
+    """Round to the cross-check precision; None when the value cannot be represented."""
+    quantum = Decimal(1).scaleb(-CROSS_CHECK_DECIMALS)
+    with localcontext() as context:
+        # Any finite float fits in about 330 digits before the point plus the 6 after it.
+        context.prec = 400
+        try:
+            return Decimal(repr(float(value))).quantize(quantum, rounding=ROUND_HALF_UP)
+        except (InvalidOperation, ValueError, OverflowError):
+            return None
+
+
+def cross_check(issuer: dict, alpaca: dict, issues: list[str]) -> dict:
+    """Compare Alpaca and issuer cash-dividend amounts on shared ex-dates; informational only."""
+    shared = sorted(set(issuer) & set(alpaca))
+    mismatches = [
+        {"ex_date": day, "issuer": issuer[day], "alpaca": alpaca[day]}
+        for day in shared
+        if _at_decimals(issuer[day]) != _at_decimals(alpaca[day])
+    ]
+    return {
+        "gating": False,
+        "decimals": CROSS_CHECK_DECIMALS,
+        "issuer_ex_dates": len(issuer),
+        "alpaca_ex_dates": len(alpaca),
+        "shared_ex_dates": len(shared),
+        "matches": len(shared) - len(mismatches),
+        "mismatches": mismatches,
+        "missing_from_alpaca": sorted(set(issuer) - set(alpaca)),
+        "missing_from_issuer": sorted(set(alpaca) - set(issuer)),
+        "alpaca_record_issues": sorted(issues),
+    }
 
 
 def chunk_path(directory: Path, request_id: str) -> Path:
@@ -339,6 +621,7 @@ def build_manifest() -> dict:
         "protocol_sha256": protocol_sha256(),
         "code_sha256": code_sha256(),
         "vendor_review_sha256": vendor_review_sha256(),
+        "issuer_workbook_sha256": issuer_workbook_sha256(),
         "runtime": runtime_versions(),
         "window": {"anchor": ANCHOR, "last": LAST},
         "requests": requests_,
@@ -541,7 +824,7 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
     except ValueError as error:  # protocol hash or vendor-review refusal
         expected = None
         defects.append(f"identity:{error}")
-    for key in ("protocol", "code", "vendor_review", "runtime"):
+    for key in ("protocol", "code", "vendor_review", "issuer_workbook", "runtime"):
         field = key if key == "runtime" else f"{key}_sha256"
         if expected is not None and dataset["manifest"].get(field) != expected[field]:
             defects.append(f"identity:manifest_{key}_mismatch")
@@ -577,30 +860,70 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
             return None
         return float(rows[0][field])
 
-    closes, scored = {}, []
+    excluded = dict(EXCLUDED_SESSIONS)
+    for day in excluded:
+        if day not in session_days:
+            defects.append(f"exclusion_session_not_in_calendar:{day}")
+        elif session_days[day]["half"]:
+            defects.append(f"exclusion_session_not_full:{day}")
+    tolerated: list[dict] = []
+
+    def absent(day: str, clock: str, role: str) -> None:
+        """An R1 endpoint that must not exist: a present, duplicated or misaligned bar means the
+        list's basis is false, which ends the study rather than widening or shrinking the list."""
+        stamp = _minute_ns(day, clock)
+        if by_ns.get(stamp) or stamp in misaligned_floor:
+            defects.append(f"exclusion_basis_violated:{role}:{day}")
+        else:
+            tolerated.append({"session": day, "endpoint": role, "status": "absent"})
+
+    closes: dict[str, float | None] = {}
+    required = []
     for index, row in enumerate(sessions):
         day = row["date"]
         if not ANCHOR <= day <= LAST:
             continue
+        skip = excluded.get(day, ())
         # The last minute bar before the official close, 12:59 on a 13:00 early close.
-        close = endpoint(day, _shift(row["close"], -1), "c", "close")
-        closes[day] = close
+        clock = _shift(row["close"], -1)
+        if "close" in skip:
+            absent(day, clock, "close")
+            closes[day] = close = None
+        else:
+            closes[day] = close = endpoint(day, clock, "c", "close")
         if day == ANCHOR or row["half"]:
             continue
         previous = sessions[index - 1]["date"] if index else None
-        scored.append(
+        required.append(
             {
                 "date": day,
                 "previous": previous,
+                "excluded": day in excluded,
                 "p0959": endpoint(day, "09:59", "c", "signal_0959"),
-                "p1530": endpoint(day, "15:30", "o", "entry_1530"),
+                "p1530": (
+                    absent(day, "15:30", "entry_1530")
+                    if "entry_1530" in skip
+                    else endpoint(day, "15:30", "o", "entry_1530")
+                ),
                 "p1559": close,
             }
         )
-    for row in scored:
+    for row in required:
         row["prior_close"] = closes.get(row["previous"])
         if row["previous"] is None:
             defects.append(f"endpoint_missing:prior_close:{row['date']}")
+        elif row["prior_close"] is None and row["previous"] in excluded:
+            # Only an excluded session's own prior close may rest on the excluded absent bar.
+            if "prior_close" in excluded.get(row["date"], ()):
+                tolerated.append(
+                    {"session": row["date"], "endpoint": "prior_close", "status": "absent"}
+                )
+            else:
+                defects.append(f"endpoint_missing:prior_close:{row['date']}")
+        elif row["prior_close"] is not None and "prior_close" in excluded.get(row["date"], ()):
+            defects.append(f"exclusion_basis_violated:prior_close:{row['date']}")
+    scored = [row for row in required if not row["excluded"]]
+    closes = {day: value for day, value in closes.items() if value is not None}
 
     # Calendar/bar consistency: regular-hours trades on a non-session date, or a full session
     # whose bars stop before 13:00 (an unflagged half-day).
@@ -627,17 +950,40 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
             gaps[row["date"]] = missing
 
     daily = _daily_closes(chunks.get("daily_bars"), session_days, defects)
-    distributions, action_counts = _corporate_actions(
+    alpaca, action_counts = _corporate_actions(
         chunks.get("corporate_actions"), session_days, defects
     )
+    distributions, issuer_dividends, issuer_info = issuer_distributions(session_days, defects)
+    for day in sorted(set(distributions) - set(closes)):
+        # A distribution is reinvested at its ex-date close; a session without one cannot be.
+        defects.append(f"distribution_ex_date_close_unavailable:{day}")
+    checked = cross_check(issuer_dividends, alpaca["dividends"], alpaca["issues"])
+    # The tolerated absences must be exactly the registered ones, no more and no fewer.
+    # A registered absence that turned up present is already a named exclusion_basis_violated
+    # defect; this guard catches anything else (an extra or silently unchecked pair).
+    registered = {(day, role) for day, roles in EXCLUDED_SESSIONS for role in roles}
+    seen = {(row["session"], row["endpoint"]) for row in tolerated}
+    violated = any(item.startswith("exclusion_basis_violated:") for item in defects)
+    if seen - registered or (registered - seen and not violated):
+        defects.append("exclusion_basis_incomplete")
+    exclusions = {
+        "protocol": "r9 R1",
+        "sessions": [day for day, _ in EXCLUDED_SESSIONS],
+        "tolerated_defects": sorted(tolerated, key=lambda row: (row["session"], row["endpoint"])),
+        "scored_sessions_before_exclusion": len(required),
+        "scored_sessions_after_exclusion": len(scored),
+        "disclosure": EXCLUSION_DISCLOSURE,
+    }
 
     counts = {
         "calendar_sessions": len(sessions),
         "half_day_sessions": sum(row["half"] for row in sessions),
         "scored_sessions": len(scored),
+        "excluded_sessions": len(required) - len(scored),
         "minute_bars": len(minute_rows),
         "daily_bars": len(daily),
         **action_counts,
+        **issuer_info,
         "chunks_complete": len(chunks),
         "chunks_expected": len(dataset["manifest"].get("requests", [])),
     }
@@ -655,6 +1001,8 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         "counts": counts,
         "diagnostics": diagnostics,
         "offline_calendar": offline_calendar,
+        "exclusions": exclusions,
+        "alpaca_dividend_cross_check": checked,
         "ancillary_coverage": ANCILLARY_COVERAGE,
     }
     if defects:
@@ -669,6 +1017,7 @@ def extract(dataset: dict) -> tuple[dict | None, dict]:
         "half_days": [row["date"] for row in sessions if row["half"]],
         "daily_closes": daily,
         "distributions": distributions,
+        "exclusions": exclusions,
     }
     return inputs, report
 
@@ -763,25 +1112,29 @@ def _same_ticker_name_change(group: str, record: dict) -> bool:
 def _corporate_actions(
     chunk: dict | None, session_days: dict, defects: list[str]
 ) -> tuple[dict, dict]:
-    """Cash distributions for the benchmark/ex-div diagnostics; classify every other SPY action.
+    """Classify every Alpaca SPY action; cash dividends feed only the non-gating cross-check.
 
-    Returns (distributions by ex-date, counts). Actions are placed by their type's documented
-    ex_date/effective_date, never process_date, so one processed outside the window still counts
-    if it took effect inside it. An in-window SPY split is the r8 automatic stop. A same-ticker
-    SPY name change is counted metadata. Any other in-window, or unplaceable, non-cash action is
-    UNRESOLVED because the valuator does not implement it, not because it is evidence of a split.
-    The quarter-presence rule uses cash dividends only; it is a coverage sanity check and does
-    not certify that no action is missing from the response.
+    Returns ({"dividends": Alpaca dividend by ex-date, "issues": record problems}, counts).
+    Actions are placed by their type's documented ex_date/effective_date, never process_date, so
+    one processed outside the window still counts if it took effect inside it. An in-window SPY
+    split is the r8 automatic stop (kept by r9 R3). A same-ticker SPY name change is counted
+    metadata. Any other in-window, or unplaceable, non-cash action is UNRESOLVED because the
+    valuator does not implement it, not because it is evidence of a split. Schema and symbol
+    faults stay defects. Value problems in Alpaca cash dividends or capital gains (bad rate,
+    currency, ex-date, duplicate) never gate: r9 takes distributions from the issuer schedule,
+    so they are recorded in ``issues`` for the cross-check.
     """
     counts = {
-        "cash_dividends_in_window": 0,
-        "capital_gains_distributions_in_window": 0,
+        "alpaca_cash_dividends_in_window": 0,
+        "alpaca_capital_gains_distributions_in_window": 0,
         "same_ticker_name_changes_non_gating": 0,
-        "cash_payouts_currency_assumed_usd": 0,
+        "alpaca_cash_payouts_currency_assumed_usd": 0,
     }
+    alpaca: dict[str, Any] = {"dividends": {}, "issues": []}
     if chunk is None:
-        return {}, counts
-    payouts: dict[str, dict[str, float]] = {group: {} for group in CASH_PAYOUT_FIELDS}
+        return alpaca, counts
+    issues: list[str] = alpaca["issues"]
+    placed: dict[str, dict[str, float]] = {group: {} for group in CASH_PAYOUT_FIELDS}
     for index, row in enumerate(chunk["records"]):
         group = row.get("group") if isinstance(row, dict) else None
         try:
@@ -802,11 +1155,10 @@ def _corporate_actions(
         day = record.get(field) if field else None
         prefix = PAYOUT_PREFIX.get(group)
         if day is None:
-            defects.append(
-                f"{prefix}_missing_ex_date:{index}"
-                if prefix
-                else f"corporate_action_unsupported_undated:{group}:{index}"
-            )
+            if prefix:
+                issues.append(f"{prefix}_missing_ex_date:{index}")
+            else:
+                defects.append(f"corporate_action_unsupported_undated:{group}:{index}")
             continue
         if not ANCHOR <= day <= LAST:
             continue
@@ -818,44 +1170,36 @@ def _corporate_actions(
             continue
         legs = [record[f] for f in CASH_PAYOUT_FIELDS[group] if f in record]
         if not all(leg == 0 or _price(leg) for leg in legs) or not _price(sum(legs)):
-            defects.append(f"{prefix}_invalid_rate:{day}")
+            issues.append(f"{prefix}_invalid_rate:{day}")
         elif record.get("currency", "") not in ("", "USD"):
-            defects.append(f"{prefix}_currency_not_usd:{day}")
+            issues.append(f"{prefix}_currency_not_usd:{day}")
         elif day not in session_days:
-            defects.append(f"{prefix}_ex_date_not_session:{day}")
-        elif day in payouts[group]:
-            defects.append(f"{prefix}_duplicate_ex_date:{day}")
+            issues.append(f"{prefix}_ex_date_not_session:{day}")
+        elif day in placed[group]:
+            issues.append(f"{prefix}_duplicate_ex_date:{day}")
         elif day != ANCHOR:  # bought at the anchor close, after the ex-date repricing
-            payouts[group][day] = float(sum(legs))
-            counts[f"{group}_in_window"] += 1
-            counts["cash_payouts_currency_assumed_usd"] += record.get("currency", "") == ""
-    first, last = date.fromisoformat(ANCHOR), date.fromisoformat(LAST)
-    covered = {
-        (date.fromisoformat(day).year, (date.fromisoformat(day).month - 1) // 3)
-        for day in payouts["cash_dividends"]
-    }
-    year, quarter = first.year, (first.month - 1) // 3
-    while (year, quarter) <= (last.year, (last.month - 1) // 3):
-        if (year, quarter) not in covered:
-            defects.append(f"dividend_coverage_missing:{year}Q{quarter + 1}")
-        year, quarter = (year + 1, 0) if quarter == 3 else (year, quarter + 1)
-    distributions: dict[str, float] = defaultdict(float)
-    for group_payouts in payouts.values():
-        for day, amount in group_payouts.items():
-            distributions[day] += amount
-    return dict(sorted(distributions.items())), counts
+            placed[group][day] = float(sum(legs))
+            counts[f"alpaca_{group}_in_window"] += 1
+            counts["alpaca_cash_payouts_currency_assumed_usd"] += record.get("currency", "") == ""
+    alpaca["dividends"] = dict(sorted(placed["cash_dividends"].items()))
+    return alpaca, counts
 
 
 def _identities(dataset: dict) -> dict:
-    """Fresh protocol, code, vendor-review, runtime and data identities (review None if refused)."""
-    try:
-        review = vendor_review_sha256()
-    except ValueError:
-        review = None  # extract() already records the refusal as a defect
+    """Fresh protocol, code, vendor-review, issuer, runtime and data identities."""
+    identities: dict[str, str | None] = {}
+    for name, compute in (
+        ("vendor_review_sha256", vendor_review_sha256),
+        ("issuer_workbook_sha256", issuer_workbook_sha256),
+    ):
+        try:
+            identities[name] = compute()
+        except ValueError:
+            identities[name] = None  # extract() already records the refusal as a defect
     return {
         "protocol_sha256": PROTOCOL_SHA256,
         "code_sha256": code_sha256(),
-        "vendor_review_sha256": review,
+        **identities,
         "runtime": runtime_versions(),
         **dataset["identities"],
     }
@@ -1020,7 +1364,11 @@ def _attribution(side: np.ndarray, r_last: np.ndarray) -> dict:
 
 
 def _close_comparison(closes: dict, daily: dict, half_days: list[str]) -> dict:
-    diff = np.array([(closes[d] - daily[d]) / daily[d] * 1e4 for d in sorted(closes)])
+    """Compare close-bar and daily closes; the R1 sessions are left out of this diagnostic."""
+    excluded = {day for day, _ in EXCLUDED_SESSIONS}
+    diff = np.array(
+        [(closes[d] - daily[d]) / daily[d] * 1e4 for d in sorted(closes) if d not in excluded]
+    )
     magnitude = np.abs(diff)
     return {
         "sessions": len(diff),
@@ -1169,6 +1517,7 @@ def score_inputs(inputs: dict) -> dict:
         },
         "diagnostics": diagnostics,
         "diagnostic_errors": errors,
+        "exclusions": inputs.get("exclusions"),
         "assumptions": ASSUMPTIONS,
     }
 
@@ -1181,11 +1530,19 @@ ASSUMPTIONS = [
     "24% of each calendar year's positive net realized P&L debited after its last session; "
     "no loss benefit or carryforward; terminal partial year taxed at the end.",
     "CAGR = (W_end/W_0)^(1/y) - 1, y = days(anchor -> last)/365.25.",
-    "SPY benchmark: same close-bar prices from the anchor, cash distributions (dividends plus "
-    "capital-gains legs provided, summed per ex-date) reinvested at the ex-date session close, "
-    "no tax; the ex-dividend-flat diagnostic zeroes every cash-distribution ex-date.",
-    "A cash payout with a missing or empty currency is assumed USD (vendor: USD, n/a or "
-    "unknown); the count is in the validation counts. Other currencies are UNRESOLVED.",
+    "SPY benchmark: same close-bar prices from the anchor, cash distributions from the issuer "
+    "schedule (dividend plus any capital-gain legs present; a blank leg is no data, not zero) "
+    "reinvested at the ex-date session close, no tax; the ex-dividend-flat diagnostic zeroes "
+    "every issuer distribution ex-date. The rule's own returns use raw prices.",
+    "Issuer amounts are assumed USD per share. Alpaca cash dividends are a non-gating "
+    "cross-check at 6 decimal places (recorded in the validation artifact).",
+    "R1: 2019-08-12 and 2019-08-13 are removed from the scored series, not scored as flat days, "
+    "so every statistic below uses the validated sessions only; the CAGR year count, window and "
+    "tax-ledger rules are unchanged. The close-convention comparison also leaves out both "
+    "sessions. The SPY buy-and-hold comparison is not interrupted: it holds through both "
+    "sessions and earns their price moves, because a continuous hold cannot drop a day "
+    "without inventing a cash gap (r9 keeps the r8 comparison unchanged). Only the missing "
+    "2019-08-12 valuation point is absent from its path; the comparison is non-gating.",
     "Losing streak counts consecutive losing traded sessions; flat sessions are skipped.",
     "Worst month and drawdown use the pre-tax base-cost sleeve.",
     "Hit rate is the share of traded sessions with a positive net return.",
@@ -1193,6 +1550,7 @@ ASSUMPTIONS = [
     "(same-ticker SPY name changes are counted metadata); that response is not certified "
     "complete. The vendor-adjustment review is a bounded documentation review bound by hash, "
     "not proof that no undocumented change exists (see ancillary_coverage).",
+    EXCLUSION_DISCLOSURE,
 ]
 
 
@@ -1222,6 +1580,8 @@ VALIDATION_KEYS = (
     "counts",
     "diagnostics",
     "offline_calendar",
+    "exclusions",
+    "alpaca_dividend_cross_check",
     "ancillary_coverage",
     "identities",
 )
@@ -1245,6 +1605,7 @@ def run_score(directory: Path, validation_path: Path, output: Path) -> dict:
         raise ValueError("validation_not_pass")
     protocol_sha256()
     vendor_review_sha256()  # surfaces the specific refusal, e.g. a documented adjustment change
+    issuer_workbook_sha256()
     dataset = load_dataset(directory)
     inputs, report = extract(dataset)
     fresh = {"schema": SCHEMAS["validation"], "version": 1, **report}
@@ -1306,11 +1667,16 @@ def render_report(result: dict) -> str:
     a1, a2, diag = result["a1"], result["a2"], result["diagnostics"]
     stress = diag.get("stress", {})
     spy = diag.get("spy_displacement", {})
+    exclusions = result.get("exclusions") or {}
     lines = [
-        "# Intraday r8 SPY proxy screen: automatic score",
+        "# Intraday r9 SPY proxy screen: automatic score",
         "",
         f"**Verdict: {result['verdict']}** — {result['label']}.",
         "",
+        f"- Scored sessions: {a1['sessions']}. Exclusion (R1, closed list): "
+        f"{', '.join(exclusions.get('sessions', [])) or 'none recorded'}, removed from the scored "
+        "series (not counted as flat days).",
+        f"- {EXCLUSION_DISCLOSURE}",
         f"- A1 NW-5 t (unrounded, threshold {a1['threshold']}): {a1['nw5_t']!r} -> {a1['status']}",
         f"- A2 after-tax-policy CAGR (threshold {a2['threshold']}): {a2['after_tax_cagr']!r} "
         f"-> {a2['status']}",
