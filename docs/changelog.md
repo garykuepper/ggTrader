@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 5: membership CLI tidy-up, D7a)
+
+- `src/ggTrader/cli/cmd_membership.py`: the six repeated `connect()` / `try` / `finally: conn.close()`
+  blocks (`apply-ddl`, `verify`, `diff`, `reinstate`, `load-sp500` from a file and from events) became one
+  private context manager `_connection(read_only=False)`, and the three identical `REFUSED: <error>` exits
+  became one helper `_refused(exc)`. Behavior-preserving: every printed byte, the stdout/stderr split, every
+  exit code (0/1/2, read by the systemd unit) and the connection mode (`verify` and `diff` still open
+  read-only) are unchanged; `connect` is still looked up in the module at call time, so the existing tests
+  that patch `cmd_membership.connect` and the other module names work unedited.
+- New `tests/data/test_membership_cli_pin.py` (written first and run green on the unchanged code): a table
+  test of every `ggt db membership` subcommand and `load-sp500` (exit code, first stderr line, first stdout
+  line, connection mode, connection closed) and the `apply-ddl` CLI test that did not exist.
+- `ruff.toml`: the `PLR0912` survivor entry for `cmd_membership.py` is gone; `run_membership` fell from 14
+  to 12 branches, so the rule no longer fires. No golden or pin changed.
+
 ## 2026-11-20 (refactor phase 6: seven more ruff rules for src/ggTrader)
 
 - `ruff.toml` now enforces `DTZ`, `G004`, `ARG001`, `ARG002`, `ANN001`, `ANN201` and `T201` for

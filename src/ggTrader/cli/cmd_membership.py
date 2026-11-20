@@ -6,8 +6,12 @@ import argparse
 import gzip
 import json
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
+
+from psycopg2.extensions import connection as PgConnection
 
 from ggTrader.data.membership import (
     DbMembershipSource,
@@ -278,6 +282,26 @@ def _parent_pin(text: str | None) -> int | str | None:
     return int(text)
 
 
+@contextmanager
+def _connection(*, read_only: bool = False) -> Iterator[PgConnection]:
+    """Open the universe database for one command and always close it.
+
+    ``connect`` is looked up here at call time so a test can replace ``cmd_membership.connect``;
+    a read-write connection is opened with no argument, a read-only one with ``read_only=True``.
+    """
+    conn = connect(read_only=True) if read_only else connect()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def _refused(exc: BaseException) -> int:
+    """Print a refused load on stderr and return the refusal exit code."""
+    print(f"REFUSED: {exc}", file=sys.stderr)
+    return EXIT_REFUSED
+
+
 def print_load_report(report: LoadReport) -> None:
     """Print the human summary of a dry run or a committed load."""
     verb = "COMMITTED" if report.committed else "DRY RUN (nothing written)"
@@ -341,32 +365,29 @@ def run_load_from_events(args: argparse.Namespace) -> int:
     if args.force:
         print("REFUSED: --force does not apply to an events file", file=sys.stderr)
         return EXIT_REFUSED
-    conn = connect()
     try:
-        prepared = prepare_events_load(
-            conn,
-            events_path=args.from_events,
-            evidence_dir=args.evidence_dir,
-            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
-            retrieved_at=args.retrieved_at,
-            commit=args.commit,
-            loader_git_sha=git_sha(),
-            note=args.note,
-            source_url=args.source_url,
-            expect_sha256=args.expect_sha256,
-            allow_count_change=args.allow_count_change,
-        )
-        _print_events_plan(prepared)
-        if prepared.problems:
-            for problem in prepared.problems:
-                print(f"REFUSED: {problem}", file=sys.stderr)
-            return EXIT_REFUSED
-        report = load_vintage(conn, prepared.request)
+        with _connection() as conn:
+            prepared = prepare_events_load(
+                conn,
+                events_path=args.from_events,
+                evidence_dir=args.evidence_dir,
+                parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+                retrieved_at=args.retrieved_at,
+                commit=args.commit,
+                loader_git_sha=git_sha(),
+                note=args.note,
+                source_url=args.source_url,
+                expect_sha256=args.expect_sha256,
+                allow_count_change=args.allow_count_change,
+            )
+            _print_events_plan(prepared)
+            if prepared.problems:
+                for problem in prepared.problems:
+                    print(f"REFUSED: {problem}", file=sys.stderr)
+                return EXIT_REFUSED
+            report = load_vintage(conn, prepared.request)
     except (LoadRefused, HistoryValidationError, EventsFileError) as exc:
-        print(f"REFUSED: {exc}", file=sys.stderr)
-        return EXIT_REFUSED
-    finally:
-        conn.close()
+        return _refused(exc)
     print_load_report(report)
     if not report.committed:
         print("  (dry run: add --commit to write it)")
@@ -398,14 +419,11 @@ def run_load_sp500(args: argparse.Namespace) -> int:
         commit=args.commit,
         loader_git_sha=git_sha(),
     )
-    conn = connect()
     try:
-        report = load_vintage(conn, request)
+        with _connection() as conn:
+            report = load_vintage(conn, request)
     except (LoadRefused, HistoryValidationError) as exc:
-        print(f"REFUSED: {exc}", file=sys.stderr)
-        return EXIT_REFUSED
-    finally:
-        conn.close()
+        return _refused(exc)
     print_load_report(report)
     if args.report_json is not None:
         report.save(args.report_json)
@@ -416,11 +434,8 @@ def run_load_sp500(args: argparse.Namespace) -> int:
 def run_membership(args: argparse.Namespace) -> int:
     """Run ``ggt db membership <apply-ddl|verify>``; returns the process exit code."""
     if args.membership_command == "apply-ddl":
-        conn = connect()
-        try:
+        with _connection() as conn:
             apply_ddl(conn)
-        finally:
-            conn.close()
         print("schema universe is up to date")
         return 0
     if args.membership_command == "check-upstream":
@@ -446,11 +461,8 @@ def run_membership(args: argparse.Namespace) -> int:
         except MembershipError as exc:
             print(f"fixture {args.against_fixture!r} cannot be used: {exc}", file=sys.stderr)
             return 1
-    conn = connect(read_only=True)
-    try:
+    with _connection(read_only=True) as conn:
         report = verify_vintage(conn, args.load_id, path)
-    finally:
-        conn.close()
     for check in report.checks:
         print(f"  [{'ok' if check.ok else 'FAIL'}] {check.name}: {check.detail}")
     print(f"verify load {report.load_id}: {'OK' if report.ok else 'FAILED'}")
@@ -727,21 +739,18 @@ def run_export(args: argparse.Namespace) -> int:
 
 def run_reinstate(args: argparse.Namespace) -> int:
     """Run ``ggt db membership reinstate --load-id N --reason ...``; dry run unless ``--commit``."""
-    conn = connect()
     try:
-        report = reinstate_vintage(
-            conn,
-            load_id=args.load_id,
-            reason=args.reason,
-            commit=args.commit,
-            parent=_parent_pin(args.parent),  # type: ignore[arg-type]
-            loader_git_sha=git_sha(),
-        )
+        with _connection() as conn:
+            report = reinstate_vintage(
+                conn,
+                load_id=args.load_id,
+                reason=args.reason,
+                commit=args.commit,
+                parent=_parent_pin(args.parent),  # type: ignore[arg-type]
+                loader_git_sha=git_sha(),
+            )
     except (LoadRefused, HistoryValidationError) as exc:
-        print(f"REFUSED: {exc}", file=sys.stderr)
-        return EXIT_REFUSED
-    finally:
-        conn.close()
+        return _refused(exc)
     print(f"reinstating load {args.load_id} as a new vintage")
     print_load_report(report)
     if not report.committed:
@@ -754,17 +763,13 @@ def run_reinstate(args: argparse.Namespace) -> int:
 
 def run_diff(args: argparse.Namespace) -> int:
     """Run ``ggt db membership diff --from A --to B``; read-only."""
-    conn = connect(read_only=True)
-    try:
-        with conn.cursor() as cur:
-            try:
-                older = read_vintage(cur, args.from_id)
-                newer = read_vintage(cur, args.to_id)
-            except LookupError as exc:
-                print(f"{exc}", file=sys.stderr)
-                return 1
-    finally:
-        conn.close()
+    with _connection(read_only=True) as conn, conn.cursor() as cur:
+        try:
+            older = read_vintage(cur, args.from_id)
+            newer = read_vintage(cur, args.to_id)
+        except LookupError as exc:
+            print(f"{exc}", file=sys.stderr)
+            return 1
     report = diff_vintages(older, newer)
     print(f"load {report['from_load_id']} -> {report['to_load_id']}: ", end="")
     print("same content" if report["same_content"] else "content differs")
