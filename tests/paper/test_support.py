@@ -42,6 +42,12 @@ def test_seed_pending_preserves_stale_fields_without_recording_setup():
     seed_pending_orders(ledger, [row])
     assert ledger.calls() == []
     assert InMemoryLedger.get_pending_orders(ledger)[0] == {**row, "reason": None}
+    seed_pending_orders(ledger, [{**row, "symbol": "B"}])
+    assert InMemoryLedger.get_pending_orders(ledger)[0]["symbol"] == "A"
+    with pytest.raises(ValueError, match="missing or unknown"):
+        seed_pending_orders(ledger, [{**row, "flaged_stale": True}])
+    with pytest.raises(ValueError, match="missing or unknown"):
+        seed_pending_orders(ledger, [{"order_id": "missing-fields"}])
 
 
 def test_guard_reports_swallowed_calls_from_both_namespaces():

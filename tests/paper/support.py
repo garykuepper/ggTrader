@@ -61,11 +61,15 @@ def seed_peak(ledger: SpyLedger, peak: float) -> None:
     InMemoryLedger.save_peak_value(ledger, peak)
 
 
-def seed_pending_orders(ledger: SpyLedger, orders: Iterable[Mapping[str, Any]]) -> None:
+def seed_pending_orders(ledger: InMemoryLedger, orders: Iterable[Mapping[str, Any]]) -> None:
     """Seed complete legacy pending rows without recording setup."""
+    required = {"order_id", "run_date", "side", "symbol", "notional"}
+    allowed = required | {"created_at", "flagged_stale", "reason"}
     for order in orders:
+        if not required <= order.keys() or not order.keys() <= allowed:
+            raise ValueError("pending order has missing or unknown fields")
         row = {"created_at": None, "flagged_stale": False, "reason": None, **deepcopy(order)}
-        ledger._pending[row["order_id"]] = row
+        ledger._pending.setdefault(row["order_id"], row)
 
 
 class UnstubbedPersistCall(AssertionError):
