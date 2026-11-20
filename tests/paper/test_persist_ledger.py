@@ -172,7 +172,7 @@ def test_engine_patch_by_dotted_string_reaches_the_ledger() -> None:
     engine = RecordingEngine([None])
     with patch(PERSIST_ENGINE, return_value=engine):
         persist._pg().clear_pending_order("ord-1")
-    assert [e["op"] for e in engine.events] == ["connect", "execute", "commit", "close"]
+    assert [e["op"] for e in engine.events] == ["begin", "execute", "commit"]
 
 
 # ------------------------------------------------------- the statement-for-statement proof
