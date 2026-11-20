@@ -1,5 +1,59 @@
 # Changelog
 
+## 2026-11-20 (refactor phase 5: the paper trader run split into step objects)
+
+- Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls
+  nine step objects in the old order: `PreflightGate`, `PortfolioView`, `RiskAssessor`, the pure
+  planners in `paper/planning.py`, `OrderFlow`, `OrderExecutor`, `DryRunExecutor`, `CorporateActions`
+  and `RunReporter`. `trader.py` went from 1,600 to 357 lines. **No order, SQL statement, Telegram
+  line or log record changed**, and no clock read moved, by design; `ggt paper` output is unchanged.
+  `persist.py`, `risk.py`, `cash_sweep.py`, `catastrophe_stop.py`, `gates.py`, `notifier.py`,
+  `alpaca_broker.py`, `signal_runner.py`, `overlay.py` and `cli/main.py` were not touched.
+- New modules: `preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`, `order_flow.py`,
+  `execution.py`, `corporate_actions.py`, `reporter.py`, `seams.py` (`RunHooks`, `TraderSeams`) and
+  `run_helpers.py`; `models.py` and `constants.py` gained records and shared constants. The
+  planners are explicit iterator classes rather than generators, so exception types are unchanged.
+- Deviation from the design: `PreflightGate.check()` returns `Halted(reason, result)` instead of
+  raising `RunHalted`, and `RunContext` holds `today_et`, the settings and the pending symbols but not
+  `now_pt` (the late-run gate still reads it after signal generation).
+- The string-patch adapter `ModuleLedger` is **retired** (owner-approved): `trader.py` now defaults to
+  `PgPaperLedger`, binds none of the 26 persist names, and the transcript harness, the digest runner,
+  the rule and seam harnesses and the Phase 4 pins inject a ledger instead of patching persist names.
+  The eight private seams (`_submit_order`, `_poll_orders`, `_reconcile_order_intents`,
+  `_reconcile_pending_orders`, `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections`,
+  `_accrue_dividends`) stay as forwards; retiring them is a separate owner decision.
+- Nets added before the code moved: named tests for the seven order-flow rules and for the late
+  failures and exception types they miss (`tests/paper/test_run_rules.py`); a seeded generator with
+  recorded per-seed digests of the transcript plus log records (100 seeds in the fast tier, 600 in the
+  slow tier; `tests/paper/golden/run_equivalence_digests.json`); a seam-contract test (legacy patches
+  still intercept, new modules import no clock, no `trader`, no database or broker client, and
+  `InMemoryLedger` stays out of production code); and a size ratchet on `run` and `_run`. The 103
+  transcript goldens and the SQL golden are the earlier pins and were not regenerated. A frozen copy of
+  the old `_run` and a differential test against it existed during the phase and were deleted once the
+  recorded digests could stand alone.
+- Tests migrated: `tests/paper/test_trader.py` no longer patches persist names (239 string patches
+  at the start of the phase, none now; all 277 test node ids kept) and uses an injected
+  `InMemoryLedger` or `SpyLedger`. An autouse guard replaces the default `PgPaperLedger` factory and
+  fails any unstubbed persistence call, even if the trader swallows the error (`AGENTS.md` carries the
+  guidance).
+- Preserved, not fixed (each pinned by a transcript or a named test): the late-run return sits inside
+  `if not dry_run`, so a dry run past 12:55 PT warns and continues; a malformed
+  `SWEEP_CASH_RESERVE_PCT` ends the run after the peak write and the stop orders; the pending-order
+  alert can say "pending" for an order reconciliation has since filled; an untradable holding is
+  announced as "broker tradable=false"; `_submit_order` called directly on a read-only trader with a
+  hand-injected lock can submit without a durable intent; the same symbol in two sleeves is bought
+  twice; the hard stops send `HALTED` outside any `try`; an invalid exit blocks strategy buys and the
+  sweep buy but not a sweep sell; an exit submitted but not fully filled clears strategy buys only; a
+  sell still working at the poll deadline ends the run in reconciliation; a sell's `market_value` is
+  read after the order went out; a `StopIteration` from `unrealized_pct` keeps its type in two
+  places and becomes `RuntimeError` in the third; and a late failure leaves earlier orders live.
+- Lint: `C901`, `PLR0912`, `PLR0915` and `PLR0913` (complexity 15, 8 arguments, ruff's default branch
+  and statement limits) are enforced for `src/ggTrader/paper` only; the 18 findings at 10 definitions
+  in 8 files are per-file ignores in `ruff.toml`, each with its reason. Nothing outside `paper/` is
+  switched on.
+- Phase 5 verification: recorded in Task 78's commit `docs: record phase 5 verification`. The trader
+  stays stopped and cron stays off.
+
 ## 2026-11-19 (refactor phase 4: paper trader interfaces and records, price-loader chain)
 
 - Gave the paper trader typed records and swappable interfaces, and gave the price-loader fallback
@@ -11,8 +65,8 @@
   `ReadOnlyLedger` and `ModuleLedger`) and `paper/config.py` (`TraderConfig`). The trader now reaches
   the database only through `self._ledger`; `PgPaperLedger` in `paper/persist.py` holds the SQL
   unchanged and the module functions remain as one-line delegations. `ModuleLedger`, the string-patch
-  adapter that keeps the roughly 440 dotted-string test patches working, is temporary and goes in
-  Phase 5.
+  adapter that keeps the roughly 440 dotted-string test patches working, was temporary and was
+  retired in Phase 5 (see the 2026-11-20 entry).
 - Moved the price-loader fallback (DB cache, then yfinance, then Tiingo) into
   `data/live/fetch_chain.py` as `OhlcvFetchChain` and `fetch_stock_ohlcv`;
   `lab.data.fetch_stock_ohlcv` is now a wrapper with the same signature and `paper/` imports its

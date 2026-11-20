@@ -84,11 +84,21 @@ src/ggTrader/
 │   ├── gates.py                 # Input/output sanity gates and the 12:55 PT late-run cutoff
 │   ├── untradable.py            # UNTRADABLE_SYMBOLS, broker status and the "asset is not active" 422
 │   ├── overlay.py               # Blend sleeve curves through engine.run_signals
-│   ├── trader.py                # Coordinates signals, risk checks, and submits orders (reaches the database only through a PaperLedger)
+│   ├── trader.py                # PaperTrader: a short orchestrator (run, _run) calling the step objects below in order; the private seams stay as forwards
+│   ├── preflight.py             # PreflightGate, PreflightResult, Halted: market, signal, late-run and freshness gates
+│   ├── portfolio.py             # PortfolioView.load: account, positions, splits, dividends, untradable set, sweep position
+│   ├── risk_assessor.py         # RiskAssessor: peak seed, drawdown and daily-loss halts -> RiskVerdict
+│   ├── planning.py              # Pure planners: strategy_signals, stops, exit validation, exits, sweep sell, buys, sweep buy
+│   ├── order_flow.py            # OrderFlow, FlowOutcome: the staged plan-then-execute glue
+│   ├── execution.py             # Executor protocol, OrderExecutor, DryRunExecutor (submit, poll, reconcile)
+│   ├── corporate_actions.py     # CorporateActions (split corrections, dividend accruals) and missed_exits
+│   ├── reporter.py              # RunReporter: alerts, corrected value, profit figures, daily summary, snapshot
+│   ├── seams.py                 # RunHooks, TraderSeams: module collaborators and private trader methods, resolved at call time
+│   ├── run_helpers.py           # as_date, account_read_halt (a home the step modules share without importing trader)
 │   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
 │   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
 │   ├── ports.py                 # Broker and Notifier protocols (AlpacaBroker, TelegramNotifier and DryRunNotifier satisfy them)
-│   ├── ledger.py                # PaperLedger protocol; ModuleLedger, ReadOnlyLedger, InMemoryLedger
+│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger (the ModuleLedger adapter is retired)
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
 │   └── persist.py               # Saves daily paper trading logs and portfolio balances (PgPaperLedger holds the SQL; the module functions delegate to it)
@@ -385,26 +395,27 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
 
 Phase 4 gave the paper trader typed records and swappable interfaces and gave the price-loader
 fallback one tested home. It changed no order, no SQL statement, no Telegram line and no price row,
-with one intended exception (the per-run settings snapshot, below). `PaperTrader._run` is **not**
-split here; that is Phase 5, which builds on these pieces.
+with one intended exception (the per-run settings snapshot, below). `PaperTrader._run` was **not**
+split here; Phase 5 did that, building on these pieces (section 4b).
 
 | Piece | Where | Status |
 |---|---|---|
 | Eight records: `Account`, `Position`, `OrderStatus`, `MarketClock`, `SleeveSignals`, `SignalBundle` (`TypedDict`s, so the JSON-shaped mappings are unchanged) and `SubmittedOrder`, `RunResult` (frozen dataclasses the trader builds) | `paper/models.py` | permanent |
 | `Broker` and `Notifier` protocols (the 11 broker methods and 3 notifier methods the trader calls) | `paper/ports.py` | permanent |
 | `PaperLedger` protocol, one method per public function of `paper/persist.py`, plus `InMemoryLedger` (a test double: no database) and `ReadOnlyLedger` (skips every write, records the method name in `skipped_writes`) | `paper/ledger.py` | permanent |
-| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because tests and the transcript harness patch them by name | `paper/persist.py` | permanent class; the delegations stay while the string-patch tests do |
-| `ModuleLedger`, the **string-patch adapter**: resolves the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` keeps working | `paper/ledger.py` | **temporary**: deleted in Phase 5 once `tests/paper/test_trader.py` (about 440 string patches) moves to `InMemoryLedger` |
+| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py` | `paper/persist.py` | permanent |
+| `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **retired in Phase 5** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
 | `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
 | `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live` | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
 | `CachedYFinanceLoader.persist(df, interval)`: public writer that delegates to `_cache_to_db`, so callers stop reaching for the private method | `data/live/cached_yfinance_loader.py` | permanent |
 
 How the trader uses them. `PaperTrader.__init__(broker, notifier, risk_cfg=None, dry_run=True,
 read_only=None, membership=None, *, ledger=None)` takes a `Broker`, a `Notifier` and an optional
-`PaperLedger`. With no ledger it builds a `ModuleLedger`; a read-only run wraps whichever ledger it
-has in a `ReadOnlyLedger`. `trader.py` reaches the database only through `self._ledger`: it has no
-`_write` helper, makes no call to an imported persist function and reads no environment variable
-(it still binds the 26 persist names at module level, which `ModuleLedger` and the harness use).
+`PaperLedger`. With no ledger it builds a `PgPaperLedger` (stateless: it opens no connection until
+a call); a read-only run wraps whichever ledger it has in a `ReadOnlyLedger`. `trader.py` reaches the
+database only through `self._ledger`: it has no `_write` helper, makes no call to an imported
+persist function, binds none of the 26 persist names (Phase 5 removed those imports) and reads no
+environment variable.
 Every pending order is a `SubmittedOrder`, read by attribute rather than by tuple index, and every
 result is built as a `RunResult` and returned as `.as_dict()`, so `run()` still returns a `dict`
 with the same key order. A test can build a trader on `InMemoryLedger` and needs no persist patch;
@@ -435,10 +446,98 @@ tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py
 included the open connection under the key `conn`; SQLAlchemy ignored it. The explicit bind
 dictionary drops that stray key. The SQL text and the other seven keys are unchanged.
 
-**Verification status.** Full core and study tests, the baseline outcome comparison, fixed hashes and
-research pin verification passed. P5 and P7 matched the real-tape baseline, including all 13 equity
-CSVs. The disposable PostgreSQL test was skipped because its test DSN was not configured. The trader
-stays stopped and cron is off; code reaches the container only through an image rebuild.
+Phase 5 verification: recorded in Task 78's commit `docs: record phase 5 verification`.
+
+### 4b. The run as step objects (refactor phase 5)
+
+Phase 5 split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` is 22) that
+calls one step object at a time, in the order the old code ran. `trader.py` went from 1,600 to 357
+lines. The design aim was that no order, SQL statement, Telegram line, log record, clock read position
+or price row changes; this section records what was built and what was kept, not what was verified.
+The order of the steps is behavior (the sweep sell is sized after the stop orders, buys wait for the
+sells to settle), so the glue between planning and execution is staged instead of planning
+everything up front.
+
+**The nine step objects** (planning counts as one):
+
+| Object | Module | Does |
+|---|---|---|
+| `PreflightGate` | `preflight.py` | market-open gate, signal generation and its alerts, the late-run gate (12:55 PT), tape refresh, the freshness gate; returns `PreflightResult` or `Halted` |
+| `PortfolioView.load` | `portfolio.py` | account and position reads, split corrections, dividend accruals, untradable resolution, the missed exits, the sweep position; the raw positions and the split-corrected copy are kept apart |
+| `RiskAssessor` | `risk_assessor.py` | seeds the peak, applies the drawdown and daily-loss halts; returns `RiskVerdict(hard_stop, buy_halts)` and sends the risk notices |
+| Planning | `planning.py` | pure planners: `strategy_signals`, `assess_stops`/`plan_stops`, `validate_exits`, `plan_exits`, `plan_sweep_sell`, `plan_buys`, `plan_sweep_buy`; they decide, they never touch the broker or the ledger; the lazy ones are explicit iterator classes advanced one decision at a time (a generator would change an exception type) |
+| `OrderFlow` | `order_flow.py` | three stages: (1) catastrophe stops, exit validation, buy limits; (2) sweep sell, sells, settlement of the sells; (3) buys, settlement, sweep buy; returns `FlowOutcome` |
+| `OrderExecutor` | `execution.py` | submit, poll and reconcile orders through the broker, the ledger and the run lock |
+| `DryRunExecutor` | `execution.py` | the same interface with no submission (it replaces the `if dry_run` branches the old methods carried); chosen at run time from `self._dry_run` |
+| `CorporateActions` | `corporate_actions.py` | split corrections and dividend accruals, moved as they were; `missed_exits` |
+| `RunReporter` | `reporter.py` | prior snapshot read, alerts, corrected value, profit figures, daily summary and the snapshot write; builds the `RunResult` |
+
+**Data flow of one run.**
+
+```
+run()   TraderConfig.from_env() once; live runs hold ledger.paper_run_lock()
+  _run  init schema -> reconcile order intents (live only) -> reconcile pending orders -> pending symbols
+    PreflightGate.check()      -> Halted(reason, result): return its result as the run's dict
+                                  or PreflightResult(bundle, signals, today_et)
+    RunContext(today_et, config, pending symbols)
+    PortfolioView.load(...)    -> account, positions, corrections, untradable, sweep, dividends
+    RiskAssessor.assess()      -> RiskVerdict; a hard stop returns RunResult([], [], [reason])
+    RunReporter.previous_value -> the last snapshot's value (read before any order)
+    OrderFlow.run()            -> stage 1 -> stage 2 -> stage 3 -> FlowOutcome(book, buy_halts, invalid exits)
+    RunReporter.finish()       -> RunResult; run() returns RunResult.as_dict()
+```
+
+**`Halted`.** The design said the gate raises `RunHalted(reason, result)`. The gate instead **returns**
+`Halted(reason, result)`: a raised exception could be swallowed by a broad `except Exception` between
+raise and catch, a returned value cannot. The reasons and the results are the design's. Only the
+preflight gate returns `Halted`; the later hard stops return their `RunResult` directly.
+
+**Seams that stay, and why.** Tests assign and patch private pieces after construction, so each
+stays reachable by its old name and is looked up on the instance at call time:
+- Eight private `PaperTrader` methods stay as one- or two-line forwards to the moved bodies:
+  `_submit_order`, `_poll_orders`, `_reconcile_order_intents`, `_reconcile_pending_orders`,
+  `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections`, `_accrue_dividends`. The step
+  objects reach them through `TraderSeams` (`seams.py`), so `trader._submit_order = MagicMock(...)`
+  or `patch.object(PaperTrader, "_poll_orders", ...)` still intercepts. Retiring them is a separate,
+  owner-approved slice.
+- Module-level collaborators (`generate_core_signals`, `live_membership_source`,
+  `refresh_benchmark_tape`, the date and clock reads, `uuid4`, `time`, `find_split_applied_symbols`)
+  are named in `trader.py` only and reach the step objects as `RunHooks` lambdas that read the module
+  global when called, so the existing patches still work. New step modules import none of them.
+- `_risk`, `_dry_run` and `_paper_lock` are read when the run starts (the executor is chosen then),
+  never at construction.
+- The clock reads: `today_et` is read once, at the freshness gate where it was read before; `now_pt` is
+  read at the late-run gate, after signal generation. `RunContext` therefore holds `today_et`, the
+  settings and the pending symbols, not `now_pt` (a deviation from the design's wording).
+- The string-patch adapter is **not** kept: `ModuleLedger` is retired (4a).
+
+**The seven rules** (design 5.1) each have a named test in `tests/paper/test_run_rules.py`:
+
+| Rule | Where it holds | Test |
+|---|---|---|
+| A catastrophe-stopped symbol leaves the strategy positions at once and is neither sold twice nor re-bought | `OrderFlow` stage 1 (`FlowState.stopped`) | `test_rule1_...` |
+| Slot arithmetic counts the regular sells, not all sells | `FlowState.regular_sell_count`, owned by the flow | `test_rule2_...` |
+| A sell that does not fully fill blocks all buys | `OrderFlow` stage 2 settlement | `test_rule3_...` (terminal, and still working at the poll deadline) |
+| An invalid exit quantity blocks buys and the sweep buy | `validate_exits`, `OrderFlow` | `test_rule4_...` (and the sweep sell is not blocked) |
+| Orders use the broker's uncorrected quantity; split-corrected positions are for reporting and concentration | `PortfolioView` keeps both | `test_rule5_...` |
+| A read-only run writes nothing and records what it skipped | `ReadOnlyLedger` over the run's ledger | `test_rule6_...` |
+| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
+
+Beyond those, the same file characterizes late failures that leave earlier orders live and the exact
+exception types, and the hook call order of a live run.
+
+**Persistence in tests.** `tests/paper/test_trader.py` no longer patches persist names (239 string
+patches at the start of the phase, none now; all 277 test node ids are kept). Each test injects an
+`InMemoryLedger` or `SpyLedger` (`tests/paper/support.py`). An autouse guard patches
+`ggTrader.paper.trader.PgPaperLedger` with a ledger whose every method records the call and raises
+`UnstubbedPersistCall`, and fails the test at teardown if anything was recorded, even when the trader
+swallowed the error. A static check keeps `InMemoryLedger` out of production code; a live run still
+accepts an injected ledger (a runtime refusal would change behavior and is the owner's call).
+
+**Not changed:** `persist.py` (no SQL, transaction mode or bind dictionary), `risk.py`, `cash_sweep.py`,
+`catastrophe_stop.py`, `gates.py`, `notifier.py`, `alpaca_broker.py`, `signal_runner.py`, `overlay.py`,
+`cli/main.py`; `ggt paper` output is unchanged. The trader stays stopped and cron stays off; code
+reaches the container only through an image rebuild.
 
 ---
 
