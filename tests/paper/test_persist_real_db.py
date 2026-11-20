@@ -352,6 +352,87 @@ def test_single_statement_writers_leave_nothing_when_the_statement_fails(
     observe(request, raised=violation(err.value), rows=0)
 
 
+def _seed_pending(_: Engine) -> None:
+    persist.log_pending_order(D1, "BUY", "AAPL", 1000.0, "ord-1")
+    persist.log_pending_order(D1, "SELL", "MSFT", 50.0, "ord-2")
+
+
+def _seed_split(_: Engine) -> None:
+    persist.save_split_correction("MNST", "2026-08-11", 2.0)
+    persist.save_split_correction("NVDA", "2026-06-10", 10.0)
+
+
+@pytest.mark.parametrize(
+    ("name", "seed", "call", "event", "table", "select"),
+    [
+        (
+            "clear_pending_order",
+            _seed_pending,
+            lambda: persist.clear_pending_order("ord-1"),
+            "DELETE",
+            "paper_pending_orders",
+            "SELECT order_id, flagged_stale FROM paper_pending_orders ORDER BY order_id",
+        ),
+        (
+            "mark_pending_order_stale",
+            _seed_pending,
+            lambda: persist.mark_pending_order_stale("ord-1"),
+            "UPDATE",
+            "paper_pending_orders",
+            "SELECT order_id, flagged_stale FROM paper_pending_orders ORDER BY order_id",
+        ),
+        (
+            "clear_split_correction",
+            _seed_split,
+            lambda: persist.clear_split_correction("MNST"),
+            "DELETE",
+            "paper_split_state",
+            "SELECT symbol, factor FROM paper_split_state ORDER BY symbol",
+        ),
+    ],
+    ids=["clear_pending_order", "mark_pending_order_stale", "clear_split_correction"],
+)
+def test_clear_and_stale_writers_leave_the_row_untouched_when_their_statement_fails(
+    db, request, name, seed, call, event, table, select
+):
+    """A BEFORE trigger refuses the writer's own DELETE/UPDATE; nothing is committed or left open.
+
+    The trigger lives only in the scratch database. After the refusal the rows equal the rows
+    before the call (read on a fresh connection), no transaction is left open, and with the trigger
+    dropped the same call does its work, so the refusal came from the writer's own statement.
+    """
+    seed(db)
+    before = rows(db, select)
+    assert len(before) == 2
+    with db.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE FUNCTION refuse() RETURNS trigger LANGUAGE plpgsql AS "
+                "$$ BEGIN RAISE EXCEPTION 'refused'; END $$"
+            )
+        )
+        conn.execute(
+            text(
+                f"CREATE TRIGGER refuse_{event.lower()} BEFORE {event} ON {table} "
+                "FOR EACH ROW EXECUTE FUNCTION refuse()"
+            )
+        )
+    with pytest.raises(DBAPIError) as err:
+        call()
+    assert violation(err.value) == "InternalError/P0001", name  # the trigger's RAISE EXCEPTION
+    assert rows(db, select) == before, name
+    assert rows(
+        db,
+        "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+        "AND pid <> pg_backend_pid() AND state LIKE 'idle in transaction%'",
+    ) == [(0,)], name
+    with db.begin() as conn:
+        conn.execute(text(f"DROP TRIGGER refuse_{event.lower()} ON {table}"))
+    call()
+    assert rows(db, select) != before, name
+    observe(request, raised=violation(err.value), rows_after_failure=before)
+
+
 # -------------------------------------------------------------------------- the 4 begin() writers
 
 
