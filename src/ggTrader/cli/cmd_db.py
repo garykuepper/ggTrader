@@ -181,7 +181,8 @@ def _db_export(args):
         "dbname": parsed.path.lstrip("/"),
     }
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # astimezone() keeps the local wall clock in the folder name and marks the value aware (DTZ005).
+    timestamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S")
     out_dir = Path("data/exports") / f"ggtrader_dump_{timestamp}"
     out_dir.mkdir(parents=True, exist_ok=True)
 

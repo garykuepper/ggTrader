@@ -16,7 +16,7 @@ force-exclude = true
 # TID251 is the import boundary: only src/ggTrader/engine/ may import vectorbt (spec 5.2).
 select = [
     "E", "F", "W", "I", "TID251", "UP006", "UP035", "UP045", "B", "S110",
-    "C901", "PLR0912", "PLR0915", "PLR0913",
+    "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ",
 ]
 ignore = []
 
@@ -70,6 +70,9 @@ max-args = 8
 "scripts/vbt_latest.py" = ["UP006", "UP035", "UP045", "B", "S110"]
 # Complexity rules are on for src/ggTrader/paper only.
 "!src/ggTrader/paper/**" = ["C901", "PLR0912", "PLR0915", "PLR0913"]
+# Rules enabled for src/ggTrader only (refactor phase 6); scripts, tests and research are outside
+# them. Each rule is added to the select list and to this one negated glob together.
+"!src/ggTrader/**" = ["DTZ"]
 # Survivors of the refactor phase 5 inventory (`ruff check --select C901,PLR0912,PLR0915,PLR0913
 # src/ggTrader/paper`: 18 findings at 10 definitions in 8 files), one entry per file and only the
 # rules that file still trips. A survivor is not a defect: the order of these steps is behavior,
