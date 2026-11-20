@@ -9,8 +9,16 @@ and ``SubmittedOrder`` and ``RunResult`` (the values the trader builds).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Literal, TypedDict
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from datetime import date
+from enum import StrEnum
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from uuid import UUID as UUID
+
+if TYPE_CHECKING:
+    from ggTrader.paper.config import TraderConfig
 
 
 class Account(TypedDict, total=False):
@@ -141,3 +149,112 @@ class RunResult:
         if self.skipped_writes is not None:
             result["skipped_writes"] = self.skipped_writes
         return result
+
+
+class IntentKind(StrEnum):
+    """Order categories."""
+
+    STOP = "stop"
+    EXIT = "exit"
+    SWEEP_SELL = "sweep_sell"
+    BUY = "buy"
+    SWEEP_BUY = "sweep_buy"
+
+
+@dataclass(frozen=True, slots=True)
+class OrderIntent:
+    """An order proposed by a planner."""
+
+    kind: IntentKind
+    side: Literal["BUY", "SELL"]
+    symbol: str
+    size: float
+    reason: str | None
+    book_amount: float | None
+    sleeve: str | None = None
+    unrealized_pct: float | None = None
+    stop_threshold: float | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Skip:
+    """An already formatted log message."""
+
+    level: int
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidExit:
+    """An exit that blocks buys."""
+
+    symbol: str
+    error: str
+
+
+Decision = OrderIntent | Skip | InvalidExit
+
+
+@dataclass(frozen=True)
+class StrategySignals:
+    """Ordered buys and sorted unique sells with immutable metadata."""
+
+    buys: tuple[tuple[str, str], ...]
+    sells: tuple[str, ...]
+    last_exit: Mapping[str, str]
+    as_of: str
+    weights: Mapping[str, float]
+    scale: float
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "last_exit", MappingProxyType(dict(self.last_exit)))
+        object.__setattr__(self, "weights", MappingProxyType(dict(self.weights)))
+
+
+@dataclass
+class ExecutionBook:
+    """Mutable execution accumulator."""
+
+    buys: list[str] = field(default_factory=list)
+    sells: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    orders: list[SubmittedOrder] = field(default_factory=list)
+    filled: dict[str, OrderStatus] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RiskVerdict:
+    """Hard stop and ordered buy halts."""
+
+    hard_stop: str | None
+    buy_halts: tuple[str, ...]
+
+    def with_halt(self, reason: str) -> RiskVerdict:
+        """Return a verdict with an additional halt."""
+        return RiskVerdict(self.hard_stop, (*self.buy_halts, reason))
+
+
+@dataclass(frozen=True)
+class RunContext:
+    """Settings and date for one run."""
+
+    today_et: date
+    config: TraderConfig
+    pending_symbols: frozenset[str]
+
+
+@dataclass
+class FlowState:
+    """Interim order flow state."""
+
+    strategy_positions: dict[str, Position] = field(default_factory=dict)
+    stopped: set[str] = field(default_factory=set)
+    invalid_exit_symbols: set[str] = field(default_factory=set)
+    all_buys: list[tuple[str, str]] = field(default_factory=list)
+    loss_halts: list[str] = field(default_factory=list)
+    slot_caps: dict[str, int] = field(default_factory=dict)
+    sleeve_open_initial: dict[str, int] = field(default_factory=dict)
+    buys_by_sleeve: dict[str, list[str]] = field(default_factory=dict)
+    sleeve_notional_by_universe: dict[str, float] = field(default_factory=dict)
+    book: ExecutionBook = field(default_factory=ExecutionBook)
+    regular_sell_count: int = 0

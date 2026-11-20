@@ -190,3 +190,45 @@ def test_typed_dict_keys_are_the_documented_ones(record: type, keys: set[str]) -
     assert set(record.__annotations__) == keys
     assert set(get_type_hints(record)) == keys
     assert record.__total__ is False
+
+
+def test_new_run_records():
+    from dataclasses import FrozenInstanceError
+
+    from ggTrader.paper.models import (
+        ExecutionBook,
+        FlowState,
+        IntentKind,
+        InvalidExit,
+        OrderIntent,
+        RiskVerdict,
+        RunContext,
+        Skip,
+        StrategySignals,
+    )
+
+    intent = OrderIntent(IntentKind.BUY, "BUY", "ABC", 5.0, None, None)
+    with pytest.raises((FrozenInstanceError, AttributeError)):
+        intent.symbol = "DEF"
+    assert not hasattr(intent, "__dict__")
+    for value, name in (
+        (Skip(20, "skip"), "message"),
+        (InvalidExit("ABC", "error"), "error"),
+        (RunContext(None, None, frozenset()), "today_et"),
+    ):
+        with pytest.raises(FrozenInstanceError):
+            setattr(value, name, "changed")
+    first = ExecutionBook()
+    second = ExecutionBook()
+    first.buys.append("ABC")
+    assert second.buys == []
+    a, b = FlowState(), FlowState()
+    a.all_buys.append(("ABC", "one"))
+    assert b.all_buys == []
+    verdict = RiskVerdict(None, ("first",))
+    assert verdict.with_halt("second").buy_halts == ("first", "second")
+    assert verdict.buy_halts == ("first",)
+    signals = StrategySignals((("ABC", "one"), ("ABC", "two")), (), {}, "", {}, 1.0)
+    assert signals.buys == (("ABC", "one"), ("ABC", "two"))
+    with pytest.raises(TypeError):
+        signals.weights["one"] = 1.0

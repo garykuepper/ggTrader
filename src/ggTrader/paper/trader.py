@@ -15,7 +15,10 @@ from ggTrader.paper import persist as _persist
 from ggTrader.paper.alpaca_broker import AlpacaBroker
 from ggTrader.paper.config import TraderConfig
 from ggTrader.paper.constants import ET as _ET
+from ggTrader.paper.constants import MAX_SIGNAL_AGE_DAYS as _MAX_SIGNAL_AGE_DAYS
 from ggTrader.paper.constants import PT as _PT
+from ggTrader.paper.constants import SPLIT_LOOKBACK_DAYS as _SPLIT_LOOKBACK_DAYS
+from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.gates import SignalGateError, late_run_reason
@@ -60,6 +63,9 @@ from ggTrader.paper.persist import (
 )
 from ggTrader.paper.ports import Broker, Notifier
 from ggTrader.paper.risk import RiskConfig, RiskGuard, config_from_env
+from ggTrader.paper.run_helpers import account_read_halt as _account_read_halt
+from ggTrader.paper.run_helpers import as_date as _as_date
+from ggTrader.paper.seams import RunHooks, TraderSeams
 from ggTrader.paper.signal_runner import (
     generate_core_signals,
     live_membership_source,
@@ -80,13 +86,11 @@ _log = logging.getLogger(__name__)
 # corporate-actions feed may know about but the account never applied (see
 # split_check.py / AlpacaBroker.get_split_corrections). Daily runs only need
 # a window wide enough to survive a missed run or two.
-_SPLIT_LOOKBACK_DAYS = 14
 
 # A pending order still open this many days after submission gets a one-time
 # "stale" alert (see _flag_if_stale) instead of being silently re-polled
 # forever with no visibility. Reconciliation itself keeps retrying past this
 # point -- only the repeated Telegram noise is capped.
-_STALE_PENDING_DAYS = 5
 
 
 #: The S&P 500 list `ggt paper` reads: the latest database vintage, behind the freshness gate of
@@ -110,7 +114,6 @@ LIVE_MEMBERSHIP_SPEC = "db"
 # early -- the weekday census of `paper_snapshots.run_date` was Sun-Thu with
 # zero Fridays. See scripts/migrate_paper_dates_20260822.py for the historical
 # row fix.
-_MAX_SIGNAL_AGE_DAYS = 4
 
 
 def _today_et() -> date:
@@ -121,21 +124,6 @@ def _today_et() -> date:
 def _now_pt() -> datetime:
     """Current time in Pacific, the zone of the 12:45 cron and the late-run cutoff."""
     return datetime.now(_PT)
-
-
-def _as_date(value) -> date:
-    """`paper_trades.run_date` as a `date` (drivers may return a datetime)."""
-    return value.date() if isinstance(value, datetime) else value
-
-
-def _account_read_halt(notifier, exc: Exception) -> None:
-    """Report an unavailable account before any orders are submitted."""
-    _log.error("Account read failed (%s); stopping before orders", type(exc).__name__)
-    reason = "Account data unavailable; no orders submitted"
-    try:
-        notifier.send(f"<b>🛑 HALTED:</b> {reason}")
-    except Exception:
-        _log.exception("Could not send account read failure notice")
 
 
 class PaperTrader:
@@ -189,6 +177,33 @@ class PaperTrader:
         self._paper_lock = None
         #: The settings snapshot of the current run; ``run()`` replaces it at its first line.
         self._cfg: TraderConfig | None = None
+
+    def _hooks(self) -> RunHooks:
+        """Resolve module collaborators at call time."""
+        return RunHooks(
+            today_et=lambda: _today_et(),
+            now_pt=lambda: _now_pt(),
+            utcnow=lambda: datetime.now(timezone.utc),
+            new_uuid=lambda: uuid4(),
+            clock_time=lambda: time.time(),
+            sleep=lambda seconds: time.sleep(seconds),
+            generate_signals=lambda *args, **kwargs: generate_core_signals(*args, **kwargs),
+            membership_source=lambda spec: live_membership_source(spec),
+            refresh_tape=lambda: refresh_benchmark_tape(),
+            find_split_applied=lambda *args: find_split_applied_symbols(*args),
+        )
+
+    def _seams(self) -> TraderSeams:
+        """Resolve private methods on this instance at call time."""
+        return TraderSeams(
+            submit_order=lambda *args: self._submit_order(*args),
+            poll_orders=lambda orders: self._poll_orders(orders),
+            reconcile_intents=lambda: self._reconcile_order_intents(),
+            reconcile_pending=lambda: self._reconcile_pending_orders(),
+            missed_exits=lambda *args: self._missed_exits(*args),
+            split_corrections=lambda *args: self._compute_split_corrections(*args),
+            accrue_dividends=lambda positions: self._accrue_dividends(positions),
+        )
 
     def _submit_order(self, side: str, symbol: str, amount: float, reason: str | None) -> str:
         """Persist the identity before submitting an order under the run lock."""
