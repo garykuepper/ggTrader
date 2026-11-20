@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from datetime import date
 
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 from ggTrader.paper.constants import TERMINAL_STATUSES
 from ggTrader.utils.db import get_engine as _get_engine
@@ -100,7 +101,7 @@ _LOCK_KEY = 1734837291
 _TERMINAL_STATUSES = set(TERMINAL_STATUSES)
 
 
-def _lock_order_and_reject_pending(conn, order_id: str) -> None:
+def _lock_order_and_reject_pending(conn: Connection, order_id: str) -> None:
     """Serialize representations and reject an existing legacy pending row."""
     conn.execute(text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id})
     if (
@@ -115,7 +116,7 @@ def _lock_order_and_reject_pending(conn, order_id: str) -> None:
 class PaperRunLock:
     """A session lock whose ownership can be checked before submission."""
 
-    def __init__(self, conn):
+    def __init__(self, conn: Connection) -> None:
         self._conn = conn
 
     def verify(self) -> None:
@@ -685,7 +686,7 @@ class PgPaperLedger:
         return {(symbol, ex_date) for symbol, ex_date in rows}
 
     def log_dividend_accrual(
-        self, symbol: str, ex_date, rate: float, qty: float, amount: float
+        self, symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
     ) -> None:
         """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
         a conflicting insert is a no-op, never a double-credit."""
@@ -1005,7 +1006,9 @@ def get_accrued_dividend_keys() -> set[tuple]:
     return _pg().get_accrued_dividend_keys()
 
 
-def log_dividend_accrual(symbol: str, ex_date, rate: float, qty: float, amount: float) -> None:
+def log_dividend_accrual(
+    symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
+) -> None:
     """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
     a conflicting insert is a no-op, never a double-credit."""
     return _pg().log_dividend_accrual(symbol, ex_date, rate, qty, amount)

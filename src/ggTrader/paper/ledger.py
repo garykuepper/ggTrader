@@ -156,7 +156,7 @@ class PaperLedger(Protocol):
     def get_accrued_dividend_keys(self) -> set[tuple]: ...
 
     def log_dividend_accrual(
-        self, symbol: str, ex_date, rate: float, qty: float, amount: float
+        self, symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
     ) -> None: ...
 
     def get_total_dividend_accrual(self) -> float: ...
@@ -557,7 +557,7 @@ class InMemoryLedger:
         return {(row["symbol"], row["ex_date"]) for row in self._dividends.values()}
 
     def log_dividend_accrual(
-        self, symbol: str, ex_date, rate: float, qty: float, amount: float
+        self, symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
     ) -> None:
         self._dividends.setdefault(
             (symbol, _iso(ex_date)),

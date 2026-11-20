@@ -73,7 +73,12 @@ class StopPlanner:
     """Produce catastrophe-stop decisions on demand."""
 
     def __init__(
-        self, assessable, strategy_positions, corrected_positions, threshold, pending_symbols
+        self,
+        assessable: Mapping[str, Position],
+        strategy_positions: Mapping[str, Position],
+        corrected_positions: Mapping[str, Position],
+        threshold: float,
+        pending_symbols: frozenset[str],
     ):
         self.assessable = assessable
         self.strategy_positions = strategy_positions
@@ -266,18 +271,18 @@ class BuyPlanner:
     def __init__(
         self,
         *,
-        buys_by_sleeve,
-        notional_by_sleeve,
-        slot_caps,
-        strategy_positions,
-        corrected_positions,
-        stopped,
-        pending_symbols,
-        slots_available,
-        max_positions,
-        risk,
-        portfolio_value,
-        open_by_sleeve,
+        buys_by_sleeve: Mapping[str, list[str]],
+        notional_by_sleeve: Mapping[str, float],
+        slot_caps: Mapping[str, int],
+        strategy_positions: Mapping[str, Position],
+        corrected_positions: Mapping[str, Position],
+        stopped: frozenset[str],
+        pending_symbols: frozenset[str],
+        slots_available: int,
+        max_positions: int,
+        risk: RiskLimits,
+        portfolio_value: float,
+        open_by_sleeve: Mapping[str, int],
     ):
         self.sleeves = iter(buys_by_sleeve.items())
         self.symbols = iter(())

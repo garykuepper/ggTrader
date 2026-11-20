@@ -17,6 +17,7 @@ force-exclude = true
 select = [
     "E", "F", "W", "I", "TID251", "UP006", "UP035", "UP045", "B", "S110",
     "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002",
+    "ANN001", "ANN201",
 ]
 ignore = []
 
@@ -72,7 +73,7 @@ max-args = 8
 "!src/ggTrader/paper/**" = ["C901", "PLR0912", "PLR0915", "PLR0913"]
 # Rules enabled for src/ggTrader only (refactor phase 6); scripts, tests and research are outside
 # them. Each rule is added to the select list and to this one negated glob together.
-"!src/ggTrader/**" = ["DTZ", "G004", "ARG001", "ARG002"]
+"!src/ggTrader/**" = ["DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201"]
 # ARG001/ARG002 survivors (`ruff check --select ARG001,ARG002 src/ggTrader`: 11 findings, 2 fixed by
 # dropping the unused parameter of the two membership check handlers; 9 listed here). An unused
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.

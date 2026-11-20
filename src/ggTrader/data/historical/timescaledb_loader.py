@@ -2,6 +2,7 @@
 
 import pandas as pd
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 
 from ggTrader.data.core.base_loader import BaseDataLoader
 from ggTrader.utils.config import get_db_connection_string
@@ -20,7 +21,7 @@ class TimescaleDBLoader(BaseDataLoader):
         self._engine = None
 
     @property
-    def engine(self):
+    def engine(self) -> Engine:
         """Lazy engine initialization."""
         if self._engine is None:
             self._engine = create_engine(self.connection_string)
@@ -128,7 +129,7 @@ class TimescaleDBLoader(BaseDataLoader):
             print(f"Error listing symbols: {e}")
             return []
 
-    def close(self):
+    def close(self) -> None:
         if self._engine is not None:
             self._engine.dispose()
             self._engine = None

@@ -22,6 +22,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from html.parser import HTMLParser
+from typing import Any
 
 import requests
 
@@ -146,7 +147,7 @@ def parse_press_date(text: str) -> date | None:
         return None
 
 
-def _structure_guard(parse):
+def _structure_guard(parse: Callable[..., Any]) -> Callable[..., Any]:
     """Turn any unexpected exception of a parser into a ``SourceStructureError`` (code internal).
 
     A hostile or oddly broken page (for example a huge numeric character reference that makes
@@ -154,7 +155,7 @@ def _structure_guard(parse):
     """
 
     @functools.wraps(parse)
-    def guarded(*args, **kwargs):
+    def guarded(*args: Any, **kwargs: Any) -> Any:
         try:
             return parse(*args, **kwargs)
         except SourceStructureError:

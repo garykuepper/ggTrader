@@ -18,7 +18,7 @@ from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.db_engine import create_db_engine_or_exit
 
 
-def register_db_parser(subparsers: argparse._SubParsersAction):
+def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     """Registers the 'db' subcommand."""
     parser = subparsers.add_parser("db", help="Database administration and maintenance")
     db_subs = parser.add_subparsers(dest="db_command", required=True)
@@ -48,7 +48,7 @@ def register_db_parser(subparsers: argparse._SubParsersAction):
     register_membership_parsers(db_subs)
 
 
-def run_db(args: argparse.Namespace):
+def run_db(args: argparse.Namespace) -> None:
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
@@ -169,7 +169,7 @@ def _db_check_compression():
             print(row)
 
 
-def _db_export(args):
+def _db_export(args: argparse.Namespace) -> None:
     """Refactored logic for DB export via ggt CLI."""
     conn_str = get_db_connection_string()
     parsed = urlparse(conn_str)

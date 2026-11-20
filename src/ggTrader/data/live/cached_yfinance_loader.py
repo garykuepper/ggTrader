@@ -14,6 +14,7 @@ ticker newly added to an existing cache.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -32,7 +33,7 @@ def _default_connection_string() -> str:
     return get_db_connection_string()
 
 
-def _as_utc(value) -> pd.Timestamp:
+def _as_utc(value: Any) -> pd.Timestamp:
     """A DB timestamp as tz-aware UTC, whether the driver returned it naive or aware."""
     ts = pd.Timestamp(value)
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
