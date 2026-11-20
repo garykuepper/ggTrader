@@ -446,14 +446,31 @@ tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py
 included the open connection under the key `conn`; SQLAlchemy ignored it. The explicit bind
 dictionary drops that stray key. The SQL text and the other seven keys are unchanged.
 
-Phase 5 verification: recorded in Task 78's commit `docs: record phase 5 verification`.
+Phase 5 verification at `3475f405`: the offline integration gate passed the oracle comparison,
+full tier (4,967 passed, one skipped, five expected failures), study tier (1,144 passed), and
+baseline outcome comparison. The 103 transcript goldens and 600 recorded seed digests remain
+unchanged. All 21 final mutation forms failed at least one reach-qualified test; the retired
+legacy differential was last exercised before its removal. Some shared submit-failure cases fail
+through the strict harness; a bounded submit-failure test also fails on its own assertion. Several
+reach probes cover a broader entry point than their mutation condition. Opus found no production-wiring
+blocker in a static cross-family review; Sol conditionally approved the behavioral-pin slice, with
+the gate record expanded afterwards. The logs do not independently embed their commit hash.
+
+The signal generator supplies mapping weights. If another integration supplies malformed weights,
+`None` or a number fails earlier than before, while an empty sequence or a sequence of pairs can be
+accepted, allowing exits or a sweep sell that the old code would not have submitted. Validate that
+boundary before relying on such an integration. For covered cases the log comparison pins logger
+name, level and rendered message, not raw `LogRecord` template, arguments or source metadata.
+The eight private compatibility seams remain; retiring them requires a separate owner decision.
+A live caller can still explicitly inject an in-memory ledger, so durable-state protection there
+is a static production-import guard rather than a runtime refusal.
 
 ### 4b. The run as step objects (refactor phase 5)
 
 Phase 5 split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` is 22) that
 calls one step object at a time, in the order the old code ran. `trader.py` went from 1,600 to 357
-lines. The design aim was that no order, SQL statement, Telegram line, log record, clock read position
-or price row changes; this section records what was built and what was kept, not what was verified.
+lines. The design aim was to preserve orders, SQL, Telegram messages, rendered log messages, clock
+read positions and price rows; the verification above describes the scope and known limits.
 The order of the steps is behavior (the sweep sell is sized after the stop orders, buys wait for the
 sells to settle), so the glue between planning and execution is staged instead of planning
 everything up front.

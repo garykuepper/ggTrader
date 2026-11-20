@@ -5,8 +5,9 @@
 - Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls
   nine step objects in the old order: `PreflightGate`, `PortfolioView`, `RiskAssessor`, the pure
   planners in `paper/planning.py`, `OrderFlow`, `OrderExecutor`, `DryRunExecutor`, `CorporateActions`
-  and `RunReporter`. `trader.py` went from 1,600 to 357 lines. **No order, SQL statement, Telegram
-  line or log record changed**, and no clock read moved, by design; `ggt paper` output is unchanged.
+  and `RunReporter`. `trader.py` went from 1,600 to 357 lines. The refactor was designed to preserve
+  orders, SQL, Telegram messages and clock timing. Log comparisons cover logger name, level and
+  rendered message; raw record templates, arguments and source metadata can differ.
   `persist.py`, `risk.py`, `cash_sweep.py`, `catastrophe_stop.py`, `gates.py`, `notifier.py`,
   `alpaca_broker.py`, `signal_runner.py`, `overlay.py` and `cli/main.py` were not touched.
 - New modules: `preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`, `order_flow.py`,
@@ -51,8 +52,17 @@
   and statement limits) are enforced for `src/ggTrader/paper` only; the 18 findings at 10 definitions
   in 8 files are per-file ignores in `ruff.toml`, each with its reason. Nothing outside `paper/` is
   switched on.
-- Phase 5 verification: recorded in Task 78's commit `docs: record phase 5 verification`. The trader
-  stays stopped and cron stays off.
+- Phase 5 verification at `3475f405`: the oracle and outcome comparisons passed; the full tier had
+  4,967 passed, one skipped and five expected failures, and the study tier had 1,144 passed. All
+  103 transcript goldens and the 600-seed digest map remain unchanged; 21 mutation forms were
+  detected by reach-qualified tests. Opus found no production-wiring blocker in a static review;
+  Sol conditionally approved the behavioral pins, and the gate evidence was expanded afterwards.
+  Driver logs do not embed the commit hash. The legacy differential was retired after Phase D;
+  some mutation probes are broad, and some submit-failure checks detect a strict harness error.
+- Outside the signal-generator contract, non-mapping weights can behave differently: an empty
+  sequence may allow exits or a sweep sell before an error or normal completion, and a sequence of
+  pairs can be accepted. Validate that boundary before using a source that can emit such values.
+  The trader stays stopped and cron stays off.
 
 ## 2026-11-19 (refactor phase 4: paper trader interfaces and records, price-loader chain)
 
