@@ -156,8 +156,8 @@ class PaperLedger(Protocol):
     ) -> None:
         """Record a trade under its order id.
 
-        A repeat of an identical trade changes nothing. A different trade, or several rows already
-        stored under the order id, raises ``ValueError``.
+        A repeat of the one identical stored trade changes nothing. A different trade, or several
+        rows already stored under the order id, raises ``ValueError``.
         """
         ...
 
@@ -510,8 +510,9 @@ class InMemoryLedger:
 
         Raise ``ValueError`` for an invalid fill, a pending order with this id, a missing or
         conflicting intent, a conflicting settlement or a conflicting trade. A trade is booked only
-        for a positive fill quantity. Settling a resolved intent again changes nothing when the
-        broker id, quantity, price and terminal status all match.
+        for a positive fill quantity. After validation and the pending-order check, settling a
+        resolved intent again changes nothing when the broker id, quantity, price and terminal
+        status all match.
         """
         amount = _validate_terminal_fill(filled_qty, filled_avg_price, terminal_status)
         self._reject_pending(order_id)

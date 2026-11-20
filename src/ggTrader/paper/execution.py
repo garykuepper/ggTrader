@@ -38,7 +38,8 @@ class Executor(Protocol):
 
         Live: an invalid side or a read-only trader raises first, with no alert. Otherwise it
         commits the intent, verifies the run lock, submits, then attaches the broker id; a failure
-        in those stages attempts an alert (a failed alert is only logged) and re-raises, even
+        in those stages attempts an alert (an alert that raises is logged, one that returns False is
+        ignored) and re-raises, even
         after the broker accepted the order.
         """
         ...
@@ -67,8 +68,9 @@ class Executor(Protocol):
         """Follow up after the main order batch has been polled, before any trailing sweep buy.
 
         The batch holds the strategy orders and any funding sweep sell. Live: when there are
-        orders, reconciles the intents; it raises after an alert attempt on working orders or a
-        recovery error, and earlier writes may already be committed. Dry run: no-op.
+        orders, reconciles the intents (attaches broker ids, books terminal fills); it raises after
+        an alert attempt on working orders or a recovery error, and earlier writes may already be
+        committed. Dry run: no-op.
         """
         ...
 
@@ -132,7 +134,8 @@ class OrderExecutor:
 
         An invalid side or a read-only trader raises first, with no alert. Otherwise it commits the
         intent, verifies the run lock, submits, then attaches the id; a failure in those stages
-        attempts an alert (a failed alert is only logged) and re-raises. Attachment can fail after
+        attempts an alert (an alert that raises is logged, one that returns False is ignored) and
+        re-raises. Attachment can fail after
         the broker accepted the order.
         """
         return self._current().submit_order(intent.side, intent.symbol, intent.size, intent.reason)

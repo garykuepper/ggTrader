@@ -206,8 +206,8 @@ class AlpacaBroker:
     def get_split_corrections(self, symbols: list[str], since: date) -> dict[str, float]:
         """Cross-reference the broker's corporate-actions feed against this
         account's own SPLIT activities to propose a correction for each symbol
-        in `symbols` that has split events but no SPLIT activity. That absence
-        is a signal, not proof that the split went unapplied.
+        in `symbols` that has split events but no SPLIT activity and whose combined factor is not
+        1.0. That absence is a signal, not proof that the split went unapplied.
 
         Returns `{symbol: correction_factor}` (see
         `split_check.compute_split_corrections`). Built on `get_split_evidence`,
@@ -262,7 +262,7 @@ class AlpacaBroker:
     ) -> dict[str, dict[str, list[tuple[date, float]]] | set[tuple[str, date]]]:
         """Return the broker's cash-dividend events for `symbols` together with
         this account's own credited DIV activities; the caller compares the two
-        to find dividends never credited to this account.
+        to find dividend events with no returned DIV activity under the same (symbol, date) key.
 
         `since` is coerced via `dividend_check.normalize_since` *before* the
         fail-soft boundary below, so a caller passing the wrong type (e.g.
