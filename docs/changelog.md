@@ -17,7 +17,7 @@
   instruction was altered.
 - `AGENTS.md` section 3 and `docs/architecture.md` now say the live equity-price path is
   `ggTrader.data.live.fetch_chain` (`OhlcvFetchChain`), imported directly by `paper/signal_runner.py` and
-  `paper/overlay.py`; `lab.data.fetch_stock_ohlcv` stays as a thin wrapper with the same signature. The
+  `paper/overlay.py`; `lab.data.fetch_stock_ohlcv` stays as a thin wrapper with its previous public arguments (including `use_negative_cache`). The
   architecture notes that name `ModuleLedger`, the 826-line `_run` and `RunHalted` now state plainly that they
   are history (retired, split, or never built).
 - Left on purpose: `lab/simulate.py` is still named in `src/ggTrader/engine/portfolio.py` comments (about lines
@@ -28,7 +28,7 @@
   is unreachable today because the `legacy` implementation is no longer selectable (`impl.IMPLS` holds only
   `new`). Comments in `tests/paper/test_constants.py`, `tests/paper/transcript/scenarios.py` and
   `tests/paper/test_run_rules.py` still cite `trader.py:NNN` and `test_trader.py:NNN` line numbers that moved in
-  the run split; those files are hash-pinned or frozen harness files.
+  the run split; `scenarios.py` is a frozen transcript harness file and `test_run_rules.py` carries Phase 5 pins; they were left unedited by this docs-only task.
 - `docs/cli_reference.md` now says `ggt db clean` and `ggt db truncate` exit with code 2 (and delete nothing)
   when their confirmation flag (`--yes`, `--yes-wipe-ohlcv`) is missing, matching `cli/cmd_db.py`.
 - `docs/next_steps.md` has one status row for the refactor: phases 0 to 2 are merged and pushed (`abe8cefa`,
