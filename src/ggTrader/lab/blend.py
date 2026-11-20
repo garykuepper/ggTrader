@@ -115,7 +115,7 @@ def _engine_curves(
         except WfoNotRun as exc:
             raise SystemExit(
                 f"blend sleeve {label!r}: WFO produced no valid folds ({exc})"
-            ) from exc
+            ) from None
         curves[label] = result.oos_equity
     tape = (bars.provenance or {}).get("snapshot") or {}
     stamp = build_provenance(

@@ -14,7 +14,7 @@
 - Frozen callers are not edited. The oracle driver `scripts/p5_wfo_validation.py` had
   `isinstance(result, str)` then `RuntimeError(result)`; with the exception it fails with the
   same text through the same per-run `except Exception` of its `main`. The branch is unreachable
-  on its windows (2 and 17 folds). `research/.../p10-evidence/dsr_one_combo.py` never checked for
+  on its windows (2 and 17 folds); if a short window were supplied programmatically it would record and print `WfoNotRun: ...` instead of `RuntimeError: ...` (same message, same handler). `research/.../p10-evidence/dsr_one_combo.py` never checked for
   the string (it would have crashed on it) and now raises with the message. The legacy-scripts
   callers cannot import today. No `research/` file changed.
 - Tests: `test_run_wfo_raises_wfo_not_run_with_the_old_message` replaces

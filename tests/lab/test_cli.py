@@ -182,6 +182,8 @@ def test_run_vbt_wfo_still_prints_and_returns_the_message(monkeypatch, capsys):
     from ggTrader.lab.strategy import LabConfig
 
     cli_support = _patch_wfo_no_folds(monkeypatch)
+    written: list = []
+    monkeypatch.setattr(cli_support, "write_wfo_json", lambda *a, **k: written.append(a))
     out = cli_support.run_vbt_wfo(
         "ensemble",
         "sp500",
@@ -193,6 +195,7 @@ def test_run_vbt_wfo_still_prints_and_returns_the_message(monkeypatch, capsys):
     )
     assert out == _NO_FOLDS
     assert _NO_FOLDS in capsys.readouterr().out.splitlines()
+    assert not written, "no provenance JSON may be written when no fold ran"
 
 
 def test_lab_wfo_with_no_valid_folds_prints_and_returns_the_message(monkeypatch, capsys):
