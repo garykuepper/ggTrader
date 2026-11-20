@@ -22,12 +22,7 @@ from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - compatibi
 from ggTrader.paper.corporate_actions import CorporateActions, missed_exits
 from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
 from ggTrader.paper.ledger import PaperLedger, ReadOnlyLedger
-from ggTrader.paper.models import (
-    OrderStatus,
-    RunContext,
-    RunResult,
-    SubmittedOrder,
-)
+from ggTrader.paper.models import RunContext, RunResult
 from ggTrader.paper.notifier import DryRunNotifier, TelegramNotifier
 from ggTrader.paper.order_flow import OrderFlow
 from ggTrader.paper.persist import PgPaperLedger
@@ -166,7 +161,6 @@ class PaperTrader:
         """Resolve private methods on this instance at call time."""
         return TraderSeams(
             submit_order=lambda *args: self._submit_order(*args),
-            poll_orders=lambda orders: self._poll_orders(orders),
             missed_exits=lambda *args: self._missed_exits(*args),
             split_corrections=lambda *args: self._compute_split_corrections(*args),
             accrue_dividends=lambda positions: self._accrue_dividends(positions),
@@ -194,17 +188,6 @@ class PaperTrader:
     ) -> list[str]:
         """Find held symbols with unacted-on exit signals."""
         return missed_exits(self._ledger, positions, last_exit, already)
-
-    def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, OrderStatus]:
-        """Poll submitted orders until they reach a terminal status (or a
-        wait budget expires), returning `{order_id: order_info}`.
-
-        Shared by the main per-run order batch (strategy sells/buys, plus a
-        cash-sweep sell if one was submitted) and the trailing cash-sweep buy,
-        which is sized from the account's real post-trade cash and so must be
-        submitted and polled separately, after the main batch resolves.
-        """
-        return self._executor_for_call().poll_orders(orders)
 
     def _compute_split_corrections(
         self, positions: dict[str, dict], split_since: date, today: date

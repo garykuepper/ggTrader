@@ -70,7 +70,7 @@ class OrderExecutor:
         return self._seams.submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
-        return self._seams.poll_orders(list(orders))
+        return self.poll_orders(list(orders))
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
         if filled:

@@ -1,7 +1,7 @@
 """Phase 4 shape pins (net K): result key order, harness name discovery, poll fallback fields.
 
 The transcript goldens sort keys (``to_json``), so they cannot see the order of the result dict;
-and they never read the fallback record `_poll_orders` builds from the order tuple. The tests here
+and they never read the fallback record `poll_orders` builds from the order tuple. The tests here
 pin both, plus the ledger the harness injects.
 """
 
@@ -16,6 +16,7 @@ import pytest
 
 from ggTrader.paper import persist
 from ggTrader.paper import trader as trader_module
+from ggTrader.paper.execution import OrderExecutor
 from ggTrader.paper.ledger import PaperLedger
 from ggTrader.paper.models import SubmittedOrder
 from ggTrader.paper.trader import PaperTrader
@@ -207,7 +208,7 @@ def test_poll_fallback_record_is_built_from_the_order_tuple() -> None:
         SubmittedOrder("ord-2", "BUY", "MSFT", 3300.0, None),
     ]
     with _trader(_broker(get_order)) as trader:
-        filled = trader._poll_orders(orders)
+        filled = trader._executor_for_call().poll_orders(orders)
 
     base = {"qty": None, "filled_qty": 0.0, "filled_avg_price": 0.0, "status": "pending"}
     assert filled == {
@@ -238,7 +239,7 @@ def test_poll_looks_orders_up_by_the_first_tuple_field() -> None:
         SubmittedOrder("ord-2", "BUY", "BBB", 2.0, None),
     ]
     with _trader(_broker(get_order)) as trader:
-        filled = trader._poll_orders(orders)
+        filled = trader._executor_for_call().poll_orders(orders)
 
     assert asked == ["ord-1", "ord-2"] and sorted(filled) == ["ord-1", "ord-2"]
 
@@ -246,7 +247,7 @@ def test_poll_looks_orders_up_by_the_first_tuple_field() -> None:
 def test_poll_of_no_orders_returns_an_empty_dict_without_a_broker_call() -> None:
     broker = _broker(RuntimeError("must not be called"))
     with _trader(broker) as trader:
-        assert trader._poll_orders([]) == {}
+        assert trader._executor_for_call().poll_orders([]) == {}
     broker.get_clock.assert_not_called()
 
 
@@ -254,16 +255,16 @@ def test_poll_of_no_orders_returns_an_empty_dict_without_a_broker_call() -> None
 
 
 def _submitted_orders(name: str) -> list[SubmittedOrder]:
-    """Every distinct order record `run` hands to `_poll_orders`, in first-seen order."""
+    """Every distinct order record `run` hands to `poll_orders`, in first-seen order."""
     seen: dict[str, SubmittedOrder] = {}
-    real = PaperTrader._poll_orders
+    real = OrderExecutor.poll_orders
 
-    def spy(self: PaperTrader, orders: list[SubmittedOrder]) -> dict[str, dict]:
+    def spy(self: OrderExecutor, orders: list[SubmittedOrder]) -> dict[str, dict]:
         for order in orders:
             seen.setdefault(order.order_id, order)
         return real(self, orders)
 
-    with patch.object(PaperTrader, "_poll_orders", spy):
+    with patch.object(OrderExecutor, "poll_orders", spy):
         run_scenario(SCENARIOS[name])
     return list(seen.values())
 

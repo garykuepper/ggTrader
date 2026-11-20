@@ -72,19 +72,10 @@ def test_after_orders_reconciles_for_a_list_holding_only_sells():
     stubs.reconcile_order_intents.assert_called_once_with()
 
 
-def test_dry_run_executor_still_polls_through_the_seam_with_an_empty_list():
-    seams = MagicMock()
-    executor = DryRunExecutor(
-        broker=MagicMock(),
-        notifier=MagicMock(),
-        ledger=MagicMock(),
-        hooks=MagicMock(),
-        lock=lambda: None,
-        read_only=True,
-        seams=seams,
-    )
+def test_dry_run_executor_still_polls_with_an_empty_list():
+    executor, *_, stubs, _ = make_executor(DryRunExecutor, read_only=True, stub=("poll_orders",))
     executor.poll(())
-    seams.poll_orders.assert_called_once_with([])
+    stubs.poll_orders.assert_called_once_with([])
 
 
 def test_executors_declare_submits_orders():
@@ -308,12 +299,12 @@ def test_executor_uses_the_hooks_not_the_modules(monkeypatch):
     assert ledger.create_order_intent.call_args.args[0] == "patched-uuid"
 
 
-def test_executor_poll_routes_through_the_class_patched_seam(monkeypatch):
+def test_executor_poll_runs_the_class_patched_poll_orders(monkeypatch):
     from ggTrader.paper.trader import PaperTrader
 
     trader = PaperTrader(MagicMock(), MagicMock(), dry_run=True, ledger=MagicMock())
     patched = MagicMock(return_value={"oid": {"status": "filled"}})
-    monkeypatch.setattr(PaperTrader, "_poll_orders", patched)
+    monkeypatch.setattr(OrderExecutor, "poll_orders", patched)
     assert trader._executor_for_call().poll([]) == {"oid": {"status": "filled"}}
     patched.assert_called_once_with([])
 

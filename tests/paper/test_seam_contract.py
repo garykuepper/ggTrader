@@ -158,7 +158,6 @@ STEP_OWNERS: dict[str, type] = {
 }
 PRIVATE_SEAMS = (
     "_submit_order",
-    "_poll_orders",
     "_missed_exits",
     "_compute_split_corrections",
     "_accrue_dividends",
@@ -762,7 +761,7 @@ class TestLegacySeamsInterceptTheRun:
             "plain_buys_and_sells",
             id="pending_orders",
         ),
-        pytest.param("_poll_orders", "class", "plain_buys_and_sells", id="poll_orders"),
+        pytest.param("OrderExecutor.poll_orders", "step", "plain_buys_and_sells", id="poll_orders"),
         pytest.param(
             "OrderExecutor.flag_if_stale", "step", "legacy_pending_stale", id="flag_if_stale"
         ),

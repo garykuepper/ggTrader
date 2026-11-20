@@ -71,7 +71,6 @@ def test_default_hooks_read_nothing_at_construction(monkeypatch):
 @pytest.mark.parametrize(
     ("field", "target", "args"),
     [
-        ("poll_orders", "_poll_orders", ([],)),
         ("missed_exits", "_missed_exits", ({}, {}, set())),
         ("split_corrections", "_compute_split_corrections", ({}, None, None)),
         ("accrue_dividends", "_accrue_dividends", ({},)),

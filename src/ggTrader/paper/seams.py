@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from ggTrader.paper.models import UUID, OrderStatus, SignalBundle, SubmittedOrder
+from ggTrader.paper.models import UUID, SignalBundle
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,6 @@ class TraderSeams:
     """Private trader methods resolved on their instance when called."""
 
     submit_order: Callable[[str, str, float, str | None], str]
-    poll_orders: Callable[[list[SubmittedOrder]], dict[str, OrderStatus]]
     missed_exits: Callable[[dict, dict[str, str], set[str]], list[str]]
     split_corrections: Callable[[dict, date, date], dict[str, float]]
     accrue_dividends: Callable[[dict], dict]

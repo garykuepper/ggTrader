@@ -636,7 +636,7 @@ def test_dry_sweep_buy_only_announces_and_does_not_enter_book(monkeypatch):
 
     flow, view, signals = make_flow({}, dry=True, buys=())
     executor, _, notifier, _, _, seams, _ = make_executor(
-        DryRunExecutor, stub=("reconcile_order_intents",)
+        DryRunExecutor, stub=("reconcile_order_intents", "poll_orders")
     )
     seams.poll_orders.return_value = {}
     flow.executor = executor
@@ -664,7 +664,9 @@ def test_buy_and_sweep_announcements_use_executor_mode(monkeypatch, dry):
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, dry=dry)
-    executor, _, notifier, _, _, seams, _ = make_executor(DryRunExecutor if dry else OrderExecutor)
+    executor, _, notifier, _, _, seams, _ = make_executor(
+        DryRunExecutor if dry else OrderExecutor, stub=("poll_orders",)
+    )
     seams.submit_order.side_effect = ["buy-id", "sweep-id"]
     seams.poll_orders.return_value = {}
     flow.executor = executor
@@ -689,7 +691,7 @@ def test_submit_failure_after_saving_intent_stops_later_buys():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, buys=(("A", "s"), ("B", "s")))
-    executor, broker, _, ledger, _, seams, _ = make_executor()
+    executor, broker, _, ledger, _, seams, _ = make_executor(stub=("poll_orders",))
     seams.submit_order.side_effect = executor.submit_order
 
     def fail_submit(*_args):
@@ -717,7 +719,7 @@ def test_rejected_buy_reaches_normal_settlement():
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({})
-    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents",))
+    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents", "poll_orders"))
     seams.submit_order.return_value = "buy-id"
     seams.poll_orders.return_value = {"buy-id": {"status": "rejected"}}
     flow.executor = executor
@@ -736,7 +738,7 @@ def test_after_orders_settles_a_sell_only_batch_or_skips_an_empty_batch(has_sell
     from tests.paper.test_execution import make_executor
 
     flow, view, signals = make_flow({}, buys=())
-    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents",))
+    executor, _, _, _, _, seams, _ = make_executor(stub=("reconcile_order_intents", "poll_orders"))
     seams.poll_orders.return_value = {}
     flow.executor = executor
     view.sweep_on = False
