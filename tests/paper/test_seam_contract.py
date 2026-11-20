@@ -34,6 +34,7 @@ from tests.paper.equivalence.run_with import implementation
 from tests.paper.rules_support import IMPLS
 from tests.paper.transcript import harness
 from tests.paper.transcript.harness import Scenario
+from tests.paper.transcript.injected import HarnessLedger
 from tests.paper.transcript.scenarios import SCENARIOS
 
 REPO = Path(__file__).resolve().parents[2]
@@ -617,6 +618,7 @@ def drive(
                 dry_run=s.dry_run,
                 read_only=s.read_only,
                 membership=s.membership,
+                ledger=HarnessLedger(run),
             )
             if configure is not None:
                 configure(trader, run, stack)
@@ -714,14 +716,21 @@ def test_required_trader_names_stay_bound():
 
 
 def test_trader_persist_names_unchanged():
-    """The 26 persist names of `ledger.TRADER_NAMES` are all bound in the trader module."""
-    names = ledger_module.TRADER_NAMES
-    assert len(names) == 26
-    assert len(set(names)) == 26
-    for name in names:
-        bound = getattr(trader_module, name, None)
-        assert callable(bound), name
-        assert getattr(bound, "__module__", None) == "ggTrader.paper.persist", name
+    """The protocol and PostgreSQL ledger expose the same persistence operations."""
+    from ggTrader.paper.persist import PgPaperLedger
+
+    names = {
+        name
+        for name, value in ledger_module.PaperLedger.__dict__.items()
+        if not name.startswith("_") and callable(value)
+    }
+    assert names
+    actual = {
+        name
+        for name, value in PgPaperLedger.__dict__.items()
+        if not name.startswith("_") and callable(value)
+    }
+    assert names == actual
 
 
 # =========================================================================== the legacy seams
@@ -898,16 +907,20 @@ class TestLegacySeamsInterceptTheRun:
         seen: list[tuple] = []
 
         def configure(_trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
-            real = getattr(trader_module, name)
+            target = _trader._ledger if name == "log_snapshot" else trader_module
+            real = getattr(target, name)
 
             def spy(*args: Any, **kwargs: Any) -> Any:
                 seen.append((args, kwargs))
                 return real(*args, **kwargs)
 
-            stack.enter_context(patch(f"{TRADER_MODULE}.{name}", spy))
+            if name == "log_snapshot":
+                stack.enter_context(patch.object(target, name, spy))
+            else:
+                stack.enter_context(patch(f"{TRADER_MODULE}.{name}", spy))
 
         intercepted = drive(impl_name, scenario, configure)
-        assert seen, f"the run never called {name} through the trader namespace"
+        assert seen, f"the run never called the patched {name}"
         assert _same_run(baseline, intercepted)
 
 

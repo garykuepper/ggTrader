@@ -21,6 +21,7 @@ from tests.paper.equivalence import impl
 from tests.paper.equivalence.run_with import implementation, run_with
 from tests.paper.transcript import harness
 from tests.paper.transcript.harness import ENV_VARS, Scenario
+from tests.paper.transcript.injected import HarnessLedger
 from tests.paper.transcript.scenarios import (
     _LIVE_ENV,
     _STOP_ENV,
@@ -204,11 +205,7 @@ def event_environment(
             "uuid4": new_uuid,
             "time": run.clock,
             "datetime": harness._pinned_datetime(s.now_pt),
-            "paper_run_lock": run.paper_run_lock,
         }
-        for name in harness.persist_function_names():
-            if name != "paper_run_lock":
-                replacements[name] = run.persist_wrapper(name)
         for name, replacement in replacements.items():
             stack.enter_context(patch.object(trader_module, name, replacement))
         yield run
@@ -237,6 +234,7 @@ def run_raw(
                     dry_run=s.dry_run,
                     read_only=s.read_only,
                     membership=s.membership,
+                    ledger=HarnessLedger(run),
                 )
                 result = trader.run()
             except Exception as exc:
