@@ -27,6 +27,8 @@ import pytest
 
 from ggTrader.paper import ledger as ledger_module
 from ggTrader.paper import trader as trader_module
+from ggTrader.paper.corporate_actions import CorporateActions
+from ggTrader.paper.execution import OrderExecutor
 from ggTrader.paper.risk import RiskConfig, RiskGuard
 from ggTrader.paper.trader import PaperTrader
 from tests.paper import rules_support as rs
@@ -148,10 +150,15 @@ REQUIRED_TRADER_NAMES = (
     "run_paper_trading",
     *sorted(MOVED_ALIASES),
 )
+#: The step objects that own the bodies of the former private trader seams (retired in refactor
+#: completion II). A test replaces the named method on the class; the run reaches it there.
+STEP_OWNERS: dict[str, type] = {
+    "OrderExecutor": OrderExecutor,
+    "CorporateActions": CorporateActions,
+}
 PRIVATE_SEAMS = (
     "_submit_order",
     "_reconcile_order_intents",
-    "_flag_if_stale",
     "_reconcile_pending_orders",
     "_poll_orders",
     "_missed_exits",
@@ -753,7 +760,9 @@ class TestLegacySeamsInterceptTheRun:
             "_reconcile_pending_orders", "instance", "plain_buys_and_sells", id="pending_orders"
         ),
         pytest.param("_poll_orders", "class", "plain_buys_and_sells", id="poll_orders"),
-        pytest.param("_flag_if_stale", "instance", "legacy_pending_stale", id="flag_if_stale"),
+        pytest.param(
+            "OrderExecutor.flag_if_stale", "step", "legacy_pending_stale", id="flag_if_stale"
+        ),
         pytest.param("_missed_exits", "instance", "missed_exit_catch_up", id="missed_exits"),
         pytest.param(
             "_compute_split_corrections", "instance", "split_correction", id="split_corrections"
@@ -768,7 +777,17 @@ class TestLegacySeamsInterceptTheRun:
         calls: list[tuple] = []
 
         def configure(trader: PaperTrader, _run: harness._Run, stack: ExitStack) -> None:
-            if how == "instance":
+            if how == "step":
+                owner_name, _, attr = method.partition(".")
+                owner = STEP_OWNERS[owner_name]
+                step_function = getattr(owner, attr)
+
+                def step_spy(self: Any, *args: Any, **kwargs: Any) -> Any:
+                    calls.append((args, kwargs))
+                    return step_function(self, *args, **kwargs)
+
+                stack.enter_context(patch.object(owner, attr, step_spy))
+            elif how == "instance":
                 real = getattr(trader, method)
 
                 def spy(*args: Any, **kwargs: Any) -> Any:

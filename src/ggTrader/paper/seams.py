@@ -34,4 +34,3 @@ class TraderSeams:
     missed_exits: Callable[[dict, dict[str, str], set[str]], list[str]]
     split_corrections: Callable[[dict, date, date], dict[str, float]]
     accrue_dividends: Callable[[dict], dict]
-    flag_if_stale: Callable[[dict, datetime], None]

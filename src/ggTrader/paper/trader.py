@@ -172,7 +172,6 @@ class PaperTrader:
             missed_exits=lambda *args: self._missed_exits(*args),
             split_corrections=lambda *args: self._compute_split_corrections(*args),
             accrue_dividends=lambda positions: self._accrue_dividends(positions),
-            flag_if_stale=lambda pending, now: self._flag_if_stale(pending, now),
         )
 
     def _executor_for_call(self) -> OrderExecutor:
@@ -201,12 +200,6 @@ class PaperTrader:
     ) -> list[str]:
         """Find held symbols with unacted-on exit signals."""
         return missed_exits(self._ledger, positions, last_exit, already)
-
-    def _flag_if_stale(self, pending_order: dict, now: datetime) -> None:
-        """Send a one-time "stale pending order" alert once an order has been
-        open past `_STALE_PENDING_DAYS`. Idempotent via the `flagged_stale`
-        column -- reconciliation keeps polling the order regardless."""
-        return self._executor_for_call().flag_if_stale(pending_order, now)
 
     def _reconcile_pending_orders(self) -> set[str]:
         """Settle orders that were still working at the end of a prior run.

@@ -300,7 +300,7 @@ class OrderExecutor:
             terminal = status in TERMINAL_STATUSES
             if not terminal:
                 still_pending.add(po["symbol"])
-                self._seams.flag_if_stale(po, now)
+                self.flag_if_stale(po, now)
                 continue  # still working — try again next run
 
             try:
