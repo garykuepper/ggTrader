@@ -457,7 +457,8 @@ blocker in a static cross-family review; Sol conditionally approved the behavior
 the gate record expanded afterwards. The logs do not independently embed their commit hash.
 
 The signal generator supplies mapping weights. Malformed weights (an empty sequence, a list of
-pairs, `None`) fail as they did before the split, with `AttributeError` at the slot-cap step. For
+pairs, `None`) fail as they did before the split, with `AttributeError` at the slot-cap step (a run that
+stops earlier, such as a stale signal date or an unreadable peak, never reads the weights). For
 covered cases the log comparison pins logger name, level and rendered message, not raw `LogRecord`
 template, arguments or source metadata.
 The eight private compatibility seams remain; retiring them requires a separate owner decision.
