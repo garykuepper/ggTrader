@@ -52,6 +52,7 @@ def _python() -> str:
 #: GGT_HEAVY_LOCK_HELD to its children, which would otherwise make every test below a no-op.
 _GUARD_VARS = (
     "GGT_TEST_NO_CGROUP",
+    "GGT_TEST_NO_SCOPE",
     "GGT_TEST_DRY_RUN",
     "GGT_RUN_MEM_MAX",
     "GGT_RUN_MAX_SECONDS",
@@ -344,3 +345,202 @@ def test_an_unreadable_margin_is_refused(tmp_path: Path) -> None:
     )
     assert result.returncode == 2, result.stderr
     assert "cannot read the size" in result.stderr
+
+
+# GGT_TEST_NO_SCOPE=1: the whole-job unit runs pytest without a nested scope, but the lock and
+# the free-memory preflight still apply (and fail closed). CI's GGT_TEST_NO_CGROUP=1 is unchanged.
+
+
+def _recording_python(tmp_path: Path, lock: Path) -> tuple[Path, Path]:
+    """A fake interpreter that logs each pytest call and whether the shared lock was held."""
+    log = tmp_path / "calls"
+    fake = tmp_path / "fake-python"
+    fake.write_text(
+        "#!/bin/sh\n"
+        f"if flock -n {lock} true 2>/dev/null; then held=free; else held=held; fi\n"
+        f'echo "$held $*" >> {log}\n'
+        "exit 0\n"
+    )
+    fake.chmod(0o755)
+    return fake, log
+
+
+@needs_flock
+def test_no_scope_job_waits_for_the_shared_lock(tmp_path: Path, holder: _Holder) -> None:
+    fake, log = _recording_python(tmp_path, holder.lock)
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(holder.lock, GGT_TEST_NO_SCOPE="1", GGT_HEAVY_WAIT="1", GGT_PYTHON=str(fake)),
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert "another heavy ggTrader job is still running after 1s" in result.stderr
+    assert not log.exists()
+
+
+def test_no_scope_job_refuses_when_memory_is_short(tmp_path: Path) -> None:
+    lock = tmp_path / "lock"
+    fake, log = _recording_python(tmp_path, lock)
+    meminfo = tmp_path / "meminfo"
+    meminfo.write_text("MemTotal:       32000000 kB\nMemAvailable:    1048576 kB\n")
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(lock, GGT_TEST_NO_SCOPE="1", GGT_MEMINFO=str(meminfo), GGT_PYTHON=str(fake)),
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert "not enough free memory" in result.stderr
+    assert not log.exists()
+
+
+def test_no_scope_job_refuses_when_memory_is_unreadable(tmp_path: Path) -> None:
+    lock = tmp_path / "lock"
+    fake, log = _recording_python(tmp_path, lock)
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(
+            lock,
+            GGT_TEST_NO_SCOPE="1",
+            GGT_MEMINFO=str(tmp_path / "missing"),
+            GGT_PYTHON=str(fake),
+        ),
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert "cannot read MemAvailable" in result.stderr
+    assert not log.exists()
+
+
+@needs_flock
+def test_no_scope_job_runs_pytest_directly_under_the_lock(tmp_path: Path) -> None:
+    lock = tmp_path / "lock"
+    fake, log = _recording_python(tmp_path, lock)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    scope = bin_dir / "systemd-run"
+    scope.write_text(f"#!/bin/sh\necho scope >> {log}\nexit 99\n")
+    scope.chmod(0o755)
+    env = _env(lock, GGT_TEST_NO_SCOPE="1", GGT_PYTHON=str(fake))
+    env["PATH"] = f"{bin_dir}:{env['PATH']}"
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    calls = log.read_text().splitlines()
+    assert len(calls) == 1 and calls[0].startswith("held -m pytest"), calls
+
+
+@needs_flock
+def test_no_scope_wins_over_an_inherited_ci_switch(tmp_path: Path, holder: _Holder) -> None:
+    fake, log = _recording_python(tmp_path, holder.lock)
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(
+            holder.lock,
+            GGT_TEST_NO_SCOPE="1",
+            GGT_TEST_NO_CGROUP="1",
+            GGT_HEAVY_WAIT="1",
+            GGT_PYTHON=str(fake),
+        ),
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert not log.exists()
+
+
+@needs_flock
+def test_ci_switch_still_skips_the_lock_and_preflight(tmp_path: Path, holder: _Holder) -> None:
+    fake, log = _recording_python(tmp_path, holder.lock)
+    meminfo = tmp_path / "meminfo"
+    meminfo.write_text("MemTotal:       32000000 kB\nMemAvailable:    1048576 kB\n")
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(
+            holder.lock,
+            GGT_TEST_NO_CGROUP="1",
+            GGT_HEAVY_WAIT="1",
+            GGT_MEMINFO=str(meminfo),
+            GGT_PYTHON=str(fake),
+        ),
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "waiting for another heavy ggTrader job" not in result.stderr
+    assert log.read_text().splitlines()[0].startswith("held -m pytest")
+
+
+def test_no_scope_job_outside_git_needs_an_explicit_lock(tmp_path: Path) -> None:
+    # The fallback lock inside the checkout is not shared with the developer's jobs, so a broker
+    # job must not silently use it.
+    checkout = tmp_path / "checkout"
+    (checkout / "scripts").mkdir(parents=True)
+    for name in ("run_tests.sh", "_heavy_job.sh"):
+        shutil.copy(ROOT / "scripts" / name, checkout / "scripts" / name)
+    fake, log = _recording_python(tmp_path, tmp_path / "unused-lock")
+    env = _env(tmp_path / "unused-lock", GGT_TEST_NO_SCOPE="1", GGT_PYTHON=str(fake))
+    del env["GGT_HEAVY_LOCK"]
+    env["GIT_CEILING_DIRECTORIES"] = str(tmp_path)
+    result = subprocess.run(
+        [str(checkout / "scripts" / "run_tests.sh"), "-q"],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=checkout,
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert "shared heavy-job lock" in result.stderr
+    assert not log.exists()
+    assert not (checkout / ".ggtrader-heavy.lock").exists()
+
+
+def test_nested_run_inside_a_no_scope_job_does_not_wait(tmp_path: Path, holder: _Holder) -> None:
+    # Pytest children of a broker job inherit GGT_TEST_NO_SCOPE=1 and GGT_HEAVY_LOCK_HELD=1; the
+    # runner's own tests (and tests/test_root_conftest.py) start run_tests.sh from inside it.
+    fake, log = _recording_python(tmp_path, holder.lock)
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=_env(
+            holder.lock,
+            GGT_TEST_NO_SCOPE="1",
+            GGT_HEAVY_LOCK_HELD="1",
+            GGT_HEAVY_WAIT="1",
+            GGT_PYTHON=str(fake),
+        ),
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    assert len(log.read_text().splitlines()) == 1
+
+
+def test_no_scope_job_refuses_an_unopenable_lock(tmp_path: Path) -> None:
+    lock = tmp_path / "missing-dir" / "lock"
+    fake, log = _recording_python(tmp_path, tmp_path / "unused")
+    env = _env(tmp_path / "lock", GGT_TEST_NO_SCOPE="1", GGT_PYTHON=str(fake))
+    env["GGT_HEAVY_LOCK"] = str(lock)
+    result = subprocess.run(
+        [str(TESTS), "tests/utils/test_import_rules.py"],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+    )
+    assert result.returncode == 75, result.stderr
+    assert "cannot open the shared heavy-job lock" in result.stderr
+    assert not log.exists()

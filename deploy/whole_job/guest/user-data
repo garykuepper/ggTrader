@@ -1,0 +1,5 @@
+#cloud-config
+ssh_pwauth: false
+package_update: false
+runcmd:
+  - [bash, -c, "mkdir -p /mnt/cidata && mount -o ro /dev/disk/by-label/cidata /mnt/cidata && cp /mnt/cidata/harness.sh /root/harness.sh && bash /root/harness.sh stage1 > /root/wj1.log 2>&1"]

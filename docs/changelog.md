@@ -1,5 +1,86 @@
 # Changelog
 
+## 2026-11-19 (whole-job broker candidate: durable stop intent)
+
+- Fixes from Sol's review of a60ed4da (`scripts/whole_job_broker.py`): the rollback of a
+  refused registration killed the cgroup first and recorded the stop intent afterwards, so a
+  release renamed into place whose directory sync failed could be killed with no durable,
+  identity-bound intent. Now `abort_release` (held, intent, first attempt counted, read back)
+  is written before the kill, and the kill runs under the admission lock only through handles
+  that still match the record; if the intent cannot be written nothing is killed (the attempt
+  is still counted in memory and the broker is `unverifiable`). A rollback that does stop and
+  drain the job now clears the record; after a torn release the broker then goes
+  `restart-required` (start refused) instead of `idle`, because that admission instance can
+  never release again. A restart with a stored pair but no record no longer kills it: no
+  intent or count can be bound to it, so a kill there could repeat on every restart. It is
+  drained only once its own pinned `cgroup.events` reads empty (the driver exits without
+  `go`); until then the broker stays `unverifiable`. New fixture tests: state at the rollback
+  kill, intent write failure (no kill), handles that stop matching (no kill), a successful
+  rollback after a torn release, a crash at the rollback kill retried after restart with the
+  count kept, an exhausted rollback budget across a restart, and repeated restarts that never
+  kill an unrecorded pair. Fixture tests only; not run in a guest.
+- `scripts/whole_job_broker.py`, `scripts/whole_job_admission.py`: a stop that failed was
+  retried only from broker memory, so after a broker restart the job came back merely held,
+  with no phase deadline and no retry, until someone sent a manual stop. Every stop now first
+  writes a stop intent and attempt count into the admission state, bound to the job string
+  (`stop` must equal `job`; only the clear after a verified stop removes it). A restart retries
+  the intent only through the restored descriptor pair that matches the record exactly; a
+  missing or different descriptor stays `unverifiable` and nothing is killed, a prior-boot
+  record is not retried, and a job held without an intent is not killed. Automatic retries stop
+  after 5 attempts per intent, counted across restarts; after that the broker only reads the
+  pinned `cgroup.events` and clears the job if it empties (an uninterruptible task that finally
+  dies), and `@stop:<attempt>` starts a fresh budget. The unadmitted-registration kill is now
+  recorded as an intent too, and its first retry waits 15 s like any other failed stop.
+  `@status` gains `stop_requested` and `stop_attempts`. Fixes from Sol's review of this change:
+  once the budget is used up, an already-empty cgroup whose store will not drain is no longer
+  stopped again on every pass (each pass wrote `cgroup.kill` and counted an attempt, without
+  limit); it is cleaned up without a kill or a new attempt. And a release record that was
+  renamed into place before its directory sync failed no longer loses the rollback's stop
+  intent: `AdmissionState.abort_release` records the job as held with the intent whether or not
+  the release landed, only for that same job, and that instance never releases admission again;
+  if that write fails too the broker is `unverifiable`. Fixture tests only (crash mid-stop,
+  stale descriptors, held without intent, uninterruptible task, intent write failure, a drain
+  that never verifies, a directory sync failing after the real rename); not run in a guest,
+  and nothing is installed on Encom.
+- Fail-closed restart (Sol's rule): a broker restart now stops every same-boot recorded job
+  whose exact pinned pair is restored, including a released job mid-phase and a merely held
+  one, instead of letting the held phase finish. The intent is inferred and written durably
+  (`stops` = 1) before the first `cgroup.kill`; a recorded intent keeps its count, so an
+  exhausted budget stays exhausted. A missing or mismatched pair and a prior-boot record are
+  still never acted on. This is for the fixed disposable test service only, not Hermes or any
+  unclassified unit. New fixture tests: released and plain-held restart, an inferred stop that
+  does not empty (bounded, still exhausted after a further restart), mismatched descriptors and
+  prior boot without an intent, and a release renamed into place whose directory sync fails
+  and whose rollback rename also fails, then a restart that stops it through the exact pair.
+
+## 2026-11-19 (whole-job broker candidate: fixes from an independent Sol review)
+
+- `scripts/run_tests.sh` has a new switch, `GGT_TEST_NO_SCOPE=1`. It skips only the nested
+  `systemd-run` scope; the heavy-job lock and the `MemAvailable` check still apply. In this mode
+  `scripts/_heavy_job.sh` exits 75 rather than run when it cannot find the shared lock in the git
+  directory (it does not fall back to a lock in the checkout), cannot open the lock, or cannot
+  read `MemAvailable`. It also cancels an inherited `GGT_TEST_NO_CGROUP=1`. The broker's driver
+  (`scripts/whole_job_driver.py`) now uses it instead of `GGT_TEST_NO_CGROUP=1`, which had
+  switched off the lock and the check for broker jobs. CI behaviour is unchanged.
+- `scripts/whole_job_broker.py`: when a registration fails before admission, the broker now
+  forgets the invocation only after it has verified both the cgroup and the descriptor store
+  are empty. On a kill error, a cgroup that does not empty, or an unverified drain, it records
+  the identity as held (new `AdmissionState.retain`) and keeps the pinned handles. Before this
+  fix it reported "stopped" and went idle.
+- `scripts/whole_job_broker.py` (Sol recheck): a stop now drains the descriptor store and reads
+  it back, outside the admission lock, before it clears the record; the record and the pinned
+  handles are kept until both the cgroup and the store are verified empty. Before this, the
+  record was cleared and the handles closed first, and a failed store removal still went idle
+  (this also hit a held unadmitted job stopped by a tick or an operator stop). Automatic stop
+  retries now wait 15 s. A restart with no recorded job no longer drains the store and goes
+  idle unconditionally: an exact stored pair is killed through its own handles and drained
+  with verification, any other stored entry is kept, and with nothing stored the job unit must
+  be inactive and its cgroup absent or empty; otherwise the broker stays `unverifiable`.
+  Fixture tests only; not run in a guest.
+- `deploy/whole_job/guest/harness.sh`: `s1-outcome` was always true; it now checks the reported
+  outcome. The 2026-11-19 guest run's `s1-outcome` PASS was vacuous. The corrected harness and
+  these fixes have not been run in a guest, and nothing is installed on Encom.
+
 ## 2026-11-20 (refactor completion II, task 4 part 2: docstrings for `src/ggTrader/paper`)
 
 - **Docstrings only** (decision D6, part 2). 115 public modules, classes, methods and functions in
@@ -384,6 +465,7 @@
   both oracle and test baselines. These changes do not authorize deployment or trader restart.
 - Paper Telegram summaries now label total P&L percentages against both the prior snapshot and
   starting capital when available; invalid non-positive bases are shown as unavailable.
+
 
 ## 2026-11-18 (test-run safety after the out-of-memory incident)
 

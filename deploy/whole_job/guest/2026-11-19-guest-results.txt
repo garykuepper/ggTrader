@@ -1,0 +1,96 @@
+WJ1 RESULT PASS broker-active
+WJ1 RESULT PASS initial-idle
+WJ1 RESULT PASS initial-state-held
+WJ1 RESULT PASS s4-no-phase
+WJ1 RESULT PASS s4-idle
+WJ1 RESULT PASS s4-test-unit-ended
+WJ1 RESULT PASS s1-wait-idle
+WJ1 RESULT PASS s1-core
+WJ1 RESULT PASS s1-studies
+WJ1 RESULT PASS s1-order
+WJ1 RESULT PASS s1-no-escape
+WJ1 RESULT PASS s1-outcome
+WJ1 RESULT PASS s1-reported
+WJ1 RESULT PASS s1-cleared
+WJ1 RESULT PASS s1-store-empty
+WJ1 RESULT PASS s1-no-procs
+WJ1 RESULT PASS s2-core-started
+WJ1 RESULT PASS s2-running
+WJ1 RESULT PASS s2-store-pair
+WJ1 RESULT PASS s2-stale-refused
+WJ1 RESULT PASS s2-stale-no-hold
+WJ1 RESULT PASS s2-idle
+WJ1 RESULT PASS s2-cgroup-empty
+WJ1 RESULT PASS s2-no-procs
+WJ1 RESULT PASS s2-no-studies
+WJ1 RESULT PASS s2-cleared
+WJ1 RESULT PASS s2-store-empty
+WJ1 RESULT PASS s3-core-started
+WJ1 RESULT PASS s3-held
+WJ1 RESULT PASS s3-restored
+WJ1 RESULT PASS s3-state-held
+WJ1 RESULT PASS s3-idle
+WJ1 RESULT PASS s3-cgroup-empty
+WJ1 RESULT PASS s3-no-procs
+WJ1 RESULT PASS s3-no-studies
+WJ1 RESULT PASS s3b-core-started
+WJ1 RESULT PASS s3b-restarted
+WJ1 RESULT PASS s3b-wait-idle
+WJ1 RESULT PASS s3b-no-procs
+WJ1 RESULT PASS s3b-no-studies
+WJ1 RESULT PASS s3b-cleared
+WJ1 RESULT PASS s3c-core-started
+WJ1 RESULT PASS s3c-held
+WJ1 RESULT PASS s3c-idle
+WJ1 RESULT PASS s3c-no-procs
+WJ1 RESULT PASS s5-refused
+WJ1 RESULT PASS s7-core-started
+WJ2 RESULT PASS s7-broker-not-autostarted
+WJ2 RESULT PASS s7-job-not-resumed
+WJ2 RESULT PASS s7-prior-boot
+WJ2 RESULT PASS s7-state-held
+WJ2 RESULT PASS s7-start-refused
+WJ2 RESULT PASS s7-bad-ack-refused
+WJ2 RESULT PASS s7-ack-idle
+WJ2 RESULT PASS s7-no-studies
+WJ2 RESULT PASS s7-restart-completes
+WJ2 RESULT PASS s7-both-phases
+JOURNAL [  127.168018] wjguest python3[1463]: job request refused: no start is pending
+JOURNAL [  131.636108] wjguest python3[1463]: attempt 55b23926dc94e1bf102a9c867c641835: start requested
+JOURNAL [  131.711450] wjguest python3[1463]: attempt 55b23926dc94e1bf102a9c867c641835: invocation d2db99f28a964cd4bf9ddfb7f7f92ac1 admitted
+JOURNAL [  131.723730] wjguest python3[1463]: attempt 55b23926dc94e1bf102a9c867c641835: phase core admitted
+JOURNAL [  132.864345] wjguest python3[1463]: attempt 55b23926dc94e1bf102a9c867c641835: phase studies admitted
+JOURNAL [  134.024893] wjguest python3[1463]: attempt 55b23926dc94e1bf102a9c867c641835: job ended; driver reported status 0; cleared
+JOURNAL [  136.063045] wjguest python3[1463]: attempt 72e611458ed7c55e512db1c78a2aa7e4: start requested
+JOURNAL [  136.134156] wjguest python3[1463]: attempt 72e611458ed7c55e512db1c78a2aa7e4: invocation 52642e8e6c254daca9e67fdcdc9d9ec4 admitted
+JOURNAL [  136.146492] wjguest python3[1463]: attempt 72e611458ed7c55e512db1c78a2aa7e4: phase core admitted
+JOURNAL [  137.265280] wjguest python3[1463]: operator request refused: attempt is not the current job
+JOURNAL [  137.900590] wjguest python3[1463]: attempt 72e611458ed7c55e512db1c78a2aa7e4: operator stop; cleared
+JOURNAL [  141.732354] wjguest python3[1463]: attempt d3e7ba82c3f9a8cd133211a9d7cb0986: start requested
+JOURNAL [  141.809255] wjguest python3[1463]: attempt d3e7ba82c3f9a8cd133211a9d7cb0986: invocation fbb2eb85d0a8494a96c4a276b6843676 admitted
+JOURNAL [  141.823473] wjguest python3[1463]: attempt d3e7ba82c3f9a8cd133211a9d7cb0986: phase core admitted
+JOURNAL [  142.533025] wjguest python3[1952]: job d3e7ba82c3f9a8cd133211a9d7cb0986: pinned handles restored; job held
+JOURNAL [  145.254231] wjguest python3[1952]: attempt d3e7ba82c3f9a8cd133211a9d7cb0986: operator stop; cleared
+JOURNAL [  146.080572] wjguest python3[1952]: attempt b6287285c424fa741b13edbe39821974: start requested
+JOURNAL [  146.158705] wjguest python3[1952]: attempt b6287285c424fa741b13edbe39821974: invocation daa43cb327614f2db8398462d0f5652d admitted
+JOURNAL [  146.171239] wjguest python3[1952]: attempt b6287285c424fa741b13edbe39821974: phase core admitted
+JOURNAL [  148.667504] wjguest python3[2088]: job b6287285c424fa741b13edbe39821974: pinned handles restored; job held
+JOURNAL [  148.672963] wjguest python3[2088]: attempt b6287285c424fa741b13edbe39821974: job ended without a driver report; cause not determined; cleared
+JOURNAL [  150.945662] wjguest python3[2088]: attempt 4631e198967f0dffc265600ba748ea04: start requested
+JOURNAL [  151.023573] wjguest python3[2088]: attempt 4631e198967f0dffc265600ba748ea04: invocation 25e194fcdb944911bc328fa534416665 admitted
+JOURNAL [  151.036139] wjguest python3[2088]: attempt 4631e198967f0dffc265600ba748ea04: phase core admitted
+JOURNAL [  152.779036] wjguest python3[2205]: job 4631e198967f0dffc265600ba748ea04: pinned handles restored; job held
+JOURNAL [  154.284790] wjguest python3[2205]: attempt 4631e198967f0dffc265600ba748ea04: operator stop; cleared
+JOURNAL [  155.043832] wjguest python3[2205]: operator request refused: sender is not a fixed operator unit
+JOURNAL [  155.139372] wjguest python3[2205]: attempt 319f74f2a8135474a201407ad4d2324c: start requested
+JOURNAL [  155.212408] wjguest python3[2205]: attempt 319f74f2a8135474a201407ad4d2324c: invocation 0227c27af9c54cf7bc819d349407b2a7 admitted
+JOURNAL [  155.225814] wjguest python3[2205]: attempt 319f74f2a8135474a201407ad4d2324c: phase core admitted
+JOURNAL [  125.554715] wjguest python3[1310]: job 319f74f2a8135474a201407ad4d2324c belongs to an earlier boot; acknowledge to clear
+JOURNAL [  127.056709] wjguest python3[1310]: operator request refused: cannot start while prior-boot
+JOURNAL [  127.454199] wjguest python3[1310]: operator request refused: attempt or boot does not match
+JOURNAL [  127.849995] wjguest python3[1310]: prior-boot job 319f74f2a8135474a201407ad4d2324c acknowledged
+JOURNAL [  128.659791] wjguest python3[1310]: attempt 848ee89326de87a505b365f4b89e5616: start requested
+JOURNAL [  128.738380] wjguest python3[1310]: attempt 848ee89326de87a505b365f4b89e5616: invocation 39c40dd161064043876f8651d1d58b90 admitted
+JOURNAL [  128.750771] wjguest python3[1310]: attempt 848ee89326de87a505b365f4b89e5616: phase core admitted
+JOURNAL [  129.877854] wjguest python3[1310]: attempt 848ee89326de87a505b365f4b89e5616: phase studies admitted
+JOURNAL [  131.038626] wjguest python3[1310]: attempt 848ee89326de87a505b365f4b89e5616: job ended; driver reported status 0; cleared
