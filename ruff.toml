@@ -81,8 +81,6 @@ convention = "google"
     "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201",
     "T201", "D100", "D101", "D102", "D103", "D104",
 ]
-# TEMPORARY: part 2 writes the paper/ docstrings; remove then
-"src/ggTrader/paper/**" = ["D100", "D101", "D102", "D103", "D104"]
 # ARG001/ARG002 survivors (`ruff check --select ARG001,ARG002 src/ggTrader`: 11 findings, 2 fixed by
 # dropping the unused parameter of the two membership check handlers; 9 listed here). An unused
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.

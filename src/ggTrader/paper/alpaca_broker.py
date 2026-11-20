@@ -34,6 +34,10 @@ class AlpacaBroker:
         self._client = TradingClient(key, secret, paper=True)
 
     def get_account(self) -> dict:
+        """Return cash, portfolio value, last equity, buying power and multiplier as floats.
+
+        last_equity is None when the broker gives no usable value.
+        """
         acct = self._client.get_account()
         try:
             last_equity = float(getattr(acct, "last_equity", None))
@@ -48,6 +52,10 @@ class AlpacaBroker:
         }
 
     def get_positions(self) -> dict[str, dict]:
+        """Return the open positions keyed by symbol, with their values and P&L as floats.
+
+        unrealized_pl, unrealized_plpc and change_today are None when the broker omits them.
+        """
         positions = self._client.get_all_positions()
         return {
             p.symbol: {
@@ -74,6 +82,10 @@ class AlpacaBroker:
         return {s for s in symbols if not self._client.get_asset(s).tradable}
 
     def submit_buy(self, symbol: str, notional: float, client_order_id: str) -> str:
+        """Submit a DAY market buy for a dollar amount; return the broker order id.
+
+        The amount is rounded to cents.
+        """
         req = MarketOrderRequest(
             symbol=symbol,
             notional=round(notional, 2),
@@ -85,6 +97,7 @@ class AlpacaBroker:
         return str(order.id)
 
     def submit_sell(self, symbol: str, qty: float, client_order_id: str) -> str:
+        """Submit a DAY market sell for a share quantity; return the broker order id."""
         req = MarketOrderRequest(
             symbol=symbol,
             qty=qty,
@@ -96,9 +109,11 @@ class AlpacaBroker:
         return str(order.id)
 
     def get_order(self, order_id: str) -> dict:
+        """Return the normalized fields of the order with this broker order id."""
         return self._normalize_order(self._client.get_order_by_id(order_id))
 
     def get_order_by_client_id(self, client_order_id: str) -> dict:
+        """Return the normalized fields of the order with this client order id."""
         return self._normalize_order(self._client.get_order_by_client_id(client_order_id))
 
     @staticmethod
@@ -119,6 +134,7 @@ class AlpacaBroker:
         }
 
     def get_clock(self) -> dict:
+        """Return whether the market is open, with the next open and close times as strings."""
         clock = self._client.get_clock()
         return {
             "is_open": clock.is_open,

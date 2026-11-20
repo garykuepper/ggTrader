@@ -30,6 +30,10 @@ class TelegramNotifier:
         self._enabled = bool(self._token and self._chat_id)
 
     def send(self, message: str) -> bool:
+        """Post the message to Telegram as HTML; return True only on an HTTP 200.
+
+        Return False when the token or chat id is missing or the request fails.
+        """
         if not self._enabled:
             return False
         try:
@@ -52,6 +56,11 @@ class TelegramNotifier:
         price: float | None = None,
         status: str | None = None,
     ) -> bool:
+        """Send a paper trade alert for an order and return the result of ``send``.
+
+        The alert shows the share count and price when both are positive and the dollar amount
+        otherwise. The upper-cased status joins the title unless it is filled or partially_filled.
+        """
         status_suffix = ""
         if status and status not in ("filled", "partially_filled"):
             status_suffix = f" ({status.upper()})"

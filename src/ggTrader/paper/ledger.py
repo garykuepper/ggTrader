@@ -66,7 +66,9 @@ class NonDurableLedgerError(RuntimeError):
 class RunLock(Protocol):
     """A held run lock whose ownership can be checked before an order is submitted."""
 
-    def verify(self) -> None: ...
+    def verify(self) -> None:
+        """Raise if the caller no longer owns the lock (the SQL lock raises ``RuntimeError``)."""
+        ...
 
 
 @runtime_checkable
@@ -79,7 +81,9 @@ class PaperLedger(Protocol):
     because a ledger without it is treated as non-durable (``require_durable_for_live``).
     """
 
-    def init_paper_schema(self) -> None: ...
+    def init_paper_schema(self) -> None:
+        """Create the paper tables if they do not exist yet."""
+        ...
 
     def create_order_intent(
         self,
@@ -90,11 +94,25 @@ class PaperLedger(Protocol):
         amount: float,
         amount_kind: str,
         reason: str | None,
-    ) -> None: ...
+    ) -> None:
+        """Record an order intent under its client order id before the order reaches the broker.
 
-    def get_unresolved_order_intents(self) -> list[dict]: ...
+        The intent starts in state ``intent``.
+        """
+        ...
 
-    def attach_broker_order(self, client_order_id: str, order_id: str) -> None: ...
+    def get_unresolved_order_intents(self) -> list[dict]:
+        """Return the intents that are not yet resolved, as dicts."""
+        ...
+
+    def attach_broker_order(self, client_order_id: str, order_id: str) -> None:
+        """Attach a broker order id to an intent and mark it submitted.
+
+        Raise ``ValueError`` for a missing intent, another broker id on the intent, an intent not in
+        state ``intent``, or an order id that is also a legacy pending order. Attaching the same id
+        again changes nothing.
+        """
+        ...
 
     def settle_order_intent(
         self,
@@ -103,9 +121,22 @@ class PaperLedger(Protocol):
         filled_qty: float,
         filled_avg_price: float | None,
         terminal_status: str,
-    ) -> None: ...
+    ) -> None:
+        """Resolve an intent with its terminal fill and book the fill as a trade.
 
-    def paper_run_lock(self) -> AbstractContextManager[RunLock]: ...
+        Raise ``ValueError`` for an invalid fill, a missing or conflicting intent, a conflicting
+        trade or an order id that is also a legacy pending order. A trade is booked only for a
+        positive fill quantity, and an identical trade or identical earlier settlement is kept as it
+        is.
+        """
+        ...
+
+    def paper_run_lock(self) -> AbstractContextManager[RunLock]:
+        """Return a context manager that holds the run lock and yields a ``RunLock``.
+
+        The SQL ledger raises ``RuntimeError`` when another run holds the lock.
+        """
+        ...
 
     def log_trade(
         self,
@@ -115,7 +146,13 @@ class PaperLedger(Protocol):
         amount: float,
         order_id: str,
         reason: str | None = None,
-    ) -> None: ...
+    ) -> None:
+        """Record a trade under its order id.
+
+        A repeat of an identical trade changes nothing; a different trade under the same order id
+        raises ``ValueError``.
+        """
+        ...
 
     def settle_legacy_pending_order(
         self,
@@ -123,7 +160,14 @@ class PaperLedger(Protocol):
         filled_qty: float,
         filled_avg_price: float | None,
         terminal_status: str,
-    ) -> None: ...
+    ) -> None:
+        """Book a legacy pending order's terminal fill as a trade and delete the pending order.
+
+        Raise ``ValueError`` for an invalid fill, a missing pending order, an order id that is also
+        an intent's broker order, or a conflicting trade. A trade is booked only for a positive fill
+        quantity.
+        """
+        ...
 
     def log_pending_order(
         self,
@@ -133,57 +177,109 @@ class PaperLedger(Protocol):
         notional: float,
         order_id: str,
         reason: str | None = None,
-    ) -> None: ...
+    ) -> None:
+        """Record an order that had not filled by run end; a repeat of the order id is ignored."""
+        ...
 
-    def get_pending_orders(self) -> list[dict]: ...
+    def get_pending_orders(self) -> list[dict]:
+        """Return the legacy pending orders, as dicts."""
+        ...
 
-    def clear_pending_order(self, order_id: str) -> None: ...
+    def clear_pending_order(self, order_id: str) -> None:
+        """Delete a pending order; an unknown order id does nothing."""
+        ...
 
-    def mark_pending_order_stale(self, order_id: str) -> None: ...
+    def mark_pending_order_stale(self, order_id: str) -> None:
+        """Mark a pending order as flagged stale; an unknown order id does nothing."""
+        ...
 
-    def get_latest_snapshot(self, *, before: date | None = None) -> float | None: ...
+    def get_latest_snapshot(self, *, before: date | None = None) -> float | None:
+        """Return the portfolio value of the latest snapshot, or None when there is none.
 
-    def get_earliest_snapshot(self) -> float | None: ...
+        With ``before``, only snapshots strictly before that date count.
+        """
+        ...
+
+    def get_earliest_snapshot(self) -> float | None:
+        """Return the portfolio value of the earliest snapshot, or None when there is none."""
+        ...
 
     def log_snapshot(
         self, run_date: str, portfolio_value: float, cash: float, positions: dict[str, Position]
-    ) -> None: ...
+    ) -> None:
+        """Store the snapshot of a run date, replacing the one already stored for that date."""
+        ...
 
-    def get_latest_snapshot_positions(self) -> dict | None: ...
+    def get_latest_snapshot_positions(self) -> dict | None:
+        """Return the positions of the latest snapshot, or None when there is none."""
+        ...
 
-    def get_latest_snapshot_run_date(self) -> str | None: ...
+    def get_latest_snapshot_run_date(self) -> str | None:
+        """Return the latest snapshot's run date as an ISO string, or None when there is none."""
+        ...
 
-    def get_peak_value(self) -> float | None: ...
+    def get_peak_value(self) -> float | None:
+        """Return the stored portfolio peak, or None when none is stored."""
+        ...
 
-    def save_peak_value(self, peak_value: float) -> None: ...
+    def save_peak_value(self, peak_value: float) -> None:
+        """Store the portfolio peak, replacing any earlier one."""
+        ...
 
-    def get_rebalance_state(self) -> dict | None: ...
+    def get_rebalance_state(self) -> dict | None:
+        """Return the stored rebalance date, weights and scale, or None when none is stored."""
+        ...
 
-    def get_snapshot_history(self) -> list[tuple]: ...
+    def get_snapshot_history(self) -> list[tuple]:
+        """Return every snapshot as ``(run_date, positions)``, oldest first."""
+        ...
 
-    def get_trade_history_dates(self, symbol: str) -> list: ...
+    def get_trade_history_dates(self, symbol: str) -> list:
+        """Return the run dates of the trades in ``symbol``, oldest first."""
+        ...
 
-    def get_last_buy_dates(self) -> dict[str, date]: ...
+    def get_last_buy_dates(self) -> dict[str, date]:
+        """Return the run date of the latest BUY trade of each symbol."""
+        ...
 
-    def get_accrued_dividend_keys(self) -> set[tuple]: ...
+    def get_accrued_dividend_keys(self) -> set[tuple]:
+        """Return the ``(symbol, ex_date)`` keys of the stored dividend accruals."""
+        ...
 
     def log_dividend_accrual(
         self, symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
-    ) -> None: ...
+    ) -> None:
+        """Store a dividend accrual per symbol and ex-date; a repeat of the pair is ignored."""
+        ...
 
-    def get_total_dividend_accrual(self) -> float: ...
+    def get_total_dividend_accrual(self) -> float:
+        """Return the sum of the stored dividend accrual amounts (0.0 when there are none)."""
+        ...
 
     def save_rebalance_state(
         self, rebalance_date: str, weights: dict[str, float], scale: float
-    ) -> None: ...
+    ) -> None:
+        """Store the rebalance date, weights and scale, replacing any earlier state."""
+        ...
 
-    def get_open_split_corrections(self) -> dict[str, float]: ...
+    def get_open_split_corrections(self) -> dict[str, float]:
+        """Return the stored split correction factor of each symbol."""
+        ...
 
-    def get_open_split_states(self) -> dict[str, dict]: ...
+    def get_open_split_states(self) -> dict[str, dict]:
+        """Return each symbol's stored split correction as ``{"factor", "ex_date"}``."""
+        ...
 
-    def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None: ...
+    def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None:
+        """Store a split correction for ``symbol``.
 
-    def clear_split_correction(self, symbol: str) -> None: ...
+        A repeat for the same symbol updates the factor and keeps the stored ex-date.
+        """
+        ...
+
+    def clear_split_correction(self, symbol: str) -> None:
+        """Delete the stored split correction of ``symbol``; none stored does nothing."""
+        ...
 
 
 class ReadOnlyLedger:
@@ -325,10 +421,15 @@ class InMemoryLedger:
     # -- schema and lock -----------------------------------------------------------------
 
     def init_paper_schema(self) -> None:
+        """Mark the schema as initialized."""
         self.schema_initialized = True
 
     @contextmanager
     def paper_run_lock(self) -> Iterator[_MemoryRunLock]:
+        """Count one entry in ``lock_entries`` and yield a lock that counts its ``verify`` calls.
+
+        Nothing is held and nothing is refused.
+        """
         self.lock_entries += 1
         yield _MemoryRunLock(self)
 
@@ -344,6 +445,7 @@ class InMemoryLedger:
         amount_kind: str,
         reason: str | None,
     ) -> None:
+        """Store a new intent; raise ``ValueError`` when its client order id already exists."""
         if client_order_id in self._intents:
             raise ValueError("Duplicate client order id")
         self._intents[client_order_id] = {
@@ -362,6 +464,7 @@ class InMemoryLedger:
         }
 
     def get_unresolved_order_intents(self) -> list[dict]:
+        """Return deep copies of the intents that are not resolved, in creation order."""
         return [copy.deepcopy(row) for row in self._intents.values() if row["state"] != "resolved"]
 
     def _reject_pending(self, order_id: str) -> None:
@@ -369,6 +472,12 @@ class InMemoryLedger:
             raise ValueError("Order has both pending and intent representations")
 
     def attach_broker_order(self, client_order_id: str, order_id: str) -> None:
+        """Attach a broker order id to an intent and mark it submitted.
+
+        Raise ``ValueError`` when the order id is a pending order, the intent is missing, it has
+        another broker id, or it is not in state ``intent``. Attaching the same id again changes
+        nothing.
+        """
         self._reject_pending(order_id)
         row = self._intents.get(client_order_id)
         if row is None or row["broker_order_id"] not in (None, order_id):
@@ -387,6 +496,13 @@ class InMemoryLedger:
         filled_avg_price: float | None,
         terminal_status: str,
     ) -> None:
+        """Resolve an intent with its terminal fill and book the fill as a trade.
+
+        Raise ``ValueError`` for an invalid fill, a pending order with this id, a missing or
+        conflicting intent, a conflicting settlement or a conflicting trade. A trade is booked only
+        for a positive fill quantity. Settling an already resolved intent with the same fill changes
+        nothing.
+        """
         amount = _validate_terminal_fill(filled_qty, filled_avg_price, terminal_status)
         self._reject_pending(order_id)
         row = self._intents.get(client_order_id)
@@ -453,6 +569,10 @@ class InMemoryLedger:
         order_id: str,
         reason: str | None = None,
     ) -> None:
+        """Append the trade unless an identical one exists under the order id.
+
+        A different trade under the same order id raises ``ValueError``.
+        """
         existing = self._trades_of(order_id)
         expected = (_iso(run_date), side, symbol, amount, reason)
         if len(existing) > 1 or (existing and _trade_key(existing[0]) != expected):
@@ -477,6 +597,12 @@ class InMemoryLedger:
         filled_avg_price: float | None,
         terminal_status: str,
     ) -> None:
+        """Book the terminal fill of a pending order as a trade and delete the pending order.
+
+        Raise ``ValueError`` for an invalid fill, a missing pending order, an intent with this
+        broker order id, or a conflicting trade. A trade is booked only for a positive fill
+        quantity.
+        """
         amount = _validate_terminal_fill(filled_qty, filled_avg_price, terminal_status)
         row = self._pending.get(order_id)
         if row is None:
@@ -500,6 +626,7 @@ class InMemoryLedger:
         order_id: str,
         reason: str | None = None,
     ) -> None:
+        """Store a pending order; a repeat of the order id keeps the first one."""
         self._pending.setdefault(
             order_id,
             {
@@ -515,28 +642,37 @@ class InMemoryLedger:
         )
 
     def get_pending_orders(self) -> list[dict]:
+        """Return deep copies of the pending orders, in the order they were stored."""
         return [copy.deepcopy(row) for row in self._pending.values()]
 
     def clear_pending_order(self, order_id: str) -> None:
+        """Delete a pending order; an unknown order id does nothing."""
         self._pending.pop(order_id, None)
 
     def mark_pending_order_stale(self, order_id: str) -> None:
+        """Flag a pending order as stale; an unknown order id does nothing."""
         if order_id in self._pending:
             self._pending[order_id]["flagged_stale"] = True
 
     # -- snapshots, peak and rebalance state ---------------------------------------------
 
     def get_latest_snapshot(self, *, before: date | None = None) -> float | None:
+        """Return the portfolio value of the latest snapshot, or None when there is none.
+
+        With ``before``, only snapshots strictly before that date count.
+        """
         days = sorted(d for d in self._snapshots if before is None or d < _iso(before))
         return float(self._snapshots[days[-1]]["portfolio_value"]) if days else None
 
     def get_earliest_snapshot(self) -> float | None:
+        """Return the portfolio value of the earliest snapshot, or None when there is none."""
         days = sorted(self._snapshots)
         return float(self._snapshots[days[0]]["portfolio_value"]) if days else None
 
     def log_snapshot(
         self, run_date: str, portfolio_value: float, cash: float, positions: dict[str, Position]
     ) -> None:
+        """Store a snapshot (positions deep-copied) per run date, replacing any earlier one."""
         self._snapshots[_iso(run_date)] = {
             "portfolio_value": portfolio_value,
             "cash": cash,
@@ -544,25 +680,31 @@ class InMemoryLedger:
         }
 
     def get_latest_snapshot_positions(self) -> dict | None:
+        """Return a deep copy of the latest snapshot's positions, or None when there is none."""
         days = sorted(self._snapshots)
         return copy.deepcopy(self._snapshots[days[-1]]["positions"]) if days else None
 
     def get_latest_snapshot_run_date(self) -> str | None:
+        """Return the latest snapshot's run date as an ISO string, or None when there is none."""
         days = sorted(self._snapshots)
         return days[-1] if days else None
 
     def get_peak_value(self) -> float | None:
+        """Return the stored portfolio peak, or None when none is stored."""
         return self._peak
 
     def save_peak_value(self, peak_value: float) -> None:
+        """Store the portfolio peak as a float, replacing any earlier one."""
         self._peak = float(peak_value)
 
     def get_rebalance_state(self) -> dict | None:
+        """Return a deep copy of the stored rebalance state, or None when none is stored."""
         return copy.deepcopy(self._rebalance)
 
     def save_rebalance_state(
         self, rebalance_date: str, weights: dict[str, float], scale: float
     ) -> None:
+        """Store the rebalance date (as an ISO string), a copy of the weights and the scale."""
         self._rebalance = {
             "rebalance_date": _iso(rebalance_date),
             "weights": copy.deepcopy(weights),
@@ -570,6 +712,10 @@ class InMemoryLedger:
         }
 
     def get_snapshot_history(self) -> list[tuple]:
+        """Return every snapshot as ``(run_date, positions)``, oldest first.
+
+        The run date is a ``date`` and the positions are deep copies.
+        """
         return [
             (date.fromisoformat(day), copy.deepcopy(self._snapshots[day]["positions"]))
             for day in sorted(self._snapshots)
@@ -578,9 +724,11 @@ class InMemoryLedger:
     # -- trade history and dividends -----------------------------------------------------
 
     def get_trade_history_dates(self, symbol: str) -> list:
+        """Return the run dates of the trades in ``symbol``, oldest first."""
         return sorted(_as_date(t["run_date"]) for t in self.trades if t["symbol"] == symbol)
 
     def get_last_buy_dates(self) -> dict[str, date]:
+        """Return the run date of the latest BUY trade of each symbol."""
         latest: dict[str, date] = {}
         for trade in self.trades:
             if trade["side"] == "BUY":
@@ -589,31 +737,40 @@ class InMemoryLedger:
         return latest
 
     def get_accrued_dividend_keys(self) -> set[tuple]:
+        """Return the ``(symbol, ex_date)`` keys of the stored dividend accruals."""
         return {(row["symbol"], row["ex_date"]) for row in self._dividends.values()}
 
     def log_dividend_accrual(
         self, symbol: str, ex_date: date | str, rate: float, qty: float, amount: float
     ) -> None:
+        """Store a dividend accrual per symbol and ex-date; a repeat of the pair is ignored."""
         self._dividends.setdefault(
             (symbol, _iso(ex_date)),
             {"symbol": symbol, "ex_date": ex_date, "rate": rate, "qty": qty, "amount": amount},
         )
 
     def get_total_dividend_accrual(self) -> float:
+        """Return the sum of the stored dividend accrual amounts as a float."""
         return float(sum(row["amount"] for row in self._dividends.values()))
 
     # -- split corrections ---------------------------------------------------------------
 
     def get_open_split_corrections(self) -> dict[str, float]:
+        """Return the stored split correction factor of each symbol."""
         return {symbol: float(row["factor"]) for symbol, row in self._splits.items()}
 
     def get_open_split_states(self) -> dict[str, dict]:
+        """Return each symbol's stored split correction as ``{"factor", "ex_date"}``."""
         return {
             symbol: {"factor": float(row["factor"]), "ex_date": _as_date(row["ex_date"])}
             for symbol, row in self._splits.items()
         }
 
     def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None:
+        """Store a split correction for ``symbol``.
+
+        A repeat for the same symbol updates the factor and keeps the stored ex-date.
+        """
         # Like the SQL upsert, a repeat for a symbol refreshes the factor and keeps the ex-date.
         if symbol in self._splits:
             self._splits[symbol]["factor"] = factor
@@ -621,4 +778,5 @@ class InMemoryLedger:
             self._splits[symbol] = {"ex_date": ex_date, "factor": factor}
 
     def clear_split_correction(self, symbol: str) -> None:
+        """Delete the stored split correction of ``symbol``; none stored does nothing."""
         self._splits.pop(symbol, None)

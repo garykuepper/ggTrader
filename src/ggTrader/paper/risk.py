@@ -37,9 +37,14 @@ class RiskGuard:
 
     @property
     def peak_value(self) -> float | None:
+        """Return the peak portfolio value the guard holds, or None when none is set."""
         return self._peak_value
 
     def update_peak(self, portfolio_value: float) -> None:
+        """Record ``portfolio_value`` as the peak when there is no peak yet or it is higher.
+
+        Raise ``ValueError`` for a missing, non-finite or non-positive value.
+        """
         if portfolio_value is None or not math.isfinite(portfolio_value) or portfolio_value <= 0:
             raise ValueError("Invalid portfolio value for risk peak")
         if self._peak_value is None or portfolio_value > self._peak_value:

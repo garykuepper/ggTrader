@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-20 (refactor completion II, task 4 part 2: docstrings for `src/ggTrader/paper`)
+
+- **Docstrings only** (decision D6, part 2). 115 public modules, classes, methods and functions in
+  `src/ggTrader/paper/` gained a docstring, each written after reading its body (`ledger.py` 63, `execution.py` 20,
+  `ports.py` 12, `alpaca_broker.py` 7, `persist.py` 4, `planning.py` 4, `notifier.py` 2, `risk.py` 2, the package
+  `__init__.py` 1). No code, signature or import changed: the protocol stubs in `execution.py`, `ports.py` and
+  `ledger.py` that were one-line `...` bodies now hold a docstring and the same `...`, with the blank line the
+  formatter puts between methods. The hash pins are unchanged (MATCH=0, MOVED-MATCH=4, HISTORY-MATCH=18, FAIL=0).
+- `ruff.toml`: the temporary `src/ggTrader/paper/**` ignore of `D100`-`D104` is gone, so the docstring rules now
+  apply to all of `src/ggTrader`.
+
 ## 2026-11-20 (refactor completion II, task 4 part 1: docstring rules D100-D104, outside paper/)
 
 - **Docstrings only** (decision D6, part 1). 33 public modules, packages, classes, methods and

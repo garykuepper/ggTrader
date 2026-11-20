@@ -148,6 +148,7 @@ class PgPaperLedger:
     durable: bool = True
 
     def init_paper_schema(self) -> None:
+        """Create the paper tables, and the columns they may lack, if they do not exist yet."""
         with _get_engine().begin() as conn:
             for stmt in _SCHEMA.strip().split(";"):
                 stmt = stmt.strip()
@@ -542,6 +543,7 @@ class PgPaperLedger:
     def log_snapshot(
         self, run_date: str, portfolio_value: float, cash: float, positions: dict
     ) -> None:
+        """Insert the snapshot of a run date, or overwrite the one already stored for that date."""
         with _get_engine().begin() as conn:
             conn.execute(
                 text(
@@ -805,6 +807,7 @@ def _pg() -> PgPaperLedger:
 
 
 def init_paper_schema() -> None:
+    """Create the paper tables, and the columns they may lack, if they do not exist yet."""
     return _pg().init_paper_schema()
 
 
@@ -923,6 +926,7 @@ def get_earliest_snapshot() -> float | None:
 
 
 def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: dict) -> None:
+    """Insert the snapshot of a run date, or overwrite the one already stored for that date."""
     return _pg().log_snapshot(run_date, portfolio_value, cash, positions)
 
 

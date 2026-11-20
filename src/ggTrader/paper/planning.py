@@ -204,13 +204,19 @@ def plan_exits(
 class RiskLimits(Protocol):
     """Risk sizing and concentration checks used by planning."""
 
-    def max_new_positions(self, current_count: int) -> int: ...
+    def max_new_positions(self, current_count: int) -> int:
+        """Return how many more positions may be opened when ``current_count`` are held."""
+        ...
 
-    def sleeve_slot_caps(self, weights: dict[str, float]) -> dict[str, int]: ...
+    def sleeve_slot_caps(self, weights: dict[str, float]) -> dict[str, int]:
+        """Return the number of position slots each sleeve may hold, given the sleeve weights."""
+        ...
 
     def sleeve_position_notional(
         self, portfolio_value: float, sleeve_weight: float, scale: float
-    ) -> float: ...
+    ) -> float:
+        """Return the dollar size of one new position in a sleeve."""
+        ...
 
     def check_concentration(
         self,
@@ -218,7 +224,9 @@ class RiskLimits(Protocol):
         positions: dict[str, dict],
         portfolio_value: float,
         prospective_notional: float = 0.0,
-    ) -> bool: ...
+    ) -> bool:
+        """Return True when adding to ``symbol`` would reach the concentration limit."""
+        ...
 
 
 def plan_sweep_sell(

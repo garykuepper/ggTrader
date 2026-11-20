@@ -25,18 +25,38 @@ class Executor(Protocol):
 
     submits_orders: bool
 
-    def recover_intents(self) -> None: ...
-    def submit(self, intent: OrderIntent) -> str | None: ...
-    def announce(self, intent: OrderIntent) -> None: ...
-    def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]: ...
-    def after_sells(self, filled: Mapping[str, OrderStatus]) -> None: ...
-    def after_orders(self, orders: Sequence[SubmittedOrder]) -> None: ...
+    def recover_intents(self) -> None:
+        """Resolve the order intents a previous run left unresolved."""
+        ...
+
+    def submit(self, intent: OrderIntent) -> str | None:
+        """Submit the intent's order; return the broker order id, or None when none is sent."""
+        ...
+
+    def announce(self, intent: OrderIntent) -> None:
+        """Tell the operator about an intent."""
+        ...
+
+    def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
+        """Poll the submitted orders; return their order info keyed by order id."""
+        ...
+
+    def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
+        """Follow up after the sell orders have been polled."""
+        ...
+
+    def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
+        """Follow up after the whole order batch has been polled."""
+        ...
+
     def unfilled_exit_errors(
         self,
         orders: Sequence[SubmittedOrder],
         filled: Mapping[str, OrderStatus],
         broker_positions: Mapping[str, Position],
-    ) -> list[str]: ...
+    ) -> list[str]:
+        """Return an error message for each sell that did not fill in full."""
+        ...
 
 
 class OrderExecutor:
@@ -73,23 +93,29 @@ class OrderExecutor:
         self._current = current if current is not None else lambda: self
 
     def recover_intents(self) -> None:
+        """Reconcile the order intents through the current executor."""
         self._current().reconcile_order_intents()
 
     def submit(self, intent: OrderIntent) -> str | None:
+        """Submit the intent's order through the current executor; return the broker order id."""
         return self._current().submit_order(intent.side, intent.symbol, intent.size, intent.reason)
 
     def poll(self, orders: Sequence[SubmittedOrder]) -> dict[str, OrderStatus]:
+        """Poll the orders through the current executor; return their info keyed by order id."""
         return self._current().poll_orders(list(orders))
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
+        """Reconcile the order intents when there are sell results; do nothing if there are none."""
         if filled:
             self._current().reconcile_order_intents()
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
+        """Reconcile the order intents when there are orders; do nothing for an empty sequence."""
         if orders:
             self._current().reconcile_order_intents()
 
     def announce(self, intent: OrderIntent) -> None:
+        """Send the catastrophe-stop alert for a stop intent; every other intent sends nothing."""
         if intent.kind == IntentKind.STOP:
             self._notifier.send(
                 f"<b>🛑 Catastrophe stop:</b> {intent.symbol} "
@@ -103,6 +129,11 @@ class OrderExecutor:
         filled: Mapping[str, OrderStatus],
         broker_positions: Mapping[str, Position],
     ) -> list[str]:
+        """Return a message for each sell that is not filled in full.
+
+        The cash-sweep sell is skipped. A sell counts as filled only when its status is "filled" and
+        its filled quantity equals the broker position quantity.
+        """
         errors = []
         for order in orders:
             if order.side != "SELL" or order.reason == cash_sweep.SWEEP_TRADE_REASON:
@@ -398,15 +429,19 @@ class DryRunExecutor(OrderExecutor):
         return set()
 
     def recover_intents(self) -> None:
+        """Do nothing: a dry run neither submits orders nor recovers intents."""
         pass
 
     def submit(self, intent: OrderIntent) -> None:
+        """Submit nothing and return None."""
         return None
 
     def after_sells(self, filled: Mapping[str, OrderStatus]) -> None:
+        """Do nothing."""
         pass
 
     def after_orders(self, orders: Sequence[SubmittedOrder]) -> None:
+        """Do nothing."""
         pass
 
     def unfilled_exit_errors(
@@ -415,9 +450,14 @@ class DryRunExecutor(OrderExecutor):
         filled: Mapping[str, OrderStatus],
         broker_positions: Mapping[str, Position],
     ) -> list[str]:
+        """Return no errors: a dry run submits no sells."""
         return []
 
     def announce(self, intent: OrderIntent) -> None:
+        """Send a DRY RUN alert that describes the intent by kind.
+
+        The kinds are stop, exit, sweep sell, buy and sweep buy.
+        """
         symbol, size = intent.symbol, intent.size
         if intent.kind == IntentKind.STOP:
             message = (
