@@ -1,50 +1,71 @@
 """In-memory paper trader test helpers."""
 
+import sys
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import ExitStack, contextmanager
+from copy import deepcopy
+from functools import wraps
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
+from ggTrader.paper import persist
 from ggTrader.paper.ledger import TRADER_NAMES, InMemoryLedger, PaperLedger
 
+if TYPE_CHECKING:
+    from ggTrader.paper.trader import PaperTrader
+
+Call = tuple[str, tuple[Any, ...], dict[str, Any]]
 PERSIST_NAMES = TRADER_NAMES
+LEDGER_NAMES = frozenset(
+    name
+    for name, value in PaperLedger.__dict__.items()
+    if not name.startswith("_") and callable(value)
+)
+FALLBACK_NAMES = LEDGER_NAMES - frozenset(PERSIST_NAMES)
 
 
 class SpyLedger(InMemoryLedger):
     """Record public ledger calls while retaining in-memory behavior."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self._calls = []
+        self._calls: list[Call] = []
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         value = super().__getattribute__(name)
         if name not in PaperLedger.__dict__ or name.startswith("_"):
             return value
 
-        def record(*args, **kwargs):
-            self._calls.append((name, args, kwargs))
+        @wraps(value)
+        def record(*args: Any, **kwargs: Any) -> Any:
+            self._calls.append((name, deepcopy(args), deepcopy(kwargs)))
             return value(*args, **kwargs)
 
         return record
 
-    def calls(self, name=None):
+    def calls(self, name: str | None = None) -> list[Call]:
+        """Return recorded calls; use unbound InMemoryLedger methods to inspect state."""
+        if name is not None and name not in LEDGER_NAMES:
+            raise ValueError(f"unknown ledger method: {name}")
         return [call for call in self._calls if name is None or call[0] == name]
 
 
-def seed_snapshots(ledger, snapshots):
+def seed_snapshots(ledger: SpyLedger, snapshots: Iterable[tuple[Any, ...]]) -> None:
     """Seed snapshots without recording setup as trader activity."""
     for snapshot in snapshots:
         InMemoryLedger.log_snapshot(ledger, *snapshot)
 
 
-def seed_peak(ledger, peak):
+def seed_peak(ledger: SpyLedger, peak: float) -> None:
     """Seed the persisted peak."""
     InMemoryLedger.save_peak_value(ledger, peak)
 
 
-def seed_pending_orders(ledger, orders):
-    """Seed legacy pending orders."""
+def seed_pending_orders(ledger: SpyLedger, orders: Iterable[Mapping[str, Any]]) -> None:
+    """Seed complete legacy pending rows without recording setup."""
     for order in orders:
-        InMemoryLedger.log_pending_order(ledger, **order)
+        row = {"created_at": None, "flagged_stale": False, "reason": None, **deepcopy(order)}
+        ledger._pending[row["order_id"]] = row
 
 
 class UnstubbedPersistCall(AssertionError):
@@ -52,12 +73,12 @@ class UnstubbedPersistCall(AssertionError):
 
 
 @contextmanager
-def persist_guard():
+def persist_guard() -> Iterator[list[Call]]:
     """Fail on unstubbed calls, including exceptions swallowed by the trader."""
-    calls = []
+    calls: list[Call] = []
 
-    def guard(name):
-        def fail(*args, **kwargs):
+    def guard(name: str) -> Any:
+        def fail(*args: Any, **kwargs: Any) -> None:
             calls.append((name, args, kwargs))
             raise UnstubbedPersistCall(name)
 
@@ -67,13 +88,24 @@ def persist_guard():
         with ExitStack() as stack:
             for name in PERSIST_NAMES:
                 stack.enter_context(patch(f"ggTrader.paper.trader.{name}", guard(name)))
+            for name in FALLBACK_NAMES:
+                stack.enter_context(patch.object(persist, name, guard(name)))
             yield calls
     finally:
         if calls:
-            raise UnstubbedPersistCall(f"Unstubbed persist calls: {calls}")
+            raise UnstubbedPersistCall(f"Unstubbed persist calls: {calls}") from sys.exc_info()[1]
 
 
-def make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
+def make_trader(
+    positions: dict[str, dict[str, Any]] | None = None,
+    portfolio_value: float = 100000.0,
+    cash: float = 50000.0,
+    *,
+    ledger: PaperLedger | None = None,
+    dry_run: bool = False,
+    read_only: bool | None = None,
+) -> tuple["PaperTrader", MagicMock, MagicMock, PaperLedger]:
+    """Build a trader with an exposed in-memory ledger and broker fakes."""
     from ggTrader.paper.trader import PaperTrader
 
     broker = MagicMock()
@@ -106,7 +138,8 @@ def make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
     notifier.trade_alert.return_value = True
     notifier.daily_summary.return_value = True
 
-    trader = PaperTrader(broker, notifier, dry_run=False, ledger=SpyLedger())
+    ledger = SpyLedger() if ledger is None else ledger
+    trader = PaperTrader(broker, notifier, dry_run=dry_run, read_only=read_only, ledger=ledger)
     trader._submit_order = MagicMock(
         side_effect=lambda side, symbol, amount, reason: (
             broker.submit_buy(symbol, amount)
@@ -114,4 +147,4 @@ def make_trader(positions=None, portfolio_value=100000.0, cash=50000.0):
             else broker.submit_sell(symbol, amount)
         )
     )
-    return trader, broker, notifier
+    return trader, broker, notifier, ledger

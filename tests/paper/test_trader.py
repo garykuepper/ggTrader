@@ -276,7 +276,7 @@ class TestSellExits:
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_sells_positions_with_exit_signal(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=["AAPL"], as_of="2026-06-19")
-        trader, broker, notifier = make_trader(
+        trader, broker, notifier, ledger = make_trader(
             positions={
                 "AAPL": {
                     "qty": 10.0,
@@ -290,17 +290,36 @@ class TestSellExits:
         trader._submit_order.assert_called_once_with("SELL", "AAPL", 10.0, None)
         broker.submit_sell.assert_called_once_with("AAPL", 10.0)
         assert "AAPL" in result["sells"]
-        assert trader._ledger.calls("log_snapshot") == [
-            ("log_snapshot", ("2026-06-19", 100000.0, 50000.0, broker.get_positions()), {})
+        assert result["errors"] == []
+        assert ledger.calls("log_snapshot") == [
+            (
+                "log_snapshot",
+                (
+                    "2026-06-19",
+                    100000.0,
+                    50000.0,
+                    {
+                        "AAPL": {
+                            "qty": 10.0,
+                            "market_value": 1500.0,
+                            "avg_entry": 145.0,
+                            "unrealized_pl": 50.0,
+                        }
+                    },
+                ),
+                {},
+            )
         ]
 
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_skips_sell_if_not_holding(self, mock_signals):
         mock_signals.return_value = _blend(buys=[], sells=["AAPL"], as_of="2026-06-19")
-        trader, broker, _ = make_trader(positions={})
+        trader, broker, _, ledger = make_trader(positions={})
         result = trader.run()
         broker.submit_sell.assert_not_called()
         assert result["sells"] == []
+        assert result["errors"] == []
+        assert ledger.calls("create_order_intent") == []
 
     @patch("ggTrader.paper.trader.generate_core_signals")
     def test_sell_submits_brokers_uncorrected_qty_not_split_adjusted(self, mock_signals):
@@ -309,7 +328,7 @@ class TestSellExits:
         # split-adjusted 41.6 shares would be rejected by the broker.
         mock_signals.return_value = _blend(buys=[], sells=["MNST"], as_of="2026-06-19")
         mnst_qty = 20.80410098
-        trader, broker, _ = make_trader(
+        trader, broker, _, _ = make_trader(
             positions={
                 "MNST": {
                     "qty": mnst_qty,
@@ -323,8 +342,11 @@ class TestSellExits:
             "corp_splits": {"MNST": [(date(2026, 8, 11), 2.0)]},
             "activity_applied": set(),
         }
-        trader.run()
+        result = trader.run()
         broker.submit_sell.assert_called_once_with("MNST", mnst_qty)
+        assert result["errors"] == [
+            "SELL MNST not fully filled (filled); new strategy buys blocked"
+        ]
 
 
 _AAPL_POS = {
