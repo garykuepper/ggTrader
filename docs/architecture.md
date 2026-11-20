@@ -98,7 +98,7 @@ src/ggTrader/
 │   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
 │   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
 │   ├── ports.py                 # Broker and Notifier protocols (AlpacaBroker, TelegramNotifier and DryRunNotifier satisfy them)
-│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger (the ModuleLedger adapter is retired)
+│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger (the old `ModuleLedger` string-patch adapter was retired in Phase 5 and no longer exists)
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
 │   └── persist.py               # Saves daily paper trading logs and portfolio balances (PgPaperLedger holds the SQL; the module functions delegate to it)
@@ -404,7 +404,7 @@ split here; Phase 5 did that, building on these pieces (section 4b).
 | `Broker` and `Notifier` protocols (the 11 broker methods and 3 notifier methods the trader calls) | `paper/ports.py` | permanent |
 | `PaperLedger` protocol, one method per public function of `paper/persist.py`, plus `InMemoryLedger` (a test double: no database) and `ReadOnlyLedger` (skips every write, records the method name in `skipped_writes`) | `paper/ledger.py` | permanent |
 | `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py` | `paper/persist.py` | permanent |
-| `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **retired in Phase 5** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
+| `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **history: retired in Phase 5, no longer in the code** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
 | `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
 | `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live`. The chain is wired: `lab.data.fetch_stock_ohlcv`, `paper/signal_runner.py` and `paper/overlay.py` all call it | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
 | `CachedYFinanceLoader.persist(df, interval)`: public writer that delegates to `_cache_to_db`, so callers stop reaching for the private method | `data/live/cached_yfinance_loader.py` | permanent |
@@ -476,7 +476,7 @@ is a static production-import guard rather than a runtime refusal.
 
 ### 4b. The run as step objects (refactor phase 5)
 
-Phase 5 split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` is 22) that
+Before Phase 5, `PaperTrader._run` was one 826-line method. Phase 5 split it into an orchestrator of 38 lines (`run` is 22) that
 calls one step object at a time, in the order the old code ran. `trader.py` went from 1,584 (at `1c7a3138`) to 357
 lines. The design aim was to preserve orders, SQL, Telegram messages, rendered log messages, clock
 read positions and price rows; the verification above describes the scope and known limits.
@@ -513,7 +513,7 @@ run()   TraderConfig.from_env() once; live runs hold ledger.paper_run_lock()
     RunReporter.finish()       -> RunResult; run() returns RunResult.as_dict()
 ```
 
-**`Halted`.** The design said the gate raises `RunHalted(reason, result)`. The gate instead **returns**
+**`Halted`.** (History: the design named an exception `RunHalted(reason, result)`; it was never built.) The gate **returns**
 `Halted(reason, result)`: a raised exception could be swallowed by a broad `except Exception` between
 raise and catch, a returned value cannot. The reasons and the results are the design's. Only the
 preflight gate returns `Halted`; the later hard stops return their `RunResult` directly.
@@ -536,7 +536,7 @@ stays reachable by its old name and is looked up on the instance at call time:
   once more for each order intent, so a successful run with N submissions reads it N+1 times; `now_pt` is
   read at the late-run gate, after signal generation. `RunContext` therefore holds `today_et`, the
   settings and the pending symbols, not `now_pt` (a deviation from the design's wording).
-- The string-patch adapter is **not** kept: `ModuleLedger` is retired (4a).
+- The string-patch adapter is **not** kept: the old `ModuleLedger` was retired in Phase 5 (history, 4a).
 
 **The seven rules** (design 5.1) each have a named test in `tests/paper/test_run_rules.py`:
 

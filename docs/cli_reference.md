@@ -425,7 +425,7 @@ A dry run without `--live` submits no order. Since P7 it is also read-only by de
 
 ## 4. ggt db (Database Management)
 
-Commands for diagnosing and maintaining your local database. `clean` and `truncate` refuse to run without their respective confirmation flags; they do not prompt.
+Commands for diagnosing and maintaining your local database. `clean` and `truncate` refuse to run without their respective confirmation flags (`--yes`, `--yes-wipe-ohlcv`): without the flag they print what they would delete and exit with code 2, and they do not prompt.
 
 ```bash
 ggt db <subcommand>
@@ -434,8 +434,8 @@ ggt db <subcommand>
 | Subcommand | What it does in plain English |
 |---|---|
 | `diag` | Prints table sizes and total row counts (lets you see how much data you have). |
-| `clean --yes` | Deletes OHLCV rows with `timestamp < '2010-01-01'` or `symbol ~ '_[0-9]+$'`. |
-| `truncate --yes-wipe-ohlcv` | Deletes all rows of `ohlcv`. |
+| `clean --yes` | Deletes OHLCV rows with `timestamp < '2010-01-01'` or `symbol ~ '_[0-9]+$'`. Without `--yes` it deletes nothing and exits 2. |
+| `truncate --yes-wipe-ohlcv` | Deletes all rows of `ohlcv`. Without the flag it deletes nothing and exits 2. |
 | `compression` | Turns on or off TimescaleDB's compression features (saves hard drive space). |
 | `export` | Creates a database backup file. |
 | `load-sp500` | Validates an S&P 500 membership file and stores it as the next **vintage** in schema `universe` (dry run unless `--commit`). |

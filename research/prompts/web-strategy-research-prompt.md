@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Refresh the context below from the current research record whenever it is
-materially out of date — last synced 2026-11-05 (one plain-language lesson added about tests that cannot see small effects).
+materially out of date — last synced 2026-11-20 (adds the stock-portfolio screens of November 2026, the intraday half-hour test and the stock-selection lead that still lacks usable stock-level inputs).
 
 ---
 
@@ -53,7 +53,10 @@ SPY 0.903, maximum drawdown −21.44% versus −24.50%). Earlier reports of the
 combined book beating or tying the index (including the earlier historical
 claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
 superseded**) were based on selected backtest parameters rather than production
-rules. Live operations are frozen. Focus on research and strategy evidence;
+rules. The stock-picking part on its own, re-run on newer simulation software over
+2022 to April 2026, earned about 3.5% a year (Sharpe ratio 0.39) against about 13.0%
+(Sharpe 0.78) for the index over the same dates. Live operations are frozen and
+the paper-trading account stays switched off until the owner says otherwise. Focus on research and strategy evidence;
 the owner explicitly asks that we stop recommending retirement decisions,
 including retiring the stock-picking sleeve, and retirement accounts. The
 account is taxable only. **So nothing in
@@ -105,6 +108,27 @@ without a genuinely different mechanism:**
   (fails statistical significance after transaction costs; the earlier
   unclustered reference of 3.619 gross / 1.572 net counted each meeting day
   three times across the three ETFs).
+- Eight more published stock-portfolio screens, run over decades of academic data
+  against the broad market (not the S&P 500 ETF), all with an assumed 1% annual cost
+  and before tax: 52-week highs, consistent earnings growth, high research spending
+  relative to market value, monthly reversal, low total variance, a bundled
+  accounting-quality score, low accruals and expected investment growth. None passed
+  both the significance bar (adjusted t of at least 3) and the post-1994 bar (at least
+  +1.0 percentage point a year). The closest, expected investment growth, earned
+  +2.63 percentage points a year since 1994 but only t = 2.73 over the full history;
+  the accounting score and research-spending portfolios looked strong in older decades
+  but trailed recently and fell 74% to 79% at their worst month-end. A published
+  portfolio is not a list of stocks you can buy: the stock-level version needs dated
+  company identities, market values, filing-availability times and years of monthly
+  training history that free sources have not yet supplied. Do not propose another sort
+  of the same large U.S. stocks by a company characteristic without a genuinely new
+  mechanism.
+- A short-horizon rule on the S&P 500 ETF: buy the last half hour of the trading day
+  when the ETF is up at 10:00 a.m. New York time, otherwise stay out. Tested once on
+  free one-minute bars from 2016 to 2026, it lost 1.46 basis points a day after costs
+  (t = -3.48), lost money even before costs, and about three quarters of the loss
+  was trading cost. Any intraday idea on this ETF has to clear roughly 2 basis points
+  per round trip.
 - A blunt volatility/VIX-level regime filter that blocks entries outright
   during "risky" markets (didn't help — vol-aware *position sizing*, by
   contrast, did help).
