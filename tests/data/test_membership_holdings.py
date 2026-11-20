@@ -463,7 +463,9 @@ def test_the_real_store_only_inserts_into_checks_and_check_blobs(monkeypatch):
     conn = _Connection()
     monkeypatch.setattr(mh, "connect", lambda url=None, **kw: conn)
     raw = holdings_xlsx(base_tickers())
-    result = compare(base_tickers(), base_tickers())
+    result = compare_holdings(
+        holdings_file(raw), vintage_data(history(base_tickers())), today=TODAY
+    )
     assert PgHoldingsStore("ignored").record("sp500", result) == 42
     statements = [sql for sql, _ in conn.log]
     assert len(statements) == 2

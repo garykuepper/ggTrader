@@ -61,8 +61,8 @@ def check(s, capsys, result, symbols, days, yf, tiingo, persisted, lines, cache=
     assert s.cache.fetch_ohlcv.call_args_list == ([request([A, B], True)] if cache else [])
     assert s.yf.fetch_ohlcv.call_args_list == [request(x) for x in yf]
     assert s.tiingo.fetch_ohlcv.call_args_list == [request(x) for x in tiingo]
-    assert s.cache._cache_to_db.call_count == len(persisted)
-    for call, expected in zip(s.cache._cache_to_db.call_args_list, persisted):
+    assert s.cache.persist.call_count == len(persisted)
+    for call, expected in zip(s.cache.persist.call_args_list, persisted):
         pd.testing.assert_frame_equal(call.args[0], expected)
         assert call.args[1:] == ("1d",)
     assert capsys.readouterr().out.splitlines() == lines
@@ -115,7 +115,7 @@ def test_cache_fetch_raises_falls_back_and_clears_writer(seams, capsys):
     """The cache constructs but its fetch raises: the writer is dropped, so no gap is saved.
 
     Unlike the constructor-fails case, the fake cache here is live, so a gap fill that wrongly
-    reached `_cache_to_db` would be recorded.
+    reached `persist` would be recorded.
     """
     seams.cache.fetch_ohlcv.side_effect = RuntimeError("down")
     seams.yf.fetch_ohlcv.side_effect = [frame([A], [START]), frame([B], [END])]
@@ -162,7 +162,7 @@ def test_yfinance_empty_raises_value_error(seams, capsys):
     assert seams.cache.fetch_ohlcv.call_args_list == [request([A, B], True)]
     assert seams.yf.fetch_ohlcv.call_args_list == [request([A, B])]
     seams.tiingo.fetch_ohlcv.assert_not_called()
-    seams.cache._cache_to_db.assert_not_called()
+    seams.cache.persist.assert_not_called()
     assert capsys.readouterr().out == ""
 
 
@@ -187,7 +187,7 @@ def test_gap_persist_failure_is_reported_and_ignored(seams, capsys):
     seams.cache.fetch_ohlcv.return_value = frame([A], [START])
     extra = frame([B], [END])
     seams.yf.fetch_ohlcv.return_value = extra
-    seams.cache._cache_to_db.side_effect = RuntimeError("write")
+    seams.cache.persist.side_effect = RuntimeError("write")
     check(
         seams,
         capsys,
@@ -256,7 +256,7 @@ def test_negative_cache_skips_and_records(seams, capsys):
     assert seams.tiingo.fetch_ohlcv.call_args_list == [request([C])]
     seams.skip.assert_called_once_with("1d")
     seams.record.assert_called_once_with([C], "1d")
-    seams.cache._cache_to_db.assert_not_called()
+    seams.cache.persist.assert_not_called()
     assert list(result.columns.get_level_values(0).unique()) == [A]
     assert list(result.index) == list(pd.to_datetime([START], utc=True))
     assert capsys.readouterr().out.splitlines() == [
@@ -330,7 +330,7 @@ def test_cache_disabled_uses_plain_without_persisting(seams):
     run(use_db_cache=False)
     seams.cache_cls.assert_not_called()
     assert seams.yf.fetch_ohlcv.call_args_list == [request([A, B]), request([B])]
-    seams.cache._cache_to_db.assert_not_called()
+    seams.cache.persist.assert_not_called()
 
 
 def test_normalizes_and_deduplicates_for_all_providers(seams):
@@ -388,7 +388,7 @@ def test_tiingo_fetch_error_is_caught(seams, capsys):
 def test_tiingo_persist_error_continues(seams, capsys):
     seams.cache.fetch_ohlcv.return_value = frame([A], [START])
     seams.tiingo.fetch_ohlcv.return_value = frame([B], [END])
-    seams.cache._cache_to_db.side_effect = RuntimeError("write")
+    seams.cache.persist.side_effect = RuntimeError("write")
     assert list(run().columns.get_level_values(0).unique()) == [A, B]
     assert "failed to persist Tiingo data: RuntimeError('write')" in capsys.readouterr().out
 
@@ -398,7 +398,7 @@ def test_tiingo_without_writer_is_not_persisted(seams):
     seams.tiingo.fetch_ohlcv.return_value = frame([B], [END])
     assert list(run(use_db_cache=False).columns.get_level_values(0).unique()) == [A, B]
     seams.cache_cls.assert_not_called()
-    seams.cache._cache_to_db.assert_not_called()
+    seams.cache.persist.assert_not_called()
 
 
 def test_provider_constructor_counts_and_arguments(seams):

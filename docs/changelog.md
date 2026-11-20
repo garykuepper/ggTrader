@@ -1,5 +1,88 @@
 # Changelog
 
+## 2026-11-20 (refactor phase 5: the paper trader run split into step objects)
+
+- Split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` stays 22) that calls
+  nine step objects in the old order: `PreflightGate`, `PortfolioView`, `RiskAssessor`, the pure
+  planners in `paper/planning.py`, `OrderFlow`, `OrderExecutor`, `DryRunExecutor`, `CorporateActions`
+  and `RunReporter`. `trader.py` went from 1,584 (at `1c7a3138`) to 357 lines. The refactor was designed to preserve
+  orders, SQL, Telegram messages and clock timing. Log comparisons cover logger name, level and
+  rendered message; raw record templates, arguments and source metadata can differ.
+  `persist.py`, `risk.py`, `cash_sweep.py`, `catastrophe_stop.py`, `gates.py`, `notifier.py`,
+  `alpaca_broker.py`, `signal_runner.py`, `overlay.py` and `cli/main.py` were not touched.
+- New modules: `preflight.py`, `portfolio.py`, `risk_assessor.py`, `planning.py`, `order_flow.py`,
+  `execution.py`, `corporate_actions.py`, `reporter.py`, `seams.py` (`RunHooks`, `TraderSeams`) and
+  `run_helpers.py`; `models.py` and `constants.py` gained records and shared constants. The
+  planners are explicit iterator classes rather than generators, so exception types are unchanged.
+- Deviation from the design: `PreflightGate.check()` returns `Halted(reason, result)` instead of
+  raising `RunHalted`, and `RunContext` holds `today_et`, the settings and the pending symbols but not
+  `now_pt` (the late-run gate still reads it after signal generation).
+- The string-patch adapter `ModuleLedger` is **retired** (owner-approved): `trader.py` now defaults to
+  `PgPaperLedger`, binds none of the 26 persist names, and the transcript harness, the digest runner,
+  the rule and seam harnesses and the Phase 4 pins inject a ledger instead of patching persist names.
+  The eight private seams (`_submit_order`, `_poll_orders`, `_reconcile_order_intents`,
+  `_reconcile_pending_orders`, `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections`,
+  `_accrue_dividends`) stay as forwards; retiring them is a separate owner decision.
+- Nets added before the code moved: named tests for the seven order-flow rules and for the late
+  failures and exception types they miss (`tests/paper/test_run_rules.py`); a seeded generator with
+  recorded per-seed digests of the transcript plus log records (100 seeds in the fast tier, 600 in the
+  slow tier; `tests/paper/golden/run_equivalence_digests.json`); a seam-contract test (legacy patches
+  still intercept, new modules import no clock, no `trader`, no database or broker client, and
+  `InMemoryLedger` stays out of production code); and a size ratchet on `run` and `_run`. The 103
+  transcript goldens and the SQL golden are the earlier pins and were not regenerated. A frozen copy of
+  the old `_run` and a differential test against it existed during the phase and were deleted once the
+  recorded digests could stand alone.
+- Tests migrated: `tests/paper/test_trader.py` no longer patches persist names (239 string patches
+  at the start of the phase, none now; all 277 test node ids kept) and uses an injected
+  `InMemoryLedger` or `SpyLedger`. An autouse guard replaces the default `PgPaperLedger` factory and
+  fails any unstubbed persistence call, even if the trader swallows the error (`AGENTS.md` carries the
+  guidance).
+- Preserved, not fixed (each pinned by a transcript or a named test): the late-run return sits inside
+  `if not dry_run`, so a dry run past 12:55 PT warns and continues; a malformed
+  `SWEEP_CASH_RESERVE_PCT` ends the run after the peak write and the stop orders; the pending-order
+  alert can say "pending" for an order reconciliation has since filled; an untradable holding is
+  announced as "broker tradable=false"; a direct `_submit_order` on a read-only trader, once
+  preserved here, is refused (fails closed) since 2026-11-20; the same symbol in two sleeves is bought
+  twice; the hard stops send `HALTED` outside any `try`; an invalid exit blocks strategy buys and the
+  sweep buy but not a sweep sell; an exit submitted but not fully filled clears strategy buys only; a
+  sell still working at the poll deadline ends the run in reconciliation; a sell's `market_value` is
+  read after the order went out; a `StopIteration` from `unrealized_pct` keeps its type in two
+  places and becomes `RuntimeError` in the third; and a late failure leaves earlier orders live.
+- Lint: `C901`, `PLR0912`, `PLR0915` and `PLR0913` (complexity 15, 8 arguments, ruff's default branch
+  and statement limits) are enforced for `src/ggTrader/paper` only; the 18 findings at 10 definitions
+  in 8 files are per-file ignores in `ruff.toml`, each with its reason. Nothing outside `paper/` is
+  switched on.
+- Phase 5 verification at `3475f405`: the oracle and outcome comparisons passed; the full tier had
+  4,967 passed, one skipped and five expected failures, and the study tier had 1,144 passed. All
+  103 transcript goldens and the 600-seed digest map remain unchanged; 21 mutation forms were
+  detected by reach-qualified tests. Opus found no production-wiring blocker in a review before the
+  default ledger changed to `PgPaperLedger`; the 2026-11-20 review repeated the wiring check at
+  `f081228b`. Sol conditionally approved the behavioral pins, and the gate evidence was expanded
+  afterwards. The P5 and P7 output JSON record `git_sha` `3475f405` and the phase F logs start with
+  a HEAD line; the P5 and P7 driver logs, the pytest logs and JUnit XML carry no commit. The legacy differential was retired after Phase D;
+  some mutation probes are broad, and some submit-failure checks detect a strict harness error.
+- Integration gate on the merged tree (2026-11-20, `main` `8282d233` merged into the branch, head `04777536`): p5 and p7 oracles exit 0 (p5 at the 6 GB cap), oracle comparison against the baseline exit 0; full tier 5,000 passed, one skipped, five expected failures; study tier 1,198 passed. The outcome comparison uses a baseline with 21 study tests removed (`research/intraday/spy-momentum-feasibility/code/tests/test_intraday_momentum.py`, replaced by the r9 study on `main`; the branch has no difference from `main` under `research/intraday`). ruff and `verify_pins.py` clean (pins=22 MATCH=0 MOVED-MATCH=4 HISTORY-MATCH=18 FAIL=0). Evidence: `p6final2*` in the refactor evidence folder.
+- Phase 3 to 5 reviews: phases 3 and 4 had no recorded Sol or Opus code review before 2026-11-20; phase 5 had an Opus production-code review on 2026-11-19 (`527ae843`, before the default ledger changed) and Sol and Opus reviews of its behavioral pins. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+  and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`
+  (`/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`). Opus and Fable reported no blockers; Sol reported two Important findings (verdict BLOCKERS), resolved as: the shared-dict broker case is a documented port contract
+  (`paper/ports.py`), and a direct `_submit_order` on a read-only trader now fails closed
+  (`RuntimeError`, before any intent, uuid, lock check or broker call). The parked minors follow
+  in the next entry.
+- Preserved, not fixed (parked review findings, one line each): a literal `None` in a sleeve's candidate list ends that sleeve silently in the buy planner, so later candidates in it are skipped too; the sweep-buy guard logs and continues if a
+  substituted sizing helper returns `None`; the WFO diagnostic stop price reads the scorer's copied
+  config; the sweep and untradable settings are snapshotted at the top of `run()`, so a `.env` not yet loaded is missed when no `AlpacaBroker` is used (`AlpacaBroker` and `TelegramNotifier` load `.env` at construction); a
+  non-mapping position value fails early with `TypeError` in `PortfolioView.load`; a guard returning
+  `(True, None)` is treated as no stop; the legacy module aliases `_MAX_SIGNAL_AGE_DAYS`,
+  `_STALE_PENDING_DAYS`, `_SPLIT_LOOKBACK_DAYS` and `TERMINAL_STATUSES` in `trader.py` are inert if
+  patched; the in-memory ledger fakes do not enforce `amount > 0`, NaN rejection or lock
+  contention; the 600 digests' `production_base` is `73c35417`, so they tie phase 5 to post-phase-4
+  code, and phase 4 is tied to `1c7a3138` by the 103 transcripts and unit tests only.
+- Non-mapping weights from a signal source (an empty sequence, a list of pairs, `None`) fail as they
+  did before the split: `AttributeError` at the slot-cap step, with the same calls and orders (runs that
+  stop earlier never read the weights);
+  restored in `fix(paper): malformed weights fail as they did before the phase 5 split`.
+  The trader stays stopped and cron stays off.
+
 ## 2026-11-20 (intraday SPY half-hour rule, r9)
 
 - Research only; no engine, strategy or live change. The single scheduled r9 score of the SPY
@@ -12,6 +95,60 @@
 - The report discloses two readings made after the data were seen: the positive-amount check
   applies to the dividend only, and the two excluded days (2019-08-12/13) have an unmeasured
   effect. The scorer's write-once files still print "NO-GO"; the label amendment explains it.
+
+## 2026-11-19 (refactor phase 4: paper trader interfaces and records, price-loader chain)
+
+- Gave the paper trader typed records and swappable interfaces, and gave the price-loader fallback
+  one tested home. **No order, SQL statement, Telegram line or price row changed**, with the one
+  intended exception below. `PaperTrader._run` was not split; that is Phase 5.
+- Added `paper/models.py` (eight records, including `SubmittedOrder`, which replaces the five-item
+  pending-order tuple, and `RunResult`, which builds the result dict), `paper/ports.py` (`Broker`
+  and `Notifier` protocols), `paper/ledger.py` (the `PaperLedger` protocol with `InMemoryLedger`,
+  `ReadOnlyLedger` and `ModuleLedger`) and `paper/config.py` (`TraderConfig`). The trader now reaches
+  the database only through `self._ledger`; `PgPaperLedger` in `paper/persist.py` holds the SQL
+  unchanged and the module functions remain as one-line delegations. `ModuleLedger`, the string-patch
+  adapter that keeps the roughly 440 dotted-string test patches working, was temporary and was
+  retired in Phase 5 (see the 2026-11-20 entry).
+- Moved the price-loader fallback (DB cache, then yfinance, then Tiingo) into
+  `data/live/fetch_chain.py` as `OhlcvFetchChain` and `fetch_stock_ohlcv`;
+  `lab.data.fetch_stock_ohlcv` is now a wrapper with the same signature and `paper/` imports its
+  fetch path from `data/live`. `CachedYFinanceLoader` gained a public `persist()`. A new import
+  rule keeps `paper/` from importing anything from `lab.data` except `STOCK_BASE_CONFIG`.
+- Intended behavior change: the stop, sweep and untradable settings are read once into one frozen
+  `TraderConfig` at the top of `run()`, not at several points of the run. The sweep and untradable
+  settings are therefore read before the run lock and the market gate. This can differ if the
+  environment changes mid-run, including `.env` loading; malformed floats are stored and re-raised where
+  they were parsed, so each keeps its old fail time.
+- Pins added before the changes: the transcript set grows from 96 to 103 scenarios (the original
+  96 goldens are byte-identical), a recording-engine SQL golden covers all 31 persist functions
+  (`tests/paper/golden/persist_sql.json`), and shape pins cover result key order, tuple-index sites
+  and environment-read timing.
+- One bind key dropped: `create_order_intent` used to pass the open connection to the SQL call under
+  the key `conn` (SQLAlchemy ignored it); the explicit dictionary omits it. The SQL text and the
+  other seven keys are unchanged. The test token `_cache_to_db` became `persist` in 12 mock lines of
+  `tests/lab/test_fetch_stock_ohlcv_chain.py` (9) and `tests/paper/test_signal_runner.py` (3).
+- Verification: full core and study tests, baseline outcome comparison, fixed hashes and research
+  pins passed. P5 and P7 matched the baseline, including 13 equity CSVs. The disposable PostgreSQL
+  test was skipped because its test DSN was not configured. `ggt paper` output did not change;
+  the trader stays stopped and cron stays off. The phase 4 hash, pin and outcome-compare checks
+  have no saved log in the evidence folder; they were run and reported in the hand-backs.
+## 2026-11-19 (refactor phase 3: research engine helpers and fold records)
+
+- Structure only; no strategy, data source or result was intentionally changed. `engine.run_signals`
+  now delegates to three private helpers (`_halt_positions`, `_validate_intraday_stops`,
+  `_reject_overlaps`), and `lab.wfo.run.run_wfo` to `_scorer_for`, `_score_fold`, `_stitch_oos` and
+  `_build_diagnostics`. New `ScoringInputs` and `SignalSimOptions` carriers (with `from_inputs`
+  constructors on both scorers) and a `FoldRecord` in `lab/wfo/fold_record.py`. Public signatures, fold
+  and diagnostics key order, error messages, printed output and scorer call order are unchanged.
+- Correction: a fold row has 28 keys, not 27 as the refactor design said; `FoldRecord` and the tests use 28.
+- Added characterization tests (exact goldens for `run_signals` and `run_wfo`, the 28 fold keys and 26
+  diagnostics keys in order, scorer and gate seams) and helper unit tests for each new piece.
+- Verification: characterization pins, full test and study tiers, test-outcome comparison, research
+  pin verification and Ruff passed. P5 and P7 matched the baseline, including all 13 equity CSVs.
+  A P5 attempt at 3G hit its cap; the owner approved the successful 6G oracle run. The phase 3 pin,
+  Ruff and outcome-compare checks have no saved log in the evidence folder; they were run and
+  reported in the hand-backs. The saved "owner approved 6G" file says "Phase 5" and postdates the
+  phase 3 runs.
 
 ## 2026-11-18 (refactor phases 0–2)
 

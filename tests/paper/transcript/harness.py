@@ -741,6 +741,8 @@ def _run_scenario(scenario: Scenario) -> dict:
         A run that raises records ``"raised"`` and a ``None`` result. A `HarnessError` is never
         recorded: it propagates and fails the test.
     """
+    from tests.paper.transcript.injected import HarnessLedger
+
     s = copy.deepcopy(scenario)
     _check_scenario(s)
     run = _Run(s)
@@ -752,12 +754,7 @@ def _run_scenario(scenario: Scenario) -> dict:
         for var in ENV_VARS:
             os.environ.pop(var, None)
         os.environ.update(s.env)
-        for name in persist_function_names():
-            if name == "paper_run_lock":
-                continue
-            stack.enter_context(patch.object(trader_module, name, run.persist_wrapper(name)))
         replacements: dict[str, object] = {
-            "paper_run_lock": run.paper_run_lock,
             "generate_core_signals": run.generate_core_signals,
             "refresh_benchmark_tape": run.refresh_benchmark_tape,
             "live_membership_source": run.live_membership_source,
@@ -777,6 +774,7 @@ def _run_scenario(scenario: Scenario) -> dict:
                 dry_run=s.dry_run,
                 read_only=s.read_only,
                 membership=s.membership,
+                ledger=HarnessLedger(run),
             )
             result = trader.run()
         except Exception as exc:

@@ -1,0 +1,3765 @@
+{
+ "cases": {
+  "init_paper_schema": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_order_intents (\n    client_order_id TEXT PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),\n    symbol TEXT NOT NULL,\n    amount DOUBLE PRECISION NOT NULL CHECK (amount > 0 AND amount < 'Infinity'::float8),\n    amount_kind TEXT NOT NULL CHECK ((side = 'BUY' AND amount_kind = 'notional') OR\n                                     (side = 'SELL' AND amount_kind = 'qty')),\n    reason TEXT,\n    broker_order_id TEXT UNIQUE,\n    state TEXT NOT NULL DEFAULT 'intent' CHECK (state IN ('intent', 'submitted', 'resolved')),\n    terminal_status TEXT,\n    filled_qty DOUBLE PRECISION,\n    filled_avg_price DOUBLE PRECISION,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_trades (\n    id SERIAL PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL,\n    symbol TEXT NOT NULL,\n    amount DOUBLE PRECISION NOT NULL,\n    order_id TEXT NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    reason TEXT\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "ALTER TABLE paper_trades ADD COLUMN IF NOT EXISTS reason TEXT",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_snapshots (\n    run_date DATE PRIMARY KEY,\n    portfolio_value DOUBLE PRECISION NOT NULL,\n    cash DOUBLE PRECISION NOT NULL,\n    positions JSONB NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_pending_orders (\n    order_id TEXT PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL,\n    symbol TEXT NOT NULL,\n    notional DOUBLE PRECISION NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    flagged_stale BOOLEAN NOT NULL DEFAULT FALSE,\n    reason TEXT\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "ALTER TABLE paper_pending_orders\n    ADD COLUMN IF NOT EXISTS flagged_stale BOOLEAN NOT NULL DEFAULT FALSE",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "ALTER TABLE paper_pending_orders ADD COLUMN IF NOT EXISTS reason TEXT",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_rebalance_state (\n    id INTEGER PRIMARY KEY DEFAULT 1,\n    rebalance_date DATE NOT NULL,\n    weights JSONB NOT NULL,\n    scale DOUBLE PRECISION NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    CONSTRAINT single_row CHECK (id = 1)\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_risk_state (\n    id INTEGER PRIMARY KEY DEFAULT 1,\n    peak_value DOUBLE PRECISION NOT NULL,\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    CONSTRAINT single_row CHECK (id = 1)\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_dividend_accruals (\n    symbol TEXT NOT NULL,\n    ex_date DATE NOT NULL,\n    rate DOUBLE PRECISION NOT NULL,\n    qty DOUBLE PRECISION NOT NULL,\n    amount DOUBLE PRECISION NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    PRIMARY KEY (symbol, ex_date)\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_split_state (\n    symbol TEXT PRIMARY KEY,\n    ex_date DATE NOT NULL,\n    factor DOUBLE PRECISION NOT NULL,\n    first_detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "init_paper_schema__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_order_intents (\n    client_order_id TEXT PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),\n    symbol TEXT NOT NULL,\n    amount DOUBLE PRECISION NOT NULL CHECK (amount > 0 AND amount < 'Infinity'::float8),\n    amount_kind TEXT NOT NULL CHECK ((side = 'BUY' AND amount_kind = 'notional') OR\n                                     (side = 'SELL' AND amount_kind = 'qty')),\n    reason TEXT,\n    broker_order_id TEXT UNIQUE,\n    state TEXT NOT NULL DEFAULT 'intent' CHECK (state IN ('intent', 'submitted', 'resolved')),\n    terminal_status TEXT,\n    filled_qty DOUBLE PRECISION,\n    filled_avg_price DOUBLE PRECISION,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "init_paper_schema__execute_fails_at_6": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_order_intents (\n    client_order_id TEXT PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL CHECK (side IN ('BUY', 'SELL')),\n    symbol TEXT NOT NULL,\n    amount DOUBLE PRECISION NOT NULL CHECK (amount > 0 AND amount < 'Infinity'::float8),\n    amount_kind TEXT NOT NULL CHECK ((side = 'BUY' AND amount_kind = 'notional') OR\n                                     (side = 'SELL' AND amount_kind = 'qty')),\n    reason TEXT,\n    broker_order_id TEXT UNIQUE,\n    state TEXT NOT NULL DEFAULT 'intent' CHECK (state IN ('intent', 'submitted', 'resolved')),\n    terminal_status TEXT,\n    filled_qty DOUBLE PRECISION,\n    filled_avg_price DOUBLE PRECISION,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_trades (\n    id SERIAL PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL,\n    symbol TEXT NOT NULL,\n    amount DOUBLE PRECISION NOT NULL,\n    order_id TEXT NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    reason TEXT\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "ALTER TABLE paper_trades ADD COLUMN IF NOT EXISTS reason TEXT",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_snapshots (\n    run_date DATE PRIMARY KEY,\n    portfolio_value DOUBLE PRECISION NOT NULL,\n    cash DOUBLE PRECISION NOT NULL,\n    positions JSONB NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now()\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "CREATE TABLE IF NOT EXISTS paper_pending_orders (\n    order_id TEXT PRIMARY KEY,\n    run_date DATE NOT NULL,\n    side TEXT NOT NULL,\n    symbol TEXT NOT NULL,\n    notional DOUBLE PRECISION NOT NULL,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    flagged_stale BOOLEAN NOT NULL DEFAULT FALSE,\n    reason TEXT\n)",
+     "params": null
+    },
+    {
+     "op": "execute",
+     "sql": "ALTER TABLE paper_pending_orders\n    ADD COLUMN IF NOT EXISTS flagged_stale BOOLEAN NOT NULL DEFAULT FALSE",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "create_order_intent": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_order_intents\n            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)\n            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)\n        ",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "amount_kind": "notional",
+      "client_order_id": "cid-1",
+      "conn": {
+       "$type": "Connection"
+      },
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "create_order_intent__sell_with_reason": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_order_intents\n            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)\n            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)\n        ",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "5.0"
+      },
+      "amount_kind": "qty",
+      "client_order_id": "cid-2",
+      "conn": {
+       "$type": "Connection"
+      },
+      "reason": "exit_signal",
+      "run_date": "2026-06-22",
+      "side": "SELL",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "create_order_intent__execute_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_order_intents\n            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)\n            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)\n        ",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "amount_kind": "notional",
+      "client_order_id": "cid-1",
+      "conn": {
+       "$type": "Connection"
+      },
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_unresolved_order_intents": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE state != 'resolved' ORDER BY created_at",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [
+    {
+     "amount": {
+      "$type": "float",
+      "v": "1000.0"
+     },
+     "amount_kind": "notional",
+     "broker_order_id": null,
+     "client_order_id": "cid-1",
+     "created_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     },
+     "filled_avg_price": null,
+     "filled_qty": null,
+     "reason": null,
+     "run_date": {
+      "$type": "date",
+      "v": "2026-06-22"
+     },
+     "side": "BUY",
+     "state": "submitted",
+     "symbol": "AAPL",
+     "terminal_status": null,
+     "updated_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     }
+    },
+    {
+     "amount": {
+      "$type": "float",
+      "v": "1000.0"
+     },
+     "amount_kind": "notional",
+     "broker_order_id": null,
+     "client_order_id": "cid-2",
+     "created_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     },
+     "filled_avg_price": null,
+     "filled_qty": null,
+     "reason": null,
+     "run_date": {
+      "$type": "date",
+      "v": "2026-06-22"
+     },
+     "side": "BUY",
+     "state": "intent",
+     "symbol": "MSFT",
+     "terminal_status": null,
+     "updated_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     }
+    }
+   ],
+   "raised": null
+  },
+  "get_unresolved_order_intents__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE state != 'resolved' ORDER BY created_at",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [],
+   "raised": null
+  },
+  "attach_broker_order__legacy_pending_present": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Order has both pending and intent representations"
+  },
+  "attach_broker_order__missing_intent": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Missing intent or conflicting broker order"
+  },
+  "attach_broker_order__conflicting_broker_id": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Missing intent or conflicting broker order"
+  },
+  "attach_broker_order__state_not_intent": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Invalid intent state"
+  },
+  "attach_broker_order__already_attached": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "attach_broker_order": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'submitted', updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "attach_broker_order__execute_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "attach_broker_order__update_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT broker_order_id, state FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'submitted', updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_order_intent__invalid_fill_none_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_none_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_nan_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_nan_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_negative_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_negative_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_unknown_status": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_unknown_status": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_filled_zero_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_filled_zero_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_zero_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_zero_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_missing_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_missing_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_nonfinite_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_nonfinite_price": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_nonfinite_price_zero_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_legacy_pending_order__invalid_fill_nonfinite_price_zero_qty": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid terminal fill"
+  },
+  "settle_order_intent__invalid_fill_overflowing_value": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid fill value"
+  },
+  "settle_legacy_pending_order__invalid_fill_overflowing_value": {
+   "events": [],
+   "returned": null,
+   "raised": "ValueError: Invalid fill value"
+  },
+  "settle_order_intent__missing_intent": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Missing intent or conflicting broker order"
+  },
+  "settle_order_intent__legacy_pending_present": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Order has both pending and intent representations"
+  },
+  "settle_order_intent__conflicting_broker_order": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Missing intent or conflicting broker order"
+  },
+  "settle_order_intent__already_resolved_identical": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_order_intent__resolved_conflicting": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting settlement"
+  },
+  "settle_order_intent__conflicting_trade_two_rows": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_order_intent__conflicting_trade_differs": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_order_intent__zero_fill_with_historical_trade": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_order_intent__fill_inserts_trade_then_updates": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1",
+      "price": {
+       "$type": "float",
+       "v": "100.0"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "status": "filled"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_order_intent__fill_with_matching_trade_updates_only": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1",
+      "price": {
+       "$type": "float",
+       "v": "100.0"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "status": "filled"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_order_intent__zero_fill_updates_only": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1",
+      "price": null,
+      "qty": {
+       "$type": "float",
+       "v": "0.0"
+      },
+      "status": "canceled"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_order_intent__sell_with_reason": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-2"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-2"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-2"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-2"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-2",
+      "reason": "exit_signal",
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "SELL",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-2",
+      "order_id": "ord-2",
+      "price": {
+       "$type": "float",
+       "v": "200.0"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "5.0"
+      },
+      "status": "filled"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_order_intent__execute_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_order_intent__insert_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_order_intent__update_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE",
+     "params": {
+      "id": "cid-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, updated_at = now() WHERE client_order_id = :id",
+     "params": {
+      "id": "cid-1",
+      "order_id": "ord-1",
+      "price": {
+       "$type": "float",
+       "v": "100.0"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "status": "filled"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_legacy_pending_order__missing_row": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Missing legacy pending order"
+  },
+  "settle_legacy_pending_order__intent_exists": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Order has both pending and intent representations"
+  },
+  "settle_legacy_pending_order__conflicting_trade_two_rows": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_legacy_pending_order__conflicting_trade_differs": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_legacy_pending_order__zero_fill_with_historical_trade": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "settle_legacy_pending_order__fill_inserts_trade_then_deletes": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_legacy_pending_order__fill_with_matching_trade_deletes_only": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_legacy_pending_order__delete_only": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "settle_legacy_pending_order__execute_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_legacy_pending_order__insert_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "settle_legacy_pending_order__delete_fails": {
+   "events": [
+    {
+     "op": "begin"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :id",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "rollback"
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "paper_run_lock__acquired_then_released": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_try_advisory_lock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 AND objid = :key AND objsubid = 1 AND granted)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_unlock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": "PaperRunLock",
+   "raised": null
+  },
+  "paper_run_lock__not_acquired": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_try_advisory_lock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: Paper run already locked"
+  },
+  "paper_run_lock__verification_false_still_unlocks": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_try_advisory_lock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 AND objid = :key AND objsubid = 1 AND granted)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_unlock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: Paper run lock lost"
+  },
+  "paper_run_lock__body_raises_still_unlocks": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_try_advisory_lock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 AND objid = :key AND objsubid = 1 AND granted)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_unlock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: boom"
+  },
+  "paper_run_lock__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_try_advisory_lock(:key)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "paper_run_lock__PaperRunLock_verify_held": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 AND objid = :key AND objsubid = 1 AND granted)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": "held",
+   "raised": null
+  },
+  "paper_run_lock__PaperRunLock_verify_lost": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid() AND classid = 0 AND objid = :key AND objsubid = 1 AND granted)",
+     "params": {
+      "key": 1734837291
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: Paper run lock lost"
+  },
+  "log_trade__new_trade": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_trade__new_trade_with_reason": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": "cash_sweep",
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_trade__identical_existing": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_trade__identical_existing_with_reason": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_trade__conflicting_trade": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "log_trade__conflicting_reason": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "log_trade__two_existing_rows": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "ValueError: Conflicting historical trade"
+  },
+  "log_trade__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "log_trade__insert_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, side, symbol, amount, reason FROM paper_trades WHERE order_id = :id FOR UPDATE",
+     "params": {
+      "id": "ord-1"
+     }
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "log_pending_order": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_pending_orders (order_id, run_date, side, symbol, notional, reason) VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) ON CONFLICT (order_id) DO NOTHING",
+     "params": {
+      "notional": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_pending_order__with_reason": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_pending_orders (order_id, run_date, side, symbol, notional, reason) VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) ON CONFLICT (order_id) DO NOTHING",
+     "params": {
+      "notional": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": "cash_sweep",
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_pending_order__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_pending_orders (order_id, run_date, side, symbol, notional, reason) VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) ON CONFLICT (order_id) DO NOTHING",
+     "params": {
+      "notional": {
+       "$type": "float",
+       "v": "1000.0"
+      },
+      "order_id": "ord-1",
+      "reason": null,
+      "run_date": "2026-06-22",
+      "side": "BUY",
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_pending_orders": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT order_id, run_date, side, symbol, notional, created_at, flagged_stale, reason FROM paper_pending_orders ORDER BY created_at",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [
+    {
+     "created_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     },
+     "flagged_stale": false,
+     "notional": {
+      "$type": "float",
+      "v": "1000.0"
+     },
+     "order_id": "ord-1",
+     "reason": null,
+     "run_date": {
+      "$type": "date",
+      "v": "2026-06-22"
+     },
+     "side": "BUY",
+     "symbol": "AAPL"
+    },
+    {
+     "created_at": {
+      "$type": "datetime",
+      "v": "2026-06-22T19:45:00"
+     },
+     "flagged_stale": true,
+     "notional": {
+      "$type": "float",
+      "v": "1000.0"
+     },
+     "order_id": "ord-2",
+     "reason": "cash_sweep",
+     "run_date": {
+      "$type": "date",
+      "v": "2026-06-22"
+     },
+     "side": "BUY",
+     "symbol": "AAPL"
+    }
+   ],
+   "raised": null
+  },
+  "get_pending_orders__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT order_id, run_date, side, symbol, notional, created_at, flagged_stale, reason FROM paper_pending_orders ORDER BY created_at",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [],
+   "raised": null
+  },
+  "clear_pending_order": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :order_id",
+     "params": {
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "clear_pending_order__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_pending_orders WHERE order_id = :order_id",
+     "params": {
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "mark_pending_order_stale": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_pending_orders SET flagged_stale = TRUE WHERE order_id = :order_id",
+     "params": {
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "mark_pending_order_stale__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "UPDATE paper_pending_orders SET flagged_stale = TRUE WHERE order_id = :order_id",
+     "params": {
+      "order_id": "ord-1"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_latest_snapshot__latest_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "101234.5"
+   },
+   "raised": null
+  },
+  "get_latest_snapshot__latest_no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "get_latest_snapshot__before_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots WHERE run_date < :before ORDER BY run_date DESC LIMIT 1",
+     "params": {
+      "before": {
+       "$type": "date",
+       "v": "2026-06-22"
+      }
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "99000.0"
+   },
+   "raised": null
+  },
+  "get_latest_snapshot__before_no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots WHERE run_date < :before ORDER BY run_date DESC LIMIT 1",
+     "params": {
+      "before": {
+       "$type": "date",
+       "v": "2026-06-22"
+      }
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "get_earliest_snapshot": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date ASC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "100000.0"
+   },
+   "raised": null
+  },
+  "get_earliest_snapshot__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date ASC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_snapshot": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) VALUES (:run_date, :pv, :cash, :pos) ON CONFLICT (run_date) DO UPDATE SET portfolio_value = EXCLUDED.portfolio_value, cash = EXCLUDED.cash, positions = EXCLUDED.positions",
+     "params": {
+      "cash": {
+       "$type": "float",
+       "v": "5000.0"
+      },
+      "pos": "{\"AAPL\": {\"qty\": 10.0, \"value\": 1000.0}, \"MSFT\": {\"qty\": 5.0, \"value\": 1500.5}}",
+      "pv": {
+       "$type": "float",
+       "v": "101234.5"
+      },
+      "run_date": "2026-06-22"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_snapshot__integer_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) VALUES (:run_date, :pv, :cash, :pos) ON CONFLICT (run_date) DO UPDATE SET portfolio_value = EXCLUDED.portfolio_value, cash = EXCLUDED.cash, positions = EXCLUDED.positions",
+     "params": {
+      "cash": {
+       "$type": "float",
+       "v": "5000.0"
+      },
+      "pos": "{\"AAPL\": {\"qty\": 10.0, \"value\": 1000.0}, \"MSFT\": {\"qty\": 5.0, \"value\": 1500.5}}",
+      "pv": 101234,
+      "run_date": "2026-06-22"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_snapshot__nonfinite_position_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) VALUES (:run_date, :pv, :cash, :pos) ON CONFLICT (run_date) DO UPDATE SET portfolio_value = EXCLUDED.portfolio_value, cash = EXCLUDED.cash, positions = EXCLUDED.positions",
+     "params": {
+      "cash": {
+       "$type": "float",
+       "v": "5000.0"
+      },
+      "pos": "{\"AAPL\": {\"qty\": 10.0, \"value\": null}, \"MSFT\": {\"value\": null}}",
+      "pv": {
+       "$type": "float",
+       "v": "101234.5"
+      },
+      "run_date": "2026-06-22"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_snapshot__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) VALUES (:run_date, :pv, :cash, :pos) ON CONFLICT (run_date) DO UPDATE SET portfolio_value = EXCLUDED.portfolio_value, cash = EXCLUDED.cash, positions = EXCLUDED.positions",
+     "params": {
+      "cash": {
+       "$type": "float",
+       "v": "5000.0"
+      },
+      "pos": "{\"AAPL\": {\"qty\": 10.0, \"value\": 1000.0}, \"MSFT\": {\"qty\": 5.0, \"value\": 1500.5}}",
+      "pv": {
+       "$type": "float",
+       "v": "101234.5"
+      },
+      "run_date": "2026-06-22"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_latest_snapshot_positions__dict_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "AAPL": {
+     "qty": {
+      "$type": "float",
+      "v": "10.0"
+     },
+     "value": {
+      "$type": "float",
+      "v": "1000.0"
+     }
+    },
+    "MSFT": {
+     "qty": {
+      "$type": "float",
+      "v": "5.0"
+     },
+     "value": {
+      "$type": "float",
+      "v": "1500.5"
+     }
+    }
+   },
+   "raised": null
+  },
+  "get_latest_snapshot_positions__json_string_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "AAPL": {
+     "qty": {
+      "$type": "float",
+      "v": "10.0"
+     },
+     "value": {
+      "$type": "float",
+      "v": "1000.0"
+     }
+    },
+    "MSFT": {
+     "qty": {
+      "$type": "float",
+      "v": "5.0"
+     },
+     "value": {
+      "$type": "float",
+      "v": "1500.5"
+     }
+    }
+   },
+   "raised": null
+  },
+  "get_latest_snapshot_positions__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "get_latest_snapshot_run_date": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": "2026-06-22",
+   "raised": null
+  },
+  "get_latest_snapshot_run_date__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date FROM paper_snapshots ORDER BY run_date DESC LIMIT 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "get_snapshot_history": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, positions FROM paper_snapshots ORDER BY run_date ASC",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [
+    {
+     "$type": "tuple",
+     "v": [
+      {
+       "$type": "date",
+       "v": "2026-06-20"
+      },
+      {
+       "AAPL": {
+        "qty": {
+         "$type": "float",
+         "v": "10.0"
+        },
+        "value": {
+         "$type": "float",
+         "v": "1000.0"
+        }
+       },
+       "MSFT": {
+        "qty": {
+         "$type": "float",
+         "v": "5.0"
+        },
+        "value": {
+         "$type": "float",
+         "v": "1500.5"
+        }
+       }
+      }
+     ]
+    },
+    {
+     "$type": "tuple",
+     "v": [
+      {
+       "$type": "date",
+       "v": "2026-06-22"
+      },
+      {
+       "AAPL": {
+        "qty": {
+         "$type": "float",
+         "v": "12.0"
+        }
+       }
+      }
+     ]
+    }
+   ],
+   "raised": null
+  },
+  "get_snapshot_history__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date, positions FROM paper_snapshots ORDER BY run_date ASC",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [],
+   "raised": null
+  },
+  "get_peak_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT peak_value FROM paper_risk_state WHERE id = 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "105000.0"
+   },
+   "raised": null
+  },
+  "get_peak_value__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT peak_value FROM paper_risk_state WHERE id = 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "save_peak_value": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) ON CONFLICT (id) DO UPDATE SET peak_value = EXCLUDED.peak_value, updated_at = now()",
+     "params": {
+      "peak": {
+       "$type": "float",
+       "v": "105000.0"
+      }
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "save_peak_value__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) ON CONFLICT (id) DO UPDATE SET peak_value = EXCLUDED.peak_value, updated_at = now()",
+     "params": {
+      "peak": {
+       "$type": "float",
+       "v": "105000.0"
+      }
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_rebalance_state__dict_weights": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "rebalance_date": "2026-06-22",
+    "scale": {
+     "$type": "float",
+     "v": "0.8"
+    },
+    "weights": {
+     "AAPL": {
+      "$type": "float",
+      "v": "0.5"
+     },
+     "MSFT": {
+      "$type": "float",
+      "v": "0.25"
+     }
+    }
+   },
+   "raised": null
+  },
+  "get_rebalance_state__string_weights": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "rebalance_date": "2026-06-22",
+    "scale": {
+     "$type": "float",
+     "v": "0.8"
+    },
+    "weights": {
+     "AAPL": {
+      "$type": "float",
+      "v": "0.5"
+     },
+     "MSFT": {
+      "$type": "float",
+      "v": "0.25"
+     }
+    }
+   },
+   "raised": null
+  },
+  "get_rebalance_state__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "save_rebalance_state": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) VALUES (1, :rd, :w, :s) ON CONFLICT (id) DO UPDATE SET rebalance_date = EXCLUDED.rebalance_date, weights = EXCLUDED.weights, scale = EXCLUDED.scale",
+     "params": {
+      "rd": "2026-06-22",
+      "s": {
+       "$type": "float",
+       "v": "0.8"
+      },
+      "w": "{\"AAPL\": 0.5, \"MSFT\": 0.25}"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "save_rebalance_state__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) VALUES (1, :rd, :w, :s) ON CONFLICT (id) DO UPDATE SET rebalance_date = EXCLUDED.rebalance_date, weights = EXCLUDED.weights, scale = EXCLUDED.scale",
+     "params": {
+      "rd": "2026-06-22",
+      "s": {
+       "$type": "float",
+       "v": "0.8"
+      },
+      "w": "{\"AAPL\": 0.5, \"MSFT\": 0.25}"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_trade_history_dates": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date FROM paper_trades WHERE symbol = :symbol ORDER BY run_date ASC",
+     "params": {
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [
+    {
+     "$type": "date",
+     "v": "2026-06-01"
+    },
+    {
+     "$type": "date",
+     "v": "2026-06-22"
+    }
+   ],
+   "raised": null
+  },
+  "get_trade_history_dates__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT run_date FROM paper_trades WHERE symbol = :symbol ORDER BY run_date ASC",
+     "params": {
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": [],
+   "raised": null
+  },
+  "get_last_buy_dates": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, max(run_date) FROM paper_trades WHERE side = 'BUY' GROUP BY symbol",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "AAPL": {
+     "$type": "date",
+     "v": "2026-06-22"
+    },
+    "MSFT": {
+     "$type": "date",
+     "v": "2026-06-01"
+    }
+   },
+   "raised": null
+  },
+  "get_accrued_dividend_keys": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, ex_date FROM paper_dividend_accruals",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "set",
+    "v": [
+     {
+      "$type": "tuple",
+      "v": [
+       "AAPL",
+       {
+        "$type": "date",
+        "v": "2026-02-09"
+       }
+      ]
+     },
+     {
+      "$type": "tuple",
+      "v": [
+       "AAPL",
+       {
+        "$type": "date",
+        "v": "2026-06-12"
+       }
+      ]
+     },
+     {
+      "$type": "tuple",
+      "v": [
+       "MSFT",
+       {
+        "$type": "date",
+        "v": "2026-05-15"
+       }
+      ]
+     }
+    ]
+   },
+   "raised": null
+  },
+  "log_dividend_accrual": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) VALUES (:symbol, :ex_date, :rate, :qty, :amount) ON CONFLICT (symbol, ex_date) DO NOTHING",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "2.5"
+      },
+      "ex_date": {
+       "$type": "date",
+       "v": "2026-06-12"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "rate": {
+       "$type": "float",
+       "v": "0.25"
+      },
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_dividend_accrual__string_ex_date": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) VALUES (:symbol, :ex_date, :rate, :qty, :amount) ON CONFLICT (symbol, ex_date) DO NOTHING",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "2.5"
+      },
+      "ex_date": "2026-06-12",
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "rate": {
+       "$type": "float",
+       "v": "0.25"
+      },
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "log_dividend_accrual__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) VALUES (:symbol, :ex_date, :rate, :qty, :amount) ON CONFLICT (symbol, ex_date) DO NOTHING",
+     "params": {
+      "amount": {
+       "$type": "float",
+       "v": "2.5"
+      },
+      "ex_date": {
+       "$type": "date",
+       "v": "2026-06-12"
+      },
+      "qty": {
+       "$type": "float",
+       "v": "10.0"
+      },
+      "rate": {
+       "$type": "float",
+       "v": "0.25"
+      },
+      "symbol": "AAPL"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "get_total_dividend_accrual": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "12.5"
+   },
+   "raised": null
+  },
+  "get_total_dividend_accrual__no_row": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "0.0"
+   },
+   "raised": null
+  },
+  "get_total_dividend_accrual__empty_table": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "$type": "float",
+    "v": "0.0"
+   },
+   "raised": null
+  },
+  "get_open_split_corrections": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, factor FROM paper_split_state",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "MNST": {
+     "$type": "float",
+     "v": "3.0"
+    },
+    "NVDA": {
+     "$type": "float",
+     "v": "10.0"
+    }
+   },
+   "raised": null
+  },
+  "get_open_split_corrections__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, factor FROM paper_split_state",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {},
+   "raised": null
+  },
+  "get_open_split_states": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, factor, ex_date FROM paper_split_state",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {
+    "MNST": {
+     "ex_date": {
+      "$type": "date",
+      "v": "2026-06-12"
+     },
+     "factor": {
+      "$type": "float",
+      "v": "3.0"
+     }
+    },
+    "NVDA": {
+     "ex_date": {
+      "$type": "date",
+      "v": "2026-06-22"
+     },
+     "factor": {
+      "$type": "float",
+      "v": "10.0"
+     }
+    }
+   },
+   "raised": null
+  },
+  "get_open_split_states__empty": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "SELECT symbol, factor, ex_date FROM paper_split_state",
+     "params": null
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": {},
+   "raised": null
+  },
+  "save_split_correction": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_split_state (symbol, ex_date, factor) VALUES (:symbol, :ex_date, :factor) ON CONFLICT (symbol) DO UPDATE SET factor = EXCLUDED.factor, updated_at = now()",
+     "params": {
+      "ex_date": "2026-06-12",
+      "factor": {
+       "$type": "float",
+       "v": "3.0"
+      },
+      "symbol": "MNST"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "save_split_correction__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "INSERT INTO paper_split_state (symbol, ex_date, factor) VALUES (:symbol, :ex_date, :factor) ON CONFLICT (symbol) DO UPDATE SET factor = EXCLUDED.factor, updated_at = now()",
+     "params": {
+      "ex_date": "2026-06-12",
+      "factor": {
+       "$type": "float",
+       "v": "3.0"
+      },
+      "symbol": "MNST"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  },
+  "clear_split_correction": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_split_state WHERE symbol = :symbol",
+     "params": {
+      "symbol": "MNST"
+     }
+    },
+    {
+     "op": "commit"
+    },
+    {
+     "op": "close",
+     "committed": true
+    }
+   ],
+   "returned": null,
+   "raised": null
+  },
+  "clear_split_correction__execute_fails": {
+   "events": [
+    {
+     "op": "connect"
+    },
+    {
+     "op": "execute",
+     "sql": "DELETE FROM paper_split_state WHERE symbol = :symbol",
+     "params": {
+      "symbol": "MNST"
+     }
+    },
+    {
+     "op": "close",
+     "committed": false
+    }
+   ],
+   "returned": null,
+   "raised": "RuntimeError: db down"
+  }
+ }
+}

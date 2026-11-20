@@ -42,7 +42,7 @@ src/ggTrader/
 │   ├── selfcheck.py             # Dispatch probe: proves the configured engine really runs
 │   ├── indicators.py            # Presets with every flag explicit: wilder_rsi, bbands, ema, sma, macd, atr
 │   ├── signals.py               # cross_above/cross_below (float coercion), time_stop
-│   ├── portfolio.py             # run_signals / run_weights -> SimResult, column chunking
+│   ├── portfolio.py             # run_signals / run_weights -> SimResult, column chunking; run_signals' halt, intraday-stop and overlap checks are private helpers
 │   ├── stats.py                 # Window Sharpe/vol/drawdown, finite guard, per-window trades, DSR
 │   ├── windows.py               # Calendar folds -> bar positions, range_split wrapper
 │   ├── provenance.py            # provenance() stamp and compare() across epochs
@@ -50,7 +50,7 @@ src/ggTrader/
 │
 ├── lab/                          # The Research & Simulation Engine
 │   ├── cli.py                   # Command-line entry point for running simulations (ggt lab)
-│   ├── data.py                  # Loads stock lists and historical prices (yfinance, TimescaleDB)
+│   ├── data.py                  # Loads stock lists and historical prices; `fetch_stock_ohlcv` is a thin wrapper over data/live/fetch_chain.py
 │   ├── persist.py               # Saves blend results to database tables
 │   ├── strategy.py              # LabConfig (shared research settings)
 │   ├── universe.py              # Vectorised point-in-time universe mask and optional exit policies
@@ -61,8 +61,9 @@ src/ggTrader/
 │   │   ├── gates.py             # NDH lattice glue (lab.gates.ndh_check) and the DSR gate
 │   │   ├── anchor.py            # defensive anchor fit only on data to each fold's train_end
 │   │   ├── breaker.py           # circuit breaker, 2-of-3 shadow re-entry, WFE, WfoPolicy
-│   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows)
-│   │   ├── run.py / report.py   # run_wfo, WfoResult, table, curve_summary, JSON payload
+│   │   ├── scorers.py           # SignalScorer (one full-history simulation, sliced) / WeightScorer (fresh-start stacked windows); ScoringInputs and SignalSimOptions carry their inputs
+│   │   ├── fold_record.py       # FOLD_KEYS (the 28 fold-dict keys, in order) and FoldRecord, whose as_dict() builds each fold row
+│   │   ├── run.py / report.py   # run_wfo (with private fold, stitch and diagnostics helpers), WfoResult, table, curve_summary, JSON payload
 │   │   └── inputs.py / cli_support.py  # Bars input, PIT masks, `ggt lab` glue
 │   ├── gates.py                 # NDH plateau check (the DSR gate is engine.stats.dsr)
 │   └── strategies/              # Strategies on the engine contract; any module dropped in here is found
@@ -83,10 +84,24 @@ src/ggTrader/
 │   ├── gates.py                 # Input/output sanity gates and the 12:55 PT late-run cutoff
 │   ├── untradable.py            # UNTRADABLE_SYMBOLS, broker status and the "asset is not active" 422
 │   ├── overlay.py               # Blend sleeve curves through engine.run_signals
-│   ├── trader.py                # Coordinates signals, risk checks, and submits orders
+│   ├── trader.py                # PaperTrader: a short orchestrator (run, _run) calling the step objects below in order; the private seams stay as forwards
+│   ├── preflight.py             # PreflightGate, PreflightResult, Halted: market, signal, late-run and freshness gates
+│   ├── portfolio.py             # PortfolioView.load: account, positions, splits, dividends, untradable set, sweep position
+│   ├── risk_assessor.py         # RiskAssessor: peak seed, drawdown and daily-loss halts -> RiskVerdict
+│   ├── planning.py              # Pure planners: strategy_signals, stops, exit validation, exits, sweep sell, buys, sweep buy
+│   ├── order_flow.py            # OrderFlow, FlowOutcome: the staged plan-then-execute glue
+│   ├── execution.py             # Executor protocol, OrderExecutor, DryRunExecutor (submit, poll, reconcile)
+│   ├── corporate_actions.py     # CorporateActions (split corrections, dividend accruals) and missed_exits
+│   ├── reporter.py              # RunReporter: alerts, corrected value, profit figures, daily summary, snapshot
+│   ├── seams.py                 # RunHooks, TraderSeams: module collaborators and private trader methods, resolved at call time
+│   ├── run_helpers.py           # as_date, account_read_halt (a home the step modules share without importing trader)
+│   ├── config.py                # TraderConfig: the run-time settings, read once per run into one frozen record
+│   ├── models.py                # Typed records: Account, Position, OrderStatus, MarketClock, SleeveSignals, SignalBundle, SubmittedOrder, RunResult
+│   ├── ports.py                 # Broker and Notifier protocols (AlpacaBroker, TelegramNotifier and DryRunNotifier satisfy them)
+│   ├── ledger.py                # PaperLedger protocol; ReadOnlyLedger, InMemoryLedger (the ModuleLedger adapter is retired)
 │   ├── risk.py                  # Safety checks (caps position sizes, halts on losses)
 │   ├── notifier.py              # Sends trade updates to Telegram
-│   └── persist.py               # Saves daily paper trading logs and portfolio balances
+│   └── persist.py               # Saves daily paper trading logs and portfolio balances (PgPaperLedger holds the SQL; the module functions delegate to it)
 │
 ├── data/                        # Data Downloader & Database Loader
 │   ├── bars.py                  # Read-only research bars (per-field frames) from the snapshot or DB
@@ -97,7 +112,10 @@ src/ggTrader/
 │   ├── historical/
 │   │   └── timescaledb_loader.py # Fetches historical prices from your local database
 │   └── live/
-│       └── yfinance_loader.py    # Downloads live stock data and saves it to a cache
+│       ├── yfinance_loader.py    # Downloads live stock data and saves it to a cache
+│       ├── cached_yfinance_loader.py # Database-cached yfinance loader (public persist() writes a frame to the cache)
+│       ├── tiingo_loader.py      # Tiingo fallback for symbols yfinance misses
+│       └── fetch_chain.py        # OhlcvFetchChain / fetch_stock_ohlcv: DB cache, then yfinance, then Tiingo for the gaps
 │
 ├── utils/                       # Common Helpers
 │   ├── config.py                # Global settings and defaults
@@ -312,6 +330,31 @@ are produced (`lab/wfo/`).
 The deleted legacy path ran three grouped simulations per fold plus one for the live pick (52 for 17
 folds); the engine path runs one (two memory chunks on the full SP500 ensemble grid).
 
+**Code layout after refactor phase 3 (structure only).** `run_signals` and `run_wfo` were long functions;
+their blocks now sit in private helpers, with the public surface unchanged (parameter names, order and
+defaults, the keys and key order of every fold row and of `diagnostics`, exceptions and messages, printed
+output, and the order of calls into the scorer):
+
+- `engine/portfolio.py`: `_halt_positions` (validates `halt_mask` and maps halted columns),
+  `_validate_intraday_stops` (the intraday-stop frame and config checks) and `_reject_overlaps` (raises
+  when a trade spans a halt or a gap). Each keeps the old check order and messages.
+- `lab/wfo/scorers.py`: `ScoringInputs` and `SignalSimOptions` are frozen carriers for what the scorers
+  take; `SignalScorer.from_inputs` and `WeightScorer.from_inputs` build a scorer from them. The scorer
+  constructors keep their signatures.
+- `lab/wfo/fold_record.py`: `FoldRecord` holds one fold row, and `FOLD_KEYS` names its **28** keys in
+  order (earlier notes said 27). `as_dict()` returns the same dict `run_wfo` always produced.
+- `lab/wfo/run.py`: `_scorer_for` picks the scorer, `_score_fold` scores one fold, `_stitch_oos` joins the
+  out-of-sample curves and scores SPY on the same days, and `_build_diagnostics` builds the 26-key
+  `diagnostics` dict. `run_wfo` keeps its signature and calls them in the old order. `run_dsr`, `run_ndh`,
+  the scorer classes and breaker functions are looked up by module-level name at call time.
+  Replacement scorer classes must implement `from_inputs`; patching `_make_scorer` does not
+  intercept `run_wfo`.
+
+Characterization tests pin this surface: `tests/engine/test_run_signals_characterization.py` and
+`tests/lab/wfo/test_run_wfo_characterization.py` (exact goldens under their `characterization/` folders),
+plus helper unit tests in `tests/engine/test_run_signals_helpers.py`, `tests/lab/wfo/test_scorer_inputs.py`,
+`tests/lab/wfo/test_fold_record.py` and `tests/lab/wfo/test_run_wfo_helpers.py`.
+
 ### 4. Paper Trading Cycle (`ggt paper`)
 
 > The trader is **stopped by the owner** (2026-11-06) and its cron lines are commented out.
@@ -324,7 +367,7 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
 1. signal_runner.require_rust_engine() -> engine.selfcheck before any data: Rust dispatched,
                                           vectorbt/vectorbt-rust paired; otherwise no orders.
     ↓
-2. loader chain (lab.data.fetch_stock_ohlcv, the 12:45 partial bar) -> paper.live_bars.Bars
+2. loader chain (data.live.fetch_chain.fetch_stock_ohlcv, the 12:45 partial bar) -> paper.live_bars.Bars
                                        -> paper.gates.vet_bars (empty / duplicates / weekend /
                                           universe / history / last-bar coverage; a not-yet-complete
                                           bar dated today is dropped, anything else thin is a bad tape)
@@ -338,14 +381,190 @@ ggt paper [--live]   (cron, when the owner re-enables it: scripts/paper_trade.sh
                                        (UNTRADABLE_SYMBOLS + broker status + 422 "not active"),
                                        risk guardrails, MAX_POSITIONS cap (alphabetical)
     ↓
-5. trader.execute()                 -> Alpaca orders (--live only; a dry run is read-only)
+5. trader order steps              -> Alpaca orders (--live only; a dry run is read-only)
     ↓
-6. persist.save()                   -> ledger, snapshot, peak (--live only)
+6. self._ledger (PaperLedger)       -> intents, trades, snapshot, peak, split and dividend rows
+                                       (--live only; a read-only run skips and records the writes)
     ↓
 7. notifier.send()                  -> Telegram (a read-only dry run logs instead)
 ```
 
 `paper/` reaches vectorbt only through `ggTrader.engine` (`tests/engine/test_boundary.py` scans every file under `src/`; `tests/paper/test_paper_boundary.py` checks the signal path).
+
+### 4a. Paper trader interfaces, records and the price-loader chain (refactor phase 4)
+
+Phase 4 gave the paper trader typed records and swappable interfaces and gave the price-loader
+fallback one tested home. It changed no order, no SQL statement, no Telegram line and no price row,
+with one intended exception (the per-run settings snapshot, below). `PaperTrader._run` was **not**
+split here; Phase 5 did that, building on these pieces (section 4b).
+
+| Piece | Where | Status |
+|---|---|---|
+| Eight records: `Account`, `Position`, `OrderStatus`, `MarketClock`, `SleeveSignals`, `SignalBundle` (`TypedDict`s, so the JSON-shaped mappings are unchanged) and `SubmittedOrder`, `RunResult` (frozen dataclasses the trader builds) | `paper/models.py` | permanent |
+| `Broker` and `Notifier` protocols (the 11 broker methods and 3 notifier methods the trader calls) | `paper/ports.py` | permanent |
+| `PaperLedger` protocol, one method per public function of `paper/persist.py`, plus `InMemoryLedger` (a test double: no database) and `ReadOnlyLedger` (skips every write, records the method name in `skipped_writes`) | `paper/ledger.py` | permanent |
+| `PgPaperLedger`: the SQL of `persist.py`, moved unchanged. The 31 module functions remain as one-line delegations with their signatures, because studies and tests import them; Phase 5 did not touch `persist.py` | `paper/persist.py` | permanent |
+| `ModuleLedger`, the **string-patch adapter** that resolved the persist names in the trader module's namespace at every call, so `patch("ggTrader.paper.trader.log_trade")` worked | `paper/ledger.py` | **retired in Phase 5** (owner-approved): the default ledger is `PgPaperLedger`, and the trader tests and the transcript harness inject a ledger instead of patching persist names (see 4b) |
+| `TraderConfig`: the stop, sweep and untradable settings as one frozen record held as `self._cfg` for the whole run. It calls the existing accessors in `cash_sweep`, `catastrophe_stop` and `untradable`; the environment variable names stay written in those modules. Risk limits stay in `RiskConfig` (read at construction) | `paper/config.py` | permanent |
+| `OhlcvFetchChain` and `fetch_stock_ohlcv`: DB cache, then yfinance, then Tiingo for the remaining gaps, with the negative cache injected as a protocol (`data/` must not import `lab/`). `lab.data.fetch_stock_ohlcv` is a wrapper with the same signature, and `paper/` imports its fetch path from `data/live`. The chain is wired: `lab.data.fetch_stock_ohlcv`, `paper/signal_runner.py` and `paper/overlay.py` all call it | `data/live/fetch_chain.py`, `lab/data.py` | permanent |
+| `CachedYFinanceLoader.persist(df, interval)`: public writer that delegates to `_cache_to_db`, so callers stop reaching for the private method | `data/live/cached_yfinance_loader.py` | permanent |
+
+How the trader uses them. `PaperTrader.__init__(broker, notifier, risk_cfg=None, dry_run=True,
+read_only=None, membership=None, *, ledger=None)` takes a `Broker`, a `Notifier` and an optional
+`PaperLedger`. With no ledger it builds a `PgPaperLedger` (stateless: it opens no connection until
+a call); a read-only run wraps whichever ledger it has in a `ReadOnlyLedger`. `trader.py` reaches the
+database only through `self._ledger`: it has no `_write` helper, makes no call to an imported
+persist function, binds none of the 26 persist names (Phase 5 removed those imports) and reads no
+environment variable.
+Every pending order is a `SubmittedOrder`, read by attribute rather than by tuple index, and every
+result is built as a `RunResult` and returned as `.as_dict()`, so `run()` still returns a `dict`
+with the same key order. A test can build a trader on `InMemoryLedger` and needs no persist patch;
+that covers the **ledger only**: the signal, membership, benchmark-refresh, date, uuid and clock
+collaborators are still patched in the trader module.
+`InMemoryLedger` is a test double without durable storage or a cross-process lock; injecting it
+into a live trader would not provide production order-intent safety.
+
+**Intended behavior change: one settings snapshot per run.** The run-time environment settings used
+to be read at several points of a run. `TraderConfig.from_env()` now reads them all once, at the top
+of `run()`, so the sweep and untradable settings are read before the run lock, the market gate and
+the account reads. This can change behavior if the process environment changes during a run;
+configuration loading can add `.env` values, although the standard broker loads them before the
+trader is constructed. A malformed float is stored in the record and re-raised where
+the trader used to parse it, so each setting keeps its old fail time (the sweep reserve ends the run;
+the minimum clip and buy trigger are logged and skip the sweep buy; an invalid stop threshold halts
+before the lock). Transcript pins cover these; the read timing itself is a deliberate change and is
+not claimed to be identical.
+
+**Pins that make the changes provable** (tests, not behavior): the transcripts now cover 103
+scenarios (the original 96 stay byte-identical; seven were added); `tests/paper/golden/persist_sql.json`
+records every SQL text, bind dictionary and commit, rollback and close event of the 31 persist
+functions through a recording engine; `tests/paper/test_phase4_pins.py` pins result key order,
+tuple-index sites and environment-read timing; `tests/utils/test_import_rules.py` gains a rule that
+`paper/` imports nothing from `lab.data` except `STOCK_BASE_CONFIG`.
+
+**Known bind-key change.** `create_order_intent` used to pass `locals()` to the SQL call, which
+included the open connection under the key `conn`; SQLAlchemy ignored it. The explicit bind
+dictionary drops that stray key. The SQL text and the other seven keys are unchanged.
+
+Phase 5 verification at `3475f405`: the offline integration gate passed the oracle comparison,
+full tier (4,967 passed, one skipped, five expected failures), study tier (1,144 passed), and
+baseline outcome comparison. The 103 transcript goldens and 600 recorded seed digests remain
+unchanged. All 21 final mutation forms failed at least one reach-qualified test; the retired
+legacy differential was last exercised before its removal. Some shared submit-failure cases fail
+through the strict harness; a bounded submit-failure test also fails on its own assertion. Several
+reach probes cover a broader entry point than their mutation condition. Opus found no production-wiring
+blocker in a static cross-family review made before the default ledger changed to `PgPaperLedger`;
+the 2026-11-20 review repeated the wiring check at `f081228b`. Sol conditionally approved the
+behavioral-pin slice, with the gate record expanded afterwards. The P5 and P7 output JSON record
+`git_sha` `3475f405` and the phase F logs start with a HEAD line; the P5 and P7 driver logs, the pytest logs and the JUnit XML carry no commit.
+
+**Phase 3 to 5 reviews.** Phases 3 and 4 had no recorded Sol or Opus code review before 2026-11-20; phase 5 had an Opus production-code review on 2026-11-19 (`527ae843`, before the default ledger changed) and Sol and Opus reviews of its behavioral pins. On 2026-11-20 `gpt-6.2-sol` (behavior parity), Claude Opus 5.5 (wiring and evidence)
+and Claude Fable 5.2 (adversarial) reviewed `main..refactor/phase-5` at `f081228b`; their files are
+in `/home/flynn/ggTrader-refactor-evidence/p6/review-*.md`. Opus and Fable reported no blockers; Sol reported two Important findings (verdict BLOCKERS), resolved as follows: a broker must not return a shared, later-mutated dictionary (now a documented port contract (`Broker` in `paper/ports.py`: `get_account` and
+`get_positions` return fresh objects the caller may keep, because `PortfolioView` holds frozen copies), and a direct `_submit_order` call on a read-only trader with a valid side now fails closed with `RuntimeError("read-only trader must not submit orders")` (an invalid side still raises `ValueError`) before any intent, uuid, lock check or
+broker call. The minor findings that were parked are listed in the changelog under
+"Preserved, not fixed".
+
+The signal generator supplies mapping weights. Malformed weights (an empty sequence, a list of
+pairs, `None`) fail as they did before the split, with `AttributeError` at the slot-cap step (a run that
+stops earlier, such as a stale signal date or an unreadable peak, never reads the weights). For
+covered cases the log comparison pins logger name, level and rendered message, not raw `LogRecord`
+template, arguments or source metadata.
+The eight private compatibility seams remain; retiring them requires a separate owner decision.
+A live caller can still explicitly inject an in-memory ledger, so durable-state protection there
+is a static production-import guard rather than a runtime refusal.
+
+### 4b. The run as step objects (refactor phase 5)
+
+Phase 5 split the 826-line `PaperTrader._run` into an orchestrator of 38 lines (`run` is 22) that
+calls one step object at a time, in the order the old code ran. `trader.py` went from 1,584 (at `1c7a3138`) to 357
+lines. The design aim was to preserve orders, SQL, Telegram messages, rendered log messages, clock
+read positions and price rows; the verification above describes the scope and known limits.
+The order of the steps is behavior (the sweep sell is sized after the stop orders, buys wait for the
+sells to settle), so the glue between planning and execution is staged instead of planning
+everything up front.
+
+**The nine step objects** (planning counts as one):
+
+| Object | Module | Does |
+|---|---|---|
+| `PreflightGate` | `preflight.py` | market-open gate, signal generation and its alerts, the late-run gate (12:55 PT), tape refresh, the freshness gate; returns `PreflightResult` or `Halted` |
+| `PortfolioView.load` | `portfolio.py` | account and position reads, split corrections, dividend accruals, untradable resolution, the missed exits, the sweep position; the raw positions and the split-corrected copy are kept apart |
+| `RiskAssessor` | `risk_assessor.py` | seeds the peak, applies the drawdown and daily-loss halts; returns `RiskVerdict(hard_stop, buy_halts)` and sends the risk notices |
+| Planning | `planning.py` | pure planners: `strategy_signals`, `assess_stops`/`plan_stops`, `validate_exits`, `plan_exits`, `plan_sweep_sell`, `plan_buys`, `plan_sweep_buy`; they decide, they never touch the broker or the ledger; the lazy ones are explicit iterator classes advanced one decision at a time (a generator would change an exception type) |
+| `OrderFlow` | `order_flow.py` | three stages: (1) catastrophe stops, exit validation, buy limits; (2) sweep sell, sells, settlement of the sells; (3) buys, settlement, sweep buy; returns `FlowOutcome` |
+| `OrderExecutor` | `execution.py` | submit, poll and reconcile orders through the broker, the ledger and the run lock |
+| `DryRunExecutor` | `execution.py` | the same interface with no submission (it replaces the `if dry_run` branches the old methods carried); chosen at run time from `self._dry_run` |
+| `CorporateActions` | `corporate_actions.py` | split corrections and dividend accruals, moved as they were; `missed_exits` |
+| `RunReporter` | `reporter.py` | prior snapshot read, alerts, corrected value, profit figures, daily summary and the snapshot write; builds the `RunResult` |
+
+**Data flow of one run.**
+
+```
+run()   TraderConfig.from_env() once; live runs hold ledger.paper_run_lock()
+  _run  init schema -> reconcile order intents (live only) -> reconcile pending orders -> pending symbols
+    PreflightGate.check()      -> Halted(reason, result): return its result as the run's dict
+                                  or PreflightResult(bundle, signals, today_et)
+    RunContext(today_et, config, pending symbols)
+    PortfolioView.load(...)    -> account, positions, corrections, untradable, sweep, dividends
+    RiskAssessor.assess()      -> RiskVerdict; a hard stop returns RunResult([], [], [reason])
+    RunReporter.previous_value -> the last snapshot's value (read before any order)
+    OrderFlow.run()            -> stage 1 -> stage 2 -> stage 3 -> FlowOutcome(book, buy_halts, invalid exits)
+    RunReporter.finish()       -> RunResult; run() returns RunResult.as_dict()
+```
+
+**`Halted`.** The design said the gate raises `RunHalted(reason, result)`. The gate instead **returns**
+`Halted(reason, result)`: a raised exception could be swallowed by a broad `except Exception` between
+raise and catch, a returned value cannot. The reasons and the results are the design's. Only the
+preflight gate returns `Halted`; the later hard stops return their `RunResult` directly.
+
+**Seams that stay, and why.** Tests assign and patch private pieces after construction, so each
+stays reachable by its old name and is looked up on the instance at call time:
+- Eight private `PaperTrader` methods stay as one- or two-line forwards to the moved bodies:
+  `_submit_order`, `_poll_orders`, `_reconcile_order_intents`, `_reconcile_pending_orders`,
+  `_flag_if_stale`, `_missed_exits`, `_compute_split_corrections`, `_accrue_dividends`. The step
+  objects reach them through `TraderSeams` (`seams.py`), so `trader._submit_order = MagicMock(...)`
+  or `patch.object(PaperTrader, "_poll_orders", ...)` still intercepts. Retiring them is a separate,
+  owner-approved slice.
+- Module-level collaborators (`generate_core_signals`, `live_membership_source`,
+  `refresh_benchmark_tape`, the date and clock reads, `uuid4`, `time`, `find_split_applied_symbols`)
+  are named in `trader.py` only and reach the step objects as `RunHooks` lambdas that read the module
+  global when called, so the existing patches still work. New step modules import none of them.
+- `_risk`, `_dry_run` and `_paper_lock` are read when the run starts (the executor is chosen then),
+  never at construction.
+- The clock reads: `today_et` is read once, at the freshness gate where it was read before, and
+  once more for each order intent, so a successful run with N submissions reads it N+1 times; `now_pt` is
+  read at the late-run gate, after signal generation. `RunContext` therefore holds `today_et`, the
+  settings and the pending symbols, not `now_pt` (a deviation from the design's wording).
+- The string-patch adapter is **not** kept: `ModuleLedger` is retired (4a).
+
+**The seven rules** (design 5.1) each have a named test in `tests/paper/test_run_rules.py`:
+
+| Rule | Where it holds | Test |
+|---|---|---|
+| A catastrophe-stopped symbol leaves the strategy positions at once and is neither sold twice nor re-bought | `OrderFlow` stage 1 (`FlowState.stopped`) | `test_rule1_...` |
+| Slot arithmetic counts the regular sells, not all sells | `FlowState.regular_sell_count`, owned by the flow | `test_rule2_...` |
+| A regular sell that does not fully fill clears the strategy buys; a terminal canceled regular sell still lets a sweep buy follow, and a terminal failed funding-sweep sale is excluded from the full-exit check | `OrderFlow` stage 2 settlement | `test_rule3_...` (terminal, and still working at the poll deadline) |
+| An invalid exit quantity blocks buys and the sweep buy | `validate_exits`, `OrderFlow` | `test_rule4_...` (and the sweep sell is not blocked) |
+| Orders use the broker's uncorrected quantity; split-corrected positions are for reporting and concentration | `PortfolioView` keeps both | `test_rule5_...` |
+| A read-only run writes nothing and records what it skipped | `ReadOnlyLedger` over the run's ledger | `test_rule6_...` |
+| A submit exception ends the run after the intent is saved; a later `rejected` order settles normally; a direct `_submit_order` on a read-only trader is refused (fails closed) since 2026-11-20 | `OrderExecutor.submit_order`, settlement | `test_rule7a_...`, `test_rule7b_...` |
+
+Beyond those, the same file characterizes late failures that leave earlier orders live and the exact
+exception types, and the hook call order of a live run.
+
+**Persistence in tests.** `tests/paper/test_trader.py` no longer patches persist names (239 string
+patches at the start of the phase, none now; all 277 test node ids are kept). Each test injects an
+`InMemoryLedger` or `SpyLedger` (`tests/paper/support.py`). An autouse guard patches
+`ggTrader.paper.trader.PgPaperLedger` with a ledger whose every method records the call and raises
+`UnstubbedPersistCall`, and fails the test at teardown if anything was recorded, even when the trader
+swallowed the error. A static check keeps `InMemoryLedger` out of production code; a live run still
+accepts an injected ledger (a runtime refusal would change behavior and is the owner's call).
+
+**Not changed:** `persist.py` (no SQL, transaction mode or bind dictionary), `risk.py`, `cash_sweep.py`,
+`catastrophe_stop.py`, `gates.py`, `notifier.py`, `alpaca_broker.py`, `signal_runner.py`, `overlay.py`,
+`cli/main.py`; `ggt paper` output is unchanged. The trader stays stopped and cron stays off; code
+reaches the container only through an image rebuild.
 
 ---
 

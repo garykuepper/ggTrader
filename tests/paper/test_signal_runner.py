@@ -339,7 +339,7 @@ class TestRefreshBenchmarkTape:
         assert sorted(args[0]) == sorted(BENCHMARK_SYMBOLS)
         assert args[1] == "1d"
         assert (kwargs["end_date"] - kwargs["start_date"]).days == 30
-        mock_cached_cls.return_value._cache_to_db.assert_called_once_with(frame, "1d")
+        mock_cached_cls.return_value.persist.assert_called_once_with(frame, "1d")
         assert sorted(got) == sorted(BENCHMARK_SYMBOLS)
 
     @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
@@ -350,7 +350,7 @@ class TestRefreshBenchmarkTape:
         mock_plain_cls.return_value.fetch_ohlcv.side_effect = RuntimeError("yf down")
 
         assert refresh_benchmark_tape() == []
-        mock_cached_cls.return_value._cache_to_db.assert_not_called()
+        mock_cached_cls.return_value.persist.assert_not_called()
 
     @patch("ggTrader.data.live.cached_yfinance_loader.CachedYFinanceLoader")
     @patch("ggTrader.data.live.yfinance_loader.YFinanceDataLoader")
@@ -360,7 +360,7 @@ class TestRefreshBenchmarkTape:
         mock_plain_cls.return_value.fetch_ohlcv.return_value = _mock_ohlcv(
             ["SPY", "TLT"], n_days=30
         )
-        mock_cached_cls.return_value._cache_to_db.side_effect = RuntimeError("db down")
+        mock_cached_cls.return_value.persist.side_effect = RuntimeError("db down")
 
         assert refresh_benchmark_tape() == []
 

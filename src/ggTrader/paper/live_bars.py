@@ -2,9 +2,9 @@
 
 The research reader :mod:`ggTrader.data.bars` serves a frozen tape or a read-only database
 session. It cannot serve the trader's case: at 12:45 PT the newest bar is a *partial* intraday
-bar that only the live loader chain (``lab.data.fetch_stock_ohlcv`` -> TimescaleDB cache ->
-yfinance gap fetch) can supply. That one step therefore stays on the live loader (spec 8.2,
-5.7); this module only reshapes its ``(symbol, field)`` MultiIndex frame into ``Bars`` so the
+bar that only the live loader chain (``data.live.fetch_chain.fetch_stock_ohlcv`` -> TimescaleDB
+cache -> yfinance gap fetch) can supply. That one step therefore stays on the live loader (spec
+8.2, 5.7); this module only reshapes its ``(symbol, field)`` MultiIndex frame into ``Bars`` so the
 validated ``Ensemble.build()`` runs on exactly the data the loader returned.
 
 Nothing here fetches or writes. Validation is left to :mod:`ggTrader.paper.gates`, so a bad tape
@@ -29,7 +29,7 @@ def bars_from_legacy_frame(ohlcv: pd.DataFrame, requested: Sequence[str] = ()) -
     **kept**, not collapsed, so the sanity gate can see and refuse them.
 
     Args:
-        ohlcv: frame as returned by ``lab.data.fetch_stock_ohlcv``.
+        ohlcv: frame as returned by ``data.live.fetch_chain.fetch_stock_ohlcv``.
         requested: symbols that were asked for (for ``missing_symbols``); defaults to the
             symbols present.
 

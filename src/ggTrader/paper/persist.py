@@ -96,51 +96,8 @@ CREATE TABLE IF NOT EXISTS paper_split_state (
 """
 
 
-def init_paper_schema() -> None:
-    with _get_engine().connect() as conn:
-        for stmt in _SCHEMA.strip().split(";"):
-            stmt = stmt.strip()
-            if stmt:
-                conn.execute(text(stmt))
-        conn.commit()
-
-
 _LOCK_KEY = 1734837291
 _TERMINAL_STATUSES = set(TERMINAL_STATUSES)
-
-
-def create_order_intent(
-    client_order_id: str,
-    run_date: str,
-    side: str,
-    symbol: str,
-    amount: float,
-    amount_kind: str,
-    reason: str | None,
-) -> None:
-    """Commit an order intent before contacting the broker."""
-    with _get_engine().begin() as conn:
-        conn.execute(
-            text("""INSERT INTO paper_order_intents
-            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)
-            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)
-        """),
-            locals(),
-        )
-
-
-def get_unresolved_order_intents() -> list[dict]:
-    """Return durable intents that still require reconciliation."""
-    with _get_engine().connect() as conn:
-        return [
-            dict(row)
-            for row in conn.execute(
-                text(
-                    "SELECT * FROM paper_order_intents WHERE state != 'resolved' "
-                    "ORDER BY created_at"
-                )
-            ).mappings()
-        ]
 
 
 def _lock_order_and_reject_pending(conn, order_id: str) -> None:
@@ -153,125 +110,6 @@ def _lock_order_and_reject_pending(conn, order_id: str) -> None:
         is not None
     ):
         raise ValueError("Order has both pending and intent representations")
-
-
-def attach_broker_order(client_order_id: str, order_id: str) -> None:
-    """Attach a broker ID, rejecting missing or conflicting intents."""
-    with _get_engine().begin() as conn:
-        _lock_order_and_reject_pending(conn, order_id)
-        row = (
-            conn.execute(
-                text(
-                    "SELECT broker_order_id, state FROM paper_order_intents "
-                    "WHERE client_order_id = :id FOR UPDATE"
-                ),
-                {"id": client_order_id},
-            )
-            .mappings()
-            .first()
-        )
-        if row is None or (row["broker_order_id"] not in (None, order_id)):
-            raise ValueError("Missing intent or conflicting broker order")
-        if row["broker_order_id"] is None:
-            if row["state"] != "intent":
-                raise ValueError("Invalid intent state")
-            conn.execute(
-                text(
-                    "UPDATE paper_order_intents SET broker_order_id = :order_id, "
-                    "state = 'submitted', updated_at = now() WHERE client_order_id = :id"
-                ),
-                {"id": client_order_id, "order_id": order_id},
-            )
-
-
-def settle_order_intent(
-    client_order_id: str,
-    order_id: str,
-    filled_qty: float,
-    filled_avg_price: float | None,
-    terminal_status: str,
-) -> None:
-    """Record validated terminal execution and resolve its intent atomically."""
-    if (
-        filled_qty is None
-        or not math.isfinite(filled_qty)
-        or filled_qty < 0
-        or terminal_status not in _TERMINAL_STATUSES
-        or (terminal_status == "filled" and filled_qty == 0)
-        or (
-            filled_qty > 0
-            and (
-                filled_avg_price is None
-                or not math.isfinite(filled_avg_price)
-                or filled_avg_price <= 0
-            )
-        )
-        or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
-    ):
-        raise ValueError("Invalid terminal fill")
-    amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
-    if not math.isfinite(amount):
-        raise ValueError("Invalid fill value")
-    with _get_engine().begin() as conn:
-        _lock_order_and_reject_pending(conn, order_id)
-        row = (
-            conn.execute(
-                text("SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE"),
-                {"id": client_order_id},
-            )
-            .mappings()
-            .first()
-        )
-        if row is None or row["broker_order_id"] not in (None, order_id):
-            raise ValueError("Missing intent or conflicting broker order")
-        if row["state"] == "resolved":
-            if (
-                row["broker_order_id"],
-                row["filled_qty"],
-                row["filled_avg_price"],
-                row["terminal_status"],
-            ) != (order_id, filled_qty, filled_avg_price, terminal_status):
-                raise ValueError("Conflicting settlement")
-            return
-        trades = conn.execute(
-            text(
-                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
-                "WHERE order_id = :id FOR UPDATE"
-            ),
-            {"id": order_id},
-        ).all()
-        expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
-        if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
-            raise ValueError("Conflicting historical trade")
-        if filled_qty > 0 and not trades:
-            conn.execute(
-                text(
-                    "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
-                    "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
-                ),
-                {
-                    "run_date": row["run_date"],
-                    "side": row["side"],
-                    "symbol": row["symbol"],
-                    "amount": amount,
-                    "order_id": order_id,
-                    "reason": row["reason"],
-                },
-            )
-        conn.execute(
-            text(
-                "UPDATE paper_order_intents SET broker_order_id = :order_id, state = 'resolved', "
-                "terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, "
-                "updated_at = now() WHERE client_order_id = :id"
-            ),
-            {
-                "id": client_order_id,
-                "order_id": order_id,
-                "status": terminal_status,
-                "qty": filled_qty,
-                "price": filled_avg_price,
-            },
-        )
 
 
 class PaperRunLock:
@@ -294,21 +132,729 @@ class PaperRunLock:
             raise RuntimeError("Paper run lock lost")
 
 
+class PgPaperLedger:
+    """The PostgreSQL implementation of the paper ledger.
+
+    Each method is the body of the module function of the same name in this file, moved
+    unchanged: same SQL, binds and transaction shape. It is stateless and reads the engine
+    through `_get_engine()` at every call, never caching it.
+    """
+
+    def init_paper_schema(self) -> None:
+        with _get_engine().connect() as conn:
+            for stmt in _SCHEMA.strip().split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    conn.execute(text(stmt))
+            conn.commit()
+
+    def create_order_intent(
+        self,
+        client_order_id: str,
+        run_date: str,
+        side: str,
+        symbol: str,
+        amount: float,
+        amount_kind: str,
+        reason: str | None,
+    ) -> None:
+        """Commit an order intent before contacting the broker."""
+        with _get_engine().begin() as conn:
+            conn.execute(
+                text("""INSERT INTO paper_order_intents
+            (client_order_id, run_date, side, symbol, amount, amount_kind, reason)
+            VALUES (:client_order_id, :run_date, :side, :symbol, :amount, :amount_kind, :reason)
+        """),
+                {
+                    "client_order_id": client_order_id,
+                    "run_date": run_date,
+                    "side": side,
+                    "symbol": symbol,
+                    "amount": amount,
+                    "amount_kind": amount_kind,
+                    "reason": reason,
+                },
+            )
+
+    def get_unresolved_order_intents(self) -> list[dict]:
+        """Return durable intents that still require reconciliation."""
+        with _get_engine().connect() as conn:
+            return [
+                dict(row)
+                for row in conn.execute(
+                    text(
+                        "SELECT * FROM paper_order_intents WHERE state != 'resolved' "
+                        "ORDER BY created_at"
+                    )
+                ).mappings()
+            ]
+
+    def attach_broker_order(self, client_order_id: str, order_id: str) -> None:
+        """Attach a broker ID, rejecting missing or conflicting intents."""
+        with _get_engine().begin() as conn:
+            _lock_order_and_reject_pending(conn, order_id)
+            row = (
+                conn.execute(
+                    text(
+                        "SELECT broker_order_id, state FROM paper_order_intents "
+                        "WHERE client_order_id = :id FOR UPDATE"
+                    ),
+                    {"id": client_order_id},
+                )
+                .mappings()
+                .first()
+            )
+            if row is None or (row["broker_order_id"] not in (None, order_id)):
+                raise ValueError("Missing intent or conflicting broker order")
+            if row["broker_order_id"] is None:
+                if row["state"] != "intent":
+                    raise ValueError("Invalid intent state")
+                conn.execute(
+                    text(
+                        "UPDATE paper_order_intents SET broker_order_id = :order_id, "
+                        "state = 'submitted', updated_at = now() WHERE client_order_id = :id"
+                    ),
+                    {"id": client_order_id, "order_id": order_id},
+                )
+
+    def settle_order_intent(
+        self,
+        client_order_id: str,
+        order_id: str,
+        filled_qty: float,
+        filled_avg_price: float | None,
+        terminal_status: str,
+    ) -> None:
+        """Record validated terminal execution and resolve its intent atomically."""
+        if (
+            filled_qty is None
+            or not math.isfinite(filled_qty)
+            or filled_qty < 0
+            or terminal_status not in _TERMINAL_STATUSES
+            or (terminal_status == "filled" and filled_qty == 0)
+            or (
+                filled_qty > 0
+                and (
+                    filled_avg_price is None
+                    or not math.isfinite(filled_avg_price)
+                    or filled_avg_price <= 0
+                )
+            )
+            or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
+        ):
+            raise ValueError("Invalid terminal fill")
+        amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
+        if not math.isfinite(amount):
+            raise ValueError("Invalid fill value")
+        with _get_engine().begin() as conn:
+            _lock_order_and_reject_pending(conn, order_id)
+            row = (
+                conn.execute(
+                    text(
+                        "SELECT * FROM paper_order_intents WHERE client_order_id = :id FOR UPDATE"
+                    ),
+                    {"id": client_order_id},
+                )
+                .mappings()
+                .first()
+            )
+            if row is None or row["broker_order_id"] not in (None, order_id):
+                raise ValueError("Missing intent or conflicting broker order")
+            if row["state"] == "resolved":
+                if (
+                    row["broker_order_id"],
+                    row["filled_qty"],
+                    row["filled_avg_price"],
+                    row["terminal_status"],
+                ) != (order_id, filled_qty, filled_avg_price, terminal_status):
+                    raise ValueError("Conflicting settlement")
+                return
+            trades = conn.execute(
+                text(
+                    "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                    "WHERE order_id = :id FOR UPDATE"
+                ),
+                {"id": order_id},
+            ).all()
+            expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
+            if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
+                raise ValueError("Conflicting historical trade")
+            if filled_qty > 0 and not trades:
+                conn.execute(
+                    text(
+                        "INSERT INTO paper_trades "
+                        "(run_date, side, symbol, amount, order_id, reason) "
+                        "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
+                    ),
+                    {
+                        "run_date": row["run_date"],
+                        "side": row["side"],
+                        "symbol": row["symbol"],
+                        "amount": amount,
+                        "order_id": order_id,
+                        "reason": row["reason"],
+                    },
+                )
+            conn.execute(
+                text(
+                    "UPDATE paper_order_intents SET broker_order_id = :order_id, "
+                    "state = 'resolved', "
+                    "terminal_status = :status, filled_qty = :qty, filled_avg_price = :price, "
+                    "updated_at = now() WHERE client_order_id = :id"
+                ),
+                {
+                    "id": client_order_id,
+                    "order_id": order_id,
+                    "status": terminal_status,
+                    "qty": filled_qty,
+                    "price": filled_avg_price,
+                },
+            )
+
+    @contextmanager
+    def paper_run_lock(self) -> Iterator[PaperRunLock]:
+        """Hold an exclusive advisory lock on a dedicated database session."""
+        with _get_engine().connect() as conn:
+            acquired = conn.execute(
+                text("SELECT pg_try_advisory_lock(:key)"), {"key": _LOCK_KEY}
+            ).scalar_one()
+            if not acquired:
+                raise RuntimeError("Paper run already locked")
+            try:
+                lock = PaperRunLock(conn)
+                lock.verify()
+                yield lock
+            finally:
+                conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": _LOCK_KEY})
+
+    def log_trade(
+        self,
+        run_date: str,
+        side: str,
+        symbol: str,
+        amount: float,
+        order_id: str,
+        reason: str | None = None,
+    ) -> None:
+        """`reason` tags why the trade happened (e.g. "cash_sweep" for a sweep
+        order -- see `cash_sweep.SWEEP_TRADE_REASON`); NULL/omitted means an
+        ordinary strategy trade, preserving the historical meaning of this
+        ledger for every caller that doesn't pass it."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
+            )
+            trades = conn.execute(
+                text(
+                    "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                    "WHERE order_id = :id FOR UPDATE"
+                ),
+                {"id": order_id},
+            ).all()
+            expected = (date.fromisoformat(run_date), side, symbol, amount, reason)
+            if len(trades) > 1 or (trades and tuple(trades[0]) != expected):
+                raise ValueError("Conflicting historical trade")
+            if trades:
+                return
+            conn.execute(
+                text(
+                    "INSERT INTO paper_trades "
+                    "(run_date, side, symbol, amount, order_id, reason) "
+                    "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
+                ),
+                {
+                    "run_date": run_date,
+                    "side": side,
+                    "symbol": symbol,
+                    "amount": amount,
+                    "order_id": order_id,
+                    "reason": reason,
+                },
+            )
+            conn.commit()
+
+    def settle_legacy_pending_order(
+        self, order_id: str, filled_qty: float, filled_avg_price: float | None, terminal_status: str
+    ) -> None:
+        """Atomically book a legacy execution and remove its pending row."""
+        if (
+            filled_qty is None
+            or not math.isfinite(filled_qty)
+            or filled_qty < 0
+            or terminal_status not in _TERMINAL_STATUSES
+            or (terminal_status == "filled" and filled_qty == 0)
+            or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
+            or (filled_qty > 0 and (filled_avg_price is None or filled_avg_price <= 0))
+        ):
+            raise ValueError("Invalid terminal fill")
+        amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
+        if not math.isfinite(amount):
+            raise ValueError("Invalid fill value")
+        with _get_engine().begin() as conn:
+            conn.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
+            )
+            row = (
+                conn.execute(
+                    text("SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE"),
+                    {"id": order_id},
+                )
+                .mappings()
+                .first()
+            )
+            if row is None:
+                raise ValueError("Missing legacy pending order")
+            intent = conn.execute(
+                text("SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1"),
+                {"id": order_id},
+            ).first()
+            if intent is not None:
+                raise ValueError("Order has both pending and intent representations")
+            trades = conn.execute(
+                text(
+                    "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
+                    "WHERE order_id = :id FOR UPDATE"
+                ),
+                {"id": order_id},
+            ).all()
+            expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
+            if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
+                raise ValueError("Conflicting historical trade")
+            if filled_qty > 0 and not trades:
+                conn.execute(
+                    text(
+                        "INSERT INTO paper_trades "
+                        "(run_date, side, symbol, amount, order_id, reason) "
+                        "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
+                    ),
+                    {
+                        "run_date": row["run_date"],
+                        "side": row["side"],
+                        "symbol": row["symbol"],
+                        "amount": amount,
+                        "order_id": order_id,
+                        "reason": row["reason"],
+                    },
+                )
+            conn.execute(
+                text("DELETE FROM paper_pending_orders WHERE order_id = :id"), {"id": order_id}
+            )
+
+    def log_pending_order(
+        self,
+        run_date: str,
+        side: str,
+        symbol: str,
+        notional: float,
+        order_id: str,
+        reason: str | None = None,
+    ) -> None:
+        """Record an order that was submitted but had not filled by run end, so the
+        next run can reconcile its final status. Idempotent on order_id.
+
+        `reason` mirrors `log_trade`'s tag (e.g. "cash_sweep"), NULL for an
+        ordinary strategy order.
+        """
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_pending_orders "
+                    "(order_id, run_date, side, symbol, notional, reason) "
+                    "VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) "
+                    "ON CONFLICT (order_id) DO NOTHING"
+                ),
+                {
+                    "order_id": order_id,
+                    "run_date": run_date,
+                    "side": side,
+                    "symbol": symbol,
+                    "notional": notional,
+                    "reason": reason,
+                },
+            )
+            conn.commit()
+
+    def get_pending_orders(self) -> list[dict]:
+        """Return all unresolved pending orders awaiting reconciliation."""
+        with _get_engine().connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT order_id, run_date, side, symbol, notional, created_at, "
+                    "flagged_stale, reason "
+                    "FROM paper_pending_orders ORDER BY created_at"
+                )
+            ).mappings()
+            return [dict(r) for r in rows]
+
+    def clear_pending_order(self, order_id: str) -> None:
+        """Remove a pending order once it has reached a terminal status."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text("DELETE FROM paper_pending_orders WHERE order_id = :order_id"),
+                {"order_id": order_id},
+            )
+            conn.commit()
+
+    def mark_pending_order_stale(self, order_id: str) -> None:
+        """Flag a pending order as having already triggered a staleness alert.
+
+        The row is left in place (reconciliation keeps polling it) -- this only
+        stops the notifier from re-alerting on it every run."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "UPDATE paper_pending_orders SET flagged_stale = TRUE "
+                    "WHERE order_id = :order_id"
+                ),
+                {"order_id": order_id},
+            )
+            conn.commit()
+
+    def get_latest_snapshot(self, *, before: date | None = None) -> float | None:
+        """Return the latest portfolio value, optionally strictly before a date."""
+        with _get_engine().connect() as conn:
+            if before is None:
+                row = conn.execute(
+                    text(
+                        "SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1"
+                    )
+                ).first()
+            else:
+                row = conn.execute(
+                    text(
+                        "SELECT portfolio_value FROM paper_snapshots "
+                        "WHERE run_date < :before ORDER BY run_date DESC LIMIT 1"
+                    ),
+                    {"before": before},
+                ).first()
+        return float(row[0]) if row else None
+
+    def get_earliest_snapshot(self) -> float | None:
+        """Return the oldest snapshot's portfolio_value (starting capital), or None."""
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date ASC LIMIT 1")
+            ).first()
+        return float(row[0]) if row else None
+
+    def log_snapshot(
+        self, run_date: str, portfolio_value: float, cash: float, positions: dict
+    ) -> None:
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) "
+                    "VALUES (:run_date, :pv, :cash, :pos) "
+                    "ON CONFLICT (run_date) DO UPDATE SET "
+                    "portfolio_value = EXCLUDED.portfolio_value, "
+                    "cash = EXCLUDED.cash, "
+                    "positions = EXCLUDED.positions"
+                ),
+                {
+                    "run_date": run_date,
+                    "pv": portfolio_value,
+                    "cash": cash,
+                    "pos": json.dumps(json_safe(positions), allow_nan=False),
+                },
+            )
+            conn.commit()
+
+    def get_latest_snapshot_positions(self) -> dict | None:
+        """Return the most recent snapshot's positions dict, or None if none exist.
+
+        Used to detect broker-side data gaps (e.g. a stock split whose qty
+        adjustment the paper broker never applied) by diffing against the
+        positions returned by the live broker on the next run.
+        """
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                text("SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+            ).first()
+        if row is None:
+            return None
+        positions = row[0]
+        return positions if isinstance(positions, dict) else json.loads(positions)
+
+    def get_latest_snapshot_run_date(self) -> str | None:
+        """Return the most recent snapshot's run_date (ISO string), or None if none exist.
+
+        Paired with `get_latest_snapshot_positions()` so the split-check gate can
+        tell whether a known split's ex-date falls between the prior snapshot and
+        today (see `split_check.find_unadjusted_split_symbols`).
+        """
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                text("SELECT run_date FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
+            ).first()
+        return str(row[0]) if row else None
+
+    def get_peak_value(self) -> float | None:
+        """Return the persisted portfolio peak (for drawdown tracking), or None."""
+        with _get_engine().connect() as conn:
+            row = conn.execute(text("SELECT peak_value FROM paper_risk_state WHERE id = 1")).first()
+        return float(row[0]) if row else None
+
+    def save_peak_value(self, peak_value: float) -> None:
+        """Upsert the single current peak-value row (id=1)."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) "
+                    "ON CONFLICT (id) DO UPDATE SET "
+                    "peak_value = EXCLUDED.peak_value, updated_at = now()"
+                ),
+                {"peak": peak_value},
+            )
+            conn.commit()
+
+    def get_rebalance_state(self) -> dict | None:
+        """Return the current sleeve weights/scale, or None if never set."""
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                text(
+                    "SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1"
+                )
+            ).first()
+        if row is None:
+            return None
+        rebalance_date, weights, scale = row
+        return {
+            "rebalance_date": str(rebalance_date),
+            "weights": weights if isinstance(weights, dict) else json.loads(weights),
+            "scale": float(scale),
+        }
+
+    def get_snapshot_history(self) -> list[tuple]:
+        """Return all persisted snapshots as `[(run_date, positions_dict), ...]`
+        ascending by `run_date`.
+
+        Used by dividend accrual (see `dividend_check.qty_held_at_ex_date`) to
+        establish, from what's already persisted, whether -- and how much of --
+        a symbol was held as of a given ex-dividend date. `run_date` comes back
+        as a real `datetime.date` (the column type), not a string.
+        """
+        with _get_engine().connect() as conn:
+            rows = conn.execute(
+                text("SELECT run_date, positions FROM paper_snapshots ORDER BY run_date ASC")
+            ).all()
+        result = []
+        for run_date, positions in rows:
+            pos = positions if isinstance(positions, dict) else json.loads(positions)
+            result.append((run_date, pos))
+        return result
+
+    def get_trade_history_dates(self, symbol: str) -> list:
+        """Return every persisted `paper_trades.run_date` for `symbol`, ascending.
+
+        Used by `split_check.find_split_applied_symbols` to rule out a plain
+        buy/sell explaining a qty change across a split's ex-date, so a trim or
+        exit is never mistaken for the broker silently applying a split. Dates
+        come back as real `datetime.date` objects (the column type), matching
+        `get_snapshot_history`'s convention.
+        """
+        with _get_engine().connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT run_date FROM paper_trades WHERE symbol = :symbol ORDER BY run_date ASC"
+                ),
+                {"symbol": symbol},
+            ).all()
+        return [run_date for (run_date,) in rows]
+
+    def get_last_buy_dates(self) -> dict[str, date]:
+        """Return `{symbol: most recent BUY run_date}` across `paper_trades`.
+
+        The trader treats this as each held position's entry date when catching
+        up exit signals that fired on a bar after entry but not on today's bar.
+        """
+        with _get_engine().connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT symbol, max(run_date) FROM paper_trades "
+                    "WHERE side = 'BUY' GROUP BY symbol"
+                )
+            ).all()
+        return {symbol: run_date for symbol, run_date in rows}
+
+    def get_accrued_dividend_keys(self) -> set[tuple]:
+        """Return `{(symbol, ex_date), ...}` already recorded in
+        `paper_dividend_accruals` -- the idempotency guard so a re-run never
+        double-credits the same dividend event."""
+        with _get_engine().connect() as conn:
+            rows = conn.execute(text("SELECT symbol, ex_date FROM paper_dividend_accruals")).all()
+        return {(symbol, ex_date) for symbol, ex_date in rows}
+
+    def log_dividend_accrual(
+        self, symbol: str, ex_date, rate: float, qty: float, amount: float
+    ) -> None:
+        """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
+        a conflicting insert is a no-op, never a double-credit."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) "
+                    "VALUES (:symbol, :ex_date, :rate, :qty, :amount) "
+                    "ON CONFLICT (symbol, ex_date) DO NOTHING"
+                ),
+                {
+                    "symbol": symbol,
+                    "ex_date": ex_date,
+                    "rate": rate,
+                    "qty": qty,
+                    "amount": amount,
+                },
+            )
+            conn.commit()
+
+    def get_total_dividend_accrual(self) -> float:
+        """Cumulative dollar total of all persisted dividend accruals -- a
+        reporting-only correction, not real cash (see `dividend_check.py`)."""
+        with _get_engine().connect() as conn:
+            row = conn.execute(
+                text("SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals")
+            ).first()
+        return float(row[0]) if row else 0.0
+
+    def save_rebalance_state(
+        self, rebalance_date: str, weights: dict[str, float], scale: float
+    ) -> None:
+        """Upsert the single current rebalance-state row (id=1)."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) "
+                    "VALUES (1, :rd, :w, :s) "
+                    "ON CONFLICT (id) DO UPDATE SET "
+                    "rebalance_date = EXCLUDED.rebalance_date, "
+                    "weights = EXCLUDED.weights, "
+                    "scale = EXCLUDED.scale"
+                ),
+                {"rd": rebalance_date, "w": json.dumps(weights), "s": scale},
+            )
+            conn.commit()
+
+    def get_open_split_corrections(self) -> dict[str, float]:
+        """Return `{symbol: factor}` for every split this account has detected
+        as broker-unapplied and not yet confirmed applied.
+
+        Persists past `trader._SPLIT_LOOKBACK_DAYS` (the rolling window used to
+        detect *new* splits from the broker's corporate-actions feed) so a
+        long-held unapplied split keeps being corrected instead of the
+        correction silently expiring while the position is still held -- the
+        MNST incident, unapplied since 2026-08-11, correction expired
+        2026-08-25 while still held. See `split_check.py`'s module docstring.
+        """
+        with _get_engine().connect() as conn:
+            rows = conn.execute(text("SELECT symbol, factor FROM paper_split_state")).all()
+        return {symbol: float(factor) for symbol, factor in rows}
+
+    def get_open_split_states(self) -> dict[str, dict]:
+        """Return `{symbol: {"factor": float, "ex_date": date}}` for every
+        persisted split-correction row -- a richer sibling of
+        `get_open_split_corrections()` that also surfaces the stored `ex_date`.
+
+        `get_open_split_corrections()` is kept unchanged (its existing
+        factor-only contract is already relied on); this getter exists so a
+        persisted correction can be re-verified against snapshot evidence using
+        its *own* ex_date even once the broker's live corporate-actions feed
+        stops mentioning it (the feed only reports events inside its own
+        rolling lookback window -- see `trader._compute_split_corrections`).
+        `ex_date` comes back as a real `datetime.date` (the column type), same
+        convention as `get_snapshot_history`.
+        """
+        with _get_engine().connect() as conn:
+            rows = conn.execute(text("SELECT symbol, factor, ex_date FROM paper_split_state")).all()
+        return {
+            symbol: {"factor": float(factor), "ex_date": ex_date}
+            for symbol, factor, ex_date in rows
+        }
+
+    def save_split_correction(self, symbol: str, ex_date: str, factor: float) -> None:
+        """Upsert a detected-unapplied split for `symbol`. Idempotent -- calling
+        again for the same symbol just refreshes `factor`/`updated_at`."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO paper_split_state (symbol, ex_date, factor) "
+                    "VALUES (:symbol, :ex_date, :factor) "
+                    "ON CONFLICT (symbol) DO UPDATE SET "
+                    "factor = EXCLUDED.factor, updated_at = now()"
+                ),
+                {"symbol": symbol, "ex_date": ex_date, "factor": factor},
+            )
+            conn.commit()
+
+    def clear_split_correction(self, symbol: str) -> None:
+        """Remove a symbol's persisted split-correction state. Call once the
+        broker's own snapshot history confirms the split was actually applied
+        (qty jumped by ~factor) or the position is fully closed -- see
+        `trader._compute_split_corrections`."""
+        with _get_engine().connect() as conn:
+            conn.execute(
+                text("DELETE FROM paper_split_state WHERE symbol = :symbol"),
+                {"symbol": symbol},
+            )
+            conn.commit()
+
+
+_LEDGER: PgPaperLedger | None = None
+
+
+def _pg() -> PgPaperLedger:
+    """Return the one stateless ledger the module functions delegate to."""
+    global _LEDGER
+    if _LEDGER is None:
+        _LEDGER = PgPaperLedger()
+    return _LEDGER
+
+
+def init_paper_schema() -> None:
+    return _pg().init_paper_schema()
+
+
+def create_order_intent(
+    client_order_id: str,
+    run_date: str,
+    side: str,
+    symbol: str,
+    amount: float,
+    amount_kind: str,
+    reason: str | None,
+) -> None:
+    """Commit an order intent before contacting the broker."""
+    return _pg().create_order_intent(
+        client_order_id, run_date, side, symbol, amount, amount_kind, reason
+    )
+
+
+def get_unresolved_order_intents() -> list[dict]:
+    """Return durable intents that still require reconciliation."""
+    return _pg().get_unresolved_order_intents()
+
+
+def attach_broker_order(client_order_id: str, order_id: str) -> None:
+    """Attach a broker ID, rejecting missing or conflicting intents."""
+    return _pg().attach_broker_order(client_order_id, order_id)
+
+
+def settle_order_intent(
+    client_order_id: str,
+    order_id: str,
+    filled_qty: float,
+    filled_avg_price: float | None,
+    terminal_status: str,
+) -> None:
+    """Record validated terminal execution and resolve its intent atomically."""
+    return _pg().settle_order_intent(
+        client_order_id, order_id, filled_qty, filled_avg_price, terminal_status
+    )
+
+
 @contextmanager
 def paper_run_lock() -> Iterator[PaperRunLock]:
     """Hold an exclusive advisory lock on a dedicated database session."""
-    with _get_engine().connect() as conn:
-        acquired = conn.execute(
-            text("SELECT pg_try_advisory_lock(:key)"), {"key": _LOCK_KEY}
-        ).scalar_one()
-        if not acquired:
-            raise RuntimeError("Paper run already locked")
-        try:
-            lock = PaperRunLock(conn)
-            lock.verify()
-            yield lock
-        finally:
-            conn.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": _LOCK_KEY})
+    with _pg().paper_run_lock() as lock:
+        yield lock
 
 
 def log_trade(
@@ -323,104 +869,16 @@ def log_trade(
     order -- see `cash_sweep.SWEEP_TRADE_REASON`); NULL/omitted means an
     ordinary strategy trade, preserving the historical meaning of this
     ledger for every caller that doesn't pass it."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
-        )
-        trades = conn.execute(
-            text(
-                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
-                "WHERE order_id = :id FOR UPDATE"
-            ),
-            {"id": order_id},
-        ).all()
-        expected = (date.fromisoformat(run_date), side, symbol, amount, reason)
-        if len(trades) > 1 or (trades and tuple(trades[0]) != expected):
-            raise ValueError("Conflicting historical trade")
-        if trades:
-            return
-        conn.execute(
-            text(
-                "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
-                "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
-            ),
-            {
-                "run_date": run_date,
-                "side": side,
-                "symbol": symbol,
-                "amount": amount,
-                "order_id": order_id,
-                "reason": reason,
-            },
-        )
-        conn.commit()
+    return _pg().log_trade(run_date, side, symbol, amount, order_id, reason)
 
 
 def settle_legacy_pending_order(
     order_id: str, filled_qty: float, filled_avg_price: float | None, terminal_status: str
 ) -> None:
     """Atomically book a legacy execution and remove its pending row."""
-    if (
-        filled_qty is None
-        or not math.isfinite(filled_qty)
-        or filled_qty < 0
-        or terminal_status not in _TERMINAL_STATUSES
-        or (terminal_status == "filled" and filled_qty == 0)
-        or (filled_avg_price is not None and not math.isfinite(filled_avg_price))
-        or (filled_qty > 0 and (filled_avg_price is None or filled_avg_price <= 0))
-    ):
-        raise ValueError("Invalid terminal fill")
-    amount = filled_qty * filled_avg_price if filled_qty > 0 else 0
-    if not math.isfinite(amount):
-        raise ValueError("Invalid fill value")
-    with _get_engine().begin() as conn:
-        conn.execute(
-            text("SELECT pg_advisory_xact_lock(hashtextextended(:id, 0))"), {"id": order_id}
-        )
-        row = (
-            conn.execute(
-                text("SELECT * FROM paper_pending_orders WHERE order_id = :id FOR UPDATE"),
-                {"id": order_id},
-            )
-            .mappings()
-            .first()
-        )
-        if row is None:
-            raise ValueError("Missing legacy pending order")
-        intent = conn.execute(
-            text("SELECT 1 FROM paper_order_intents WHERE broker_order_id = :id LIMIT 1"),
-            {"id": order_id},
-        ).first()
-        if intent is not None:
-            raise ValueError("Order has both pending and intent representations")
-        trades = conn.execute(
-            text(
-                "SELECT run_date, side, symbol, amount, reason FROM paper_trades "
-                "WHERE order_id = :id FOR UPDATE"
-            ),
-            {"id": order_id},
-        ).all()
-        expected = (row["run_date"], row["side"], row["symbol"], amount, row["reason"])
-        if len(trades) > 1 or (trades and (filled_qty == 0 or tuple(trades[0]) != expected)):
-            raise ValueError("Conflicting historical trade")
-        if filled_qty > 0 and not trades:
-            conn.execute(
-                text(
-                    "INSERT INTO paper_trades (run_date, side, symbol, amount, order_id, reason) "
-                    "VALUES (:run_date, :side, :symbol, :amount, :order_id, :reason)"
-                ),
-                {
-                    "run_date": row["run_date"],
-                    "side": row["side"],
-                    "symbol": row["symbol"],
-                    "amount": amount,
-                    "order_id": order_id,
-                    "reason": row["reason"],
-                },
-            )
-        conn.execute(
-            text("DELETE FROM paper_pending_orders WHERE order_id = :id"), {"id": order_id}
-        )
+    return _pg().settle_legacy_pending_order(
+        order_id, filled_qty, filled_avg_price, terminal_status
+    )
 
 
 def log_pending_order(
@@ -437,47 +895,17 @@ def log_pending_order(
     `reason` mirrors `log_trade`'s tag (e.g. "cash_sweep"), NULL for an
     ordinary strategy order.
     """
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_pending_orders "
-                "(order_id, run_date, side, symbol, notional, reason) "
-                "VALUES (:order_id, :run_date, :side, :symbol, :notional, :reason) "
-                "ON CONFLICT (order_id) DO NOTHING"
-            ),
-            {
-                "order_id": order_id,
-                "run_date": run_date,
-                "side": side,
-                "symbol": symbol,
-                "notional": notional,
-                "reason": reason,
-            },
-        )
-        conn.commit()
+    return _pg().log_pending_order(run_date, side, symbol, notional, order_id, reason)
 
 
 def get_pending_orders() -> list[dict]:
     """Return all unresolved pending orders awaiting reconciliation."""
-    with _get_engine().connect() as conn:
-        rows = conn.execute(
-            text(
-                "SELECT order_id, run_date, side, symbol, notional, created_at, "
-                "flagged_stale, reason "
-                "FROM paper_pending_orders ORDER BY created_at"
-            )
-        ).mappings()
-        return [dict(r) for r in rows]
+    return _pg().get_pending_orders()
 
 
 def clear_pending_order(order_id: str) -> None:
     """Remove a pending order once it has reached a terminal status."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text("DELETE FROM paper_pending_orders WHERE order_id = :order_id"),
-            {"order_id": order_id},
-        )
-        conn.commit()
+    return _pg().clear_pending_order(order_id)
 
 
 def mark_pending_order_stale(order_id: str) -> None:
@@ -485,60 +913,21 @@ def mark_pending_order_stale(order_id: str) -> None:
 
     The row is left in place (reconciliation keeps polling it) -- this only
     stops the notifier from re-alerting on it every run."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text("UPDATE paper_pending_orders SET flagged_stale = TRUE WHERE order_id = :order_id"),
-            {"order_id": order_id},
-        )
-        conn.commit()
+    return _pg().mark_pending_order_stale(order_id)
 
 
 def get_latest_snapshot(*, before: date | None = None) -> float | None:
     """Return the latest portfolio value, optionally strictly before a date."""
-    with _get_engine().connect() as conn:
-        if before is None:
-            row = conn.execute(
-                text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
-            ).first()
-        else:
-            row = conn.execute(
-                text(
-                    "SELECT portfolio_value FROM paper_snapshots "
-                    "WHERE run_date < :before ORDER BY run_date DESC LIMIT 1"
-                ),
-                {"before": before},
-            ).first()
-    return float(row[0]) if row else None
+    return _pg().get_latest_snapshot(before=before)
 
 
 def get_earliest_snapshot() -> float | None:
     """Return the oldest snapshot's portfolio_value (starting capital), or None."""
-    with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT portfolio_value FROM paper_snapshots ORDER BY run_date ASC LIMIT 1")
-        ).first()
-    return float(row[0]) if row else None
+    return _pg().get_earliest_snapshot()
 
 
 def log_snapshot(run_date: str, portfolio_value: float, cash: float, positions: dict) -> None:
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_snapshots (run_date, portfolio_value, cash, positions) "
-                "VALUES (:run_date, :pv, :cash, :pos) "
-                "ON CONFLICT (run_date) DO UPDATE SET "
-                "portfolio_value = EXCLUDED.portfolio_value, "
-                "cash = EXCLUDED.cash, "
-                "positions = EXCLUDED.positions"
-            ),
-            {
-                "run_date": run_date,
-                "pv": portfolio_value,
-                "cash": cash,
-                "pos": json.dumps(json_safe(positions), allow_nan=False),
-            },
-        )
-        conn.commit()
+    return _pg().log_snapshot(run_date, portfolio_value, cash, positions)
 
 
 def get_latest_snapshot_positions() -> dict | None:
@@ -548,14 +937,7 @@ def get_latest_snapshot_positions() -> dict | None:
     adjustment the paper broker never applied) by diffing against the
     positions returned by the live broker on the next run.
     """
-    with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT positions FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
-        ).first()
-    if row is None:
-        return None
-    positions = row[0]
-    return positions if isinstance(positions, dict) else json.loads(positions)
+    return _pg().get_latest_snapshot_positions()
 
 
 def get_latest_snapshot_run_date() -> str | None:
@@ -565,48 +947,22 @@ def get_latest_snapshot_run_date() -> str | None:
     tell whether a known split's ex-date falls between the prior snapshot and
     today (see `split_check.find_unadjusted_split_symbols`).
     """
-    with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT run_date FROM paper_snapshots ORDER BY run_date DESC LIMIT 1")
-        ).first()
-    return str(row[0]) if row else None
+    return _pg().get_latest_snapshot_run_date()
 
 
 def get_peak_value() -> float | None:
     """Return the persisted portfolio peak (for drawdown tracking), or None."""
-    with _get_engine().connect() as conn:
-        row = conn.execute(text("SELECT peak_value FROM paper_risk_state WHERE id = 1")).first()
-    return float(row[0]) if row else None
+    return _pg().get_peak_value()
 
 
 def save_peak_value(peak_value: float) -> None:
     """Upsert the single current peak-value row (id=1)."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_risk_state (id, peak_value) VALUES (1, :peak) "
-                "ON CONFLICT (id) DO UPDATE SET "
-                "peak_value = EXCLUDED.peak_value, updated_at = now()"
-            ),
-            {"peak": peak_value},
-        )
-        conn.commit()
+    return _pg().save_peak_value(peak_value)
 
 
 def get_rebalance_state() -> dict | None:
     """Return the current sleeve weights/scale, or None if never set."""
-    with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT rebalance_date, weights, scale FROM paper_rebalance_state WHERE id = 1")
-        ).first()
-    if row is None:
-        return None
-    rebalance_date, weights, scale = row
-    return {
-        "rebalance_date": str(rebalance_date),
-        "weights": weights if isinstance(weights, dict) else json.loads(weights),
-        "scale": float(scale),
-    }
+    return _pg().get_rebalance_state()
 
 
 def get_snapshot_history() -> list[tuple]:
@@ -618,15 +974,7 @@ def get_snapshot_history() -> list[tuple]:
     a symbol was held as of a given ex-dividend date. `run_date` comes back
     as a real `datetime.date` (the column type), not a string.
     """
-    with _get_engine().connect() as conn:
-        rows = conn.execute(
-            text("SELECT run_date, positions FROM paper_snapshots ORDER BY run_date ASC")
-        ).all()
-    result = []
-    for run_date, positions in rows:
-        pos = positions if isinstance(positions, dict) else json.loads(positions)
-        result.append((run_date, pos))
-    return result
+    return _pg().get_snapshot_history()
 
 
 def get_trade_history_dates(symbol: str) -> list:
@@ -638,12 +986,7 @@ def get_trade_history_dates(symbol: str) -> list:
     come back as real `datetime.date` objects (the column type), matching
     `get_snapshot_history`'s convention.
     """
-    with _get_engine().connect() as conn:
-        rows = conn.execute(
-            text("SELECT run_date FROM paper_trades WHERE symbol = :symbol ORDER BY run_date ASC"),
-            {"symbol": symbol},
-        ).all()
-    return [run_date for (run_date,) in rows]
+    return _pg().get_trade_history_dates(symbol)
 
 
 def get_last_buy_dates() -> dict[str, date]:
@@ -652,70 +995,31 @@ def get_last_buy_dates() -> dict[str, date]:
     The trader treats this as each held position's entry date when catching
     up exit signals that fired on a bar after entry but not on today's bar.
     """
-    with _get_engine().connect() as conn:
-        rows = conn.execute(
-            text(
-                "SELECT symbol, max(run_date) FROM paper_trades WHERE side = 'BUY' GROUP BY symbol"
-            )
-        ).all()
-    return {symbol: run_date for symbol, run_date in rows}
+    return _pg().get_last_buy_dates()
 
 
 def get_accrued_dividend_keys() -> set[tuple]:
     """Return `{(symbol, ex_date), ...}` already recorded in
     `paper_dividend_accruals` -- the idempotency guard so a re-run never
     double-credits the same dividend event."""
-    with _get_engine().connect() as conn:
-        rows = conn.execute(text("SELECT symbol, ex_date FROM paper_dividend_accruals")).all()
-    return {(symbol, ex_date) for symbol, ex_date in rows}
+    return _pg().get_accrued_dividend_keys()
 
 
 def log_dividend_accrual(symbol: str, ex_date, rate: float, qty: float, amount: float) -> None:
     """Persist one dividend accrual. Idempotent on `(symbol, ex_date)` --
     a conflicting insert is a no-op, never a double-credit."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_dividend_accruals (symbol, ex_date, rate, qty, amount) "
-                "VALUES (:symbol, :ex_date, :rate, :qty, :amount) "
-                "ON CONFLICT (symbol, ex_date) DO NOTHING"
-            ),
-            {
-                "symbol": symbol,
-                "ex_date": ex_date,
-                "rate": rate,
-                "qty": qty,
-                "amount": amount,
-            },
-        )
-        conn.commit()
+    return _pg().log_dividend_accrual(symbol, ex_date, rate, qty, amount)
 
 
 def get_total_dividend_accrual() -> float:
     """Cumulative dollar total of all persisted dividend accruals -- a
     reporting-only correction, not real cash (see `dividend_check.py`)."""
-    with _get_engine().connect() as conn:
-        row = conn.execute(
-            text("SELECT COALESCE(SUM(amount), 0) FROM paper_dividend_accruals")
-        ).first()
-    return float(row[0]) if row else 0.0
+    return _pg().get_total_dividend_accrual()
 
 
 def save_rebalance_state(rebalance_date: str, weights: dict[str, float], scale: float) -> None:
     """Upsert the single current rebalance-state row (id=1)."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_rebalance_state (id, rebalance_date, weights, scale) "
-                "VALUES (1, :rd, :w, :s) "
-                "ON CONFLICT (id) DO UPDATE SET "
-                "rebalance_date = EXCLUDED.rebalance_date, "
-                "weights = EXCLUDED.weights, "
-                "scale = EXCLUDED.scale"
-            ),
-            {"rd": rebalance_date, "w": json.dumps(weights), "s": scale},
-        )
-        conn.commit()
+    return _pg().save_rebalance_state(rebalance_date, weights, scale)
 
 
 def get_open_split_corrections() -> dict[str, float]:
@@ -729,9 +1033,7 @@ def get_open_split_corrections() -> dict[str, float]:
     MNST incident, unapplied since 2026-08-11, correction expired
     2026-08-25 while still held. See `split_check.py`'s module docstring.
     """
-    with _get_engine().connect() as conn:
-        rows = conn.execute(text("SELECT symbol, factor FROM paper_split_state")).all()
-    return {symbol: float(factor) for symbol, factor in rows}
+    return _pg().get_open_split_corrections()
 
 
 def get_open_split_states() -> dict[str, dict]:
@@ -748,27 +1050,13 @@ def get_open_split_states() -> dict[str, dict]:
     `ex_date` comes back as a real `datetime.date` (the column type), same
     convention as `get_snapshot_history`.
     """
-    with _get_engine().connect() as conn:
-        rows = conn.execute(text("SELECT symbol, factor, ex_date FROM paper_split_state")).all()
-    return {
-        symbol: {"factor": float(factor), "ex_date": ex_date} for symbol, factor, ex_date in rows
-    }
+    return _pg().get_open_split_states()
 
 
 def save_split_correction(symbol: str, ex_date: str, factor: float) -> None:
     """Upsert a detected-unapplied split for `symbol`. Idempotent -- calling
     again for the same symbol just refreshes `factor`/`updated_at`."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text(
-                "INSERT INTO paper_split_state (symbol, ex_date, factor) "
-                "VALUES (:symbol, :ex_date, :factor) "
-                "ON CONFLICT (symbol) DO UPDATE SET "
-                "factor = EXCLUDED.factor, updated_at = now()"
-            ),
-            {"symbol": symbol, "ex_date": ex_date, "factor": factor},
-        )
-        conn.commit()
+    return _pg().save_split_correction(symbol, ex_date, factor)
 
 
 def clear_split_correction(symbol: str) -> None:
@@ -776,9 +1064,4 @@ def clear_split_correction(symbol: str) -> None:
     broker's own snapshot history confirms the split was actually applied
     (qty jumped by ~factor) or the position is fully closed -- see
     `trader._compute_split_corrections`."""
-    with _get_engine().connect() as conn:
-        conn.execute(
-            text("DELETE FROM paper_split_state WHERE symbol = :symbol"),
-            {"symbol": symbol},
-        )
-        conn.commit()
+    return _pg().clear_split_correction(symbol)

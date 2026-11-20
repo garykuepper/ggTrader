@@ -21,7 +21,7 @@ from tests.paper.transcript.harness import PT, Scenario, Seq
 FIXTURE_SPEC = "fixture:sp500_v1_2026-06-02"
 
 #: How many scenarios the suite records: the 38 of the first plan, then the follow-up rounds.
-EXPECTED_SCENARIO_COUNT = 96
+EXPECTED_SCENARIO_COUNT = 103
 
 SCENARIOS: dict[str, Scenario] = {}
 
@@ -2281,3 +2281,156 @@ def recovery_filled_zero_quantity() -> dict:
     market-clock call. Intents: the seeded row stays unresolved.
     """
     return _recovery([{"status": "filled", "filled_qty": 0.0, "filled_avg_price": None}])
+
+
+# --------------------------------------------------------------------------- Phase 4 pins
+# Task 32 of the Phase 4 plan: environment-setting behavior and the pending-order tuple fields
+# that no earlier scenario shows. Each one was checked against the 96 above; see the commit message.
+
+
+@scenario
+def sweep_min_clip_invalid_fail_soft() -> dict:
+    """An unreadable ``SWEEP_MIN_CLIP_USD`` makes sweep-buy sizing fail soft: no sweep buy.
+
+    Based on `sweep_sizing_failure` (same account and empty signals; cash 50,000 would trigger a
+    sweep buy). ``SWEEP_MIN_CLIP_USD`` is ``abc``: ``min_clip_usd()`` raises ``ValueError`` inside
+    the sweep-buy ``try`` (`trader.py:1351-1362`), which logs and goes on. Terminal outcome:
+    success with no orders and no errors. Discriminating calls: three ``get_account`` calls, none
+    raised, no ``submit_buy``. Intents: none created.
+    """
+    return dict(
+        env={**_LIVE_ENV, **_SWEEP_ENV, "SWEEP_MIN_CLIP_USD": "abc"},
+        signals=_blend([], []),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def sweep_buy_trigger_invalid_fail_soft() -> dict:
+    """An unreadable ``SWEEP_BUY_TRIGGER_PCT`` makes sweep-buy sizing fail soft: no sweep buy.
+
+    Same as `sweep_min_clip_invalid_fail_soft` with ``SWEEP_BUY_TRIGGER_PCT=abc``
+    (``buy_trigger_pct()`` raises inside the ``try``, `trader.py:1351-1362`). Terminal outcome:
+    success with no orders and no errors. Discriminating calls: three ``get_account`` calls, no
+    ``submit_buy``. Intents: none created.
+    """
+    return dict(
+        env={**_LIVE_ENV, **_SWEEP_ENV, "SWEEP_BUY_TRIGGER_PCT": "abc"},
+        signals=_blend([], []),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def sweep_reserve_invalid_ends_run() -> dict:
+    """An unreadable ``SWEEP_CASH_RESERVE_PCT`` ends the run at the funding-sell computation.
+
+    Based on `sweep_sizing_failure` with ``SWEEP_CASH_RESERVE_PCT=abc``. ``reserve_pct()`` is read
+    in the funding-sell computation (`trader.py:1189-1195`), which has no ``try``. Terminal
+    outcome: the run raises ``ValueError: could not convert string to float: 'abc'`` after the
+    account and position reads and before any order. Discriminating calls: one ``get_account``,
+    no ``submit_buy`` or ``submit_sell``, no snapshot. Intents: none created.
+    """
+    return dict(
+        env={**_LIVE_ENV, **_SWEEP_ENV, "SWEEP_CASH_RESERVE_PCT": "abc"},
+        signals=_blend([], []),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def sweep_reserve_invalid_but_sweep_off() -> dict:
+    """With the sweep off nothing reads ``SWEEP_CASH_RESERVE_PCT``, so ``abc`` is harmless.
+
+    Based on `plain_buys_and_sells` with a single MSFT buy. Terminal outcome: success,
+    ``buys == ["MSFT"]``, no errors. Discriminating calls: BUY MSFT notional 3300.0 and no error.
+    Intents: 1 settled (the MSFT buy), none unresolved.
+    """
+    return dict(
+        env={**_LIVE_ENV, "SWEEP_CASH_RESERVE_PCT": "abc"},
+        signals=_blend(["MSFT"], []),
+        replies=_replies(_acct(), {}),
+    )
+
+
+@scenario
+def untradable_symbols_from_env() -> dict:
+    """``UNTRADABLE_SYMBOLS=" aapl, ,Msft "`` freezes both held names, upper-cased, blanks dropped.
+
+    Based on `untradable_holding` (`trader.py:881-893`, `untradable.py:38`). AAPL and MSFT are held
+    and AAPL carries an exit signal; NVDA is the buy candidate. Terminal outcome: success,
+    ``sells == []`` (a frozen name is never sold), ``untradable == ["AAPL", "MSFT"]``.
+    Discriminating calls: ``get_untradable(["NVDA"])`` (only the unconfigured name is asked);
+    "Untradable holdings: AAPL, MSFT" is sent. Intents: 1 settled (the NVDA buy), none unresolved.
+    """
+    return dict(
+        env={**_LIVE_ENV, "UNTRADABLE_SYMBOLS": " aapl, ,Msft "},
+        signals=_blend(["NVDA"], ["AAPL"]),
+        replies=_replies(_acct(), {"AAPL": _pos(10.0, 150.0), "MSFT": _pos(5.0, 400.0)}),
+    )
+
+
+@scenario
+def catastrophe_enabled_pct_blank() -> dict:
+    """The stop is on and ``CATASTROPHE_STOP_PCT`` is blank: the default -25% applies.
+
+    Based on `catastrophe_stop` with NXPI at -30% (between a blank setting's -25% default and
+    nothing). Terminal outcome: success, ``sells == ["NXPI"]``, ``buys == ["MSFT"]``.
+    Discriminating calls: one SELL NXPI qty 100.0; BUY MSFT notional 3300.0. Intents: 2 settled
+    (the NXPI stop sell, the MSFT buy), none unresolved.
+    """
+    return dict(
+        env={**_STOP_ENV, "CATASTROPHE_STOP_PCT": ""},
+        signals=_blend(["MSFT"], []),
+        replies=_replies(
+            _acct(), {"NXPI": _pos(100.0, 70.0, cost_basis=10_000.0, unrealized_pl=-3000.0)}
+        ),
+    )
+
+
+@scenario
+def pending_order_all_five_fields() -> dict:
+    """A SELL and a BUY whose poll lookups all fail are reported as pending, with their amounts.
+
+    Based on `sweep_sell_and_strategy_sell` and `catastrophe_stop` combined: NXPI at -40% (a
+    catastrophe stop), AAPL with an exit signal, SPY held (the sweep position) and cash 1,000 so
+    that the funding sell fires, then a BUY MSFT. Submission order: SELL NXPI
+    (``catastrophe_stop``), SELL SPY (``cash_sweep``), SELL AAPL, BUY MSFT. ``get_order`` answers
+    the first poll of NXPI and AAPL from the broker; every call for SPY and for MSFT fails, so both
+    go to the fallback record of `_poll_orders` (`trader.py:460-469`) and are alerted as
+    ``pending``. The fallback's own fields (``symbol``, ``side``, ``notional``) are never read after
+    the poll, so this golden does not distinguish them; `test_phase4_pins.py` pins them on the poll
+    itself. Terminal outcome: success, ``sells == ["NXPI", "AAPL"]`` (the stop first), ``buys ==
+    ["MSFT"]``, no errors (a pending sweep sell blocks nothing). Discriminating calls: trade alerts
+    for SPY (SELL, status ``pending``, amount 7300.0) and MSFT (BUY, ``pending``, amount 3300.0).
+    Intents: 4 settled (recovery finds each order at the broker), none unresolved.
+    """
+    return dict(
+        env={**_STOP_ENV, **_SWEEP_ENV},
+        signals=_blend(["MSFT"], ["AAPL"]),
+        fills={
+            "SPY:SELL": [{"status": "filled", "filled_qty": 18.25, "filled_avg_price": 400.0}],
+            "AAPL": [{"status": "filled", "filled_qty": 10.0, "filled_avg_price": 150.0}],
+        },
+        replies={
+            **_replies(
+                [
+                    _acct(100_000.0, 1_000.0),
+                    _acct(100_000.0, 6_500.0),
+                    _acct(100_033.0, 6_500.0),
+                ],
+                [
+                    {
+                        "NXPI": _pos(100.0, 60.0, cost_basis=10_000.0, unrealized_pl=-4000.0),
+                        "SPY": _pos(240.75, 400.0),
+                        "AAPL": _pos(10.0, 150.0),
+                    },
+                    {
+                        "SPY": _pos(222.5, 400.0),
+                        "MSFT": _pos(33.0, 101.0, cost_basis=3300.0),
+                    },
+                ],
+            ),
+            "get_order": [None, RuntimeError("poll down"), None, RuntimeError("poll down")],
+        },
+    )

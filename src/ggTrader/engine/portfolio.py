@@ -179,28 +179,7 @@ def run_signals(
     if stop_entry_price not in ("close", "fillprice"):
         raise ValueError("stop_entry_price must be 'close' or 'fillprice'")
     _check_shapes(close, entries=entries, exits=exits)
-    halt_positions = {}
-    if halt_mask is not None:
-        if (
-            not isinstance(halt_mask, pd.DataFrame)
-            or not halt_mask.index.equals(close.index)
-            or not halt_mask.columns.is_unique
-            or halt_mask.isna().to_numpy().any()
-            or not all(pd.api.types.is_bool_dtype(dtype) for dtype in halt_mask.dtypes)
-        ):
-            raise ValueError("halt_mask must have matching dates and known boolean states")
-        if halt_mask.columns.equals(close.columns):
-            halt_columns = np.arange(len(close.columns))
-        elif isinstance(close.columns, pd.MultiIndex):
-            halt_columns = halt_mask.columns.get_indexer(close.columns.get_level_values(-1))
-            if (halt_columns < 0).any():
-                raise ValueError("halt_mask must cover every symbol")
-        else:
-            raise ValueError("halt_mask must match close columns")
-        for column in np.unique(halt_columns):
-            positions = np.flatnonzero(halt_mask.iloc[:, column].to_numpy(dtype=bool))
-            if len(positions):
-                halt_positions[int(column)] = positions
+    halt_positions, halt_columns = _halt_positions(halt_mask, close)
     entries = _as_bool(entries)
     exits = _as_bool(exits)
     if mask is not None:
@@ -208,35 +187,7 @@ def run_signals(
             mask.reindex(index=entries.index, columns=entries.columns, fill_value=False)
         )
     gaps: dict[int, np.ndarray] = {}
-    stop_columns = None
-    if stop_open is not None:
-        if td_stop is not None:
-            raise ValueError("td_stop is unreliable and cannot be combined with intraday stops")
-        if base_config.get("atr_mult") is not None and base_config.get("ts_stop") is None:
-            raise ValueError("ATR stops are not supported with intraday stop prices")
-        if base_config.get("ts_stop") is None and base_config.get("tp_stop") is None:
-            raise ValueError("intraday stop prices require a configured price stop")
-        for key in ("ts_stop", "tp_stop"):
-            value = base_config.get(key)
-            if value is None:
-                continue
-            try:
-                fraction = float(value)
-            except (TypeError, ValueError) as exc:
-                raise ValueError(f"invalid {key}: expected a finite positive fraction") from exc
-            if not np.isfinite(fraction) or fraction <= 0 or (key == "ts_stop" and fraction >= 1):
-                raise ValueError(f"invalid {key}: expected a finite positive fraction")
-        if high is None or low is None:
-            raise ValueError("stop_open requires high and low")
-        if not stop_open.columns.equals(close.columns):
-            if not isinstance(close.columns, pd.MultiIndex) or not stop_open.columns.is_unique:
-                raise ValueError("stop prices must have the same index and columns as close")
-            stop_columns = stop_open.columns.get_indexer(close.columns.get_level_values(-1))
-            if (stop_columns < 0).any():
-                raise ValueError("stop prices must have the same index and columns as close")
-        for frame in (stop_open, high, low):
-            if not frame.index.equals(close.index) or not frame.columns.equals(stop_open.columns):
-                raise ValueError("stop prices must have the same index and columns as close")
+    stop_columns = _validate_intraday_stops(stop_open, high, low, close, base_config, td_stop)
     if td_stop is not None:
         warnings.warn(
             TIME_STOP_WARNING,
@@ -295,30 +246,9 @@ def run_signals(
         )
 
     result = _run_chunks(simulate, close, groups, all_groups, base_config, n_dense, max_bytes)
-    if halt_positions:
-        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
-            index=False, name=None
-        ):
-            dates = halt_positions.get(int(halt_columns[int(col)]))
-            if dates is not None:
-                at = int(np.searchsorted(dates, int(entry)))
-                if at < len(dates) and dates[at] <= int(exit_):
-                    raise ValueError(
-                        f"halt during an open position at "
-                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
-                    )
-    if gaps:
-        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
-            index=False, name=None
-        ):
-            dates = gaps.get(int(col))
-            if dates is not None:
-                at = int(np.searchsorted(dates, int(entry)))
-                if at < len(dates) and dates[at] <= int(exit_):
-                    raise ValueError(
-                        f"missing price bar during an open position at "
-                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
-                    )
+    _reject_overlaps(
+        result, close, halt_positions=halt_positions, halt_columns=halt_columns, gaps=gaps
+    )
     return result
 
 
@@ -396,6 +326,166 @@ def _cfg_float(base_config: Mapping[str, Any], key: str) -> float:
     if key not in base_config:
         raise ValueError(f"base_config is missing {key!r}")
     return float(base_config[key])
+
+
+def _halt_positions(
+    halt_mask: pd.DataFrame | None, close: pd.DataFrame
+) -> tuple[dict[int, np.ndarray], np.ndarray]:
+    """Validate ``halt_mask`` against ``close`` and index its flagged bars.
+
+    Args:
+        halt_mask: boolean halt bars, grid-aligned with ``close`` or one column per symbol;
+            ``None`` means no halts.
+        close: the caller's close frame, before any forward fill.
+
+    Returns:
+        ``(positions, columns)``. ``positions`` maps a halt-mask column position to the sorted
+        bar positions flagged in it (columns with no flag are absent). ``columns[c]`` is the
+        halt-mask column that serves column ``c`` of ``close``: ``np.arange`` when the frames
+        share columns, the symbol lookup for a MultiIndex ``close``. With no mask the result is
+        ``({}, np.empty(0, dtype=np.intp))``.
+
+    Raises:
+        ValueError: the mask has other dates, a non-boolean or missing state, does not cover
+            every symbol, or does not match the columns of ``close``.
+    """
+    halt_positions: dict[int, np.ndarray] = {}
+    halt_columns = np.empty(0, dtype=np.intp)
+    if halt_mask is None:
+        return halt_positions, halt_columns
+    if (
+        not isinstance(halt_mask, pd.DataFrame)
+        or not halt_mask.index.equals(close.index)
+        or not halt_mask.columns.is_unique
+        or halt_mask.isna().to_numpy().any()
+        or not all(pd.api.types.is_bool_dtype(dtype) for dtype in halt_mask.dtypes)
+    ):
+        raise ValueError("halt_mask must have matching dates and known boolean states")
+    if halt_mask.columns.equals(close.columns):
+        halt_columns = np.arange(len(close.columns))
+    elif isinstance(close.columns, pd.MultiIndex):
+        halt_columns = halt_mask.columns.get_indexer(close.columns.get_level_values(-1))
+        if (halt_columns < 0).any():
+            raise ValueError("halt_mask must cover every symbol")
+    else:
+        raise ValueError("halt_mask must match close columns")
+    for column in np.unique(halt_columns):
+        positions = np.flatnonzero(halt_mask.iloc[:, column].to_numpy(dtype=bool))
+        if len(positions):
+            halt_positions[int(column)] = positions
+    return halt_positions, halt_columns
+
+
+def _reject_overlaps(
+    result: SimResult,
+    close: pd.DataFrame,
+    *,
+    halt_positions: Mapping[int, np.ndarray],
+    halt_columns: np.ndarray,
+    gaps: Mapping[int, np.ndarray],
+) -> None:
+    """Reject a simulation whose trades span a flagged halt bar or a missing price bar.
+
+    Args:
+        result: the finished simulation; its ``trades`` frame is read in order (by column,
+            then id).
+        close: the forward-filled close frame, used only to format the message.
+        halt_positions: halt-mask column position -> sorted flagged bar positions.
+        halt_columns: the halt-mask column serving each column of ``close``.
+        gaps: ``close`` column position -> sorted missing-bar positions.
+
+    Raises:
+        ValueError: for the first trade (in ``result.trades`` order) that overlaps a flagged
+            halt bar or, if there is none, for the first that overlaps a missing price bar.
+            A trade overlaps when a flagged bar lies at or after its entry bar and at or
+            before its exit bar.
+    """
+    if halt_positions:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = halt_positions.get(int(halt_columns[int(col)]))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"halt during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
+    if gaps:
+        for col, entry, exit_ in result.trades[["col", "entry_idx", "exit_idx"]].itertuples(
+            index=False, name=None
+        ):
+            dates = gaps.get(int(col))
+            if dates is not None:
+                at = int(np.searchsorted(dates, int(entry)))
+                if at < len(dates) and dates[at] <= int(exit_):
+                    raise ValueError(
+                        f"missing price bar during an open position at "
+                        f"{close.index[dates[at]]}, {close.columns[int(col)]}"
+                    )
+
+
+def _validate_intraday_stops(
+    stop_open: pd.DataFrame | None,
+    high: pd.DataFrame | None,
+    low: pd.DataFrame | None,
+    close: pd.DataFrame,
+    base_config: Mapping[str, Any],
+    td_stop: int | None,
+) -> np.ndarray | None:
+    """Check the configuration and shape of an intraday-stop request.
+
+    Returns the position array that maps each column of ``close`` to its column in
+    ``stop_open`` when the stop frames carry one column per symbol, or ``None`` when they
+    share ``close``'s columns or no intraday stops were asked for.
+
+    Args:
+        stop_open: opens for the intraday stops, or ``None`` when none were asked for.
+        high: highs, one column per ``stop_open`` column.
+        low: lows, likewise.
+        close: closes the stops are checked against.
+        base_config: the run configuration (``ts_stop``, ``tp_stop``, ``atr_mult``).
+        td_stop: the time-stop request, which intraday stops cannot be combined with.
+
+    Raises:
+        ValueError: with ``td_stop is unreliable and cannot be combined with intraday stops``,
+            ``ATR stops are not supported with intraday stop prices``, ``intraday stop prices
+            require a configured price stop``, ``invalid ts_stop: expected a finite positive
+            fraction`` (or ``tp_stop``), ``stop_open requires high and low``, or ``stop prices
+            must have the same index and columns as close``.
+    """
+    if stop_open is None:
+        return None
+    stop_columns = None
+    if td_stop is not None:
+        raise ValueError("td_stop is unreliable and cannot be combined with intraday stops")
+    if base_config.get("atr_mult") is not None and base_config.get("ts_stop") is None:
+        raise ValueError("ATR stops are not supported with intraday stop prices")
+    if base_config.get("ts_stop") is None and base_config.get("tp_stop") is None:
+        raise ValueError("intraday stop prices require a configured price stop")
+    for key in ("ts_stop", "tp_stop"):
+        value = base_config.get(key)
+        if value is None:
+            continue
+        try:
+            fraction = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid {key}: expected a finite positive fraction") from exc
+        if not np.isfinite(fraction) or fraction <= 0 or (key == "ts_stop" and fraction >= 1):
+            raise ValueError(f"invalid {key}: expected a finite positive fraction")
+    if high is None or low is None:
+        raise ValueError("stop_open requires high and low")
+    if not stop_open.columns.equals(close.columns):
+        if not isinstance(close.columns, pd.MultiIndex) or not stop_open.columns.is_unique:
+            raise ValueError("stop prices must have the same index and columns as close")
+        stop_columns = stop_open.columns.get_indexer(close.columns.get_level_values(-1))
+        if (stop_columns < 0).any():
+            raise ValueError("stop prices must have the same index and columns as close")
+    for frame in (stop_open, high, low):
+        if not frame.index.equals(close.index) or not frame.columns.equals(stop_open.columns):
+            raise ValueError("stop prices must have the same index and columns as close")
+    return stop_columns
 
 
 def _check_shapes(close: pd.DataFrame, **frames: pd.DataFrame) -> None:
