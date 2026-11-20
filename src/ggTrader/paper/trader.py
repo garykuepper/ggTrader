@@ -17,8 +17,8 @@ from ggTrader.paper.constants import ET as _ET
 from ggTrader.paper.constants import MAX_SIGNAL_AGE_DAYS as _MAX_SIGNAL_AGE_DAYS
 from ggTrader.paper.constants import PT as _PT
 from ggTrader.paper.constants import SPLIT_LOOKBACK_DAYS as _SPLIT_LOOKBACK_DAYS
-from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS  # noqa: F401 - patch target
-from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - patch target
+from ggTrader.paper.constants import STALE_PENDING_DAYS as _STALE_PENDING_DAYS  # noqa: F401 - compatibility alias
+from ggTrader.paper.constants import TERMINAL_STATUSES  # noqa: F401 - compatibility alias
 from ggTrader.paper.dividend_check import DIVIDEND_BACKFILL_START, compute_dividend_accruals
 from ggTrader.paper.execution import DryRunExecutor, OrderExecutor
 from ggTrader.paper.gates import SignalGateError, late_run_reason
@@ -256,15 +256,34 @@ class PaperTrader:
         )
 
     def _flag_if_stale(self, pending_order: dict, now: datetime) -> None:
-        """Send a one-time "stale pending order" alert once an order has been"""
+        """Send a one-time "stale pending order" alert once an order has been
+        open past `_STALE_PENDING_DAYS`. Idempotent via the `flagged_stale`
+        column -- reconciliation keeps polling the order regardless."""
         return self._executor_for_call().flag_if_stale(pending_order, now)
 
     def _reconcile_pending_orders(self) -> set[str]:
-        """Settle orders that were still working at the end of a prior run."""
+        """Settle orders that were still working at the end of a prior run.
+
+        Orders queued after the close may fill at the next session, long after
+        that run exited. Each run re-checks them: a completed fill is booked at
+        its real executed value under the original order date; a terminally-failed order is
+        dropped; anything still working is left for a later run.
+
+        Returns the set of symbols that remain pending after this pass, so
+        the caller can avoid submitting a duplicate/conflicting order for
+        them this run.
+        """
         return self._executor_for_call().reconcile_pending_orders()
 
     def _poll_orders(self, orders: list[SubmittedOrder]) -> dict[str, OrderStatus]:
-        """Poll submitted orders until they reach a terminal status (or a"""
+        """Poll submitted orders until they reach a terminal status (or a
+        wait budget expires), returning `{order_id: order_info}`.
+
+        Shared by the main per-run order batch (strategy sells/buys, plus a
+        cash-sweep sell if one was submitted) and the trailing cash-sweep buy,
+        which is sized from the account's real post-trade cash and so must be
+        submitted and polled separately, after the main batch resolves.
+        """
         return self._executor_for_call().poll_orders(orders)
 
     def _compute_split_corrections(
