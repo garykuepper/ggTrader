@@ -1861,13 +1861,10 @@ def test_invalid_catastrophe_threshold_stops_before_orders(monkeypatch, dry_run)
         }
     )
     trader._dry_run = dry_run
-    with (
-        patch("ggTrader.paper.trader.generate_core_signals") as signals,
-        patch("ggTrader.paper.trader.paper_run_lock") as lock,
-    ):
+    with patch("ggTrader.paper.trader.generate_core_signals") as signals:
         with pytest.raises(ValueError, match="CATASTROPHE_STOP_PCT"):
             trader.run()
-    lock.assert_not_called()
+    assert not ledger.calls("paper_run_lock")
     assert not ledger.calls("init_paper_schema")
     signals.assert_not_called()
     broker.get_account.assert_not_called()
