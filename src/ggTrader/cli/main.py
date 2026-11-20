@@ -101,6 +101,7 @@ def paper(
 
 
 def main() -> None:
+    """Run the ``ggt`` command-line app."""
     app()
 
 

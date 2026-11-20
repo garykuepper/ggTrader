@@ -101,6 +101,7 @@ PROVENANCE_MIGRATIONS = (
 
 
 def init_schema() -> None:
+    """Create the lab tables, apply the provenance migrations and try to create the hypertables."""
     eng = get_engine()
     with eng.begin() as conn:
         conn.execute(text(_SCHEMA))
@@ -159,11 +160,13 @@ def start_run(
 
 
 def finish_run(run_id: str) -> None:
+    """Mark a run's status as done."""
     with get_engine().begin() as conn:
         conn.execute(text("UPDATE lab_runs SET status='done' WHERE run_id=:r"), {"r": run_id})
 
 
 def plan_done(run_id: str, strategy: str, asof: pd.Timestamp) -> bool:
+    """Return whether a plan row exists for the run, strategy and as-of date."""
     with get_engine().connect() as conn:
         row = conn.execute(
             text("SELECT 1 FROM lab_plans WHERE run_id=:r AND strategy=:s AND asof=:a"),
@@ -180,6 +183,7 @@ def write_plan(
     eligible_count: int,
     coverage: dict[str, Any],
 ) -> None:
+    """Insert a plan row, or replace its plan if the row already exists."""
     with get_engine().begin() as conn:
         conn.execute(
             text(
@@ -199,6 +203,7 @@ def write_plan(
 
 
 def read_plan(run_id: str, strategy: str, asof: pd.Timestamp) -> list[dict[str, Any]]:
+    """Return the stored plan for the run, strategy and as-of date, or ``[]``."""
     with get_engine().connect() as conn:
         row = conn.execute(
             text("SELECT plan FROM lab_plans WHERE run_id=:r AND strategy=:s AND asof=:a"),
@@ -210,6 +215,7 @@ def read_plan(run_id: str, strategy: str, asof: pd.Timestamp) -> list[dict[str, 
 
 
 def read_all_plans(run_id: str, strategy: str) -> dict[pd.Timestamp, list[dict[str, Any]]]:
+    """Return a run's plans for one strategy, keyed by as-of date in date order."""
     with get_engine().connect() as conn:
         rows = conn.execute(
             text("SELECT asof, plan FROM lab_plans WHERE run_id=:r AND strategy=:s ORDER BY asof"),
@@ -228,6 +234,11 @@ def write_returns_equity(
     equity: pd.Series,
     benchmark_equity: pd.Series | None = None,
 ) -> None:
+    """Upsert a run's daily returns and equity with the benchmark equity aligned to its dates.
+
+    The benchmark column is written as NULL when no benchmark is given or it has no value on a
+    date, which overwrites any benchmark value already stored for that row.
+    """
     bench = benchmark_equity.reindex(equity.index) if benchmark_equity is not None else None
     with get_engine().begin() as conn:
         ret_rows = [
@@ -276,6 +287,7 @@ def write_summary(
     benchmark_metrics: dict[str, Any],
     diagnostics: dict[str, Any],
 ) -> None:
+    """Upsert a run's metrics, benchmark metrics and diagnostics."""
     with get_engine().begin() as conn:
         conn.execute(
             text(
@@ -335,6 +347,7 @@ def write_sweep_combo(
     benchmark_metrics: dict[str, Any],
     diagnostics: dict[str, Any],
 ) -> None:
+    """Upsert one parameter combination's metrics, benchmark metrics and diagnostics."""
     with get_engine().begin() as conn:
         conn.execute(
             text(
@@ -359,6 +372,7 @@ def write_sweep_combo(
 
 
 def finish_sweep(sweep_id: str) -> None:
+    """Mark a sweep's status as done."""
     with get_engine().begin() as conn:
         conn.execute(
             text("UPDATE lab_sweeps SET status='done' WHERE sweep_id=:s"),

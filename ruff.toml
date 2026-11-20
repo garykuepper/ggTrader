@@ -17,8 +17,9 @@ force-exclude = true
 select = [
     "E", "F", "W", "I", "TID251", "UP006", "UP035", "UP045", "B", "S110",
     "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002",
-    "ANN001", "ANN201", "T201",
+    "ANN001", "ANN201", "T201", "D100", "D101", "D102", "D103", "D104",
 ]
+# D107 (``__init__`` docstring) is not selected: the class docstring covers it.
 ignore = []
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
@@ -45,6 +46,11 @@ max-complexity = 15
 
 [lint.pylint]
 max-args = 8
+
+# D100-D104 (refactor completion II, D6): public modules, packages, classes, methods and
+# functions in src/ggTrader carry a one-line docstring.
+[lint.pydocstyle]
+convention = "google"
 
 [lint.flake8-tidy-imports.banned-api]
 "vectorbt".msg = "Import vectorbt only inside src/ggTrader/engine/ (use ggTrader.engine presets)."
@@ -73,8 +79,10 @@ max-args = 8
 # them. Each rule is added to the select list and to this one negated glob together.
 "!src/ggTrader/**" = [
     "C901", "PLR0912", "PLR0915", "PLR0913", "DTZ", "G004", "ARG001", "ARG002", "ANN001", "ANN201",
-    "T201",
+    "T201", "D100", "D101", "D102", "D103", "D104",
 ]
+# TEMPORARY: part 2 writes the paper/ docstrings; remove then
+"src/ggTrader/paper/**" = ["D100", "D101", "D102", "D103", "D104"]
 # ARG001/ARG002 survivors (`ruff check --select ARG001,ARG002 src/ggTrader`: 11 findings, 2 fixed by
 # dropping the unused parameter of the two membership check handlers; 9 listed here). An unused
 # argument is kept where a base class, a protocol or a keyword caller fixes the signature.

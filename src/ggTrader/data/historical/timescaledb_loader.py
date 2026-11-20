@@ -134,6 +134,7 @@ class TimescaleDBLoader(BaseDataLoader):
             return []
 
     def close(self) -> None:
+        """Dispose the database engine, if one was created."""
         if self._engine is not None:
             self._engine.dispose()
             self._engine = None

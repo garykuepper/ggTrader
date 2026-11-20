@@ -46,6 +46,8 @@ def blend_curves(
 
 
 class BlendResult(NamedTuple):
+    """Result of ``run_blend``: equity curves, overlay diagnostics, result table and run id."""
+
     blended_equity: pd.Series
     sleeve_equity: dict[str, pd.Series]
     diag: pd.DataFrame

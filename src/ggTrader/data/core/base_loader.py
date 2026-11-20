@@ -1,3 +1,5 @@
+"""Abstract base class for OHLCV data loaders."""
+
 from abc import ABC, abstractmethod
 
 import pandas as pd

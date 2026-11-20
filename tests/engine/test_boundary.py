@@ -344,7 +344,9 @@ def test_ruff_bans_vectorbt_outside_the_engine_and_allows_it_inside() -> None:
         return subprocess.run(
             [_ruff(), "check", "--no-cache", "--stdin-filename", stdin_name, "-"],
             input=(
-                "import vectorbt\nfrom vectorbt import RSI\n\n\ndef f() -> tuple:\n"
+                '"""Snippet."""\n\nimport vectorbt\nfrom vectorbt import RSI\n\n\n'
+                "def f() -> tuple:\n"
+                '    """Return the imports."""\n'
                 "    import vectorbt_rust\n    return vectorbt, RSI, vectorbt_rust\n"
             ),
             cwd=ROOT,

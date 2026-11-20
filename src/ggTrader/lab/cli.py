@@ -58,6 +58,7 @@ def _parse_blend_sleeves(spec: str) -> list[tuple[str, str]]:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
+    """Return the argument parser for ``ggt lab``."""
     p = argparse.ArgumentParser(
         description="Run a lab strategy walk-forward (or blend sleeves) on the vectorbt engine."
     )
@@ -121,6 +122,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def run_lab(argv: list[str] | None = None) -> str:
+    """Run ``ggt lab`` from ``argv``; return the blend run id or the WFO result text."""
     args = build_arg_parser().parse_args(argv)
     # Raises MembershipSourceNotSelected (naming --membership and GGT_MEMBERSHIP) when neither is
     # set, before any data is loaded; there is deliberately no default source.
