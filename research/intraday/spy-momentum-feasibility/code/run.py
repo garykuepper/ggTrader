@@ -1,4 +1,4 @@
-"""Approved r8 intraday SPY screen: print the frozen manifest, collect, validate or score.
+"""Approved r9 intraday SPY screen: print the frozen manifest, collect, validate or score.
 
 Collection and scoring of real data require the owner's separate approval 2. With no command, or
 with --help, this prints usage only: no credentials, network or writes.
@@ -16,10 +16,10 @@ HERE = Path(__file__).resolve().parent  # root-ok: stdlib-only family
 sys.path[:0] = [str(HERE), str(HERE.parents[1] / "_lib")]  # root-ok: venv has no repo package
 PROJECT_ROOT = HERE.parents[3]  # root-ok: stdlib-only family
 
-DEFAULT_COLLECTION = PROJECT_ROOT / "data/external/intraday_momentum_r8"
+DEFAULT_COLLECTION = PROJECT_ROOT / "data/external/intraday_momentum_r9"
 STUDY_DIR = PROJECT_ROOT / "research/intraday/spy-momentum-feasibility"
-DEFAULT_VALIDATION = STUDY_DIR / "_intraday_momentum_validation.json"
-DEFAULT_RESULT = STUDY_DIR / "_intraday_momentum_results.json"
+DEFAULT_VALIDATION = STUDY_DIR / "_intraday_momentum_r9_validation.json"
+DEFAULT_RESULT = STUDY_DIR / "_intraday_momentum_r9_results.json"
 
 
 def build_parser() -> argparse.ArgumentParser:

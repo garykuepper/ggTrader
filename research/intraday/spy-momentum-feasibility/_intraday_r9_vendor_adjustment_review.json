@@ -1,0 +1,44 @@
+{
+  "schema": "intraday_r9_vendor_adjustment_review",
+  "version": 1,
+  "reviewed_on": "2026-11-15",
+  "symbol": "SPY",
+  "window": {"anchor": "2016-01-04", "end": "2026-09-30"},
+  "protocol_sha256": "222521cebe23aed66f9a44672dd1645a210f0c545a7cfbd30482496922593ed3",
+  "status": "reviewed",
+  "known_unresolved_changes": [],
+  "prior_review": "_intraday_r8_vendor_adjustment_review_2026-10-25.json (r8; kept as history)",
+  "sources": [
+    {
+      "url": "https://docs.alpaca.markets/us/changelog",
+      "finding": "Every changelog entry dated 2026-10-27 to 2026-11-12 (listing pages 1 to 4; page 4 resumes at 2026-10-23, so no entry exists for 2026-10-24 to 2026-10-26) was read by title, and the only stock market-data entry was opened. None documents a change to the raw stock-bar price basis."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/changelog/2026-11-02-adjustment-8f7882f",
+      "published_on": "2026-11-02",
+      "finding": "The adjustment parameter on GET /v2/stocks/bars and /v2/stocks/{symbol}/bars is now typed as an enum array. The HTTP query shape is unchanged, omitting it still defaults to raw, and raw still means no adjustments. A typing change, not a price-basis change; the r9 requests send adjustment=raw explicitly."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/changelog/2026-11-10-opra-feed-b3cd237",
+      "published_on": "2026-11-10",
+      "finding": "Feed default rules changed on option market-data endpoints only. Not used by this screen."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/reference/stockbars",
+      "finding": "The current reference still defines raw as no adjustments and asof=- as skipping symbol mapping. The r9 requests use both explicitly."
+    },
+    {
+      "url": "https://docs.alpaca.markets/us/docs/market-data-faq",
+      "finding": "Minute bars are still aggregated from SIP trades, truncated to the minute, with the published trade-condition rules; raw still does not imply an immutable vendor archive."
+    }
+  ],
+  "conclusion": "No known unresolved raw-SPY adjustment-basis change affecting the registered window was identified in these checked sources since the r8 review of 2026-10-25. A documented applicable change must stop collection or scoring until resolved under the registered rules.",
+  "limitations": [
+    "This records a bounded human documentation review, not proof that no historical vendor change exists.",
+    "Undocumented changes, missing corporate actions and later vendor revisions cannot be excluded.",
+    "The changelog was read by entry title, opening only market-data entries; it is not an audit of every release.",
+    "Before this review, a 2026-11-15 gap count requested SPY minute bars and kept timestamps and counts only (research/intraday/artifacts-2026-11-15-spy-minute-gap-count/). No price or return was stored or read."
+  ],
+  "market_data_requested": false,
+  "candidate_prices_or_returns_inspected": false
+}
