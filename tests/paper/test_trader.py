@@ -3170,7 +3170,11 @@ class TestLiveMembershipGate:
         from ggTrader.paper.trader import PaperTrader
 
         _t, broker, notifier = _make_trader()
-        return PaperTrader(broker, notifier, dry_run=False, membership=membership), broker, notifier
+        return (
+            PaperTrader(broker, notifier, dry_run=False, membership=membership, ledger=SpyLedger()),
+            broker,
+            notifier,
+        )
 
     @staticmethod
     def _assert_no_order_path_was_reached(broker, mock_fetch):
@@ -3297,11 +3301,17 @@ class TestLiveMembershipGate:
         mock_signals.return_value = blend
         _t, broker, _n = _make_trader()
         telegram = MagicMock()
-        silent = PaperTrader(broker, DryRunNotifier(telegram), dry_run=True, membership=_FIXTURE)
+        silent = PaperTrader(
+            broker, DryRunNotifier(telegram), dry_run=True, membership=_FIXTURE, ledger=SpyLedger()
+        )
         silent.run()
         telegram.send.assert_not_called()
         forwarded = PaperTrader(
-            broker, DryRunNotifier(telegram, forward=True), dry_run=True, membership=_FIXTURE
+            broker,
+            DryRunNotifier(telegram, forward=True),
+            dry_run=True,
+            membership=_FIXTURE,
+            ledger=SpyLedger(),
         )
         forwarded.run()
         assert any("lag warning" in call.args[0] for call in telegram.send.call_args_list)
@@ -3321,7 +3331,7 @@ class TestLiveMembershipGate:
 @patch("ggTrader.paper.trader.generate_core_signals")
 def test_pending_order_read_failure_stops_live_run(mock_signals, stop_enabled):
     mock_signals.return_value = _blend(buys=["MSFT"], sells=["NXPI"])
-    trader, broker, notifier = _make_trader(
+    trader, broker, notifier, ledger = make_trader(
         positions={"NXPI": _losing_position(qty=100.0, cost_basis=10000.0, loss_pct=-0.40)}
     )
     with (
@@ -3329,7 +3339,7 @@ def test_pending_order_read_failure_stops_live_run(mock_signals, stop_enabled):
             "os.environ",
             {"CATASTROPHE_STOP_ENABLED": str(stop_enabled).lower(), "CASH_SWEEP_ENABLED": "true"},
         ),
-        patch("ggTrader.paper.trader.get_pending_orders", side_effect=RuntimeError("DB down")),
+        patch.object(ledger, "get_pending_orders", side_effect=RuntimeError("DB down")),
         pytest.raises(RuntimeError, match="DB down"),
     ):
         trader.run()
@@ -3342,9 +3352,10 @@ def test_pending_order_read_failure_dry_run_still_rehearses():
     from ggTrader.paper.trader import PaperTrader
 
     _, broker, notifier = _make_trader()
-    trader = PaperTrader(broker, notifier, dry_run=True, read_only=True)
+    ledger = SpyLedger()
+    trader = PaperTrader(broker, notifier, dry_run=True, read_only=True, ledger=ledger)
     with (
-        patch("ggTrader.paper.trader.get_pending_orders", side_effect=RuntimeError("DB down")),
+        patch.object(ledger, "get_pending_orders", side_effect=RuntimeError("DB down")),
         patch("ggTrader.paper.trader.generate_core_signals", return_value=_blend(["MSFT"], [])),
     ):
         result = trader.run()
@@ -3359,17 +3370,26 @@ def test_submit_order_persists_intent_before_broker_call():
     broker = MagicMock()
     # `read_only=False`: a read-only trader's ledger would skip the intent writes, and the point
     # here is the order of intent, submit and attach (a dry run never reaches `_submit_order`).
-    trader = PaperTrader(broker, MagicMock(), dry_run=True, read_only=False)
+    ledger = SpyLedger()
+    trader = PaperTrader(broker, MagicMock(), dry_run=True, read_only=False, ledger=ledger)
     trader._paper_lock = MagicMock()
     events = []
     with (
-        patch(
-            "ggTrader.paper.trader.create_order_intent",
-            side_effect=lambda *a: events.append(("intent", a)),
+        patch.object(
+            ledger,
+            "create_order_intent",
+            side_effect=lambda *a: (
+                events.append(("intent", a)),
+                InMemoryLedger.create_order_intent(ledger, *a),
+            )[1],
         ),
-        patch(
-            "ggTrader.paper.trader.attach_broker_order",
-            side_effect=lambda *a: events.append(("attach", a)),
+        patch.object(
+            ledger,
+            "attach_broker_order",
+            side_effect=lambda *a: (
+                events.append(("attach", a)),
+                InMemoryLedger.attach_broker_order(ledger, *a),
+            )[1],
         ),
     ):
         broker.submit_buy.side_effect = lambda *a: events.append(("submit", a)) or "broker-1"
@@ -3382,7 +3402,7 @@ def test_submit_order_persists_intent_before_broker_call():
 @patch("ggTrader.paper.trader.generate_core_signals")
 def test_submit_seam_failure_aborts_before_later_orders(mock_signals):
     mock_signals.return_value = _blend(buys=["MSFT", "AAPL"], sells=[])
-    trader, broker, _ = _make_trader()
+    trader, broker, _, _ledger = make_trader()
     trader._submit_order = MagicMock(side_effect=RuntimeError("ambiguous submit"))
     with pytest.raises(RuntimeError, match="ambiguous submit"):
         trader.run()
@@ -3392,22 +3412,24 @@ def test_submit_seam_failure_aborts_before_later_orders(mock_signals):
 
 def test_unresolved_intent_lookup_error_aborts_before_submissions():
     """An absent broker result is ambiguous, never permission to retry."""
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     broker.get_order_by_client_id.side_effect = RuntimeError("404")
-    intent = {"client_order_id": "client-1"}
-    with patch("ggTrader.paper.trader.get_unresolved_order_intents", return_value=[intent]):
-        with pytest.raises(RuntimeError):
-            trader._reconcile_order_intents()
+    InMemoryLedger.create_order_intent(
+        ledger, "client-1", _TEST_TODAY, "BUY", "SPY", 100, "notional", None
+    )
+    with pytest.raises(RuntimeError):
+        trader._reconcile_order_intents()
     broker.submit_buy.assert_not_called()
     notifier.send.assert_called()
 
 
 def test_reconciliation_error_survives_notification_failure():
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     notifier.send.side_effect = RuntimeError("notification failed")
     with (
-        patch(
-            "ggTrader.paper.trader.get_unresolved_order_intents",
+        patch.object(
+            ledger,
+            "get_unresolved_order_intents",
             side_effect=ValueError("db failed"),
         ),
         pytest.raises(ValueError, match="db failed"),
@@ -3418,10 +3440,10 @@ def test_reconciliation_error_survives_notification_failure():
 
 
 def test_live_run_releases_lock_on_reconciliation_failure():
-    trader, broker, _ = _make_trader()
+    trader, broker, _, ledger = make_trader()
     with (
-        patch("ggTrader.paper.trader.paper_run_lock") as lock,
-        patch("ggTrader.paper.trader.get_unresolved_order_intents", side_effect=RuntimeError("db")),
+        patch.object(ledger, "paper_run_lock") as lock,
+        patch.object(ledger, "get_unresolved_order_intents", side_effect=RuntimeError("db")),
         pytest.raises(RuntimeError, match="db"),
     ):
         trader.run()
@@ -3444,15 +3466,7 @@ def test_live_run_releases_lock_on_reconciliation_failure():
     ],
 )
 def test_recovery_blocks_ambiguous_or_working_orders(change):
-    trader, broker, _ = _make_trader()
-    intent = {
-        "client_order_id": "c",
-        "broker_order_id": None,
-        "symbol": "SPY",
-        "side": "BUY",
-        "amount_kind": "notional",
-        "amount": 100,
-    }
+    trader, broker, _, ledger = make_trader()
     info = {
         "client_order_id": "c",
         "id": "b",
@@ -3465,26 +3479,17 @@ def test_recovery_blocks_ambiguous_or_working_orders(change):
     }
     info.update(change)
     broker.get_order_by_client_id.return_value = info
-    with (
-        patch("ggTrader.paper.trader.get_unresolved_order_intents", return_value=[intent]),
-        patch("ggTrader.paper.trader.settle_order_intent") as settle,
-        pytest.raises(Exception),
-    ):
+    InMemoryLedger.create_order_intent(
+        ledger, "c", _TEST_TODAY, "BUY", "SPY", 100, "notional", None
+    )
+    with pytest.raises(Exception):
         trader.run()
-    settle.assert_not_called()
+    assert ledger.calls("settle_order_intent") == []
     broker.submit_buy.assert_not_called()
 
 
 def test_recovery_settles_partial_cancellation():
-    trader, broker, _ = _make_trader()
-    intent = {
-        "client_order_id": "c",
-        "broker_order_id": None,
-        "symbol": "SPY",
-        "side": "BUY",
-        "amount_kind": "notional",
-        "amount": 100,
-    }
+    trader, broker, _, ledger = make_trader()
     broker.get_order_by_client_id.return_value = {
         "client_order_id": "c",
         "id": "b",
@@ -3495,30 +3500,25 @@ def test_recovery_settles_partial_cancellation():
         "filled_avg_price": 10,
         "status": "canceled",
     }
-    with (
-        patch("ggTrader.paper.trader.get_unresolved_order_intents", return_value=[intent]),
-        patch("ggTrader.paper.trader.settle_order_intent") as settle,
-    ):
-        trader._reconcile_order_intents()
-    settle.assert_called_once_with("c", "b", 2.0, 10.0, "canceled")
+    InMemoryLedger.create_order_intent(
+        ledger, "c", _TEST_TODAY, "BUY", "SPY", 100, "notional", None
+    )
+    trader._reconcile_order_intents()
+    assert ledger.calls("settle_order_intent") == [
+        ("settle_order_intent", ("c", "b", 2.0, 10.0, "canceled"), {})
+    ]
 
 
 def test_reconciliation_failure_after_submission_does_not_claim_no_orders():
     from ggTrader.paper.trader import PaperTrader
 
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     trader._submit_order = PaperTrader._submit_order.__get__(trader)
     trader._paper_lock = MagicMock()
     broker.submit_sell.return_value = "broker-order"
     trader._submit_order("SELL", "AAPL", 10, None)
     broker.get_order_by_client_id.side_effect = RuntimeError("order lookup failed")
-    with (
-        patch(
-            "ggTrader.paper.trader.get_unresolved_order_intents",
-            return_value=[{"client_order_id": "c"}],
-        ),
-        pytest.raises(RuntimeError, match="lookup failed"),
-    ):
+    with pytest.raises(RuntimeError, match="lookup failed"):
         trader._reconcile_order_intents()
     broker.submit_sell.assert_called_once()
     message = str(notifier.send.call_args)
@@ -3528,7 +3528,7 @@ def test_reconciliation_failure_after_submission_does_not_claim_no_orders():
 
 @pytest.mark.parametrize("stage", ["submit", "attach"])
 def test_submit_failure_notifies_client_id_and_stage(stage):
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     from ggTrader.paper.trader import PaperTrader
 
     trader._submit_order = PaperTrader._submit_order.__get__(trader)
@@ -3538,9 +3538,9 @@ def test_submit_failure_notifies_client_id_and_stage(stage):
         broker.submit_buy.side_effect = RuntimeError("accepted then disconnected")
     with (
         patch("ggTrader.paper.trader.uuid4", return_value="client-fixed"),
-        patch("ggTrader.paper.trader.create_order_intent"),
-        patch(
-            "ggTrader.paper.trader.attach_broker_order",
+        patch.object(
+            ledger,
+            "attach_broker_order",
             side_effect=(RuntimeError("attach failed") if stage == "attach" else None),
         ),
         pytest.raises(RuntimeError),
@@ -3555,7 +3555,7 @@ def test_submit_failure_notifies_client_id_and_stage(stage):
 def test_run_stops_after_ambiguous_order_failure(stage):
     from ggTrader.paper.trader import PaperTrader
 
-    trader, broker, notifier = _make_trader()
+    trader, broker, notifier, ledger = make_trader()
     trader._submit_order = PaperTrader._submit_order.__get__(trader)
     broker.submit_buy.return_value = "accepted"
     if stage == "submit":
@@ -3566,8 +3566,9 @@ def test_run_stops_after_ambiguous_order_failure(stage):
             return_value=_blend(buys=["MSFT", "AAPL"], sells=[]),
         ),
         patch("ggTrader.paper.trader.uuid4", return_value="client-fixed"),
-        patch(
-            "ggTrader.paper.trader.attach_broker_order",
+        patch.object(
+            ledger,
+            "attach_broker_order",
             side_effect=RuntimeError("attach failed") if stage == "attach" else None,
         ),
         pytest.raises(RuntimeError),
@@ -3586,14 +3587,14 @@ def test_loss_halt_stops_after_ambiguous_exit_submission():
         "AAPL": {"qty": 10, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
         "MSFT": {"qty": 5, "market_value": 1000, "cost_basis": 1000, "unrealized_pl": 0},
     }
-    trader, broker, notifier = _make_trader(positions=positions, portfolio_value=100000.0)
+    trader, broker, notifier, ledger = make_trader(positions=positions, portfolio_value=100000.0)
     trader._submit_order = PaperTrader._submit_order.__get__(trader)
     broker.submit_sell.side_effect = RuntimeError("accepted then disconnected")
+    seed_peak(ledger, 120000.0)
     with (
         patch(
             "ggTrader.paper.trader.generate_core_signals", return_value=_blend([], ["AAPL", "MSFT"])
         ),
-        patch("ggTrader.paper.trader.get_peak_value", return_value=120000.0),
         patch("ggTrader.paper.trader.uuid4", return_value="client-fixed"),
         pytest.raises(RuntimeError, match="accepted then disconnected"),
     ):
