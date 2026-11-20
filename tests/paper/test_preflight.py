@@ -1,5 +1,6 @@
 """Tests for the paper run preflight gates."""
 
+import logging
 from datetime import date, datetime
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -70,11 +71,15 @@ def test_membership_source_failure_is_inside_the_signal_try(setup_gate):
     hooks.generate_signals.assert_not_called()
 
 
-def test_clock_error_fails_open_and_skips_read_only_write(setup_gate):
+def test_clock_error_fails_open_and_skips_read_only_write(setup_gate, caplog):
     broker, _, hooks, _, skipped, make = setup_gate
     broker.get_clock.side_effect = RuntimeError("clock")
-    assert isinstance(make().check(), PreflightResult)
+    gate = make()
+    with caplog.at_level(logging.INFO, logger="ggTrader.paper.trader"):
+        assert isinstance(gate.check(), PreflightResult)
+    assert gate.skipped_writes is skipped
     assert skipped == ["refresh_benchmark_tape"]
+    assert "read-only: skipped write refresh_benchmark_tape" in caplog.text
     hooks.refresh_tape.assert_not_called()
 
 
@@ -86,7 +91,7 @@ def test_signal_gate_error_notifies_and_reraises(setup_gate):
     notifier.send.assert_called_once_with("<b>🛑 Signal gate — no orders placed:</b>\n[code] bad")
 
 
-def test_late_live_halts_and_dry_continues(setup_gate):
+def test_late_live_halts_and_dry_continues(setup_gate, caplog):
     _, notifier, hooks, _, _, make = setup_gate
     hooks.now_pt.return_value = datetime(
         2026, 11, 19, 13, 0, tzinfo=ZoneInfo("America/Los_Angeles")
@@ -94,9 +99,18 @@ def test_late_live_halts_and_dry_continues(setup_gate):
     halted = make(dry_run=False, read_only=False).check()
     assert isinstance(halted, Halted) and halted.reason == "late_run"
     assert halted.result.as_dict()["gate"] == "late_run"
+    reason = (
+        "signals ready at 13:00 PT, after the 12:55 PT cutoff; "
+        "a DAY order now would queue to the next open"
+    )
+    notifier.send.assert_called_once_with(f"<b>⏰ Late run — no orders placed:</b> {reason}")
     hooks.refresh_tape.assert_not_called()
-    assert isinstance(make().check(), PreflightResult)
-    assert any("DRY RUN late-run notice" in call.args[0] for call in notifier.send.call_args_list)
+    with caplog.at_level(logging.WARNING, logger="ggTrader.paper.trader"):
+        assert isinstance(make().check(), PreflightResult)
+    assert (
+        notifier.send.call_args_list[-1].args[0] == f"<b>⏰ DRY RUN late-run notice:</b> {reason}"
+    )
+    assert f"dry run past the late-run cutoff (a live run would stop): {reason}" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -111,12 +125,17 @@ def test_stale_dates_halt_after_fallback_notice(setup_gate, as_of, description):
     assert isinstance(result, Halted) and result.reason == "stale_signals"
     messages = [call.args[0] for call in notifier.send.call_args_list]
     assert "Overlay fallback" in messages[0]
-    assert description in messages[1]
+    assert messages[1] == (
+        f"<b>⚠️ Stale signal data:</b> core as_of={as_of} is {description} "
+        "(today 2026-11-19, max 4d); no trades submitted this run."
+    )
 
 
 def test_clock_is_read_after_signals_and_today_after_late_gate(setup_gate):
-    broker, _, hooks, _, _, make = setup_gate
+    broker, notifier, hooks, bundle, _, make = setup_gate
     events = []
+    bundle["fallback_used"] = True
+    notifier.send.side_effect = lambda _: events.append("fallback")
     broker.get_clock.side_effect = lambda: events.append("clock") or {"is_open": True}
     hooks.membership_source.side_effect = lambda _: events.append("membership") or "source"
     bundle = hooks.generate_signals.return_value
@@ -124,16 +143,22 @@ def test_clock_is_read_after_signals_and_today_after_late_gate(setup_gate):
     hooks.now_pt.side_effect = lambda: (
         events.append("now") or datetime(2026, 11, 19, 12, tzinfo=ZoneInfo("America/Los_Angeles"))
     )
+    hooks.refresh_tape.side_effect = lambda: events.append("refresh") or ["SPY"]
     hooks.today_et.side_effect = lambda: events.append("today") or date(2026, 11, 19)
-    make().check()
-    assert events == ["clock", "membership", "signals", "now", "today"]
+    make(dry_run=False, read_only=False).check()
+    assert events == ["clock", "membership", "signals", "now", "refresh", "fallback", "today"]
 
 
 def test_empty_sleeves_raise_stop_iteration_through_check(setup_gate):
-    _, _, _, bundle, _, make = setup_gate
+    _, notifier, hooks, bundle, _, make = setup_gate
     bundle["sleeves"] = {}
+    bundle["fallback_used"] = True
     with pytest.raises(StopIteration):
-        make().check()
+        make(dry_run=False, read_only=False).check()
+    hooks.now_pt.assert_called_once()
+    hooks.refresh_tape.assert_called_once()
+    assert "Overlay fallback" in notifier.send.call_args.args[0]
+    hooks.today_et.assert_not_called()
 
 
 def test_live_refreshes_and_warns_when_nothing_refreshed(setup_gate, caplog):
@@ -153,3 +178,13 @@ def test_signal_error_notifies_and_reraises(setup_gate):
     notifier.send.assert_called_once_with(
         "Paper trading failed: signal generation error\nsignal failed"
     )
+
+
+def test_gate_uses_the_shared_constants_not_trader(setup_gate, monkeypatch):
+    from ggTrader.paper import constants, preflight
+
+    assert preflight.MAX_SIGNAL_AGE_DAYS == constants.MAX_SIGNAL_AGE_DAYS
+    monkeypatch.setattr(preflight, "MAX_SIGNAL_AGE_DAYS", 0)
+    _, _, _, bundle, _, make = setup_gate
+    bundle["sleeves"]["core"]["as_of"] = "2026-11-18"
+    assert make().check().reason == "stale_signals"
