@@ -1,4 +1,13 @@
 {
+  "amendments": [
+    {
+      "commit": "7e77fd2c9cea77dcee8600eb49de3193f4074f98",
+      "commit_role": "parent of the atomic runner and provenance commit",
+      "date": "2026-11-19",
+      "reason": "Inject the transcript ledger without changing recorded seed digests",
+      "runner_sha256": "5b25c1b68adfd77f408e748707acd6c4379bb90c196a12b56a000b576fbb2cab"
+    }
+  ],
   "digests": {
     "0": "6b1869b8c60292cd5e60ad691cb17f11b63b1d3631a16b266486bd746a0e1d23",
     "1": "16346fcc13015f9d68bbd8842a10a3e9474ea34459da193cefe19f836fc26822",
@@ -605,7 +614,7 @@
   "normalization_version": "identity-v1",
   "production_base": "73c35417",
   "recorder_commit": "dbb255ef4a3634ea5417a0dd5a0248bdf73f0889",
-  "runner_sha256": "7902ea5939a359da3609389c8019a39512d61d8ac1619c277cfc711f544f8209",
+  "runner_sha256": "5b25c1b68adfd77f408e748707acd6c4379bb90c196a12b56a000b576fbb2cab",
   "seed_count": 600,
   "witnesses_sha256": "59644adcf71fcda4f7efeb6a384f5fd17eb01c8863e0b98bc8571d20d377e642"
 }

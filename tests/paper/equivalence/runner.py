@@ -20,6 +20,7 @@ from tests.paper.equivalence.generator import Case, build_case
 from tests.paper.equivalence.run_with import implementation
 from tests.paper.equivalence.witnesses import reached_witnesses, witness_projection
 from tests.paper.transcript import harness
+from tests.paper.transcript.injected import HarnessLedger
 
 LOGGER_NAMES = (
     "ggTrader.paper.trader",
@@ -143,13 +144,7 @@ def run_recorded(impl: str, case: Case) -> Recorded:
             for var in harness.ENV_VARS:
                 os.environ.pop(var, None)
             os.environ.update(s.env)
-            for name in harness.persist_function_names():
-                if name != "paper_run_lock":
-                    stack.enter_context(
-                        patch.object(trader_module, name, run.persist_wrapper(name))
-                    )
             replacements = {
-                "paper_run_lock": run.paper_run_lock,
                 "generate_core_signals": run.generate_core_signals,
                 "refresh_benchmark_tape": run.refresh_benchmark_tape,
                 "live_membership_source": membership,
@@ -169,6 +164,7 @@ def run_recorded(impl: str, case: Case) -> Recorded:
                     dry_run=s.dry_run,
                     read_only=s.read_only,
                     membership=s.membership,
+                    ledger=HarnessLedger(run),
                 )
                 result = trader.run()
             except Exception as exc:
