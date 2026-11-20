@@ -1,11 +1,13 @@
 """Coordinate paper-trading order stages."""
 
 import logging
+from dataclasses import dataclass
 
 from ggTrader.paper import cash_sweep
 from ggTrader.paper.constants import TRADER_LOGGER_NAME
 from ggTrader.paper.execution import Executor
 from ggTrader.paper.models import (
+    ExecutionBook,
     FlowState,
     InvalidExit,
     RiskVerdict,
@@ -30,6 +32,15 @@ from ggTrader.paper.risk import RiskGuard
 _log = logging.getLogger(TRADER_LOGGER_NAME)
 
 
+@dataclass(frozen=True)
+class FlowOutcome:
+    """Execution results needed for reporting."""
+
+    book: ExecutionBook
+    buy_halts: tuple[str, ...]
+    invalid_exit_symbols: frozenset[str]
+
+
 class OrderFlow:
     """Apply order decisions in their original execution order."""
 
@@ -49,6 +60,17 @@ class OrderFlow:
         self.risk = risk
         self.ctx = ctx
         self.stop_threshold = stop_threshold
+
+    def run(
+        self, view: PortfolioView, signals: StrategySignals, verdict: RiskVerdict
+    ) -> FlowOutcome:
+        """Execute all order stages and return their reporting state."""
+        state = self.run_stage_one(view, signals, verdict)
+        self.run_stage_two(view, state)
+        self.run_stage_three(view, state)
+        return FlowOutcome(
+            state.book, tuple(state.loss_halts), frozenset(state.invalid_exit_symbols)
+        )
 
     def run_stage_one(
         self, view: PortfolioView, signals: StrategySignals, verdict: RiskVerdict
