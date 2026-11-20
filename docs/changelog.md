@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-20 (the whole-job broker prototype is merged, inert)
+
+- The 26-commit branch `chore/test-run-safety` (a whole-job admission/broker prototype: `scripts/whole_job_*.py`, `deploy/whole_job/`, `tests/scripts/test_whole_job_*.py`) is merged into `main` by owner request. It is **not wired in**: `scripts/run_tests.sh` and `scripts/_heavy_job.sh` keep `main`'s versions (the simple one-heavy-job lock); the conflicting hunks in those two scripts, in `AGENTS.md` and in `tests/scripts/test_test_runner_phases.py` were resolved by taking `main`'s side, and the prototype's five extra tests in `tests/scripts/test_heavy_job_guard.py` (which test its own guard variant) were dropped. `tests/scripts` passes (834 passed, 2 skipped). The prototype was never reviewed by Sol, Opus or Fable: read it before wiring any of it in.
+
 ## 2026-11-19 (whole-job broker candidate: durable stop intent)
 
 - Fixes from Sol's review of a60ed4da (`scripts/whole_job_broker.py`): the rollback of a
