@@ -15,10 +15,10 @@ The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) fo
 
 - ggTrader is a research-first platform.
 - The paper trader has been stopped since 2026-11-06 and has not restarted. Nothing is deployed: the
-  container image on the registry is rebuilt on every push to `main`, but the trader container is not
-  pulled or restarted.
+  a new image is published to the registry on every push to `main`, but the trader container still runs
+  the September image and has not been pulled or restarted.
 - No stock picker has been validated. The [category report](research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows benchmark gaps and approximate bands.
-- Basis points (bps) measure return differences: 100 bps is one percentage point a year.
+- Basis points (bps) measure return differences: 100 bps is one percentage point.
 - The rebuilt engine and versioned membership database provide a reproducible base. The 2026-11-20
   refactor (the paper trader's run split into step objects, typed ledger and broker interfaces, lint
   and docstring rules for `src/ggTrader`) is merged to `main` and pushed; CI is green.

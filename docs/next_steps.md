@@ -21,7 +21,7 @@ Development and research are paused as of 2026-11-12 with a clean slate; the 202
 
 Terms:
 
-- **bps**: basis points. 100 bps is one percentage point a year.
+- **bps**: basis points. 100 bps is one percentage point.
 - **AVB**: the paper account's frozen holding, which the broker marks untradable.
 - **Parity**: the paper trader doing what the backtest says it would.
 - **WFO**: walk-forward optimization, rolling tests that tune on past data and score on later data.

@@ -17,10 +17,12 @@ Build an honest, reproducible research lab, and put real money behind a trading 
 strict out-of-sample tests and a long clean paper-trading record. Nothing has cleared that bar yet.
 
 - **Benchmark:** SPY buy-and-hold, in a taxable account. A rule has to beat it after costs and tax.
-- **Evidence standard:** the owner-approved [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md).
-  Part A needs a long free-history test with a Holm-corrected t of at least 3 and at least +1.0 percentage
-  point a year net since 1994. B0 is a kill-only replay. B1 is a forward paper-only copy (a "shadow") kept
-  for at least 18 months. Real money needs six months of clean paper trading first.
+- **Evidence standard:** Part A (from the owner-delegated momentum brief) needs a long free-history test with a
+  Holm-corrected t of at least 3 and at least +1.0 percentage point a year net since 1994. The
+  [forward-paper brief](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md) is still a
+  draft: it proposes B0, a kill-only replay, and B1, a forward paper-only copy (a "shadow") kept for at least
+  18 months. The owner-approved capital terms in the momentum brief (a 5% pilot, 10% maximum) need 6 months of
+  clean broker paper trading before the pilot.
 - **Labels:** GO/NO-GO labels are retired for new work. A new result states the evidence, whether each preset
   threshold was met, and the uncertainty. Older verdicts stay as history.
 - **Limits:** no paid data; the account is taxable only; the owner decides every deploy and restart.
@@ -29,42 +31,43 @@ strict out-of-sample tests and a long clean paper-trading record. Nothing has cl
 
 ## 2. Where things stand (2026-11-20)
 
-Basis points (bps) measure return differences: 100 bps is one percentage point a year.
+Basis points (bps) measure return differences: 100 bps is one percentage point.
 
 | Component | Status | Notes |
 |---|---|---|
-| Research | Paused since 2026-11-12 | No validated stock picker. The [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows each category's gap to its benchmark and approximate bands; none is proven alpha. |
-| Paper trader | Stopped since 2026-11-06 | Cron lines are commented out. The code on `main` is not deployed: the image is rebuilt on every push, but the container is not pulled or restarted. |
-| Engine | Rebuilt | vectorbt 1.2.0 with the Rust simulator; the only code that imports vectorbt is `src/ggTrader/engine/`. |
-| Paper-trader code | Refactored | The run is split into step objects behind typed ledger and broker interfaces; a live run refuses a non-durable ledger. Behavior was proven unchanged by recorded transcripts, oracle runs and reviews. Merged and pushed 2026-11-20. |
+| Research | New research paused since 2026-11-12 (engineering work continued to 2026-11-20) | No validated stock picker. The [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows each category's gap to its benchmark and approximate bands; none is proven alpha. |
+| Paper trader | Stopped since 2026-11-06 | Cron lines are commented out. The code on `main` is not deployed: every push to `main` publishes a new image to the registry, but the trader container still runs the September image and has not been pulled or restarted. |
+| Engine | Rebuilt | vectorbt 1.2.0 with the Rust simulator; inside `src/`, only `src/ggTrader/engine/` imports vectorbt (research evidence scripts also import it). |
+| Paper-trader code | Refactored | The run is split into step objects behind typed ledger and broker interfaces; a live run refuses a non-durable ledger. Behavior was checked against recorded transcripts, oracle runs and reviews, with no differences found. Merged and pushed 2026-11-20. |
 | Membership | Running | The S&P 500 membership list lives in the database as versioned vintages; the live gate fails closed. The weekly check runs Saturdays at 06:00 Pacific. |
 | Intraday observer | Recording | Four timers record a hypothetical SPY journal and place no orders. Supervision is paused. Checkpoint 2026-11-30. |
 | Study code | Isolated | Each study keeps its code, tests and reports under `research/`; the test tiers (fast core, full, studies) are described in [AGENTS.md](../AGENTS.md). |
-| CI | Green | The full suite runs on every push to `main` (it cannot run the real-tape oracles, so those run locally before a merge). |
+| CI | Green at the last completed run | The full suite runs on every push to `main` (it cannot run the real-tape oracles, so those run locally before a merge). |
 
 ---
 
 ## 3. What the evidence says
 
-- **The fixed-rule stock model** (the deployed ensemble plus a SPY sweep) earned 14.19% a year against SPY's
-  14.83%, excess −64 bps, Newey-West t −0.69, on the pinned primary window. The audit rated its own test too
-  weak to see a modest edge, so the result is inconclusive against its +1.0 point bar, not a proof of no skill.
+- **The fixed-rule stock model** (a historical daily-bar replay of the ensemble plus a SPY sweep) earned 14.19% a
+  year against SPY's 14.83%, excess −64 bps, Newey-West t −0.69, on the pinned primary window. Both registered
+  bars (t of at least 3.0, excess of at least +1.0 point a year) failed, and the study was closed negatively. The
+  replay matched only 10 of 32 historical live orders, so it does not measure the live path itself.
   ([audit](../research/audits/production-replica/2026-10-19-production-replica-audit-nogo.md))
 - **The standalone SP500 core** (ensemble WFO on the Rust engine, OOS 2022-01-31 to 2026-04-29): Sharpe 0.3905,
   CAGR 3.50%, against SPY 0.7792 and 13.02%. The corrected membership list moves it only to 0.3958 and 3.56%.
   ([snapshot, section 1](../research/RESEARCH_SNAPSHOT.md))
 - **Stock screens** of 2026-11-10 and 2026-11-11 (eight published-portfolio screens), plus the earlier momentum,
-  factor and net-issuance screens: none cleared both hurdles. Expected investment growth came closest on the
-  recent-return threshold but not on significance.
+  factor and net-issuance screens: none cleared both hurdles. Expected investment growth came closest: it met the
+  recent-return threshold but not the full-history significance threshold.
 - **Allocation:** the cross-asset 80/20 sleeve is a shadow only (thin edge, mostly gold). The owner adopted a
-  70/30 SPY/SSO allocation (A23) knowing its after-tax edge is +0.80 point a year at today's funding costs,
-  which is below the bar. That is extra market exposure, not selection skill.
+  70/30 SPY/SSO allocation (A23), knowing its estimated after-tax edge (about +0.8 point a year at the
+  funding costs of the time) is below the bar. That is extra market exposure, not selection skill. Funding
+  status is unverified.
 - **Intraday:** the SPY last-half-hour rule, scored once on free Alpaca minute bars (2016 to 2026), lost money
   before and after costs: t −3.48, −3.7% a year after the illustrative tax ledger.
   ([result](../research/intraday/spy-momentum-feasibility/2026-11-15-intraday-half-hour-rule-result.md))
 - **Process findings that outlive any verdict:** point-in-time membership, one-day tape shifts, duplicate rows and
-  unpinned windows each overturned earlier headline numbers; a closed test is a verdict on the test, not proof of
-  no edge ([root-cause summary](../research/audits/root-cause-2026-11-04/2026-11-05-executive-summary.md)).
+  unpinned windows each overturned earlier headline numbers ([root-cause summary](../research/audits/root-cause-2026-11-04/2026-11-05-executive-summary.md)).
 
 ---
 
@@ -110,8 +113,8 @@ Each track names what must happen before it moves. None starts without the owner
 - **August 19 to 22:** the baseline Sharpe of 1.12 did not reproduce; a one-day shift in every stored equity bar
   and duplicate SPY rows were found and fixed. Earlier figures were re-measured.
 - **September 22 to 30:** standalone core and the core-plus-SPY blend re-evaluated with point-in-time
-  membership; live exit parity fixed; cross-asset shadow started; 70/30 SPY/SSO adopted by the owner.
-- **October 19 to 23:** production-replica audit (inconclusive, 64 bps behind SPY); momentum, factor and
+  membership; live exit parity fixed; cross-asset 80/20 sleeve kept as a shadow candidate; 70/30 SPY/SSO adopted by the owner.
+- **October 19 to 23:** production-replica audit (closed negatively, 64 bps behind SPY; live parity unverified); momentum, factor and
   net-issuance screens closed; no paid data; PEAD and insider studies parked.
 - **November 5 to 8:** research reorganized under `research/`; root-cause investigation accepted; engine rebuilt on
   vectorbt 1.2.0 with Rust and the trader stopped (November 6); study code isolated from `src/`.
@@ -128,7 +131,7 @@ Each track names what must happen before it moves. None starts without the owner
 - **WFO (walk-forward optimization):** tune on a past block, score on the next unseen block, roll forward.
 - **OOS / IS:** out-of-sample (unseen) and in-sample (tuning) data.
 - **Sharpe ratio:** return per unit of risk; higher is better.
-- **Drawdown:** the biggest peak-to-trough fall in account value.
+- **Maximum drawdown:** the biggest peak-to-trough fall in account value.
 - **Shadow:** a paper-only copy of a book that places no orders.
 - **Parity:** the paper trader doing what the backtest says it would.
 - **A23:** the owner's 70% SPY / 30% SSO allocation. **AVB:** the paper account's frozen holding, which the broker

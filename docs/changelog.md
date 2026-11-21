@@ -3,6 +3,7 @@
 ## 2026-11-20 (roadmap rewritten)
 
 - `docs/roadmap.md` was a June-era document patched since: it still carried an "In-Flight Tasks (~4 Weeks)" section, a pre-engine-rebuild infrastructure table, a June strategy status list and a running timeline whose numbers a warning banner disowned. It is rewritten at 135 lines: the North Star and evidence standard, where things stand, what the evidence says (numbers taken from the research snapshot), the open tracks with their gates, a current infrastructure table, and a condensed 2026 timeline. The old file moved unchanged (links rewritten for its new folder, plus an archived note) to `docs/archive/roadmap-2026-06-to-2026-11.md`.
+- Fact-check corrections to the same day's roadmap and README: the forward-paper brief is a draft, not owner-approved (Part A comes from the owner-delegated momentum brief); the replica audit was closed negatively on its two failed bars, not "inconclusive", and its replay matched 10 of 32 live orders; the registry publishes an image on every push while the trader container still runs the September image; "100 bps is one percentage point" (not a year); only `src/` is limited to the engine for vectorbt imports; the cross-asset sleeve is a shadow candidate; A23 funding status is unverified; CI "green at the last completed run".
 
 ## 2026-11-20 (README and next-steps refresh)
 
