@@ -210,21 +210,28 @@ jobs:
               echo "A pull request for ${BRANCH} already exists; nothing to do."
               exit 0
             fi
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git checkout -b "$BRANCH"
-            # The artifact is data from a job that ran an unreviewed release: accept only a
-            # pyproject change that touches vectorbt lines, then take exactly two files.
-            if diff -U0 pyproject.toml artifacts/report-rust/pyproject.toml \
-                | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vq 'vectorbt'; then
-              echo "pyproject.toml in the artifact changes more than the vectorbt pins; refusing."
-              exit 1
+            # A branch with no PR means an earlier run pushed it and then failed to open the PR
+            # (e.g. the Actions PR-creation setting was off). Reuse it: pushing a fresh commit
+            # over it is rejected as a non-fast-forward and failed every later run (2026-11-21).
+            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+              echo "Branch ${BRANCH} already exists without a pull request; opening the PR from it."
+            else
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b "$BRANCH"
+              # The artifact is data from a job that ran an unreviewed release: accept only a
+              # pyproject change that touches vectorbt lines, then take exactly two files.
+              if diff -U0 pyproject.toml artifacts/report-rust/pyproject.toml \
+                  | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -vq 'vectorbt'; then
+                echo "pyproject.toml in the artifact changes more than the vectorbt pins; refusing."
+                exit 1
+              fi
+              cp artifacts/report-rust/pyproject.toml pyproject.toml
+              cp artifacts/report-rust/uv.lock uv.lock
+              git add pyproject.toml uv.lock
+              git commit -m "chore: try vectorbt ${VER} (upgrade watch, not merged)"
+              git push origin "$BRANCH"
             fi
-            cp artifacts/report-rust/pyproject.toml pyproject.toml
-            cp artifacts/report-rust/uv.lock uv.lock
-            git add pyproject.toml uv.lock
-            git commit -m "chore: try vectorbt ${VER} (upgrade watch, not merged)"
-            git push origin "$BRANCH"
             gh pr create --draft --head "$BRANCH" --base "$BASE_BRANCH" \
               --title "vectorbt ${VER}: upgrade report" --body-file body.md --label vbt-upgrade
           else
