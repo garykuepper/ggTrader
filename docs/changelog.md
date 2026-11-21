@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-20 (roadmap rewritten)
+
+- `docs/roadmap.md` was a June-era document patched since: it still carried an "In-Flight Tasks (~4 Weeks)" section, a pre-engine-rebuild infrastructure table, a June strategy status list and a running timeline whose numbers a warning banner disowned. It is rewritten at 135 lines: the North Star and evidence standard, where things stand, what the evidence says (numbers taken from the research snapshot), the open tracks with their gates, a current infrastructure table, and a condensed 2026 timeline. The old file moved unchanged (links rewritten for its new folder, plus an archived note) to `docs/archive/roadmap-2026-06-to-2026-11.md`.
+
 ## 2026-11-20 (README and next-steps refresh)
 
 - `README.md`: the strategy table now lists the ten registered strategies (it named `ensemble_conviction`, `wfo_tournament` and `dual_momentum`, which are legacy-only); the quick-start commands name the required `--membership` source; the "Strategy protocol" wording became the `ParamGrid` + `build` contract; the paper-trader layout names the step modules; the fast-core time is about six minutes; the status block is dated 2026-11-20 (the verdict-register branch is merged and pushed); the intraday paragraph adds the r9 result; the event-timing paragraph moved above the license and says both studies are parked.

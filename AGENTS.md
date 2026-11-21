@@ -218,7 +218,7 @@ These are the most actively maintained docs in the repo and the ones to read
 *first* when picking up work. Earlier revisions of this file omitted all four.
 
 * **`docs/next_steps.md`** — the current worklist, deliberately only 1–2 steps deep. Start here.
-* **`docs/roadmap.md`** — long-form history and the strategy status table.
+* **`docs/roadmap.md`** — the North Star, where things stand, the open tracks and a condensed timeline; the older long-form history is `docs/archive/roadmap-2026-06-to-2026-11.md`.
 * **`research/RESEARCH_SNAPSHOT.md`** — the roster of everything tried and its verdict. Regenerate it with the `research-snapshot` skill rather than hand-editing; it drifts otherwise.
 * **`research/<category>/<study>/<YYYY-MM-DD>-<slug>[-nogo].md`** — one report per closed study, following `research/TEMPLATE-research-report.md`. `research/WEB_RESEARCH_CANDIDATES.md` is the accumulating backlog of untried ideas.
 
