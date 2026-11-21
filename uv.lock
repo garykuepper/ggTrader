@@ -500,8 +500,8 @@ requires-dist = [
     { name = "tqdm" },
     { name = "typer", specifier = ">=0.12" },
     { name = "typing-extensions" },
-    { name = "vectorbt", extras = ["rust"], specifier = "==1.2.0" },
-    { name = "vectorbt-rust", specifier = "==1.2.0" },
+    { name = "vectorbt", extras = ["rust"], specifier = "==1.2.1" },
+    { name = "vectorbt-rust", specifier = "==1.2.1" },
     { name = "xlrd", specifier = ">=2.0.1" },
     { name = "yfinance" },
 ]
@@ -1729,7 +1729,7 @@ wheels = [
 
 [[package]]
 name = "vectorbt"
-version = "1.2.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anywidget" },
@@ -1751,9 +1751,9 @@ dependencies = [
     { name = "scipy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/03/8d667c8afeb490e389e09c87f3250593aaf7abe27d7987e8d79cae717b65/vectorbt-1.2.0.tar.gz", hash = "sha256:f336deba190c4d249d37aaf7c65945769ea952836090e4128da73508af7b6de8", size = 573050, upload-time = "2026-10-19T13:19:06.577Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/de/4bc151d32026ac2b2173f6849dd00d6efe8aa5a9656c9cfa6a3ea8a12675/vectorbt-1.2.1.tar.gz", hash = "sha256:a02625f960202f1771f6172e0b92b244d93679fbd68f181c2a1bee5906e2e920", size = 595269, upload-time = "2026-11-11T18:11:34.336Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/4f/8c3c75a791336b637d50eb9a6893093c201b766f8bc084eae6c960e9a122/vectorbt-1.2.0-py3-none-any.whl", hash = "sha256:0f0bd9a5eaddbf168b8aafb75489e93a07dc2134ed3d0dab52b57cb1252cbe8d", size = 462717, upload-time = "2026-10-19T13:19:04.47Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/58/efef289cab672a984d7d0b84cefbf354c492b332ca11a67d8580cd59729d/vectorbt-1.2.1-py3-none-any.whl", hash = "sha256:352ee4d9f0777508c681110f7df3a748f4229d9a18dae31ed0621ace57b12fe6", size = 466689, upload-time = "2026-11-11T18:11:32.74Z" },
 ]
 
 [package.optional-dependencies]
@@ -1763,18 +1763,18 @@ rust = [
 
 [[package]]
 name = "vectorbt-rust"
-version = "1.2.0"
+version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0a/1d/6d5fc36ffc718fd57a61139336f4bb6d0f4f80ec64550080b0232dc4d8ca/vectorbt_rust-1.2.0.tar.gz", hash = "sha256:9adc3b3cad70f7428fb4714ddbfc64d34aa06c8626938b032e98d1b5733e56c5", size = 75191, upload-time = "2026-10-19T13:18:33.878Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/fe/72059aad468d5866bef2d268b2480f26e90a4b48b9e586ebb019f732af04/vectorbt_rust-1.2.1.tar.gz", hash = "sha256:b369c533e5addc657a59d9a8a23799ad54cebcc174e36f39cc45d5f065b72649", size = 76286, upload-time = "2026-11-11T18:11:13.18Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/ba/accd2f31a18398aa67c906a1a410501847259ed644b804c326d0f275786c/vectorbt_rust-1.2.0-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:12e8a275cede40224297c4eff3cb790e0ae72531271af880721dcb876756a94c", size = 906072, upload-time = "2026-10-19T13:18:11.713Z" },
-    { url = "https://files.pythonhosted.org/packages/2c/db/69a258250f11fac88c97dd8077a20866e6cf0d8f28547b6d3fdc82ce43d8/vectorbt_rust-1.2.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:2c074dbcb57ce958d9c7c18d07d764877871ab6d8bd1ae7e9fbe50d2885a9f00", size = 803776, upload-time = "2026-10-19T13:18:13.097Z" },
-    { url = "https://files.pythonhosted.org/packages/a8/e5/9588ac718110d1db295780770de90aa17b69b27040c206fc4f85f4060bb2/vectorbt_rust-1.2.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:642ba6d748e2939bc5958ca706bdd19c903e4491b8c0033145cdfeaeb2ea3f83", size = 812049, upload-time = "2026-10-19T13:18:14.798Z" },
-    { url = "https://files.pythonhosted.org/packages/4e/f9/1274a6246050eeb27fd33c61eff8a63c9ff1367183c5ca1aaf5a2e66f359/vectorbt_rust-1.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5b6d5c0a87e36877c132d0e02a53c738967bf5da6bcd5e72292926836c694f67", size = 916998, upload-time = "2026-10-19T13:18:16.252Z" },
-    { url = "https://files.pythonhosted.org/packages/24/db/e4eb9d7f662efe8bf79bdb75f9992a2d2812058d3f87ec8a5ac4c29cdb28/vectorbt_rust-1.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:2cfc835a31ac9f763ddaf78670f86a8e1324e84b8418d2aa75826ed813285107", size = 934903, upload-time = "2026-10-19T13:18:17.812Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/6a/dce58affdb444749efcfb68bb9e211f763eee48212471fdb7e8abde07a80/vectorbt_rust-1.2.1-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:c48e785e23422e851a103257f5d2c500c99346f80cc46bd623a42ed1609f8a3c", size = 906624, upload-time = "2026-11-11T18:10:50.101Z" },
+    { url = "https://files.pythonhosted.org/packages/60/03/f5f363455b6c7a38e351d48a05c15b232e80163f91cf558301f0c8a4434d/vectorbt_rust-1.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8475c1f84ef8e88e11f7d8e485e99ae1b036f3d388b5405402bdbd6755f6a500", size = 804694, upload-time = "2026-11-11T18:10:52.114Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/23/77a9f0829d8cc0da00987a5f497eff22caf92c5c0afb5baf191839f16c40/vectorbt_rust-1.2.1-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:dd925877bfa697b33931612543e4ace636bdcceb0a388e6f38446a269a595f45", size = 812783, upload-time = "2026-11-11T18:10:53.734Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/f9/f949b7ac4558eacc59984c80076ca5414503b86ce590d42fd32015ef2fab/vectorbt_rust-1.2.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:240f8034883c748486c5e273ae662a4399a34e8fbe73ba88c0dd22899152a22d", size = 918193, upload-time = "2026-11-11T18:10:55.376Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/a3/db7cbf5bd4e1f588f67949c97cd745582db0c47126f90433214a403326ee/vectorbt_rust-1.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:daab96bf6602689408ea91378db14c63f8617f8d0e6666bec6deabf55a35cf41", size = 936727, upload-time = "2026-11-11T18:10:56.742Z" },
 ]
 
 [[package]]
