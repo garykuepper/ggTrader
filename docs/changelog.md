@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-20 (README and next-steps refresh)
+
+- `README.md`: the strategy table now lists the ten registered strategies (it named `ensemble_conviction`, `wfo_tournament` and `dual_momentum`, which are legacy-only); the quick-start commands name the required `--membership` source; the "Strategy protocol" wording became the `ParamGrid` + `build` contract; the paper-trader layout names the step modules; the fast-core time is about six minutes; the status block is dated 2026-11-20 (the verdict-register branch is merged and pushed); the intraday paragraph adds the r9 result; the event-timing paragraph moved above the license and says both studies are parked.
+- `docs/next_steps.md` and `docs/working_task_list.md`: the "Waiting on review" row became "Done" (reviews finished 2026-11-12), the "To resume" item now says everything is merged and pushed with CI green, "This week's eight screens" got its dates, and the intraday section points at the r9 result. Checked against the host: the weekly membership timer, the four observer timers and the paused Hermes supervision job are as the docs say.
+
 ## 2026-11-20 (the real-database persist test fixture is merged, inert and flagged)
 
 - By owner request the branch `refactor/ii-persist` is merged: `tests/paper/persist_scratch_db.py` (creates and drops a throwaway `ggt_scratch_<8 hex>` database), its no-database unit tests `tests/paper/test_persist_scratch_db.py`, and the 27 real-database characterization tests `tests/paper/test_persist_real_db.py` (marked `integration`, skipped unless `GGT_SCRATCH_DB_ADMIN_URL` is set, so no tier runs them). **Four security reviews still rated the fixture NOT SAFE** when it is given a superuser URL; its docstring says so. Run the real-database tests only against a disposable cluster with a dedicated CREATEDB role. This replaces the earlier statement that the fixture is kept outside the repository (the evidence copy and observation files stay in `p6/t7/`).

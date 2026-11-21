@@ -11,16 +11,20 @@ It simulates how a trading strategy would have performed in the past using **Wal
 
 The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) for research and for paper trading (paper trading is currently stopped). Crypto is research-only: historical OHLCV loads from a local TimescaleDB, but there is no supported live-trading path for it — the crypto execution engines were removed, and crypto data ingestion (`ggt ingest`) was removed.
 
-## Where things stand (2026-11-12)
+## Where things stand (2026-11-20)
 
 - ggTrader is a research-first platform.
-- The paper trader has been stopped since 2026-11-06 and has not restarted.
+- The paper trader has been stopped since 2026-11-06 and has not restarted. Nothing is deployed: the
+  container image on the registry is rebuilt on every push to `main`, but the trader container is not
+  pulled or restarted.
 - No stock picker has been validated. The [category report](research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) shows benchmark gaps and approximate bands.
 - Basis points (bps) measure return differences: 100 bps is one percentage point a year.
-- The rebuilt engine and versioned membership database provide a reproducible base.
+- The rebuilt engine and versioned membership database provide a reproducible base. The 2026-11-20
+  refactor (the paper trader's run split into step objects, typed ledger and broker interfaces, lint
+  and docstring rules for `src/ggTrader`) is merged to `main` and pushed; CI is green.
 - Two jobs run on their own: the weekly membership check (enabled, Saturdays at 06:00 Pacific) and the four intraday-observer timers.
-- Development and research are paused. The verdict register, the stock screens and the category report are committed on `feature/verdict-register`, which is neither merged to main nor pushed.
-- The paper-trader changes, including the order-recovery fix `783c7267`, are on `main` but not deployed.
+- The verdict register, the stock screens and the category report are merged to `main` and pushed.
+- Development and research are paused; see [Next Steps](docs/next_steps.md) for what is open.
 
 ---
 
@@ -29,7 +33,7 @@ The platform supports US equities (stocks like the S&P 500 via Yahoo Finance) fo
 - **Realistic Backtesting (Walk-Forward Optimization)**: Instead of cheating by testing rules on the same data used to create them, we split history into monthly segments. We find the best rules on a "training" segment (in-sample) and test them on the next "testing" segment (out-of-sample).
 - **Super-Fast Simulations (Vectorization)**: Traditional backtesters test day-by-day in a slow loop. ggTrader uses the **vectorbt** library to calculate your entire portfolio's performance all at once, letting you run years of history across hundreds of stocks in seconds.
 - **Constituent History (No Survivorship Bias)**: Most people test stock strategies using the current list of S&P 500 stocks. This is a mistake because it ignores companies that went bankrupt or got acquired. ggTrader tracks the historical "point-in-time" list of S&P 500 members to make your tests realistic.
-- **Easy Strategy Customization**: Implement a simple Python blueprint (the `Strategy` protocol) and your new trading rules are immediately usable from the command line.
+- **Easy Strategy Customization**: Drop a module into `src/ggTrader/lab/strategies/` that declares a `ParamGrid` and a `build(bars, grid)` function (see [Adding a strategy](docs/adding_a_strategy.md)); the registry finds it by scanning, and your rules are immediately usable from the command line.
 - **Result Records**: `--wfo` runs save a JSON record with provenance. `--blend` runs are also stored in **TimescaleDB** (a time-series database).
 
 ---
@@ -42,14 +46,16 @@ Strategies are split into two kinds:
 
 | Strategy Name | Type | Description |
 |------|------|-------------|
-| `ensemble` | Signal | **The strategy the paper trader used.** Combines five indicators (Bollinger Bands, RSI, EMA cross, MACD divergence, volume-confirmed BB) and only trades when enough of them agree. This was used by the paper trader, which is stopped. |
-| `ensemble_conviction` | Signal | As above, but sizes each position by how many indicators agreed. |
-| `bb_reversion` | Signal | Buys when price falls below a lower Bollinger Band and sells when it returns to the middle. |
-| `rsi_reversion` | Signal | Buys when RSI signals oversold, sells on recovery. |
-| `wfo_tournament` | Signal | Automatically finds the best moving average parameters by running a mini-competition on past data. |
-| `ema_cross` | Signal | A classic strategy that buys when a fast moving average crosses above a slow moving average, and sells when it crosses below. |
-| `xs_momentum` | Weight | Ranks stocks by their past 12-month returns and holds the top performers. |
-| `dual_momentum` | Weight | Ranks stocks by momentum, but moves the entire portfolio to safe cash if the overall market is falling. |
+| `ensemble` | Signal | **The strategy the paper trader used.** Combines five indicators (Bollinger Bands, RSI, EMA cross, MACD divergence, volume-confirmed BB) and only trades when enough of them agree. The paper trader is stopped. |
+| `bb_reversion` | Signal | Buys when price falls below a lower Bollinger Band and sells when it returns to the middle (one voter of the ensemble). |
+| `rsi_reversion` | Signal | Buys when RSI signals oversold, sells on recovery (one voter). |
+| `ema_cross` | Signal | Buys when a fast moving average crosses above a slow one, sells when it crosses below (one voter). |
+| `macd_divergence` | Signal | Buys on a bullish MACD divergence, exits when the MACD histogram crosses below zero (one voter). |
+| `volume_bb_reversion` | Signal | Bollinger reversion gated by a volume spike, a capitulation filter (one voter). |
+| `conviction_bb` | Signal | Bollinger reversion that sizes each entry by how far the close is below the lower band. |
+| `xs_momentum` | Weight | Ranks stocks by 12-1 month returns and holds the top performers, equal weight, rebalanced on decision dates. |
+| `cross_asset_sleeve` | Weight | Holds SPY plus a sleeve split equally across TLT, GLD and PDBC (a static shadow arm and an optional slow-trend arm). |
+| `retail_attention` | Weight | Google Trends search-spike score, equal weight in the top bucket. Paused: the Trends backfill is blocked. |
 
 **Ten** strategies are ported to the current engine and registered (`REGISTRY`);
 another **28** historical names (`LEGACY_ONLY_STRATEGIES`) are closed NO-GO or
@@ -77,14 +83,17 @@ ggt --help
 
 ### 3. Run a Simulation
 Walk-forward a strategy over the S&P 500 universe on the vectorbt engine (frozen tape; pin both dates for any number you will quote):
+The membership source must always be named (`--membership db`, `db:<load_id>` or `fixture:<name>`, or the `GGT_MEMBERSHIP` environment variable); there is no default.
 ```bash
-ggt lab --strategy ensemble --wfo --eval-start 2021-01-31 --eval-end 2026-04-30
+ggt lab --strategy ensemble --wfo --membership fixture:sp500_v1_2026-06-02 \
+  --eval-start 2021-01-31 --eval-end 2026-04-30
 ```
 
 ### 4. Diagnostic Run
 Run a small, fast test run on 40 stocks:
 ```bash
-ggt lab --strategy ensemble --wfo --eval-end 2022-07-31 --max-stocks 40
+ggt lab --strategy ensemble --wfo --membership fixture:sp500_v1_2026-06-02 \
+  --eval-end 2022-07-31 --max-stocks 40
 ```
 
 Ten strategies are ported (see [CLI Reference §1](docs/cli_reference.md)); the other 28 are closed research that
@@ -106,7 +115,9 @@ src/ggTrader/
 │   └── strategies/   # The ported strategies and the vote glue
 ├── engine/           # The only code that imports vectorbt (presets, simulation, statistics)
 ├── paper/            # Paper Trading (Alpaca; stopped since 2026-11-06)
-│   ├── trader.py     # Orchestrates one trading cycle
+│   ├── trader.py     # Short orchestrator of one trading cycle; the steps live in preflight.py,
+│   │                 # portfolio.py, risk_assessor.py, planning.py, order_flow.py, execution.py,
+│   │                 # corporate_actions.py and reporter.py (models, ports, ledger, config beside them)
 │   ├── alpaca_broker.py  # Broker API wrapper (paper account)
 │   ├── signal_runner.py  # Generates today's ensemble signals
 │   ├── overlay.py    # Multi-sleeve blending and vol targeting
@@ -125,7 +136,7 @@ src/ggTrader/
 | `scripts/` | Operations and evidence scripts (backfills, snapshots, the engine checks), the test runner, and the study tools `study.py` and `verify_pins.py`. |
 | `research/` | One folder per study: report, registered plan, raw results, and the study's own code in its `code/` folder (tests in `code/tests/`; helpers shared by a category in `_lib/`). `research/CODEMOVED.csv` lists every file that moved here from `src/`, `scripts/` or `tests/`. |
 | `tests/lab/` | Code tests to ensure the simulator is working correctly. |
-| `tests/` | `scripts/run_tests.sh` runs the fast core (about two minutes); `scripts/run_tests.sh --full` runs everything (the engine, the study tests and the real-tape checks) and is the gate before a merge, a deploy or a vectorbt upgrade; `scripts/run_tests.sh --studies` runs the study tests only. |
+| `tests/` | `scripts/run_tests.sh` runs the fast core (about six minutes); `scripts/run_tests.sh --full` runs everything (the engine, the study tests and the real-tape checks) and is the gate before a merge, a deploy or a vectorbt upgrade; `scripts/run_tests.sh --studies` runs the study tests only. |
 
 ---
 
@@ -140,7 +151,16 @@ It records hypothetical SPY positions and places no orders. See the
 Historical intraday r8 is closed as **UNRESOLVED (data)** after parent-verified
 collection and signal-blind validation found missing endpoint bars. No score was
 computed. See the [validation report](research/intraday/spy-momentum-feasibility/2026-10-25-intraday-r8-validation-unresolved.md).
-The prospective observer is separate from that closed study and production paper trading.
+A fresh r9 protocol then scored the same last-half-hour rule once (2026-11-15) on free Alpaca minute bars,
+2016 to 2026: neither preset threshold was met (t = -3.48; -3.7% a year after the illustrative tax
+ledger). See the [result report](research/intraday/spy-momentum-feasibility/2026-11-15-intraday-half-hour-rule-result.md).
+The prospective observer is separate from those studies and from production paper trading.
+
+The [event-timing audit utility](research/audits/event-timing/event-timing-audit-implementation.md)
+(code in `research/audits/event-timing/code/`) provides offline evidence replay and guarded read-only
+collection for the registered PEAD/insider timing study. It computes no returns. Both studies are parked
+by the owner's decision of 2026-10-23 (no paid data); see the
+[decision memo](research/audits/event-timing/2026-10-23-event-timing-audit-decision.md).
 
 For a deeper dive, check out our detailed guides:
 - [**Next Steps**](docs/next_steps.md) — The current worklist. Start here if you are picking up work.
@@ -158,8 +178,3 @@ For a deeper dive, check out our detailed guides:
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-The [event-timing audit utility](research/audits/event-timing/event-timing-audit-implementation.md)
-(code in `research/audits/event-timing/code/`) provides offline evidence replay and guarded read-only collection for the
-registered PEAD/insider timing study. It computes no returns; full collection
-remains blocked pending code review and an authorized contact.

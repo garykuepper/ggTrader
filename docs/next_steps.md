@@ -2,7 +2,7 @@
 
 ## Status at a glance
 
-Development and research are paused as of 2026-11-12 with a clean slate. Nothing below is urgent except the intraday checkpoint on 2026-11-30.
+Development and research are paused as of 2026-11-12 with a clean slate; the 2026-11-20 refactor and project clean-up are complete. Nothing below is urgent except the intraday checkpoint on 2026-11-30.
 
 | Status | What |
 |---|---|
@@ -12,7 +12,7 @@ Development and research are paused as of 2026-11-12 with a clean slate. Nothing
 | Done, deploy open | The refactor and its follow-ups are merged into `main` and pushed (2026-11-20, `8c0c4540`): phases 0 to 2 (`abe8cefa`), phases 3 to 5, the lint rules, the docs audit, the snapshot and completion II (the eight seam forwards retired, a live run refuses a non-durable ledger, `run_wfo` raises `WfoNotRun`, the membership CLI and weekly job tidy-ups, the persist writers on `engine.begin()`, docstring rules for `src/ggTrader`) (all on `origin/main`). The trader stays stopped and nothing is deployed. Left for the owner: the deploy (image rebuild), and an optional re-run of the real-database persist characterization, whose fixture is kept outside the repository (evidence folder `p6/t7/`). See the [refactor design](superpowers/specs/2026-11-17-refactor-design.md), the [completion II plan](superpowers/plans/2026-11-20-refactor-completion-ii.md) and the [changelog](changelog.md). |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
-| Waiting on review | Sol's two blocking issues in the paper commit are fixed. Sol's final re-check and Opus's review are clean ([details](archive/where-we-left-it-2026-11-12.md)). The paper changes, including `783c7267`, are on `main` but not deployed. |
+| Done | The paper-trader order-recovery and halt changes (including `783c7267`) were reviewed by Sol and Opus on 2026-11-12 with no open findings and are on `main`, not deployed ([details](archive/where-we-left-it-2026-11-12.md)). |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
@@ -32,7 +32,7 @@ Terms:
 
 ### To resume
 
-1. Merged and pushed on 2026-11-12 after a clean full test run. Deploying the paper changes and restarting the trader are separate owner decisions.
+1. Everything is merged and pushed to `main` (the 2026-11-12 work and the 2026-11-20 refactor; CI green at `35156a0f`). Deploying the paper changes and restarting the trader are separate owner decisions.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
@@ -45,7 +45,7 @@ Full state: [where we left it](archive/where-we-left-it-2026-11-12.md). Detail i
 - All four recording timers are enabled and active. See the [activation record](../research/intraday/spy-momentum-prospective-observer/2026-10-27-intraday-observer-activation.md).
 - Hermes supervision (job `39172df68638`) is **paused**. Its job record says since 2026-11-06 09:18 Pacific, with no reason and no external alert.
 - Until it is restored, the operator does a daily local health check and a weekly or notice-driven calendar review.
-- Limits: historical r8 stays unresolved for lack of data, and the dividend comparison stays provisional.
+- Limits: historical r8 stays unresolved for lack of data (a fresh r9 protocol scored the same rule once on 2026-11-15: neither threshold met, [result](../research/intraday/spy-momentum-feasibility/2026-11-15-intraday-half-hour-rule-result.md)), and the dividend comparison stays provisional.
 - Preserve faults and never backfill a missed decision.
 - The October 29 anchor and October 30 first stages were checked on 2026-11-11 (record, source hash, integrity); limits are in the activation record.
 - Checkpoint: slot 20 on 2026-11-30 reviews operational reliability under the frozen rules. The final slot is 2027-11-03. No performance result is implied.
@@ -89,7 +89,7 @@ Later: plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/202
 - The owner retired new GO/NO-GO determinations. Older classifications stay as history.
 - The fixed-rule stock model is also closed NO-GO: 14.19% a year against SPY's 14.83%, with a Newey-West t of -0.69.
 - Live parity is unverified, and the older holdout is inconclusive.
-- This week's eight screens did not clear both hurdles. No category shows proven alpha ([category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md)).
+- The eight screens of 2026-11-10 and 2026-11-11 did not clear both hurdles. No category shows proven alpha ([category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md)).
 - PEAD and insider studies are parked; the insider timestamp amendment is a draft. No paid data. See the [decision memo](../research/audits/event-timing/2026-10-23-event-timing-audit-decision.md).
 - The account is taxable only. Follow the [owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
 
