@@ -293,3 +293,22 @@ def test_space_uses_database_path(tmp_path, monkeypatch):
     with pytest.raises(LoadFailed, match="Insufficient"):
         load_crsp(None, path, sums, backup_dir=None, db_free_path=target)
     assert seen == [target]
+
+
+def test_copy_names_columns(conn, tmp_path, monkeypatch):
+    from unittest.mock import Mock
+
+    from ggTrader.data.kaggle_import import crsp
+
+    path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
+    cur = Mock()
+
+    def capture(conn, load_id, key, rows, writer, **kwargs):
+        writer(cur)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(crsp, "commit_chunk", capture)
+    with pytest.raises(RuntimeError, match="captured"):
+        crsp.load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+    sql = cur.copy_expert.call_args.args[0]
+    assert "(load_id, " + ", ".join(crsp.COLUMNS) + ") FROM STDIN" in sql

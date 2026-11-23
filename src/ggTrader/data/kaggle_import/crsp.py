@@ -125,7 +125,11 @@ def _write_chunk(  # noqa: PLR0913 — chunk inputs
     buffer.seek(0)
 
     def copy(cur: cursor) -> int:
-        cur.copy_expert("COPY kaggle_crsp.daily FROM STDIN WITH (FORMAT CSV, NULL '')", buffer)
+        cur.copy_expert(
+            f"COPY kaggle_crsp.daily (load_id, {', '.join(COLUMNS)}) "
+            "FROM STDIN WITH (FORMAT CSV, NULL '')",
+            buffer,
+        )
         cur.execute(
             "UPDATE ref.loads SET checks=jsonb_set(checks, '{nulled_values}', "
             "to_jsonb(COALESCE((checks->>'nulled_values')::bigint, 0) + %s)) WHERE load_id=%s",

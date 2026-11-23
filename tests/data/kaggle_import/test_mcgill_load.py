@@ -322,3 +322,22 @@ def test_space_failure_between_batches_is_resumable(conn, tmp_path, monkeypatch)
     with conn.cursor() as cur:
         cur.execute("SELECT status, rows_parsed FROM ref.loads WHERE load_id=%s", (load,))
         assert cur.fetchone() == ("complete", 10)
+
+
+def test_copy_names_columns(conn, tmp_path, monkeypatch):
+    from unittest.mock import Mock
+
+    from ggTrader.data.kaggle_import import mcgill
+
+    path, sums = make_file(tmp_path)
+    cur = Mock()
+
+    def capture(conn, load_id, key, rows, writer, **kwargs):
+        writer(cur)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(mcgill, "commit_chunk", capture)
+    with pytest.raises(RuntimeError, match="captured"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
+    sql = cur.copy_expert.call_args.args[0]
+    assert "(load_id, " + ", ".join([name for name, _ in MCGILL_COLUMNS]) + ") FROM STDIN" in sql

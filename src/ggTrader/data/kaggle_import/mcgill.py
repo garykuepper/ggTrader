@@ -172,8 +172,11 @@ def load_mcgill(
             nulled: int = nulled,
             rows: int = output.num_rows,
         ):
+            columns = ", ".join(name for name, _ in MCGILL_COLUMNS)
             cur.copy_expert(
-                "COPY kaggle_chars.mcgill FROM STDIN WITH (FORMAT CSV, NULL '')", buffer
+                f"COPY kaggle_chars.mcgill (load_id, {columns}) "
+                "FROM STDIN WITH (FORMAT CSV, NULL '')",
+                buffer,
             )
             cur.execute(
                 "UPDATE ref.loads SET checks=jsonb_set(checks, '{nulled_values}', "
