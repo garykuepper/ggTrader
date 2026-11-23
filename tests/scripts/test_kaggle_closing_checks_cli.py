@@ -116,12 +116,20 @@ def test_exit_policy_only_allows_named_skips():
     good = [
         {"status": "pass", "reason": ""},
         {"status": "covered_by_tests", "reason": ""},
-        {"status": "skipped", "reason": "no baseline given"},
         {"status": "skipped", "reason": "name not in release"},
     ]
     assert checks_succeeded(good)
+    assert not checks_succeeded([*good, {"status": "skipped", "reason": "no baseline given"}])
+    assert checks_succeeded(
+        [*good, {"status": "skipped", "reason": "no baseline given"}], allow_synthetic_skips=True
+    )
     assert not checks_succeeded([*good, {"status": "skipped", "reason": "not implemented"}])
     assert not checks_succeeded([*good, {"status": "fail", "reason": ""}])
+
+
+def test_baseline_origin_is_a_cli_option():
+    args = build_parser().parse_args(["--db-url-env", "TEST_URL", "--baseline-origin", "main abc"])
+    assert args.baseline_origin == "main abc"
 
 
 def test_ten_stock_comparison_requires_full_month_coverage():

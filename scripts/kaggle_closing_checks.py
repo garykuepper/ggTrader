@@ -41,6 +41,10 @@ READ_TIMING_TOLERANCE = {
     "db_one_seconds_lt": 10,
     "db_hundred_seconds_lt": 60,
 }
+BASELINE_REQUIRED_REASON = (
+    "no baseline given: take one with --save-baseline on the target BEFORE "
+    "the first load, compare after"
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,6 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
     baseline = parser.add_mutually_exclusive_group()
     baseline.add_argument("--save-baseline", type=Path)
     baseline.add_argument("--compare-baseline", type=Path)
+    parser.add_argument("--baseline-origin", help="Describe where and how the baseline was taken.")
     return parser
 
 
@@ -966,6 +971,7 @@ def run_checks(
     *,
     save_baseline: Path | None = None,
     compare_baseline: Path | None = None,
+    baseline_origin: str | None = None,
     allow_synthetic_skips: bool = False,
     nested_plans: Path | None = None,
 ) -> dict:
@@ -975,6 +981,42 @@ def run_checks(
     checks = initial_checks()
     conn = connect_target(url)
     try:
+        if save_baseline is not None and compare_baseline is None:
+            from ggTrader.data.kaggle_import.link_manifest import file_sha256
+
+            started = time.perf_counter()
+            baseline = _baseline(conn, url, save=save_baseline)
+            measured = {
+                "baseline": baseline,
+                "baseline_file": str(save_baseline),
+                "baseline_sha256": file_sha256(save_baseline),
+                "baseline_origin": baseline_origin,
+            }
+            for check in checks[:8]:
+                _set(check, "skipped", {}, None, "baseline only")
+            _set(
+                checks[3],
+                "skipped" if allow_synthetic_skips else "fail",
+                measured,
+                "baseline comparison required",
+                "no baseline given" if allow_synthetic_skips else BASELINE_REQUIRED_REASON,
+            )
+            _finish_check(checks[3], started)
+            with conn.cursor() as cur:
+                cur.execute("SELECT pg_database_size(current_database())")
+                db_size = cur.fetchone()[0]
+                cur.execute(
+                    "SELECT setting::bigint FROM pg_settings WHERE name='statement_timeout'"
+                )
+                statement_timeout_ms = cur.fetchone()[0]
+            return {
+                "release_id": None,
+                "database_bytes": db_size,
+                "free_bytes": shutil.disk_usage(data_volume).free,
+                "statement_timeout_ms": statement_timeout_ms,
+                "synthetic_skips_allowed": allow_synthetic_skips,
+                "checks": checks,
+            }
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT release_id FROM ref.releases WHERE status='published' "
@@ -1064,10 +1106,18 @@ def run_checks(
             measured["baseline"] = baseline
             if baseline["matches"] is False:
                 status, reason = "fail", "baseline hashes differ"
-            elif status == "pass" and compare_baseline is None:
-                status, reason = "skipped", "no baseline given"
-        elif status == "pass":
-            status, reason = "skipped", "no baseline given"
+        baseline_path = compare_baseline or save_baseline
+        from ggTrader.data.kaggle_import.link_manifest import file_sha256
+
+        measured["baseline_file"] = str(baseline_path) if baseline_path else None
+        measured["baseline_sha256"] = file_sha256(baseline_path) if baseline_path else None
+        measured["baseline_origin"] = baseline_origin
+        if compare_baseline is None:
+            if allow_synthetic_skips:
+                if status == "pass":
+                    status, reason = "skipped", "no baseline given"
+            else:
+                status, reason = "fail", BASELINE_REQUIRED_REASON
         _set(checks[3], status, measured, "identical row keys and all five fields", reason)
         _finish_check(checks[3], started)
         started = time.perf_counter()
@@ -1238,9 +1288,9 @@ def run_checks(
 
 def checks_succeeded(checks: list[dict], *, allow_synthetic_skips: bool = False) -> bool:
     """Require every check to pass or have one explicitly permitted absence."""
-    allowed_skips = {"no baseline given", "name not in release"}
+    allowed_skips = {"name not in release"}
     if allow_synthetic_skips:
-        allowed_skips.add("synthetic data")
+        allowed_skips.update(("synthetic data", "no baseline given"))
     return all(
         item["status"] in ("pass", "covered_by_tests")
         or (item["status"] == "skipped" and item.get("reason") in allowed_skips)
@@ -1270,6 +1320,7 @@ def main() -> int:
             args.data_volume,
             save_baseline=args.save_baseline,
             compare_baseline=args.compare_baseline,
+            baseline_origin=args.baseline_origin,
             allow_synthetic_skips=args.allow_synthetic_skips,
             nested_plans=args.nested_plans,
         )

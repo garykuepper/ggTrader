@@ -464,8 +464,42 @@ def test_healthy_synthetic_release_requires_explicit_skip(healthy_release, tmp_p
         )
         for item in checks.values()
     )
-    code, _ = _run_healthy_cli(healthy_release, tmp_path, monkeypatch)
+    code, checks = _run_healthy_cli(healthy_release, tmp_path, monkeypatch)
     assert code != 0
+    assert checks["check_04"]["status"] == "fail"
+    assert checks["check_04"]["reason"] == (
+        "no baseline given: take one with --save-baseline on the target BEFORE "
+        "the first load, compare after"
+    )
+
+
+def test_comparison_records_baseline_hash_and_origin(healthy_release, tmp_path, monkeypatch):
+    import hashlib
+
+    from scripts import kaggle_closing_checks as closing
+
+    _, _, url = healthy_release
+    baseline = tmp_path / "baseline.json"
+    readonly = closing.connect_target(url)
+    try:
+        closing._baseline(readonly, url, save=baseline)
+    finally:
+        readonly.close()
+    code, checks = _run_healthy_cli(
+        healthy_release,
+        tmp_path,
+        monkeypatch,
+        "--allow-synthetic-skips",
+        "--compare-baseline",
+        str(baseline),
+        "--baseline-origin",
+        "main abc",
+    )
+    assert code == 0
+    measured = checks["check_04"]["measured"]
+    assert measured["baseline_file"] == str(baseline)
+    assert measured["baseline_sha256"] == hashlib.sha256(baseline.read_bytes()).hexdigest()
+    assert measured["baseline_origin"] == "main abc"
 
 
 @pytest.mark.parametrize("check", ["01", "04", "05", "07"])
@@ -635,3 +669,21 @@ def test_yahoo_comparison_accepts_crsp_history_after_2000(conn, monkeypatch):
     assert measured["compared_rows"] == 3
     assert measured["missing_rows"] == measured["unexpected_rows"] == 0
     assert measured["different_fields"] == []
+
+
+def test_can_save_baseline_before_any_release(conn, tmp_path):
+    import hashlib
+
+    db, _ = conn
+    with db.cursor() as cur:
+        cur.execute("UPDATE public.ohlcv SET timestamp=timestamp + interval '1 day'")
+    db.commit()
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
+    url = urlunparse(original._replace(path="/" + db.info.dbname))
+    baseline = tmp_path / "before.json"
+    report = run_checks(url, None, tmp_path, save_baseline=baseline, baseline_origin="main abc")
+    item = next(row for row in report["checks"] if row["id"] == "check_04")
+    assert baseline.is_file()
+    assert item["status"] == "fail" and item["reason"].startswith("no baseline given")
+    assert item["measured"]["baseline_sha256"] == hashlib.sha256(baseline.read_bytes()).hexdigest()
+    assert item["measured"]["baseline_origin"] == "main abc"
