@@ -95,11 +95,14 @@ def find_links(
     yahoo_last: pd.Series,
     crsp_last: pd.Series,
     settings: LinkSettings,
+    calendar: pd.DatetimeIndex,
 ) -> pd.DataFrame:
     """Find links while refusing weak, ambiguous, duplicate and outliving matches."""
-    calendar = yahoo_returns.index.union(crsp_returns.index).sort_values()
-    y = yahoo_returns.reindex(calendar)
-    c = crsp_returns.reindex(calendar)
+    if not calendar.is_monotonic_increasing or not calendar.is_unique:
+        raise ValueError("calendar must be sorted and unique")
+    dates = yahoo_returns.index.union(crsp_returns.index).sort_values()
+    y = yahoo_returns.reindex(dates)
+    c = crsp_returns.reindex(dates)
     counts, corr = pairwise_correlation(y.to_numpy(), c.to_numpy(), settings.min_sessions_short)
     candidates = top_candidates(corr)
     rows = []
@@ -137,14 +140,19 @@ def find_links(
                 (calendar >= max(yf, pd.Timestamp(settings.window_start)))
                 & (calendar <= min(yl, pd.Timestamp(settings.window_end)))
             ).sum()
-            start_gap = ((calendar > yf) & (calendar <= cf)).sum()
+            start_gap = calendar.searchsorted(cf, side="right") - calendar.searchsorted(
+                yf, side="right"
+            )
             enough = counts[i, j] >= settings.min_sessions or (
                 life < settings.min_sessions
                 and counts[i, j] >= settings.min_sessions_short
                 and cf >= yf
                 and start_gap <= 1
             )
-            if ((calendar > yl) & (calendar <= cl)).sum() > 20:
+            if (
+                calendar.searchsorted(cl, side="right") - calendar.searchsorted(yl, side="right")
+                > 20
+            ):
                 row["reason"] = "crsp_outlives_yahoo"
             elif not enough:
                 row["reason"] = "insufficient_sessions"
