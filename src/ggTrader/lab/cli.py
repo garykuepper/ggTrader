@@ -112,6 +112,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "dead stocks and are optimistic about what holders of failed companies recover",
     )
     p.add_argument("--release-id", type=int, default=None, help="Published combined release ID.")
+    p.add_argument(
+        "--dead-stock-loss",
+        type=float,
+        default=None,
+        help="share of its last price a dead company's holders lose when the test sells it; "
+        "0 = sold at the last price (optimistic), 1 = total loss",
+    )
     add_membership_argument(p)
     p.add_argument(
         "--result-json",
@@ -135,6 +142,12 @@ def run_lab(argv: list[str] | None = None) -> str:
     args = parser.parse_args(argv)
     if args.release_id is not None and args.source != "combined":
         parser.error("--release-id requires --source combined")
+    if args.dead_stock_loss is not None:
+        if args.source != "combined":
+            parser.error("--dead-stock-loss requires --source combined")
+        if not 0 <= args.dead_stock_loss <= 1:
+            parser.error("--dead-stock-loss must be between 0 and 1")
+    loss = 0.0 if args.dead_stock_loss is None else args.dead_stock_loss
     # Raises MembershipSourceNotSelected (naming --membership and GGT_MEMBERSHIP) when neither is
     # set, before any data is loaded; there is deliberately no default source.
     membership = source_from_args(args)
@@ -170,6 +183,7 @@ def run_lab(argv: list[str] | None = None) -> str:
             snapshot=args.snapshot,
             source=args.source,
             release_id=args.release_id,
+            dead_stock_loss=loss,
             membership=membership,
         )
         print(result.table)
@@ -194,6 +208,7 @@ def run_lab(argv: list[str] | None = None) -> str:
         snapshot=args.snapshot,
         source=args.source,
         release_id=args.release_id,
+        dead_stock_loss=loss,
         result_json=args.result_json,
         membership=membership,
     )

@@ -159,6 +159,8 @@ The mask builder warns (policy `on_stale`) when the constituent list looks stale
 
 ---
 
+The optional combined source reads a published CRSP + Yahoo release, including stocks that later stopped trading. The lab applies the dead-stock rule in `lab/dead_stocks.py` and `lab/wfo/`: it sells an ended series on its last bar and blocks later orders. A total loss uses a simulation price of one billionth of the last price because the simulator rejects zero; recovery is therefore nearly zero.
+
 ## Membership database and the single reader
 
 The S&P 500 membership list is data that changes, so it lives in PostgreSQL schema `universe`

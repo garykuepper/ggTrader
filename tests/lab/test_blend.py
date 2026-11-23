@@ -295,3 +295,49 @@ def test_wfo_json_and_persisted_blend_record_release(monkeypatch, tmp_path):
     )
     _run([("ensemble", "sp500")])
     assert stamps["provenance"]["data_release"] == release
+
+
+def test_wfo_json_records_dead_stock_rule_only_when_present(tmp_path, monkeypatch):
+    import json
+
+    rule = {"applied": True, "loss": 0.5}
+    monkeypatch.setattr(cli_support, "result_payload", lambda *a, **k: k)
+    bars = type("B", (), {"provenance": {}, "summary": lambda self: {}})()
+    result = WfoResult(pd.Series(dtype=float), [], {}, "", diagnostics={"dead_stock_rule": rule})
+    out = cli_support.write_wfo_json(result, bars, str(tmp_path / "x.json"), strategy="ensemble")
+    saved = json.loads(out.read_text())
+    assert saved["dead_stock_rule"] == rule
+    assert saved["provenance"]["dead_stock_loss"] == 0.5
+    empty = result._replace(diagnostics={})
+    out = cli_support.write_wfo_json(empty, bars, str(tmp_path / "y.json"), strategy="ensemble")
+    saved = json.loads(out.read_text())
+    assert "dead_stock_rule" not in saved and "dead_stock_loss" not in saved["provenance"]
+
+
+def test_blend_passes_loss_and_persists_sleeve_rule(monkeypatch):
+    idx = _idx(100)
+    spy = _equity_from_returns(pd.Series(np.linspace(-0.01, 0.01, 100), index=idx))
+    _patch_inputs(monkeypatch, idx, spy)
+    rule = {"applied": True, "loss": 0.5, "n_ended_in_window": 1}
+    seen = []
+
+    def fake_wfo(*args, **kwargs):
+        seen.append(kwargs["dead_stock_loss"])
+        return WfoResult(spy, [], {}, "", diagnostics={"dead_stock_rule": rule})
+
+    monkeypatch.setattr(wfo_pkg, "run_wfo", fake_wfo)
+    _patch_persist(monkeypatch)
+    stamps = {}
+    monkeypatch.setattr(blend_mod.persist, "start_run", lambda *a, **k: stamps.update(k) or "ok")
+    run_blend(
+        [("ensemble", "sp500")],
+        LabConfig(),
+        "2021-01-01",
+        "2022-07-01",
+        market="equity",
+        base_config={},
+        dead_stock_loss=0.5,
+    )
+    assert seen == [0.5]
+    assert stamps["provenance"]["dead_stock_loss"] == 0.5
+    assert stamps["provenance"]["dead_stock_rule"] == {"ensemble@sp500": rule}

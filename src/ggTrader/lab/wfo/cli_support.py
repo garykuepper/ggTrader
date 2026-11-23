@@ -98,6 +98,7 @@ def run_vbt_wfo(
     snapshot: str | None = None,
     source: str | None = None,
     result_json: str | None = None,
+    dead_stock_loss: float = 0.0,
     release_id: int | None = None,
     membership: MembershipSource | None = None,
 ) -> WfoResult | str:
@@ -141,6 +142,7 @@ def run_vbt_wfo(
             base_config=dict(base_config),
             grid=grid,
             mask=mask,
+            dead_stock_loss=dead_stock_loss,
         )
     except WfoNotRun as exc:
         # `ggt lab --wfo` prints and returns the message for a window with no fold, as it
@@ -188,10 +190,14 @@ def write_wfo_json(
     cls = registry.REGISTRY.get(str(fields.get("strategy")))
     # The strategy's own source is part of what produced the number; hash it so an edited
     # or out-of-tree strategy is identified by its result.
+    rule = getattr(result, "diagnostics", {}).get("dead_stock_rule")
+    extra = registry.source_sha256(cls) if cls else {}
+    if rule is not None:
+        extra["dead_stock_loss"] = rule["loss"]
     block = provenance(
         tape_sha256=tape_sha256_of(bars),
         data_release=(bars.provenance or {}).get("data_release"),
-        extra=registry.source_sha256(cls) if cls else None,
+        extra=extra or None,
         membership=None if membership is None else membership.provenance(_asof(fields)),
     )
     tape = (bars.provenance or {}).get("snapshot") or {}
@@ -200,6 +206,8 @@ def write_wfo_json(
         for key in ("data_release", "drift")
         if key in (bars.provenance or {})
     }
+    if rule is not None:
+        release_fields["dead_stock_rule"] = rule
     payload = result_payload(
         result, bars_summary=bars.summary(), tape=tape or None, **release_fields, **fields
     )

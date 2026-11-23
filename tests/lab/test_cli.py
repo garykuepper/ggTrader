@@ -280,3 +280,28 @@ def test_release_id_reaches_both_run_paths(monkeypatch, mode):
         args = ["--blend", "ensemble@sp500"]
     assert run_lab([*args, "--source", "combined", "--release-id", "12"]) == "done"
     assert seen["source"] == "combined" and seen["release_id"] == 12
+
+
+@pytest.mark.parametrize("source", [[], ["--source", "db"], ["--source", "snapshot"]])
+def test_dead_stock_loss_requires_combined(source, capsys):
+    with pytest.raises(SystemExit):
+        run_lab(["--wfo", "--dead-stock-loss", "0.5", *source])
+    assert "--dead-stock-loss requires --source combined" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("loss", ["-0.1", "1.1", "nan", "inf"])
+def test_dead_stock_loss_range(loss, capsys):
+    with pytest.raises(SystemExit):
+        run_lab(["--wfo", "--source", "combined", "--dead-stock-loss", loss])
+    assert "between 0 and 1" in capsys.readouterr().err
+
+
+def test_dead_stock_loss_reaches_run_wfo(monkeypatch):
+    import ggTrader.lab.cli as cli
+    import ggTrader.lab.wfo.cli_support as support
+
+    calls = {}
+    monkeypatch.setattr(cli, "source_from_args", lambda args: object())
+    monkeypatch.setattr(support, "run_vbt_wfo", lambda *a, **kw: calls.update(kw) or "ok")
+    run_lab(["--wfo", "--strategy", "ensemble", "--source", "combined", "--dead-stock-loss", "0.5"])
+    assert calls["dead_stock_loss"] == 0.5

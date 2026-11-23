@@ -73,6 +73,7 @@ def _engine_curves(
     membership: MembershipSource,
     source: str | None,
     release_id: int | None,
+    dead_stock_loss: float,
 ) -> tuple[dict[str, pd.Series], pd.Series, dict[str, Any]]:
     """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
     from ggTrader.engine.provenance import provenance as build_provenance
@@ -95,6 +96,7 @@ def _engine_curves(
     spy_close = bars.close["SPY"].dropna()
     curves: dict[str, pd.Series] = {}
     sources: dict[str, Any] = {}
+    rules: dict[str, Any] = {}
     for strategy, universe in sleeves:
         label = f"{strategy}@{universe}"
         if label in curves:
@@ -122,18 +124,26 @@ def _engine_curves(
                 base_config=base_config,
                 grid=cls.grid,
                 mask=mask,
+                dead_stock_loss=dead_stock_loss,
             )
         except WfoNotRun as exc:
             raise SystemExit(
                 f"blend sleeve {label!r}: WFO produced no valid folds ({exc})"
             ) from None
         curves[label] = result.oos_equity
+        rule = result.diagnostics.get("dead_stock_rule")
+        if rule is not None:
+            rules[label] = rule
     from ggTrader.data.bars import tape_sha256_of
 
+    extra = {"strategy_sources": sources}
+    if rules:
+        extra["dead_stock_loss"] = dead_stock_loss
+        extra["dead_stock_rule"] = rules
     stamp = build_provenance(
         tape_sha256=tape_sha256_of(bars),
         data_release=(bars.provenance or {}).get("data_release"),
-        extra={"strategy_sources": sources},
+        extra=extra,
         membership=membership.provenance(date.fromisoformat(eval_end)),
     )
     return curves, spy_close, stamp
@@ -153,6 +163,7 @@ def run_blend(
     snapshot: str | None = None,
     source: str | None = None,
     release_id: int | None = None,
+    dead_stock_loss: float = 0.0,
     membership: MembershipSource | None = None,
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
@@ -180,6 +191,7 @@ def run_blend(
         resolve_source(membership),
         source,
         release_id,
+        dead_stock_loss,
     )
 
     blend_eq, returns_df, diag = blend_curves(
