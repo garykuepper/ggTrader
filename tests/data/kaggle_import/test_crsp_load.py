@@ -24,7 +24,7 @@ def conn():
         yield connection
 
 
-def make_file(tmp_path, rows):
+def make_file(tmp_path, rows, row_group_size=1):
     schema = pa.schema(
         [
             (k, t)
@@ -43,7 +43,7 @@ def make_file(tmp_path, rows):
         ]
     )
     path = tmp_path / "x.parquet"
-    pq.write_table(pa.Table.from_pylist(rows, schema=schema), path, row_group_size=1)
+    pq.write_table(pa.Table.from_pylist(rows, schema=schema), path, row_group_size=row_group_size)
     sums = tmp_path / "sums"
     sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
     return path, sums
@@ -107,3 +107,31 @@ def test_non_midnight_rolls_back_chunk(conn, tmp_path):
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_crsp.daily")
         assert cur.fetchone()[0] == 0
+
+
+def test_large_group_pilot_and_full(conn, tmp_path):
+    count = 60_000
+    rows = [row(i, datetime(1999, 1, 1), 11.0 if i % 2 else None) for i in range(count)]
+    schema_path, sums = make_file(tmp_path, rows, row_group_size=count)
+    pilot = load_crsp(conn, schema_path, sums, backup_dir=None, year=1999, margin_bytes=0)
+    full = load_crsp(conn, schema_path, sums, backup_dir=None, margin_bytes=0)
+    with conn.cursor() as cur:
+        for load_id in (pilot, full):
+            cur.execute(
+                "SELECT count(*), sum(prc), count(shrcd), min(shrcd), max(shrcd) "
+                "FROM kaggle_crsp.daily WHERE load_id=%s",
+                (load_id,),
+            )
+            assert cur.fetchone() == (count, -5.0 * count, count // 2, 11, 11)
+
+
+def test_pilot_filters_other_years_before_validation(conn, tmp_path):
+    path, sums = make_file(
+        tmp_path,
+        [row(1, datetime(1999, 1, 1)), row(2, datetime(2000, 1, 1), 10.5)],
+        row_group_size=2,
+    )
+    load_id = load_crsp(conn, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM kaggle_crsp.daily WHERE load_id=%s", (load_id,))
+        assert cur.fetchone()[0] == 1
