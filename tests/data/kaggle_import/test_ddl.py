@@ -197,3 +197,22 @@ def test_release_columns_and_frozen_spans(conn):
         with pytest.raises(psycopg2.Error), conn.cursor() as cur:
             cur.execute(sql)
         conn.rollback()
+
+
+def test_closing_check_required_indexes_exist_on_repository_ddl(conn):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT tablename,indexname,indexdef FROM pg_indexes "
+            "WHERE schemaname IN ('ref', 'market')"
+        )
+        indexes = {name: (table, definition.lower()) for table, name, definition in cur.fetchall()}
+    assert "release_loads_role_unique" in indexes
+    assert indexes["symbol_map_release_symbol_dates_idx"][0] == "symbol_map"
+    definition = indexes["symbol_map_release_symbol_dates_idx"][1]
+    assert all(
+        column in definition for column in ("release_id", "symbol", "valid_from", "valid_to")
+    )
+    assert any(
+        table == "daily_bars" and all(col in definition for col in ("load_id", "permno", "date"))
+        for table, definition in indexes.values()
+    )

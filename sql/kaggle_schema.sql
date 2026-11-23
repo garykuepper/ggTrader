@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS ref.quarantine (load_id bigint, chunk_key text, row_r
 CREATE TABLE IF NOT EXISTS ref.releases (release_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, created_at timestamptz, settings jsonb, status text CHECK (status IN ('published','withdrawn')), yahoo_fingerprint jsonb);
 CREATE TABLE IF NOT EXISTS ref.release_loads (release_id bigint, load_id bigint, role text);
 CREATE TABLE IF NOT EXISTS ref.symbol_map (permno bigint, symbol text, valid_from date, valid_to date, source text, release_id bigint);
+CREATE INDEX IF NOT EXISTS symbol_map_release_symbol_dates_idx ON ref.symbol_map (release_id, symbol, valid_from, valid_to);
 CREATE TABLE IF NOT EXISTS ref.splice_links (release_id bigint, permno bigint, symbol text, first_yf_date date, common_day date, join_returns double precision[], link_day_returns_hash text, agreement jsonb, PRIMARY KEY(release_id, permno));
 CREATE TABLE IF NOT EXISTS kaggle_crsp.daily (load_id bigint, permno bigint, date date, shrcd int, exchcd int, prc double precision, ret double precision, shrout double precision, vwretd double precision, year int, month int, PRIMARY KEY(load_id, permno, date));
 CREATE TABLE IF NOT EXISTS kaggle_chars.mcgill (

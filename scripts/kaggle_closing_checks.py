@@ -996,11 +996,8 @@ def run_checks(
         )
         symbol_key = any(
             index["table"] == "symbol_map"
-            and "symbol" in index["definition"].lower()
-            and (
-                "valid_from" in index["definition"].lower()
-                or "valid_to" in index["definition"].lower()
-            )
+            and index["name"] == "symbol_map_release_symbol_dates_idx"
+            and all(col in index["definition"].lower() for col in ("symbol", "valid_from"))
             for index in indexes
         )
         index_ok = index_ok and bars_key and symbol_key
