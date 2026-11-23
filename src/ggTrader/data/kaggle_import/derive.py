@@ -1,6 +1,8 @@
 """Build return-chained bars from a completed CRSP load."""
 
+import hashlib
 import io
+import json
 from pathlib import Path
 
 import numpy as np
@@ -62,7 +64,7 @@ def derive_bars(  # noqa: PLR0912, PLR0913, PLR0915 — loader contract and sequ
         backup_fresh(backup_dir)
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT file_sha256 FROM ref.loads WHERE load_id=%s "
+            "SELECT file_sha256, parser_version FROM ref.loads WHERE load_id=%s "
             "AND dataset IN ('crsp-daily','crsp-daily-pilot') AND status='complete'",
             (crsp_load_id,),
         )
@@ -83,15 +85,31 @@ def derive_bars(  # noqa: PLR0912, PLR0913, PLR0915 — loader contract and sequ
             chunks[-1][1] = permno
             chunks[-1][2] += count
     keys = [f"pm-{first:06d}" for first, _, _ in chunks]
+    calendar_hash = hashlib.sha256(
+        "\n".join(pd.Timestamp(day).isoformat() for day in calendar).encode("utf-8")
+    ).hexdigest()
+    identity = {
+        "parent_load_id": crsp_load_id,
+        "parent_file_sha256": source[0],
+        "parent_parser_version": source[1],
+        "calendar_sha256": calendar_hash,
+        "derivation_version": "derive-1",
+        "chunk_layout": {"algorithm": "permno-ranges-v1", "rows_per_chunk": rows_per_chunk},
+    }
+    identity_sha = hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
     load_id = begin_load(
         conn,
         dataset="crsp-derived-bars",
         kaggle_slug="derived",
         file_path=Path(f"load:{crsp_load_id}"),
-        file_sha256=source[0],
+        # The derived file identity is a hash of the inputs, not the raw file's hash.
+        file_sha256=identity_sha,
         parser_version="derive-1",
         content_sha256=source[0],
         expected_chunks=keys,
+        derivation_identity=identity,
     )
     try:
         for (first, last, count), key in zip(chunks, keys, strict=True):

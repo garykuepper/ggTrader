@@ -13,6 +13,12 @@ The import is code only and has been tested on scratch databases. Nothing has be
 
 A load marked `failed` is terminal: correct the cause and start a new load. A running load can resume with the same file and parser; do not read partial data. Use `kaggle_crsp.daily_of(load_id)` and `kaggle_chars.mcgill_of(load_id)` to read completed loads.
 
+Derived-load `file_sha256` identifies its derivation inputs rather than a physical file. Its
+`checks.derivation_identity` records the parent load, raw file and parser, a SHA-256 of the ordered
+calendar timestamps, the derivation version, and chunk layout. A running derivation resumes only
+with the same identity; to use a changed calendar or chunk layout, first mark the old running
+load failed, then start a new derivation.
+
 To exercise the backup restore, set an administrative connection to the server hosting the `ggtrader_db` container in an environment variable and run `scripts/run_capped.sh .venv/bin/python scripts/kaggle_restore_drill.py --scratch-url-env GGT_SCRATCH_URL --out results/kaggle_restore_drill.json`. Use `--dump`, `--expected`, and `--sums` to select the backup and its evidence when needed. The drill creates a scratch database on that server and runs `pg_restore` inside the `ggtrader_db` container, so the connection and container must refer to the same server. It can consume substantial disk space; the live database is not the restore target.
 
 Further owner gates: G3 approves the written link table after calibration; G4 approves wiring the dead-stock rule into the engine; G5 approves the first release before publication. See the [implementation plan](superpowers/plans/2026-11-22-kaggle-import-version-one.md) for the evidence at each gate.

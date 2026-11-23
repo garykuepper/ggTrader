@@ -105,7 +105,13 @@ def test_derive_in_scratch_database(tmp_path):
             assert status == "complete" and checks["source_rows"] == 6
         with pytest.raises(AlreadyLoaded):
             derive_bars(
-                conn, source, calendar, backup_dir=None, db_free_path=tmp_path, margin_bytes=0
+                conn,
+                source,
+                calendar,
+                backup_dir=None,
+                db_free_path=tmp_path,
+                margin_bytes=0,
+                rows_per_chunk=2,
             )
 
 
@@ -175,17 +181,17 @@ def test_cli_requires_yes(monkeypatch, capsys):
 
 @pytest.mark.integration
 @pytest.mark.db
-def test_derived_retention_counts_running_and_complete(tmp_path):
+def test_derived_retention_counts_running_and_complete(tmp_path, monkeypatch):
     from contextlib import closing
     from datetime import datetime
-    from pathlib import Path
 
     import psycopg2
 
+    import ggTrader.data.kaggle_import.derive as derive_module
     from ggTrader.data.kaggle_import.crsp import load_crsp
     from ggTrader.data.kaggle_import.ddl import apply_ddl
     from ggTrader.data.kaggle_import.derive import derive_bars
-    from ggTrader.data.kaggle_import.loadlog import RetentionLimit, begin_load
+    from ggTrader.data.kaggle_import.loadlog import RetentionLimit
     from tests.data.kaggle_import.test_crsp_load import make_file, row
     from tests.data.scratch_db import scratch_database
 
@@ -211,19 +217,22 @@ def test_derived_retention_counts_running_and_complete(tmp_path):
             )
         kwargs = dict(backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
         derive_bars(conn, sources[0], calendar, **kwargs)
+
+        def interrupted(*args, **kwargs):
+            raise psycopg2.OperationalError("simulated interruption")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(derive_module, "commit_chunk", interrupted)
+            with pytest.raises(psycopg2.OperationalError):
+                derive_bars(conn, sources[1], calendar, **kwargs)
+        conn.rollback()
         with conn.cursor() as cur:
-            cur.execute("SELECT file_sha256 FROM ref.loads WHERE load_id=%s", (sources[1],))
-            digest = cur.fetchone()[0]
-        running = begin_load(
-            conn,
-            dataset="crsp-derived-bars",
-            kaggle_slug="derived",
-            file_path=Path(f"load:{sources[1]}"),
-            file_sha256=digest,
-            parser_version="derive-1",
-            content_sha256=digest,
-            expected_chunks=["pm-000002"],
-        )
+            cur.execute(
+                "SELECT load_id FROM ref.loads WHERE dataset='crsp-derived-bars' "
+                "AND file_path=%s AND status='running'",
+                (f"load:{sources[1]}",),
+            )
+            running = cur.fetchone()[0]
         with pytest.raises(RetentionLimit):
             derive_bars(conn, sources[2], calendar, **kwargs)
         assert derive_bars(conn, sources[1], calendar, **kwargs) == running

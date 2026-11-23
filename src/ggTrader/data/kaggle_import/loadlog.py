@@ -35,11 +35,21 @@ def begin_load(  # noqa: PLR0913 — public import contract
     allow_third: bool = False,
     slug_version: str | None = None,
     download_date: str | None = None,
+    derivation_identity: dict | None = None,
 ) -> int:
     """Start or resume a load, respecting retained versions."""
     try:
         with conn.cursor() as cur:
             cur.execute("LOCK TABLE ref.loads IN SHARE ROW EXCLUSIVE MODE")
+            if derivation_identity is not None:
+                cur.execute(
+                    "SELECT checks FROM ref.loads WHERE dataset=%s AND file_path=%s "
+                    "AND status='running'",
+                    (dataset, str(file_path)),
+                )
+                for (checks,) in cur.fetchall():
+                    if (checks or {}).get("derivation_identity") != derivation_identity:
+                        raise LoadFailed("Running derivation identity or chunk layout differs")
             cur.execute(
                 "SELECT load_id, status"
                 " FROM ref.loads WHERE file_sha256=%s AND parser_version=%s"
@@ -79,6 +89,11 @@ def begin_load(  # noqa: PLR0913 — public import contract
                                 "expected_chunks": list(expected_chunks or []),
                                 "slug_version": slug_version,
                                 "download_date": download_date,
+                                **(
+                                    {"derivation_identity": derivation_identity}
+                                    if derivation_identity is not None
+                                    else {}
+                                ),
                             }
                         ),
                         git_sha(),
