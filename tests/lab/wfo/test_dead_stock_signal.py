@@ -50,9 +50,10 @@ def test_two_end_dates_agree_through_common_history():
     sims = []
     for n in (35, 95):
         close, spans, out = data(n)
-        sims.append(
-            simulate_signal_out(out, close, TOY_CONFIG, dead=forced_exit_frames(close, spans))
-        )
+        sim = simulate_signal_out(out, close, TOY_CONFIG, dead=forced_exit_frames(close, spans))
+        assert sim.trades.loc[sim.trades.col == 0, "exit_idx"].tolist() == [4]
+        assert sim.trades.loc[sim.trades.col == 0, "status"].tolist() == [1]
+        sims.append(sim)
     pd.testing.assert_frame_equal(sims[0].value, sims[1].value.iloc[:35])
 
 
@@ -201,3 +202,27 @@ def test_dead_stock_diagnostics_distinguish_warmup_and_total_loss():
     assert rule["n_ended_in_window"] == 2 and rule["n_ended_in_evaluation"] == 1
     assert "written off completely" in rule["plain_words"]
     assert "optimistic" not in rule["plain_words"]
+
+
+def test_negative_control_turning_off_rule_changes_equity(monkeypatch):
+    import ggTrader.lab.dead_stocks as rules
+
+    close, spans, out = data(35)
+    close.loc[close.index[9] :, "LIVE"] = 40.0
+    entries = out.entries.copy()
+    entries.iloc[0, 1] = False
+    entries.iloc[8, 1] = True
+    out = replace(out, entries=entries)
+    original = rules.forced_exit_frames
+    active = simulate_signal_out(out, close, TOY_CONFIG, dead=original(close, spans))
+
+    def disabled(prices, series):
+        frames = original(prices, series)
+        return replace(frames, exits=frames.exits & False, entry_ok=frames.entry_ok | True)
+
+    monkeypatch.setattr(rules, "forced_exit_frames", disabled)
+    control = simulate_signal_out(
+        out, close, TOY_CONFIG, dead=rules.forced_exit_frames(close, spans)
+    )
+    assert active.trades.loc[active.trades.col == 0, "exit_idx"].tolist() == [4]
+    assert active.value.iloc[-1, 0] != control.value.iloc[-1, 0]

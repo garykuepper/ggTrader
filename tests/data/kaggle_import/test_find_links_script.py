@@ -46,3 +46,21 @@ def test_run_adds_yahoo_lifetimes(monkeypatch):
     assert result.loc[0, "status"] == "linked"
     assert result.loc[0, "first_yf_date"] == days[0]
     assert result.loc[0, "last_yf_date"] == days[-1]
+
+
+def test_error_prints_class_and_message_without_connection_secrets(monkeypatch, capsys, tmp_path):
+    import psycopg2
+
+    from scripts import kaggle_find_links as script
+
+    def fail(*args):
+        raise psycopg2.OperationalError(
+            "bad database postgresql://alice:secret@db.example/ggtrader "
+            "password=hidden dbname=ggtrader"
+        )
+
+    monkeypatch.setattr(script, "run", fail)
+    assert script.main(["--crsp-file", "x", "--out", str(tmp_path / "links.csv")]) == 1
+    error = capsys.readouterr().err
+    assert "OperationalError" in error and "bad database" in error
+    assert "secret" not in error and "hidden" not in error and "db.example" not in error

@@ -39,11 +39,27 @@ def test_weights_zero_then_no_order(data):
 
 
 def test_window_end_independence():
-    close = pd.DataFrame({"A": 1.0}, index=pd.date_range("2024-01-01", periods=100))
-    spans = pd.DataFrame({"symbol": ["A"], "last_date": [close.index[9]]})
-    a, b = forced_exit_frames(close.iloc[:40], spans), forced_exit_frames(close, spans)
-    for name in ("exits", "entry_ok", "weight_ok"):
-        pd.testing.assert_frame_equal(getattr(a, name), getattr(b, name).iloc[:40])
+    from ggTrader.lab.strategies.contract import SignalOut, group_columns, simulate_signal_out
+    from tests.lab.wfo.helpers import TOY_CONFIG
+
+    index = pd.bdate_range("2024-01-01", periods=100, tz="UTC")
+    close = pd.DataFrame({"A": 10.0, "B": 20.0}, index=index)
+    close.loc[index[10] :, "A"] = np.nan
+    close.loc[index[21] :, "B"] = 40.0
+    spans = pd.DataFrame({"symbol": ["A"], "last_date": [index[9].date()]})
+    results = []
+    for n in (40, 100):
+        prices = close.iloc[:n]
+        columns = group_columns([{}], [], prices.columns)
+        entries = pd.DataFrame(False, index=prices.index, columns=columns)
+        entries.iloc[0, 0] = True
+        entries.iloc[20, 1] = True
+        out = SignalOut(entries, entries & False, ({},))
+        sim = simulate_signal_out(out, prices, TOY_CONFIG, dead=forced_exit_frames(prices, spans))
+        assert sim.trades.loc[sim.trades.col == 0, "exit_idx"].tolist() == [9]
+        assert sim.value.iloc[-1, 0] == 15000.0
+        results.append(sim.value)
+    pd.testing.assert_frame_equal(results[0], results[1].iloc[:40])
 
 
 def test_temporary_outage_is_not_dead(data):

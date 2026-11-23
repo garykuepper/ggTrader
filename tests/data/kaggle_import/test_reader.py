@@ -350,3 +350,21 @@ def test_yahoo_horizon_uses_raw_timestamp_for_chunk_exclusion(conn):
         sql = cur.fetchone()[0]
     assert sql.count("y.timestamp < (yahoo_end + 1)::timestamp") == 2
     assert "y.timestamp::date <= yahoo_end" not in sql
+
+
+def test_no_stock_readable_under_two_names_same_day(release, linked):
+    cases = [
+        (linked, ["TTWO", "PERMNO-1", "PERMNO-1~1"], False),
+        (release, ["VC", "PERMNO-88319~1"], False),
+        (release, ["TTWO", "PERMNO-1", "PERMNO-1~1"], True),
+    ]
+    found_overlap = False
+    for fixture, names, expected_overlap in cases:
+        data = read(fixture, names)
+        overlap = data[data.duplicated("ts", keep=False)]
+        assert (not overlap.empty) == expected_overlap
+        if expected_overlap:
+            found_overlap = True
+            assert overlap.possible_double.all()
+            assert set(overlap.symbol) == {"TTWO", "PERMNO-1~1"}
+    assert found_overlap

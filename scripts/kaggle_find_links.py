@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from dataclasses import asdict
 from datetime import date
@@ -39,6 +40,17 @@ def run(args: argparse.Namespace, settings: LinkSettings) -> pd.DataFrame:
     return result
 
 
+def _safe_error(exc: Exception) -> str:
+    """Remove URL and connection parameters before showing a failure."""
+    message = re.sub(r"(?i)\b[a-z][a-z0-9+.-]*://\S+", "[connection redacted]", str(exc))
+    message = re.sub(
+        r"(?i)\b(?:password|passwd|pwd|user|host|hostaddr|port|dbname|database)\s*=\s*(?:'[^']*'|\"[^\"]*\"|\S+)",
+        "[connection field redacted]",
+        message,
+    )
+    return f"{type(exc).__name__}: {message}"
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse inputs and write the link table without disclosing credentials."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -57,8 +69,8 @@ def main(argv: list[str] | None = None) -> int:
             if getattr(args, name):
                 values[name] = getattr(args, name)
         run(args, settings_from_dict(values)).to_csv(args.out, index=False)
-    except Exception:
-        print("Link finding failed; check inputs and database access.", file=sys.stderr)
+    except Exception as exc:
+        print(f"Link finding failed: {_safe_error(exc)}", file=sys.stderr)
         return 1
     return 0
 

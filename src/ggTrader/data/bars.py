@@ -88,6 +88,8 @@ class Bars:
         provenance: source description for run JSON (snapshot hash or ``db`` read-only flag).
         flags: combined-source row flags, indexed by UTC timestamp and symbol.
         spans: ended series for the combined release; total loss is false in version one.
+            The dead-stock rule runs in ``run_wfo`` only; direct simulation callers must apply
+            ``forced_exit_frames`` themselves.
     """
 
     close: pd.DataFrame

@@ -159,7 +159,7 @@ The mask builder warns (policy `on_stale`) when the constituent list looks stale
 
 ---
 
-The optional combined source reads a published CRSP + Yahoo release, including stocks that later stopped trading. The lab applies the dead-stock rule in `lab/dead_stocks.py` and `lab/wfo/`: it sells an ended series on its last bar and blocks later orders. A total loss uses a simulation price of one billionth of the last price because the simulator rejects zero; recovery is therefore nearly zero.
+The optional combined source reads a published CRSP + Yahoo release, including stocks that later stopped trading. The lab applies the dead-stock rule in `lab/dead_stocks.py` and `lab/wfo/`: it sells an ended series on its last bar and blocks later orders. A total loss uses a simulation price of one billionth of the last price because the simulator rejects zero; recovery is therefore nearly zero. The rule is applied only in `run_wfo`; a driver calling `simulate_signal_out` or the engine directly with combined bars must apply `forced_exit_frames` itself.
 
 ## Membership database and the single reader
 
