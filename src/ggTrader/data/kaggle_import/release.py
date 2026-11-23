@@ -39,6 +39,7 @@ def build_release(  # noqa: PLR0912, PLR0915 — publication is one atomic opera
     """Publish all release records atomically, or leave none of them behind."""
     try:
         with conn.cursor() as cur:
+            cur.execute("SET LOCAL ggt.release_build = 'on'")
             loads = [(crsp_bars_load, "crsp-derived-bars")]
             if mcgill_load is not None:
                 loads.append((mcgill_load, "mcgill-fiam"))

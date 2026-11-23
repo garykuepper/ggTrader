@@ -94,6 +94,7 @@ def test_retention_and_published_release(conn):
     with conn.cursor() as cur:
         cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
         release = cur.fetchone()[0]
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO ref.release_loads(release_id, load_id) VALUES (%s, %s)", (release, first)
         )

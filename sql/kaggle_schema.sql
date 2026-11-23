@@ -200,6 +200,10 @@ ALTER TABLE market.daily_bars SET (timescaledb.compress, timescaledb.compress_se
 CREATE OR REPLACE FUNCTION ref.guard_load() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'loads cannot be deleted'; END IF;
+ IF OLD.status = 'complete' AND NEW.status = 'withdrawn' AND EXISTS (
+   SELECT 1 FROM ref.release_loads rl JOIN ref.releases r USING (release_id)
+   WHERE rl.load_id = OLD.load_id AND r.status = 'published'
+ ) THEN RAISE EXCEPTION 'load belongs to a published release'; END IF;
  IF OLD.status IN ('complete', 'withdrawn', 'failed') AND NOT
    (OLD.status = 'complete' AND NEW.status = 'withdrawn' AND
     (to_jsonb(NEW) - 'status') = (to_jsonb(OLD) - 'status')) THEN
@@ -266,11 +270,44 @@ BEGIN
  RETURN QUERY SELECT * FROM kaggle_chars.mcgill WHERE load_id = p_load_id;
 END $$;
 
+
+-- Accident protection only: anyone able to set this session variable can opt in.
+CREATE OR REPLACE FUNCTION ref.guard_release_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF current_setting('ggt.release_build', true) IS DISTINCT FROM 'on' THEN
+  RAISE EXCEPTION 'release build setting required';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS release_loads_role_unique ON ref.release_loads(release_id, role);
+DO $$ DECLARE item text; BEGIN
+ FOREACH item IN ARRAY ARRAY['ref.release_loads','ref.symbol_map','ref.splice_links','market.stock_spans'] LOOP
+  EXECUTE format('DROP TRIGGER IF EXISTS guard_release_insert ON %s', item);
+  EXECUTE format('CREATE TRIGGER guard_release_insert BEFORE INSERT ON %s FOR EACH ROW EXECUTE FUNCTION ref.guard_release_insert()', item);
+  EXECUTE format('ALTER TABLE %s ENABLE ALWAYS TRIGGER guard_release_insert', item);
+ END LOOP;
+END $$;
+
+CREATE OR REPLACE FUNCTION ref.require_available_release(p_release_id bigint) RETURNS void
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM ref.releases WHERE release_id=p_release_id AND status='published')
+    OR NOT EXISTS (SELECT 1 FROM ref.release_loads WHERE release_id=p_release_id AND role='crsp-bars')
+    OR EXISTS (SELECT 1 FROM ref.release_loads rl LEFT JOIN ref.loads l ON l.load_id=rl.load_id
+               WHERE rl.release_id=p_release_id AND l.status IS DISTINCT FROM 'complete') THEN
+    RAISE EXCEPTION 'release % is unavailable', p_release_id;
+ END IF;
+END $$;
+DROP FUNCTION IF EXISTS market.ohlcv_daily_combined(bigint, text[], date, date);
+DROP FUNCTION IF EXISTS market._combined_linked(bigint, text[]);
+
 SET LOCAL check_function_bodies = off;
 CREATE OR REPLACE FUNCTION market._combined_linked(p_release_id bigint, p_symbols text[])
 RETURNS TABLE (symbol text, permno bigint, spell int, load_id bigint, crsp_until date, first_yf_date date, possible_double boolean, scale double precision, drift boolean)
-LANGUAGE sql STABLE AS $$
-SELECT s.symbol,s.permno,s.spell,l.load_id,s.crsp_until,s.first_yf_date,s.possible_double,
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+PERFORM ref.require_available_release(p_release_id);
+RETURN QUERY SELECT s.symbol,s.permno,s.spell,l.load_id,s.crsp_until,s.first_yf_date,s.possible_double,
        (SELECT y.close FROM public.ohlcv y WHERE y.symbol=s.symbol AND y.venue='yfinance'
            AND y.interval='1d' AND y.timestamp=sp.common_day::timestamp) /
        NULLIF((SELECT b.close FROM market.daily_bars b WHERE b.load_id=l.load_id
@@ -293,6 +330,7 @@ CROSS JOIN LATERAL (
     ) q
 ) c
 WHERE s.release_id=p_release_id AND s.symbol=ANY(p_symbols) AND s.kind='linked_yahoo';
+END;
 $$;
 SET LOCAL check_function_bodies = on;
 
@@ -313,9 +351,7 @@ CREATE OR REPLACE FUNCTION market.ohlcv_daily_combined(
 ) LANGUAGE plpgsql STABLE AS $$
 DECLARE missing_symbol text;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM ref.releases r WHERE r.release_id = p_release_id AND r.status = 'published') THEN
-        RAISE EXCEPTION 'release % is unavailable', p_release_id;
-    END IF;
+    PERFORM ref.require_available_release(p_release_id);
     SELECT x.symbol INTO missing_symbol FROM market._combined_linked(p_release_id,p_symbols) x WHERE x.scale IS NULL LIMIT 1;
     IF FOUND THEN RAISE EXCEPTION 'release input missing for %', missing_symbol; END IF;
     RETURN QUERY

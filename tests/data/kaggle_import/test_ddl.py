@@ -90,8 +90,10 @@ def test_hypertables_exist(conn):
 def test_frozen_tables_reject_update_delete_truncate(conn, table):
     with conn.cursor() as cur:
         if table == "splice_links":
+            cur.execute("SET LOCAL ggt.release_build = 'on'")
             cur.execute("INSERT INTO ref.splice_links(release_id, permno) VALUES (1, 1)")
         else:
+            cur.execute("SET LOCAL ggt.release_build = 'on'")
             cur.execute(f"INSERT INTO ref.{table} DEFAULT VALUES")
     conn.commit()
     for statement in (
@@ -145,6 +147,7 @@ def test_release_withdrawal_and_links_are_immutable(conn):
     with conn.cursor() as cur:
         cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
         release_id = cur.fetchone()[0]
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO ref.release_loads(release_id, load_id) VALUES (%s, 1)", (release_id,)
         )
@@ -183,6 +186,7 @@ def test_release_columns_and_frozen_spans(conn):
         assert {"kind", "crsp_until", "first_yf_date", "possible_double"} <= {
             row[0] for row in cur.fetchall()
         }
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute("INSERT INTO market.stock_spans(release_id, symbol) VALUES (1, 'X')")
     conn.commit()
     for sql in (

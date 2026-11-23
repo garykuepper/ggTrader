@@ -227,3 +227,85 @@ def test_ttwo_and_aapl_are_both_linked(conn):
         )
         assert cur.fetchall() == [("AAPL",), ("TTWO",)]
     assert "PERMNO-2" not in stocks_alive_on(db, release, date(1999, 1, 2)).symbol.tolist()
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,123,'other')",
+        "INSERT INTO ref.symbol_map(release_id,symbol) VALUES (%s,'ZZZ')",
+        "INSERT INTO ref.splice_links(release_id,permno) VALUES (%s,999)",
+        "INSERT INTO market.stock_spans(release_id,symbol) VALUES (%s,'ZZZ')",
+    ],
+)
+def test_published_release_rejects_unapproved_inserts(conn, statement):
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with pytest.raises(psycopg2.Error, match="release build"), db.cursor() as cur:
+        cur.execute(statement, (rid,))
+    db.rollback()
+
+
+def test_cannot_withdraw_load_until_release_withdrawn(conn):
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with pytest.raises(psycopg2.Error, match="published release"), db.cursor() as cur:
+        cur.execute("UPDATE ref.loads SET status='withdrawn' WHERE load_id=%s", (load,))
+    db.rollback()
+    withdraw_release(db, rid)
+    with db.cursor() as cur:
+        cur.execute("UPDATE ref.loads SET status='withdrawn' WHERE load_id=%s", (load,))
+    db.commit()
+
+
+def test_release_with_incomplete_referenced_load_is_unavailable(conn):
+    from ggTrader.data.kaggle_import.reader import read_combined
+
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO ref.loads(status) VALUES ('running') RETURNING load_id")
+        running = cur.fetchone()[0]
+        # Construct an invalid reference through the accident-protection setting.
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'mcgill')",
+            (rid, running),
+        )
+    db.commit()
+    with pytest.raises(ReleaseUnavailable):
+        read_combined(db, rid, ["TTWO"], None, None)
+
+
+def test_release_load_role_is_unique(conn):
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with pytest.raises(psycopg2.errors.UniqueViolation), db.cursor() as cur:
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'crsp-bars')",
+            (rid, load),
+        )
+    db.rollback()
+
+
+def test_combined_helper_rejects_incomplete_reference(conn):
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO ref.loads(status) VALUES ('running') RETURNING load_id")
+        other = cur.fetchone()[0]
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'mcgill')",
+            (rid, other),
+        )
+    db.commit()
+    with pytest.raises(psycopg2.Error, match="release .* is unavailable"), db.cursor() as cur:
+        cur.execute("SELECT * FROM market._combined_linked(%s, ARRAY['TTWO'])", (rid,))
+    db.rollback()

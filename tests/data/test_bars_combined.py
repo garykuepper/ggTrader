@@ -142,6 +142,7 @@ def test_spans_exclude_alive_and_file_end_series_and_mark_successors(published):
             "(%s,20,1,'1999-01-01',1),(%s,20,2,'2000-01-01',1)",
             (load, load),
         )
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,last_date) VALUES "
             "(%s,'OLD',10,1,'yahoo','2000-01-01'),"
