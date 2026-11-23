@@ -136,3 +136,30 @@ def test_duplicate_symbols_in_spans_raise(data):
 def test_meta_lists_biases_and_count(data):
     f = forced_exit_frames(*data)
     assert f.meta["n_ended"] == 1 and len(f.meta["biases"]) == 2
+
+
+def test_simulation_close_floors_only_haircuts_to_zero(data):
+    from ggTrader.lab.dead_stocks import SIM_PRICE_FLOOR, simulation_close
+
+    close, _ = data
+    close["C"] = float("nan")
+    close["D"] = 0.0
+    close["E"] = -1.0
+    spans = pd.DataFrame(
+        {
+            "symbol": ["A", "B", "C", "D", "E"],
+            "last_date": [close.index[2]] * 5,
+            "has_successor": [False, True, False, False, False],
+            "total_loss": [False] * 5,
+        }
+    )
+    result = simulation_close(close, spans, 1.0)
+    assert result.A.iloc[2] == close.A.iloc[2] * SIM_PRICE_FLOOR
+    assert result.B.iloc[2] == close.B.iloc[2]
+    assert pd.isna(result.C.iloc[2])
+    assert result.D.iloc[2] == 0.0 and result.E.iloc[2] == -1.0
+    pd.testing.assert_frame_equal(result.drop(close.index[2]), close.drop(close.index[2]))
+    positive = close.drop(columns=["D", "E"])
+    pd.testing.assert_frame_equal(
+        simulation_close(positive, spans, 0.5), haircut_close(positive, spans, 0.5)
+    )

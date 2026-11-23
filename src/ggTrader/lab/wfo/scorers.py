@@ -36,13 +36,14 @@ from ggTrader.engine import config as engine_config
 from ggTrader.engine import portfolio as engine_portfolio
 from ggTrader.engine import stats, windows
 from ggTrader.lab.data import rebalance_dates
-from ggTrader.lab.dead_stocks import DeadStockFrames
+from ggTrader.lab.dead_stocks import DeadStockFrames, apply_weight_rule
 from ggTrader.lab.strategies.contract import (
     COMBO_LEVEL,
     SYMBOL_LEVEL,
     ParamGrid,
     group_columns,
     simulate_signal_out,
+    tile_columns,
 )
 
 KINDS = ("anchor", "train", "test", "live")
@@ -442,6 +443,8 @@ class WeightScorer:
         self.names, self.params, self.mask = list(names), list(params), mask
         self.base_config, self.max_bytes = dict(base_config), max_bytes
         self.min_losing_days = min_losing_days
+        self.dead_frames: DeadStockFrames | None = None
+        self.sim_close: pd.DataFrame | None = None
         self.index = bars.close.index
         self.n_simulations = 0
         self.n_chunks = 0
@@ -451,9 +454,9 @@ class WeightScorer:
     @classmethod
     def from_inputs(cls, inputs: ScoringInputs) -> WeightScorer:
         """The constructor called with the nine inputs (does not prepare)."""
-        if inputs.dead_frames is not None:
-            raise NotImplementedError("combined weight strategies need W2")
-        return cls(*inputs.as_args())
+        scorer = cls(*inputs.as_args())
+        scorer.dead_frames, scorer.sim_close = inputs.dead_frames, inputs.sim_close
+        return scorer
 
     def _key(self, req: WindowReq) -> tuple:
         if req.kind == "anchor":  # every anchor is a prefix of one window from the first bar
@@ -499,7 +502,8 @@ class WeightScorer:
     def _simulate(self, keys: list[tuple]) -> None:
         t0 = time.time()
         n_combos = len(self.names)
-        close = self.bars.close.ffill()
+        close = self.bars.close if self.sim_close is None else self.sim_close
+        close = close.ffill()
         blocks: list[tuple | None] = []
         for key in keys:
             _, start, end = key
@@ -514,6 +518,16 @@ class WeightScorer:
             w = weights.iloc[i0:i1]
             n_sym = w.shape[1] // n_combos
             self._check_weight_order(w, n_sym, n_combos)
+            if self.dead_frames is not None and n_sym:
+                dead = self.dead_frames
+                tiled = DeadStockFrames(
+                    *(
+                        tile_columns(frame.iloc[i0:i1], w.columns)
+                        for frame in (dead.exits, dead.entry_ok, dead.weight_ok)
+                    ),
+                    dead.meta,
+                )
+                w = apply_weight_rule(w, tiled)
             symbols = list(w.columns.get_level_values(-1)[:n_sym])
             c = close[symbols].iloc[i0:i1].to_numpy() if n_sym else np.empty((i1 - i0, 0))
             blocks.append((i0, i1, w.to_numpy(), np.tile(c, (1, n_combos)), n_sym))

@@ -46,7 +46,9 @@ def test_scoring_inputs_as_args_matches_the_constructor_order() -> None:
         7,
     )
     assert [f.name for f in dataclasses.fields(ScoringInputs)] == [
-        *list(inspect.signature(SignalScorer.__init__).parameters)[1:10]
+        *list(inspect.signature(SignalScorer.__init__).parameters)[1:10],
+        "dead_frames",
+        "sim_close",
     ]
     assert inspect.signature(WeightScorer.__init__).parameters.keys() == (
         inspect.signature(SignalScorer.__init__).parameters.keys()
@@ -55,6 +57,8 @@ def test_scoring_inputs_as_args_matches_the_constructor_order() -> None:
             "halt_mask",
             "order_sequence",
             "stop_exit_price",
+            "dead_frames",
+            "sim_close",
         }
     )
 

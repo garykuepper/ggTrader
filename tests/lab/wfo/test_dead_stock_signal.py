@@ -5,7 +5,7 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from ggTrader.lab.dead_stocks import forced_exit_frames, haircut_close
+from ggTrader.lab.dead_stocks import forced_exit_frames, haircut_close, simulation_close
 from ggTrader.lab.strategies.contract import (
     ParamGrid,
     SignalOut,
@@ -106,3 +106,13 @@ def test_combined_run_records_diagnostics_and_keeps_spans_in_subset():
     assert result.diagnostics["dead_stock_rule"]["n_ended_in_window"] == 1
     assert result.diagnostics["dead_stock_rule"]["entries_suppressed"] == 0
     assert result.diagnostics["dead_stock_rule"]["loss"] == 0
+
+
+def test_total_loss_signal_recovers_only_floor():
+    close, spans, out = data()
+    sim = simulate_signal_out(
+        out, simulation_close(close, spans, 1.0), TOY_CONFIG, dead=forced_exit_frames(close, spans)
+    )
+    recovery = sim.value.iloc[-1, 0] - 5000.0
+    assert 0 < recovery < 1e-6 * 5000.0
+    assert sim.trades.loc[sim.trades.col == 0, "exit_idx"].tolist() == [4]

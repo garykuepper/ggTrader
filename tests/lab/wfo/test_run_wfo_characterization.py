@@ -1014,12 +1014,13 @@ SIGNATURE: list[tuple[str, str, Any]] = [
     ("order_sequence", "KEYWORD_ONLY", None),
     ("stop_exit_price", "KEYWORD_ONLY", None),
     ("verbose", "KEYWORD_ONLY", True),
+    ("dead_stock_loss", "KEYWORD_ONLY", 0.0),
 ]
 
 
 def test_run_wfo_signature_is_frozen() -> None:
     parameters = list(inspect.signature(run.run_wfo).parameters.values())
-    assert len(parameters) == 23
+    assert len(parameters) == 24
     resolved = {
         "WfoPolicy()": WfoPolicy(),
         "DEFAULT_MAX_BYTES": engine_portfolio.DEFAULT_MAX_BYTES,

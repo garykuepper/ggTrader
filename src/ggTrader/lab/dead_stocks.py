@@ -6,6 +6,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+# The simulator rejects zero: a total loss recovers one billionth of the last price.
+SIM_PRICE_FLOOR = 1e-9
+
 
 @dataclass(frozen=True)
 class DeadStockFrames:
@@ -105,4 +108,21 @@ def haircut_close(close: pd.DataFrame, spans: pd.DataFrame, loss: float) -> pd.D
     result = close.copy()
     for row, col, factor in zip(rows, cols, factors, strict=True):
         result.iloc[row, col] = result.iloc[row, col] * factor
+    return result
+
+
+def simulation_close(close: pd.DataFrame, spans: pd.DataFrame, loss: float) -> pd.DataFrame:
+    """Return simulation prices with near-zero recovery when an exit price would be zero.
+
+    The floor recovers one billionth of the position value, below one millionth;
+    it is not exactly zero because the simulator requires a positive order price.
+    """
+    result = haircut_close(close, spans, loss)
+    rows, cols, _ = _positions(close, spans)
+    for row, col in zip(rows, cols, strict=True):
+        before = close.iat[row, col]
+        if before <= 0:
+            result.iat[row, col] = before
+        elif before > 0 and result.iat[row, col] <= 0:
+            result.iat[row, col] = before * SIM_PRICE_FLOOR
     return result

@@ -556,12 +556,12 @@ def run_wfo(
     bars = inputs.as_bars(ohlcv)
     dead_frames = sim_close = None
     if bars.provenance.get("source") == "combined":
-        from ggTrader.lab.dead_stocks import forced_exit_frames, haircut_close
+        from ggTrader.lab.dead_stocks import forced_exit_frames, simulation_close
 
         if bars.spans is None:
             raise ValueError("combined bars carry no release spans")
         dead_frames = forced_exit_frames(bars.close, bars.spans)
-        sim_close = haircut_close(bars.close, bars.spans, dead_stock_loss)
+        sim_close = simulation_close(bars.close, bars.spans, dead_stock_loss)
     strategy = _instantiate(strategy_name, strategy_cls)
     for key in CFG_DEFAULT_KEYS:
         if key in getattr(strategy, "defaults", {}):
