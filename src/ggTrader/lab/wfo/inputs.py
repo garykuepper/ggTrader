@@ -68,6 +68,10 @@ def subset_bars(bars: Bars, symbols: Sequence[str]) -> Bars:
         missing_symbols=(),
         last_valid_bar=bars.last_valid_bar.reindex(keep),
         provenance=dict(bars.provenance),
+        spans=None if bars.spans is None else bars.spans[bars.spans.symbol.isin(keep)].copy(),
+        flags=None
+        if bars.flags is None
+        else bars.flags[bars.flags.index.get_level_values("symbol").isin(keep)].copy(),
         **frames,
     )
 

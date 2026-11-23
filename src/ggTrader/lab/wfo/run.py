@@ -498,6 +498,7 @@ def run_wfo(
     order_sequence: str | None = None,
     stop_exit_price: str | None = None,
     verbose: bool = True,
+    dead_stock_loss: float = 0.0,
 ) -> WfoResult:
     """Main WFO entry point: fold, train, test, concatenate, report.
 
@@ -541,6 +542,8 @@ def run_wfo(
         WfoNotRun: the window yields no fold (under ``TRAIN_MONTHS + TEST_MONTHS`` months); the
             message is the legacy "no valid folds" text. Nothing has been computed by then.
     """
+    if not 0 <= dead_stock_loss <= 1:
+        raise ValueError("dead_stock_loss must be between zero and one")
     started = time.time()
     eval_start_ts = pd.Timestamp(eval_start, tz="UTC")
     eval_end_ts = pd.Timestamp(eval_end, tz="UTC")
@@ -551,6 +554,14 @@ def run_wfo(
         )
 
     bars = inputs.as_bars(ohlcv)
+    dead_frames = sim_close = None
+    if bars.provenance.get("source") == "combined":
+        from ggTrader.lab.dead_stocks import forced_exit_frames, haircut_close
+
+        if bars.spans is None:
+            raise ValueError("combined bars carry no release spans")
+        dead_frames = forced_exit_frames(bars.close, bars.spans)
+        sim_close = haircut_close(bars.close, bars.spans, dead_stock_loss)
     strategy = _instantiate(strategy_name, strategy_cls)
     for key in CFG_DEFAULT_KEYS:
         if key in getattr(strategy, "defaults", {}):
@@ -565,7 +576,17 @@ def run_wfo(
     )
 
     scoring_inputs = ScoringInputs(
-        strategy, bars, param_grid, names, combos, pit, base, max_bytes, min_losing_days
+        strategy,
+        bars,
+        param_grid,
+        names,
+        combos,
+        pit,
+        base,
+        max_bytes,
+        min_losing_days,
+        dead_frames,
+        sim_close,
     )
     sim_options = SignalSimOptions(intraday_stops, halt_mask, order_sequence, stop_exit_price)
     scorer = _scorer_for(strategy, scoring_inputs, sim_options)
@@ -641,6 +662,17 @@ def run_wfo(
     diagnostics = _build_diagnostics(
         scorer, scoring_inputs, sim_options, tally, started=started, fold_started=fold_started
     )
+    if dead_frames is not None:
+        diagnostics["dead_stock_rule"] = {
+            "applied": True,
+            "loss": float(dead_stock_loss),
+            "n_ended_in_window": dead_frames.meta["n_ended"],
+            "entries_suppressed": getattr(scorer, "entries_suppressed", 0),
+            "biases": dead_frames.meta["biases"],
+            "plain_words": "Dead stocks are sold at their last price, scaled by 1 - loss; "
+            "real holders of failed companies usually recover less, so these results are "
+            "optimistic.",
+        }
     return WfoResult(
         oos_equity=oos_equity,
         fold_results=fold_results,

@@ -36,6 +36,7 @@ from ggTrader.engine import config as engine_config
 from ggTrader.engine import portfolio as engine_portfolio
 from ggTrader.engine import stats, windows
 from ggTrader.lab.data import rebalance_dates
+from ggTrader.lab.dead_stocks import DeadStockFrames
 from ggTrader.lab.strategies.contract import (
     COMBO_LEVEL,
     SYMBOL_LEVEL,
@@ -191,6 +192,8 @@ class ScoringInputs:
     base_config: Mapping[str, Any]
     max_bytes: int
     min_losing_days: int = engine_config.MIN_LOSING_DAYS
+    dead_frames: DeadStockFrames | None = None
+    sim_close: pd.DataFrame | None = None
 
     def as_args(self) -> tuple[Any, ...]:
         """The nine values in the scorer constructors' positional order."""
@@ -258,7 +261,10 @@ class SignalScorer:
         halt_mask: pd.DataFrame | None = None,
         order_sequence: str | None = None,
         stop_exit_price: str | None = None,
+        dead_frames: DeadStockFrames | None = None,
+        sim_close: pd.DataFrame | None = None,
     ) -> None:
+        self.dead_frames, self.sim_close = dead_frames, sim_close
         self.strategy, self.bars, self.grid = strategy, bars, grid
         self.names, self.params, self.mask = list(names), list(params), mask
         self.base_config, self.max_bytes = dict(base_config), max_bytes
@@ -279,7 +285,12 @@ class SignalScorer:
         options: SignalSimOptions = SignalSimOptions(),  # noqa: B008
     ) -> SignalScorer:
         """The constructor called with the nine inputs and four options (does not prepare)."""
-        return cls(*inputs.as_args(), **options.as_kwargs())
+        return cls(
+            *inputs.as_args(),
+            **options.as_kwargs(),
+            dead_frames=inputs.dead_frames,
+            sim_close=inputs.sim_close,
+        )
 
     def prepare(self, requests: Sequence[WindowReq]) -> None:  # noqa: ARG002
         """Build every combination's signals and simulate the whole history once."""
@@ -303,8 +314,9 @@ class SignalScorer:
         use_atr = self.base_config.get("atr_mult") is not None
         sim = simulate_signal_out(
             out,
-            self.bars.close,
+            self.bars.close if self.sim_close is None else self.sim_close,
             self.base_config,
+            dead=self.dead_frames,
             mask=self.mask,
             high=self.bars.high if use_atr or self.intraday_stops else None,
             low=self.bars.low if use_atr or self.intraday_stops else None,
@@ -328,6 +340,7 @@ class SignalScorer:
             ),
             "time_stop_bars": None if out.td_stop is None else int(out.td_stop),
         }
+        self.entries_suppressed = sim.entries_suppressed
         self.timings["simulate_s"] = time.time() - t1
         self.n_simulations, self.n_chunks = 1, sim.n_chunks
         if sim.value.shape[1] != n_groups:
@@ -438,6 +451,8 @@ class WeightScorer:
     @classmethod
     def from_inputs(cls, inputs: ScoringInputs) -> WeightScorer:
         """The constructor called with the nine inputs (does not prepare)."""
+        if inputs.dead_frames is not None:
+            raise NotImplementedError("combined weight strategies need W2")
         return cls(*inputs.as_args())
 
     def _key(self, req: WindowReq) -> tuple:

@@ -21,6 +21,7 @@ import pandas as pd
 
 from ggTrader.data.bars import Bars
 from ggTrader.engine import portfolio as engine_portfolio
+from ggTrader.lab.dead_stocks import DeadStockFrames, apply_signal_rule
 
 SYMBOL_LEVEL = "symbol"
 #: Column level used when a grid has no swept key (a single combination, e.g. the live config).
@@ -257,6 +258,7 @@ def simulate_signal_out(
     order_sequence: str | None = None,
     stop_exit_price: str | None = None,
     max_bytes: int = engine_portfolio.DEFAULT_MAX_BYTES,
+    dead: DeadStockFrames | None = None,
 ) -> engine_portfolio.SimResult:
     """Run a :class:`SignalOut` through ``engine.run_signals`` (mask tiled, one group per combo).
 
@@ -271,9 +273,17 @@ def simulate_signal_out(
     size = out.size
     if isinstance(size, pd.DataFrame):
         size = size.fillna(float(config.get("SIGNAL_POSITION_SIZE", 0.02)))
-    return engine_portfolio.run_signals(
-        out.entries,
-        out.exits,
+    entries, exits = out.entries, out.exits
+    suppressed = 0
+    if dead is not None:
+        tiled = DeadStockFrames(
+            *(tile_columns(frame, cols) for frame in (dead.exits, dead.entry_ok, dead.weight_ok)),
+            dead.meta,
+        )
+        entries, exits, suppressed = apply_signal_rule(entries, exits, tiled)
+    sim = engine_portfolio.run_signals(
+        entries,
+        exits,
         tile_columns(close, cols),
         config,
         groups=out.group_labels(),
@@ -288,3 +298,4 @@ def simulate_signal_out(
         stop_exit_price=stop_exit_price,
         max_bytes=max_bytes,
     )
+    return replace(sim, entries_suppressed=suppressed) if dead is not None else sim

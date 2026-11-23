@@ -27,7 +27,11 @@ def _positions(
     if spans["symbol"].duplicated().any():
         raise ValueError("duplicate symbols in spans")
     selected = spans.loc[spans.symbol.isin(close.columns)].copy()
-    dates = pd.to_datetime(selected.last_date)
+    dates = pd.to_datetime(selected.last_date, utc=True)
+    if close.index.tz is None:
+        dates = dates.dt.tz_localize(None)
+    else:
+        dates = dates.dt.tz_convert(close.index.tz)
     if close.empty:
         return np.array([], dtype=int), np.array([], dtype=int), selected.iloc[:0]
     eligible = dates.notna() & (dates >= close.index[0]) & (dates <= close.index[-1])

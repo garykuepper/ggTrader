@@ -92,6 +92,7 @@ class SimResult:
     n_trades: pd.Series
     engine: str
     n_chunks: int
+    entries_suppressed: int = 0
 
 
 def estimate_peak_bytes(n_bars: int, n_cols: int, n_dense: int = 1) -> int:
