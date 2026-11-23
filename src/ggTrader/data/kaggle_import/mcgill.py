@@ -51,10 +51,16 @@ def _prepare(table: pa.Table, load_id: int, offset: int):
     for name, kind in MCGILL_COLUMNS:
         values = table[name]
         if kind in ("bigint", "integer"):
+            # Float parsing can round 2**53 + 1 down to 2**53.
             invalid = pc.fill_null(
                 pc.and_(
                     pc.is_valid(values),
-                    pc.or_(pc.invert(pc.is_finite(values)), pc.not_equal(values, pc.trunc(values))),
+                    pc.or_(
+                        pc.or_(
+                            pc.invert(pc.is_finite(values)), pc.not_equal(values, pc.trunc(values))
+                        ),
+                        pc.greater_equal(pc.abs(values), 2**53),
+                    ),
                 ),
                 False,
             )
@@ -103,6 +109,27 @@ def load_mcgill(
         content_sha256=digest,
         expected_chunks=expected,
     )
+    with conn.cursor() as cur:
+        cur.execute("SELECT checks FROM ref.loads WHERE load_id=%s FOR UPDATE", (load_id,))
+        checks = cur.fetchone()[0]
+        cur.execute(
+            "SELECT rows FROM ref.load_chunks WHERE load_id=%s AND chunk_key='batch-000'",
+            (load_id,),
+        )
+        first = cur.fetchone()
+        if (
+            checks.get("expected_chunks") != expected
+            or ("batch_rows" in checks and checks["batch_rows"] != batch_rows)
+            or (first and len(expected) > 1 and first[0] != batch_rows)
+        ):
+            conn.rollback()
+            raise LoadFailed("batch size or file changed since the load began")
+        cur.execute(
+            "UPDATE ref.loads SET checks=jsonb_set(checks, '{batch_rows}', "
+            "to_jsonb(%s::int)) WHERE load_id=%s",
+            (batch_rows, load_id),
+        )
+    conn.commit()
     for index, table in enumerate(_batches(csv_path, batch_rows)):
         output, nulled = _prepare(table, load_id, index * batch_rows)
         buffer = io.BytesIO()
