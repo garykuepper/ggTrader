@@ -234,17 +234,18 @@ def _check_yahoo_keys(conn, url: str, release_id: int, names: list[str]) -> tupl
 
 
 def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
-    """Report stock-days read under multiple names unless every row is flagged."""
+    """Report stock-days read under multiple CRSP-backed names."""
     import pandas as pd
 
     if flags.empty:
         return []
-    frame = flags[["possible_double"]].reset_index()
+    frame = flags.index.to_frame(index=False)
     frame["permno"] = frame["symbol"].map(identities)
     frame = frame.dropna(subset=["permno"])
+    frame = frame.loc[frame.duplicated(["timestamp", "permno"], keep=False)]
     result = []
     for (day, permno), rows in frame.groupby(["timestamp", "permno"], sort=False):
-        if rows.symbol.nunique() > 1 and not rows.possible_double.fillna(False).all():
+        if rows.symbol.nunique() > 1:
             result.append(
                 {
                     "date": str(pd.Timestamp(day).date()),
@@ -253,6 +254,39 @@ def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
                 }
             )
     return result
+
+
+def classify_identity_records(records):
+    """Classify candidate matches separately from overlapping CRSP-backed series."""
+    by_permno = {}
+    for row in records:
+        symbol, permno, kind, first, last, flagged = row[:6]
+        if permno is not None:
+            by_permno.setdefault(permno, []).append((symbol, kind, first, last, bool(flagged)))
+    overlap_groups, flag_issues, different_companies = [], [], []
+    checked_pairs = 0
+    for permno, rows in by_permno.items():
+        backed = [row for row in rows if row[1] in ("linked_yahoo", "placeholder", "spell")]
+        for symbol, kind, _, _, flagged in rows:
+            if kind != "yahoo" or not backed:
+                continue
+            linked = sorted(
+                row[0] for row in backed if row[1] == "linked_yahoo" and row[0] != symbol
+            )
+            if linked:
+                different_companies.append(
+                    {"yahoo_symbol": symbol, "linked_symbols": linked, "permno": permno}
+                )
+                continue
+            for name, _, _, _, crsp_flagged in backed:
+                checked_pairs += 1
+                if not flagged or not crsp_flagged:
+                    flag_issues.append(
+                        {"yahoo_symbol": symbol, "crsp_symbol": name, "permno": permno}
+                    )
+        if len(backed) > 1:
+            overlap_groups.append((permno, [row[0] for row in backed]))
+    return overlap_groups, flag_issues, different_companies, checked_pairs
 
 
 def pack_identity_groups(groups, *, limit: int = 120):
@@ -270,6 +304,17 @@ def pack_identity_groups(groups, *, limit: int = 120):
         size += count
     if batch:
         yield batch
+
+
+def read_identity_overlaps(url: str, release_id: int, groups) -> list[dict]:
+    """Read packed groups and report every shared CRSP-backed stock-day."""
+    violations = []
+    for batch in pack_identity_groups(groups):
+        names = [name for _, columns in batch for name in columns]
+        batch_bars = _load(url, names, "combined", release_id)
+        identities = {name: permno for permno, columns in batch for name in columns}
+        violations.extend(duplicate_stock_days(batch_bars.flags, identities))
+    return violations
 
 
 def validate_named_frame(bars, span: dict) -> dict:
@@ -437,23 +482,9 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         requested_missing.extend(["PERMNO-84761", "PERMNO-84761~1"])
     missing = _load(url, requested_missing, "combined", release_id)
     missing_names = list(missing.missing_symbols)
-    groups = {}
-    for symbol, permno, _, first, last, *_ in records:
-        if permno is not None and first is not None and last is not None:
-            groups.setdefault(permno, []).append((symbol, first, last))
-    candidates = []
-    for permno, rows in groups.items():
-        if any(a[1] <= b[2] and b[1] <= a[2] for i, a in enumerate(rows) for b in rows[i + 1 :]):
-            candidates.append((permno, [row[0] for row in rows]))
-    violations = []
+    candidates, flag_issues, different_companies, checked_pairs = classify_identity_records(records)
     try:
-        for batch in pack_identity_groups(candidates):
-            names = [name for _, columns in batch for name in columns]
-            batch_bars = _load(url, names, "combined", release_id)
-            for permno, columns in batch:
-                flags = batch_bars.flags
-                flags = flags.loc[flags.index.get_level_values("symbol").isin(columns)]
-                violations.extend(duplicate_stock_days(flags, dict.fromkeys(columns, permno)))
+        violations = read_identity_overlaps(url, release_id, candidates)
     except ValueError as exc:
         if "identity has more than 120 columns" not in str(exc):
             raise
@@ -465,8 +496,14 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         "gm_permnos": gm_permnos,
         "missing_symbols": missing_names,
         "overlap_groups": len(candidates),
-        "unflagged_duplicate_days": len(violations),
-        "unflagged_examples": violations[:10],
+        "crsp_backed_overlapping_stock_days": len(violations),
+        "crsp_backed_overlap_examples": violations[:10],
+        "yahoo_candidates_missing_double_flags": len(flag_issues),
+        "yahoo_candidate_and_crsp_pairs_checked": checked_pairs,
+        "yahoo_candidate_and_crsp_pairs_both_flagged": checked_pairs - len(flag_issues),
+        "yahoo_candidate_flag_exceptions": flag_issues,
+        "yahoo_candidates_matched_to_different_linked_company": len(different_companies),
+        "different_company_candidate_examples": different_companies[:50],
     }
     errors = []
     if set(missing_names) != set(requested_missing):
@@ -510,7 +547,12 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         if name.startswith("PERMNO-10128~") and catalog[name][2] != "spell":
             errors.append(f"{name} is not a CRSP spell")
     measured["trace_errors"] = errors
-    if violations or errors or any(case["status"] == "fail" for case in cases.values()):
+    if (
+        violations
+        or flag_issues
+        or errors
+        or any(case["status"] == "fail" for case in cases.values())
+    ):
         return "fail", measured, "a named trace or duplicate-stock check failed"
     if "AAPL" not in catalog or not spell_names:
         return "skipped", measured, "name not in release"

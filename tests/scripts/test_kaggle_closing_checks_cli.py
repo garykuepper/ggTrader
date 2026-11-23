@@ -91,7 +91,7 @@ def test_timezone_sample_and_chunk_filter_detection():
     )
 
 
-def test_duplicate_stock_days_require_both_flags():
+def test_duplicate_crsp_stock_days_fail_even_if_flagged():
     import pandas as pd
 
     from scripts.kaggle_closing_checks import duplicate_stock_days
@@ -104,7 +104,7 @@ def test_duplicate_stock_days_require_both_flags():
         names=["timestamp", "symbol"],
     )
     flags = pd.DataFrame({"possible_double": [True, True]}, index=index)
-    assert duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1}) == []
+    assert len(duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1})) == 1
     flags.iloc[1, 0] = False
     bad = duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1})
     assert len(bad) == 1 and bad[0]["permno"] == 1
@@ -254,3 +254,59 @@ def test_main_redacts_connection_details_from_failure(monkeypatch, capsys):
     message = str(error.value)
     assert "ValueError" in message and "bad" in message
     assert all(word not in message for word in ("alice", "secret", "hidden", "db.invalid"))
+
+
+def test_identity_audit_distinguishes_crsp_overlaps_and_yahoo_candidates():
+    import pandas as pd
+
+    from scripts.kaggle_closing_checks import classify_identity_records, duplicate_stock_days
+
+    d1, d2 = date(2000, 1, 1), date(2000, 12, 31)
+    records = [
+        ("WRB", 1, "linked_yahoo", d1, d2, False),
+        ("ACGL", 1, "yahoo", d1, d2, False),
+        ("CMVT", 2, "yahoo", d1, d2, True),
+        ("PERMNO-2", 2, "placeholder", d1, d2, True),
+        ("BAD", 3, "yahoo", d1, d2, True),
+        ("PERMNO-3", 3, "placeholder", d1, d2, False),
+        ("PERMNO-4", 4, "placeholder", d1, d2, True),
+        ("PERMNO-4~1", 4, "spell", d1, d2, True),
+    ]
+    groups, issues, different, checked = classify_identity_records(records)
+    assert checked == 2
+    assert different == [{"yahoo_symbol": "ACGL", "linked_symbols": ["WRB"], "permno": 1}]
+    assert issues == [{"yahoo_symbol": "BAD", "crsp_symbol": "PERMNO-3", "permno": 3}]
+    assert groups == [(4, ["PERMNO-4", "PERMNO-4~1"])]
+    index = pd.MultiIndex.from_tuples(
+        [(pd.Timestamp("2000-01-03", tz="UTC"), name) for name in groups[0][1]],
+        names=["timestamp", "symbol"],
+    )
+    flags = pd.DataFrame({"possible_double": [True, True]}, index=index)
+    assert duplicate_stock_days(flags, dict.fromkeys(groups[0][1], 4)) == [
+        {"date": "2000-01-03", "permno": 4, "symbols": ["PERMNO-4", "PERMNO-4~1"]}
+    ]
+
+
+def test_identity_audit_packs_440_groups_into_eight_reads(monkeypatch):
+    from types import SimpleNamespace
+
+    import pandas as pd
+
+    from scripts import kaggle_closing_checks as closing
+
+    calls = []
+    day = pd.Timestamp("2000-01-03", tz="UTC")
+    groups = [(n, [f"A{n}", f"B{n}"]) for n in range(440)]
+
+    def fake_load(url, names, source, release_id):
+        calls.append(names)
+        index = pd.MultiIndex.from_tuples(
+            [(day, name) for name in names], names=["timestamp", "symbol"]
+        )
+        return SimpleNamespace(flags=pd.DataFrame({"possible_double": False}, index=index))
+
+    monkeypatch.setattr(closing, "_load", fake_load)
+    overlaps = closing.read_identity_overlaps("scratch", 1, groups)
+    assert len(calls) == 8 and max(map(len, calls)) == 120
+    assert len(overlaps) == 440
+    assert overlaps[0] == {"date": "2000-01-03", "permno": 0, "symbols": ["A0", "B0"]}

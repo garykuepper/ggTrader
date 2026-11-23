@@ -310,7 +310,7 @@ def test_named_audit_finds_unflagged_duplicate(conn):
     original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     status, measured, _ = _check_named_stocks(db, url, rid)
-    assert status == "fail" and measured["unflagged_duplicate_days"] >= 1
+    assert status == "fail" and measured["crsp_backed_overlapping_stock_days"] >= 1
 
 
 @pytest.fixture
@@ -513,3 +513,82 @@ def test_healthy_release_negative_controls(healthy_release, tmp_path, monkeypatc
         monkeypatch.setattr(closing, "_load", timezone_fault)
     code, checks = _run_healthy_cli(healthy_release, tmp_path, monkeypatch, *options)
     assert code != 0 and checks[f"check_{check}"]["status"] == "fail"
+
+
+@pytest.mark.parametrize("include_invalid", [False, True])
+def test_identity_audit_classifies_candidates_on_synthetic_release(conn, include_invalid):
+    import pandas as pd
+
+    from ggTrader.data.kaggle_import.release import build_release
+    from scripts.kaggle_closing_checks import _check_named_stocks
+
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute("UPDATE public.ohlcv SET timestamp=timestamp + interval '1 day'")
+        cur.execute(
+            "UPDATE market.daily_bars SET date='1999-12-31' WHERE load_id=%s "
+            "AND permno=1 AND date='2000-01-01'",
+            (load,),
+        )
+        cur.execute(
+            "UPDATE market.daily_bars SET date='2000-01-03' WHERE load_id=%s "
+            "AND permno=1 AND date='2000-01-02'",
+            (load,),
+        )
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) VALUES "
+            "('2000-01-03','ACGL','1d','yfinance',8),"
+            "('2000-01-03','CMVT','1d','yfinance',8)"
+        )
+    db.commit()
+    links, settings = _inputs()
+    links = pd.concat(
+        [
+            links,
+            pd.DataFrame(
+                [
+                    dict(symbol="ACGL", permno=1, status="unlinked"),
+                    dict(symbol="CMVT", permno=2, status="unlinked"),
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
+
+    def add_bad_rows(cur, rid):
+        if not include_invalid:
+            return
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) VALUES "
+            "(%s,3,1,'1999-01-04',10)",
+            (load,),
+        )
+        cur.execute(
+            "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
+            "first_date,last_date,possible_double) VALUES "
+            "(%s,'BAD',3,NULL,'yahoo','2000-01-03','2000-01-03',true),"
+            "(%s,'PERMNO-3',3,1,'placeholder','1999-01-04','1999-01-04',false),"
+            "(%s,'PERMNO-1',1,1,'placeholder','2000-01-03','2000-01-03',true)",
+            (rid,) * 3,
+        )
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_bad_rows,
+    )
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
+    url = urlunparse(original._replace(path="/" + db.info.dbname))
+    status, measured, _ = _check_named_stocks(db, url, rid)
+    assert measured["yahoo_candidates_matched_to_different_linked_company"] == 1
+    assert measured["different_company_candidate_examples"][0]["yahoo_symbol"] == "ACGL"
+    assert measured["yahoo_candidates_missing_double_flags"] == int(include_invalid)
+    assert measured["yahoo_candidate_and_crsp_pairs_checked"] == 1 + int(include_invalid)
+    assert measured["yahoo_candidate_and_crsp_pairs_both_flagged"] == 1
+    assert measured["crsp_backed_overlapping_stock_days"] == (2 if include_invalid else 0)
+    if include_invalid:
+        assert status == "fail"
+        assert measured["yahoo_candidate_flag_exceptions"][0]["yahoo_symbol"] == "BAD"
