@@ -1,19 +1,22 @@
 """Find return-matched identities using approved calibration settings."""
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
 from dataclasses import asdict
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 
 from ggTrader.data.kaggle_import.link_inputs import crsp_data, yahoo_data
+from ggTrader.data.kaggle_import.link_manifest import file_sha256, settings_dict
 from ggTrader.data.kaggle_import.links import APPROVED_LINK_SETTINGS, LinkSettings, find_links
 from ggTrader.data.kaggle_import.spells import calendar_from_file
+from ggTrader.data.universe_db import git_sha
 
 
 def settings_from_dict(values: dict) -> LinkSettings:
@@ -37,6 +40,12 @@ def run(args: argparse.Namespace, settings: LinkSettings) -> pd.DataFrame:
     result = find_links(y, c, yf, cf, yl, cl, settings, calendar_from_file(args.crsp_file))
     result["first_yf_date"] = result.symbol.map(yf)
     result["last_yf_date"] = result.symbol.map(yl)
+    symbols = sorted(str(symbol) for symbol in y.columns)
+    result.attrs["yahoo_fingerprint"] = {
+        "n_symbols": len(symbols),
+        "newest_timestamp": pd.Timestamp(yl.max()).isoformat() if len(yl) else None,
+        "symbols_sha256": hashlib.sha256("\n".join(symbols).encode()).hexdigest(),
+    }
     return result
 
 
@@ -68,7 +77,21 @@ def main(argv: list[str] | None = None) -> int:
         for name in ("window_start", "window_end"):
             if getattr(args, name):
                 values[name] = getattr(args, name)
-        run(args, settings_from_dict(values)).to_csv(args.out, index=False)
+        settings = settings_from_dict(values)
+        result = run(args, settings)
+        result.to_csv(args.out, index=False)
+        manifest = {
+            "settings": settings_dict(settings),
+            "csv_sha256": file_sha256(args.out),
+            "crsp_file_sha256": file_sha256(args.crsp_file),
+            "sample_permnos": args.sample_permnos,
+            "yahoo_fingerprint": result.attrs["yahoo_fingerprint"],
+            "git_sha": git_sha(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        args.out.with_name(args.out.name + ".manifest.json").write_text(
+            json.dumps(manifest, indent=2) + "\n"
+        )
     except Exception as exc:
         print(f"Link finding failed: {_safe_error(exc)}", file=sys.stderr)
         return 1

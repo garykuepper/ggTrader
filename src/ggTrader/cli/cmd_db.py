@@ -255,6 +255,7 @@ def _run_release_import(conn: Any, args: argparse.Namespace) -> None:
             mcgill_load=args.mcgill_load,
             links=pd.read_csv(args.links),
             settings=APPROVED_LINK_SETTINGS,
+            links_path=args.links,
         )
         print(f"Release {rid}")
     elif args.release_command == "withdraw":

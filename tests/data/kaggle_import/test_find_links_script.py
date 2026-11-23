@@ -64,3 +64,34 @@ def test_error_prints_class_and_message_without_connection_secrets(monkeypatch, 
     error = capsys.readouterr().err
     assert "OperationalError" in error and "bad database" in error
     assert "secret" not in error and "hidden" not in error and "db.example" not in error
+
+
+def test_link_finder_writes_manifest_of_actual_inputs(tmp_path, monkeypatch):
+    import hashlib
+    import json
+
+    import pandas as pd
+
+    from scripts import kaggle_find_links as script
+
+    raw = tmp_path / "crsp.parquet"
+    raw.write_bytes(b"synthetic crsp")
+    out = tmp_path / "links.csv"
+    frame = pd.DataFrame({"symbol": ["ABC"], "permno": [1], "status": ["linked"]})
+    frame.attrs["yahoo_fingerprint"] = {
+        "n_symbols": 1,
+        "newest_timestamp": "2020-01-01",
+        "symbols_sha256": "a" * 64,
+    }
+    monkeypatch.setattr(script, "run", lambda *args: frame)
+    monkeypatch.setattr(script, "git_sha", lambda: "revision")
+    assert (
+        script.main(["--crsp-file", str(raw), "--out", str(out), "--window-start", "2010-01-01"])
+        == 0
+    )
+    manifest = json.loads((tmp_path / "links.csv.manifest.json").read_text())
+    assert manifest["csv_sha256"] == hashlib.sha256(out.read_bytes()).hexdigest()
+    assert manifest["crsp_file_sha256"] == hashlib.sha256(raw.read_bytes()).hexdigest()
+    assert manifest["settings"]["window_start"] == "2010-01-01"
+    assert manifest["yahoo_fingerprint"] == frame.attrs["yahoo_fingerprint"]
+    assert manifest["git_sha"] == "revision" and manifest["created_at"]

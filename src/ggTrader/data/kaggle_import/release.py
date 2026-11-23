@@ -4,6 +4,7 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -17,6 +18,44 @@ from ggTrader.data.kaggle_import.loadlog import LoadFailed
 
 class ReleaseUnavailable(Exception):
     """A release does not exist or has been withdrawn."""
+
+
+def _verify_link_artifact(
+    cur: cursor,
+    source_path: str | None,
+    links: pd.DataFrame,
+    settings: LinkSettings,
+    links_path: Path | None,
+) -> dict:
+    from ggTrader.data.kaggle_import.link_manifest import settings_dict, verify_link_manifest
+    from ggTrader.data.kaggle_import.links import APPROVED_LINK_SETTINGS
+
+    if links_path is None:
+        raise ValueError("Link manifest missing; create it with scripts/kaggle_find_links.py")
+    if settings_dict(settings) != settings_dict(APPROVED_LINK_SETTINGS):
+        raise ValueError("Link settings are not approved")
+    if not source_path or not source_path.startswith("load:"):
+        raise ValueError("Derived load has no identifiable CRSP source")
+    cur.execute(
+        "SELECT file_sha256 FROM ref.loads WHERE load_id=%s AND dataset IN "
+        "('crsp-daily','crsp-daily-pilot') AND status='complete'",
+        (int(source_path.removeprefix("load:")),),
+    )
+    source = cur.fetchone()
+    if not source or not source[0]:
+        raise ValueError("Derived load has no complete CRSP source")
+    manifest = verify_link_manifest(links_path, source[0])
+    try:
+        pd.testing.assert_frame_equal(
+            links.reset_index(drop=True),
+            pd.read_csv(links_path),
+            check_dtype=False,
+            check_exact=False,
+            rtol=1e-12,
+        )
+    except AssertionError as exc:
+        raise ValueError("Link data differs from the verified CSV") from exc
+    return manifest
 
 
 def _native(value: Any) -> Any:
@@ -37,6 +76,7 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
     links: pd.DataFrame,
     settings: LinkSettings,
     before_publish: Callable[[cursor, int], None] | None = None,
+    links_path: Path | None = None,
 ) -> int:
     """Publish all release records atomically, or leave none of them behind."""
     try:
@@ -57,6 +97,7 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
                 versions[dataset] = row[0]
                 if dataset == "crsp-derived-bars":
                     source_path = row[1]
+            link_manifest = _verify_link_artifact(cur, source_path, links, settings, links_path)
             cur.execute(
                 "SELECT permno,spell,min(date),max(date) FROM market.daily_bars WHERE load_id=%s "
                 "GROUP BY permno,spell",
@@ -180,6 +221,7 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
                 derive_parser_version=versions["crsp-derived-bars"],
                 crsp_parser_version=crsp_version,
                 demoted_links=demoted,
+                link_manifest=link_manifest,
             )
             fingerprint_data = dict(
                 sha256=fingerprint,

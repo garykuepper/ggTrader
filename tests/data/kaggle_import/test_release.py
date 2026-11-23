@@ -20,7 +20,13 @@ pytestmark = [pytest.mark.integration, pytest.mark.db]
 
 
 @pytest.fixture
-def conn():
+def conn(request, monkeypatch):
+    # These reader fixtures exercise publication mechanics with tiny, preconstructed links.
+    # The manifest integration test exercises the actual artifact verification separately.
+    if not request.node.module.__name__.endswith("test_link_manifest"):
+        import ggTrader.data.kaggle_import.release as release_module
+
+        monkeypatch.setattr(release_module, "_verify_link_artifact", lambda *args: {})
     with scratch_database() as url, psycopg2.connect(url) as db:
         apply_ddl(db)
         with db.cursor() as cur:
