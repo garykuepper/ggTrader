@@ -49,6 +49,12 @@ def test_backup_age(tmp_path):
     with pytest.raises(BackupStale):
         backup_fresh(tmp_path, now=now)
     fresh = tmp_path / "fresh.dump"
-    fresh.touch()
+    fresh.write_bytes(b"\0" * (2 * 1024**2))
     os.utime(fresh, ((now - timedelta(days=6)).timestamp(),) * 2)
     assert backup_fresh(tmp_path, now=now) == fresh
+
+
+def test_tiny_backup_rejected(tmp_path):
+    (tmp_path / "x.dump").touch()
+    with pytest.raises(BackupStale, match="0 bytes"):
+        backup_fresh(tmp_path)

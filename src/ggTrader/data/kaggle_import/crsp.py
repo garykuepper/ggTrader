@@ -102,7 +102,7 @@ def _write_chunk(  # noqa: PLR0913 — chunk inputs
     quarantine = []
     accepted = nulled = 0
     for group in groups:
-        size = parquet.metadata.row_group(group).total_byte_size * 12
+        size = parquet.metadata.row_group(group).num_rows * BYTES_PER_ROW
         if not free_space_ok(free_path, needed_bytes=size, margin_bytes=margin):
             raise LoadFailed("Insufficient free space for chunk")
         table = parquet.read_row_group(group, columns=list(COLUMNS))
@@ -139,6 +139,10 @@ def _write_chunk(  # noqa: PLR0913 — chunk inputs
         buffer.close()
 
 
+# Pilot measured 149 uncompressed bytes per row; round up for the estimate.
+BYTES_PER_ROW = 160
+
+
 def load_crsp(  # noqa: PLR0913 — public loader contract
     conn: connection,
     parquet_path: Path,
@@ -148,7 +152,7 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
     row_groups: Sequence[int] | None = None,
     year: int | None = None,
     margin_bytes: int = 40 * 1024**3,
-    db_free_path: Path | None = None,
+    db_free_path: Path,
     parser_suffix: str | None = None,
 ) -> int:
     """Verify and load a file, or a resumable subset of its row groups."""
@@ -157,12 +161,12 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
     if backup_dir is not None:
         backup_fresh(backup_dir)
     digest = verify_sha256(parquet_path, sums_file)
-    free_path = db_free_path or parquet_path.parent
+    free_path = db_free_path
+    parquet = pq.ParquetFile(parquet_path)
     if not free_space_ok(
-        free_path, needed_bytes=parquet_path.stat().st_size * 12, margin_bytes=margin_bytes
+        free_path, needed_bytes=parquet.metadata.num_rows * BYTES_PER_ROW, margin_bytes=margin_bytes
     ):
         raise LoadFailed("Insufficient free space for load")
-    parquet = pq.ParquetFile(parquet_path)
     all_groups = list(range(parquet.num_row_groups))
     groups = all_groups if row_groups is None else list(row_groups)
     if len(set(groups)) != len(groups) or any(i not in all_groups for i in groups):

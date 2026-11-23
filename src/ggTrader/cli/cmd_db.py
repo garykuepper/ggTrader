@@ -55,20 +55,26 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     mcgill = import_subs.add_parser("mcgill", help="Load McGill CSV")
     mcgill.add_argument("--file", type=Path, required=True)
     mcgill.add_argument("--sums", type=Path, required=True)
-    mcgill.add_argument("--backup-dir", type=Path)
+    mcgill_backup = mcgill.add_mutually_exclusive_group(required=True)
+    mcgill_backup.add_argument("--backup-dir", type=Path)
+    mcgill_backup.add_argument("--no-backup-check", action="store_true")
+    mcgill.add_argument("--db-free-path", type=Path, default=Path("/"))
     mcgill.add_argument("--db-url", required=True)
     mcgill.add_argument("--yes", action="store_true")
     crsp = import_subs.add_parser("crsp", help="Load CRSP parquet")
     crsp.add_argument("--file", type=Path, required=True)
     crsp.add_argument("--sums", type=Path, required=True)
-    crsp.add_argument("--backup-dir", type=Path)
+    crsp_backup = crsp.add_mutually_exclusive_group(required=True)
+    crsp_backup.add_argument("--backup-dir", type=Path)
+    crsp_backup.add_argument("--no-backup-check", action="store_true")
+    crsp.add_argument("--db-free-path", type=Path, default=Path("/"))
     crsp.add_argument("--year", type=int)
     crsp.add_argument("--row-groups", type=lambda value: [int(x) for x in value.split(",")])
     crsp.add_argument("--db-url", required=True)
     crsp.add_argument("--yes", action="store_true")
 
 
-def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, C901 — existing command dispatcher
+def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 — existing command dispatcher
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
@@ -98,6 +104,11 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, C901 — existin
         from ggTrader.data.kaggle_import.ddl import apply_ddl
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
+        if args.import_command in ("crsp", "mcgill") and args.no_backup_check:
+            from psycopg2.extensions import parse_dsn
+
+            if parse_dsn(to_psycopg_url(args.db_url)).get("dbname") == "ggtrader":
+                sys.exit("Backup check cannot be disabled for ggtrader")
         if args.import_command in ("crsp", "mcgill") and not args.yes:
             print(f"Would import {args.file}; pass --yes to proceed.")
             return
@@ -109,7 +120,14 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, C901 — existin
             elif args.import_command == "mcgill":
                 from ggTrader.data.kaggle_import.mcgill import load_mcgill
 
-                print(f"Load {load_mcgill(conn, args.file, args.sums, backup_dir=args.backup_dir)}")
+                load_id = load_mcgill(
+                    conn,
+                    args.file,
+                    args.sums,
+                    backup_dir=args.backup_dir,
+                    db_free_path=args.db_free_path,
+                )
+                print(f"Load {load_id}")
             else:
                 from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks, load_crsp
 
@@ -118,6 +136,7 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, C901 — existin
                     args.file,
                     args.sums,
                     backup_dir=args.backup_dir,
+                    db_free_path=args.db_free_path,
                     row_groups=args.row_groups,
                     year=args.year,
                 )

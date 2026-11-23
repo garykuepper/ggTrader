@@ -48,7 +48,7 @@ def make_file(tmp_path, permno="123.0"):
 def test_declared_types_not_inferred(conn, tmp_path):
     path, sums = make_file(tmp_path, "123.5")
     with pytest.raises(LoadFailed, match="row 2"):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
 
 
 def test_batch_resume(conn, tmp_path, monkeypatch):
@@ -65,9 +65,11 @@ def test_batch_resume(conn, tmp_path, monkeypatch):
 
     monkeypatch.setattr(mcgill, "commit_chunk", interrupt)
     with pytest.raises(RuntimeError):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None, batch_rows=4)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4)
     monkeypatch.setattr(mcgill, "commit_chunk", original)
-    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, batch_rows=4)
+    load = mcgill.load_mcgill(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4
+    )
     with conn.cursor() as cur:
         cur.execute(
             "SELECT count(*), min(permno), count(stock_ticker), count(prc) "
@@ -86,7 +88,7 @@ def test_hash_mismatch_refuses(conn, tmp_path):
     path, sums = make_file(tmp_path)
     sums.write_text("0  sample.csv\n")
     with pytest.raises(HashMismatch):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
 
 
 def test_resume_changed_batch_size_refused(conn, tmp_path, monkeypatch):
@@ -100,10 +102,10 @@ def test_resume_changed_batch_size_refused(conn, tmp_path, monkeypatch):
 
     monkeypatch.setattr(mcgill, "commit_chunk", interrupt)
     with pytest.raises(RuntimeError):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None, batch_rows=4)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4)
     monkeypatch.setattr(mcgill, "commit_chunk", original)
     with pytest.raises(LoadFailed, match="batch size or file changed"):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None, batch_rows=5)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=5)
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_chars.mcgill")
         assert cur.fetchone()[0] == 4
@@ -112,12 +114,12 @@ def test_resume_changed_batch_size_refused(conn, tmp_path, monkeypatch):
 def test_large_integer_refused(conn, tmp_path):
     path, sums = make_file(tmp_path, "9007199254740993")
     with pytest.raises(LoadFailed, match="row 2"):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
 
 
 def test_null_ticker_rows_kept(conn, tmp_path):
     path, sums = make_file(tmp_path)
-    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT count(*) FROM kaggle_chars.mcgill WHERE load_id=%s "
@@ -131,7 +133,9 @@ def test_null_ticker_rows_kept(conn, tmp_path):
 
 def test_row_count_reconciles_and_load_completes(conn, tmp_path):
     path, sums = make_file(tmp_path)
-    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, batch_rows=4)
+    load = mcgill.load_mcgill(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4
+    )
     with conn.cursor() as cur:
         cur.execute(
             "SELECT status, rows_parsed, rows_accepted, checks FROM ref.loads WHERE load_id=%s",
@@ -147,7 +151,7 @@ def test_non_finite_double_becomes_null_and_is_counted(conn, tmp_path):
     contents = path.read_text().replace("NaN", "", 9)
     path.write_text(contents)
     sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
-    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     with conn.cursor() as cur:
         cur.execute("SELECT count(prc) FROM kaggle_chars.mcgill WHERE load_id=%s", (load,))
         assert cur.fetchone()[0] == 0
@@ -177,8 +181,10 @@ def test_cli_requires_yes(conn, tmp_path, monkeypatch, capsys):
         file=path,
         sums=sums,
         backup_dir=None,
+        db_free_path=tmp_path,
         db_url="postgresql://unused/db",
         yes=False,
+        no_backup_check=False,
     )
     run_db(args)
     assert "Would import" in capsys.readouterr().out
@@ -205,12 +211,12 @@ def test_invalid_date_refused(conn, tmp_path, column):
         writer.writerows(rows)
     sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
     with pytest.raises(LoadFailed, match=f"Invalid {column} at row 2"):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
 
 
 def test_real_date_and_size_port_format(conn, tmp_path):
     path, sums = make_file(tmp_path)
-    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT date, ret_eom, size_port FROM kaggle_chars.mcgill WHERE load_id=%s LIMIT 1",
@@ -234,7 +240,7 @@ def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
 
     monkeypatch.setattr(mcgill, "commit_chunk", wrong_count)
     with pytest.raises(LoadFailed, match="row count"):
-        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads")
         assert cur.fetchone()[0] == "failed"
@@ -271,7 +277,7 @@ def test_double_values_survive_copy_exactly(conn, tmp_path):
         )
     sums = tmp_path / "sums"
     sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
-    load_id = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    load_id = mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT permno, prc, rf, market_equity FROM kaggle_chars.mcgill "
@@ -281,3 +287,36 @@ def test_double_values_survive_copy_exactly(conn, tmp_path):
         assert cur.fetchall() == [
             (2000000000 + i, value, value, value) for i, value in enumerate(values)
         ] + [(2000000005, -18.25, None, 0.0)]
+
+
+def test_space_uses_database_path(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    path, sums = make_file(tmp_path)
+    seen = []
+    monkeypatch.setattr(
+        "ggTrader.data.kaggle_import.guards.shutil.disk_usage",
+        lambda p: (seen.append(p), SimpleNamespace(free=0))[1],
+    )
+    target = tmp_path / "database"
+    with pytest.raises(LoadFailed, match="Insufficient"):
+        mcgill.load_mcgill(None, path, sums, backup_dir=None, db_free_path=target)
+    assert seen == [target]
+
+
+def test_space_failure_between_batches_is_resumable(conn, tmp_path, monkeypatch):
+    path, sums = make_file(tmp_path)
+    calls = iter([True, True, False])
+    monkeypatch.setattr(mcgill, "free_space_ok", lambda *a, **kw: next(calls))
+    with pytest.raises(LoadFailed, match="Insufficient"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM kaggle_chars.mcgill")
+        assert cur.fetchone()[0] == 4
+    monkeypatch.setattr(mcgill, "free_space_ok", lambda *a, **kw: True)
+    load = mcgill.load_mcgill(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, batch_rows=4
+    )
+    with conn.cursor() as cur:
+        cur.execute("SELECT status, rows_parsed FROM ref.loads WHERE load_id=%s", (load,))
+        assert cur.fetchone() == ("complete", 10)

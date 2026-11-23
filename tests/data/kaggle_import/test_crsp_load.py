@@ -67,8 +67,12 @@ def row(permno, stamp, shrcd=10.0):
 
 def test_resume_quarantine_and_compression(conn, tmp_path):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1)), row(2, datetime(1900, 1, 1))])
-    first = load_crsp(conn, path, sums, backup_dir=None, row_groups=[0], margin_bytes=0)
-    assert load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0) == first
+    first = load_crsp(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, row_groups=[0], margin_bytes=0
+    )
+    assert (
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0) == first
+    )
     with conn.cursor() as cur:
         cur.execute("SELECT prc, shrcd, ret FROM kaggle_crsp.daily WHERE load_id=%s", (first,))
         assert cur.fetchone() == (-5.0, 10, None)
@@ -78,7 +82,9 @@ def test_resume_quarantine_and_compression(conn, tmp_path):
         parsed, quarantined, checks = cur.fetchone()
         assert (parsed, quarantined, checks["nulled_values"]) == (2, 1, 1)
     assert compress_kaggle_chunks(conn) == 1
-    load_crsp(conn, path, sums, backup_dir=None, parser_suffix="v2", margin_bytes=0)
+    load_crsp(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, parser_suffix="v2", margin_bytes=0
+    )
     assert compress_kaggle_chunks(conn) > 0
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_crsp.daily")
@@ -95,28 +101,30 @@ def test_resume_quarantine_and_compression(conn, tmp_path):
 
 def test_pilot_and_full_are_distinct(conn, tmp_path):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
-    pilot = load_crsp(conn, path, sums, backup_dir=None, year=1999, margin_bytes=0)
-    full = load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+    pilot = load_crsp(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, year=1999, margin_bytes=0
+    )
+    full = load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     assert pilot != full
 
 
 def test_fractional_and_hash_and_space(conn, tmp_path, monkeypatch):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1), 10.5)])
     with pytest.raises(LoadFailed, match="permno 1"):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     sums.write_text("0  x.parquet\n")
     with pytest.raises(HashMismatch):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  x.parquet\n")
     monkeypatch.setattr("ggTrader.data.kaggle_import.crsp.free_space_ok", lambda *a, **k: False)
     with pytest.raises(LoadFailed, match="space"):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
 
 
 def test_non_midnight_rolls_back_chunk(conn, tmp_path):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1, 12))])
     with pytest.raises(LoadFailed, match="Non-midnight"):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_crsp.daily")
         assert cur.fetchone()[0] == 0
@@ -126,8 +134,12 @@ def test_large_group_pilot_and_full(conn, tmp_path):
     count = 60_000
     rows = [row(i, datetime(1999, 1, 1), 11.0 if i % 2 else None) for i in range(count)]
     schema_path, sums = make_file(tmp_path, rows, row_group_size=count)
-    pilot = load_crsp(conn, schema_path, sums, backup_dir=None, year=1999, margin_bytes=0)
-    full = load_crsp(conn, schema_path, sums, backup_dir=None, margin_bytes=0)
+    pilot = load_crsp(
+        conn, schema_path, sums, backup_dir=None, db_free_path=tmp_path, year=1999, margin_bytes=0
+    )
+    full = load_crsp(
+        conn, schema_path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0
+    )
     with conn.cursor() as cur:
         for load_id in (pilot, full):
             cur.execute(
@@ -144,7 +156,9 @@ def test_pilot_filters_other_years_before_validation(conn, tmp_path):
         [row(1, datetime(1999, 1, 1)), row(2, datetime(2000, 1, 1), 10.5)],
         row_group_size=2,
     )
-    load_id = load_crsp(conn, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+    load_id = load_crsp(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, year=1999, margin_bytes=0
+    )
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_crsp.daily WHERE load_id=%s", (load_id,))
         assert cur.fetchone()[0] == 1
@@ -152,9 +166,18 @@ def test_pilot_filters_other_years_before_validation(conn, tmp_path):
 
 def test_two_pilot_versions(conn, tmp_path):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
-    first = load_crsp(conn, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+    first = load_crsp(
+        conn, path, sums, backup_dir=None, db_free_path=tmp_path, year=1999, margin_bytes=0
+    )
     second = load_crsp(
-        conn, path, sums, backup_dir=None, year=1999, parser_suffix="v2", margin_bytes=0
+        conn,
+        path,
+        sums,
+        backup_dir=None,
+        db_free_path=tmp_path,
+        year=1999,
+        parser_suffix="v2",
+        margin_bytes=0,
     )
     assert first != second
     with conn.cursor() as cur:
@@ -165,7 +188,7 @@ def test_two_pilot_versions(conn, tmp_path):
 def test_fatal_data_marks_failed(conn, tmp_path):
     path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1), 10.5)])
     with pytest.raises(LoadFailed):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     with conn.cursor() as cur:
         cur.execute("SELECT status, checks->>'failure' FROM ref.loads")
         status, reason = cur.fetchone()
@@ -188,7 +211,7 @@ def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
 
     monkeypatch.setattr(crsp, "_write_chunk", wrong_count)
     with pytest.raises(LoadFailed, match="row count"):
-        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+        load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads")
         assert cur.fetchone()[0] == "failed"
@@ -203,13 +226,22 @@ def test_recompression_reclaims_space(tmp_path):
     for reclaim in (False, True):
         with scratch_database() as url, closing(psycopg2.connect(url)) as connection:
             apply_ddl(connection)
-            load_crsp(connection, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+            load_crsp(
+                connection,
+                path,
+                sums,
+                backup_dir=None,
+                db_free_path=tmp_path,
+                year=1999,
+                margin_bytes=0,
+            )
             assert compress_kaggle_chunks(connection, reclaim=reclaim) == 1
             load_crsp(
                 connection,
                 path,
                 sums,
                 backup_dir=None,
+                db_free_path=tmp_path,
                 year=1999,
                 parser_suffix="v2",
                 margin_bytes=0,
@@ -236,7 +268,7 @@ def test_double_values_survive_copy_exactly(conn, tmp_path):
     special.update(prc=-18.25, ret=None, shrout=0.0, vwretd=0.0)
     rows.append(special)
     path, sums = make_file(tmp_path, rows, row_group_size=len(rows))
-    load_id = load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+    load_id = load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT permno, prc, ret, shrout, vwretd FROM kaggle_crsp.daily "
@@ -246,3 +278,18 @@ def test_double_values_survive_copy_exactly(conn, tmp_path):
         assert cur.fetchall() == [
             (2000000000 + i, value, value, 3.4e7, 0.0004785) for i, value in enumerate(values)
         ] + [(2000000005, -18.25, None, 0.0, 0.0)]
+
+
+def test_space_uses_database_path(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
+    seen = []
+    monkeypatch.setattr(
+        "ggTrader.data.kaggle_import.guards.shutil.disk_usage",
+        lambda p: (seen.append(p), SimpleNamespace(free=0))[1],
+    )
+    target = tmp_path / "database"
+    with pytest.raises(LoadFailed, match="Insufficient"):
+        load_crsp(None, path, sums, backup_dir=None, db_free_path=target)
+    assert seen == [target]

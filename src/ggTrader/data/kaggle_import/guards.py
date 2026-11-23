@@ -63,4 +63,7 @@ def backup_fresh(backup_dir: Path, max_age_days: int = 7, now: datetime | None =
     modified = datetime.fromtimestamp(newest.stat().st_mtime, tz=current.tzinfo)
     if current - modified > timedelta(days=max_age_days):
         raise BackupStale(f"Backup {newest} is stale")
+    size = newest.stat().st_size
+    if size < 1024**2:
+        raise BackupStale(f"Backup {newest} is too small: {size} bytes")
     return newest

@@ -98,12 +98,17 @@ def _prepare(table: pa.Table, load_id: int, offset: int):
     return pa.table({"load_id": pa.repeat(load_id, table.num_rows), **columns}), nulled
 
 
+# Conservative per-row estimate for the wide characteristics table.
+BYTES_PER_ROW = 4096
+
+
 def load_mcgill(
     conn: connection,
     csv_path: Path,
     sums_file: Path,
     *,
     backup_dir: Path | None,
+    db_free_path: Path,
     batch_rows: int = 50_000,
 ) -> int:
     """Verify, count and import the raw file without exposing it to signals."""
@@ -112,11 +117,11 @@ def load_mcgill(
     if backup_dir is not None:
         backup_fresh(backup_dir)
     digest = verify_sha256(csv_path, sums_file)
+    count = sum(batch.num_rows for batch in _batches(csv_path, batch_rows))
     if not free_space_ok(
-        csv_path.parent, needed_bytes=csv_path.stat().st_size * 12, margin_bytes=40 * 1024**3
+        db_free_path, needed_bytes=count * BYTES_PER_ROW, margin_bytes=40 * 1024**3
     ):
         raise LoadFailed("Insufficient free space for load")
-    count = sum(batch.num_rows for batch in _batches(csv_path, batch_rows))
     expected = [f"batch-{i:03d}" for i in range((count + batch_rows - 1) // batch_rows)]
     load_id = begin_load(
         conn,
@@ -150,6 +155,8 @@ def load_mcgill(
         )
     conn.commit()
     for index, table in enumerate(_batches(csv_path, batch_rows)):
+        if not free_space_ok(db_free_path, table.num_rows * BYTES_PER_ROW):
+            raise LoadFailed("Insufficient free space for batch")
         try:
             output, nulled = _prepare(table, load_id, index * batch_rows)
         except LoadFailed as exc:
