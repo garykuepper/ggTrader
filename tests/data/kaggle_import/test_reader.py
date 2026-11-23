@@ -112,3 +112,52 @@ def test_timezone_invariance(release):
     with db.cursor() as cur:
         cur.execute("SET TIME ZONE 'America/Los_Angeles'")
     pd.testing.assert_frame_equal(utc, read(release, ["PLAIN", "PERMNO-10128"]))
+
+
+@pytest.fixture
+def linked(conn):
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    return db, rid
+
+
+def test_linked_trace_and_join(linked):
+    result = read(linked, ["TTWO"])
+    assert result.close.tolist() == [5, 10, 11, 12]
+    assert result.source.tolist() == ["crsp", "yfinance", "yfinance", "yfinance"]
+    assert result.close.iloc[1] / result.close.iloc[0] == 2
+    assert not result.drift.any()
+    assert read(linked, ["PERMNO-1"]).empty
+
+
+def test_linked_rescale_and_drift(linked):
+    db, _ = linked
+    before = read(linked, ["TTWO"])
+    with db.cursor() as cur:
+        cur.execute("UPDATE public.ohlcv SET close=close*0.9 WHERE symbol='TTWO'")
+    after = read(linked, ["TTWO"])
+    assert after.close.tolist() == pytest.approx((before.close * 0.9).tolist())
+    assert not after.drift.any()
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE public.ohlcv SET close=99 WHERE symbol='TTWO' AND timestamp='2000-01-03'"
+        )
+    assert read(linked, ["TTWO"]).drift.all()
+
+
+def test_linked_backfill_and_missing(linked):
+    from ggTrader.data.kaggle_import.reader import ReleaseInputMissing
+
+    db, _ = linked
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
+            "VALUES ('2000-01-01','TTWO','1d','yfinance',1)"
+        )
+    result = read(linked, ["TTWO"])
+    assert result.drift.all() and result.source.tolist().count("yfinance") == 3
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM public.ohlcv WHERE symbol='TTWO' AND timestamp='2000-01-02'")
+    with pytest.raises(ReleaseInputMissing):
+        read(linked, ["TTWO"])

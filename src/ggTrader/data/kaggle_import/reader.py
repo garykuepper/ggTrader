@@ -29,6 +29,8 @@ def read_combined(
     except psycopg2.Error as exc:
         if f"release {release_id} is unavailable" in str(exc):
             raise ReleaseUnavailable(f"release {release_id} is unavailable") from None
+        if "release input missing" in str(exc):
+            raise ReleaseInputMissing(str(exc).splitlines()[0]) from None
         raise
     result = pd.DataFrame(rows, columns=columns)
     result["ts"] = pd.to_datetime(result["ts"]).astype("datetime64[ns]")
