@@ -85,6 +85,8 @@ class Bars:
         missing_symbols: requested symbols with no bar in the window (sorted tuple).
         last_valid_bar: per loaded symbol, the date of its last non-NaN close.
         provenance: source description for run JSON (snapshot hash or ``db`` read-only flag).
+        flags: combined-source row flags, indexed by UTC timestamp and symbol.
+        spans: ended series for the combined release; total loss is false in version one.
     """
 
     close: pd.DataFrame
@@ -222,7 +224,12 @@ def _read_combined_long(
     *,
     batch_size: int = 120,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
-    """Read one published release in a single consistent read-only transaction."""
+    """Read one published release in a single consistent read-only transaction.
+
+    Ended spans exclude Yahoo series within five days of the latest Yahoo end,
+    and CRSP series ending at that file's last date. Total loss is always false
+    in version one because that event is not represented in the release.
+    """
     from ggTrader.data.kaggle_import.reader import read_combined
     from ggTrader.data.kaggle_import.release import ReleaseUnavailable
 
@@ -275,21 +282,41 @@ def _read_combined_long(
         combined = (
             pd.concat(batches, ignore_index=True) if batches else pd.DataFrame(columns=columns)
         )
+        del batches
         combined["timestamp"] = pd.to_datetime(combined["timestamp"])
         flat = combined[["timestamp", "symbol", *snapshot.FIELDS]].copy()
         flags = combined.set_index(["timestamp", "symbol"])[
             ["source", "abs_prc", "midpoint_flag", "possible_double"]
         ].copy()
+        del combined
         flags.index = flags.index.set_levels(
             pd.DatetimeIndex(flags.index.levels[0]).tz_localize("UTC"), level=0
         )
+        with conn.cursor() as cur:
+            cur.execute(
+                "WITH limits AS (SELECT "
+                "max(last_date) FILTER (WHERE kind IN ('yahoo','linked_yahoo')) AS yf, "
+                "max(last_date) FILTER (WHERE kind IN ('placeholder','spell')) AS crsp "
+                "FROM market.stock_spans WHERE release_id = %s) "
+                "SELECT s.symbol, s.last_date, EXISTS (SELECT 1 FROM market.stock_spans n "
+                "WHERE n.release_id=s.release_id AND n.permno=s.permno AND n.spell>s.spell) "
+                "FROM market.stock_spans s CROSS JOIN limits l "
+                "WHERE s.release_id=%s AND s.symbol=ANY(%s) AND "
+                "((s.kind IN ('yahoo','linked_yahoo') AND s.last_date < l.yf - 5) OR "
+                "(s.kind IN ('placeholder','spell') AND s.last_date < l.crsp)) "
+                "ORDER BY s.symbol",
+                (resolved, resolved, list(flat["symbol"].dropna().unique())),
+            )
+            spans = pd.DataFrame(cur.fetchall(), columns=["symbol", "last_date", "has_successor"])
+        spans["has_successor"] = spans["has_successor"].astype(bool)
+        spans["total_loss"] = False
         flags.attrs["data_release"] = {
             "release_id": resolved,
             "created_at": created_at.isoformat(),
             "yahoo_fingerprint": fingerprint,
         }
         flags.attrs["drift_symbols"] = sorted(drift_symbols)
-        return flat, flags, pd.DataFrame(), resolved
+        return flat, flags, spans, resolved
     finally:
         conn.close()
 
@@ -369,9 +396,10 @@ def load_bars(  # noqa: PLR0912, PLR0915
         universe_span: ``(start, end)`` over which the membership union is taken; required with
             ``universe`` (the bar window usually starts earlier, for indicator warm-up).
         extra_symbols: added to a ``universe`` request (benchmark and sleeve ETFs).
-        source: ``db`` (default) or ``snapshot``; a snapshot path selects snapshot by default.
+        source: ``db`` (default), ``snapshot``, or the published ``combined`` release.
         snapshot_path: snapshot file; default is :func:`snapshot.default_snapshot_path`.
         deep_verify: also recompute the snapshot content hash.
+        release_id: published combined release to read, or the newest published release.
         membership: the S&P 500 list source; required with ``universe='sp500'`` (the point-in-time
             union is taken from it), ignored for symbol lists and static universes.
 
@@ -419,6 +447,7 @@ def load_bars(  # noqa: PLR0912, PLR0915
             "data_release": flags.attrs["data_release"],
             "drift": bool(drift_symbols),
             "drift_symbols": drift_symbols[:50],
+            "n_spans_ended": len(spans),
         }
     else:
         flat = _read_db_long(requested, lo, hi)
