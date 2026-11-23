@@ -267,3 +267,47 @@ def test_copy_round_trip_is_exact_for_close(tmp_path):
                 (derived,),
             )
             assert [value for (value,) in cur.fetchall()] == expected
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_null_returns_and_computation_failure(tmp_path, monkeypatch):
+    from contextlib import closing
+    from datetime import datetime
+
+    import psycopg2
+
+    from ggTrader.data.kaggle_import import derive
+    from ggTrader.data.kaggle_import.crsp import load_crsp
+    from ggTrader.data.kaggle_import.ddl import apply_ddl
+    from tests.data.kaggle_import.test_crsp_load import make_file, row
+    from tests.data.scratch_db import scratch_database
+
+    dates = [datetime(1999, 1, day) for day in (4, 5, 6)]
+    items = [row(1, day) for day in dates]
+    for item in items:
+        item.update(prc=10.0, ret=None)
+    path, sums = make_file(tmp_path, items)
+    with scratch_database() as url, closing(psycopg2.connect(url)) as conn:
+        apply_ddl(conn)
+        source = load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+        kwargs = dict(backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+
+        def fail(_rows):
+            raise RuntimeError("computation exploded")
+
+        original = derive.build_spell_closes
+        monkeypatch.setattr(derive, "build_spell_closes", fail)
+        with pytest.raises(RuntimeError, match="computation exploded"):
+            derive.derive_bars(conn, source, pd.DatetimeIndex(dates), **kwargs)
+        with conn.cursor() as cur:
+            cur.execute("SELECT status, checks FROM ref.loads WHERE dataset='crsp-derived-bars'")
+            status, checks = cur.fetchone()
+            assert status == "failed" and "computation exploded" in checks["failure"]
+        monkeypatch.setattr(derive, "build_spell_closes", original)
+        derived = derive.derive_bars(conn, source, pd.DatetimeIndex(dates), **kwargs)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT spell FROM market.daily_bars WHERE load_id=%s ORDER BY date", (derived,)
+            )
+            assert cur.fetchall() == [(0,), (1,), (2,)]

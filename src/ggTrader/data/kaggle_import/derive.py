@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pacsv
+from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extensions import connection, cursor
 
 from ggTrader.data.kaggle_import.guards import backup_fresh, free_space_ok
@@ -44,7 +45,7 @@ def build_spell_closes(spelled: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def derive_bars(  # noqa: PLR0913, PLR0915 — loader contract and sequential chunk workflow
+def derive_bars(  # noqa: PLR0912, PLR0913, PLR0915 — loader contract and sequential chunk workflow
     conn: connection,
     crsp_load_id: int,
     calendar: pd.DatetimeIndex,
@@ -111,6 +112,7 @@ def derive_bars(  # noqa: PLR0913, PLR0915 — loader contract and sequential ch
                 rows = pd.DataFrame(
                     cur.fetchall(), columns=["permno", "date", "prc", "ret", "shrout"]
                 )
+            rows[["prc", "ret", "shrout"]] = rows[["prc", "ret", "shrout"]].astype("float64")
             result = build_spell_closes(assign_spells(rows, calendar))
             result.insert(0, "load_id", load_id)
             columns = [
@@ -156,8 +158,13 @@ def derive_bars(  # noqa: PLR0913, PLR0915 — loader contract and sequential ch
         if written != source_rows:
             raise LoadFailed("Derived row count differs from source")
         complete_load(conn, load_id, {"source_rows": source_rows})
-    except (LoadFailed, ValueError) as exc:
-        conn.rollback()
-        fail_load(conn, load_id, str(exc))
+    except (InterfaceError, OperationalError):
+        raise
+    except Exception as exc:
+        try:
+            conn.rollback()
+            fail_load(conn, load_id, str(exc))
+        except Exception:  # noqa: S110 — preserve the original failure
+            pass
         raise
     return load_id
