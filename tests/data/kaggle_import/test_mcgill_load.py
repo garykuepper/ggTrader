@@ -341,3 +341,54 @@ def test_copy_names_columns(conn, tmp_path, monkeypatch):
         mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
     sql = cur.copy_expert.call_args.args[0]
     assert "(load_id, " + ", ".join([name for name, _ in MCGILL_COLUMNS]) + ") FROM STDIN" in sql
+
+
+def rewrite_sums(path, sums):
+    sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
+
+
+@pytest.mark.parametrize("content", ["", "wrong,header\n1,2\n"])
+def test_bad_header_before_load(conn, tmp_path, content):
+    path, sums = make_file(tmp_path)
+    path.write_text(content)
+    rewrite_sums(path, sums)
+    with pytest.raises(LoadFailed, match="header"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.loads")
+        assert cur.fetchone()[0] == 0
+
+
+def test_empty_data_before_load(conn, tmp_path):
+    path, sums = make_file(tmp_path)
+    path.write_text(path.read_text().splitlines()[0] + "\n")
+    rewrite_sums(path, sums)
+    with pytest.raises(LoadFailed, match="no data rows"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.loads")
+        assert cur.fetchone()[0] == 0
+
+
+@pytest.mark.parametrize("permno", ["", "NaN"])
+def test_missing_permno(conn, tmp_path, permno):
+    path, sums = make_file(tmp_path, permno)
+    with pytest.raises(LoadFailed, match="permno at row 2"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
+
+
+def test_nullable_identifiers_accept_nan(conn, tmp_path):
+    path, sums = make_file(tmp_path)
+    with path.open(newline="") as f:
+        rows = list(csv.DictReader(f))
+    for name in ("shrcd", "exchcd", "year", "month"):
+        rows[0][name] = "NaN"
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[name for name, _ in MCGILL_COLUMNS])
+        writer.writeheader()
+        writer.writerows(rows)
+    rewrite_sums(path, sums)
+    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None, db_free_path=tmp_path)
+    with conn.cursor() as cur:
+        cur.execute("SELECT checks FROM ref.loads WHERE load_id=%s", (load,))
+        assert cur.fetchone()[0]["nulled_values"] == 14

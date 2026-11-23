@@ -1,5 +1,6 @@
 """Import McGill characteristics as resumable raw batches."""
 
+import csv as stdlib_csv
 import io
 from pathlib import Path
 
@@ -70,6 +71,13 @@ def _prepare(table: pa.Table, load_id: int, offset: int):
                 raise LoadFailed(f"Invalid {name} at row {offset + indices[0].as_py() + 2}")
             values = pc.cast(parsed, pa.date32())
         elif kind in ("bigint", "integer"):
+            nonfinite = pc.and_(pc.is_valid(values), pc.invert(pc.is_finite(values)))
+            nulled += pc.sum(pc.cast(pc.fill_null(nonfinite, False), pa.int64())).as_py() or 0
+            values = pc.if_else(nonfinite, pa.scalar(None, type=pa.float64()), values)
+            if name == "permno":
+                missing = pc.indices_nonzero(pc.is_null(values))
+                if len(missing):
+                    raise LoadFailed(f"Missing permno at row {offset + missing[0].as_py() + 2}")
             # Float parsing can round 2**53 + 1 down to 2**53.
             invalid = pc.fill_null(
                 pc.and_(
@@ -102,6 +110,14 @@ def _prepare(table: pa.Table, load_id: int, offset: int):
 BYTES_PER_ROW = 4096
 
 
+def _check_header(csv_path: Path) -> None:
+    with csv_path.open(newline="", encoding="utf-8") as source:
+        header = next(stdlib_csv.reader(source), [])
+    expected_header = [name for name, _ in MCGILL_COLUMNS]
+    if header != expected_header:
+        raise LoadFailed(f"Invalid header: expected {expected_header}, got {header}")
+
+
 def load_mcgill(
     conn: connection,
     csv_path: Path,
@@ -117,7 +133,10 @@ def load_mcgill(
     if backup_dir is not None:
         backup_fresh(backup_dir)
     digest = verify_sha256(csv_path, sums_file)
+    _check_header(csv_path)
     count = sum(batch.num_rows for batch in _batches(csv_path, batch_rows))
+    if not count:
+        raise LoadFailed("McGill file has no data rows")
     if not free_space_ok(
         db_free_path, needed_bytes=count * BYTES_PER_ROW, margin_bytes=40 * 1024**3
     ):
