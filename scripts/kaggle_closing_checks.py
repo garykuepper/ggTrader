@@ -322,6 +322,39 @@ def _release_loads(conn, release_id: int) -> dict:
         return {role: (load, path) for role, load, path in cur.fetchall()}
 
 
+def select_timezone_symbols(placeholders: list[str], all_symbols: list[str]) -> list[str]:
+    """Choose five pre-2000 placeholders and fifteen distinct other columns."""
+    import random
+
+    rng = random.Random(42)
+    old = sorted(set(placeholders))
+    if len(old) < 5:
+        return []
+    selected = rng.sample(old, 5)
+    remaining = sorted(set(all_symbols) - set(selected))
+    if len(remaining) < 15:
+        return []
+    return selected + rng.sample(remaining, 15)
+
+
+def symbol_filter_in_plan(plan) -> bool:
+    """Find a symbol condition on a scan node, including decompression scans."""
+    if isinstance(plan, list):
+        return any(symbol_filter_in_plan(item) for item in plan)
+    if not isinstance(plan, dict):
+        return False
+    scan = "scan" in str(plan.get("Node Type", "")).lower()
+    if scan and any(
+        "symbol" in str(value).lower()
+        for key, value in plan.items()
+        if "cond" in key.lower() or "filter" in key.lower()
+    ):
+        return True
+    return any(
+        symbol_filter_in_plan(value) for value in plan.values() if isinstance(value, (dict, list))
+    )
+
+
 def _stock_comparison(conn, release_id: int, mapping: dict | None = None) -> tuple[str, dict, str]:
     """Compare month-end returns from derived close and adjusted Yahoo close."""
     import pandas as pd
@@ -545,14 +578,21 @@ def run_checks(
         )
         checks[5]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
-        sample = random.Random(42).sample(symbols, min(20, len(symbols)))
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT symbol FROM market.stock_spans WHERE release_id=%s "
+                "AND kind='placeholder' AND first_date < DATE '2000-01-01' ORDER BY symbol",
+                (release_id,),
+            )
+            placeholders = [row[0] for row in cur.fetchall()]
+        sample = select_timezone_symbols(placeholders, symbols)
         if sample:
             prior = os.environ.get("PGTZ")
             try:
                 os.environ["PGTZ"] = "UTC"
-                utc = _load(url, sample, "combined", release_id, start="2000-01-03")
+                utc = _load(url, sample, "combined", release_id, start="1968-01-01")
                 os.environ["PGTZ"] = "America/Los_Angeles"
-                pacific = _load(url, sample, "combined", release_id, start="2000-01-03")
+                pacific = _load(url, sample, "combined", release_id, start="1968-01-01")
             finally:
                 if prior is None:
                     os.environ.pop("PGTZ", None)
@@ -566,7 +606,13 @@ def run_checks(
                 "hashes equal",
             )
         else:
-            _set(checks[6], "skipped", {}, "hashes equal", "release has no symbols")
+            _set(
+                checks[6],
+                "skipped",
+                {},
+                "hashes equal",
+                "fewer than five pre-2000 placeholders or twenty total symbols",
+            )
         checks[6]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
         with conn.cursor() as cur:
@@ -602,8 +648,21 @@ def run_checks(
             for index in indexes
         )
         index_ok = index_ok and bars_key and symbol_key
+        with conn.cursor() as cur:
+            probe_symbols = yahoo[:1] or ["__NO_SYMBOL__"]
+            cur.execute(
+                "EXPLAIN (FORMAT JSON) SELECT timestamp,symbol,open,high,low,close,volume "
+                "FROM public.ohlcv WHERE symbol=ANY(%s) AND interval='1d' "
+                "AND venue='yfinance' AND timestamp >= TIMESTAMP '2000-01-03' "
+                "AND timestamp <= TIMESTAMP '2024-12-31'",
+                (probe_symbols,),
+            )
+            plan = cur.fetchone()[0]
+        plan_ok = symbol_filter_in_plan(plan)
         measurements = {
             "indexes": indexes,
+            "plan": plan,
+            "symbol_filter_in_scan": plan_ok,
             "available_yahoo_symbols": len(yahoo),
             "required_indexes_present": index_ok,
         }
@@ -620,6 +679,7 @@ def run_checks(
                 measurements[label + "_seconds"] = time.perf_counter() - start
             good = (
                 index_ok
+                and plan_ok
                 and measurements["combined_one_seconds"] < 5
                 and measurements["combined_hundred_seconds"] < 60
                 and measurements["db_one_seconds"] < 5
@@ -634,7 +694,7 @@ def run_checks(
         else:
             _set(
                 checks[7],
-                "skipped" if index_ok else "fail",
+                "skipped" if index_ok and plan_ok else "fail",
                 measurements,
                 {"combined_one_seconds_lt": 5, "combined_hundred_seconds_lt": 60},
                 "fewer than 100 Yahoo symbols",

@@ -34,6 +34,21 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
     db.commit()
     links, settings = _inputs()
     rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        for number in range(92000, 92020):
+            cur.execute(
+                "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+                "VALUES (%s,%s,1,'1999-12-31',10),(%s,%s,1,'2000-01-03',11)",
+                (load, number, load, number),
+            )
+            cur.execute(
+                "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
+                "first_date,last_date) "
+                "VALUES (%s,%s,%s,1,'placeholder','1999-12-31','2000-01-03')",
+                (rid, f"PERMNO-{number}", number),
+            )
+    db.commit()
     original = urlparse(os.environ["GGT_TEST_DB_URL"])
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     readonly = connect_target(url)

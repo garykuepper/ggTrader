@@ -74,3 +74,18 @@ def test_return_statistics_and_thresholds():
     assert bad["mean_abs_points"] == pytest.approx(1.0)
     assert bad["max_abs_points"] == pytest.approx(1.0)
     assert return_statistics([0.01], [0.01])["correlation"] is None
+
+
+def test_timezone_sample_and_chunk_filter_detection():
+    from scripts.kaggle_closing_checks import select_timezone_symbols, symbol_filter_in_plan
+
+    old = [f"PERMNO-{i}" for i in range(10)]
+    all_names = old + [f"S{i}" for i in range(20)]
+    picked = select_timezone_symbols(old, all_names)
+    assert len(picked) == 20 and len(set(picked) & set(old)) >= 5
+    assert symbol_filter_in_plan(
+        {"Plan": {"Node Type": "Index Scan", "Index Cond": "symbol = ANY (...)"}}
+    )
+    assert not symbol_filter_in_plan(
+        {"Plan": {"Node Type": "Seq Scan", "Filter": "interval = '1d'"}}
+    )
