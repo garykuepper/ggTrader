@@ -217,6 +217,13 @@ def test_returns_comparisons_on_synthetic_database(conn):
     assert measured["correlation"] == pytest.approx(1.0)
     with db.cursor() as cur:
         cur.execute(
+            "UPDATE kaggle_chars.mcgill SET stock_exret=0.9 WHERE load_id=%s AND date='2005-03-31'",
+            (mcgill,),
+        )
+    db.commit()
+    assert _mcgill_comparison(db, raw, mcgill, count=1)[0] == "fail"
+    with db.cursor() as cur:
+        cur.execute(
             "UPDATE public.ohlcv SET close=50 WHERE symbol='EXAMPLE' AND timestamp='2005-03-31'"
         )
     db.commit()

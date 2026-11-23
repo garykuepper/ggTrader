@@ -222,6 +222,50 @@ def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
     return result
 
 
+def validate_named_traces(
+    cases: dict, catalog: dict, missing: list[str], pre2000: int
+) -> list[str]:
+    """Validate the identity-specific traces that are present in the release."""
+    errors = []
+    if pre2000 < 1:
+        errors.append("no pre-2000 placeholder bars")
+    if set(missing) != {"PERMNO-84761", "PERMNO-1~7"}:
+        errors.append("expected unknown placeholder symbols were readable")
+    for name, expected in (
+        ("AAPL", 14593),
+        ("TTWO", 84761),
+        ("CMVT", 10942),
+        ("SMCI", 91907),
+        ("IBKR", 92043),
+        ("VC", 88319),
+    ):
+        if name in catalog and catalog[name][1] not in (None, expected):
+            errors.append(f"{name} identifies the wrong stock")
+    for name in ("AAPL", "TTWO"):
+        if name in cases and cases[name]["status"] != "skipped":
+            case = cases[name]
+            if case["kind"] != "linked_yahoo" or case["sources"].get("crsp", 0) == 0:
+                errors.append(f"{name} has no linked CRSP history")
+            if "join_return" not in case or abs(case["join_return"]) >= 0.5:
+                errors.append(f"{name} has no valid join return")
+    for name in ("SMCI", "IBKR", "VC"):
+        if name in cases and cases[name]["status"] != "skipped":
+            if cases[name]["sources"].get("crsp", 0):
+                errors.append(f"{name} unexpectedly contains spliced CRSP rows")
+    if "VC" in cases and cases["VC"]["status"] != "skipped":
+        if cases["VC"]["first"] != "2010-10-05":
+            errors.append("VC Yahoo history starts on an unexpected date")
+        if "PERMNO-88319~1" not in catalog:
+            errors.append("VC earlier spell is missing")
+        if cases["VC"]["possible_double"] and "PERMNO-88319" not in catalog:
+            errors.append("unlinked VC placeholder is missing")
+    if "PERMNO-10128" in catalog and not any(name.startswith("PERMNO-10128~") for name in catalog):
+        errors.append("10128 earlier spell is missing")
+    if "GM" in catalog and "PERMNO-12079" not in catalog:
+        errors.append("older GM placeholder is missing")
+    return errors
+
+
 def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str]:
     """Inspect named traces and check overlapping identity columns in bounded batches."""
     import pandas as pd
@@ -242,7 +286,13 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
     catalog = {row[0]: row for row in records}
     cases = {}
     names = ["AAPL", "TTWO", "CMVT", "SMCI", "IBKR", "VC", "PERMNO-10128", "GM"]
-    related = {row[0] for row in records if row[0].startswith("PERMNO-10128~")}
+    related = {
+        row[0]
+        for row in records
+        if row[0].startswith("PERMNO-10128~")
+        or row[0].startswith("PERMNO-88319")
+        or row[0] == "PERMNO-12079"
+    }
     related.update(row[0] for row in records if row[1] in gm_permnos)
     selected = [name for name in names if name in catalog] + sorted(related)
     selected = list(dict.fromkeys(selected))
@@ -292,7 +342,12 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
     if placeholders:
         placeholder = placeholders[0][0]
         historic = _load(url, [placeholder], "combined", release_id, start="1900-01-01")
-        pre2000 = int((historic.close.index < pd.Timestamp("2000-01-01", tz="UTC")).sum())
+        pre2000 = int(
+            historic.close.loc[historic.close.index < pd.Timestamp("2000-01-01", tz="UTC")]
+            .notna()
+            .sum()
+            .sum()
+        )
     else:
         placeholder, pre2000 = None, 0
     missing = _load(url, ["PERMNO-84761", "PERMNO-1~7"], "combined", release_id)
@@ -323,7 +378,9 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         "unflagged_duplicate_days": len(violations),
         "unflagged_examples": violations[:10],
     }
-    if violations or any(case["status"] == "fail" for case in cases.values()):
+    errors = validate_named_traces(cases, catalog, missing_names, pre2000)
+    measured["trace_errors"] = errors
+    if violations or errors or any(case["status"] == "fail" for case in cases.values()):
         return "fail", measured, "a named trace or duplicate-stock check failed"
     return "skipped", measured, "exact named-stock traces are not yet fully verified"
 
@@ -564,6 +621,8 @@ def _stock_comparison(conn, release_id: int, mapping: dict | None = None) -> tup
             "permno": permno,
             "raw_rows": raw_counts.get(permno, 0),
             "mcgill_dated_tickers": dated_tickers.get(ticker, []),
+            "mcgill_disagrees": bool(dated_tickers.get(ticker))
+            and not any(item["permno"] == permno for item in dated_tickers[ticker]),
             "mapping_source": "validate_crsp.py",
             **return_statistics(paired.derived, paired.yahoo),
         }
@@ -619,12 +678,17 @@ def _mcgill_comparison(
     values = return_statistics(paired.mcgill, paired.crsp)
     values.update(
         {
+            "compared_permnos": int(paired.permno.nunique()),
             "sample_permnos": sample,
             "seed": 42,
             "alignment": "ret_eom calendar month; stock_exret + rf against compounded daily ret",
         }
     )
-    ok = values["correlation"] is not None and values["correlation"] >= 0.9999
+    ok = (
+        values["compared_permnos"] == len(sample)
+        and values["correlation"] is not None
+        and values["correlation"] >= 0.9999
+    )
     return ("pass" if ok else "fail"), values, ""
 
 

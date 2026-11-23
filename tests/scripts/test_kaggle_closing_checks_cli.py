@@ -131,3 +131,18 @@ def test_ten_stock_comparison_requires_full_month_coverage():
     assert not ten_stock_passes(result, minimum_months=239)
     assert ten_stock_passes({**result, "count": 239}, minimum_months=239)
     assert not ten_stock_passes({**result, "count": 239, "max_abs_points": 1.7}, minimum_months=239)
+
+
+def test_named_trace_validation_checks_required_evidence():
+    from scripts.kaggle_closing_checks import validate_named_traces
+
+    missing = ["PERMNO-84761", "PERMNO-1~7"]
+    assert validate_named_traces({}, {}, missing, 5) == []
+    errors = validate_named_traces(
+        {"AAPL": {"status": "pass", "kind": "yahoo", "sources": {"yfinance": 1}}},
+        {"AAPL": ("AAPL", 14593, "yahoo", None, None, False)},
+        missing,
+        5,
+    )
+    assert any("AAPL" in error for error in errors)
+    assert validate_named_traces({}, {}, [], 0)
