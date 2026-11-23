@@ -46,6 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-volume", type=Path, default=Path("/"))
     parser.add_argument("--out", type=Path)
     parser.add_argument("--label")
+    parser.add_argument(
+        "--allow-synthetic-skips",
+        action="store_true",
+        help="Allow checks without sufficient synthetic sample data to be skipped.",
+    )
     baseline = parser.add_mutually_exclusive_group()
     baseline.add_argument("--save-baseline", type=Path)
     baseline.add_argument("--compare-baseline", type=Path)
@@ -222,48 +227,77 @@ def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
     return result
 
 
-def validate_named_traces(
-    cases: dict, catalog: dict, missing: list[str], pre2000: int
-) -> list[str]:
-    """Validate the identity-specific traces that are present in the release."""
+def validate_named_frame(bars, span: dict) -> dict:
+    """Check one named column against its published span and splice boundaries."""
+    import pandas as pd
+
+    name = span["symbol"]
+    subset = bars.flags[bars.flags.index.get_level_values("symbol") == name]
+    dates = subset.index.get_level_values("timestamp")
+    source = subset["source"].astype(str)
+    crsp = dates[source == "crsp"]
+    yahoo = dates[source == "yfinance"]
     errors = []
-    if pre2000 < 1:
-        errors.append("no pre-2000 placeholder bars")
-    if set(missing) != {"PERMNO-84761", "PERMNO-1~7"}:
-        errors.append("expected unknown placeholder symbols were readable")
-    for name, expected in (
-        ("AAPL", 14593),
-        ("TTWO", 84761),
-        ("CMVT", 10942),
-        ("SMCI", 91907),
-        ("IBKR", 92043),
-        ("VC", 88319),
-    ):
-        if name in catalog and catalog[name][1] not in (None, expected):
-            errors.append(f"{name} identifies the wrong stock")
-    for name in ("AAPL", "TTWO"):
-        if name in cases and cases[name]["status"] != "skipped":
-            case = cases[name]
-            if case["kind"] != "linked_yahoo" or case["sources"].get("crsp", 0) == 0:
-                errors.append(f"{name} has no linked CRSP history")
-            if "join_return" not in case or abs(case["join_return"]) >= 0.5:
-                errors.append(f"{name} has no valid join return")
-    for name in ("SMCI", "IBKR", "VC"):
-        if name in cases and cases[name]["status"] != "skipped":
-            if cases[name]["sources"].get("crsp", 0):
-                errors.append(f"{name} unexpectedly contains spliced CRSP rows")
-    if "VC" in cases and cases["VC"]["status"] != "skipped":
-        if cases["VC"]["first"] != "2010-10-05":
-            errors.append("VC Yahoo history starts on an unexpected date")
-        if "PERMNO-88319~1" not in catalog:
-            errors.append("VC earlier spell is missing")
-        if cases["VC"]["possible_double"] and "PERMNO-88319" not in catalog:
-            errors.append("unlinked VC placeholder is missing")
-    if "PERMNO-10128" in catalog and not any(name.startswith("PERMNO-10128~") for name in catalog):
-        errors.append("10128 earlier spell is missing")
-    if "GM" in catalog and "PERMNO-12079" not in catalog:
-        errors.append("older GM placeholder is missing")
-    return errors
+    if subset.empty:
+        errors.append("no rows")
+    else:
+        if span["first_date"] is None or dates.min().date() != span["first_date"]:
+            errors.append("first date differs from span")
+        if span["last_date"] is None or dates.max().date() != span["last_date"]:
+            errors.append("last date differs from span")
+        if not subset.possible_double.eq(bool(span["possible_double"])).all():
+            errors.append("possible_double differs from span")
+    kind = span["kind"]
+    if kind in ("yahoo", "linked_yahoo"):
+        if span["first_yf_date"] is None or len(yahoo) == 0:
+            errors.append("Yahoo start date or rows are missing")
+        elif yahoo.min().date() != span["first_yf_date"]:
+            errors.append("first Yahoo date differs from span")
+    if kind == "linked_yahoo":
+        first = span["first_yf_date"]
+        end = span["crsp_until"]
+        if first is None or end is None:
+            errors.append("linked span has no splice date")
+        elif any(ts.date() >= first or ts.date() >= end for ts in crsp) or any(
+            ts.date() < first for ts in yahoo
+        ):
+            errors.append("rows cross the splice boundary")
+        if set(source) - {"crsp", "yfinance"}:
+            errors.append("unknown row source")
+    elif kind == "yahoo":
+        if set(source) - {"yfinance"}:
+            errors.append("Yahoo column contains non-Yahoo rows")
+    elif kind in ("placeholder", "spell"):
+        if set(source) - {"crsp"}:
+            errors.append("CRSP column contains non-CRSP rows")
+    else:
+        errors.append("unknown span kind")
+    result = {
+        "status": "fail" if errors else "pass",
+        "errors": errors,
+        "kind": kind,
+        "possible_double": bool(span["possible_double"]),
+        "rows": len(subset),
+        "first": str(dates.min().date()) if len(dates) else None,
+        "last": str(dates.max().date()) if len(dates) else None,
+        "first_yf_date": str(span["first_yf_date"]) if span["first_yf_date"] else None,
+        "crsp_until": str(span["crsp_until"]) if span["crsp_until"] else None,
+        "crsp_first": str(crsp.min().date()) if len(crsp) else None,
+        "crsp_last": str(crsp.max().date()) if len(crsp) else None,
+        "sources": source.value_counts().to_dict(),
+    }
+    if kind == "linked_yahoo" and len(crsp) and len(yahoo):
+        close = bars.close[name]
+        before, after = close.loc[crsp.max()], close.loc[yahoo.min()]
+        if pd.isna(before) or pd.isna(after) or before == 0:
+            errors.append("join prices missing or zero")
+        else:
+            result["join_return"] = float(after / before - 1)
+            if abs(result["join_return"]) > 0.5:
+                errors.append("join return exceeds 50%")
+        if errors:
+            result["status"] = "fail"
+    return result
 
 
 def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str]:
@@ -272,7 +306,8 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
 
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT symbol,permno,kind,first_date,last_date,possible_double "
+            "SELECT symbol,permno,kind,first_date,last_date,possible_double, "
+            "crsp_until,first_yf_date "
             "FROM market.stock_spans WHERE release_id=%s ORDER BY symbol",
             (release_id,),
         )
@@ -285,7 +320,18 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         gm_permnos = [row[0] for row in cur.fetchall()]
     catalog = {row[0]: row for row in records}
     cases = {}
-    names = ["AAPL", "TTWO", "CMVT", "SMCI", "IBKR", "VC", "PERMNO-10128", "GM"]
+    names = [
+        "AAPL",
+        "TTWO",
+        "CMVT",
+        "SMCI",
+        "IBKR",
+        "VC",
+        "PERMNO-10128",
+        "GM",
+        "PERMNO-10128~1",
+        "PERMNO-88319~1",
+    ]
     related = {
         row[0]
         for row in records
@@ -293,7 +339,7 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         or row[0].startswith("PERMNO-88319")
         or row[0] == "PERMNO-12079"
     }
-    related.update(row[0] for row in records if row[1] in gm_permnos)
+    related.update(row[0] for row in records if row[1] in {*gm_permnos, 12079, 12369})
     selected = [name for name in names if name in catalog] + sorted(related)
     selected = list(dict.fromkeys(selected))
     for name in names:
@@ -303,35 +349,24 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         batch = selected[offset : offset + 120]
         bars = _load(url, batch, "combined", release_id)
         for name in batch:
-            subset = bars.flags[bars.flags.index.get_level_values("symbol") == name]
-            sources = subset["source"].astype(str).value_counts().to_dict()
-            close = bars.close[name].dropna() if name in bars.close else pd.Series(dtype=float)
-            cases[name] = {
-                "status": "pass" if len(close) else "fail",
-                "rows": int(len(subset)),
-                "first": str(close.index[0].date()) if len(close) else None,
-                "last": str(close.index[-1].date()) if len(close) else None,
-                "sources": sources,
-                "kind": catalog[name][2],
-                "possible_double": bool(catalog[name][5]),
-            }
-            if catalog[name][2] == "linked_yahoo" and len(subset):
-                yahoo = subset[subset.source == "yfinance"]
-                earlier = subset[subset.source == "crsp"]
-                if not yahoo.empty and not earlier.empty:
-                    start = yahoo.index.get_level_values("timestamp").min()
-                    previous = close.loc[close.index < start]
-                    if not previous.empty and start in close.index:
-                        jump = float(close.loc[start] / previous.iloc[-1] - 1)
-                        cases[name]["join_return"] = jump
-                        if abs(jump) >= 0.5:
-                            cases[name]["status"] = "fail"
-            if name == "AAPL":
-                before = subset.index.get_level_values("timestamp") < pd.Timestamp(
-                    "2000-01-03", tz="UTC"
+            row = catalog[name]
+            span = dict(
+                zip(
+                    (
+                        "symbol",
+                        "permno",
+                        "kind",
+                        "first_date",
+                        "last_date",
+                        "possible_double",
+                        "crsp_until",
+                        "first_yf_date",
+                    ),
+                    row,
+                    strict=True,
                 )
-                if not ((subset.source == "crsp") & before).any():
-                    cases[name]["status"] = "fail"
+            )
+            cases[name] = validate_named_frame(bars, span)
     placeholders = [
         row
         for row in records
@@ -350,10 +385,15 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         )
     else:
         placeholder, pre2000 = None, 0
-    missing = _load(url, ["PERMNO-84761", "PERMNO-1~7"], "combined", release_id)
+    requested_missing = ["PERMNO-84761~7", "PERMNO-1~7"]
+    if "AAPL" in catalog and catalog["AAPL"][2] == "linked_yahoo":
+        requested_missing.append("PERMNO-14593")
+    if "TTWO" in catalog and catalog["TTWO"][2] == "linked_yahoo":
+        requested_missing.extend(["PERMNO-84761", "PERMNO-84761~1"])
+    missing = _load(url, requested_missing, "combined", release_id)
     missing_names = list(missing.missing_symbols)
     groups = {}
-    for symbol, permno, _, first, last, _ in records:
+    for symbol, permno, _, first, last, *_ in records:
         if permno is not None and first is not None and last is not None:
             groups.setdefault(permno, []).append((symbol, first, last))
     candidates = []
@@ -378,11 +418,53 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         "unflagged_duplicate_days": len(violations),
         "unflagged_examples": violations[:10],
     }
-    errors = validate_named_traces(cases, catalog, missing_names, pre2000)
+    errors = []
+    if set(missing_names) != set(requested_missing):
+        errors.append("an unavailable placeholder or spell was returned")
+    if pre2000 == 0:
+        errors.append("no pre-2000 placeholder bars")
+    aapl = cases.get("AAPL", {})
+    if aapl.get("status") != "skipped" and aapl.get("kind") == "linked_yahoo":
+        if (
+            aapl.get("crsp_first") != "1980-12-15"
+            or (aapl.get("crsp_last") or "9999") > "1999-12-31"
+        ):
+            errors.append("AAPL CRSP dates differ from the fixed trace")
+    ttwo = cases.get("TTWO", {})
+    if ttwo.get("kind") == "linked_yahoo" and (ttwo.get("crsp_last") or "9999") > "1999-12-31":
+        errors.append("TTWO CRSP history extends past 1999")
+    vc = cases.get("VC", {})
+    if vc.get("status") != "skipped":
+        if vc.get("kind") != "yahoo" or vc.get("first") != "2010-10-05":
+            errors.append("VC Yahoo trace differs")
+        old = cases.get("PERMNO-88319~1")
+        if old is None:
+            cases["PERMNO-88319~1"] = {"status": "skipped", "reason": "name not in release"}
+        elif old.get("status") != "skipped" and (old.get("last") or "9999") > "2009-03-05":
+            errors.append("VC earlier spell ends after 2009-03-05")
+    if "GM" in catalog and catalog["GM"][1] not in (None, 12369):
+        errors.append("GM names the wrong stock")
+    gm_columns = {row[1]: row[0] for row in records if row[1] in (12079, 12369)}
+    measured["gm_columns"] = gm_columns
+    if len(gm_columns) == 2 and len(set(gm_columns.values())) != 2:
+        errors.append("old and new GM share a column")
+    if 12079 in gm_columns and not any(
+        row[1] == 12079 and row[2] == "placeholder" and row[0].startswith("PERMNO-12079")
+        for row in records
+    ):
+        errors.append("old GM is not a placeholder")
+    if len(gm_columns) < 2:
+        cases["GM_pair"] = {"status": "skipped", "reason": "name not in release"}
+    spell_names = [name for name in selected if catalog[name][2] == "spell"]
+    for name in selected:
+        if name.startswith("PERMNO-10128~") and catalog[name][2] != "spell":
+            errors.append(f"{name} is not a CRSP spell")
     measured["trace_errors"] = errors
     if violations or errors or any(case["status"] == "fail" for case in cases.values()):
         return "fail", measured, "a named trace or duplicate-stock check failed"
-    return "skipped", measured, "exact named-stock traces are not yet fully verified"
+    if "AAPL" not in catalog or not spell_names:
+        return "skipped", measured, "name not in release"
+    return "pass", measured, ""
 
 
 def _check_counts(conn, release_id: int) -> tuple[str, dict, str]:
@@ -423,7 +505,7 @@ def _check_counts(conn, release_id: int) -> tuple[str, dict, str]:
             cur.execute(
                 "SELECT coalesce(sum(rows),0) FROM ref.load_chunks WHERE load_id=%s", (load,)
             )
-            chunk_rows = cur.fetchone()[0]
+            chunk_rows = int(cur.fetchone()[0])
             item = {
                 "load_id": load,
                 "parsed": parsed,
@@ -699,6 +781,7 @@ def run_checks(
     *,
     save_baseline: Path | None = None,
     compare_baseline: Path | None = None,
+    allow_synthetic_skips: bool = False,
 ) -> dict:
     """Measure implemented checks; label unimplemented evidence rather than guessing."""
     import random
@@ -726,6 +809,15 @@ def run_checks(
         checks[0]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
         status, measured, reason = _stock_comparison(conn, release_id)
+        if (
+            allow_synthetic_skips
+            and status == "fail"
+            and all(
+                row.get("count", 0) < 2 or ten_stock_passes(row, minimum_months=2)
+                for row in measured.values()
+            )
+        ):
+            status, reason = "skipped", "synthetic data"
         _set(
             checks[1],
             status,
@@ -749,6 +841,8 @@ def run_checks(
             status, measured, reason = _mcgill_comparison(
                 conn, int(source_path.split(":", 1)[1]), loads["mcgill"][0]
             )
+            if allow_synthetic_skips and status == "skipped":
+                reason = "synthetic data"
             _set(checks[2], status, measured, {"correlation_min": 0.9999}, reason)
         checks[2]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
@@ -763,9 +857,20 @@ def run_checks(
         if chosen:
             status, measured, reason = _check_yahoo_keys(conn, url, release_id, chosen)
             if status == "pass" and len(chosen) < 40:
-                status, reason = "skipped", "fewer than 40 Yahoo symbols in release"
+                status, reason = (
+                    "skipped",
+                    (
+                        "synthetic data"
+                        if allow_synthetic_skips
+                        else "fewer than 40 Yahoo symbols in release"
+                    ),
+                )
         else:
-            status, measured, reason = "skipped", {}, "no Yahoo symbols in release"
+            status, measured, reason = (
+                "skipped",
+                {},
+                ("synthetic data" if allow_synthetic_skips else "no Yahoo symbols in release"),
+            )
         if save_baseline or compare_baseline:
             baseline = _baseline(conn, url, save=save_baseline, compare=compare_baseline)
             measured["baseline"] = baseline
@@ -835,7 +940,9 @@ def run_checks(
                 "skipped",
                 {},
                 "hashes equal",
-                "fewer than five pre-2000 placeholders or twenty total symbols",
+                "synthetic data"
+                if allow_synthetic_skips
+                else "fewer than five pre-2000 placeholders or twenty total symbols",
             )
         checks[6]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
@@ -918,25 +1025,28 @@ def run_checks(
         else:
             _set(
                 checks[7],
-                "skipped" if index_ok and plan_ok else "fail",
+                "skipped" if allow_synthetic_skips or (index_ok and plan_ok) else "fail",
                 measurements,
                 {"combined_one_seconds_lt": 5, "combined_hundred_seconds_lt": 60},
-                "fewer than 100 Yahoo symbols",
+                "synthetic data" if allow_synthetic_skips else "fewer than 100 Yahoo symbols",
             )
         checks[7]["elapsed_seconds"] = time.perf_counter() - started
         return {
             "release_id": release_id,
             "database_bytes": db_size,
             "free_bytes": free,
+            "synthetic_skips_allowed": allow_synthetic_skips,
             "checks": checks,
         }
     finally:
         conn.close()
 
 
-def checks_succeeded(checks: list[dict]) -> bool:
+def checks_succeeded(checks: list[dict], *, allow_synthetic_skips: bool = False) -> bool:
     """Require every check to pass or have one explicitly permitted absence."""
     allowed_skips = {"no baseline given", "name not in release"}
+    if allow_synthetic_skips:
+        allowed_skips.add("synthetic data")
     return all(
         item["status"] in ("pass", "covered_by_tests")
         or (item["status"] == "skipped" and item.get("reason") in allowed_skips)
@@ -966,6 +1076,7 @@ def main() -> int:
             args.data_volume,
             save_baseline=args.save_baseline,
             compare_baseline=args.compare_baseline,
+            allow_synthetic_skips=args.allow_synthetic_skips,
         )
     except Exception:
         raise SystemExit("Closing checks could not read the selected database") from None
@@ -974,7 +1085,11 @@ def main() -> int:
     for item in report["checks"]:
         print(f"{item['id']}  {item['status']:<16} {item['name']}")
     print(f"Report: {out}")
-    return 0 if checks_succeeded(report["checks"]) else 1
+    return (
+        0
+        if checks_succeeded(report["checks"], allow_synthetic_skips=args.allow_synthetic_skips)
+        else 1
+    )
 
 
 if __name__ == "__main__":

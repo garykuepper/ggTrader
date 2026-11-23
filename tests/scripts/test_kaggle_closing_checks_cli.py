@@ -133,16 +133,65 @@ def test_ten_stock_comparison_requires_full_month_coverage():
     assert not ten_stock_passes({**result, "count": 239, "max_abs_points": 1.7}, minimum_months=239)
 
 
-def test_named_trace_validation_checks_required_evidence():
-    from scripts.kaggle_closing_checks import validate_named_traces
+def test_named_frame_structural_validation():
+    from types import SimpleNamespace
 
-    missing = ["PERMNO-84761", "PERMNO-1~7"]
-    assert validate_named_traces({}, {}, missing, 5) == []
-    errors = validate_named_traces(
-        {"AAPL": {"status": "pass", "kind": "yahoo", "sources": {"yfinance": 1}}},
-        {"AAPL": ("AAPL", 14593, "yahoo", None, None, False)},
-        missing,
-        5,
+    import pandas as pd
+
+    from scripts.kaggle_closing_checks import validate_named_frame
+
+    days = pd.to_datetime(["1980-12-15", "1999-12-31", "2000-01-03"], utc=True)
+    index = pd.MultiIndex.from_arrays([days, ["AAPL"] * 3], names=["timestamp", "symbol"])
+    flags = pd.DataFrame(
+        {"source": ["crsp", "crsp", "yfinance"], "possible_double": [False] * 3}, index=index
     )
-    assert any("AAPL" in error for error in errors)
-    assert validate_named_traces({}, {}, [], 0)
+    close = pd.DataFrame({"AAPL": [10.0, 10.0, 11.0]}, index=days)
+    bars = SimpleNamespace(flags=flags, close=close)
+    span = {
+        "symbol": "AAPL",
+        "kind": "linked_yahoo",
+        "first_date": days[0].date(),
+        "last_date": days[-1].date(),
+        "first_yf_date": days[-1].date(),
+        "crsp_until": days[-1].date(),
+        "possible_double": False,
+    }
+    result = validate_named_frame(bars, span)
+    assert result["status"] == "pass" and result["join_return"] == pytest.approx(0.1)
+    flags.iloc[0, 0] = "yfinance"
+    assert validate_named_frame(bars, span)["status"] == "fail"
+
+
+def test_synthetic_skip_requires_explicit_flag():
+    from scripts.kaggle_closing_checks import checks_succeeded
+
+    checks = [{"status": "skipped", "reason": "synthetic data"}]
+    assert not checks_succeeded(checks)
+    assert checks_succeeded(checks, allow_synthetic_skips=True)
+    args = build_parser().parse_args(["--db-url-env", "TEST_URL", "--allow-synthetic-skips"])
+    assert args.allow_synthetic_skips
+
+
+def test_yahoo_span_checks_its_recorded_first_yahoo_date():
+    from types import SimpleNamespace
+
+    import pandas as pd
+
+    from scripts.kaggle_closing_checks import validate_named_frame
+
+    day = pd.Timestamp("2020-01-03", tz="UTC")
+    index = pd.MultiIndex.from_tuples([(day, "AAA")], names=["timestamp", "symbol"])
+    bars = SimpleNamespace(
+        flags=pd.DataFrame({"source": ["yfinance"], "possible_double": [False]}, index=index),
+        close=pd.DataFrame({"AAA": [10.0]}, index=[day]),
+    )
+    span = {
+        "symbol": "AAA",
+        "kind": "yahoo",
+        "first_date": day.date(),
+        "last_date": day.date(),
+        "first_yf_date": pd.Timestamp("2020-01-06").date(),
+        "crsp_until": None,
+        "possible_double": False,
+    }
+    assert validate_named_frame(bars, span)["status"] == "fail"

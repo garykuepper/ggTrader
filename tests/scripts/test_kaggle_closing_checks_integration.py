@@ -296,3 +296,198 @@ def test_named_audit_finds_unflagged_duplicate(conn):
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     status, measured, _ = _check_named_stocks(db, url, rid)
     assert status == "fail" and measured["unflagged_duplicate_days"] >= 1
+
+
+@pytest.fixture
+def healthy_release(conn, tmp_path, monkeypatch):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from ggTrader.data.kaggle_import.release import build_release
+
+    db, _ = conn
+    path = tmp_path / "healthy.parquet"
+    # AAPL has three rows, the two 10128 spells have one each, and 20 controls have two each.
+    pq.write_table(pa.table({"row": list(range(45))}), path)
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM public.ohlcv")
+        cur.execute(
+            "INSERT INTO ref.loads(dataset,file_path,status,rows_parsed, "
+            "rows_accepted,rows_quarantined) "
+            "VALUES ('crsp-daily',%s,'complete',45,45,0) RETURNING load_id",
+            (str(path),),
+        )
+        raw = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO ref.loads(dataset,file_path,status,parser_version,checks) "
+            "VALUES ('crsp-derived-bars',%s,'complete','derive-1',"
+            "'{\"source_rows\":45}') RETURNING load_id",
+            (f"load:{raw}",),
+        )
+        derived = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO ref.loads(dataset,status,rows_parsed,rows_accepted,rows_quarantined) "
+            "VALUES ('mcgill-fiam','complete',1,1,0) RETURNING load_id"
+        )
+        mcgill = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO ref.load_chunks(load_id,chunk_key,rows) "
+            "VALUES (%s,'rg',45),(%s,'batch',1)",
+            (raw, mcgill),
+        )
+        cur.execute(
+            "INSERT INTO kaggle_chars.mcgill(load_id,permno,date) VALUES (%s,14593,'2000-01-03')",
+            (mcgill,),
+        )
+        rows = [
+            (14593, 1, "1980-12-15", 10.0),
+            (14593, 1, "1999-12-31", 10.0),
+            (14593, 1, "2000-01-03", 10.0),
+            (10128, 1, "1990-01-02", 3.0),
+            (10128, 2, "1999-12-31", 4.0),
+        ]
+        rows += [
+            (number, 1, day, 10.0)
+            for number in range(93000, 93020)
+            for day in ("1999-12-31", "2000-01-03")
+        ]
+        cur.executemany(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close,abs_prc) "
+            "VALUES (%s,%s,%s,%s,%s,%s)",
+            [(derived, permno, spell, day, close, close) for permno, spell, day, close in rows],
+        )
+        cur.executemany(
+            "INSERT INTO kaggle_crsp.daily(load_id,permno,date,ret) VALUES (%s,%s,%s,0)",
+            [(raw, permno, day) for permno, _, day, _ in rows],
+        )
+        cur.executemany(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
+            "VALUES (%s,'AAPL','1d','yfinance',%s)",
+            [("2000-01-03", 10.0), ("2000-01-04", 11.0), ("2000-01-05", 12.0)],
+        )
+    db.commit()
+    links, settings = _inputs()
+    links.loc[0, ["symbol", "permno"]] = ["AAPL", 14593]
+    rid = build_release(
+        db, crsp_bars_load=derived, mcgill_load=mcgill, links=links, settings=settings
+    )
+    source = urlparse(os.environ["GGT_TEST_DB_URL"])
+    url = urlunparse(source._replace(path="/" + db.info.dbname))
+    monkeypatch.setenv("HEALTHY_SCRATCH_URL", url)
+    return db, rid, url
+
+
+def _run_healthy_cli(healthy_release, tmp_path, monkeypatch, *options):
+    import json
+    import sys
+    from pathlib import Path
+
+    from scripts import kaggle_closing_checks as closing
+
+    db, rid, _ = healthy_release
+    out = tmp_path / "healthy-report.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "checks",
+            "--db-url-env",
+            "HEALTHY_SCRATCH_URL",
+            "--release-id",
+            str(rid),
+            "--data-volume",
+            str(Path(__file__).resolve().parents[2]),
+            "--out",
+            str(out),
+            *options,
+        ],
+    )
+    code = closing.main()
+    return code, {item["id"]: item for item in json.loads(out.read_text())["checks"]}
+
+
+def test_healthy_synthetic_release_requires_explicit_skip(healthy_release, tmp_path, monkeypatch):
+    code, checks = _run_healthy_cli(
+        healthy_release, tmp_path, monkeypatch, "--allow-synthetic-skips"
+    )
+    assert code == 0
+    assert (
+        checks["check_01"]["status"]
+        == checks["check_05"]["status"]
+        == checks["check_07"]["status"]
+        == "pass"
+    )
+    assert all(
+        item["status"] in ("pass", "covered_by_tests")
+        or (
+            item["status"] == "skipped"
+            and item["reason"] in ("synthetic data", "name not in release", "no baseline given")
+        )
+        for item in checks.values()
+    )
+    code, _ = _run_healthy_cli(healthy_release, tmp_path, monkeypatch)
+    assert code != 0
+
+
+@pytest.mark.parametrize("check", ["01", "04", "05", "07"])
+def test_healthy_release_negative_controls(healthy_release, tmp_path, monkeypatch, check):
+    from dataclasses import replace
+
+    import ggTrader.data.bars as bars_module
+    from scripts import kaggle_closing_checks as closing
+
+    db, rid, url = healthy_release
+    options = ["--allow-synthetic-skips"]
+    if check == "01":
+        with db.cursor() as cur:
+            cur.execute("DELETE FROM kaggle_crsp.daily WHERE permno=14593 AND date='1980-12-15'")
+        db.commit()
+    elif check == "04":
+        readonly = closing.connect_target(url)
+        baseline = tmp_path / "baseline.json"
+        try:
+            closing._baseline(readonly, url, save=baseline)
+        finally:
+            readonly.close()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE public.ohlcv SET close=13 WHERE symbol='AAPL' AND timestamp='2000-01-04'"
+            )
+        db.commit()
+        options += ["--compare-baseline", str(baseline)]
+    elif check == "05":
+        with db.cursor() as cur:
+            cur.execute("SET LOCAL ggt.release_build = 'on'")
+            cur.execute(
+                "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
+                "first_date,last_date,possible_double) "
+                "VALUES (%s,'PERMNO-14593',14593,1,'placeholder',"
+                "'1980-12-15','1999-12-31',false)",
+                (rid,),
+            )
+        db.commit()
+    else:
+        original = closing._load
+
+        def timezone_fault(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if os.environ.get("PGTZ") == "America/Los_Angeles":
+                close = result.close.copy()
+                close.index = close.index + __import__("pandas").Timedelta(hours=1)
+                frames = {
+                    name: (close if name == "close" else result.frame(name))
+                    for name in bars_module.BAR_FIELDS
+                }
+                result = replace(
+                    result,
+                    close=close,
+                    provenance={
+                        **result.provenance,
+                        "bars_sha256": bars_module.bars_sha256(frames),
+                    },
+                )
+            return result
+
+        monkeypatch.setattr(closing, "_load", timezone_fault)
+    code, checks = _run_healthy_cli(healthy_release, tmp_path, monkeypatch, *options)
+    assert code != 0 and checks[f"check_{check}"]["status"] == "fail"
