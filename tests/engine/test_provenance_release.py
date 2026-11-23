@@ -44,3 +44,17 @@ def test_no_release_block_is_unchanged():
         "tape_sha256",
         "created_utc",
     }
+
+
+def test_different_dead_stock_settings_are_not_comparable():
+    a = provenance(tape_sha256="same", data_release=RELEASE, extra={"dead_stock_loss": 0.0})
+    b = {**a, "dead_stock_loss": 1.0}
+    for other in (
+        b,
+        {k: v for k, v in a.items() if k != "dead_stock_loss"},
+        {**a, "dead_stock_rule": {}},
+    ):
+        comparison = compare(a, other)
+        assert comparison.flag == "TAPE_DIFF" and not comparison.comparable
+        assert "dead-stock setting differs" in comparison.note
+    assert compare(a, dict(a)).comparable

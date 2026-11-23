@@ -163,3 +163,41 @@ def test_crsp_end_guard_refuses_only_columns_that_stop_at_file_end():
     assert run(continued).diagnostics["n_symbols"] == 1
     empty = subset_bars(bars, [])
     assert empty.close.shape[1] == 0
+
+
+def test_dead_stock_diagnostics_distinguish_warmup_and_total_loss():
+    bars = toy_bars()
+    early, later = bars.close.index[100], bars.close.index[400]
+    extra = {
+        name: bars.frame(name).rename(columns={"X": "Y"})
+        for name in ("close", "open", "high", "low", "volume")
+    }
+    frames = {name: pd.concat([bars.frame(name), extra[name]], axis=1) for name in extra}
+    spans = pd.DataFrame({"symbol": ["X", "Y"], "last_date": [early.date(), later.date()]})
+    both = replace(
+        bars,
+        **frames,
+        requested=("X", "Y"),
+        last_valid_bar=pd.Series({"X": bars.close.index[-1], "Y": bars.close.index[-1]}),
+        provenance={"source": "combined"},
+        spans=spans,
+    )
+    result = run_wfo(
+        "toy",
+        ToyHold,
+        LabConfig(),
+        both,
+        bars.close.X,
+        "2020-06-01",
+        "2022-03-01",
+        "equity",
+        TOY_CONFIG,
+        ParamGrid.single({"delay": 3}),
+        allow_unmasked=True,
+        verbose=False,
+        dead_stock_loss=1.0,
+    )
+    rule = result.diagnostics["dead_stock_rule"]
+    assert rule["n_ended_in_window"] == 2 and rule["n_ended_in_evaluation"] == 1
+    assert "written off completely" in rule["plain_words"]
+    assert "optimistic" not in rule["plain_words"]

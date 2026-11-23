@@ -554,6 +554,8 @@ def run_wfo(
             count (degeneracy guard, ``engine.config.MIN_LOSING_DAYS``; 0 turns it off).
             Selection windows also blank Sharpe and Sortino of a combination with no entry
             inside them (spec 5.6). The values used are stamped in ``diagnostics["guards"]``.
+        dead_stock_loss: fraction of the last price lost for ended combined-data series.
+            Weight strategies have no entry signals, so entries_suppressed is None.
         verbose: print the per-fold progress and the table, as the legacy run did.
 
     Returns:
@@ -689,11 +691,20 @@ def run_wfo(
             "applied": True,
             "loss": float(dead_stock_loss),
             "n_ended_in_window": dead_frames.meta["n_ended"],
-            "entries_suppressed": getattr(scorer, "entries_suppressed", 0),
+            "n_ended_in_evaluation": int(
+                dead_frames.exits.loc[dead_frames.exits.index >= eval_start_ts].to_numpy().sum()
+            ),
+            "entries_suppressed": (
+                None if strategy.kind == "weights" else scorer.entries_suppressed
+            ),
             "biases": dead_frames.meta["biases"],
-            "plain_words": "Dead stocks are sold at their last price, scaled by 1 - loss; "
-            "real holders of failed companies usually recover less, so these results are "
-            "optimistic.",
+            "plain_words": (
+                "Dead stocks are written off completely; the simulator uses a near-zero price."
+                if dead_stock_loss == 1.0
+                else "Dead stocks are sold at their last price, scaled by 1 - loss; "
+                "real holders of failed companies usually recover less, so these results are "
+                "optimistic."
+            ),
         }
     return WfoResult(
         oos_equity=oos_equity,

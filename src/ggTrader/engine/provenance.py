@@ -187,7 +187,17 @@ def _major(version: str) -> str:
     return version.split(".")[0]
 
 
-def compare(
+def _dead_stock_diff(
+    a: dict[str, Any], b: dict[str, Any], diffs: dict[str, tuple[Any, Any]]
+) -> bool:
+    """Record missing rule fields, and identify loss-setting changes."""
+    missing = [key for key in ("dead_stock_loss", "dead_stock_rule") if (key in a) != (key in b)]
+    for key in missing:
+        diffs[key] = (a.get(key), b.get(key))
+    return bool(missing) or "dead_stock_loss" in diffs
+
+
+def compare(  # noqa: C901
     a: dict[str, Any] | None, b: dict[str, Any] | None, *, allow_cross_epoch: bool = False
 ) -> Comparison:
     """Classify the difference between two provenance blocks (worst difference wins).
@@ -244,6 +254,9 @@ def compare(
     if "tape_sha256" in diffs or "data_release" in diffs:
         flags.append("TAPE_DIFF")
         note = "different data snapshots: a number gap may be the tape, not the engine"
+    if _dead_stock_diff(a, b, diffs):
+        flags.append("TAPE_DIFF")
+        note = "the dead-stock setting differs"
     sha_a, sha_b = a.get("membership_sha256"), b.get("membership_sha256")
     if sha_a and sha_b and sha_a != sha_b:
         diffs["membership_sha256"] = (sha_a, sha_b)

@@ -71,3 +71,28 @@ def test_total_loss_is_zero_recovery(monkeypatch):
 def test_weight_rule_not_applied_for_db_source(monkeypatch):
     scorer, req = simulate(monkeypatch, 0.0, combined=False)
     assert scorer.equity(req, 0).iloc[-1] == pytest.approx(10000.0, abs=1e-9)
+
+
+def test_weight_diagnostics_suppressed_entries_are_not_applicable():
+    from ggTrader.lab.strategies.xs_momentum import XsMomentum
+    from ggTrader.lab.strategy import LabConfig
+    from ggTrader.lab.wfo.run import run_wfo
+
+    bars = toy_bars()
+    spans = pd.DataFrame({"symbol": ["X"], "last_date": [bars.close.index[400].date()]})
+    bars = replace(bars, provenance={"source": "combined"}, spans=spans)
+    result = run_wfo(
+        "xs_momentum",
+        XsMomentum,
+        LabConfig(),
+        bars,
+        bars.close.X,
+        "2020-06-01",
+        "2022-03-01",
+        "equity",
+        TOY_CONFIG,
+        ParamGrid.single({"lookback": 30, "skip": 1, "top_n": 1}),
+        mask=bars.close.notna(),
+        verbose=False,
+    )
+    assert result.diagnostics["dead_stock_rule"]["entries_suppressed"] is None
