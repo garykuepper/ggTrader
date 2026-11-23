@@ -455,7 +455,10 @@ def load_bars(  # noqa: PLR0912, PLR0915
 
     validate_long(flat)
     stamps = flat["timestamp"]
-    flat = flat[(stamps >= lo) & (stamps <= hi)]
+    in_window = (stamps >= lo) & (stamps <= hi)
+    flat = flat[in_window]
+    if flags is not None:
+        flags = flags.loc[in_window.to_numpy()]
     provenance = {
         **provenance,
         "start": None if start is None else str(lo),
@@ -468,12 +471,13 @@ def load_bars(  # noqa: PLR0912, PLR0915
         )
         frames = {name: empty.copy() for name in BAR_FIELDS}
     else:
+        flat["symbol"] = flat["symbol"].astype(str)
         wide = flat.set_index(["timestamp", "symbol"])[list(snapshot.FIELDS)].unstack("symbol")
         wide.index = pd.DatetimeIndex(wide.index).tz_localize("UTC")
         wide.index.name = "timestamp"
         frames = {}
         for name in BAR_FIELDS:
-            frame = wide[name].astype("float64")
+            frame = wide[name].astype("float64").reindex(sorted(wide[name].columns), axis=1)
             frame.columns.name = "symbol"
             frames[name] = frame
 

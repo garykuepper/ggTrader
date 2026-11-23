@@ -238,3 +238,34 @@ def test_missing_symbols_lists_unknown_permno_and_k(published):
     assert bars.missing_symbols == ("PERMNO-1~7", "PERMNO-84761")
     assert bars.flags.empty
     assert len(bars.provenance["bars_sha256"]) == 64
+
+
+def test_combined_sorted_plain_columns_and_flags_match_filtered_bars(monkeypatch):
+    import pandas as pd
+
+    import ggTrader.data.bars as module
+
+    flat = pd.DataFrame(
+        {
+            "timestamp": pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-02"]),
+            "symbol": pd.Categorical(["BBB", "BBB", "AAA"], categories=["AAA", "BBB", "CCC"]),
+            **{name: [1.0, 2.0, 3.0] for name in ("open", "high", "low", "close", "volume")},
+        }
+    )
+    flags = flat.set_index(["timestamp", "symbol"])[[]]
+    flags.index = flags.index.set_levels(flags.index.levels[0].tz_localize("UTC"), level=0)
+    flags.attrs = {"data_release": {}, "drift_symbols": []}
+    monkeypatch.setattr(
+        module, "_read_combined_long", lambda *a: (flat.copy(), flags, pd.DataFrame(), 1)
+    )
+    monkeypatch.setattr(
+        module, "_read_db_long", lambda *a: flat.assign(symbol=flat.symbol.astype(str))
+    )
+    combined = load_bars(["AAA", "BBB", "CCC"], source="combined", start="2020-01-01 12:00")
+    db = load_bars(["AAA", "BBB", "CCC"], source="db", start="2020-01-01 12:00")
+    assert combined.symbols == ["AAA", "BBB"]
+    assert not isinstance(combined.close.columns, pd.CategoricalIndex)
+    pd.testing.assert_frame_equal(combined.close, db.close)
+    assert combined.flags.index.get_level_values("timestamp").min() == pd.Timestamp(
+        "2020-01-02", tz="UTC"
+    )
