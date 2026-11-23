@@ -142,8 +142,14 @@ def test_missing_price_raises():
 def test_cli_requires_yes(monkeypatch, capsys):
     import argparse
 
+    import psycopg2
+
     from ggTrader.cli.cmd_db import register_db_parser, run_db
 
+    def reject_connection(*args, **kwargs):
+        raise AssertionError("dry run must not connect")
+
+    monkeypatch.setattr(psycopg2, "connect", reject_connection)
     monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
     parser = argparse.ArgumentParser()
     register_db_parser(parser.add_subparsers(dest="command"))
@@ -163,5 +169,101 @@ def test_cli_requires_yes(monkeypatch, capsys):
             "TEST_IMPORT_URL",
         ]
     )
-    run_db(args)
+    assert run_db(args) is None
     assert "pass --yes" in capsys.readouterr().out
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_derived_retention_counts_running_and_complete(tmp_path):
+    from contextlib import closing
+    from datetime import datetime
+    from pathlib import Path
+
+    import psycopg2
+
+    from ggTrader.data.kaggle_import.crsp import load_crsp
+    from ggTrader.data.kaggle_import.ddl import apply_ddl
+    from ggTrader.data.kaggle_import.derive import derive_bars
+    from ggTrader.data.kaggle_import.loadlog import RetentionLimit, begin_load
+    from tests.data.kaggle_import.test_crsp_load import make_file, row
+    from tests.data.scratch_db import scratch_database
+
+    date = datetime(1999, 1, 4)
+    calendar = pd.DatetimeIndex([date])
+    with scratch_database() as url, closing(psycopg2.connect(url)) as conn:
+        apply_ddl(conn)
+        sources = []
+        for number in (1, 2, 3):
+            item = row(number, date)
+            item["ret"] = 0.1
+            path, sums = make_file(tmp_path, [item])
+            sources.append(
+                load_crsp(
+                    conn,
+                    path,
+                    sums,
+                    backup_dir=None,
+                    db_free_path=tmp_path,
+                    year=1999 if number == 3 else None,
+                    margin_bytes=0,
+                )
+            )
+        kwargs = dict(backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+        derive_bars(conn, sources[0], calendar, **kwargs)
+        with conn.cursor() as cur:
+            cur.execute("SELECT file_sha256 FROM ref.loads WHERE load_id=%s", (sources[1],))
+            digest = cur.fetchone()[0]
+        running = begin_load(
+            conn,
+            dataset="crsp-derived-bars",
+            kaggle_slug="derived",
+            file_path=Path(f"load:{sources[1]}"),
+            file_sha256=digest,
+            parser_version="derive-1",
+            content_sha256=digest,
+            expected_chunks=["pm-000002"],
+        )
+        with pytest.raises(RetentionLimit):
+            derive_bars(conn, sources[2], calendar, **kwargs)
+        assert derive_bars(conn, sources[1], calendar, **kwargs) == running
+        with pytest.raises(RetentionLimit):
+            derive_bars(conn, sources[2], calendar, **kwargs)
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_copy_round_trip_is_exact_for_close(tmp_path):
+    from contextlib import closing
+    from datetime import datetime
+
+    import psycopg2
+
+    from ggTrader.data.kaggle_import.crsp import load_crsp
+    from ggTrader.data.kaggle_import.ddl import apply_ddl
+    from ggTrader.data.kaggle_import.derive import derive_bars
+    from ggTrader.data.kaggle_import.spells import assign_spells
+    from tests.data.kaggle_import.test_crsp_load import make_file, row
+    from tests.data.scratch_db import scratch_database
+
+    dates = [datetime(1999, 1, day) for day in (4, 5, 6, 7)]
+    rows = []
+    for date, ret in zip(dates, [None, 1 / 3, -3 / 7, 1 / 7], strict=True):
+        item = row(1, date)
+        item.update(prc=0.1234567890123456, ret=ret)
+        rows.append(item)
+    path, sums = make_file(tmp_path, rows, row_group_size=len(rows))
+    calendar = pd.DatetimeIndex(dates)
+    expected = build_spell_closes(assign_spells(pd.DataFrame(rows), calendar)).close.tolist()
+    with scratch_database() as url, closing(psycopg2.connect(url)) as conn:
+        apply_ddl(conn)
+        source = load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+        derived = derive_bars(
+            conn, source, calendar, backup_dir=None, db_free_path=tmp_path, margin_bytes=0
+        )
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT close FROM market.daily_bars WHERE load_id=%s ORDER BY permno, date",
+                (derived,),
+            )
+            assert [value for (value,) in cur.fetchall()] == expected

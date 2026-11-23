@@ -19,6 +19,9 @@ from ggTrader.data.kaggle_import.loadlog import (
 )
 from ggTrader.data.kaggle_import.spells import assign_spells
 
+# Measured 124 bytes per row uncompressed in the 2026-11-22 rehearsal, rounded up.
+BYTES_PER_ROW = 140
+
 
 def build_spell_closes(spelled: pd.DataFrame) -> pd.DataFrame:
     """Anchor each spell at its final observed price and chain returns backwards."""
@@ -91,7 +94,7 @@ def derive_bars(  # noqa: PLR0913, PLR0915 — loader contract and sequential ch
     )
     try:
         for (first, last, count), key in zip(chunks, keys, strict=True):
-            if not free_space_ok(db_free_path, count * 100, margin_bytes):
+            if not free_space_ok(db_free_path, count * BYTES_PER_ROW, margin_bytes):
                 raise LoadFailed("Insufficient free space for chunk")
             with conn.cursor() as cur:
                 cur.execute(
