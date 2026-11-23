@@ -474,3 +474,14 @@ def test_empty_yahoo_fingerprint_cannot_publish_and_leaves_no_release(conn):
         ):
             cur.execute(f"SELECT count(*) FROM {table}")
             assert cur.fetchone()[0] == 0
+
+
+def test_build_release_can_publish_from_nested_savepoint(conn):
+    db, load = conn
+    links, settings = _inputs()
+    with db.cursor() as cur:
+        cur.execute("SAVEPOINT outer_scope")
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("SELECT status FROM ref.releases WHERE release_id=%s", (rid,))
+        assert cur.fetchone()[0] == "published"
