@@ -411,3 +411,19 @@ def test_nested_plans_accept_quoted_timestamps_and_compressed_time_bounds(tmp_pa
         assert nested_plan_evidence(path)["status"] == "pass"
     path.write_text(json.dumps({"yahoo": yahoo_symbol, "crsp": crsp_symbol + "\n" + compressed}))
     assert nested_plan_evidence(path)["status"] == "fail"
+
+
+def test_read_timing_limits_allow_fixed_single_symbol_cost():
+    from scripts.kaggle_closing_checks import read_timings_pass
+
+    times = {
+        "combined_one_seconds": 9.99,
+        "db_one_seconds": 9.99,
+        "combined_hundred_seconds": 59.99,
+        "db_hundred_seconds": 59.99,
+    }
+    assert read_timings_pass(times)
+    for key in ("combined_one_seconds", "db_one_seconds"):
+        assert not read_timings_pass({**times, key: 10.0})
+    for key in ("combined_hundred_seconds", "db_hundred_seconds"):
+        assert not read_timings_pass({**times, key: 60.0})

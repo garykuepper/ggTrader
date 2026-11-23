@@ -79,6 +79,9 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch, capsys):
     assert checks["check_06"]["measured"]["database_bytes"] > 0
     assert checks["check_06"]["measured"]["free_bytes"] > 0
     assert checks["check_07"]["status"] == "pass"
+    assert checks["check_08"]["tolerance"]["combined_one_seconds_lt"] == 10
+    assert checks["check_08"]["tolerance"]["combined_hundred_seconds_lt"] == 60
+    assert "fixed cost of a few seconds" in checks["check_08"]["measured"]["timing_note"]
     assert all(
         "name" in item and "measured" in item and "tolerance" in item and "elapsed_seconds" in item
         for item in checks.values()
