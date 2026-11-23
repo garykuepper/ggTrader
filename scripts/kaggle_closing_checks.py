@@ -255,6 +255,23 @@ def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
     return result
 
 
+def pack_identity_groups(groups, *, limit: int = 120):
+    """Pack complete identity groups into bounded symbol batches."""
+    batch = []
+    size = 0
+    for group in groups:
+        count = len(group[1])
+        if count > limit:
+            raise ValueError(f"identity has more than {limit} columns")
+        if batch and size + count > limit:
+            yield batch
+            batch, size = [], 0
+        batch.append(group)
+        size += count
+    if batch:
+        yield batch
+
+
 def validate_named_frame(bars, span: dict) -> dict:
     """Check one named column against its published span and splice boundaries."""
     import pandas as pd
@@ -429,13 +446,18 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
         if any(a[1] <= b[2] and b[1] <= a[2] for i, a in enumerate(rows) for b in rows[i + 1 :]):
             candidates.append((permno, [row[0] for row in rows]))
     violations = []
-    for permno, columns in candidates:
-        if len(columns) > 120:
-            return "fail", {"cases": cases, "permno": permno}, "identity has more than 120 columns"
-        group_bars = _load(url, columns, "combined", release_id)
-        violations.extend(
-            duplicate_stock_days(group_bars.flags, {name: permno for name in columns})
-        )
+    try:
+        for batch in pack_identity_groups(candidates):
+            names = [name for _, columns in batch for name in columns]
+            batch_bars = _load(url, names, "combined", release_id)
+            for permno, columns in batch:
+                flags = batch_bars.flags
+                flags = flags.loc[flags.index.get_level_values("symbol").isin(columns)]
+                violations.extend(duplicate_stock_days(flags, dict.fromkeys(columns, permno)))
+    except ValueError as exc:
+        if "identity has more than 120 columns" not in str(exc):
+            raise
+        return "fail", {"cases": cases}, str(exc)
     measured = {
         "cases": cases,
         "placeholder": placeholder,
@@ -1149,8 +1171,10 @@ def main() -> int:
             allow_synthetic_skips=args.allow_synthetic_skips,
             nested_plans=args.nested_plans,
         )
-    except Exception:
-        raise SystemExit("Closing checks could not read the selected database") from None
+    except Exception as exc:
+        from ggTrader.data.kaggle_import.guards import safe_error
+
+        raise SystemExit(f"Closing checks failed: {safe_error(exc)}") from None
     out = args.out or default_output(date.today(), args.label)
     write_json(out, report)
     for item in report["checks"]:

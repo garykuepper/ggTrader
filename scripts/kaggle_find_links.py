@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import os
-import re
 import sys
 from dataclasses import asdict
 from datetime import date, datetime, timezone
@@ -12,6 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from ggTrader.data.kaggle_import.guards import safe_error as _safe_error
 from ggTrader.data.kaggle_import.link_inputs import crsp_data, yahoo_data
 from ggTrader.data.kaggle_import.link_manifest import file_sha256, settings_dict
 from ggTrader.data.kaggle_import.links import APPROVED_LINK_SETTINGS, LinkSettings, find_links
@@ -47,17 +47,6 @@ def run(args: argparse.Namespace, settings: LinkSettings) -> pd.DataFrame:
         "symbols_sha256": hashlib.sha256("\n".join(symbols).encode()).hexdigest(),
     }
     return result
-
-
-def _safe_error(exc: Exception) -> str:
-    """Remove URL and connection parameters before showing a failure."""
-    message = re.sub(r"(?i)\b[a-z][a-z0-9+.-]*://\S+", "[connection redacted]", str(exc))
-    message = re.sub(
-        r"(?i)\b(?:password|passwd|pwd|user|host|hostaddr|port|dbname|database)\s*=\s*(?:'[^']*'|\"[^\"]*\"|\S+)",
-        "[connection field redacted]",
-        message,
-    )
-    return f"{type(exc).__name__}: {message}"
 
 
 def main(argv: list[str] | None = None) -> int:

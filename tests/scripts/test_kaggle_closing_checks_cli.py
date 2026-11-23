@@ -224,3 +224,33 @@ def test_nested_plan_evidence_requires_both_conditions(tmp_path):
         build_parser().parse_args(["--db-url-env", "DB", "--nested-plans", str(path)]).nested_plans
         == path
     )
+
+
+def test_identity_groups_are_packed_without_splitting_or_exceeding_limit():
+    from scripts.kaggle_closing_checks import pack_identity_groups
+
+    groups = [(n, [f"{n}-{i}" for i in range(size)]) for n, size in enumerate([50, 50, 30, 120, 2])]
+    batches = list(pack_identity_groups(groups, limit=120))
+    assert [sum(len(names) for _, names in batch) for batch in batches] == [100, 30, 120, 2]
+    assert [item for batch in batches for item in batch] == groups
+    with pytest.raises(ValueError, match="120"):
+        list(pack_identity_groups([(1, [str(i) for i in range(121)])], limit=120))
+
+
+def test_main_redacts_connection_details_from_failure(monkeypatch, capsys):
+    import sys
+
+    from scripts import kaggle_closing_checks as closing
+
+    monkeypatch.setenv("GGT_FAKE_URL", "postgresql://alice:secret@db.invalid/scratch")
+    monkeypatch.setattr(sys, "argv", ["checks", "--db-url-env", "GGT_FAKE_URL"])
+
+    def fail(*args, **kwargs):
+        raise ValueError("bad postgresql://alice:secret@db.invalid/scratch password=hidden")
+
+    monkeypatch.setattr(closing, "run_checks", fail)
+    with pytest.raises(SystemExit) as error:
+        closing.main()
+    message = str(error.value)
+    assert "ValueError" in message and "bad" in message
+    assert all(word not in message for word in ("alice", "secret", "hidden", "db.invalid"))

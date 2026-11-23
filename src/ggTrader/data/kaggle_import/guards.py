@@ -1,6 +1,7 @@
 """Preflight checks for imports."""
 
 import hashlib
+import re
 import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,6 +21,17 @@ _REDIRECT_KEYS = frozenset(
         "target_session_attrs",
     }
 )
+
+
+def safe_error(exc: Exception) -> str:
+    """Describe an exception while redacting connection strings and fields."""
+    message = re.sub(r"(?i)\b[a-z][a-z0-9+.-]*://\S+", "[connection redacted]", str(exc))
+    message = re.sub(
+        r"(?i)\b(?:password|passwd|pwd|user|host|hostaddr|port|dbname|database)\s*=\s*(?:'[^']*'|\"[^\"]*\"|\S+)",
+        "[connection field redacted]",
+        message,
+    )
+    return f"{type(exc).__name__}: {message}"
 
 
 def checked_pg_url(url: str, *, expect_db: str | None = None) -> str:
