@@ -200,34 +200,51 @@ def test_validate_long_still_enforces_weekday_and_duplicates_on_combined(monkeyp
         load_bars(["X"], source="combined")
 
 
-@pytest.mark.slow
-def test_wide_frame_memory_budget(monkeypatch):
-    import resource
+def test_wide_frame_memory_budget():
+    import subprocess
+    import sys
+    import textwrap
 
-    import numpy as np
-    import pandas as pd
+    program = textwrap.dedent("""
+        import resource
+        from datetime import datetime, timezone
+        import numpy as np
+        import pandas as pd
+        import ggTrader.data.bars as bars
+        import ggTrader.data.kaggle_import.reader as reader
 
-    import ggTrader.data.bars as module
-
-    dates = pd.bdate_range("1950-01-02", periods=14_000)
-    names = [f"S{i:04d}" for i in range(1000)]
-    count = len(dates) * len(names)
-    flat = pd.DataFrame(
-        {
-            "timestamp": np.tile(dates.to_numpy(), len(names)),
-            "symbol": pd.Categorical.from_codes(
-                np.repeat(np.arange(len(names)), len(dates)), names
-            ),
-        }
-    )
-    for field in ("open", "high", "low", "close", "volume"):
-        flat[field] = np.ones(count, dtype="float64")
-    monkeypatch.setattr(module, "_read_db_long", lambda *args: flat)
-    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    result = load_bars(names, source="db")
-    peak_delta = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - before
-    assert result.close.shape == (14_000, 1000)
-    assert peak_delta < 2.5 * 1024 * 1024
+        class Cursor:
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def execute(self, *args): pass
+            def fetchone(self): return (1, datetime.now(timezone.utc), {})
+            def fetchall(self): return []
+        class Connection:
+            def set_session(self, **kw): pass
+            def cursor(self): return Cursor()
+            def close(self): pass
+        bars.connect_readonly = lambda: Connection()
+        dates = pd.bdate_range("2000-01-03", periods=5000)
+        def fake(conn, release, symbols, start, end):
+            n = len(dates) * len(symbols)
+            data = {"ts": np.tile(dates.to_numpy(), len(symbols)),
+                    "symbol": np.repeat(symbols, len(dates)),
+                    "source": np.repeat("crsp", n), "drift": np.zeros(n, dtype=bool),
+                    "midpoint_flag": np.zeros(n, dtype=bool),
+                    "possible_double": np.zeros(n, dtype=bool)}
+            for col in ("open", "high", "low", "close", "volume", "abs_prc"):
+                data[col] = np.ones(n, dtype="float64")
+            return pd.DataFrame(data)
+        reader.read_combined = fake
+        result = bars.load_bars([f"S{i:03}" for i in range(300)], source="combined")
+        assert result.close.shape == (5000, 300)
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+        print(f"peak_bytes={peak} rows=1500000 bytes_per_row={peak / 1500000:.1f}")
+        assert peak < 552000000  # 424267776 measured, plus 30% slack.
+    """)
+    result = subprocess.run([sys.executable, "-c", program], capture_output=True, text=True)
+    print(result.stdout, result.stderr)
+    assert result.returncode == 0
 
 
 @pytest.mark.integration
@@ -255,9 +272,12 @@ def test_combined_sorted_plain_columns_and_flags_match_filtered_bars(monkeypatch
     flags = flat.set_index(["timestamp", "symbol"])[[]]
     flags.index = flags.index.set_levels(flags.index.levels[0].tz_localize("UTC"), level=0)
     flags.attrs = {"data_release": {}, "drift_symbols": []}
-    monkeypatch.setattr(
-        module, "_read_combined_long", lambda *a: (flat.copy(), flags, pd.DataFrame(), 1)
-    )
+
+    def read(_release, _symbols, start, end):
+        keep = (flat.timestamp >= start) & (flat.timestamp <= end)
+        return flat.loc[keep].copy(), flags.loc[keep.to_numpy()], pd.DataFrame(), 1
+
+    monkeypatch.setattr(module, "_read_combined_long", read)
     monkeypatch.setattr(
         module, "_read_db_long", lambda *a: flat.assign(symbol=flat.symbol.astype(str))
     )
@@ -269,3 +289,14 @@ def test_combined_sorted_plain_columns_and_flags_match_filtered_bars(monkeypatch
     assert combined.flags.index.get_level_values("timestamp").min() == pd.Timestamp(
         "2020-01-02", tz="UTC"
     )
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_combined_non_midnight_start_filters_flags(published):
+    import pandas as pd
+
+    _, _, rid = published
+    bars = load_bars(["TTWO"], start="2000-01-03 12:00", source="combined", release_id=rid)
+    assert bars.close.index.tolist() == [pd.Timestamp("2000-01-04", tz="UTC")]
+    assert bars.flags.index.get_level_values("timestamp").tolist() == bars.close.index.tolist()

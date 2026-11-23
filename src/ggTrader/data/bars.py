@@ -261,6 +261,7 @@ def _read_combined_long(
             part = read_combined(
                 conn, resolved, symbols[offset : offset + batch_size], start.date(), end.date()
             )
+            part = part.loc[(part["ts"] >= start) & (part["ts"] <= end)]
             drift_symbols.update(part.loc[part["drift"].fillna(False), "symbol"].tolist())
             part = part.drop(columns="drift").rename(columns={"ts": "timestamp"})
             part["symbol"] = part["symbol"].astype(symbol_dtype)
@@ -284,14 +285,16 @@ def _read_combined_long(
         )
         del batches
         combined["timestamp"] = pd.to_datetime(combined["timestamp"])
-        flat = combined[["timestamp", "symbol", *snapshot.FIELDS]].copy()
-        flags = combined.set_index(["timestamp", "symbol"])[
-            ["source", "abs_prc", "midpoint_flag", "possible_double"]
-        ].copy()
-        del combined
-        flags.index = flags.index.set_levels(
-            pd.DatetimeIndex(flags.index.levels[0]).tz_localize("UTC"), level=0
+        index = pd.MultiIndex.from_arrays(
+            [pd.DatetimeIndex(combined["timestamp"]).tz_localize("UTC"), combined["symbol"]],
+            names=["timestamp", "symbol"],
         )
+        flag_data = {
+            name: combined.pop(name).array
+            for name in ("source", "abs_prc", "midpoint_flag", "possible_double")
+        }
+        flags = pd.DataFrame(flag_data, index=index)
+        flat = combined
         with conn.cursor() as cur:
             cur.execute(
                 "WITH limits AS (SELECT "
@@ -456,9 +459,11 @@ def load_bars(  # noqa: PLR0912, PLR0915
     validate_long(flat)
     stamps = flat["timestamp"]
     in_window = (stamps >= lo) & (stamps <= hi)
-    flat = flat[in_window]
-    if flags is not None:
-        flags = flags.loc[in_window.to_numpy()]
+    if source == "combined":
+        if not in_window.all():
+            raise BarsValidationError("combined reader returned bars outside the requested window")
+    else:
+        flat = flat[in_window]
     provenance = {
         **provenance,
         "start": None if start is None else str(lo),
