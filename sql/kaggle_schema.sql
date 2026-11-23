@@ -265,3 +265,43 @@ BEGIN
  END IF;
  RETURN QUERY SELECT * FROM kaggle_chars.mcgill WHERE load_id = p_load_id;
 END $$;
+
+CREATE OR REPLACE FUNCTION market.ohlcv_daily_combined(
+    p_release_id bigint, p_symbols text[], p_start date, p_end date
+) RETURNS TABLE (
+    ts timestamp without time zone, symbol text, open double precision,
+    high double precision, low double precision, close double precision,
+    volume double precision, source text, abs_prc double precision,
+    midpoint_flag boolean, possible_double boolean, drift boolean
+) LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ref.releases r WHERE r.release_id = p_release_id AND r.status = 'published') THEN
+        RAISE EXCEPTION 'release % is unavailable', p_release_id;
+    END IF;
+    IF EXISTS (SELECT 1 FROM market.stock_spans s WHERE s.release_id = p_release_id
+               AND s.symbol = ANY(p_symbols) AND s.kind = 'linked_yahoo') THEN
+        RAISE EXCEPTION 'linked_yahoo is not implemented yet';
+    END IF;
+    RETURN QUERY
+    WITH requested AS (SELECT DISTINCT unnest(p_symbols) AS symbol)
+    SELECT y."timestamp"::date::timestamp, q.symbol, y.open, y.high, y.low, y.close, y.volume,
+           'yfinance'::text, NULL::double precision, NULL::boolean,
+           COALESCE(s.possible_double, false), false
+    FROM requested q
+    LEFT JOIN market.stock_spans s ON s.release_id = p_release_id AND s.symbol = q.symbol
+    JOIN public.ohlcv y ON y.symbol = q.symbol AND y.venue = 'yfinance' AND y.interval = '1d'
+    WHERE (s.symbol IS NULL OR s.kind = 'yahoo')
+      AND (p_start IS NULL OR y."timestamp" >= p_start::timestamp)
+      AND (p_end IS NULL OR y."timestamp" < (p_end + 1)::timestamp)
+    UNION ALL
+    SELECT b.date::timestamp, q.symbol, NULL::double precision, NULL::double precision,
+           NULL::double precision, b.close, NULL::double precision, 'crsp'::text,
+           b.abs_prc, b.midpoint_flag, s.possible_double, false
+    FROM requested q
+    JOIN market.stock_spans s ON s.release_id = p_release_id AND s.symbol = q.symbol
+                             AND s.kind IN ('placeholder', 'spell')
+    JOIN ref.release_loads l ON l.release_id = p_release_id AND l.role = 'crsp-bars'
+    JOIN market.daily_bars b ON b.load_id = l.load_id AND b.permno = s.permno AND b.spell = s.spell
+    WHERE (p_start IS NULL OR b.date >= p_start) AND (p_end IS NULL OR b.date <= p_end);
+END;
+$$;
