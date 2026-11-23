@@ -15,6 +15,14 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ---
 
+## Market data imports
+
+`ggt db import apply-ddl` creates the import schemas. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
+
+Both loaders require `--file PATH`, `--sums PATH`, and either `--backup-dir PATH` or `--no-backup-check`. `--db-free-path PATH` identifies the database volume for the free-space check (default `/`). CRSP accepts `--year YEAR` for a pilot only, or `--row-groups 0,1,...` for a subset; they cannot be combined. A full CRSP load compresses its chunks after completion. See [the import runbook](kaggle_import_runbook.md) for the owner gates and operating order. Nothing has been loaded into the live database.
+
+---
+
 ## Study and test tooling (not `ggt` subcommands)
 
 Study code lives with its study, in the study's own `code/` folder (shared helpers in the category's `_lib/` folder), not in `src/`. These scripts keep that tree honest; each has `--help`.

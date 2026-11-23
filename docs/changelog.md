@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-22 (Kaggle import infrastructure)
+
+- Added import schemas and resumable CRSP and McGill loaders with hash, backup and disk-space checks, plus pilot and restore-drill scripts. These provide traceable loads and a way to measure storage and verify backup recovery before a live import. Code has been tested on scratch databases; nothing has been loaded into the live database.
+
 ## 2026-11-22 (database bars by default)
 
 - `load_bars`, `load_run_bars`, and `ggt lab` now default to read-only Yahoo daily bars from the database because the frozen snapshot is a test fixture and its file is absent. Snapshots remain available explicitly, and database runs record a hash of the bars read so changes in the data are visible in provenance.
