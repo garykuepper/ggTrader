@@ -135,3 +135,15 @@ def test_pilot_filters_other_years_before_validation(conn, tmp_path):
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM kaggle_crsp.daily WHERE load_id=%s", (load_id,))
         assert cur.fetchone()[0] == 1
+
+
+def test_two_pilot_versions(conn, tmp_path):
+    path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
+    first = load_crsp(conn, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+    second = load_crsp(
+        conn, path, sums, backup_dir=None, year=1999, parser_suffix="v2", margin_bytes=0
+    )
+    assert first != second
+    with conn.cursor() as cur:
+        cur.execute("SELECT status FROM ref.loads WHERE load_id IN (%s, %s)", (first, second))
+        assert cur.fetchall() == [("complete",), ("complete",)]

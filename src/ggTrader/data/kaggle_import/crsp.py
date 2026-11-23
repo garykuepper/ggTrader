@@ -138,6 +138,7 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
     year: int | None = None,
     margin_bytes: int = 40 * 1024**3,
     db_free_path: Path | None = None,
+    parser_suffix: str | None = None,
 ) -> int:
     """Verify and load a file, or a resumable subset of its row groups."""
     if year is not None and row_groups is not None:
@@ -156,15 +157,18 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
     if len(set(groups)) != len(groups) or any(i not in all_groups for i in groups):
         raise ValueError("Invalid or repeated row group")
     expected = [f"year-{year:04d}"] if year is not None else [f"rg-{i:03d}" for i in all_groups]
+    parser_version = (
+        f"{PARSER_VERSION}:pilot-year-{year:04d}" if year is not None else PARSER_VERSION
+    )
+    if parser_suffix is not None:
+        parser_version += f":{parser_suffix}"
     load_id = begin_load(
         conn,
         dataset="crsp-daily-pilot" if year is not None else "crsp-daily",
         kaggle_slug="crsp-kaggle",
         file_path=parquet_path,
         file_sha256=digest,
-        parser_version=f"{PARSER_VERSION}:pilot-year-{year:04d}"
-        if year is not None
-        else PARSER_VERSION,
+        parser_version=parser_version,
         content_sha256=digest,
         expected_chunks=expected,
     )
