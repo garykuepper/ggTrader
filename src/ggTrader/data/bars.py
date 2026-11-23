@@ -51,7 +51,7 @@ from ggTrader.data.membership import MembershipSource
 BAR_FIELDS = ("close", "open", "high", "low", "volume")
 #: Field order of the legacy ``(symbol, field)`` frame (alphabetical, as ``sort_index`` gave).
 LEGACY_FIELD_ORDER = ("close", "high", "low", "open", "volume")
-SOURCES = ("snapshot", "db")
+SOURCES = ("snapshot", "db", "combined")
 VENUE = "yfinance"
 INTERVAL = "1d"
 STATEMENT_TIMEOUT_MS = 900_000
@@ -96,6 +96,8 @@ class Bars:
     missing_symbols: tuple[str, ...]
     last_valid_bar: pd.Series
     provenance: dict[str, Any] = field(default_factory=dict)
+    flags: pd.DataFrame | None = None
+    spans: pd.DataFrame | None = None
 
     @property
     def symbols(self) -> list[str]:
@@ -212,6 +214,86 @@ def _read_db_long(symbols: Sequence[str], start: pd.Timestamp, end: pd.Timestamp
     return flat
 
 
+def _read_combined_long(
+    release_id: int | None,
+    symbols: Sequence[str],
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    *,
+    batch_size: int = 120,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
+    """Read one published release in a single consistent read-only transaction."""
+    from ggTrader.data.kaggle_import.reader import read_combined
+    from ggTrader.data.kaggle_import.release import ReleaseUnavailable
+
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    conn = connect_readonly()
+    try:
+        conn.set_session(isolation_level="REPEATABLE READ", readonly=True, autocommit=False)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT release_id, created_at, yahoo_fingerprint FROM ref.releases "
+                "WHERE status = 'published' AND (%s IS NULL OR release_id = %s) "
+                "ORDER BY created_at DESC NULLS LAST, release_id DESC LIMIT 1",
+                (release_id, release_id),
+            )
+            row = cur.fetchone()
+        if row is None:
+            raise ReleaseUnavailable(
+                "no published release available"
+                if release_id is None
+                else f"release {release_id} is unavailable"
+            )
+        resolved, created_at, fingerprint = row
+        batches = []
+        drift_symbols: set[str] = set()
+        symbol_dtype = pd.CategoricalDtype(categories=list(symbols))
+        source_dtype = pd.CategoricalDtype(categories=["crsp", "yfinance"])
+        for offset in range(0, len(symbols), batch_size):
+            part = read_combined(
+                conn, resolved, symbols[offset : offset + batch_size], start.date(), end.date()
+            )
+            drift_symbols.update(part.loc[part["drift"].fillna(False), "symbol"].tolist())
+            part = part.drop(columns="drift").rename(columns={"ts": "timestamp"})
+            part["symbol"] = part["symbol"].astype(symbol_dtype)
+            part["source"] = part["source"].astype(source_dtype)
+            for col in ("midpoint_flag", "possible_double"):
+                part[col] = part[col].fillna(False).astype(bool)
+            for col in (*snapshot.FIELDS, "abs_prc"):
+                part[col] = pd.to_numeric(part[col]).astype("float64")
+            batches.append(part)
+        columns = [
+            "timestamp",
+            "symbol",
+            *snapshot.FIELDS,
+            "source",
+            "abs_prc",
+            "midpoint_flag",
+            "possible_double",
+        ]
+        combined = (
+            pd.concat(batches, ignore_index=True) if batches else pd.DataFrame(columns=columns)
+        )
+        combined["timestamp"] = pd.to_datetime(combined["timestamp"])
+        flat = combined[["timestamp", "symbol", *snapshot.FIELDS]].copy()
+        flags = combined.set_index(["timestamp", "symbol"])[
+            ["source", "abs_prc", "midpoint_flag", "possible_double"]
+        ].copy()
+        flags.index = flags.index.set_levels(
+            pd.DatetimeIndex(flags.index.levels[0]).tz_localize("UTC"), level=0
+        )
+        flags.attrs["data_release"] = {
+            "release_id": resolved,
+            "created_at": created_at.isoformat(),
+            "yahoo_fingerprint": fingerprint,
+        }
+        flags.attrs["drift_symbols"] = sorted(drift_symbols)
+        return flat, flags, pd.DataFrame(), resolved
+    finally:
+        conn.close()
+
+
 def _naive_utc(value: Any, default: pd.Timestamp) -> pd.Timestamp:
     """A bound as a naive UTC timestamp (tz-aware inputs are converted, not shifted)."""
     if value is None:
@@ -246,8 +328,12 @@ def _utc(value: Any) -> pd.Timestamp:
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
 
-def _normalise_symbols(symbols: Iterable[str]) -> tuple[str, ...]:
-    return tuple(sorted({normalize_yf_ticker(s) for s in symbols}))
+def _normalise_symbols(symbols: Iterable[str], *, combined: bool = False) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            {s if combined and s.startswith("PERMNO-") else normalize_yf_ticker(s) for s in symbols}
+        )
+    )
 
 
 def resolve_source(source: str | None, snapshot_path: Any | None) -> str:
@@ -259,7 +345,7 @@ def resolve_source(source: str | None, snapshot_path: Any | None) -> str:
     return source
 
 
-def load_bars(  # noqa: PLR0912
+def load_bars(  # noqa: PLR0912, PLR0915
     symbols: Sequence[str] | None = None,
     start: Any = None,
     end: Any = None,
@@ -310,16 +396,30 @@ def load_bars(  # noqa: PLR0912
             raise ValueError("membership=<MembershipSource> is required with universe='sp500'")
         span_start, span_end = _utc(universe_span[0]), _utc(universe_span[1])
         members = universe_all_between(universe, span_start, span_end, membership=membership)
-        requested = _normalise_symbols([*members, *extra_symbols])
+        requested = _normalise_symbols([*members, *extra_symbols], combined=source == "combined")
     else:
-        requested = _normalise_symbols([*(symbols or ()), *extra_symbols])
+        requested = _normalise_symbols(
+            [*(symbols or ()), *extra_symbols], combined=source == "combined"
+        )
 
     lo = _naive_utc(start, _FAR_PAST)
     hi = _naive_utc(end, _FAR_FUTURE)
 
+    flags = None
+    spans = None
     if source == "snapshot":
         flat, info = snapshot.load_snapshot_long(snapshot_path, requested, deep=deep_verify)
         provenance: dict[str, Any] = {"source": "snapshot", "snapshot": info.as_dict()}
+    elif source == "combined":
+        flat, flags, spans, _ = _read_combined_long(release_id, requested, lo, hi)
+        drift_symbols = flags.attrs["drift_symbols"]
+        provenance = {
+            "source": "combined",
+            "read_only": True,
+            "data_release": flags.attrs["data_release"],
+            "drift": bool(drift_symbols),
+            "drift_symbols": drift_symbols[:50],
+        }
     else:
         flat = _read_db_long(requested, lo, hi)
         provenance = {"source": "db", "read_only": True}
@@ -348,7 +448,7 @@ def load_bars(  # noqa: PLR0912
             frame.columns.name = "symbol"
             frames[name] = frame
 
-    provenance.update({"bars_sha256": bars_sha256(frames)} if source == "db" else {})
+    provenance.update({"bars_sha256": bars_sha256(frames)} if source in ("db", "combined") else {})
 
     loaded = set(frames["close"].columns)
     missing = tuple(s for s in requested if s not in loaded)
@@ -358,6 +458,8 @@ def load_bars(  # noqa: PLR0912
         missing_symbols=missing,
         last_valid_bar=last_valid,
         provenance=provenance,
+        flags=flags,
+        spans=spans,
         **frames,
     )
 
