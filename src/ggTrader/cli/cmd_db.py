@@ -52,6 +52,12 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     import_subs = importer.add_subparsers(dest="import_command", required=True)
     ddl = import_subs.add_parser("apply-ddl", help="Apply import schemas")
     ddl.add_argument("--db-url", help="Database URL (defaults to configured database)")
+    mcgill = import_subs.add_parser("mcgill", help="Load McGill CSV")
+    mcgill.add_argument("--file", type=Path, required=True)
+    mcgill.add_argument("--sums", type=Path, required=True)
+    mcgill.add_argument("--backup-dir", type=Path)
+    mcgill.add_argument("--db-url", required=True)
+    mcgill.add_argument("--yes", action="store_true")
     crsp = import_subs.add_parser("crsp", help="Load CRSP parquet")
     crsp.add_argument("--file", type=Path, required=True)
     crsp.add_argument("--sums", type=Path, required=True)
@@ -62,7 +68,7 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     crsp.add_argument("--yes", action="store_true")
 
 
-def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
+def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, C901 — existing command dispatcher
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
@@ -92,7 +98,7 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
         from ggTrader.data.kaggle_import.ddl import apply_ddl
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
-        if args.import_command == "crsp" and not args.yes:
+        if args.import_command in ("crsp", "mcgill") and not args.yes:
             print(f"Would import {args.file}; pass --yes to proceed.")
             return
         url = to_psycopg_url(args.db_url or get_db_connection_string())
@@ -100,6 +106,10 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
         try:
             if args.import_command == "apply-ddl":
                 apply_ddl(conn)
+            elif args.import_command == "mcgill":
+                from ggTrader.data.kaggle_import.mcgill import load_mcgill
+
+                print(f"Load {load_mcgill(conn, args.file, args.sums, backup_dir=args.backup_dir)}")
             else:
                 from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks, load_crsp
 
