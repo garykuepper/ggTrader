@@ -195,3 +195,32 @@ def test_yahoo_span_checks_its_recorded_first_yahoo_date():
         "possible_double": False,
     }
     assert validate_named_frame(bars, span)["status"] == "fail"
+
+
+def test_nested_plan_evidence_requires_both_conditions(tmp_path):
+    import json
+
+    from scripts.kaggle_closing_checks import check8_status, checks_succeeded, nested_plan_evidence
+
+    assert nested_plan_evidence(None)["status"] == "collected_by_orchestrator"
+    assert check8_status(True, True, "collected_by_orchestrator", False) == "partial"
+    assert not checks_succeeded([{"status": "partial"}])
+    assert check8_status(True, True, "collected_by_orchestrator", True) == "skipped"
+    path = tmp_path / "plans.json"
+    path.write_text(
+        json.dumps(
+            {
+                "yahoo": "Filter: symbol = ANY; timestamp >= 2000",
+                "crsp": "Index Cond: symbol = ANY; date >= 2000",
+            }
+        )
+    )
+    assert nested_plan_evidence(path)["status"] == "pass"
+    assert check8_status(True, True, "pass", False) == "pass"
+    path.write_text(json.dumps({"yahoo": "Filter: symbol = ANY", "crsp": "date >= 2000"}))
+    assert nested_plan_evidence(path)["status"] == "fail"
+    assert check8_status(True, True, "fail", False) == "fail"
+    assert (
+        build_parser().parse_args(["--db-url-env", "DB", "--nested-plans", str(path)]).nested_plans
+        == path
+    )

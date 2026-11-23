@@ -47,6 +47,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--out", type=Path)
     parser.add_argument("--label")
     parser.add_argument(
+        "--nested-plans", type=Path, help="JSON containing captured Yahoo and CRSP nested plans"
+    )
+    parser.add_argument(
         "--allow-synthetic-skips",
         action="store_true",
         help="Allow checks without sufficient synthetic sample data to be skipped.",
@@ -647,6 +650,38 @@ def symbol_filter_in_plan(plan) -> bool:
     )
 
 
+def nested_plan_evidence(path: Path | None) -> dict:
+    """Check externally captured nested plans for symbol and date restrictions."""
+    if path is None:
+        return {"status": "collected_by_orchestrator", "plans": None}
+    import json
+
+    try:
+        plans = json.loads(path.read_text())
+        valid = all(
+            isinstance(plans.get(name), str)
+            and re.search(
+                r"(?i)(?:filter|cond)[^\n]*\bsymbol\b[^\n]*(?:=|\bany\b|\bin\b)", plans[name]
+            )
+            and re.search(r"(?i)\b(?:timestamp|date)\b\s*(?:>=|<=|>|<|=|\bbetween\b)", plans[name])
+            for name in ("yahoo", "crsp")
+        )
+    except (OSError, ValueError, AttributeError, TypeError):
+        return {"status": "fail", "plans": None}
+    return {"status": "pass" if valid else "fail", "plans": plans}
+
+
+def check8_status(good: bool, enough_symbols: bool, nested: str, synthetic: bool) -> str:
+    """Combine measured timings with the separately collected nested-plan evidence."""
+    if not good or nested == "fail":
+        return "fail"
+    if synthetic and (not enough_symbols or nested == "collected_by_orchestrator"):
+        return "skipped"
+    if nested == "collected_by_orchestrator":
+        return "partial"
+    return "pass" if enough_symbols else "skipped"
+
+
 def ten_stock_passes(value: dict, *, minimum_months: int) -> bool:
     """Require paired coverage and all three return-comparison thresholds."""
     return (
@@ -807,6 +842,7 @@ def run_checks(
     save_baseline: Path | None = None,
     compare_baseline: Path | None = None,
     allow_synthetic_skips: bool = False,
+    nested_plans: Path | None = None,
 ) -> dict:
     """Measure implemented checks; label unimplemented evidence rather than guessing."""
     import random
@@ -1012,9 +1048,12 @@ def run_checks(
             )
             plan = cur.fetchone()[0]
         plan_ok = symbol_filter_in_plan(plan)
+        nested = nested_plan_evidence(nested_plans)
         measurements = {
             "indexes": indexes,
-            "plan": plan,
+            "baseline_direct_probe_plan": plan,
+            "nested_function_plan": nested["plans"],
+            "nested_function_plan_status": nested["status"],
             "symbol_filter_in_scan": plan_ok,
             "available_yahoo_symbols": len(yahoo),
             "required_indexes_present": index_ok,
@@ -1038,16 +1077,25 @@ def run_checks(
                 and measurements["db_one_seconds"] < 5
                 and measurements["db_hundred_seconds"] < 60
             )
+            status = check8_status(good, True, nested["status"], allow_synthetic_skips)
             _set(
                 checks[7],
-                "pass" if good else "fail",
+                status,
                 measurements,
                 {"combined_one_seconds_lt": 5, "combined_hundred_seconds_lt": 60},
+                "synthetic data"
+                if status == "skipped"
+                else "nested plans not supplied"
+                if status == "partial"
+                else "",
             )
         else:
+            status = check8_status(
+                index_ok and plan_ok, False, nested["status"], allow_synthetic_skips
+            )
             _set(
                 checks[7],
-                "skipped" if allow_synthetic_skips or (index_ok and plan_ok) else "fail",
+                status,
                 measurements,
                 {"combined_one_seconds_lt": 5, "combined_hundred_seconds_lt": 60},
                 "synthetic data" if allow_synthetic_skips else "fewer than 100 Yahoo symbols",
@@ -1099,6 +1147,7 @@ def main() -> int:
             save_baseline=args.save_baseline,
             compare_baseline=args.compare_baseline,
             allow_synthetic_skips=args.allow_synthetic_skips,
+            nested_plans=args.nested_plans,
         )
     except Exception:
         raise SystemExit("Closing checks could not read the selected database") from None
