@@ -298,3 +298,42 @@ def test_reader_does_not_scan_all_chunks(linked):
                     scanned.add(node["Relation Name"])
                 nodes.extend(node.get("Plans", []))
             assert 0 < len(scanned) < len(chunks), (scanned, chunks)
+
+
+def test_combined_sql_filters_every_yahoo_probe_by_requested_symbols(conn):
+    import re
+
+    db, _ = conn
+    with db.cursor() as cur:
+        for function in (
+            "market._combined_linked(bigint,text[])",
+            "market.ohlcv_daily_combined(bigint,text[],date,date)",
+        ):
+            cur.execute("SELECT pg_get_functiondef(%s::regprocedure)", (function,))
+            definition = cur.fetchone()[0]
+            matches = list(re.finditer(r"public\.ohlcv\s+(\w+)", definition, re.I))
+            assert matches
+            for i, match in enumerate(matches):
+                segment = definition[
+                    match.end() : matches[i + 1].start() if i + 1 < len(matches) else None
+                ]
+                alias = match.group(1)
+                assert re.search(
+                    rf"\b{alias}\.symbol\s*=\s*ANY\s*\(\s*p_symbols\s*\)", segment, re.I
+                ), (function, alias)
+                assert re.search(rf"\b{alias}\.interval\s*=\s*'1d'", segment, re.I)
+                assert re.search(rf"\b{alias}\.venue\s*=\s*'yfinance'", segment, re.I)
+
+
+def test_yahoo_rows_after_release_horizon_are_excluded(linked):
+    db, _ = linked
+    before = read(linked, ["TTWO"])
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
+            "VALUES ('2000-01-05','TTWO','1d','yfinance',99)"
+        )
+    db.commit()
+    after = read(linked, ["TTWO"])
+    pd.testing.assert_frame_equal(before, after)
+    assert not after.drift.any()

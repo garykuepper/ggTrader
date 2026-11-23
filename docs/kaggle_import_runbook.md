@@ -13,3 +13,7 @@ A load marked `failed` is terminal: correct the cause and start a new load. A ru
 To exercise the backup restore, set an administrative connection to the server hosting the `ggtrader_db` container in an environment variable and run `scripts/run_capped.sh .venv/bin/python scripts/kaggle_restore_drill.py --scratch-url-env GGT_SCRATCH_URL --out results/kaggle_restore_drill.json`. Use `--dump`, `--expected`, and `--sums` to select the backup and its evidence when needed. The drill creates a scratch database on that server and runs `pg_restore` inside the `ggtrader_db` container, so the connection and container must refer to the same server. It can consume substantial disk space; the live database is not the restore target.
 
 Further owner gates: G3 approves the written link table after calibration; G4 approves wiring the dead-stock rule into the engine; G5 approves the first release before publication. See the [implementation plan](superpowers/plans/2026-11-22-kaggle-import-version-one.md) for the evidence at each gate.
+
+A published release reads Yahoo bars only through the date recorded in its Yahoo fingerprint.
+Rows added after that date are excluded; Yahoo rows within the horizon remain mutable and can
+trigger the release's drift check.

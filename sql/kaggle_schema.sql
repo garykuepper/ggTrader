@@ -308,11 +308,11 @@ LANGUAGE plpgsql STABLE AS $$
 BEGIN
 PERFORM ref.require_available_release(p_release_id);
 RETURN QUERY SELECT s.symbol,s.permno,s.spell,l.load_id,s.crsp_until,s.first_yf_date,s.possible_double,
-       (SELECT y.close FROM public.ohlcv y WHERE y.symbol=s.symbol AND y.venue='yfinance'
+       (SELECT y.close FROM public.ohlcv y WHERE y.symbol=s.symbol AND y.symbol = ANY(p_symbols) AND y.venue='yfinance'
            AND y.interval='1d' AND y.timestamp=sp.common_day::timestamp) /
        NULLIF((SELECT b.close FROM market.daily_bars b WHERE b.load_id=l.load_id
            AND b.permno=s.permno AND b.date=sp.common_day),0),
-       EXISTS (SELECT 1 FROM public.ohlcv o WHERE o.symbol=s.symbol AND o.venue='yfinance' AND o.interval='1d' AND o.timestamp < s.first_yf_date::timestamp)
+       EXISTS (SELECT 1 FROM public.ohlcv o WHERE o.symbol=s.symbol AND o.symbol = ANY(p_symbols) AND o.venue='yfinance' AND o.interval='1d' AND o.timestamp < s.first_yf_date::timestamp)
        OR EXISTS (SELECT 1 FROM generate_subscripts(sp.join_returns,1) n(i)
           WHERE c.closes[n.i] IS NULL OR c.closes[n.i+1] IS NULL
              OR c.closes[n.i] = 0
@@ -324,7 +324,7 @@ JOIN ref.splice_links sp ON sp.release_id=s.release_id AND sp.permno=s.permno
 CROSS JOIN LATERAL (
     SELECT array_agg(q.close ORDER BY q.timestamp) AS closes FROM (
         SELECT x.close, x.timestamp FROM public.ohlcv x
-        WHERE x.symbol=s.symbol AND x.venue='yfinance' AND x.interval='1d'
+        WHERE x.symbol=s.symbol AND x.symbol = ANY(p_symbols) AND x.venue='yfinance' AND x.interval='1d'
           AND x.timestamp >= s.first_yf_date::timestamp
         ORDER BY x.timestamp LIMIT COALESCE(array_length(sp.join_returns,1),0)+1
     ) q
@@ -349,9 +349,12 @@ CREATE OR REPLACE FUNCTION market.ohlcv_daily_combined(
     volume double precision, source text, abs_prc double precision,
     midpoint_flag boolean, possible_double boolean, drift boolean
 ) LANGUAGE plpgsql STABLE AS $$
-DECLARE missing_symbol text;
+-- Yahoo reads stop at the date recorded by the release fingerprint.
+DECLARE missing_symbol text; yahoo_end date;
 BEGIN
     PERFORM ref.require_available_release(p_release_id);
+    SELECT left(yahoo_fingerprint->>'newest_yahoo_timestamp',10)::date INTO yahoo_end
+    FROM ref.releases WHERE release_id=p_release_id;
     SELECT x.symbol INTO missing_symbol FROM market._combined_linked(p_release_id,p_symbols) x WHERE x.scale IS NULL LIMIT 1;
     IF FOUND THEN RAISE EXCEPTION 'release input missing for %', missing_symbol; END IF;
     RETURN QUERY
@@ -363,7 +366,8 @@ BEGIN
     FROM requested q
     LEFT JOIN market.stock_spans s ON s.release_id = p_release_id AND s.symbol = q.symbol
     JOIN public.ohlcv y ON y.symbol = q.symbol AND y.venue = 'yfinance' AND y.interval = '1d'
-    WHERE (s.symbol IS NULL OR s.kind = 'yahoo')
+    WHERE y.symbol = ANY(p_symbols) AND y.timestamp::date <= yahoo_end
+      AND (s.symbol IS NULL OR s.kind = 'yahoo')
       AND (p_start IS NULL OR y."timestamp" >= p_start::timestamp)
       AND (p_end IS NULL OR y."timestamp" < (p_end + 1)::timestamp)
     UNION ALL
@@ -389,6 +393,7 @@ BEGIN
     SELECT y.timestamp,x.symbol,y.open,y.high,y.low,y.close,y.volume,'yfinance'::text,NULL::double precision,NULL::boolean,x.possible_double,x.drift
     FROM linked x
     JOIN public.ohlcv y ON y.symbol=x.symbol AND y.venue='yfinance' AND y.interval='1d'
-    WHERE y.timestamp>=x.first_yf_date::timestamp AND (p_start IS NULL OR y.timestamp>=p_start::timestamp) AND (p_end IS NULL OR y.timestamp<(p_end+1)::timestamp);
+    WHERE y.symbol = ANY(p_symbols) AND y.timestamp::date <= yahoo_end
+      AND y.timestamp>=x.first_yf_date::timestamp AND (p_start IS NULL OR y.timestamp>=p_start::timestamp) AND (p_end IS NULL OR y.timestamp<(p_end+1)::timestamp);
 END;
 $$;
