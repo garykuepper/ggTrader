@@ -223,3 +223,26 @@ def test_recompression_reclaims_space(tmp_path):
                 assert rows == 2 * count
                 sizes.append(size)
     assert sizes[1] < sizes[0]
+
+
+def test_double_values_survive_copy_exactly(conn, tmp_path):
+    values = [0.1234567890123456, 1 / 3, 123456789.12345679, 2.2250738585072014e-308, 1e-10]
+    rows = []
+    for i, value in enumerate(values):
+        item = row(2000000000 + i, datetime(1999, 1, 1))
+        item.update(prc=value, ret=value, shrout=3.4e7, vwretd=0.0004785)
+        rows.append(item)
+    special = row(2000000005, datetime(1999, 1, 1))
+    special.update(prc=-18.25, ret=None, shrout=0.0, vwretd=0.0)
+    rows.append(special)
+    path, sums = make_file(tmp_path, rows, row_group_size=len(rows))
+    load_id = load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT permno, prc, ret, shrout, vwretd FROM kaggle_crsp.daily "
+            "WHERE load_id=%s ORDER BY permno",
+            (load_id,),
+        )
+        assert cur.fetchall() == [
+            (2000000000 + i, value, value, 3.4e7, 0.0004785) for i, value in enumerate(values)
+        ] + [(2000000005, -18.25, None, 0.0, 0.0)]

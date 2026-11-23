@@ -238,3 +238,46 @@ def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads")
         assert cur.fetchone()[0] == "failed"
+
+
+def test_double_values_survive_copy_exactly(conn, tmp_path):
+    values = [0.1234567890123456, 1 / 3, 123456789.12345679, 2.2250738585072014e-308, 1e-10]
+    path = tmp_path / "precision.csv"
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[name for name, _ in MCGILL_COLUMNS])
+        writer.writeheader()
+        for i, value in enumerate(values):
+            writer.writerow(
+                {
+                    "date": "20000131",
+                    "ret_eom": "20000131",
+                    "size_port": "B",
+                    "permno": 2000000000 + i,
+                    "prc": repr(value),
+                    "rf": repr(value),
+                    "market_equity": repr(value),
+                }
+            )
+        writer.writerow(
+            {
+                "date": "20000131",
+                "ret_eom": "20000131",
+                "size_port": "B",
+                "permno": 2000000005,
+                "prc": "-18.25",
+                "rf": "",
+                "market_equity": "0",
+            }
+        )
+    sums = tmp_path / "sums"
+    sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
+    load_id = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT permno, prc, rf, market_equity FROM kaggle_chars.mcgill "
+            "WHERE load_id=%s ORDER BY permno",
+            (load_id,),
+        )
+        assert cur.fetchall() == [
+            (2000000000 + i, value, value, value) for i, value in enumerate(values)
+        ] + [(2000000005, -18.25, None, 0.0)]
