@@ -90,7 +90,12 @@ def _running(cur: cursor, load_id: int) -> tuple:
 
 
 def commit_chunk(
-    conn: connection, load_id: int, chunk_key: str, rows: int, writer: Callable[[cursor], int]
+    conn: connection,
+    load_id: int,
+    chunk_key: str,
+    rows: int,
+    writer: Callable[[cursor], int],
+    quarantine: Sequence[tuple[str, dict, str]] = (),
 ) -> bool:
     """Commit data and chunk marker together; retries do not call writer."""
     try:
@@ -105,39 +110,21 @@ def commit_chunk(
                 return False
             if rows < 0 or writer(cur) != rows:
                 raise LoadFailed(f"Chunk {chunk_key} wrote an unexpected row count")
+            cur.executemany(
+                "INSERT INTO ref.quarantine VALUES (%s,%s,%s,%s,%s)",
+                [(load_id, chunk_key, ref, Json(raw), reason) for ref, raw, reason in quarantine],
+            )
             cur.execute(
                 "INSERT INTO ref.load_chunks VALUES (%s,%s,%s,now())", (load_id, chunk_key, rows)
             )
             cur.execute(
-                "UPDATE ref.loads SET rows_accepted=rows_accepted+%s, rows_parsed=rows_parsed+%s"
-                " WHERE load_id=%s",
-                (rows, rows, load_id),
+                "UPDATE ref.loads SET rows_accepted=rows_accepted+%s, "
+                "rows_quarantined=rows_quarantined+%s, rows_parsed=rows_parsed+%s "
+                "WHERE load_id=%s",
+                (rows, len(quarantine), rows + len(quarantine), load_id),
             )
         conn.commit()
         return True
-    except Exception:
-        conn.rollback()
-        raise
-
-
-def quarantine_rows(
-    conn: connection, load_id: int, chunk_key: str, rows: Sequence[tuple[str, dict, str]]
-) -> None:
-    """Record rejected rows and their counts in one transaction."""
-    try:
-        with conn.cursor() as cur:
-            _running(cur, load_id)
-            cur.executemany(
-                "INSERT INTO ref.quarantine VALUES (%s,%s,%s,%s,%s)",
-                [(load_id, chunk_key, ref, Json(raw), reason) for ref, raw, reason in rows],
-            )
-            cur.execute(
-                "UPDATE ref.loads SET rows_quarantined=rows_quarantined+%s,"
-                " rows_parsed=rows_parsed+%s"
-                " WHERE load_id=%s",
-                (len(rows), len(rows), load_id),
-            )
-        conn.commit()
     except Exception:
         conn.rollback()
         raise

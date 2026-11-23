@@ -14,7 +14,6 @@ from ggTrader.data.kaggle_import.loadlog import (
     can_delete_load,
     commit_chunk,
     complete_load,
-    quarantine_rows,
 )
 from tests.data.scratch_db import scratch_database
 
@@ -53,8 +52,7 @@ def test_resume_counts_and_completion(conn):
     assert not commit_chunk(conn, load, "1999", 1, writer)
     with pytest.raises(LoadFailed, match="2000"):
         complete_load(conn, load, {})
-    quarantine_rows(conn, load, "2000", [("r", {"x": 1}, "bad")])
-    assert commit_chunk(conn, load, "2000", 0, lambda cur: 0)
+    assert commit_chunk(conn, load, "2000", 0, lambda cur: 0, [("r", {"x": 1}, "bad")])
     complete_load(conn, load, {"ok": True})
     with pytest.raises(AlreadyLoaded):
         begin(conn)
@@ -101,3 +99,60 @@ def test_retention_and_published_release(conn):
     conn.commit()
     assert not can_delete_load(conn, first)
     assert can_delete_load(conn, second)
+
+
+def test_quarantine_commits_with_chunk_and_retry_does_not_duplicate(conn):
+    load = begin(conn)
+    rejected = [("1", {"v": 1}, "bad"), ("2", {"v": 2}, "bad")]
+    assert commit_chunk(conn, load, "ok", 0, lambda cur: 0, rejected)
+    assert not commit_chunk(conn, load, "ok", 0, lambda cur: 0, rejected)
+    # A database failure after quarantine insertion must roll back the entire chunk.
+    with conn.cursor() as cur:
+        cur.execute(
+            "ALTER TABLE ref.load_chunks ADD CONSTRAINT reject_key CHECK (chunk_key <> 'fail')"
+        )
+    conn.commit()
+    with pytest.raises(psycopg2.Error):
+        commit_chunk(conn, load, "fail", 0, lambda cur: 0, rejected)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.quarantine WHERE load_id=%s", (load,))
+        assert cur.fetchone()[0] == 2
+        cur.execute(
+            "SELECT rows_parsed, rows_accepted, rows_quarantined FROM ref.loads WHERE load_id=%s",
+            (load,),
+        )
+        assert cur.fetchone() == (2, 0, 2)
+        cur.execute(
+            "SELECT count(*) FROM ref.load_chunks WHERE load_id=%s AND chunk_key='fail'", (load,)
+        )
+        assert cur.fetchone()[0] == 0
+
+
+def test_new_parser_version_same_bytes_is_a_new_load(conn):
+    first = begin(conn)
+    complete_load(conn, first, {})
+    with pytest.raises(AlreadyLoaded):
+        begin(conn)
+    assert begin(conn, version="2") != first
+
+
+def test_missing_expected_chunk_blocks_complete(conn):
+    load = begin(conn, expected_chunks=["missing"])
+    with pytest.raises(LoadFailed, match="missing"):
+        complete_load(conn, load, {})
+
+
+def test_running_load_resumes_same_id(conn):
+    load = begin(conn)
+    assert begin(conn) == load
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.loads")
+        assert cur.fetchone()[0] == 1
+
+
+def test_third_load_refused_without_allow_third(conn):
+    for version in ("1", "2"):
+        complete_load(conn, begin(conn, version=version), {})
+    with pytest.raises(RetentionLimit):
+        begin(conn, digest="other")
+    assert begin(conn, digest="other", allow_third=True)
