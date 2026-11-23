@@ -271,7 +271,10 @@ CREATE OR REPLACE FUNCTION market._combined_linked(p_release_id bigint, p_symbol
 RETURNS TABLE (symbol text, permno bigint, spell int, load_id bigint, crsp_until date, first_yf_date date, possible_double boolean, scale double precision, drift boolean)
 LANGUAGE sql STABLE AS $$
 SELECT s.symbol,s.permno,s.spell,l.load_id,s.crsp_until,s.first_yf_date,s.possible_double,
-       y.close / NULLIF(b.close,0),
+       (SELECT y.close FROM public.ohlcv y WHERE y.symbol=s.symbol AND y.venue='yfinance'
+           AND y.interval='1d' AND y.timestamp=sp.common_day::timestamp) /
+       NULLIF((SELECT b.close FROM market.daily_bars b WHERE b.load_id=l.load_id
+           AND b.permno=s.permno AND b.date=sp.common_day),0),
        EXISTS (SELECT 1 FROM public.ohlcv o WHERE o.symbol=s.symbol AND o.venue='yfinance' AND o.interval='1d' AND o.timestamp < s.first_yf_date::timestamp)
        OR EXISTS (SELECT 1 FROM generate_subscripts(sp.join_returns,1) n(i)
           WHERE c.closes[n.i] IS NULL OR c.closes[n.i+1] IS NULL
@@ -289,8 +292,6 @@ CROSS JOIN LATERAL (
         ORDER BY x.timestamp LIMIT COALESCE(array_length(sp.join_returns,1),0)+1
     ) q
 ) c
-LEFT JOIN public.ohlcv y ON y.symbol=s.symbol AND y.venue='yfinance' AND y.interval='1d' AND y.timestamp=sp.common_day::timestamp
-LEFT JOIN market.daily_bars b ON b.load_id=l.load_id AND b.permno=s.permno AND b.date=sp.common_day
 WHERE s.release_id=p_release_id AND s.symbol=ANY(p_symbols) AND s.kind='linked_yahoo';
 $$;
 SET LOCAL check_function_bodies = on;
@@ -337,13 +338,17 @@ BEGIN
     JOIN market.stock_spans s ON s.release_id = p_release_id AND s.symbol = q.symbol
                              AND s.kind IN ('placeholder', 'spell')
     JOIN ref.release_loads l ON l.release_id = p_release_id AND l.role = 'crsp-bars'
-    JOIN market.daily_bars b ON b.load_id = l.load_id AND b.permno = s.permno AND b.spell = s.spell
-    WHERE (p_start IS NULL OR b.date >= p_start) AND (p_end IS NULL OR b.date <= p_end)
+    JOIN LATERAL (SELECT b.* FROM market.daily_bars b
+        WHERE b.load_id = l.load_id AND b.permno = s.permno AND b.spell = s.spell
+          AND (p_start IS NULL OR b.date >= p_start) AND (p_end IS NULL OR b.date <= p_end)
+        OFFSET 0) b ON true
     UNION ALL
     SELECT b.date::timestamp,x.symbol,NULL::double precision,NULL::double precision,NULL::double precision,b.close*COALESCE(x.scale, market._raise_input_missing(x.symbol)),NULL::double precision,'crsp'::text,b.abs_prc,b.midpoint_flag,x.possible_double,x.drift
     FROM linked x
-    JOIN market.daily_bars b ON b.load_id=x.load_id AND b.permno=x.permno AND b.spell=x.spell
-    WHERE b.date<x.crsp_until AND (p_start IS NULL OR b.date>=p_start) AND (p_end IS NULL OR b.date<=p_end)
+    JOIN LATERAL (SELECT b.* FROM market.daily_bars b
+        WHERE b.load_id=x.load_id AND b.permno=x.permno AND b.spell=x.spell
+          AND b.date<x.crsp_until AND (p_start IS NULL OR b.date>=p_start)
+          AND (p_end IS NULL OR b.date<=p_end) OFFSET 0) b ON true
     UNION ALL
     SELECT y.timestamp,x.symbol,y.open,y.high,y.low,y.close,y.volume,'yfinance'::text,NULL::double precision,NULL::boolean,x.possible_double,x.drift
     FROM linked x

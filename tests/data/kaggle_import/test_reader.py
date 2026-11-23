@@ -255,3 +255,45 @@ def test_pushdown_narrow_range(linked):
     text = json.dumps(plan)
     assert len(chunks) > 2
     assert 0 < sum(name in text for name in chunks) < len(chunks)
+
+
+def test_reader_does_not_scan_all_chunks(linked):
+    db, rid = linked
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+            "SELECT load_id,1,1,make_date(y,1,1),1 FROM ref.release_loads, "
+            "generate_series(1990,1998) y WHERE release_id=%s AND role='crsp-bars'",
+            (rid,),
+        )
+        cur.execute(
+            "SELECT chunk_name FROM timescaledb_information.chunks "
+            "WHERE hypertable_schema='market' AND hypertable_name='daily_bars'"
+        )
+        chunks = {row[0] for row in cur.fetchall()}
+        assert len(chunks) >= 4
+        queries = [
+            "SELECT (SELECT b.close FROM market.daily_bars b "
+            "WHERE b.load_id=l.load_id AND b.permno=s.permno AND b.date=sp.common_day) "
+            "FROM market.stock_spans s JOIN ref.release_loads l "
+            "ON l.release_id=s.release_id AND l.role='crsp-bars' "
+            "JOIN ref.splice_links sp ON sp.release_id=s.release_id AND sp.permno=s.permno "
+            "WHERE s.release_id=%s AND s.symbol='TTWO'",
+            "WITH linked AS MATERIALIZED (SELECT * FROM "
+            "market._combined_linked(%s, ARRAY['TTWO'])) "
+            "SELECT b.date FROM linked x JOIN LATERAL (SELECT b.* FROM market.daily_bars b "
+            "WHERE b.load_id=x.load_id AND b.permno=x.permno AND b.spell=x.spell "
+            "AND b.date<x.crsp_until AND b.date>=DATE '1999-01-01' "
+            "AND b.date<=DATE '2000-01-01' OFFSET 0) b ON true",
+        ]
+        for query in queries:
+            cur.execute("EXPLAIN (ANALYZE, FORMAT JSON) " + query, (rid,))
+            plan = cur.fetchone()[0][0]["Plan"]
+            nodes = [plan]
+            scanned = set()
+            while nodes:
+                node = nodes.pop()
+                if node.get("Relation Name") in chunks and node.get("Actual Loops", 0) > 0:
+                    scanned.add(node["Relation Name"])
+                nodes.extend(node.get("Plans", []))
+            assert 0 < len(scanned) < len(chunks), (scanned, chunks)
