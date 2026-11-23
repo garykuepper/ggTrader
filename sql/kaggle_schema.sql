@@ -274,20 +274,33 @@ SELECT s.symbol,s.permno,s.spell,l.load_id,s.crsp_until,s.first_yf_date,s.possib
        y.close / NULLIF(b.close,0),
        EXISTS (SELECT 1 FROM public.ohlcv o WHERE o.symbol=s.symbol AND o.venue='yfinance' AND o.interval='1d' AND o.timestamp < s.first_yf_date::timestamp)
        OR EXISTS (SELECT 1 FROM generate_subscripts(sp.join_returns,1) n(i)
-          LEFT JOIN LATERAL (SELECT z.r FROM (SELECT row_number() OVER (ORDER BY x.timestamp)-1 AS i,
-             x.close / NULLIF(lag(x.close) OVER (ORDER BY x.timestamp),0)-1 AS r
-             FROM public.ohlcv x WHERE x.symbol=s.symbol AND x.venue='yfinance' AND x.interval='1d'
-             AND x.timestamp >= s.first_yf_date::timestamp ORDER BY x.timestamp
-             LIMIT COALESCE(array_length(sp.join_returns,1),0)+1) z WHERE z.i=n.i) a ON true
-          WHERE a.r IS NULL OR abs(a.r-sp.join_returns[n.i])>1e-6)
+          WHERE c.closes[n.i] IS NULL OR c.closes[n.i+1] IS NULL
+             OR c.closes[n.i] = 0
+             OR abs(c.closes[n.i+1] / NULLIF(c.closes[n.i],0) - 1 - sp.join_returns[n.i]) > 1e-6)
+
 FROM market.stock_spans s
 JOIN ref.release_loads l ON l.release_id=s.release_id AND l.role='crsp-bars'
 JOIN ref.splice_links sp ON sp.release_id=s.release_id AND sp.permno=s.permno
+CROSS JOIN LATERAL (
+    SELECT array_agg(q.close ORDER BY q.timestamp) AS closes FROM (
+        SELECT x.close, x.timestamp FROM public.ohlcv x
+        WHERE x.symbol=s.symbol AND x.venue='yfinance' AND x.interval='1d'
+          AND x.timestamp >= s.first_yf_date::timestamp
+        ORDER BY x.timestamp LIMIT COALESCE(array_length(sp.join_returns,1),0)+1
+    ) q
+) c
 LEFT JOIN public.ohlcv y ON y.symbol=s.symbol AND y.venue='yfinance' AND y.interval='1d' AND y.timestamp=sp.common_day::timestamp
 LEFT JOIN market.daily_bars b ON b.load_id=l.load_id AND b.permno=s.permno AND b.date=sp.common_day
 WHERE s.release_id=p_release_id AND s.symbol=ANY(p_symbols) AND s.kind='linked_yahoo';
 $$;
 SET LOCAL check_function_bodies = on;
+
+CREATE OR REPLACE FUNCTION market._raise_input_missing(p_symbol text)
+RETURNS double precision LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'release input missing for %', p_symbol;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION market.ohlcv_daily_combined(
     p_release_id bigint, p_symbols text[], p_start date, p_end date
@@ -305,7 +318,8 @@ BEGIN
     SELECT x.symbol INTO missing_symbol FROM market._combined_linked(p_release_id,p_symbols) x WHERE x.scale IS NULL LIMIT 1;
     IF FOUND THEN RAISE EXCEPTION 'release input missing for %', missing_symbol; END IF;
     RETURN QUERY
-    WITH requested AS (SELECT DISTINCT unnest(p_symbols) AS symbol)
+    WITH linked AS MATERIALIZED (SELECT * FROM market._combined_linked(p_release_id, p_symbols)),
+    requested AS (SELECT DISTINCT unnest(p_symbols) AS symbol)
     SELECT y."timestamp"::date::timestamp, q.symbol, y.open, y.high, y.low, y.close, y.volume,
            'yfinance'::text, NULL::double precision, NULL::boolean,
            COALESCE(s.possible_double, false), false
@@ -326,13 +340,13 @@ BEGIN
     JOIN market.daily_bars b ON b.load_id = l.load_id AND b.permno = s.permno AND b.spell = s.spell
     WHERE (p_start IS NULL OR b.date >= p_start) AND (p_end IS NULL OR b.date <= p_end)
     UNION ALL
-    SELECT b.date::timestamp,x.symbol,NULL::double precision,NULL::double precision,NULL::double precision,b.close*x.scale,NULL::double precision,'crsp'::text,b.abs_prc,b.midpoint_flag,x.possible_double,x.drift
-    FROM market._combined_linked(p_release_id,p_symbols) x
+    SELECT b.date::timestamp,x.symbol,NULL::double precision,NULL::double precision,NULL::double precision,b.close*COALESCE(x.scale, market._raise_input_missing(x.symbol)),NULL::double precision,'crsp'::text,b.abs_prc,b.midpoint_flag,x.possible_double,x.drift
+    FROM linked x
     JOIN market.daily_bars b ON b.load_id=x.load_id AND b.permno=x.permno AND b.spell=x.spell
     WHERE b.date<x.crsp_until AND (p_start IS NULL OR b.date>=p_start) AND (p_end IS NULL OR b.date<=p_end)
     UNION ALL
     SELECT y.timestamp,x.symbol,y.open,y.high,y.low,y.close,y.volume,'yfinance'::text,NULL::double precision,NULL::boolean,x.possible_double,x.drift
-    FROM market._combined_linked(p_release_id,p_symbols) x
+    FROM linked x
     JOIN public.ohlcv y ON y.symbol=x.symbol AND y.venue='yfinance' AND y.interval='1d'
     WHERE y.timestamp>=x.first_yf_date::timestamp AND (p_start IS NULL OR y.timestamp>=p_start::timestamp) AND (p_end IS NULL OR y.timestamp<(p_end+1)::timestamp);
 END;

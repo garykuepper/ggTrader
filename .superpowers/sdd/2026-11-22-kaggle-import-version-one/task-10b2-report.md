@@ -1,4 +1,3 @@
-Status: DONE_WITH_CONCERNS
-Base: d03bcc8f5f222c819fce44a96f7bb82032594411.
-Implemented linked reader, missing-input mapping, and integration checks for join, rescaling, drift, and backfill. Scratch integration run: 29 passed. Ruff check and format passed.
-Coverage missing: dedicated SMCI first-day split, two-linked-symbols, missing CRSP join row, other-symbol drift isolation, and chunk-exclusion EXPLAIN tests. Chunk exclusion has not been verified; performance and those cases need verification before relying on this change.
+Round 1 performance fix. The old drift check computed windows across all Yahoo history once per stored return; the new check reads at most K+1 closes once per helper invocation and compares array entries. The two output branches share a materialized helper result. The separate up-front helper call remains to detect missing joins even when no CRSP rows are returned; the helper now does bounded work. No real-data timing was repeated.
+
+Scratch integration: 35 passed across reader, release and DDL; Ruff check and format passed. Added the five requested regression cases. The EXPLAIN test checks date pruning on a simplified CRSP query with the same date, load, permno and spell filters, over multiple chunks. It does not prove pruning in the complete function: its helper scans also appear in the full plan and could not be distinguished reliably by a simple chunk-name count.

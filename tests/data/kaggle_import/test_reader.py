@@ -161,3 +161,97 @@ def test_linked_backfill_and_missing(linked):
         cur.execute("DELETE FROM public.ohlcv WHERE symbol='TTWO' AND timestamp='2000-01-02'")
     with pytest.raises(ReleaseInputMissing):
         read(linked, ["TTWO"])
+
+
+@pytest.fixture
+def two_linked(conn):
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+            "VALUES (%s,3,1,'2000-01-02',1)",
+            (load,),
+        )
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) VALUES "
+            "('2000-01-01','AAPL','1d','yfinance',9),"
+            "('2000-01-02','AAPL','1d','yfinance',10),"
+            "('2000-01-03','AAPL','1d','yfinance',12),"
+            "('2000-01-04','AAPL','1d','yfinance',13)"
+        )
+    db.commit()
+    links, settings = _inputs()
+    links.loc[1] = ["AAPL", 3, "linked", 1.0, 1.0, 1.0]
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    return db, rid
+
+
+def test_smci_first_day_split_crsp_part_empty(two_linked):
+    result = read(two_linked, ["AAPL"])
+    assert result.source.tolist() == ["yfinance"] * 4
+    assert not result.drift.any()
+
+
+def test_two_linked_symbols_in_one_call(two_linked):
+    result = read(two_linked, ["TTWO", "AAPL"])
+    assert set(result.symbol) == {"TTWO", "AAPL"}
+    assert len(result) == 8
+
+
+def test_missing_crsp_join_row_raises(linked):
+    from ggTrader.data.kaggle_import.reader import ReleaseInputMissing
+
+    db, _ = linked
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM market.daily_bars WHERE permno=1 AND date='2000-01-02'")
+    with pytest.raises(ReleaseInputMissing):
+        read(linked, ["TTWO"])
+
+
+def test_drift_isolated_to_the_changed_symbol(two_linked):
+    db, _ = two_linked
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE public.ohlcv SET close=99 WHERE symbol='TTWO' AND timestamp='2000-01-03'"
+        )
+    result = read(two_linked, ["TTWO", "AAPL"])
+    assert result[result.symbol == "TTWO"].drift.all()
+    assert not result[result.symbol == "AAPL"].drift.any()
+
+
+def test_function_is_fast_enough_on_a_small_release(linked):
+    from time import perf_counter
+
+    start = perf_counter()
+    read(linked, ["TTWO"])
+    assert perf_counter() - start < 2
+
+
+def test_pushdown_narrow_range(linked):
+    db, rid = linked
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+            "SELECT load_id,1,1,make_date(y,1,1),1 FROM ref.release_loads, "
+            "generate_series(1990,1998) y WHERE release_id=%s AND role='crsp-bars'",
+            (rid,),
+        )
+        cur.execute(
+            "SELECT chunk_name FROM timescaledb_information.chunks "
+            "WHERE hypertable_schema='market' AND hypertable_name='daily_bars'"
+        )
+        chunks = {row[0] for row in cur.fetchall()}
+        cur.execute(
+            "EXPLAIN (ANALYZE, FORMAT JSON) SELECT b.date FROM market.daily_bars b "
+            "WHERE b.load_id=(SELECT load_id FROM ref.release_loads "
+            "WHERE release_id=%s AND role='crsp-bars') AND b.permno=1 AND b.spell=1 "
+            "AND b.date < DATE '2000-01-02' AND b.date >= DATE '1999-01-01' "
+            "AND b.date <= DATE '2000-01-01'",
+            (rid,),
+        )
+        plan = cur.fetchone()[0]
+    import json
+
+    text = json.dumps(plan)
+    assert len(chunks) > 2
+    assert 0 < sum(name in text for name in chunks) < len(chunks)
