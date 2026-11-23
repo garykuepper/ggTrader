@@ -158,6 +158,48 @@ def _baseline(conn, url: str, *, save: Path | None = None, compare: Path | None 
     }
 
 
+def _check_yahoo_keys(conn, url: str, release_id: int, names: list[str]) -> tuple[str, dict, str]:
+    """Compare post-2000 row keys and all fields; count added older rows."""
+    import numpy as np
+    import pandas as pd
+
+    from ggTrader.data.bars import BAR_FIELDS
+
+    combined = _load(url, names, "combined", release_id)
+    db = _load(url, names, "db", start="2000-01-03")
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT timestamp,symbol FROM public.ohlcv WHERE symbol=ANY(%s) "
+            "AND venue='yfinance' AND interval='1d' AND timestamp >= TIMESTAMP '2000-01-03'",
+            (names,),
+        )
+        db_keys = {(pd.Timestamp(stamp, tz="UTC"), symbol) for stamp, symbol in cur.fetchall()}
+    cutoff = pd.Timestamp("2000-01-03", tz="UTC")
+    flag_index = combined.flags.index
+    combo_keys = {(ts, str(symbol)) for ts, symbol in flag_index if ts >= cutoff}
+    older = sum(ts < cutoff for ts, _ in flag_index)
+    missing, extra = db_keys - combo_keys, combo_keys - db_keys
+    different = []
+    for symbol in names:
+        dates = sorted(ts for ts, ticker in db_keys & combo_keys if ticker == symbol)
+        if not dates:
+            continue
+        for field in BAR_FIELDS:
+            a = combined.frame(field).reindex(index=dates, columns=[symbol]).to_numpy(dtype=float)
+            b = db.frame(field).reindex(index=dates, columns=[symbol]).to_numpy(dtype=float)
+            if not np.array_equal(a, b, equal_nan=True):
+                different.append({"symbol": symbol, "field": field})
+    measured = {
+        "symbols": names,
+        "compared_rows": len(db_keys & combo_keys),
+        "missing_rows": len(missing),
+        "unexpected_rows": len(extra),
+        "earlier_rows_added": older,
+        "different_fields": different,
+    }
+    return ("fail" if missing or extra or different else "pass"), measured, ""
+
+
 def _check_counts(conn, release_id: int) -> tuple[str, dict, str]:
     """Reconcile load records, database rows, chunk counts and Parquet metadata."""
     import pyarrow.parquet as pq
@@ -449,17 +491,32 @@ def run_checks(
             )
             _set(checks[2], status, measured, {"correlation_min": 0.9999}, reason)
         checks[2]["elapsed_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT symbol FROM market.stock_spans WHERE release_id=%s "
+                "AND kind IN ('yahoo','linked_yahoo') ORDER BY symbol",
+                (release_id,),
+            )
+            yahoo_symbols = [row[0] for row in cur.fetchall()]
+        chosen = random.Random(42).sample(yahoo_symbols, min(40, len(yahoo_symbols)))
+        if chosen:
+            status, measured, reason = _check_yahoo_keys(conn, url, release_id, chosen)
+            if status == "pass" and len(chosen) < 40:
+                status, reason = "skipped", "fewer than 40 Yahoo symbols in release"
+        else:
+            status, measured, reason = "skipped", {}, "no Yahoo symbols in release"
         if save_baseline or compare_baseline:
             baseline = _baseline(conn, url, save=save_baseline, compare=compare_baseline)
-            status = "fail" if baseline["matches"] is False else "skipped"
-            reason = "Yahoo key comparison not implemented"
-            if save_baseline:
-                reason += "; baseline saved but not compared"
-            _set(checks[3], status, baseline, "identical batch hashes and Yahoo keys", reason)
-        else:
-            _set(
-                checks[3], "skipped", {}, None, "baseline and Yahoo key comparison not implemented"
-            )
+            measured["baseline"] = baseline
+            if baseline["matches"] is False:
+                status, reason = "fail", "baseline hashes differ"
+            elif status == "pass" and compare_baseline is None:
+                status, reason = "skipped", "no baseline given"
+        elif status == "pass":
+            status, reason = "skipped", "no baseline given"
+        _set(checks[3], status, measured, "identical row keys and all five fields", reason)
+        checks[3]["elapsed_seconds"] = time.perf_counter() - started
         _set(
             checks[4],
             "skipped",

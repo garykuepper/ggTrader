@@ -18,6 +18,20 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
     from ggTrader.data.kaggle_import.release import build_release
 
     db, load = conn
+    # The shared tiny fixture uses weekend dates; move them to trading days here.
+    with db.cursor() as cur:
+        cur.execute("UPDATE public.ohlcv SET timestamp=timestamp + interval '1 day'")
+        cur.execute(
+            "UPDATE market.daily_bars SET date='1999-12-31' "
+            "WHERE load_id=%s AND permno=1 AND date='2000-01-01'",
+            (load,),
+        )
+        cur.execute(
+            "UPDATE market.daily_bars SET date='2000-01-03' "
+            "WHERE load_id=%s AND permno=1 AND date='2000-01-02'",
+            (load,),
+        )
+    db.commit()
     links, settings = _inputs()
     rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
     original = urlparse(os.environ["GGT_TEST_DB_URL"])
@@ -182,3 +196,36 @@ def test_returns_comparisons_on_synthetic_database(conn):
         )
     db.commit()
     assert _stock_comparison(db, rid, {"EXAMPLE": 10})[0] == "fail"
+
+
+def test_yahoo_key_comparison_detects_changed_combined_value(conn, monkeypatch):
+    from ggTrader.data.kaggle_import.release import build_release
+    from scripts import kaggle_closing_checks as closing
+
+    db, load = conn
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM public.ohlcv WHERE timestamp='2000-01-02'")
+    db.commit()
+    original = urlparse(os.environ["GGT_TEST_DB_URL"])
+    url = urlunparse(original._replace(path="/" + db.info.dbname))
+    # Use an ordinary Yahoo-only name so no splice anchor is required.
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
+            "VALUES ('2000-01-03','EXAMPLE','1d','yfinance',10)"
+        )
+    db.commit()
+    status, measured, _ = closing._check_yahoo_keys(db, url, rid, ["EXAMPLE"])
+    assert status == "pass" and measured["compared_rows"] == 1
+    real_load = closing._load
+
+    def changed(url, names, source, release_id=None, **kwargs):
+        bars = real_load(url, names, source, release_id, **kwargs)
+        if source == "combined":
+            bars.close.iloc[0, 0] = 11
+        return bars
+
+    monkeypatch.setattr(closing, "_load", changed)
+    assert closing._check_yahoo_keys(db, url, rid, ["EXAMPLE"])[0] == "fail"
