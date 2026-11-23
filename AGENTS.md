@@ -14,6 +14,26 @@ This document serves as the consolidated source of truth for all AI assistants (
   prompts, and handoffs. Preserve honest NO-GO findings and production freezes;
   neither authorizes a shutdown or an account change.
 
+## Research rules reset (2026-11-20)
+
+Owner instruction of 2026-11-20. The owner did not understand the old evidence rules
+and wiped them for **new** work.
+
+- **No longer binding for new work:** Part A, the t-stat bars (Holm, Newey-West), the
+  "+1.0 percentage point a year since 1994" bar, the B0/B1 shadow stages and the
+  "six months of clean paper trading" wait. Do not hold a new idea to them, and do not
+  quote them to the owner as requirements.
+- **The four plain rules that replace them:**
+  1. Test only on data the strategy never saw while it was being tuned.
+  2. Use only what was known on each day, and include stocks that later died.
+  3. Subtract trading costs and taxes, and compare to SPY over the same dates.
+  4. Paper trade first. The owner decides when a strategy has earned real money.
+- **Talk to the owner in plain words.** No jargon, no unexplained labels (Part A, PIT,
+  Holm, WFO, bps). If a term is needed, say what it means in the same sentence.
+- **History stays.** Old reports, verdicts and NO-GO findings were scored under the old
+  rules and stay on disk as history. Do not delete them and do not re-score them.
+  Production freezes are unchanged: the trader stays stopped until the owner says so.
+
 ## Delegation preference (2026-11-08)
 
 Owner instruction of 2026-11-08; revisit when the owner says so.
@@ -90,6 +110,29 @@ A **paper-trading path was added back on 2026-06-20** and has been trading a liv
   * **Shared helpers**: `src/ggTrader/utils/` holds the helpers that studies and the lab share: `significance.py`, `fred_data.py`, `io.py` (atomic writes), `results.py`, `manifest.py` and `binding.py` (hash and provenance records), and `study.py` (study plumbing: `bootstrap`, `repo_root`, `study_dir`).
   * **Study code is not in `src`**: since the study-isolation refactor (2026-11-07) `src/ggTrader/lab/` holds no study modules. Each study keeps its own modules, drivers and tests in its folder under `research/`: a `code/` folder (tests in `code/tests/`), plus a `_lib/` folder per category for helpers that several studies of that category share. The moved screens, audits, tax-lot library, replica tools and intraday family now live there; `research/CODEMOVED.csv` lists every moved file with its hash before and after. Nothing in `src/` imports a study.
 * **State Storage**: `ggt lab --wfo` saves a JSON record only (with a provenance block); `--blend` persists a `blend:` run. The blend persistence is done to TimescaleDB by `src/ggTrader/lab/persist.py`, which creates **seven** tables: `lab_runs` (run metadata), `lab_plans`, `lab_returns`, `lab_equity`, `lab_summary`, `lab_sweeps`, and `lab_sweep_combos`. There is **no** `lab_periods` table — earlier revisions of this file named one repeatedly and it has never existed. The S&P 500 membership list lives apart from the lab tables, in PostgreSQL schema `universe` (`loads`, `membership`, `snapshot_dates`, `load_blobs`, `load_evidence`, `checks`, `check_blobs`, `symbol_changes`, `source_snapshots`). Its tables are append-only: a refresh is a new vintage (1 the frozen file import, 2 the upstream download to 2026-08-18, 3 a curated gap-fill to 2026-11-04), never an edit of an existing one (the only permitted update marks a replaced row `superseded_by_load_id`). DDL is `sql/universe_schema.sql`, applied by `ggt db membership apply-ddl`.
+
+### Database map (measured 2026-11-22)
+
+Read this before writing any query or importer. Everything below was read from the live database on that date; row counts are approximate (`reltuples`) and drift. Re-measure before you quote one.
+
+* **Server.** One PostgreSQL 16 database named `ggtrader` with the TimescaleDB 2.25.1 extension (an add-on that splits big time-series tables into compressed chunks; it is not a separate database). Container `ggtrader_db` (`timescale/timescaledb:latest-pg16`), host port 5433. Its data lives in the Docker volume `ggtraderdb_ggtrader_pgdata` on the **main drive** (455 GB, 83% full, about 75 GB free on 2026-11-22). Total size **14 GB**, of which the `ohlcv` hypertable is 12 GB. `wal_level=replica`, `max_wal_size` 1 GB, archiving off. Two schemas hold our tables: `public` (49 tables) and `universe` (9 tables).
+* **Sizing trap.** `pg_total_relation_size()` and `pg_class` row counts do **not** include compressed hypertable chunks: `ohlcv` shows 16 kB and `-1` rows there while holding 295 million rows. Use `hypertable_size('public.ohlcv')` for size and `count(*)` or the `timescaledb_information` views for rows.
+* **`public.ohlcv`: the one bars table** (hypertable, 7-day chunks, 1,402 chunks, compression policy after 7 days, compressed by `symbol, interval`, ordered by `timestamp DESC`). Columns: `timestamp` (**timestamp without time zone**, naive UTC; a client set to Pacific time shows midnight as 08:00Z, the stored value is midnight), `symbol`, `interval`, `open`, `high`, `low`, `close`, `volume` (all `double precision`, nullable), `trades` (integer), `venue`. Primary key `(timestamp, symbol, interval, venue)`, so **the same symbol and day can exist under more than one venue**; there is also an index on `timestamp DESC`. What it holds:
+
+  | venue | interval | rows | symbols | span |
+  | :--- | :--- | ---: | ---: | :--- |
+  | `yfinance` | `1d` | 5,777,834 | 1,443 | 2000-01-03 to 2026-11-05 (**the equity tape; every stock tool reads this**) |
+  | `kraken_spot` | 1m, 5m, 15m, 30m, 1h, 4h, 12h, 1d | about 289 million | 1,097 to 1,611 per interval | 2023-01 to 2026-06 (crypto, parked) |
+  | `binanceus_spot` | 4h, 1d | about 271,000 | 53 to 78 | 2023-01 to 2026-06 (crypto, parked) |
+
+  `ggTrader.data.bars.load_bars` (the research entry point) hard-codes `VENUE = "yfinance"` and `INTERVAL = "1d"`, selects `open, high, low, close, volume` for a list of symbols, and **raises** if stored stamps are not unique per `(timestamp, symbol)`, not midnight, or fall on a weekend. `load_bars` defaults to `source="snapshot"` (the frozen Parquet tape named in `data/snapshots/MANIFEST.json`), but **on 2026-11-22 that file (`ohlcv_20261106.parquet`) was not on disk**, only the manifest; a run that needs it fails until it is rebuilt (`scripts/make_tape_snapshot.py`) or reads the database (`source="db"`). The snapshot is a test fixture from the engine rebuild (605 S&P 500 symbols, 2019-03 to 2026-10), not research data. A new equity source is visible to existing tools only if it is written as `1d` rows the same way and `load_bars` is told which venue to read. Symbols are tickers in the form `normalize_yf_ticker` produces (for example `BRK-B`); the live loader that fills the equity rows (`data/live/yfinance_loader.py`) calls yfinance with `auto_adjust=True`, so the bars are meant to be split- and dividend-adjusted (the stored values were not audited when this map was written).
+* **Other bars and crypto tables.** `perp_ohlcv` and `funding_rates` (perpetual futures, tiny), `ohlcv_no_data` (symbol/interval pairs checked and found empty, 173 rows), `symbol_inception` (first date per symbol, 141 rows), `ohlcv_yf_preshift_backup_20260820` (548 MB copy of the equity tape from before the 2026-08-20 one-day-shift fix: **keep it**, it is evidence).
+* **Alternative data (equities).** `form4_transactions` (insider trades, 746,813 rows, 1,309 symbols), `house_ptr_transactions` (congressional trades, 36,263), `short_volume` (daily, 1,186,767 rows, 2018-08 to 2026-07, 674 symbols), `short_interest` (83,958 rows, 2020-04 to 2026-06, 629 symbols), `earnings_surprise` (61,299 rows, 1998-12 to 2026-07, 762 symbols), `fred_series` (74,641 rows, 11 series, 1934 to 2026-09), `fear_greed_index`, `google_trends_interest`, `news_headlines` with `headline_sentiment_scores`, `correlation_matrices`. **Dates in `form4_transactions` and `house_ptr_transactions` include impossible values** (years 0015 and 2031 in the first, 3031 in the second): filter them and never trust a min or max date there.
+* **Lab results.** `lab_runs` (292), `lab_plans`, `lab_summary`, `lab_sweeps`, `lab_sweep_combos`, and the hypertables `lab_returns` and `lab_equity`; see State Storage above. Older engine and crypto-era results sit in `runs` (1,017), `trades`, `orders`, `equity_curves`, `performance_metrics`, `wfo_splits`, `wfo_windows`, `wfo_cache`, `study_results`, `regime_states`, `kraken_ledger`, `live_balance_snapshots`, `live_positions_snapshot`.
+* **Paper trader state.** `paper_snapshots` (80 days), `paper_trades` (183), `paper_pending_orders`, `paper_rebalance_state`, `paper_risk_state`, `paper_split_state`, `paper_dividend_accruals`, `system_state`, `universe_cache`, plus `*_backup_*` copies taken before earlier fixes (keep them).
+* **`universe` schema.** The versioned S&P 500 membership list: `membership` (1,255 rows), `snapshot_dates` (8,156), `source_snapshots` (57), `loads`, `load_blobs`, `load_evidence`, `checks`, `check_blobs`, `symbol_changes`. It is the model for any new versioned import: a `loads` row per load (source, SHA-256 of the raw and normalized content, normalizer version, counts, loader git SHA, who and when), append-only triggers that fire for every role, idempotent DDL, no `timestamp without time zone`.
+* **Backups.** A full dump of the database was taken to `/media/thesix/ggTrader-data/ggtraderdb-backup-20261122/` on 2026-11-22 (9.7 GB, readable, SHA-256 recorded; a full restore drill has not been run). It is a one-off, not a schedule. The system backup (`borgmatic`, config `~/borgmatic_config.yaml`) **excludes Docker volumes** and the folder `~/ggtraderdb`. That folder holds a single 14 GB dump directory from 2026-02-18; the only database dump I found (2026-11-22). No scheduled dump of `ggtrader` turned up in cron, the user timers or the scripts. Treat the live volume as unbacked-up until the owner confirms otherwise, and say so before any bulk load or destructive change.
+* **Kaggle and Stooq files (not in the database yet).** Raw downloads live under `/media/thesix/ggTrader-data/market-data/` (`README.md` there has the findings; the Kaggle CRSP copy, the Gu-Kelly-Xiu and McGill-FIAM characteristics, the SEC company facts and the other files, each with SHA-256 lists, are in `crsp-kaggle/` and `kaggle/`). They are keyed by CRSP's `permno`, which our tools do not use; they carry no tickers (except the McGill sample, 3,349 stocks) and the CRSP copy has no open, high, low or volume. An importer design is in progress and **not approved**: nothing may be loaded until the owner says so.
 
 ---
 
