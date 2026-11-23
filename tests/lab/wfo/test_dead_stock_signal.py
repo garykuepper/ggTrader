@@ -116,3 +116,50 @@ def test_total_loss_signal_recovers_only_floor():
     recovery = sim.value.iloc[-1, 0] - 5000.0
     assert 0 < recovery < 1e-6 * 5000.0
     assert sim.trades.loc[sim.trades.col == 0, "exit_idx"].tolist() == [4]
+
+
+def test_crsp_end_guard_refuses_only_columns_that_stop_at_file_end():
+    from ggTrader.lab.wfo.inputs import subset_bars
+
+    original = toy_bars()
+    cliff = original.close.index[800]
+    frame = original.close.copy()
+    frame.loc[frame.index > cliff, "X"] = float("nan")
+    bars = replace(
+        original,
+        close=frame,
+        last_valid_bar=pd.Series({"X": cliff}),
+        provenance={"source": "combined", "crsp_end": str(cliff.date())},
+        spans=pd.DataFrame(columns=["symbol", "last_date"]),
+    )
+
+    def run(b):
+        return run_wfo(
+            "toy",
+            ToyHold,
+            LabConfig(),
+            b,
+            original.close.X,
+            "2020-06-01",
+            "2022-03-01",
+            "equity",
+            TOY_CONFIG,
+            ParamGrid.single({"delay": 3}),
+            allow_unmasked=True,
+            verbose=False,
+        )
+
+    with pytest.raises(ValueError, match="X.*end the window on or before.*CRSP end"):
+        run(bars)
+    trimmed = replace(
+        bars,
+        **{
+            name: bars.frame(name).loc[:cliff]
+            for name in ("close", "open", "high", "low", "volume")
+        },
+    )
+    assert run(trimmed).diagnostics["n_symbols"] == 1
+    continued = replace(bars, close=original.close, last_valid_bar=original.last_valid_bar)
+    assert run(continued).diagnostics["n_symbols"] == 1
+    empty = subset_bars(bars, [])
+    assert empty.close.shape[1] == 0

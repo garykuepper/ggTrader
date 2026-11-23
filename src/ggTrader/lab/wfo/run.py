@@ -473,6 +473,27 @@ def _build_diagnostics(
     }
 
 
+def _check_crsp_end(bars: Bars) -> None:
+    """Reject series cut short solely because the CRSP file ended."""
+    crsp_end = bars.provenance.get("crsp_end")
+    if (
+        crsp_end
+        and len(bars.close.index)
+        and bars.close.index[-1].date() > pd.Timestamp(crsp_end).date()
+    ):
+        end_day = pd.Timestamp(crsp_end).date()
+        affected = sorted(
+            str(symbol)
+            for symbol, last in bars.last_valid_bar.items()
+            if pd.notna(last) and last.date() == end_day
+        )
+        if affected:
+            raise ValueError(
+                f"series stop at CRSP end: {', '.join(affected[:5])}; end the window on or "
+                "before the CRSP end date, or load symbols that continue past it"
+            )
+
+
 def run_wfo(
     strategy_name: str,
     strategy_cls: Any,
@@ -560,6 +581,7 @@ def run_wfo(
 
         if bars.spans is None:
             raise ValueError("combined bars carry no release spans")
+        _check_crsp_end(bars)
         dead_frames = forced_exit_frames(bars.close, bars.spans)
         sim_close = simulation_close(bars.close, bars.spans, dead_stock_loss)
     strategy = _instantiate(strategy_name, strategy_cls)

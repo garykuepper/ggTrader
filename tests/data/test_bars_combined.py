@@ -31,7 +31,7 @@ def test_permno_symbols_not_normalized(monkeypatch):
         flags = pd.DataFrame(columns=["source", "abs_prc", "midpoint_flag", "possible_double"])
         flags.attrs["data_release"] = {"release_id": 1, "created_at": "", "yahoo_fingerprint": {}}
         flags.attrs["drift_symbols"] = []
-        return flat, flags, pd.DataFrame(), 1
+        return flat, flags, pd.DataFrame(), 1, None
 
     monkeypatch.setattr(module, "_read_combined_long", read, raising=False)
     bars = load_bars(["PERMNO-84761", "PERMNO-1~7"], source="combined")
@@ -83,7 +83,7 @@ def test_combined_returns_five_fields_and_flags_from_one_call(published, monkeyp
     monkeypatch.setattr(reader, "read_combined", observe)
 
     _, _, rid = published
-    flat, flags, _, resolved = _read_combined_long(
+    flat, flags, _, resolved, _ = _read_combined_long(
         rid,
         ["PERMNO-2", "TTWO"],
         pd.Timestamp("1990-01-01"),
@@ -156,7 +156,7 @@ def test_spans_exclude_alive_and_file_end_series_and_mark_successors(published):
             "('2000-02-01','ALIVE','1d','yfinance',1)"
         )
     db.commit()
-    _, _, spans, _ = _read_combined_long(
+    _, _, spans, _, _ = _read_combined_long(
         rid,
         ["OLD", "ALIVE", "PERMNO-20~1", "PERMNO-20"],
         pd.Timestamp("1900-01-01"),
@@ -193,7 +193,7 @@ def test_validate_long_still_enforces_weekday_and_duplicates_on_combined(monkeyp
         )
         flags = pd.DataFrame()
         flags.attrs = {"data_release": {}, "drift_symbols": []}
-        return flat, flags, pd.DataFrame(), 1
+        return flat, flags, pd.DataFrame(), 1, None
 
     monkeypatch.setattr(module, "_read_combined_long", read)
     with pytest.raises(module.BarsValidationError, match="duplicate.*weekend"):
@@ -216,8 +216,10 @@ def test_wide_frame_memory_budget():
         class Cursor:
             def __enter__(self): return self
             def __exit__(self, *args): pass
-            def execute(self, *args): pass
-            def fetchone(self): return (1, datetime.now(timezone.utc), {})
+            def execute(self, sql, *args): self.sql = sql
+            def fetchone(self):
+                if "max(last_date)" in self.sql: return (None,)
+                return (1, datetime.now(timezone.utc), {})
             def fetchall(self): return []
         class Connection:
             def set_session(self, **kw): pass
@@ -275,7 +277,7 @@ def test_combined_sorted_plain_columns_and_flags_match_filtered_bars(monkeypatch
 
     def read(_release, _symbols, start, end):
         keep = (flat.timestamp >= start) & (flat.timestamp <= end)
-        return flat.loc[keep].copy(), flags.loc[keep.to_numpy()], pd.DataFrame(), 1
+        return flat.loc[keep].copy(), flags.loc[keep.to_numpy()], pd.DataFrame(), 1, None
 
     monkeypatch.setattr(module, "_read_combined_long", read)
     monkeypatch.setattr(
@@ -300,3 +302,11 @@ def test_combined_non_midnight_start_filters_flags(published):
     bars = load_bars(["TTWO"], start="2000-01-03 12:00", source="combined", release_id=rid)
     assert bars.close.index.tolist() == [pd.Timestamp("2000-01-04", tz="UTC")]
     assert bars.flags.index.get_level_values("timestamp").tolist() == bars.close.index.tolist()
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_combined_records_crsp_end_in_provenance(published):
+    _, _, rid = published
+    bars = load_bars(["TTWO"], start="2000-01-03", source="combined", release_id=rid)
+    assert bars.provenance["crsp_end"] == "1999-01-01"

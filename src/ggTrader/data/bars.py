@@ -38,6 +38,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import date
 from hashlib import sha256
 from typing import Any
 
@@ -223,7 +224,7 @@ def _read_combined_long(
     end: pd.Timestamp,
     *,
     batch_size: int = 120,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int, date | None]:
     """Read one published release in a single consistent read-only transaction.
 
     Ended spans exclude Yahoo series within five days of the latest Yahoo end,
@@ -311,6 +312,13 @@ def _read_combined_long(
                 (resolved, resolved, list(flat["symbol"].dropna().unique())),
             )
             spans = pd.DataFrame(cur.fetchall(), columns=["symbol", "last_date", "has_successor"])
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT max(last_date) FROM market.stock_spans "
+                "WHERE release_id=%s AND kind IN ('placeholder','spell')",
+                (resolved,),
+            )
+            crsp_end = cur.fetchone()[0]
         spans["has_successor"] = spans["has_successor"].astype(bool)
         spans["total_loss"] = False
         flags.attrs["data_release"] = {
@@ -319,7 +327,7 @@ def _read_combined_long(
             "yahoo_fingerprint": fingerprint,
         }
         flags.attrs["drift_symbols"] = sorted(drift_symbols)
-        return flat, flags, spans, resolved
+        return flat, flags, spans, resolved, crsp_end
     finally:
         conn.close()
 
@@ -442,7 +450,7 @@ def load_bars(  # noqa: PLR0912, PLR0915
         flat, info = snapshot.load_snapshot_long(snapshot_path, requested, deep=deep_verify)
         provenance: dict[str, Any] = {"source": "snapshot", "snapshot": info.as_dict()}
     elif source == "combined":
-        flat, flags, spans, _ = _read_combined_long(release_id, requested, lo, hi)
+        flat, flags, spans, _, crsp_end = _read_combined_long(release_id, requested, lo, hi)
         drift_symbols = flags.attrs["drift_symbols"]
         provenance = {
             "source": "combined",
@@ -451,6 +459,7 @@ def load_bars(  # noqa: PLR0912, PLR0915
             "drift": bool(drift_symbols),
             "drift_symbols": drift_symbols[:50],
             "n_spans_ended": len(spans),
+            "crsp_end": None if crsp_end is None else crsp_end.isoformat(),
         }
     else:
         flat = _read_db_long(requested, lo, hi)
