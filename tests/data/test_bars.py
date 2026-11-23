@@ -69,7 +69,7 @@ def patched_snapshot(monkeypatch: pytest.MonkeyPatch):
 
 def test_per_field_frames_shape_and_dtype(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31")
+    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31", source="snapshot")
     for field in ("close", "open", "high", "low", "volume"):
         frame = getattr(b, field)
         assert list(frame.columns) == ["AAA", "BBB", "CCC"]
@@ -83,7 +83,7 @@ def test_per_field_frames_shape_and_dtype(patched_snapshot) -> None:
 
 def test_last_valid_bar_per_symbol(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31")
+    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31", source="snapshot")
     assert b.last_valid_bar["AAA"] == pd.Timestamp("2024-01-08", tz="UTC")
     assert b.last_valid_bar["BBB"] == pd.Timestamp("2024-01-04", tz="UTC")
     assert b.last_valid_bar["CCC"] == pd.Timestamp("2024-01-08", tz="UTC")
@@ -91,7 +91,7 @@ def test_last_valid_bar_per_symbol(patched_snapshot) -> None:
 
 def test_missing_symbols_reported(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA", "ZZZ", "YYY"], "2024-01-01", "2024-01-31")
+    b = load_bars(["AAA", "ZZZ", "YYY"], "2024-01-01", "2024-01-31", source="snapshot")
     assert b.missing_symbols == ("YYY", "ZZZ")
     assert list(b.close.columns) == ["AAA"]
     assert set(b.last_valid_bar.index) == {"AAA"}
@@ -100,14 +100,14 @@ def test_missing_symbols_reported(patched_snapshot) -> None:
 def test_symbol_normalisation_and_dedupe(patched_snapshot) -> None:
     flat = _long({"BRK-B": list(DAYS), "AAA": list(DAYS)})
     patched_snapshot(flat)
-    b = load_bars(["brk.b", "BRK-B", "AAA"], "2024-01-01", "2024-01-31")
+    b = load_bars(["brk.b", "BRK-B", "AAA"], "2024-01-01", "2024-01-31", source="snapshot")
     assert b.requested == ("AAA", "BRK-B")
     assert list(b.close.columns) == ["AAA", "BRK-B"]
 
 
 def test_date_bounds_are_inclusive(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA"], "2024-01-03", "2024-01-05")
+    b = load_bars(["AAA"], "2024-01-03", "2024-01-05", source="snapshot")
     assert [d.date().isoformat() for d in b.close.index] == [
         "2024-01-03",
         "2024-01-04",
@@ -117,7 +117,7 @@ def test_date_bounds_are_inclusive(patched_snapshot) -> None:
 
 def test_open_ended_window(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA"])
+    b = load_bars(["AAA"], source="snapshot")
     assert len(b.close) == 5
 
 
@@ -125,7 +125,7 @@ def test_rejects_duplicate_rows(patched_snapshot) -> None:
     flat = _long()
     patched_snapshot(pd.concat([flat, flat.iloc[[0]]], ignore_index=True))
     with pytest.raises(BarsValidationError, match="duplicate"):
-        load_bars(["AAA"], "2024-01-01", "2024-01-31")
+        load_bars(["AAA"], "2024-01-01", "2024-01-31", source="snapshot")
 
 
 def test_rejects_non_midnight_stamps(patched_snapshot) -> None:
@@ -133,7 +133,7 @@ def test_rejects_non_midnight_stamps(patched_snapshot) -> None:
     flat.loc[0, "timestamp"] = flat.loc[0, "timestamp"] + pd.Timedelta(hours=16)
     patched_snapshot(flat)
     with pytest.raises(BarsValidationError, match="midnight"):
-        load_bars(["AAA"], "2024-01-01", "2024-01-31")
+        load_bars(["AAA"], "2024-01-01", "2024-01-31", source="snapshot")
 
 
 def test_rejects_weekend_stamps(patched_snapshot) -> None:
@@ -141,7 +141,7 @@ def test_rejects_weekend_stamps(patched_snapshot) -> None:
     flat.loc[0, "timestamp"] = pd.Timestamp("2024-01-06")  # Saturday
     patched_snapshot(flat)
     with pytest.raises(BarsValidationError, match="weekend"):
-        load_bars(["AAA"], "2024-01-01", "2024-01-31")
+        load_bars(["AAA"], "2024-01-01", "2024-01-31", source="snapshot")
 
 
 def test_validation_applies_to_rows_outside_the_window_too(patched_snapshot) -> None:
@@ -149,19 +149,19 @@ def test_validation_applies_to_rows_outside_the_window_too(patched_snapshot) -> 
     flat.loc[0, "timestamp"] = pd.Timestamp("2023-06-03")  # Saturday, before the window
     patched_snapshot(flat)
     with pytest.raises(BarsValidationError, match="weekend"):
-        load_bars(["AAA"], "2024-01-01", "2024-01-31")
+        load_bars(["AAA"], "2024-01-01", "2024-01-31", source="snapshot")
 
 
 def test_universe_and_span_validation(patched_snapshot) -> None:
     patched_snapshot(_long())
     with pytest.raises(ValueError, match="symbols or universe"):
-        load_bars(None, "2024-01-01", "2024-01-31")
+        load_bars(None, "2024-01-01", "2024-01-31", source="snapshot")
     with pytest.raises(ValueError, match="not both"):
-        load_bars(["AAA"], universe="sp500")
+        load_bars(["AAA"], universe="sp500", source="snapshot")
     with pytest.raises(ValueError, match="universe_span"):
-        load_bars(universe="sp500")
+        load_bars(universe="sp500", source="snapshot")
     with pytest.raises(ValueError, match="membership"):  # sp500 needs an explicit source
-        load_bars(universe="sp500", universe_span=("2024-01-02", "2024-01-08"))
+        load_bars(universe="sp500", universe_span=("2024-01-02", "2024-01-08"), source="snapshot")
     with pytest.raises(ValueError, match="source"):
         load_bars(["AAA"], source="yfinance")
 
@@ -183,6 +183,7 @@ def test_universe_selection_uses_pit_union(patched_snapshot, monkeypatch) -> Non
         start="2024-01-01",
         end="2024-01-31",
         membership=SOURCE,
+        source="snapshot",
     )
     assert seen["args"][0] == "sp500"
     assert seen["membership"] is SOURCE  # the chosen source is passed down, not re-selected
@@ -221,6 +222,7 @@ def test_universe_span_accepts_aware_naive_and_string_bounds(
         start="2024-01-01",
         end="2024-01-31",
         membership=SOURCE,
+        source="snapshot",
     )
     start, end = seen["span"]
     assert (start, end) == (
@@ -248,9 +250,11 @@ def test_legacy_exclusive_end_is_the_previous_weekday(end, expected) -> None:
 def test_legacy_exclusive_end_reproduces_the_legacy_window(patched_snapshot) -> None:
     """Legacy excluded the bar stamped on ``end``; inclusive load_bars needs the previous day."""
     patched_snapshot(_long())
-    inclusive = load_bars(["AAA"], "2024-01-02", "2024-01-05")
+    inclusive = load_bars(["AAA"], "2024-01-02", "2024-01-05", source="snapshot")
     assert inclusive.close.index[-1] == pd.Timestamp("2024-01-05", tz="UTC")
-    legacy = load_bars(["AAA"], "2024-01-02", bars_mod.legacy_exclusive_end("2024-01-05"))
+    legacy = load_bars(
+        ["AAA"], "2024-01-02", bars_mod.legacy_exclusive_end("2024-01-05"), source="snapshot"
+    )
     assert legacy.close.index[-1] == pd.Timestamp("2024-01-04", tz="UTC")
 
 
@@ -267,13 +271,15 @@ def test_legacy_exclusive_end_matches_the_p0_oos_last_on_the_real_tape() -> None
         ).read_text()
     )
     oos_last = pd.Timestamp(ref["oos_last"]).tz_localize(None)
-    b = load_bars(["SPY"], "2021-01-31", bars_mod.legacy_exclusive_end("2026-04-30"))
+    b = load_bars(
+        ["SPY"], "2021-01-31", bars_mod.legacy_exclusive_end("2026-04-30"), source="snapshot"
+    )
     assert b.close.index[-1].tz_localize(None) == oos_last
 
 
 def test_legacy_frame_layout(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA", "BBB"], "2024-01-01", "2024-01-31")
+    b = load_bars(["AAA", "BBB"], "2024-01-01", "2024-01-31", source="snapshot")
     legacy = to_legacy_frame(b)
     assert list(legacy.columns.names) == ["symbol", "field"]
     assert list(legacy.columns.get_level_values(1)[:5]) == [
@@ -291,7 +297,7 @@ def test_legacy_frame_layout(patched_snapshot) -> None:
 
 def test_summary_flags_early_ending_and_last_bar_coverage(patched_snapshot) -> None:
     patched_snapshot(_long())
-    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31")
+    b = load_bars(["AAA", "BBB", "CCC"], "2024-01-01", "2024-01-31", source="snapshot")
     assert b.last_bar_coverage() == pytest.approx(2 / 3)
     assert b.early_ending(min_bars=1) == ["BBB"]
     assert b.early_ending(min_bars=3) == []
@@ -449,7 +455,7 @@ def test_real_tape_matches_p0_legacy_reader_bit_for_bit() -> None:
     expected = p0.load_snapshot_wide(
         REAL_PARQUET, symbols=syms, start="2021-01-31", end="2026-04-30"
     )
-    got = to_legacy_frame(load_bars(syms, "2021-01-31", "2026-04-29"))
+    got = to_legacy_frame(load_bars(syms, "2021-01-31", "2026-04-29", source="snapshot"))
     pd.testing.assert_frame_equal(got, expected, check_exact=True)
 
 
@@ -462,6 +468,7 @@ def test_real_tape_universe_load_and_missing_symbols() -> None:
         end="2026-10-30",
         extra_symbols=["SPY", "TLT", "GLD", "PDBC", "BIL"],
         membership=SOURCE,
+        source="snapshot",
     )
     # Manifest: 617 requested, 12 not in the database; the extras are all present.
     assert len(b.requested) == 617
@@ -472,3 +479,67 @@ def test_real_tape_universe_load_and_missing_symbols() -> None:
     assert b.last_valid_bar.notna().all()
     # Manifest sanity block: last bar coverage was 554 of 605.
     assert round(b.last_bar_coverage() * 605) == 554
+
+
+def test_default_source_is_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+
+    def read_db(*args):
+        calls.append(args)
+        return _long()
+
+    monkeypatch.setattr(bars_mod, "_read_db_long", read_db)
+    bars = load_bars(["AAA"])
+    assert len(calls) == 1
+    assert bars.provenance["source"] == "db"
+
+
+def test_snapshot_path_alone_selects_snapshot(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    calls = []
+    info = snap.SnapshotInfo(
+        path=tmp_path / "tape.parquet",
+        sha256="a" * 64,
+        content_sha256=None,
+        rows=5,
+        symbols=1,
+        date_min="2024-01-02",
+        date_max="2024-01-08",
+        db_session_timezone="UTC",
+        deep_checked=False,
+    )
+
+    def read_snapshot(path, symbols, *, deep):
+        calls.append(path)
+        return _long({"AAA": list(DAYS)}), info
+
+    def read_db(*args):
+        pytest.fail("database must not be read")
+
+    monkeypatch.setattr(bars_mod.snapshot, "load_snapshot_long", read_snapshot)
+    monkeypatch.setattr(bars_mod, "_read_db_long", read_db)
+    bars = load_bars(["AAA"], snapshot_path=info.path)
+    assert calls == [info.path]
+    assert bars.provenance["source"] == "snapshot"
+
+
+def test_explicit_db_with_snapshot_path_raises(tmp_path) -> None:
+    with pytest.raises(ValueError, match="source.*snapshot_path"):
+        load_bars(["AAA"], source="db", snapshot_path=tmp_path / "tape.parquet")
+
+
+def test_unknown_source_still_raises() -> None:
+    with pytest.raises(ValueError, match="source"):
+        load_bars(["AAA"], source="yfinance")
+
+
+@pytest.mark.parametrize(
+    ("source", "path", "expected"),
+    [
+        (None, None, "db"),
+        (None, "x.parquet", "snapshot"),
+        ("snapshot", None, "snapshot"),
+        ("db", None, "db"),
+    ],
+)
+def test_resolve_source_table(source, path, expected) -> None:
+    assert bars_mod.resolve_source(source, path) == expected

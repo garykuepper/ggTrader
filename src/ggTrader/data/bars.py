@@ -7,10 +7,10 @@ last valid bar of every symbol.
 
 Guarantees
 ----------
-* **Read-only, no network.** The default source is the hashed Parquet snapshot
-  (:mod:`ggTrader.data.snapshot`); the ``db`` source opens a server-enforced read-only session
-  and runs one SELECT. Nothing here fetches from a provider and nothing writes a row or runs DDL;
-  a test scans this file for write verbs.
+* **Read-only, no network.** The default source is the database; the optional hashed Parquet
+  snapshot is handled by :mod:`ggTrader.data.snapshot`. The database opens a server-enforced
+  read-only session and runs one SELECT. Nothing here fetches from a provider or writes a row
+  or runs DDL; a test scans this file for write verbs.
 * **Hard assertions instead of repair.** Stored stamps must be unique per ``(timestamp, symbol)``,
   naive-UTC midnight and weekdays, otherwise :class:`BarsValidationError` is raised. This
   replaces the silent heuristic ``ggTrader.lab.data.collapse_daily_duplicates`` (which stays
@@ -249,6 +249,15 @@ def _normalise_symbols(symbols: Iterable[str]) -> tuple[str, ...]:
     return tuple(sorted({normalize_yf_ticker(s) for s in symbols}))
 
 
+def resolve_source(source: str | None, snapshot_path: Any | None) -> str:
+    """Select the requested source, inferring it from a snapshot path if omitted."""
+    if source is None:
+        return "snapshot" if snapshot_path is not None else "db"
+    if source == "db" and snapshot_path is not None:
+        raise ValueError("source='db' cannot be used with snapshot_path")
+    return source
+
+
 def load_bars(
     symbols: Sequence[str] | None = None,
     start: Any = None,
@@ -257,7 +266,7 @@ def load_bars(
     universe: str | None = None,
     universe_span: tuple[Any, Any] | None = None,
     extra_symbols: Sequence[str] = (),
-    source: str = "snapshot",
+    source: str | None = None,
     snapshot_path: Any | None = None,
     deep_verify: bool = False,
     membership: MembershipSource | None = None,
@@ -272,7 +281,7 @@ def load_bars(
         universe_span: ``(start, end)`` over which the membership union is taken; required with
             ``universe`` (the bar window usually starts earlier, for indicator warm-up).
         extra_symbols: added to a ``universe`` request (benchmark and sleeve ETFs).
-        source: ``snapshot`` (default, hash-verified Parquet) or ``db`` (read-only session).
+        source: ``db`` (default) or ``snapshot``; a snapshot path selects snapshot by default.
         snapshot_path: snapshot file; default is :func:`snapshot.default_snapshot_path`.
         deep_verify: also recompute the snapshot content hash.
         membership: the S&P 500 list source; required with ``universe='sp500'`` (the point-in-time
@@ -282,6 +291,7 @@ def load_bars(
         BarsValidationError: duplicate, non-midnight or weekend stamps.
         snapshot.SnapshotIntegrityError: snapshot does not match its manifest.
     """
+    source = resolve_source(source, snapshot_path)
     if source not in SOURCES:
         raise ValueError(f"unknown source {source!r}; expected one of {SOURCES}")
     if universe is not None and symbols is not None:
