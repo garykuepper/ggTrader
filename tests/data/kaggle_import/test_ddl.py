@@ -167,3 +167,29 @@ def test_release_withdrawal_and_links_are_immutable(conn):
     with pytest.raises(psycopg2.Error), conn.cursor() as cur:
         cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (release_id,))
     conn.rollback()
+
+
+def test_release_columns_and_frozen_spans(conn):
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='ref' AND "
+            "table_name='splice_links'"
+        )
+        assert {"common_day", "join_returns"} <= {row[0] for row in cur.fetchall()}
+        cur.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema='market' AND "
+            "table_name='stock_spans'"
+        )
+        assert {"kind", "crsp_until", "first_yf_date", "possible_double"} <= {
+            row[0] for row in cur.fetchall()
+        }
+        cur.execute("INSERT INTO market.stock_spans(release_id, symbol) VALUES (1, 'X')")
+    conn.commit()
+    for sql in (
+        "UPDATE market.stock_spans SET symbol='Y'",
+        "DELETE FROM market.stock_spans",
+        "TRUNCATE market.stock_spans",
+    ):
+        with pytest.raises(psycopg2.Error), conn.cursor() as cur:
+            cur.execute(sql)
+        conn.rollback()

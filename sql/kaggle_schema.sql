@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS ref.quarantine (load_id bigint, chunk_key text, row_r
 CREATE TABLE IF NOT EXISTS ref.releases (release_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, created_at timestamptz, settings jsonb, status text CHECK (status IN ('published','withdrawn')), yahoo_fingerprint jsonb);
 CREATE TABLE IF NOT EXISTS ref.release_loads (release_id bigint, load_id bigint, role text);
 CREATE TABLE IF NOT EXISTS ref.symbol_map (permno bigint, symbol text, valid_from date, valid_to date, source text, release_id bigint);
-CREATE TABLE IF NOT EXISTS ref.splice_links (release_id bigint, permno bigint, symbol text, first_yf_date date, link_day_returns_hash text, agreement jsonb, PRIMARY KEY(release_id, permno));
+CREATE TABLE IF NOT EXISTS ref.splice_links (release_id bigint, permno bigint, symbol text, first_yf_date date, common_day date, join_returns double precision[], link_day_returns_hash text, agreement jsonb, PRIMARY KEY(release_id, permno));
 CREATE TABLE IF NOT EXISTS kaggle_crsp.daily (load_id bigint, permno bigint, date date, shrcd int, exchcd int, prc double precision, ret double precision, shrout double precision, vwretd double precision, year int, month int, PRIMARY KEY(load_id, permno, date));
 CREATE TABLE IF NOT EXISTS kaggle_chars.mcgill (
     load_id bigint,
@@ -186,7 +186,13 @@ CREATE TABLE IF NOT EXISTS kaggle_chars.mcgill (
     qmj_safety double precision
 );
 CREATE TABLE IF NOT EXISTS market.daily_bars (load_id bigint, permno bigint, spell int, date date, close double precision, abs_prc double precision, midpoint_flag boolean, gap_return_approx boolean, final_flag boolean, PRIMARY KEY(load_id, permno, date));
-CREATE TABLE IF NOT EXISTS market.stock_spans (release_id bigint, symbol text, permno bigint, spell int, first_date date, last_date date, linked boolean, PRIMARY KEY(release_id, symbol));
+CREATE TABLE IF NOT EXISTS market.stock_spans (release_id bigint, symbol text, permno bigint, spell int, first_date date, last_date date, linked boolean, kind text CHECK (kind IN ('linked_yahoo','yahoo','placeholder','spell')), crsp_until date, first_yf_date date, possible_double boolean, PRIMARY KEY(release_id, symbol));
+ALTER TABLE ref.splice_links ADD COLUMN IF NOT EXISTS common_day date;
+ALTER TABLE ref.splice_links ADD COLUMN IF NOT EXISTS join_returns double precision[];
+ALTER TABLE market.stock_spans ADD COLUMN IF NOT EXISTS kind text CHECK (kind IN ('linked_yahoo','yahoo','placeholder','spell'));
+ALTER TABLE market.stock_spans ADD COLUMN IF NOT EXISTS crsp_until date;
+ALTER TABLE market.stock_spans ADD COLUMN IF NOT EXISTS first_yf_date date;
+ALTER TABLE market.stock_spans ADD COLUMN IF NOT EXISTS possible_double boolean;
 SELECT create_hypertable('kaggle_crsp.daily', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
 SELECT create_hypertable('market.daily_bars', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
 ALTER TABLE kaggle_crsp.daily SET (timescaledb.compress, timescaledb.compress_segmentby = 'load_id, permno');
@@ -234,6 +240,13 @@ DO $$ DECLARE t text; BEGIN
   EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER no_truncate', t);
  END LOOP;
 END $$;
+
+DROP TRIGGER IF EXISTS frozen ON market.stock_spans;
+CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON market.stock_spans FOR EACH ROW EXECUTE FUNCTION ref.reject_change();
+ALTER TABLE market.stock_spans ENABLE ALWAYS TRIGGER frozen;
+DROP TRIGGER IF EXISTS no_truncate ON market.stock_spans;
+CREATE TRIGGER no_truncate BEFORE TRUNCATE ON market.stock_spans FOR EACH STATEMENT EXECUTE FUNCTION ref.reject_change();
+ALTER TABLE market.stock_spans ENABLE ALWAYS TRIGGER no_truncate;
 
 CREATE OR REPLACE FUNCTION kaggle_crsp.daily_of(p_load_id bigint)
 RETURNS SETOF kaggle_crsp.daily LANGUAGE plpgsql STABLE AS $$
