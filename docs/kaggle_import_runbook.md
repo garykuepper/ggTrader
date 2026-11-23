@@ -2,6 +2,12 @@
 
 The import is code only and has been tested on scratch databases. Nothing has been loaded into the live database. The live database volume is treated as unbacked-up until the owner confirms otherwise. Do not load it without the owner gates below.
 
+Before the first load, save the closing checks' baseline on the target with the original code.
+After the load, supply it with `--compare-baseline PATH` and describe its origin with
+`--baseline-origin TEXT`. Saving a baseline after the change cannot establish the before/after
+comparison. Saving is a baseline-only operation: it writes the file before any release exists,
+does not run the release checks, and exits nonzero until a later comparison is made.
+
 1. Check the backup: `backup_fresh` requires a dump at least 1 MiB and no older than seven days in the supplied backup directory. A freshness check does not prove a restore works. G1 requires the owner to accept the 2026-11-22 backup or a successful restore drill before any write to `ggtrader`.
 2. Apply the schemas after G1: `ggt db import apply-ddl --use-configured-db --yes`. For a scratch target, use `--db-url-env NAME` instead.
 3. Run the pilot on a disposable database server using an environment variable containing its connection: `scripts/run_capped.sh .venv/bin/python scripts/kaggle_pilot.py --scratch-url-env GGT_SCRATCH_URL --file CRSP.parquet --sums SHA256SUMS.txt --out results/kaggle_pilot/pilot.json`. The optional `--year` selects a year. The pilot creates and drops a scratch database and measures a load, compression and reload. At G2 the owner approves projected size, peak disk use and free-space margin before a full load.
@@ -29,3 +35,21 @@ published. A building release is unavailable to readers; published and withdrawn
 gain new child records.
 Rows added after that date are excluded; Yahoo rows within the horizon remain mutable and can
 trigger the release's drift check.
+
+## Known limits of version one
+
+- Check 4 can accept CRSP rows before the first Yahoo date in a column that should contain only
+  Yahoo data after a link is rejected.
+- Check 5 compares most named stocks with the release's own records. It can pass when optional
+  names are absent, so it is not an independent confirmation of every historical identity.
+- Checks 9 through 13 are labelled `covered_by_tests`; the closing-check script does not run
+  those suites. Run the listed tests separately.
+- The guard against running beyond the end of the CRSP file uses each column's last valid bar
+  date. A stock that ended on that date can be refused, while a file-end stock with missing last
+  prices can escape that guard.
+- The link manifest's Yahoo fingerprint is recorded but not checked again when building a release.
+  Yahoo symbols without an end-of-life record have no forced exit.
+- A combined-data read has a fixed cost of roughly three to five seconds per call on the
+  rehearsal database.
+- A manually committed `building` release cannot be read, but can still be published by a later
+  direct database update. Do not publish or add records to such a release by hand.
