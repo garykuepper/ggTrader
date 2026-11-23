@@ -328,6 +328,7 @@ def test_combined_sql_filters_every_yahoo_probe_by_requested_symbols(conn):
 def test_yahoo_rows_after_release_horizon_are_excluded(linked):
     db, _ = linked
     before = read(linked, ["TTWO"])
+    assert before.ts.max() == pd.Timestamp("2000-01-04")
     with db.cursor() as cur:
         cur.execute(
             "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
@@ -337,3 +338,15 @@ def test_yahoo_rows_after_release_horizon_are_excluded(linked):
     after = read(linked, ["TTWO"])
     pd.testing.assert_frame_equal(before, after)
     assert not after.drift.any()
+
+
+def test_yahoo_horizon_uses_raw_timestamp_for_chunk_exclusion(conn):
+    db, _ = conn
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT pg_get_functiondef("
+            "'market.ohlcv_daily_combined(bigint,text[],date,date)'::regprocedure)"
+        )
+        sql = cur.fetchone()[0]
+    assert sql.count("y.timestamp < (yahoo_end + 1)::timestamp") == 2
+    assert "y.timestamp::date <= yahoo_end" not in sql

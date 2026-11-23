@@ -207,7 +207,6 @@ def test_wide_frame_memory_budget():
     import textwrap
 
     program = textwrap.dedent("""
-        import resource
         from datetime import datetime, timezone
         import numpy as np
         import pandas as pd
@@ -239,11 +238,19 @@ def test_wide_frame_memory_budget():
                 data[col] = np.ones(n, dtype="float64")
             return pd.DataFrame(data)
         reader.read_combined = fake
+        def status(name):
+            with open("/proc/self/status") as f:
+                line = next(line for line in f if line.startswith(name + ":"))
+                return int(line.split()[1]) * 1024
+        with open("/proc/self/clear_refs", "w") as f: f.write("5")
+        baseline = status("VmRSS")
         result = bars.load_bars([f"S{i:03}" for i in range(300)], source="combined")
         assert result.close.shape == (5000, 300)
-        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
-        print(f"peak_bytes={peak} rows=1500000 bytes_per_row={peak / 1500000:.1f}")
-        assert peak < 552000000  # 424267776 measured, plus 30% slack.
+        peak = status("VmHWM")
+        delta = peak - baseline
+        print(f"baseline_bytes={baseline} peak_bytes={peak} delta_bytes={delta} "
+              f"bytes_per_row={delta / 1500000:.1f}")
+        assert delta < 406000000  # 312008704 measured, plus 30% slack.
     """)
     result = subprocess.run([sys.executable, "-c", program], capture_output=True, text=True)
     print(result.stdout, result.stderr)

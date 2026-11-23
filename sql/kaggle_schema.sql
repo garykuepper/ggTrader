@@ -366,7 +366,7 @@ BEGIN
     FROM requested q
     LEFT JOIN market.stock_spans s ON s.release_id = p_release_id AND s.symbol = q.symbol
     JOIN public.ohlcv y ON y.symbol = q.symbol AND y.venue = 'yfinance' AND y.interval = '1d'
-    WHERE y.symbol = ANY(p_symbols) AND y.timestamp::date <= yahoo_end
+    WHERE y.symbol = ANY(p_symbols) AND y.timestamp < (yahoo_end + 1)::timestamp
       AND (s.symbol IS NULL OR s.kind = 'yahoo')
       AND (p_start IS NULL OR y."timestamp" >= p_start::timestamp)
       AND (p_end IS NULL OR y."timestamp" < (p_end + 1)::timestamp)
@@ -393,7 +393,7 @@ BEGIN
     SELECT y.timestamp,x.symbol,y.open,y.high,y.low,y.close,y.volume,'yfinance'::text,NULL::double precision,NULL::boolean,x.possible_double,x.drift
     FROM linked x
     JOIN public.ohlcv y ON y.symbol=x.symbol AND y.venue='yfinance' AND y.interval='1d'
-    WHERE y.symbol = ANY(p_symbols) AND y.timestamp::date <= yahoo_end
+    WHERE y.symbol = ANY(p_symbols) AND y.timestamp < (yahoo_end + 1)::timestamp
       AND y.timestamp>=x.first_yf_date::timestamp AND (p_start IS NULL OR y.timestamp>=p_start::timestamp) AND (p_end IS NULL OR y.timestamp<(p_end+1)::timestamp);
 END;
 $$;
