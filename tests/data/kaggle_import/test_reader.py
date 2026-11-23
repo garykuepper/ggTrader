@@ -29,19 +29,26 @@ def release(request):
     db.commit()
     links, settings = _inputs()
     links.loc[0, "status"] = "unlinked"
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+
     # Represent the Visteon split: the later spell is deliberately inaccessible.
-    with db.cursor() as cur:
+    def add_visteon(cur, rid):
         cur.execute(
             "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) VALUES (%s,88319,1,'1990-01-01',4),(%s,88319,2,'1991-01-01',5)",  # noqa: E501
             (load, load),
         )
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,possible_double) VALUES (%s,'VC',88319,2,'yahoo',true),(%s,'PERMNO-88319~1',88319,1,'spell',true)",  # noqa: E501
             (rid, rid),
         )
-    db.commit()
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_visteon,
+    )
     return db, rid
 
 

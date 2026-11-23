@@ -34,9 +34,8 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
         )
     db.commit()
     links, settings = _inputs()
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
-    with db.cursor() as cur:
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
+
+    def add_controls(cur, rid):
         for number in range(92000, 92020):
             cur.execute(
                 "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
@@ -49,7 +48,15 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
                 "VALUES (%s,%s,%s,1,'placeholder','1999-12-31','2000-01-03')",
                 (rid, f"PERMNO-{number}", number),
             )
-    db.commit()
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_controls,
+    )
     original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     readonly = connect_target(url)
@@ -175,14 +182,14 @@ def test_returns_comparisons_on_synthetic_database(conn):
             (f"load:{raw}",),
         )
         derived = cur.fetchone()[0]
-        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
         rid = cur.fetchone()[0]
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO ref.release_loads(release_id,load_id,role) "
             "VALUES (%s,%s,'crsp-bars'),(%s,%s,'mcgill')",
             (rid, derived, rid, mcgill),
         )
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (rid,))
         days = ["2005-01-31", "2005-02-28", "2005-03-31", "2005-04-29"]
         prices = [100.0, 110.0, 99.0, 118.8]
         returns = [0.0, 0.1, -0.1, 0.2]
@@ -283,16 +290,23 @@ def test_named_audit_finds_unflagged_duplicate(conn):
         )
     db.commit()
     links, settings = _inputs()
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
-    with db.cursor() as cur:
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
+
+    def add_duplicate(cur, rid):
         cur.execute(
             "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
             "first_date,last_date,possible_double) "
             "VALUES (%s,'PERMNO-1',1,1,'placeholder','2000-01-03','2000-01-03',false)",
             (rid,),
         )
-    db.commit()
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_duplicate,
+    )
     original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     status, measured, _ = _check_named_stocks(db, url, rid)
@@ -300,7 +314,7 @@ def test_named_audit_finds_unflagged_duplicate(conn):
 
 
 @pytest.fixture
-def healthy_release(conn, tmp_path, monkeypatch):
+def healthy_release(conn, tmp_path, monkeypatch, request):
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -369,8 +383,24 @@ def healthy_release(conn, tmp_path, monkeypatch):
     db.commit()
     links, settings = _inputs()
     links.loc[0, ["symbol", "permno"]] = ["AAPL", 14593]
+
+    def add_negative_control(cur, rid):
+        if getattr(getattr(request.node, "callspec", None), "params", {}).get("check") == "05":
+            cur.execute(
+                "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
+                "first_date,last_date,possible_double) "
+                "VALUES (%s,'PERMNO-14593',14593,1,'placeholder',"
+                "'1980-12-15','1999-12-31',false)",
+                (rid,),
+            )
+
     rid = build_release(
-        db, crsp_bars_load=derived, mcgill_load=mcgill, links=links, settings=settings
+        db,
+        crsp_bars_load=derived,
+        mcgill_load=mcgill,
+        links=links,
+        settings=settings,
+        before_publish=add_negative_control,
     )
     source = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(source._replace(path="/" + db.info.dbname))
@@ -457,16 +487,7 @@ def test_healthy_release_negative_controls(healthy_release, tmp_path, monkeypatc
         db.commit()
         options += ["--compare-baseline", str(baseline)]
     elif check == "05":
-        with db.cursor() as cur:
-            cur.execute("SET LOCAL ggt.release_build = 'on'")
-            cur.execute(
-                "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
-                "first_date,last_date,possible_double) "
-                "VALUES (%s,'PERMNO-14593',14593,1,'placeholder',"
-                "'1980-12-15','1999-12-31',false)",
-                (rid,),
-            )
-        db.commit()
+        pass  # The duplicate was included before publication by the fixture.
     else:
         original = closing._load
 

@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS ref.loads (
 CREATE TABLE IF NOT EXISTS ref.load_chunks (load_id bigint, chunk_key text, rows bigint, committed_at timestamptz, PRIMARY KEY(load_id, chunk_key));
 CREATE TABLE IF NOT EXISTS ref.quarantine (load_id bigint, chunk_key text, row_ref text, raw jsonb, reason text);
 CREATE TABLE IF NOT EXISTS ref.releases (release_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, created_at timestamptz, settings jsonb, status text CHECK (status IN ('published','withdrawn')), yahoo_fingerprint jsonb);
+ALTER TABLE ref.releases DROP CONSTRAINT IF EXISTS releases_status_check;
+ALTER TABLE ref.releases ADD CONSTRAINT releases_status_check CHECK (status IN ('building','published','withdrawn'));
 CREATE TABLE IF NOT EXISTS ref.release_loads (release_id bigint, load_id bigint, role text);
 CREATE TABLE IF NOT EXISTS ref.symbol_map (permno bigint, symbol text, valid_from date, valid_to date, source text, release_id bigint);
 CREATE INDEX IF NOT EXISTS symbol_map_release_symbol_dates_idx ON ref.symbol_map (release_id, symbol, valid_from, valid_to);
@@ -218,7 +220,8 @@ END $$;
 CREATE OR REPLACE FUNCTION ref.guard_release() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'releases cannot be deleted'; END IF;
- IF (OLD.status = 'published' AND NEW.status = 'withdrawn' AND
+ IF (((OLD.status = 'published' AND NEW.status = 'withdrawn') OR
+      (OLD.status = 'building' AND NEW.status = 'published')) AND
      (to_jsonb(NEW) - 'status') = (to_jsonb(OLD) - 'status')) IS NOT TRUE THEN
   RAISE EXCEPTION 'releases are immutable';
  END IF;
@@ -272,11 +275,11 @@ BEGIN
 END $$;
 
 
--- Accident protection only: anyone able to set this session variable can opt in.
 CREATE OR REPLACE FUNCTION ref.guard_release_insert() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
- IF current_setting('ggt.release_build', true) IS DISTINCT FROM 'on' THEN
-  RAISE EXCEPTION 'release build setting required';
+ PERFORM 1 FROM ref.releases WHERE release_id = NEW.release_id AND status = 'building' FOR SHARE;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'parent release must exist and be building';
  END IF;
  RETURN NEW;
 END $$;

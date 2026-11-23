@@ -18,5 +18,8 @@ To exercise the backup restore, set an administrative connection to the server h
 Further owner gates: G3 approves the written link table after calibration; G4 approves wiring the dead-stock rule into the engine; G5 approves the first release before publication. See the [implementation plan](superpowers/plans/2026-11-22-kaggle-import-version-one.md) for the evidence at each gate.
 
 A published release reads Yahoo bars only through the date recorded in its Yahoo fingerprint.
+Release publication first builds the release and its records in one transaction, then seals it as
+published. A building release is unavailable to readers; published and withdrawn releases cannot
+gain new child records.
 Rows added after that date are excluded; Yahoo rows within the horizon remain mutable and can
 trigger the release's drift check.

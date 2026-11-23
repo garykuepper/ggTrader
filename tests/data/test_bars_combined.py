@@ -112,6 +112,12 @@ def test_default_release_is_newest_and_id_is_recorded(published):
         db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings
     )
     withdraw_release(db, withdrawn)
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO ref.releases(created_at,status) "
+            "VALUES (now() + interval '1 day','building')"
+        )
+    db.commit()
     result = load_bars(["TTWO"], start="2000-01-03", source="combined")
     assert result.provenance["data_release"]["release_id"] == latest
     assert result.provenance["bars_sha256"]
@@ -136,14 +142,15 @@ def test_spans_exclude_alive_and_file_end_series_and_mark_successors(published):
 
     from ggTrader.data.bars import _read_combined_long
 
-    db, load, rid = published
-    with db.cursor() as cur:
+    db, load, _ = published
+    from ggTrader.data.kaggle_import.release import build_release
+
+    def add_spans(cur, rid):
         cur.execute(
             "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) VALUES "
             "(%s,20,1,'1999-01-01',1),(%s,20,2,'2000-01-01',1)",
             (load, load),
         )
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,last_date) VALUES "
             "(%s,'OLD',10,1,'yahoo','2000-01-01'),"
@@ -157,7 +164,16 @@ def test_spans_exclude_alive_and_file_end_series_and_mark_successors(published):
             "('2000-01-03','OLD','1d','yfinance',1),"
             "('2000-02-01','ALIVE','1d','yfinance',1)"
         )
-    db.commit()
+
+    links, settings = _inputs()
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_spans,
+    )
     _, _, spans, _, _ = _read_combined_long(
         rid,
         ["OLD", "ALIVE", "PERMNO-20~1", "PERMNO-20"],

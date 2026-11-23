@@ -37,4 +37,4 @@ def test_build_list_withdraw(conn, monkeypatch, tmp_path, capsys):
     listing = invoke("list")
     assert "published" in listing and "1" in listing and "linked_yahoo" in listing
     assert "1" in invoke("withdraw", "--release-id", "1", "--yes")
-    assert "withdrawn" in invoke("list")
+    assert "withdrawn" not in invoke("list")

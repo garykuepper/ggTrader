@@ -89,12 +89,13 @@ def test_hypertables_exist(conn):
 @pytest.mark.parametrize("table", ["symbol_map", "splice_links"])
 def test_frozen_tables_reject_update_delete_truncate(conn, table):
     with conn.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
+        rid = cur.fetchone()[0]
         if table == "splice_links":
-            cur.execute("SET LOCAL ggt.release_build = 'on'")
-            cur.execute("INSERT INTO ref.splice_links(release_id, permno) VALUES (1, 1)")
+            cur.execute("INSERT INTO ref.splice_links(release_id, permno) VALUES (%s, 1)", (rid,))
         else:
-            cur.execute("SET LOCAL ggt.release_build = 'on'")
-            cur.execute(f"INSERT INTO ref.{table} DEFAULT VALUES")
+            cur.execute(f"INSERT INTO ref.{table}(release_id) VALUES (%s)", (rid,))
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (rid,))
     conn.commit()
     for statement in (
         f"UPDATE ref.{table} SET symbol=NULL",
@@ -145,12 +146,12 @@ def test_cli_apply_ddl_parses_and_runs(monkeypatch):
 
 def test_release_withdrawal_and_links_are_immutable(conn):
     with conn.cursor() as cur:
-        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
         release_id = cur.fetchone()[0]
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO ref.release_loads(release_id, load_id) VALUES (%s, 1)", (release_id,)
         )
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (release_id,))
     conn.commit()
     for statement in (
         "UPDATE ref.releases SET settings='{}'::jsonb",
@@ -186,8 +187,10 @@ def test_release_columns_and_frozen_spans(conn):
         assert {"kind", "crsp_until", "first_yf_date", "possible_double"} <= {
             row[0] for row in cur.fetchall()
         }
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
-        cur.execute("INSERT INTO market.stock_spans(release_id, symbol) VALUES (1, 'X')")
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
+        rid = cur.fetchone()[0]
+        cur.execute("INSERT INTO market.stock_spans(release_id, symbol) VALUES (%s, 'X')", (rid,))
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (rid,))
     conn.commit()
     for sql in (
         "UPDATE market.stock_spans SET symbol='Y'",
@@ -216,3 +219,30 @@ def test_closing_check_required_indexes_exist_on_repository_ddl(conn):
         table == "daily_bars" and all(col in definition for col in ("load_id", "permno", "date"))
         for table, definition in indexes.values()
     )
+
+
+def test_old_release_constraint_and_guard_migrate_idempotently(conn):
+    with conn.cursor() as cur:
+        cur.execute("ALTER TABLE ref.releases DROP CONSTRAINT releases_status_check")
+        cur.execute(
+            "ALTER TABLE ref.releases ADD CONSTRAINT releases_status_check "
+            "CHECK (status IN ('published', 'withdrawn'))"
+        )
+        cur.execute("""CREATE OR REPLACE FUNCTION ref.guard_release_insert() RETURNS trigger
+                    LANGUAGE plpgsql AS $$ BEGIN
+                    IF current_setting('ggt.release_build', true) IS DISTINCT FROM 'on' THEN
+                        RAISE EXCEPTION 'release build setting required';
+                    END IF; RETURN NEW; END $$""")
+    conn.commit()
+    apply_ddl(conn)
+    apply_ddl(conn)
+    with conn.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
+        rid = cur.fetchone()[0]
+        cur.execute("INSERT INTO ref.symbol_map(release_id,symbol) VALUES (%s,'TEST')", (rid,))
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (rid,))
+        cur.execute("SAVEPOINT guard_probe")
+        with pytest.raises(psycopg2.Error):
+            cur.execute("INSERT INTO ref.symbol_map(release_id,symbol) VALUES (%s,'LATE')", (rid,))
+        cur.execute("ROLLBACK TO SAVEPOINT guard_probe")
+    conn.rollback()

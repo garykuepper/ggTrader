@@ -242,7 +242,7 @@ def test_published_release_rejects_unapproved_inserts(conn, statement):
     db, load = conn
     links, settings = _inputs()
     rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
-    with pytest.raises(psycopg2.Error, match="release build"), db.cursor() as cur:
+    with pytest.raises(psycopg2.Error, match="building"), db.cursor() as cur:
         cur.execute(statement, (rid,))
     db.rollback()
 
@@ -265,47 +265,71 @@ def test_release_with_incomplete_referenced_load_is_unavailable(conn):
 
     db, load = conn
     links, settings = _inputs()
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
     with db.cursor() as cur:
         cur.execute("INSERT INTO ref.loads(status) VALUES ('running') RETURNING load_id")
         running = cur.fetchone()[0]
-        # Construct an invalid reference through the accident-protection setting.
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
+
+    def add_invalid(cur, rid):
         cur.execute(
             "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'mcgill')",
             (rid, running),
         )
-    db.commit()
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_invalid,
+    )
     with pytest.raises(ReleaseUnavailable):
         read_combined(db, rid, ["TTWO"], None, None)
+    db.rollback()
 
 
 def test_release_load_role_is_unique(conn):
     db, load = conn
     links, settings = _inputs()
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
-    with pytest.raises(psycopg2.errors.UniqueViolation), db.cursor() as cur:
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
+
+    def duplicate(cur, rid):
         cur.execute(
             "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'crsp-bars')",
             (rid, load),
         )
-    db.rollback()
+
+    with pytest.raises(psycopg2.errors.UniqueViolation):
+        build_release(
+            db,
+            crsp_bars_load=load,
+            mcgill_load=None,
+            links=links,
+            settings=settings,
+            before_publish=duplicate,
+        )
 
 
 def test_combined_helper_rejects_incomplete_reference(conn):
     db, load = conn
     links, settings = _inputs()
-    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
     with db.cursor() as cur:
         cur.execute("INSERT INTO ref.loads(status) VALUES ('running') RETURNING load_id")
         other = cur.fetchone()[0]
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
+
+    def add_invalid(cur, rid):
         cur.execute(
             "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'mcgill')",
             (rid, other),
         )
-    db.commit()
+
+    rid = build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=add_invalid,
+    )
     with pytest.raises(psycopg2.Error, match="release .* is unavailable"), db.cursor() as cur:
         cur.execute("SELECT * FROM market._combined_linked(%s, ARRAY['TTWO'])", (rid,))
     db.rollback()
@@ -381,3 +405,44 @@ def test_first_candidate_day_skipped_when_zero_then_next_day_used(conn):
             "SELECT common_day FROM ref.splice_links WHERE release_id=%s AND symbol='TTWO'", (rid,)
         )
         assert cur.fetchone()[0] == date(2000, 1, 3)
+
+
+@pytest.mark.parametrize(
+    "table", ["ref.release_loads", "ref.symbol_map", "ref.splice_links", "market.stock_spans"]
+)
+def test_old_and_nonexistent_release_reject_children_during_new_build(conn, table):
+    db, load = conn
+    links, settings = _inputs()
+    old = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+
+    def probe(cur, new):
+        for target in (old, -999):
+            cur.execute("SAVEPOINT child_probe")
+            with pytest.raises(psycopg2.Error, match="building"):
+                cur.execute(f"INSERT INTO {table} (release_id) VALUES (%s)", (target,))
+            cur.execute("ROLLBACK TO SAVEPOINT child_probe")
+
+    build_release(
+        db,
+        crsp_bars_load=load,
+        mcgill_load=None,
+        links=links,
+        settings=settings,
+        before_publish=probe,
+    )
+
+
+def test_building_release_unavailable_until_published(conn):
+    from ggTrader.data.kaggle_import.reader import read_combined
+
+    db, _ = conn
+    # A separate uncommitted building row is unavailable to ordinary resolution.
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
+        rid = cur.fetchone()[0]
+    db.commit()
+    with pytest.raises(ReleaseUnavailable):
+        read_combined(db, rid, ["TTWO"], None, None)
+    db.rollback()
+    with pytest.raises(ReleaseUnavailable):
+        stocks_alive_on(db, rid, date(2000, 1, 1))

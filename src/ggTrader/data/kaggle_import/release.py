@@ -1,12 +1,13 @@
 """Publish immutable combinations of derived bars and Yahoo identities."""
 
 import hashlib
+from collections.abc import Callable
 from dataclasses import asdict
 from datetime import date
 from typing import Any
 
 import pandas as pd
-from psycopg2.extensions import connection
+from psycopg2.extensions import connection, cursor
 from psycopg2.extras import Json, execute_values
 
 from ggTrader.data.kaggle_import.columns import plan_columns
@@ -35,11 +36,11 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
     mcgill_load: int | None,
     links: pd.DataFrame,
     settings: LinkSettings,
+    before_publish: Callable[[cursor, int], None] | None = None,
 ) -> int:
     """Publish all release records atomically, or leave none of them behind."""
     try:
         with conn.cursor() as cur:
-            cur.execute("SET LOCAL ggt.release_build = 'on'")
             loads = [(crsp_bars_load, "crsp-derived-bars")]
             if mcgill_load is not None:
                 loads.append((mcgill_load, "mcgill-fiam"))
@@ -188,7 +189,7 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
             )
             cur.execute(
                 "INSERT INTO ref.releases(created_at,settings,status,yahoo_fingerprint) "
-                "VALUES(now(),%s,'published',%s) RETURNING release_id",
+                "VALUES(now(),%s,'building',%s) RETURNING release_id",
                 (Json(config), Json(fingerprint_data)),
             )
             release_id = cur.fetchone()[0]
@@ -266,6 +267,11 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
                     "NULL GROUP BY permno,stock_ticker",
                     (release_id, mcgill_load),
                 )
+            if before_publish is not None:
+                before_publish(cur, release_id)
+            cur.execute(
+                "UPDATE ref.releases SET status='published' WHERE release_id=%s", (release_id,)
+            )
         conn.commit()
         return release_id
     except Exception:

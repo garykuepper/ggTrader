@@ -269,7 +269,8 @@ def _run_release_import(conn: Any, args: argparse.Namespace) -> None:
             "r.settings->'demoted_links', "
             "(SELECT jsonb_object_agg(kind,n) FROM (SELECT kind,count(*) n "
             "FROM market.stock_spans s WHERE s.release_id=r.release_id GROUP BY kind) counts) "
-            "FROM ref.releases r WHERE (%s IS NULL OR r.release_id=%s) ORDER BY r.release_id",
+            "FROM ref.releases r WHERE r.status='published' AND "
+            "(%s IS NULL OR r.release_id=%s) ORDER BY r.release_id",
             (rid, rid),
         )
         for release_id, created, status, fingerprint, demoted, counts in cur.fetchall():

@@ -92,12 +92,12 @@ def test_retention_and_published_release(conn):
         begin(conn, digest="b")
     assert begin(conn, digest="b", allow_third=True) != second
     with conn.cursor() as cur:
-        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('building') RETURNING release_id")
         release = cur.fetchone()[0]
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
         cur.execute(
             "INSERT INTO ref.release_loads(release_id, load_id) VALUES (%s, %s)", (release, first)
         )
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (release,))
     conn.commit()
     assert not can_delete_load(conn, first)
     assert can_delete_load(conn, second)
