@@ -1,0 +1,167 @@
+"""Tests for rescaling CRSP spell prices."""
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from ggTrader.data.kaggle_import.derive import build_spell_closes
+
+
+def test_close_anchored_and_returns():
+    rows = pd.DataFrame(
+        {
+            "permno": [1, 1, 1, 1],
+            "date": pd.date_range("2020-01-01", periods=4),
+            "spell": [0, 0, 1, 1],
+            "prc": [10.0, -11.0, 20.0, 22.0],
+            "chained_return": [np.nan, 0.1, np.nan, 0.1],
+        }
+    )
+    result = build_spell_closes(rows)
+    assert result.close.tolist() == pytest.approx([10, 11, 20, 22])
+    assert result.groupby(
+        ["permno", "spell"]
+    ).close.pct_change().dropna().tolist() == pytest.approx([0.1, 0.1], abs=1e-12)
+    assert result.midpoint_flag.tolist() == [False, True, False, False]
+    assert result.final_flag.tolist() == [False, False, False, True]
+
+
+def test_total_loss_raises():
+    rows = pd.DataFrame(
+        {
+            "permno": [1, 1],
+            "date": pd.date_range("2020-01-01", periods=2),
+            "spell": [0, 0],
+            "prc": [10.0, 1.0],
+            "chained_return": [np.nan, -1.0],
+        }
+    )
+    with pytest.raises(ValueError, match="1.*2020-01-02"):
+        build_spell_closes(rows)
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_derive_in_scratch_database(tmp_path):
+    from contextlib import closing
+    from datetime import datetime
+
+    import psycopg2
+
+    from ggTrader.data.kaggle_import.crsp import load_crsp
+    from ggTrader.data.kaggle_import.ddl import apply_ddl
+    from ggTrader.data.kaggle_import.derive import derive_bars
+    from ggTrader.data.kaggle_import.loadlog import AlreadyLoaded, LoadFailed, fail_load
+    from tests.data.kaggle_import.test_crsp_load import make_file, row
+    from tests.data.scratch_db import scratch_database
+
+    dates = [datetime(1999, 1, 4), datetime(1999, 1, 5)]
+    rows = []
+    for permno in (1, 2, 3):
+        for day in dates:
+            item = row(permno, day)
+            item.update(prc=11.0 if day == dates[1] else 10.0, ret=0.1)
+            rows.append(item)
+    path, sums = make_file(tmp_path, rows, row_group_size=6)
+    with scratch_database() as url, closing(psycopg2.connect(url)) as conn:
+        apply_ddl(conn)
+        source = load_crsp(conn, path, sums, backup_dir=None, db_free_path=tmp_path, margin_bytes=0)
+        calendar = pd.DatetimeIndex(dates)
+        running = load_crsp(
+            conn,
+            path,
+            sums,
+            backup_dir=None,
+            db_free_path=tmp_path,
+            row_groups=[0],
+            parser_suffix="running",
+            margin_bytes=0,
+        )
+        with pytest.raises(LoadFailed):
+            derive_bars(conn, running, calendar, backup_dir=None, db_free_path=tmp_path)
+        fail_load(conn, running, "test failure")
+        with pytest.raises(LoadFailed):
+            derive_bars(conn, running, calendar, backup_dir=None, db_free_path=tmp_path)
+        with pytest.raises(LoadFailed):
+            derive_bars(conn, source + 100, calendar, backup_dir=None, db_free_path=tmp_path)
+        derived = derive_bars(
+            conn,
+            source,
+            calendar,
+            backup_dir=None,
+            db_free_path=tmp_path,
+            rows_per_chunk=2,
+            margin_bytes=0,
+        )
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT close, final_flag FROM market.daily_bars "
+                "WHERE load_id=%s ORDER BY permno, date",
+                (derived,),
+            )
+            assert cur.fetchall() == [(10.0, False), (11.0, True)] * 3
+            cur.execute("SELECT status, checks FROM ref.loads WHERE load_id=%s", (derived,))
+            status, checks = cur.fetchone()
+            assert status == "complete" and checks["source_rows"] == 6
+        with pytest.raises(AlreadyLoaded):
+            derive_bars(
+                conn, source, calendar, backup_dir=None, db_free_path=tmp_path, margin_bytes=0
+            )
+
+
+def test_split_day_does_not_change_returns():
+    from pathlib import Path
+
+    from ggTrader.data.kaggle_import.spells import assign_spells
+
+    fixtures = Path(__file__).parent / "fixtures"
+    rows = pd.read_csv(fixtures / "crsp_cases.csv", parse_dates=["date"])
+    rows = rows[(rows.permno == 14593) & rows.date.between("1987-06-04", "1987-06-24")]
+    calendar = pd.DatetimeIndex(pd.read_csv(fixtures / "crsp_calendar.csv")["date"])
+    bars = build_spell_closes(assign_spells(rows, calendar))
+    assert bars.spell.nunique() == 1
+    np.testing.assert_allclose(
+        bars.close.pct_change().iloc[1:], bars.chained_return.iloc[1:], atol=1e-12
+    )
+
+
+def test_missing_price_raises():
+    rows = pd.DataFrame(
+        {
+            "permno": [1],
+            "date": pd.to_datetime(["2020-01-01"]),
+            "spell": [0],
+            "prc": [np.nan],
+            "chained_return": [np.nan],
+        }
+    )
+    with pytest.raises(ValueError, match="Missing price"):
+        build_spell_closes(rows)
+
+
+def test_cli_requires_yes(monkeypatch, capsys):
+    import argparse
+
+    from ggTrader.cli.cmd_db import register_db_parser, run_db
+
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    args = parser.parse_args(
+        [
+            "db",
+            "import",
+            "derive-bars",
+            "--crsp-load",
+            "1",
+            "--calendar-file",
+            "x",
+            "--no-backup-check",
+            "--db-free-path",
+            "/",
+            "--db-url-env",
+            "TEST_IMPORT_URL",
+        ]
+    )
+    run_db(args)
+    assert "pass --yes" in capsys.readouterr().out

@@ -74,7 +74,14 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     crsp.add_argument("--db-free-path", type=Path, default=Path("/"))
     crsp.add_argument("--year", type=int)
     crsp.add_argument("--row-groups", type=lambda value: [int(x) for x in value.split(",")])
-    for command in (ddl, crsp, mcgill):
+    derive = import_subs.add_parser("derive-bars", help="Derive CRSP bars")
+    derive.add_argument("--crsp-load", type=int, required=True)
+    derive.add_argument("--calendar-file", type=Path, required=True)
+    derive_backup = derive.add_mutually_exclusive_group(required=True)
+    derive_backup.add_argument("--backup-dir", type=Path)
+    derive_backup.add_argument("--no-backup-check", action="store_true")
+    derive.add_argument("--db-free-path", type=Path, required=True)
+    for command in (ddl, crsp, mcgill, derive):
         target = command.add_mutually_exclusive_group(required=True)
         target.add_argument(
             "--db-url-env",
@@ -127,7 +134,7 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
         url = resolve_import_url(args)
-        if args.import_command in ("crsp", "mcgill") and args.no_backup_check:
+        if args.import_command in ("crsp", "mcgill", "derive-bars") and args.no_backup_check:
             from psycopg2.extensions import parse_dsn
 
             try:
@@ -140,7 +147,11 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
             action = (
                 "apply import schemas"
                 if args.import_command == "apply-ddl"
-                else f"import {args.file}"
+                else (
+                    f"derive bars from load {args.crsp_load}"
+                    if args.import_command == "derive-bars"
+                    else f"import {args.file}"
+                )
             )
             print(f"Would {action}; pass --yes to proceed.")
             return
@@ -163,6 +174,20 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
                     db_free_path=args.db_free_path,
                 )
                 print(f"Load {load_id}")
+            elif args.import_command == "derive-bars":
+                from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks
+                from ggTrader.data.kaggle_import.derive import derive_bars
+                from ggTrader.data.kaggle_import.spells import calendar_from_file
+
+                load_id = derive_bars(
+                    conn,
+                    args.crsp_load,
+                    calendar_from_file(args.calendar_file),
+                    backup_dir=args.backup_dir,
+                    db_free_path=args.db_free_path,
+                )
+                print(f"Load {load_id}")
+                print(f"Compressed {compress_kaggle_chunks(conn, 'market.daily_bars')} chunks")
             else:
                 from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks, load_crsp
 
