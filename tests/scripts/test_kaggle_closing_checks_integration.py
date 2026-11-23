@@ -597,3 +597,38 @@ def test_identity_audit_classifies_candidates_on_synthetic_release(conn, include
     if include_invalid:
         assert status == "fail"
         assert measured["yahoo_candidate_flag_exceptions"][0]["yahoo_symbol"] == "BAD"
+
+
+def test_yahoo_comparison_accepts_crsp_history_after_2000(conn, monkeypatch):
+
+    from ggTrader.data.kaggle_import.release import build_release
+    from scripts import kaggle_closing_checks as closing
+
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM market.daily_bars WHERE load_id=%s", (load,))
+        cur.execute("DELETE FROM public.ohlcv")
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) VALUES "
+            "(%s,1,1,'2005-01-03',5),(%s,1,1,'2009-12-31',9),"
+            "(%s,1,1,'2010-01-04',10)",
+            (load, load, load),
+        )
+        cur.execute(
+            "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) VALUES "
+            "('2010-01-04','TTWO','1d','yfinance',10),"
+            "('2010-01-05','TTWO','1d','yfinance',11),"
+            "('2010-01-06','TTWO','1d','yfinance',12)"
+        )
+    db.commit()
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
+    url = urlunparse(original._replace(path="/" + db.info.dbname))
+    status, measured, _ = closing._check_yahoo_keys(db, url, rid, ["TTWO"])
+    assert status == "pass"
+    assert measured["crsp_rows_before_2000"] == 0
+    assert measured["crsp_rows_from_2000"] == 2
+    assert measured["compared_rows"] == 3
+    assert measured["missing_rows"] == measured["unexpected_rows"] == 0
+    assert measured["different_fields"] == []

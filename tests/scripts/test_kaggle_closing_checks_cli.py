@@ -310,3 +310,73 @@ def test_identity_audit_packs_440_groups_into_eight_reads(monkeypatch):
     assert len(calls) == 8 and max(map(len, calls)) == 120
     assert len(overlaps) == 440
     assert overlaps[0] == {"date": "2000-01-03", "permno": 0, "symbols": ["A0", "B0"]}
+
+
+@pytest.mark.parametrize(
+    "problem", [None, "changed", "late_crsp", "missing_yahoo", "missing_source"]
+)
+def test_yahoo_comparison_handles_crsp_additions_and_rejects_bad_rows(monkeypatch, problem):
+    from types import SimpleNamespace
+
+    import pandas as pd
+
+    from scripts import kaggle_closing_checks as closing
+
+    dates = pd.to_datetime(
+        ["1999-01-04", "2005-01-03", "2009-12-31", "2010-01-04", "2010-01-05"], utc=True
+    )
+    close = pd.DataFrame({"SHOP": [3.0, 5.0, 9.0, 10.0, 11.0]}, index=dates)
+    sources = ["crsp", "crsp", "crsp", "yfinance", "yfinance"]
+    if problem == "changed":
+        close.iloc[3, 0] = 20.0
+    if problem == "late_crsp":
+        sources[3] = "crsp"
+    if problem == "missing_source":
+        sources[2] = pd.NA
+    if problem == "missing_yahoo":
+        close = close.iloc[:-1]
+        sources = sources[:-1]
+    index = pd.MultiIndex.from_arrays(
+        [close.index, ["SHOP"] * len(close)], names=["timestamp", "symbol"]
+    )
+    combined = SimpleNamespace(
+        flags=pd.DataFrame({"source": sources}, index=index), frame=lambda field: close
+    )
+    db_close = pd.DataFrame({"SHOP": [10.0, 11.0]}, index=dates[3:])
+    db_bars = SimpleNamespace(frame=lambda field: db_close)
+    monkeypatch.setattr(
+        closing,
+        "_load",
+        lambda url, names, source, *args, **kwargs: combined if source == "combined" else db_bars,
+    )
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def execute(self, sql, args):
+            self.sql = sql
+
+        def fetchall(self):
+            if "public.ohlcv" in self.sql:
+                return [(day.tz_localize(None), "SHOP") for day in dates[3:]]
+            return [("SHOP", date(2010, 1, 4))]
+
+    conn = SimpleNamespace(cursor=Cursor)
+    status, measured, _ = closing._check_yahoo_keys(conn, "scratch", 1, ["SHOP"])
+    assert status == ("pass" if problem is None else "fail")
+    assert measured["crsp_rows_before_2000"] == 1
+    assert measured["crsp_rows_from_2000"] == 2 + (problem == "late_crsp") - (
+        problem == "missing_source"
+    )
+    if problem == "changed":
+        assert measured["different_fields"]
+    if problem == "missing_yahoo":
+        assert measured["missing_rows"] == 1
+    if problem == "late_crsp":
+        assert measured["invalid_crsp_rows"] == 1
+    if problem == "missing_source":
+        assert measured["invalid_source_rows"] == 1

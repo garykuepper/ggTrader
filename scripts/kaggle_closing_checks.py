@@ -193,25 +193,48 @@ def _baseline(conn, url: str, *, save: Path | None = None, compare: Path | None 
 
 
 def _check_yahoo_keys(conn, url: str, release_id: int, names: list[str]) -> tuple[str, dict, str]:
-    """Compare post-2000 row keys and all fields; count added older rows."""
+    """Compare Yahoo rows and ensure all CRSP additions precede their Yahoo splice."""
     import numpy as np
     import pandas as pd
 
     from ggTrader.data.bars import BAR_FIELDS
 
     combined = _load(url, names, "combined", release_id)
-    db = _load(url, names, "db", start="2000-01-03")
+    db = _load(url, names, "db")
     with conn.cursor() as cur:
         cur.execute(
             "SELECT timestamp,symbol FROM public.ohlcv WHERE symbol=ANY(%s) "
-            "AND venue='yfinance' AND interval='1d' AND timestamp >= TIMESTAMP '2000-01-03'",
+            "AND venue='yfinance' AND interval='1d'",
             (names,),
         )
         db_keys = {(pd.Timestamp(stamp, tz="UTC"), symbol) for stamp, symbol in cur.fetchall()}
+        cur.execute(
+            "SELECT symbol,first_yf_date FROM market.stock_spans "
+            "WHERE release_id=%s AND symbol=ANY(%s)",
+            (release_id, names),
+        )
+        first_yahoo = dict(cur.fetchall())
     cutoff = pd.Timestamp("2000-01-03", tz="UTC")
-    flag_index = combined.flags.index
-    combo_keys = {(ts, str(symbol)) for ts, symbol in flag_index if ts >= cutoff}
-    older = sum(ts < cutoff for ts, _ in flag_index)
+    combo_keys = set()
+    before_2000 = after_2000 = 0
+    invalid_crsp = []
+    invalid_source = []
+    for (stamp, symbol), source in combined.flags["source"].items():
+        symbol = str(symbol)
+        if source == "yfinance":
+            combo_keys.add((stamp, symbol))
+        elif source == "crsp":
+            if stamp < cutoff:
+                before_2000 += 1
+            else:
+                after_2000 += 1
+            first = first_yahoo.get(symbol)
+            if first is None or stamp.date() >= first:
+                invalid_crsp.append({"symbol": symbol, "date": str(stamp.date())})
+        else:
+            invalid_source.append(
+                {"symbol": symbol, "date": str(stamp.date()), "source": str(source)}
+            )
     missing, extra = db_keys - combo_keys, combo_keys - db_keys
     different = []
     for symbol in names:
@@ -228,10 +251,19 @@ def _check_yahoo_keys(conn, url: str, release_id: int, names: list[str]) -> tupl
         "compared_rows": len(db_keys & combo_keys),
         "missing_rows": len(missing),
         "unexpected_rows": len(extra),
-        "earlier_rows_added": older,
+        "crsp_rows_before_2000": before_2000,
+        "crsp_rows_from_2000": after_2000,
+        "invalid_crsp_rows": len(invalid_crsp),
+        "invalid_crsp_examples": invalid_crsp[:50],
+        "invalid_source_rows": len(invalid_source),
+        "invalid_source_examples": invalid_source[:50],
         "different_fields": different,
     }
-    return ("fail" if missing or extra or different else "pass"), measured, ""
+    return (
+        ("fail" if missing or extra or different or invalid_crsp or invalid_source else "pass"),
+        measured,
+        "",
+    )
 
 
 def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
