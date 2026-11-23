@@ -52,6 +52,14 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     import_subs = importer.add_subparsers(dest="import_command", required=True)
     ddl = import_subs.add_parser("apply-ddl", help="Apply import schemas")
     ddl.add_argument("--db-url", help="Database URL (defaults to configured database)")
+    crsp = import_subs.add_parser("crsp", help="Load CRSP parquet")
+    crsp.add_argument("--file", type=Path, required=True)
+    crsp.add_argument("--sums", type=Path, required=True)
+    crsp.add_argument("--backup-dir", type=Path)
+    crsp.add_argument("--year", type=int)
+    crsp.add_argument("--row-groups", type=lambda value: [int(x) for x in value.split(",")])
+    crsp.add_argument("--db-url", required=True)
+    crsp.add_argument("--yes", action="store_true")
 
 
 def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
@@ -84,10 +92,28 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
         from ggTrader.data.kaggle_import.ddl import apply_ddl
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
+        if args.import_command == "crsp" and not args.yes:
+            print(f"Would import {args.file}; pass --yes to proceed.")
+            return
         url = to_psycopg_url(args.db_url or get_db_connection_string())
         conn = connect(url)
         try:
-            apply_ddl(conn)
+            if args.import_command == "apply-ddl":
+                apply_ddl(conn)
+            else:
+                from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks, load_crsp
+
+                load_id = load_crsp(
+                    conn,
+                    args.file,
+                    args.sums,
+                    backup_dir=args.backup_dir,
+                    row_groups=args.row_groups,
+                    year=args.year,
+                )
+                print(f"Load {load_id}")
+                if args.year is None and args.row_groups is None:
+                    print(f"Compressed {compress_kaggle_chunks(conn)} chunks")
         finally:
             conn.close()
     elif args.db_command == "membership":
