@@ -259,7 +259,8 @@ lists are `REGISTRY` and `LEGACY_ONLY_STRATEGIES` in `src/ggTrader/lab/strategie
 | `--sweep-param` | none | Override one axis of the strategy's parameter grid, for example `--sweep-param rsi_oversold=20,25,30,35` (repeat the flag for several axes). |
 | `--membership SPEC` | none (see below) | Where the S&P 500 membership list is read from: `db` (latest vintage), `db:<load_id>` or `fixture:<name>`, for example `fixture:sp500_v1_2026-06-02` (the frozen vintage 1 that every committed reference number was made on). **There is deliberately no default**: without the flag the `GGT_MEMBERSHIP` environment variable is used, and if that is also unset the run stops at once with `MembershipSourceNotSelected`, before loading any data. The flag is needed for any universe, not only `sp500`. |
 | `--expect-membership-sha SHA256` | none | Refuse to run unless the chosen vintage's content sha256 equals this (pins a reproduction to the exact list). |
-| `--snapshot PATH` | newest in `data/snapshots/MANIFEST.json` | The Parquet tape to read. |
+| `--source {db,snapshot}` | `db` unless `--snapshot` is supplied | Read Yahoo daily bars from the database or the frozen Parquet tape. `--source snapshot` uses the newest tape in `data/snapshots/MANIFEST.json` unless a path is supplied. |
+| `--snapshot PATH` | none | Read the specified Parquet tape; cannot be combined with `--source db`. |
 | `--result-json PATH` | `results/lab/wfo_<strategy>_<universe>_<start>_<end>_vbt.json` | `--wfo`: where to write the run record. Every record carries a provenance block (vectorbt and Rust versions, the engine that actually ran, tape sha256, statistic definitions, baseline epoch, and the membership list used: `membership_sha256` plus a `membership` block with the load id or fixture name, coverage and ages). With `--blend` the same block is stored on the `lab_runs` row. |
 
 ### Simulation Modes (Choose One)

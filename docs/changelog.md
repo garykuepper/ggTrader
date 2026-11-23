@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-22 (database bars by default)
+
+- `load_bars`, `load_run_bars`, and `ggt lab` now default to read-only Yahoo daily bars from the database because the frozen snapshot is a test fixture and its file is absent. Snapshots remain available explicitly, and database runs record a hash of the bars read so changes in the data are visible in provenance.
+
 ## 2026-11-20 (roadmap rewritten)
 
 - `docs/roadmap.md` was a June-era document patched since: it still carried an "In-Flight Tasks (~4 Weeks)" section, a pre-engine-rebuild infrastructure table, a June strategy status list and a running timeline whose numbers a warning banner disowned. It is rewritten at 135 lines: the North Star and evidence standard, where things stand, what the evidence says (numbers taken from the research snapshot), the open tracks with their gates, a current infrastructure table, and a condensed 2026 timeline. The old file moved unchanged (links rewritten for its new folder, plus an archived note) to `docs/archive/roadmap-2026-06-to-2026-11.md`.
