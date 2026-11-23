@@ -9,6 +9,9 @@ Epochs: E1 is the first baseline on vectorbt's own definitions (owner decision 2
 vectorbt's definition wins where it differs from the old ggTrader one; the indicator presets
 still reproduce the legacy signals, OD1(a)). A later definition change starts E2. Results from
 the legacy engine carry no block at all.
+
+Combined results cannot be replayed exactly after Yahoo rows refresh: a release records a
+fingerprint of the Yahoo rows, not an immutable copy. Version two keeps an immutable copy.
 """
 
 from __future__ import annotations
@@ -130,6 +133,7 @@ def provenance(
     tape_sha256: str | None = None,
     extra: dict[str, Any] | None = None,
     membership: dict[str, Any] | None = None,
+    data_release: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the provenance block for a result produced now.
 
@@ -139,6 +143,8 @@ def provenance(
 
     Args:
         tape_sha256: hash of the frozen data snapshot behind the result, if any.
+        data_release: combined release identity; Yahoo refreshes prevent exact replay until
+            version two keeps an immutable copy.
         extra: additional fields; they may not override any stack field.
         membership: the ``MembershipSource.provenance(asof)`` fields (``membership_sha256`` and
             the ``membership`` block). Added only when given: a record without them says nothing
@@ -163,6 +169,8 @@ def provenance(
         "tape_sha256": tape_sha256,
         "created_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if data_release is not None:
+        block["data_release"] = data_release
     for key, value in (extra or {}).items():
         if key in block:
             raise ValueError(f"extra may not override the stack field {key!r}")
@@ -183,6 +191,9 @@ def compare(
     a: dict[str, Any] | None, b: dict[str, Any] | None, *, allow_cross_epoch: bool = False
 ) -> Comparison:
     """Classify the difference between two provenance blocks (worst difference wins).
+
+    A different combined release is a tape difference. Yahoo refreshes can prevent exact
+    replay even for the same release; version two keeps an immutable copy.
 
     Args:
         a: provenance of one result; ``None`` for a legacy result (vectorbt 0.28.5).
@@ -228,7 +239,9 @@ def compare(
         note = "comparable only if the golden suite passed on both versions"
     if "pandas" in diffs and _major(a["pandas"]) != _major(b["pandas"]):
         flags.append("PANDAS_MAJOR_DIFF")
-    if "tape_sha256" in diffs:
+    if ("data_release" in a) != ("data_release" in b):
+        diffs["data_release"] = (a.get("data_release"), b.get("data_release"))
+    if "tape_sha256" in diffs or "data_release" in diffs:
         flags.append("TAPE_DIFF")
         note = "different data snapshots: a number gap may be the tape, not the engine"
     sha_a, sha_b = a.get("membership_sha256"), b.get("membership_sha256")
