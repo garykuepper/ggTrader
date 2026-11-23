@@ -254,12 +254,12 @@ def resolve_source(source: str | None, snapshot_path: Any | None) -> str:
     """Select the requested source, inferring it from a snapshot path if omitted."""
     if source is None:
         return "snapshot" if snapshot_path is not None else "db"
-    if source == "db" and snapshot_path is not None:
-        raise ValueError("source='db' cannot be used with snapshot_path")
+    if source in ("db", "combined") and snapshot_path is not None:
+        raise ValueError(f"source={source!r} cannot be used with snapshot_path")
     return source
 
 
-def load_bars(
+def load_bars(  # noqa: PLR0912
     symbols: Sequence[str] | None = None,
     start: Any = None,
     end: Any = None,
@@ -271,6 +271,7 @@ def load_bars(
     snapshot_path: Any | None = None,
     deep_verify: bool = False,
     membership: MembershipSource | None = None,
+    release_id: int | None = None,
 ) -> Bars:
     """Load daily bars for research, read-only.
 
@@ -293,6 +294,8 @@ def load_bars(
         snapshot.SnapshotIntegrityError: snapshot does not match its manifest.
     """
     source = resolve_source(source, snapshot_path)
+    if release_id is not None and source != "combined":
+        raise ValueError("release_id requires source='combined'")
     if source not in SOURCES:
         raise ValueError(f"unknown source {source!r}; expected one of {SOURCES}")
     if universe is not None and symbols is not None:
