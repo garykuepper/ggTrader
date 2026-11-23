@@ -104,7 +104,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Parquet tape to read (selects snapshot source).",
     )
-    p.add_argument("--source", choices=("db", "snapshot"), default=None)
+    p.add_argument(
+        "--source",
+        choices=("db", "snapshot", "combined"),
+        default=None,
+        help="combined = CRSP + Yahoo history from a published release; results on it include "
+        "dead stocks and are optimistic about what holders of failed companies recover",
+    )
+    p.add_argument("--release-id", type=int, default=None, help="Published combined release ID.")
     add_membership_argument(p)
     p.add_argument(
         "--result-json",
@@ -124,7 +131,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def run_lab(argv: list[str] | None = None) -> str:
     """Run ``ggt lab`` from ``argv``; return the blend run id or the WFO result text."""
-    args = build_arg_parser().parse_args(argv)
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+    if args.release_id is not None and args.source != "combined":
+        parser.error("--release-id requires --source combined")
     # Raises MembershipSourceNotSelected (naming --membership and GGT_MEMBERSHIP) when neither is
     # set, before any data is loaded; there is deliberately no default source.
     membership = source_from_args(args)
@@ -159,6 +169,7 @@ def run_lab(argv: list[str] | None = None) -> str:
             max_leverage=args.max_leverage,
             snapshot=args.snapshot,
             source=args.source,
+            release_id=args.release_id,
             membership=membership,
         )
         print(result.table)
@@ -182,6 +193,7 @@ def run_lab(argv: list[str] | None = None) -> str:
         overrides=_parse_sweep_params(args.sweep_param) or None,
         snapshot=args.snapshot,
         source=args.source,
+        release_id=args.release_id,
         result_json=args.result_json,
         membership=membership,
     )

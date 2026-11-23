@@ -266,3 +266,32 @@ def test_wfo_json_records_the_membership_vintage_in_provenance_only(monkeypatch,
     assert saved["provenance"]["membership_sha256"] == source.vintage().content_sha256
     assert saved["provenance"]["membership"]["fixture"] == "sp500_v1_2026-06-02"
     assert saved["provenance"]["membership"]["age_since_verified_days"] == -40
+
+
+def test_wfo_json_and_persisted_blend_record_release(monkeypatch, tmp_path):
+    import json
+
+    release = {"release_id": 3, "created_at": "2026-01-01", "yahoo_fingerprint": {}}
+    metadata = {"data_release": release, "bars_sha256": "abc", "drift": True}
+    monkeypatch.setattr(cli_support, "result_payload", lambda *a, **k: k)
+    bars = type("B", (), {"provenance": metadata, "summary": lambda self: {}})()
+    out = cli_support.write_wfo_json(None, bars, str(tmp_path / "r.json"), strategy="ensemble")
+    saved = json.loads(out.read_text())
+    assert saved["data_release"] == saved["provenance"]["data_release"] == release
+    assert saved["drift"] is True
+
+    idx = _idx(100)
+    spy = _equity_from_returns(pd.Series(np.linspace(-0.01, 0.01, 100), index=idx))
+    _patch_inputs(monkeypatch, idx, spy, provenance=metadata)
+    monkeypatch.setattr(
+        wfo_pkg,
+        "run_wfo",
+        lambda *a, **k: WfoResult(oos_equity=spy, fold_results=[], live_params={}, table="t"),
+    )
+    _patch_persist(monkeypatch)
+    stamps = {}
+    monkeypatch.setattr(
+        blend_mod.persist, "start_run", lambda *a, **k: stamps.update(k) or "run123"
+    )
+    _run([("ensemble", "sp500")])
+    assert stamps["provenance"]["data_release"] == release

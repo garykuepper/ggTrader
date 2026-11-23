@@ -225,3 +225,58 @@ def test_cli_conflicting_source_and_snapshot_is_error(monkeypatch):
     )
     with pytest.raises(ValueError, match="source.*snapshot_path"):
         cli.run_lab(["--wfo", "--strategy", "ensemble", "--source", "db", "--snapshot", "x"])
+
+
+def test_lab_cli_source_combined_parses():
+    args = build_arg_parser().parse_args(["--wfo", "--source", "combined", "--release-id", "12"])
+    assert args.source == "combined" and args.release_id == 12
+
+
+def test_release_id_requires_combined(capsys):
+    for source in ([], ["--source", "db"], ["--source", "snapshot"]):
+        with pytest.raises(SystemExit):
+            run_lab(["--wfo", "--release-id", "12", *source])
+        assert "--release-id requires --source combined" in capsys.readouterr().err
+
+
+def test_release_id_reaches_load_bars(monkeypatch):
+    import pandas as pd
+
+    import ggTrader.lab.wfo.cli_support as support
+    from ggTrader.lab.strategy import LabConfig
+
+    seen = {}
+    monkeypatch.setattr(support, "equity_universe_between", lambda *a, **k: ["AAA"])
+    monkeypatch.setattr(support, "load_bars", lambda *a, **k: seen.update(k))
+    support.load_run_bars(
+        ["sp500"],
+        LabConfig(),
+        pd.Timestamp("2020-01-01"),
+        pd.Timestamp("2021-01-01"),
+        source="combined",
+        release_id=12,
+    )
+    assert seen["source"] == "combined" and seen["release_id"] == 12
+
+
+@pytest.mark.parametrize("mode", ["wfo", "blend"])
+def test_release_id_reaches_both_run_paths(monkeypatch, mode):
+    import types
+
+    import ggTrader.lab.cli as cli
+    import ggTrader.lab.wfo.cli_support as support
+
+    seen = {}
+    monkeypatch.setattr(cli, "source_from_args", lambda args: object())
+    if mode == "wfo":
+        monkeypatch.setattr(support, "run_vbt_wfo", lambda *a, **kw: seen.update(kw) or "done")
+        args = ["--wfo", "--strategy", "ensemble"]
+    else:
+        monkeypatch.setattr(
+            blend_mod,
+            "run_blend",
+            lambda *a, **kw: seen.update(kw) or types.SimpleNamespace(table="", run_id="done"),
+        )
+        args = ["--blend", "ensemble@sp500"]
+    assert run_lab([*args, "--source", "combined", "--release-id", "12"]) == "done"
+    assert seen["source"] == "combined" and seen["release_id"] == 12

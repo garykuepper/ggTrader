@@ -72,6 +72,7 @@ def _engine_curves(
     snapshot: str | None,
     membership: MembershipSource,
     source: str | None,
+    release_id: int | None,
 ) -> tuple[dict[str, pd.Series], pd.Series, dict[str, Any]]:
     """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
     from ggTrader.engine.provenance import provenance as build_provenance
@@ -82,7 +83,14 @@ def _engine_curves(
     es = pd.Timestamp(eval_start, tz="UTC")
     ee = pd.Timestamp(eval_end, tz="UTC")
     bars = load_run_bars(
-        sorted({u for _, u in sleeves}), cfg, es, ee, snapshot, source=source, membership=membership
+        sorted({u for _, u in sleeves}),
+        cfg,
+        es,
+        ee,
+        snapshot,
+        source=source,
+        membership=membership,
+        release_id=release_id,
     )
     spy_close = bars.close["SPY"].dropna()
     curves: dict[str, pd.Series] = {}
@@ -124,6 +132,7 @@ def _engine_curves(
 
     stamp = build_provenance(
         tape_sha256=tape_sha256_of(bars),
+        data_release=(bars.provenance or {}).get("data_release"),
         extra={"strategy_sources": sources},
         membership=membership.provenance(date.fromisoformat(eval_end)),
     )
@@ -143,6 +152,7 @@ def run_blend(
     max_leverage: float = 1.0,
     snapshot: str | None = None,
     source: str | None = None,
+    release_id: int | None = None,
     membership: MembershipSource | None = None,
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
@@ -169,6 +179,7 @@ def run_blend(
         snapshot,
         resolve_source(membership),
         source,
+        release_id,
     )
 
     blend_eq, returns_df, diag = blend_curves(

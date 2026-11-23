@@ -33,6 +33,7 @@ def load_run_bars(
     source: str | None = None,
     *,
     membership: MembershipSource | None = None,
+    release_id: int | None = None,
 ) -> Bars:
     """Bars for the union of ``universes`` plus SPY, over the warm-up and evaluation window.
 
@@ -55,6 +56,7 @@ def load_run_bars(
         end=legacy_exclusive_end(eval_end),
         source=source,
         snapshot_path=snapshot,
+        release_id=release_id,
     )
 
 
@@ -96,6 +98,7 @@ def run_vbt_wfo(
     snapshot: str | None = None,
     source: str | None = None,
     result_json: str | None = None,
+    release_id: int | None = None,
     membership: MembershipSource | None = None,
 ) -> WfoResult | str:
     """``ggt lab --wfo``: load, mask, run, print and write the provenance JSON.
@@ -112,7 +115,14 @@ def run_vbt_wfo(
     cls = type(instance)
     membership = resolve_source(membership)
     bars = load_run_bars(
-        [universe], cfg, eval_start, eval_end, snapshot, source=source, membership=membership
+        [universe],
+        cfg,
+        eval_start,
+        eval_end,
+        snapshot,
+        source=source,
+        membership=membership,
+        release_id=release_id,
     )
     spy_close = bars.close["SPY"].dropna()
     sleeve, mask = sleeve_inputs(bars, universe, cfg, eval_start, eval_end, membership=membership)
@@ -180,11 +190,19 @@ def write_wfo_json(
     # or out-of-tree strategy is identified by its result.
     block = provenance(
         tape_sha256=tape_sha256_of(bars),
+        data_release=(bars.provenance or {}).get("data_release"),
         extra=registry.source_sha256(cls) if cls else None,
         membership=None if membership is None else membership.provenance(_asof(fields)),
     )
     tape = (bars.provenance or {}).get("snapshot") or {}
-    payload = result_payload(result, bars_summary=bars.summary(), tape=tape or None, **fields)
+    release_fields = {
+        key: bars.provenance[key]
+        for key in ("data_release", "drift")
+        if key in (bars.provenance or {})
+    }
+    payload = result_payload(
+        result, bars_summary=bars.summary(), tape=tape or None, **release_fields, **fields
+    )
     out = write_result_json(path, payload, provenance=block)
     print(f"  result JSON: {out}", flush=True)
     return out
