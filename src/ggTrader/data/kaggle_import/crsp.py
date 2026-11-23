@@ -13,7 +13,13 @@ import pyarrow.parquet as pq
 from psycopg2.extensions import connection, cursor
 
 from ggTrader.data.kaggle_import.guards import backup_fresh, free_space_ok, verify_sha256
-from ggTrader.data.kaggle_import.loadlog import LoadFailed, begin_load, commit_chunk, complete_load
+from ggTrader.data.kaggle_import.loadlog import (
+    LoadFailed,
+    begin_load,
+    commit_chunk,
+    complete_load,
+    fail_load,
+)
 
 PARSER_VERSION = "crsp-1"
 COLUMNS = ("permno", "date", "shrcd", "exchcd", "prc", "ret", "shrout", "vwretd", "year", "month")
@@ -104,7 +110,11 @@ def _write_chunk(  # noqa: PLR0913 — chunk inputs
             mask = pc.fill_null(pc.equal(table["year"], year), False)
             indices = indices.filter(mask)
             table = table.filter(mask)
-        output, rejected, count = _prepare(table, group, indices, load_id)
+        try:
+            output, rejected, count = _prepare(table, group, indices, load_id)
+        except LoadFailed as exc:
+            fail_load(conn, load_id, str(exc))
+            raise
         quarantine.extend(rejected)
         nulled += count
         accepted += output.num_rows
@@ -184,7 +194,9 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
             cur.execute("SELECT rows_parsed FROM ref.loads WHERE load_id=%s", (load_id,))
             if cur.fetchone()[0] != parquet.metadata.num_rows:
                 conn.rollback()
-                raise LoadFailed("Parsed row count differs from Parquet metadata")
+                reason = "Parsed row count differs from Parquet metadata"
+                fail_load(conn, load_id, reason)
+                raise LoadFailed(reason)
     if row_groups is None:
         complete_load(conn, load_id, {}, expected_chunks=expected)
     return load_id

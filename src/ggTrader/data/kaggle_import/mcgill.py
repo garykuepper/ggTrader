@@ -10,7 +10,13 @@ from psycopg2.extensions import connection, cursor
 
 from ggTrader.data.kaggle_import.ddl import MCGILL_COLUMNS
 from ggTrader.data.kaggle_import.guards import backup_fresh, free_space_ok, verify_sha256
-from ggTrader.data.kaggle_import.loadlog import LoadFailed, begin_load, commit_chunk, complete_load
+from ggTrader.data.kaggle_import.loadlog import (
+    LoadFailed,
+    begin_load,
+    commit_chunk,
+    complete_load,
+    fail_load,
+)
 
 PARSER_VERSION = "mcgill-1"
 _TYPES = {
@@ -144,7 +150,11 @@ def load_mcgill(
         )
     conn.commit()
     for index, table in enumerate(_batches(csv_path, batch_rows)):
-        output, nulled = _prepare(table, load_id, index * batch_rows)
+        try:
+            output, nulled = _prepare(table, load_id, index * batch_rows)
+        except LoadFailed as exc:
+            fail_load(conn, load_id, str(exc))
+            raise
         buffer = io.BytesIO()
         csv.write_csv(output, buffer, write_options=csv.WriteOptions(include_header=False))
         buffer.seek(0)
@@ -171,6 +181,8 @@ def load_mcgill(
         cur.execute("SELECT rows_parsed FROM ref.loads WHERE load_id=%s", (load_id,))
         if cur.fetchone()[0] != count:
             conn.rollback()
-            raise LoadFailed("Parsed row count differs from counting pass")
+            reason = "Parsed row count differs from counting pass"
+            fail_load(conn, load_id, reason)
+            raise LoadFailed(reason)
     complete_load(conn, load_id, {}, expected_chunks=expected)
     return load_id

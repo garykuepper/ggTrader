@@ -147,3 +147,35 @@ def test_two_pilot_versions(conn, tmp_path):
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads WHERE load_id IN (%s, %s)", (first, second))
         assert cur.fetchall() == [("complete",), ("complete",)]
+
+
+def test_fatal_data_marks_failed(conn, tmp_path):
+    path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1), 10.5)])
+    with pytest.raises(LoadFailed):
+        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+    with conn.cursor() as cur:
+        cur.execute("SELECT status, checks->>'failure' FROM ref.loads")
+        status, reason = cur.fetchone()
+        assert status == "failed" and "Invalid shrcd" in reason
+
+
+def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
+    import ggTrader.data.kaggle_import.crsp as crsp
+
+    path, sums = make_file(tmp_path, [row(1, datetime(1999, 1, 1))])
+    original = crsp._write_chunk
+
+    def wrong_count(*args, **kwargs):
+        original(*args, **kwargs)
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE ref.loads SET rows_parsed=rows_parsed+1 WHERE load_id=%s", (args[1],)
+            )
+        conn.commit()
+
+    monkeypatch.setattr(crsp, "_write_chunk", wrong_count)
+    with pytest.raises(LoadFailed, match="row count"):
+        load_crsp(conn, path, sums, backup_dir=None, margin_bytes=0)
+    with conn.cursor() as cur:
+        cur.execute("SELECT status FROM ref.loads")
+        assert cur.fetchone()[0] == "failed"

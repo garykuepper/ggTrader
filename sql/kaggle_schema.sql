@@ -194,10 +194,13 @@ ALTER TABLE market.daily_bars SET (timescaledb.compress, timescaledb.compress_se
 CREATE OR REPLACE FUNCTION ref.guard_load() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'loads cannot be deleted'; END IF;
- IF OLD.status IN ('complete', 'withdrawn') AND NOT
+ IF OLD.status IN ('complete', 'withdrawn', 'failed') AND NOT
    (OLD.status = 'complete' AND NEW.status = 'withdrawn' AND
     (to_jsonb(NEW) - 'status') = (to_jsonb(OLD) - 'status')) THEN
    RAISE EXCEPTION 'completed loads are immutable';
+ END IF;
+ IF OLD.status = 'running' AND (NEW.status IS NULL OR NEW.status NOT IN ('running', 'complete', 'failed')) THEN
+   RAISE EXCEPTION 'invalid load status transition';
  END IF;
  RETURN NEW;
 END $$;
@@ -230,4 +233,22 @@ DO $$ DECLARE t text; BEGIN
   EXECUTE format('CREATE TRIGGER no_truncate BEFORE TRUNCATE ON ref.%I FOR EACH STATEMENT EXECUTE FUNCTION ref.reject_change()', t);
   EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER no_truncate', t);
  END LOOP;
+END $$;
+
+CREATE OR REPLACE FUNCTION kaggle_crsp.daily_of(p_load_id bigint)
+RETURNS SETOF kaggle_crsp.daily LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+  RAISE EXCEPTION 'load % is not complete', p_load_id;
+ END IF;
+ RETURN QUERY SELECT * FROM kaggle_crsp.daily WHERE load_id = p_load_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION kaggle_chars.mcgill_of(p_load_id bigint)
+RETURNS SETOF kaggle_chars.mcgill LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+  RAISE EXCEPTION 'load % is not complete', p_load_id;
+ END IF;
+ RETURN QUERY SELECT * FROM kaggle_chars.mcgill WHERE load_id = p_load_id;
 END $$;

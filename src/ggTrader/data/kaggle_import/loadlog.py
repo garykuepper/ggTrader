@@ -48,11 +48,12 @@ def begin_load(  # noqa: PLR0913 — public import contract
                 result = matches[0][0]
             else:
                 cur.execute(
-                    "SELECT count(*) FROM ref.loads WHERE dataset=%s AND status='complete'",
+                    "SELECT count(*) FROM ref.loads WHERE dataset=%s "
+                    "AND status IN ('running','complete')",
                     (dataset,),
                 )
                 if cur.fetchone()[0] >= 2 and not allow_third:
-                    raise RetentionLimit(f"{dataset} already has two complete loads")
+                    raise RetentionLimit(f"{dataset} already has two retained loads")
                 cur.execute(
                     "INSERT INTO ref.loads(dataset,kaggle_slug,file_path,file_sha256,"
                     "parser_version,"
@@ -87,6 +88,21 @@ def _running(cur: cursor, load_id: int) -> tuple:
     if row is None:
         raise LoadFailed(f"Load {load_id} is not running")
     return row
+
+
+def fail_load(conn: connection, load_id: int, reason: str) -> None:
+    """Mark a running load terminal while preserving its checks."""
+    try:
+        with conn.cursor() as cur:
+            _, _, _, checks = _running(cur, load_id)
+            cur.execute(
+                "UPDATE ref.loads SET status='failed', checks=%s WHERE load_id=%s",
+                (Json({**(checks or {}), "failure": reason}), load_id),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def commit_chunk(

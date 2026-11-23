@@ -217,3 +217,24 @@ def test_real_date_and_size_port_format(conn, tmp_path):
             (load,),
         )
         assert cur.fetchone() == (date(2000, 1, 31), date(2000, 1, 31), "B")
+
+
+def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
+    path, sums = make_file(tmp_path)
+    original = mcgill.commit_chunk
+
+    def wrong_count(*args, **kwargs):
+        result = original(*args, **kwargs)
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE ref.loads SET rows_parsed=rows_parsed+1 WHERE load_id=%s", (args[1],)
+            )
+        conn.commit()
+        return result
+
+    monkeypatch.setattr(mcgill, "commit_chunk", wrong_count)
+    with pytest.raises(LoadFailed, match="row count"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    with conn.cursor() as cur:
+        cur.execute("SELECT status FROM ref.loads")
+        assert cur.fetchone()[0] == "failed"

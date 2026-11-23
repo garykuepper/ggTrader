@@ -156,3 +156,62 @@ def test_third_load_refused_without_allow_third(conn):
     with pytest.raises(RetentionLimit):
         begin(conn, digest="other")
     assert begin(conn, digest="other", allow_third=True)
+
+
+def test_failed_load_is_terminal_and_retry_starts_new(conn):
+    from ggTrader.data.kaggle_import.loadlog import fail_load
+
+    load = begin(conn)
+    fail_load(conn, load, "bad data")
+    with conn.cursor() as cur:
+        cur.execute("SELECT status, checks->>'failure' FROM ref.loads WHERE load_id=%s", (load,))
+        assert cur.fetchone() == ("failed", "bad data")
+    with pytest.raises(LoadFailed):
+        complete_load(conn, load, {})
+    with pytest.raises(LoadFailed):
+        fail_load(conn, load, "again")
+    with pytest.raises(psycopg2.Error), conn.cursor() as cur:
+        cur.execute("UPDATE ref.loads SET status='complete' WHERE load_id=%s", (load,))
+    conn.rollback()
+    with pytest.raises(psycopg2.Error), conn.cursor() as cur:
+        cur.execute("UPDATE ref.loads SET checks='{}' WHERE load_id=%s", (load,))
+    conn.rollback()
+    assert begin(conn) != load
+
+
+def test_running_load_counts_toward_retention_and_can_resume(conn):
+    complete_load(conn, begin(conn), {})
+    running = begin(conn, version="2")
+    assert begin(conn, version="2") == running
+    with pytest.raises(RetentionLimit):
+        begin(conn, version="3")
+
+
+@pytest.mark.parametrize(
+    "function,table",
+    [
+        ("kaggle_crsp.daily_of", "kaggle_crsp.daily"),
+        ("kaggle_chars.mcgill_of", "kaggle_chars.mcgill"),
+    ],
+)
+def test_complete_only_read_helpers(conn, function, table):
+    from ggTrader.data.kaggle_import.loadlog import fail_load
+
+    running = begin(conn)
+    failed = begin(conn, version="2")
+    fail_load(conn, failed, "bad")
+    for load in (running, failed):
+        with pytest.raises(psycopg2.Error, match="not complete"), conn.cursor() as cur:
+            cur.execute(f"SELECT * FROM {function}(%s)", (load,))
+        conn.rollback()
+    with conn.cursor() as cur:
+        cur.execute(f"INSERT INTO {table} (load_id) VALUES (%s)", (running,)) if table.endswith(
+            "mcgill"
+        ) else cur.execute(
+            f"INSERT INTO {table} (load_id, permno, date) VALUES (%s, 1, '2000-01-01')", (running,)
+        )
+    conn.commit()
+    complete_load(conn, running, {})
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT count(*) FROM {function}(%s)", (running,))
+        assert cur.fetchone()[0] == 1
