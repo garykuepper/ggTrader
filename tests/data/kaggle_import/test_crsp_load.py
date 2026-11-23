@@ -77,6 +77,18 @@ def test_resume_quarantine_and_compression(conn, tmp_path):
         parsed, quarantined, checks = cur.fetchone()
         assert (parsed, quarantined, checks["nulled_values"]) == (2, 1, 1)
     assert compress_kaggle_chunks(conn) == 1
+    load_crsp(conn, path, sums, backup_dir=None, parser_suffix="v2", margin_bytes=0)
+    assert compress_kaggle_chunks(conn) > 0
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM kaggle_crsp.daily")
+        assert cur.fetchone()[0] == 2
+        cur.execute(
+            "SELECT count(*) FROM _timescaledb_catalog.chunk c JOIN "
+            "_timescaledb_catalog.hypertable h ON c.hypertable_id=h.id "
+            "WHERE h.schema_name='kaggle_crsp' AND h.table_name='daily' "
+            "AND (c.status & 8) <> 0"
+        )
+        assert cur.fetchone()[0] == 0
     assert compress_kaggle_chunks(conn) == 0
 
 

@@ -80,7 +80,9 @@ def test_hypertables_exist(conn):
         )
         assert set(cur.fetchall()) == {
             ("market", "daily_bars", "permno"),
+            ("market", "daily_bars", "load_id"),
             ("kaggle_crsp", "daily", "permno"),
+            ("kaggle_crsp", "daily", "load_id"),
         }
 
 

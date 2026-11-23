@@ -203,12 +203,14 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
 
 
 def compress_kaggle_chunks(conn: connection, table: str = "kaggle_crsp.daily") -> int:
-    """Compress uncompressed chunks and return their count."""
+    """Compress uncompressed or partially compressed chunks and return their count."""
     with conn.cursor() as cur:
         cur.execute(
             "SELECT compress_chunk(c, if_not_compressed => true) FROM show_chunks(%s::regclass) c "
-            "JOIN timescaledb_information.chunks i ON i.chunk_schema = split_part(c::text, '.', 1) "
-            "AND i.chunk_name = split_part(c::text, '.', 2) WHERE NOT i.is_compressed",
+            "JOIN _timescaledb_catalog.chunk i ON "
+            "i.schema_name = split_part(c::text, '.', 1) "
+            "AND i.table_name = split_part(c::text, '.', 2) "
+            "WHERE (i.status & 1) = 0 OR (i.status & 8) <> 0",
             (table,),
         )
         count = len(cur.fetchall())

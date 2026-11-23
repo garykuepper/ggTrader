@@ -45,6 +45,8 @@ def project(  # noqa: PLR0913 - explicit measurements are the public projection 
     rows_loaded: int,
     free_before: int,
     margin: int = MARGIN,
+    bytes_after_reload_compressed: int | None = None,
+    bytes_after_reload_uncompressed: int | None = None,
 ) -> dict:
     """Scale measured table sizes to the full file and estimate reload space."""
     if rows_loaded <= 0 or year not in rows_by_year:
@@ -53,9 +55,13 @@ def project(  # noqa: PLR0913 - explicit measurements are the public projection 
     uncompressed = bytes_uncompressed * total // rows_loaded
     compressed = bytes_compressed * total // rows_loaded
     peak = (compressed + uncompressed) * 11 // 10
+    if bytes_after_reload_compressed is not None:
+        if bytes_after_reload_uncompressed is None:
+            raise ValueError("The measured reload size before compression is required")
+        peak = bytes_after_reload_uncompressed * total * 11 // (rows_loaded * 10)
     full_free = free_before - compressed
     peak_free = free_before - peak
-    return dict(
+    result = dict(
         full_uncompressed_bytes=uncompressed,
         full_compressed_bytes=compressed,
         reload_peak_bytes=peak,
@@ -63,6 +69,11 @@ def project(  # noqa: PLR0913 - explicit measurements are the public projection 
         free_after_reload_peak=peak_free,
         margin_ok=full_free >= margin and peak_free >= margin,
     )
+    if bytes_after_reload_compressed is not None:
+        result["full_two_versions_compressed_bytes"] = (
+            bytes_after_reload_compressed * total // rows_loaded
+        )
+    return result
 
 
 def measure(conn, started: float) -> dict:
@@ -128,8 +139,10 @@ def run(args: argparse.Namespace) -> dict:
                 ("D", lambda: compress_kaggle_chunks(conn)),
             ):
                 start = time.monotonic()
-                action()
+                result = action()
                 steps[label] = measure(conn, start)
+                if label == "D":
+                    steps[label]["chunks_compressed"] = result
         finally:
             conn.close()
     finally:
@@ -151,6 +164,8 @@ def run(args: argparse.Namespace) -> dict:
         rows_loaded=steps["A"]["rows"],
         free_before=free,
         margin=MARGIN,
+        bytes_after_reload_uncompressed=steps["C"]["hypertable_bytes"],
+        bytes_after_reload_compressed=steps["D"]["hypertable_bytes"],
     )
     return dict(inputs=inputs, steps=steps, projection=project(**inputs))
 

@@ -189,8 +189,8 @@ CREATE TABLE IF NOT EXISTS market.daily_bars (load_id bigint, permno bigint, spe
 CREATE TABLE IF NOT EXISTS market.stock_spans (release_id bigint, symbol text, permno bigint, spell int, first_date date, last_date date, linked boolean, PRIMARY KEY(release_id, symbol));
 SELECT create_hypertable('kaggle_crsp.daily', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
 SELECT create_hypertable('market.daily_bars', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
-ALTER TABLE kaggle_crsp.daily SET (timescaledb.compress, timescaledb.compress_segmentby = 'permno');
-ALTER TABLE market.daily_bars SET (timescaledb.compress, timescaledb.compress_segmentby = 'permno');
+ALTER TABLE kaggle_crsp.daily SET (timescaledb.compress, timescaledb.compress_segmentby = 'load_id, permno');
+ALTER TABLE market.daily_bars SET (timescaledb.compress, timescaledb.compress_segmentby = 'load_id, permno');
 CREATE OR REPLACE FUNCTION ref.guard_load() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'loads cannot be deleted'; END IF;

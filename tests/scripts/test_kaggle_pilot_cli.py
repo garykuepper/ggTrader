@@ -34,3 +34,20 @@ def test_projection():
         "free_after_reload_peak": 615,
         "margin_ok": True,
     }
+
+
+def test_projection_measured_reload():
+    result = project(
+        {1999: 2, 2000: 3},
+        1999,
+        100,
+        40,
+        2,
+        1000,
+        100,
+        bytes_after_reload_uncompressed=120,
+        bytes_after_reload_compressed=60,
+    )
+    assert result["reload_peak_bytes"] == 330
+    assert result["full_two_versions_compressed_bytes"] == 150
+    assert result["free_after_reload_peak"] == 670
