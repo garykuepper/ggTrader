@@ -19,6 +19,9 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 `ggt db import apply-ddl` creates the import schemas. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
 
+`ggt db import release build --crsp-bars-load N --links LINKS.csv [--mcgill-load M]` builds and publishes a release using the approved link settings. It prints its ID, counts by kind, demoted links, and Yahoo fingerprint. `ggt db import release list` prints releases and counts; `ggt db import release withdraw --release-id N` withdraws one. Each requires `--db-url-env NAME` or `--use-configured-db`; build and withdraw require `--yes` to execute.
+
+
 Both loaders require `--file PATH`, `--sums PATH`, and either `--backup-dir PATH` or `--no-backup-check`. `--db-free-path PATH` identifies the database volume for the free-space check (default `/`). CRSP accepts `--year YEAR` for a pilot only, or `--row-groups 0,1,...` for a subset; they cannot be combined. A full CRSP load compresses its chunks after completion. See [the import runbook](kaggle_import_runbook.md) for the owner gates and operating order. Nothing has been loaded into the live database.
 
 ---

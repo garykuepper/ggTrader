@@ -4,30 +4,24 @@ import argparse
 import json
 import os
 import sys
+from dataclasses import asdict
 from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
 from ggTrader.data.kaggle_import.link_inputs import crsp_data, yahoo_data
-from ggTrader.data.kaggle_import.links import LinkSettings, find_links
+from ggTrader.data.kaggle_import.links import APPROVED_LINK_SETTINGS, LinkSettings, find_links
 from ggTrader.data.kaggle_import.spells import calendar_from_file
 
 
 def settings_from_dict(values: dict) -> LinkSettings:
     """Read approved settings, allowing a JSON file to override defaults."""
-    defaults = dict(
-        min_sessions=250,
-        min_sessions_short=40,
-        agreement_bar=0.999,
-        margin=0.0005,
-        window_start="2005-01-01",
-        window_end="2024-12-31",
-        hold_first_days=60,
-    )
+    defaults = asdict(APPROVED_LINK_SETTINGS)
     defaults.update(values)
     for name in ("window_start", "window_end"):
-        defaults[name] = date.fromisoformat(defaults[name])
+        if isinstance(defaults[name], str):
+            defaults[name] = date.fromisoformat(defaults[name])
     return LinkSettings(**defaults)
 
 

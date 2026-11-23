@@ -8,6 +8,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy import text
@@ -27,7 +28,7 @@ def _env_name(value: str) -> str:
     return value
 
 
-def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
+def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa: PLR0915
     """Registers the 'db' subcommand."""
     parser = subparsers.add_parser("db", help="Database administration and maintenance")
     db_subs = parser.add_subparsers(dest="db_command", required=True)
@@ -81,7 +82,16 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     derive_backup.add_argument("--backup-dir", type=Path)
     derive_backup.add_argument("--no-backup-check", action="store_true")
     derive.add_argument("--db-free-path", type=Path, required=True)
-    for command in (ddl, crsp, mcgill, derive):
+    release = import_subs.add_parser("release", help="Build, withdraw or list data releases")
+    release_subs = release.add_subparsers(dest="release_command", required=True)
+    release_build = release_subs.add_parser("build", help="Build and publish a release")
+    release_build.add_argument("--crsp-bars-load", type=int, required=True)
+    release_build.add_argument("--mcgill-load", type=int)
+    release_build.add_argument("--links", type=Path, required=True)
+    release_withdraw = release_subs.add_parser("withdraw", help="Withdraw a release")
+    release_withdraw.add_argument("--release-id", type=int, required=True)
+    release_list = release_subs.add_parser("list", help="List releases")
+    for command in (ddl, crsp, mcgill, derive, release_build, release_withdraw, release_list):
         target = command.add_mutually_exclusive_group(required=True)
         target.add_argument(
             "--db-url-env",
@@ -143,7 +153,10 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
                 sys.exit("Invalid database connection")
             if dbname == "ggtrader":
                 sys.exit("Backup check cannot be disabled for ggtrader")
-        if not args.yes:
+        if args.import_command == "release" and args.release_command != "list" and not args.yes:
+            print("Would change a release; pass --yes to proceed.")
+            return
+        if not args.yes and args.import_command != "release":
             action = (
                 "apply import schemas"
                 if args.import_command == "apply-ddl"
@@ -161,7 +174,9 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
         except Exception:  # noqa: BLE001 â€” connection errors can contain credentials
             sys.exit("Database connection failed")
         try:
-            if args.import_command == "apply-ddl":
+            if args.import_command == "release":
+                _run_release_import(conn, args)
+            elif args.import_command == "apply-ddl":
                 apply_ddl(conn)
             elif args.import_command == "mcgill":
                 from ggTrader.data.kaggle_import.mcgill import load_mcgill
@@ -207,6 +222,59 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
             conn.close()
     elif args.db_command == "membership":
         _exit_unless_zero(run_membership(args))
+
+
+def _run_release_import(conn: Any, args: argparse.Namespace) -> None:
+    """Build, list, or withdraw releases at the explicitly selected target."""
+    import json
+
+    from ggTrader.data.kaggle_import.release import build_release, withdraw_release
+
+    if args.release_command == "build":
+        import pandas as pd
+
+        from ggTrader.data.kaggle_import.links import APPROVED_LINK_SETTINGS
+
+        rid = build_release(
+            conn,
+            crsp_bars_load=args.crsp_bars_load,
+            mcgill_load=args.mcgill_load,
+            links=pd.read_csv(args.links),
+            settings=APPROVED_LINK_SETTINGS,
+        )
+        print(f"Release {rid}")
+    elif args.release_command == "withdraw":
+        withdraw_release(conn, args.release_id)
+        print(f"Withdrawn release {args.release_id}")
+        return
+    else:
+        rid = None
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT r.release_id,r.created_at,r.status,r.yahoo_fingerprint, "
+            "r.settings->'demoted_links', "
+            "(SELECT jsonb_object_agg(kind,n) FROM (SELECT kind,count(*) n "
+            "FROM market.stock_spans s WHERE s.release_id=r.release_id GROUP BY kind) counts) "
+            "FROM ref.releases r WHERE (%s IS NULL OR r.release_id=%s) ORDER BY r.release_id",
+            (rid, rid),
+        )
+        for release_id, created, status, fingerprint, demoted, counts in cur.fetchall():
+            counts = {
+                key: (counts or {}).get(key, 0)
+                for key in ("linked_yahoo", "yahoo", "placeholder", "spell")
+            }
+            print(
+                json.dumps(
+                    {
+                        "release_id": release_id,
+                        "created_at": str(created),
+                        "status": status,
+                        "counts": counts,
+                        "demoted_links": demoted or [],
+                        "yahoo_fingerprint": fingerprint,
+                    }
+                )
+            )
 
 
 def _exit_unless_zero(code: int) -> None:

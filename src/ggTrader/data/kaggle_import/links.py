@@ -21,6 +21,17 @@ class LinkSettings:
     hold_first_days: int
 
 
+APPROVED_LINK_SETTINGS = LinkSettings(
+    min_sessions=250,
+    min_sessions_short=40,
+    agreement_bar=0.999,
+    margin=0.0005,
+    window_start=date(2005, 1, 1),
+    window_end=date(2024, 12, 31),
+    hold_first_days=60,
+)
+
+
 def pairwise_correlation(
     Y: np.ndarray, C: np.ndarray, min_shared: int
 ) -> tuple[np.ndarray, np.ndarray]:
