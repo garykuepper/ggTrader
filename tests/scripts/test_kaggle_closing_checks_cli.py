@@ -62,3 +62,15 @@ def test_baseline_records_and_detects_changed_hash(monkeypatch, tmp_path):
     assert closing._baseline(Connection(), "unused", compare=path)["matches"] is True
     state["hash"] = "changed"
     assert closing._baseline(Connection(), "unused", compare=path)["matches"] is False
+
+
+def test_return_statistics_and_thresholds():
+    from scripts.kaggle_closing_checks import return_statistics
+
+    good = return_statistics([0.01, -0.02, 0.03], [0.01, -0.02, 0.03])
+    assert good["count"] == 3 and good["correlation"] == pytest.approx(1.0)
+    assert good["mean_abs_points"] == 0 and good["max_abs_points"] == 0
+    bad = return_statistics([0.01, -0.02, 0.03], [0.02, -0.01, 0.04])
+    assert bad["mean_abs_points"] == pytest.approx(1.0)
+    assert bad["max_abs_points"] == pytest.approx(1.0)
+    assert return_statistics([0.01], [0.01])["correlation"] is None

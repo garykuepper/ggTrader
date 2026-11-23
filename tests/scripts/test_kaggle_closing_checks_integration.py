@@ -127,3 +127,58 @@ def test_row_counts_reconcile_database_and_parquet(conn, tmp_path):
     status, values, _ = _check_counts(db, rid)
     assert status == "pass" and values["crsp"]["parquet_rows"] == 2
     assert values["mcgill"]["database_rows"] == 1
+
+
+def test_returns_comparisons_on_synthetic_database(conn):
+    from scripts.kaggle_closing_checks import _mcgill_comparison, _stock_comparison
+
+    db, derived = conn
+    with db.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        rid = cur.fetchone()[0]
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'crsp-bars')",
+            (rid, derived),
+        )
+        cur.execute(
+            "INSERT INTO ref.loads(dataset,status) VALUES "
+            "('crsp-daily','complete'),('mcgill-fiam','complete') RETURNING load_id"
+        )
+        raw, mcgill = [row[0] for row in cur.fetchall()]
+        days = ["2005-01-31", "2005-02-28", "2005-03-31", "2005-04-29"]
+        prices = [100.0, 110.0, 99.0, 118.8]
+        returns = [0.0, 0.1, -0.1, 0.2]
+        for day, price, ret in zip(days, prices, returns, strict=True):
+            cur.execute(
+                "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+                "VALUES (%s,10,1,%s,%s)",
+                (derived, day, price),
+            )
+            cur.execute(
+                "INSERT INTO public.ohlcv(timestamp,symbol,interval,venue,close) "
+                "VALUES (%s,'EXAMPLE','1d','yfinance',%s)",
+                (day, price),
+            )
+            cur.execute(
+                "INSERT INTO kaggle_crsp.daily(load_id,permno,date,ret) VALUES (%s,10,%s,%s)",
+                (raw, day, ret),
+            )
+            cur.execute(
+                "INSERT INTO kaggle_chars.mcgill(load_id,permno,date,ret_eom,stock_exret,rf) "
+                "VALUES (%s,10,%s,%s,%s,0.01)",
+                (mcgill, day, day, ret - 0.01),
+            )
+    db.commit()
+    status, measured, _ = _stock_comparison(db, rid, {"EXAMPLE": 10})
+    assert status == "pass" and measured["EXAMPLE"]["count"] == 3
+    assert measured["EXAMPLE"]["mean_abs_points"] == pytest.approx(0, abs=1e-9)
+    status, measured, _ = _mcgill_comparison(db, raw, mcgill, count=1)
+    assert status == "pass" and measured["count"] == 4
+    assert measured["correlation"] == pytest.approx(1.0)
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE public.ohlcv SET close=50 WHERE symbol='EXAMPLE' AND timestamp='2005-03-31'"
+        )
+    db.commit()
+    assert _stock_comparison(db, rid, {"EXAMPLE": 10})[0] == "fail"

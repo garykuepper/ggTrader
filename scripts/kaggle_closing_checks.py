@@ -231,6 +231,165 @@ def _check_counts(conn, release_id: int) -> tuple[str, dict, str]:
         )
 
 
+TEN_STOCKS = {
+    "AAPL": 14593,
+    "MSFT": 10107,
+    "IBM": 12490,
+    "GE": 12060,
+    "XOM": 11850,
+    "KO": 11308,
+    "WMT": 55976,
+    "INTC": 59328,
+    "PG": 18163,
+    "JPM": 47896,
+}
+
+
+def return_statistics(left, right) -> dict:
+    """Correlation and absolute differences in percentage points for paired returns."""
+    import numpy as np
+
+    a, b = np.asarray(left, dtype=float), np.asarray(right, dtype=float)
+    valid = np.isfinite(a) & np.isfinite(b)
+    a, b = a[valid], b[valid]
+    if len(a) < 2:
+        return {
+            "count": len(a),
+            "correlation": None,
+            "mean_abs_points": None,
+            "max_abs_points": None,
+        }
+    difference = np.abs(a - b) * 100
+    correlation = float(np.corrcoef(a, b)[0, 1]) if np.std(a) > 0 and np.std(b) > 0 else None
+    return {
+        "count": len(a),
+        "correlation": correlation,
+        "mean_abs_points": float(difference.mean()),
+        "max_abs_points": float(difference.max()),
+    }
+
+
+def _release_loads(conn, release_id: int) -> dict:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT r.role,l.load_id,l.file_path FROM ref.release_loads r "
+            "JOIN ref.loads l ON l.load_id=r.load_id "
+            "WHERE r.release_id=%s",
+            (release_id,),
+        )
+        return {role: (load, path) for role, load, path in cur.fetchall()}
+
+
+def _stock_comparison(conn, release_id: int, mapping: dict | None = None) -> tuple[str, dict, str]:
+    """Compare month-end returns from derived close and adjusted Yahoo close."""
+    import pandas as pd
+
+    mapping = TEN_STOCKS if mapping is None else mapping
+    loads = _release_loads(conn, release_id)
+    if "crsp-bars" not in loads:
+        return "fail", {}, "release has no derived bars load"
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT permno,date,spell,close FROM market.daily_bars "
+            "WHERE load_id=%s AND permno=ANY(%s) AND date >= DATE '2005-01-01' "
+            "AND date <= DATE '2024-12-31' ORDER BY permno,date",
+            (loads["crsp-bars"][0], list(mapping.values())),
+        )
+        derived = pd.DataFrame(cur.fetchall(), columns=["permno", "date", "spell", "close"])
+        cur.execute(
+            "SELECT symbol,timestamp,close FROM public.ohlcv WHERE symbol=ANY(%s) "
+            "AND interval='1d' AND venue='yfinance' AND timestamp >= TIMESTAMP '2005-01-01' "
+            "AND timestamp < TIMESTAMP '2025-01-01' ORDER BY symbol,timestamp",
+            (list(mapping),),
+        )
+        yahoo = pd.DataFrame(cur.fetchall(), columns=["symbol", "date", "close"])
+    measured = {}
+    for ticker, permno in mapping.items():
+        x = derived.loc[derived.permno == permno].copy()
+        y = yahoo.loc[yahoo.symbol == ticker].copy()
+        if x.empty or y.empty:
+            measured[ticker] = {"permno": permno, "count": 0, "reason": "missing data"}
+            continue
+        x["month"] = pd.to_datetime(x.date).dt.to_period("M")
+        y["month"] = pd.to_datetime(y.date).dt.to_period("M")
+        x = x.groupby("month", sort=True).last()
+        y = y.groupby("month", sort=True).last()
+        x = x.reindex(pd.period_range(x.index.min(), x.index.max(), freq="M"))
+        y = y.reindex(pd.period_range(y.index.min(), y.index.max(), freq="M"))
+        xr = x.close.pct_change(fill_method=None).where(x.spell.eq(x.spell.shift()))
+        yr = y.close.pct_change(fill_method=None)
+        paired = (
+            pd.concat([xr.rename("derived"), yr.rename("yahoo")], axis=1)
+            .loc["2005-02":"2024-12"]
+            .dropna()
+        )
+        measured[ticker] = {"permno": permno, **return_statistics(paired.derived, paired.yahoo)}
+
+    def good(value):
+        return (
+            value.get("count", 0) >= 2
+            and value.get("correlation") is not None
+            and value["correlation"] >= 0.9998
+            and value["mean_abs_points"] <= 0.02
+            and value["max_abs_points"] <= 1.6
+        )
+
+    return ("pass" if all(good(row) for row in measured.values()) else "fail"), measured, ""
+
+
+def _mcgill_comparison(
+    conn, raw_id: int, mcgill_id: int, *, count: int = 300
+) -> tuple[str, dict, str]:
+    """Compare McGill excess return plus risk-free rate to same-month compounded CRSP return."""
+    import random
+
+    import pandas as pd
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DISTINCT permno FROM kaggle_chars.mcgill WHERE load_id=%s "
+            "AND permno IS NOT NULL ORDER BY permno",
+            (mcgill_id,),
+        )
+        available = [row[0] for row in cur.fetchall()]
+        if not available:
+            return "fail", {}, "McGill load has no permnos"
+        sample = random.Random(42).sample(available, min(count, len(available)))
+        if len(sample) < count:
+            return (
+                "skipped",
+                {"sample_permnos": sample, "seed": 42},
+                "fewer than 300 McGill permnos",
+            )
+        cur.execute(
+            "SELECT permno,date_trunc('month',date)::date, "
+            "CASE WHEN bool_or(ret = -1) THEN -1 "
+            "ELSE exp(sum(CASE WHEN ret > -1 THEN ln(1+ret) END)) - 1 END "
+            "FROM kaggle_crsp.daily WHERE load_id=%s AND permno=ANY(%s) "
+            "AND ret IS NOT NULL AND ret >= -1 GROUP BY permno,2",
+            (raw_id, sample),
+        )
+        crsp = pd.DataFrame(cur.fetchall(), columns=["permno", "month", "crsp"])
+        cur.execute(
+            "SELECT permno,date_trunc('month',ret_eom)::date,stock_exret + rf "
+            "FROM kaggle_chars.mcgill WHERE load_id=%s AND permno=ANY(%s) "
+            "AND ret_eom IS NOT NULL AND stock_exret IS NOT NULL AND rf IS NOT NULL",
+            (mcgill_id, sample),
+        )
+        mcgill = pd.DataFrame(cur.fetchall(), columns=["permno", "month", "mcgill"])
+    paired = mcgill.merge(crsp, on=["permno", "month"], how="inner", validate="one_to_one")
+    values = return_statistics(paired.mcgill, paired.crsp)
+    values.update(
+        {
+            "sample_permnos": sample,
+            "seed": 42,
+            "alignment": "ret_eom calendar month; stock_exret + rf against compounded daily ret",
+        }
+    )
+    ok = values["correlation"] is not None and values["correlation"] >= 0.9999
+    return ("pass" if ok else "fail"), values, ""
+
+
 def run_checks(
     url: str,
     release_id: int | None,
@@ -263,21 +422,33 @@ def run_checks(
         status, measured, reason = _check_counts(conn, release_id)
         _set(checks[0], status, measured, "exact row counts", reason)
         checks[0]["elapsed_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        status, measured, reason = _stock_comparison(conn, release_id)
         _set(
             checks[1],
-            "skipped",
-            {},
-            {"correlation_min": 0.9998},
-            "combined linked columns expose CRSP only before Yahoo starts; "
-            "the requested 2005–2024 comparison cannot use them",
+            status,
+            measured,
+            {"correlation_min": 0.9998, "mean_abs_points_max": 0.02, "max_abs_points_max": 1.6},
+            reason,
         )
-        _set(
-            checks[2],
-            "skipped",
-            {},
-            {"correlation_min": 0.9999},
-            "McGill versus CRSP comparison is not implemented",
-        )
+        checks[1]["elapsed_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        loads = _release_loads(conn, release_id)
+        source_path = loads.get("crsp-bars", (None, None))[1] or ""
+        if "mcgill" not in loads or not source_path.startswith("load:"):
+            _set(
+                checks[2],
+                "fail",
+                {},
+                {"correlation_min": 0.9999},
+                "release lacks McGill or identifiable CRSP source load",
+            )
+        else:
+            status, measured, reason = _mcgill_comparison(
+                conn, int(source_path.split(":", 1)[1]), loads["mcgill"][0]
+            )
+            _set(checks[2], status, measured, {"correlation_min": 0.9999}, reason)
+        checks[2]["elapsed_seconds"] = time.perf_counter() - started
         if save_baseline or compare_baseline:
             baseline = _baseline(conn, url, save=save_baseline, compare=compare_baseline)
             status = "fail" if baseline["matches"] is False else "skipped"
