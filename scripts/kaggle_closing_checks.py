@@ -200,6 +200,133 @@ def _check_yahoo_keys(conn, url: str, release_id: int, names: list[str]) -> tupl
     return ("fail" if missing or extra or different else "pass"), measured, ""
 
 
+def duplicate_stock_days(flags, identities: dict[str, int]) -> list[dict]:
+    """Report stock-days read under multiple names unless every row is flagged."""
+    import pandas as pd
+
+    if flags.empty:
+        return []
+    frame = flags[["possible_double"]].reset_index()
+    frame["permno"] = frame["symbol"].map(identities)
+    frame = frame.dropna(subset=["permno"])
+    result = []
+    for (day, permno), rows in frame.groupby(["timestamp", "permno"], sort=False):
+        if rows.symbol.nunique() > 1 and not rows.possible_double.fillna(False).all():
+            result.append(
+                {
+                    "date": str(pd.Timestamp(day).date()),
+                    "permno": int(permno),
+                    "symbols": sorted(rows.symbol.astype(str).unique().tolist()),
+                }
+            )
+    return result
+
+
+def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str]:
+    """Inspect named traces and check overlapping identity columns in bounded batches."""
+    import pandas as pd
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT symbol,permno,kind,first_date,last_date,possible_double "
+            "FROM market.stock_spans WHERE release_id=%s ORDER BY symbol",
+            (release_id,),
+        )
+        records = cur.fetchall()
+        cur.execute(
+            "SELECT DISTINCT permno FROM ref.symbol_map WHERE release_id=%s "
+            "AND symbol='GM' AND permno IS NOT NULL ORDER BY permno",
+            (release_id,),
+        )
+        gm_permnos = [row[0] for row in cur.fetchall()]
+    catalog = {row[0]: row for row in records}
+    cases = {}
+    names = ["AAPL", "TTWO", "CMVT", "SMCI", "IBKR", "VC", "PERMNO-10128", "GM"]
+    related = {row[0] for row in records if row[0].startswith("PERMNO-10128~")}
+    related.update(row[0] for row in records if row[1] in gm_permnos)
+    selected = [name for name in names if name in catalog] + sorted(related)
+    selected = list(dict.fromkeys(selected))
+    for name in names:
+        if name not in catalog:
+            cases[name] = {"status": "skipped", "reason": "name not in release"}
+    if selected:
+        bars = _load(url, selected, "combined", release_id)
+        for name in selected:
+            subset = bars.flags[bars.flags.index.get_level_values("symbol") == name]
+            sources = subset["source"].astype(str).value_counts().to_dict()
+            close = bars.close[name].dropna() if name in bars.close else pd.Series(dtype=float)
+            cases[name] = {
+                "status": "pass" if len(close) else "fail",
+                "rows": int(len(subset)),
+                "first": str(close.index[0].date()) if len(close) else None,
+                "last": str(close.index[-1].date()) if len(close) else None,
+                "sources": sources,
+                "kind": catalog[name][2],
+                "possible_double": bool(catalog[name][5]),
+            }
+            if catalog[name][2] == "linked_yahoo" and len(subset):
+                yahoo = subset[subset.source == "yfinance"]
+                earlier = subset[subset.source == "crsp"]
+                if not yahoo.empty and not earlier.empty:
+                    start = yahoo.index.get_level_values("timestamp").min()
+                    previous = close.loc[close.index < start]
+                    if not previous.empty and start in close.index:
+                        jump = float(close.loc[start] / previous.iloc[-1] - 1)
+                        cases[name]["join_return"] = jump
+                        if abs(jump) >= 0.5:
+                            cases[name]["status"] = "fail"
+            if name == "AAPL":
+                before = subset.index.get_level_values("timestamp") < pd.Timestamp(
+                    "2000-01-03", tz="UTC"
+                )
+                if not ((subset.source == "crsp") & before).any():
+                    cases[name]["status"] = "fail"
+    placeholders = [
+        row
+        for row in records
+        if row[2] == "placeholder"
+        and row[3] is not None
+        and row[3] < pd.Timestamp("2000-01-01").date()
+    ]
+    if placeholders:
+        placeholder = placeholders[0][0]
+        historic = _load(url, [placeholder], "combined", release_id, start="1900-01-01")
+        pre2000 = int((historic.close.index < pd.Timestamp("2000-01-01", tz="UTC")).sum())
+    else:
+        placeholder, pre2000 = None, 0
+    missing = _load(url, ["PERMNO-84761", "PERMNO-1~7"], "combined", release_id)
+    missing_names = list(missing.missing_symbols)
+    groups = {}
+    for symbol, permno, _, first, last, _ in records:
+        if permno is not None and first is not None and last is not None:
+            groups.setdefault(permno, []).append((symbol, first, last))
+    candidates = []
+    for permno, rows in groups.items():
+        if any(a[1] <= b[2] and b[1] <= a[2] for i, a in enumerate(rows) for b in rows[i + 1 :]):
+            candidates.append((permno, [row[0] for row in rows]))
+    violations = []
+    for permno, columns in candidates:
+        if len(columns) > 120:
+            return "fail", {"cases": cases, "permno": permno}, "identity has more than 120 columns"
+        group_bars = _load(url, columns, "combined", release_id)
+        violations.extend(
+            duplicate_stock_days(group_bars.flags, {name: permno for name in columns})
+        )
+    measured = {
+        "cases": cases,
+        "placeholder": placeholder,
+        "pre_2000_rows": pre2000,
+        "gm_permnos": gm_permnos,
+        "missing_symbols": missing_names,
+        "overlap_groups": len(candidates),
+        "unflagged_duplicate_days": len(violations),
+        "unflagged_examples": violations[:10],
+    }
+    if violations or any(case["status"] == "fail" for case in cases.values()):
+        return "fail", measured, "a named trace or duplicate-stock check failed"
+    return "skipped", measured, "exact named-stock traces are not yet fully verified"
+
+
 def _check_counts(conn, release_id: int) -> tuple[str, dict, str]:
     """Reconcile load records, database rows, chunk counts and Parquet metadata."""
     import pyarrow.parquet as pq
@@ -550,13 +677,10 @@ def run_checks(
             status, reason = "skipped", "no baseline given"
         _set(checks[3], status, measured, "identical row keys and all five fields", reason)
         checks[3]["elapsed_seconds"] = time.perf_counter() - started
-        _set(
-            checks[4],
-            "skipped",
-            {},
-            None,
-            "named-stock traces and double-name audit not implemented",
-        )
+        started = time.perf_counter()
+        status, measured, reason = _check_named_stocks(conn, url, release_id)
+        _set(checks[4], status, measured, {"absolute_join_return_lt": 0.5}, reason)
+        checks[4]["elapsed_seconds"] = time.perf_counter() - started
         started = time.perf_counter()
         free = shutil.disk_usage(data_volume).free
         with conn.cursor() as cur:

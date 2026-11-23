@@ -244,3 +244,38 @@ def test_yahoo_key_comparison_detects_changed_combined_value(conn, monkeypatch):
 
     monkeypatch.setattr(closing, "_load", changed)
     assert closing._check_yahoo_keys(db, url, rid, ["EXAMPLE"])[0] == "fail"
+
+
+def test_named_audit_finds_unflagged_duplicate(conn):
+    from ggTrader.data.kaggle_import.release import build_release
+    from scripts.kaggle_closing_checks import _check_named_stocks
+
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute("UPDATE public.ohlcv SET timestamp=timestamp + interval '1 day'")
+        cur.execute(
+            "UPDATE market.daily_bars SET date='1999-12-31' "
+            "WHERE load_id=%s AND permno=1 AND date='2000-01-01'",
+            (load,),
+        )
+        cur.execute(
+            "UPDATE market.daily_bars SET date='2000-01-03' "
+            "WHERE load_id=%s AND permno=1 AND date='2000-01-02'",
+            (load,),
+        )
+    db.commit()
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO market.stock_spans(release_id,symbol,permno,spell,kind,"
+            "first_date,last_date,possible_double) "
+            "VALUES (%s,'PERMNO-1',1,1,'placeholder','2000-01-03','2000-01-03',false)",
+            (rid,),
+        )
+    db.commit()
+    original = urlparse(os.environ["GGT_TEST_DB_URL"])
+    url = urlunparse(original._replace(path="/" + db.info.dbname))
+    status, measured, _ = _check_named_stocks(db, url, rid)
+    assert status == "fail" and measured["unflagged_duplicate_days"] >= 1

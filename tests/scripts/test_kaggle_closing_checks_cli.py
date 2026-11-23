@@ -89,3 +89,22 @@ def test_timezone_sample_and_chunk_filter_detection():
     assert not symbol_filter_in_plan(
         {"Plan": {"Node Type": "Seq Scan", "Filter": "interval = '1d'"}}
     )
+
+
+def test_duplicate_stock_days_require_both_flags():
+    import pandas as pd
+
+    from scripts.kaggle_closing_checks import duplicate_stock_days
+
+    index = pd.MultiIndex.from_tuples(
+        [
+            (pd.Timestamp("2000-01-03", tz="UTC"), "AAA"),
+            (pd.Timestamp("2000-01-03", tz="UTC"), "PERMNO-1"),
+        ],
+        names=["timestamp", "symbol"],
+    )
+    flags = pd.DataFrame({"possible_double": [True, True]}, index=index)
+    assert duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1}) == []
+    flags.iloc[1, 0] = False
+    bad = duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1})
+    assert len(bad) == 1 and bad[0]["permno"] == 1
