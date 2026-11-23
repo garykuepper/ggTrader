@@ -10,6 +10,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.csv as pacsv
 import pyarrow.parquet as pq
+from psycopg2 import sql
 from psycopg2.extensions import connection, cursor
 
 from ggTrader.data.kaggle_import.guards import backup_fresh, free_space_ok, verify_sha256
@@ -202,17 +203,44 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
     return load_id
 
 
-def compress_kaggle_chunks(conn: connection, table: str = "kaggle_crsp.daily") -> int:
-    """Compress uncompressed or partially compressed chunks and return their count."""
+def compress_kaggle_chunks(
+    conn: connection, table: str = "kaggle_crsp.daily", *, reclaim: bool = True
+) -> int:
+    """Compress eligible chunks and optionally reclaim their dead space."""
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT compress_chunk(c, if_not_compressed => true) FROM show_chunks(%s::regclass) c "
+            "SELECT i.id, c::text FROM show_chunks(%s::regclass) c "
             "JOIN _timescaledb_catalog.chunk i ON "
             "i.schema_name = split_part(c::text, '.', 1) "
             "AND i.table_name = split_part(c::text, '.', 2) "
             "WHERE (i.status & 1) = 0 OR (i.status & 8) <> 0",
             (table,),
         )
-        count = len(cur.fetchall())
+        chunks = cur.fetchall()
+        for _, chunk in chunks:
+            cur.execute("SELECT compress_chunk(%s::regclass, if_not_compressed => true)", (chunk,))
+        if reclaim and chunks:
+            ids = [chunk[0] for chunk in chunks]
+            cur.execute(
+                "SELECT c.schema_name, c.table_name FROM _timescaledb_catalog.chunk c "
+                "WHERE c.id = ANY(%s) OR c.id IN "
+                "(SELECT compressed_chunk_id FROM _timescaledb_catalog.chunk WHERE id = ANY(%s))",
+                (ids, ids),
+            )
+            relations = cur.fetchall()
     conn.commit()
-    return count
+    if reclaim and chunks:
+        previous_autocommit = conn.autocommit
+        try:
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                for schema, relation in relations:
+                    cur.execute(
+                        sql.SQL("VACUUM FULL {}.{}").format(
+                            sql.Identifier(schema), sql.Identifier(relation)
+                        )
+                    )
+        finally:
+            conn.rollback()
+            conn.autocommit = previous_autocommit
+    return len(chunks)

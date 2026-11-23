@@ -1,6 +1,7 @@
 """CRSP import tests using synthetic data and a scratch database."""
 
 import hashlib
+from contextlib import closing
 from datetime import datetime
 
 import psycopg2
@@ -19,7 +20,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.db]
 
 @pytest.fixture
 def conn():
-    with scratch_database() as url, psycopg2.connect(url) as connection:
+    with scratch_database() as url, closing(psycopg2.connect(url)) as connection:
         apply_ddl(connection)
         yield connection
 
@@ -191,3 +192,34 @@ def test_reconciliation_failure_marks_failed(conn, tmp_path, monkeypatch):
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads")
         assert cur.fetchone()[0] == "failed"
+
+
+def test_recompression_reclaims_space(tmp_path):
+    count = 60_000
+    path, sums = make_file(
+        tmp_path, [row(i, datetime(1999, 1, 1)) for i in range(count)], row_group_size=count
+    )
+    sizes = []
+    for reclaim in (False, True):
+        with scratch_database() as url, closing(psycopg2.connect(url)) as connection:
+            apply_ddl(connection)
+            load_crsp(connection, path, sums, backup_dir=None, year=1999, margin_bytes=0)
+            assert compress_kaggle_chunks(connection, reclaim=reclaim) == 1
+            load_crsp(
+                connection,
+                path,
+                sums,
+                backup_dir=None,
+                year=1999,
+                parser_suffix="v2",
+                margin_bytes=0,
+            )
+            assert compress_kaggle_chunks(connection, reclaim=reclaim) == 1
+            with connection.cursor() as cur:
+                cur.execute(
+                    "SELECT hypertable_size('kaggle_crsp.daily'), count(*) FROM kaggle_crsp.daily"
+                )
+                size, rows = cur.fetchone()
+                assert rows == 2 * count
+                sizes.append(size)
+    assert sizes[1] < sizes[0]
