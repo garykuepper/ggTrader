@@ -15,7 +15,7 @@ conn = db_fixture
 pytestmark = [pytest.mark.integration, pytest.mark.db]
 
 
-def test_read_only_and_report(conn, tmp_path, monkeypatch):
+def test_read_only_and_report(conn, tmp_path, monkeypatch, capsys):
     from ggTrader.data.kaggle_import.release import build_release
 
     db, load = conn
@@ -68,6 +68,11 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
         readonly.close()
     report = run_checks(url, rid, tmp_path)
     assert report["release_id"] == rid
+    assert report["statement_timeout_ms"] == 900_000
+    progress = capsys.readouterr().err
+    for number in range(1, 14):
+        assert f"check_{number:02}" in progress
+    assert "Ten-stock monthly returns" in progress and "McGill and CRSP returns" in progress
     checks = {item["id"]: item for item in report["checks"]}
     assert len(checks) == 13
     assert checks["check_01"]["status"] in ("pass", "skipped")

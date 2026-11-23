@@ -7,6 +7,7 @@ import argparse
 import os
 import re
 import shutil
+import sys
 import time
 from datetime import date
 from pathlib import Path
@@ -898,6 +899,16 @@ def _mcgill_comparison(
     return ("pass" if ok else "fail"), values, ""
 
 
+def _finish_check(check: dict, started: float) -> None:
+    """Record and print elapsed time as each check finishes."""
+    check["elapsed_seconds"] = time.perf_counter() - started
+    print(
+        f"{check['id']} {check['name']}: {check['elapsed_seconds']:.2f}s",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
 def run_checks(
     url: str,
     release_id: int | None,
@@ -927,11 +938,13 @@ def run_checks(
             release_id = row[0]
             cur.execute("SELECT pg_database_size(current_database())")
             db_size = cur.fetchone()[0]
+            cur.execute("SELECT setting::bigint FROM pg_settings WHERE name='statement_timeout'")
+            statement_timeout_ms = cur.fetchone()[0]
         symbols = _symbols(conn, release_id)
         started = time.perf_counter()
         status, measured, reason = _check_counts(conn, release_id)
         _set(checks[0], status, measured, "exact row counts", reason)
-        checks[0]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[0], started)
         started = time.perf_counter()
         status, measured, reason = _stock_comparison(conn, release_id)
         if (
@@ -950,7 +963,7 @@ def run_checks(
             {"correlation_min": 0.9998, "mean_abs_points_max": 0.02, "max_abs_points_max": 1.6},
             reason,
         )
-        checks[1]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[1], started)
         started = time.perf_counter()
         loads = _release_loads(conn, release_id)
         source_path = loads.get("crsp-bars", (None, None))[1] or ""
@@ -969,7 +982,7 @@ def run_checks(
             if allow_synthetic_skips and status == "skipped":
                 reason = "synthetic data"
             _set(checks[2], status, measured, {"correlation_min": 0.9999}, reason)
-        checks[2]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[2], started)
         started = time.perf_counter()
         with conn.cursor() as cur:
             cur.execute(
@@ -1006,11 +1019,11 @@ def run_checks(
         elif status == "pass":
             status, reason = "skipped", "no baseline given"
         _set(checks[3], status, measured, "identical row keys and all five fields", reason)
-        checks[3]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[3], started)
         started = time.perf_counter()
         status, measured, reason = _check_named_stocks(conn, url, release_id)
         _set(checks[4], status, measured, {"absolute_join_return_lt": 0.5}, reason)
-        checks[4]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[4], started)
         started = time.perf_counter()
         free = shutil.disk_usage(data_volume).free
         with conn.cursor() as cur:
@@ -1030,7 +1043,7 @@ def run_checks(
             {"database_bytes": db_size, "free_bytes": free, "hypertable_bytes": sizes},
             {"minimum_free_bytes": 40_000_000_000},
         )
-        checks[5]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[5], started)
         started = time.perf_counter()
         with conn.cursor() as cur:
             cur.execute(
@@ -1069,7 +1082,7 @@ def run_checks(
                 if allow_synthetic_skips
                 else "fewer than five pre-2000 placeholders or twenty total symbols",
             )
-        checks[6]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[6], started)
         started = time.perf_counter()
         with conn.cursor() as cur:
             cur.execute(
@@ -1164,11 +1177,14 @@ def run_checks(
                 {"combined_one_seconds_lt": 5, "combined_hundred_seconds_lt": 60},
                 "synthetic data" if allow_synthetic_skips else "fewer than 100 Yahoo symbols",
             )
-        checks[7]["elapsed_seconds"] = time.perf_counter() - started
+        _finish_check(checks[7], started)
+        for check in checks[8:]:
+            _finish_check(check, time.perf_counter())
         return {
             "release_id": release_id,
             "database_bytes": db_size,
             "free_bytes": free,
+            "statement_timeout_ms": statement_timeout_ms,
             "synthetic_skips_allowed": allow_synthetic_skips,
             "checks": checks,
         }
