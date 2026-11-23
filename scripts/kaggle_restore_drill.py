@@ -66,11 +66,55 @@ def restore_command(name: str) -> list[str]:
     ]
 
 
+def check_database_volume(url: str, dump: Path, report: dict) -> None:
+    """Require three dump sizes plus 40 GB on the matched local database volume."""
+    target = urlparse(checked_pg_url(url))
+    if target.hostname not in ("localhost", "127.0.0.1", "::1"):
+        raise ValueError("Cannot match the database target to the local container")
+    ports = subprocess.run(
+        ["docker", "port", "ggtrader_db", "5432/tcp"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    local_addresses = {"0.0.0.0", "::", target.hostname}
+    if target.hostname == "localhost":
+        local_addresses.update(("127.0.0.1", "::1"))
+    matches = (line.rsplit(":", 1) for line in ports if ":" in line)
+    if not any(
+        address.strip("[]") in local_addresses and port == str(target.port or 5432)
+        for address, port in matches
+    ):
+        raise ValueError("Cannot match the database target to the local container")
+    result = subprocess.run(
+        ["docker", "exec", "ggtrader_db", "df", "-P", "/var/lib/postgresql/data"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    try:
+        free = int(result.stdout.splitlines()[-1].split()[3]) * 1024
+    except (IndexError, ValueError) as exc:
+        raise ValueError("Cannot determine database volume free space") from exc
+    size = dump.stat().st_size
+    required = 3 * size + 40_000_000_000
+    report["database_volume"] = {
+        "container": "ggtrader_db",
+        "free_bytes": free,
+        "dump_bytes": size,
+        "required_bytes": required,
+        "formula": "3 * dump_bytes + 40,000,000,000 bytes",
+    }
+    if free < required:
+        raise ValueError("Insufficient database volume free space")
+
+
 def run(args: argparse.Namespace, report: dict) -> None:
     """Verify the dump, restore and check it, and clean up even after failure."""
     checked_pg_url(args.scratch_url)
     verify_sha256(args.dump, args.sums)
     expected = parse_expected(args.expected)
+    check_database_volume(args.scratch_url, args.dump, report)
     name = "ggt_restore_drill_" + uuid.uuid4().hex[:8]
     admin = psycopg2.connect(args.scratch_url)
     admin.autocommit = True
