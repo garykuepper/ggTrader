@@ -452,3 +452,25 @@ def test_building_release_unavailable_until_published(conn):
     db.rollback()
     with pytest.raises(ReleaseUnavailable):
         stocks_alive_on(db, rid, date(2000, 1, 1))
+
+
+def test_empty_yahoo_fingerprint_cannot_publish_and_leaves_no_release(conn):
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM public.ohlcv")
+    db.commit()
+    links, settings = _inputs()
+    with pytest.raises(ValueError, match="(?i)yahoo.*(timestamp|horizon)"):
+        build_release(
+            db, crsp_bars_load=load, mcgill_load=None, links=links.iloc[:0], settings=settings
+        )
+    with db.cursor() as cur:
+        for table in (
+            "ref.releases",
+            "ref.release_loads",
+            "ref.symbol_map",
+            "ref.splice_links",
+            "market.stock_spans",
+        ):
+            cur.execute(f"SELECT count(*) FROM {table}")
+            assert cur.fetchone()[0] == 0

@@ -140,6 +140,10 @@ def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic
                     "closes",
                 ],
             )
+            if facts.empty or pd.isna(facts.newest.max()):
+                raise ValueError(
+                    "Yahoo fingerprint has no newest timestamp; cannot publish release"
+                )
             if len(facts) != len(links) or links.symbol.duplicated().any():
                 raise ValueError("Yahoo symbols missing or duplicated")
             candidates = links.loc[links.status.eq("linked"), ["symbol", "permno"]].dropna()
