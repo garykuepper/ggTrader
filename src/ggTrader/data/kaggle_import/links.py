@@ -87,7 +87,7 @@ def agreement(yahoo_ret: pd.Series, crsp_ret: pd.Series, *, tolerance: float = 0
     }
 
 
-def find_links(
+def find_links(  # noqa: PLR0913 - explicit inputs include reusable correlation results
     yahoo_returns: pd.DataFrame,
     crsp_returns: pd.DataFrame,
     yahoo_first: pd.Series,
@@ -96,6 +96,8 @@ def find_links(
     crsp_last: pd.Series,
     settings: LinkSettings,
     calendar: pd.DatetimeIndex,
+    *,
+    pairwise: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> pd.DataFrame:
     """Find links while refusing weak, ambiguous, duplicate and outliving matches."""
     if not calendar.is_monotonic_increasing or not calendar.is_unique:
@@ -103,7 +105,11 @@ def find_links(
     dates = yahoo_returns.index.union(crsp_returns.index).sort_values()
     y = yahoo_returns.reindex(dates)
     c = crsp_returns.reindex(dates)
-    counts, corr = pairwise_correlation(y.to_numpy(), c.to_numpy(), settings.min_sessions_short)
+    counts, corr = (
+        pairwise
+        if pairwise is not None
+        else pairwise_correlation(y.to_numpy(), c.to_numpy(), settings.min_sessions_short)
+    )
     candidates = top_candidates(corr)
     rows = []
     for i, symbol in enumerate(y.columns):
