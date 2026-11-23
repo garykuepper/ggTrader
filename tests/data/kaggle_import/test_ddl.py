@@ -122,13 +122,19 @@ def test_mcgill_columns_match_constant(conn):
         assert cur.fetchall() == [("load_id", "bigint"), *MCGILL_COLUMNS]
 
 
-def test_cli_apply_ddl_parses_and_runs():
+def test_cli_apply_ddl_parses_and_runs(monkeypatch):
     parser = argparse.ArgumentParser(prog="ggt")
     register_db_parser(parser.add_subparsers(dest="command"))
-    args = parser.parse_args(["db", "import", "apply-ddl", "--db-url", "x"])
-    assert (args.db_command, args.import_command, args.db_url) == ("import", "apply-ddl", "x")
+    args = parser.parse_args(
+        ["db", "import", "apply-ddl", "--db-url-env", "TEST_IMPORT_URL", "--yes"]
+    )
+    assert (args.db_command, args.import_command, args.db_url_env) == (
+        "import",
+        "apply-ddl",
+        "TEST_IMPORT_URL",
+    )
     with scratch_database() as url:
-        args.db_url = url
+        monkeypatch.setenv("TEST_IMPORT_URL", url)
         run_db(args)
         with psycopg2.connect(url) as conn, conn.cursor() as cur:
             cur.execute("SELECT to_regclass('market.daily_bars')")

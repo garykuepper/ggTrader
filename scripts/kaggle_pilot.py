@@ -3,6 +3,8 @@
 
 import argparse
 import json
+import os
+import re
 import resource
 import shutil
 import sys
@@ -174,13 +176,19 @@ def main(argv: list[str] | None = None) -> int:
     """Parse arguments and write the pilot report."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int)
-    parser.add_argument("--scratch-url", required=True)
+    parser.add_argument("--scratch-url-env", default="GGT_SCRATCH_URL", metavar="NAME")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--sums", type=Path, default=DATA / "SHA256SUMS.txt")
     parser.add_argument(
         "--file", type=Path, default=DATA / "cleaned/crsp_1968_2024_daily_cleaned.parquet"
     )
     args = parser.parse_args(argv)
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", args.scratch_url_env):
+        parser.error("expected an environment variable name")
+    args.scratch_url = os.environ.get(args.scratch_url_env)
+    if not args.scratch_url:
+        print(f"Environment variable {args.scratch_url_env} is unset or empty", file=sys.stderr)
+        return 1
     try:
         report = run(args)
         args.out.parent.mkdir(parents=True, exist_ok=True)

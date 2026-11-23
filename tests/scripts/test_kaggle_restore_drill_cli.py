@@ -35,3 +35,14 @@ def test_compare_counts():
 def test_command_has_no_credentials():
     command = restore_command("ggt_restore_drill_12345678")
     assert all("://" not in item and "password" not in item.lower() for item in command)
+
+
+def test_missing_scratch_env(monkeypatch, tmp_path):
+    monkeypatch.delenv("GGT_SCRATCH_URL", raising=False)
+    result = subprocess.run(
+        [sys.executable, "scripts/kaggle_restore_drill.py", "--out", str(tmp_path / "out")],
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert b"GGT_SCRATCH_URL" in result.stderr

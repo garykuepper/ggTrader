@@ -3,6 +3,8 @@
 
 import argparse
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -133,10 +135,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dump", type=Path, default=BACKUP / "ggtrader_20261122.dump")
     parser.add_argument("--expected", type=Path, default=BACKUP / "rowcounts_before.txt")
     parser.add_argument("--sums", type=Path, default=None)
-    parser.add_argument("--scratch-url", required=True)
+    parser.add_argument("--scratch-url-env", default="GGT_SCRATCH_URL", metavar="NAME")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--keep", action="store_true")
     args = parser.parse_args(argv)
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", args.scratch_url_env):
+        parser.error("expected an environment variable name")
+    args.scratch_url = os.environ.get(args.scratch_url_env)
+    if not args.scratch_url:
+        print(f"Environment variable {args.scratch_url_env} is unset or empty", file=sys.stderr)
+        return 1
     if args.sums is None:
         args.sums = args.dump.parent / "SHA256SUMS"
     started = time.monotonic()

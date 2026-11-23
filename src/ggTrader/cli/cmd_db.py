@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,12 @@ from ggTrader.cli.cmd_membership import (
 )
 from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.db_engine import create_db_engine_or_exit
+
+
+def _env_name(value: str) -> str:
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", value):
+        raise argparse.ArgumentTypeError("expected an environment variable name")
+    return value
 
 
 def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -51,7 +58,6 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     importer = db_subs.add_parser("import", help="Import market datasets")
     import_subs = importer.add_subparsers(dest="import_command", required=True)
     ddl = import_subs.add_parser("apply-ddl", help="Apply import schemas")
-    ddl.add_argument("--db-url", help="Database URL (defaults to configured database)")
     mcgill = import_subs.add_parser("mcgill", help="Load McGill CSV")
     mcgill.add_argument("--file", type=Path, required=True)
     mcgill.add_argument("--sums", type=Path, required=True)
@@ -59,8 +65,6 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     mcgill_backup.add_argument("--backup-dir", type=Path)
     mcgill_backup.add_argument("--no-backup-check", action="store_true")
     mcgill.add_argument("--db-free-path", type=Path, default=Path("/"))
-    mcgill.add_argument("--db-url", required=True)
-    mcgill.add_argument("--yes", action="store_true")
     crsp = import_subs.add_parser("crsp", help="Load CRSP parquet")
     crsp.add_argument("--file", type=Path, required=True)
     crsp.add_argument("--sums", type=Path, required=True)
@@ -70,8 +74,26 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
     crsp.add_argument("--db-free-path", type=Path, default=Path("/"))
     crsp.add_argument("--year", type=int)
     crsp.add_argument("--row-groups", type=lambda value: [int(x) for x in value.split(",")])
-    crsp.add_argument("--db-url", required=True)
-    crsp.add_argument("--yes", action="store_true")
+    for command in (ddl, crsp, mcgill):
+        target = command.add_mutually_exclusive_group(required=True)
+        target.add_argument(
+            "--db-url-env",
+            type=_env_name,
+            metavar="NAME",
+            help="Environment variable containing the database connection",
+        )
+        target.add_argument("--use-configured-db", action="store_true")
+        command.add_argument("--yes", action="store_true", help="Confirm write")
+
+
+def resolve_import_url(args: argparse.Namespace) -> str:
+    """Resolve the explicitly selected import target."""
+    if args.use_configured_db:
+        return get_db_connection_string()
+    value = os.environ.get(args.db_url_env)
+    if not value:
+        sys.exit(f"Environment variable {args.db_url_env} is unset or empty")
+    return value
 
 
 def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 — existing command dispatcher
@@ -104,16 +126,29 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 �
         from ggTrader.data.kaggle_import.ddl import apply_ddl
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
+        url = resolve_import_url(args)
         if args.import_command in ("crsp", "mcgill") and args.no_backup_check:
             from psycopg2.extensions import parse_dsn
 
-            if parse_dsn(to_psycopg_url(args.db_url)).get("dbname") == "ggtrader":
+            try:
+                dbname = parse_dsn(to_psycopg_url(url)).get("dbname")
+            except Exception:  # noqa: BLE001 — connection text can contain credentials
+                sys.exit("Invalid database connection")
+            if dbname == "ggtrader":
                 sys.exit("Backup check cannot be disabled for ggtrader")
-        if args.import_command in ("crsp", "mcgill") and not args.yes:
-            print(f"Would import {args.file}; pass --yes to proceed.")
+        if not args.yes:
+            action = (
+                "apply import schemas"
+                if args.import_command == "apply-ddl"
+                else f"import {args.file}"
+            )
+            print(f"Would {action}; pass --yes to proceed.")
             return
-        url = to_psycopg_url(args.db_url or get_db_connection_string())
-        conn = connect(url)
+        try:
+            url = to_psycopg_url(url)
+            conn = connect(url)
+        except Exception:  # noqa: BLE001 — connection errors can contain credentials
+            sys.exit("Database connection failed")
         try:
             if args.import_command == "apply-ddl":
                 apply_ddl(conn)

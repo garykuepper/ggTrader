@@ -175,6 +175,7 @@ def test_cli_requires_yes(conn, tmp_path, monkeypatch, capsys):
             pass
 
     monkeypatch.setattr(universe_db, "connect", lambda url: ConnectionProxy())
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://unused/db")
     args = argparse.Namespace(
         db_command="import",
         import_command="mcgill",
@@ -182,7 +183,8 @@ def test_cli_requires_yes(conn, tmp_path, monkeypatch, capsys):
         sums=sums,
         backup_dir=None,
         db_free_path=tmp_path,
-        db_url="postgresql://unused/db",
+        db_url_env="TEST_IMPORT_URL",
+        use_configured_db=False,
         yes=False,
         no_backup_check=False,
     )

@@ -51,3 +51,14 @@ def test_projection_measured_reload():
     assert result["reload_peak_bytes"] == 330
     assert result["full_two_versions_compressed_bytes"] == 150
     assert result["free_after_reload_peak"] == 670
+
+
+def test_missing_scratch_env(monkeypatch, tmp_path):
+    monkeypatch.delenv("GGT_SCRATCH_URL", raising=False)
+    result = subprocess.run(
+        [sys.executable, "scripts/kaggle_pilot.py", "--out", str(tmp_path / "out")],
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert b"GGT_SCRATCH_URL" in result.stderr
