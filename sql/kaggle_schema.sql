@@ -1,0 +1,220 @@
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+CREATE SCHEMA IF NOT EXISTS ref;
+CREATE SCHEMA IF NOT EXISTS market;
+CREATE SCHEMA IF NOT EXISTS kaggle_crsp;
+CREATE SCHEMA IF NOT EXISTS kaggle_chars;
+CREATE TABLE IF NOT EXISTS ref.loads (
+ load_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, dataset text, kaggle_slug text,
+ file_path text, file_sha256 text, parser_version text, content_sha256 text,
+ rows_parsed bigint, rows_accepted bigint, rows_quarantined bigint, loader_git_sha text,
+ loaded_by text, started_at timestamptz, completed_at timestamptz,
+ status text CHECK (status IN ('running','complete','failed','withdrawn')), checks jsonb
+);
+CREATE TABLE IF NOT EXISTS ref.load_chunks (load_id bigint, chunk_key text, rows bigint, committed_at timestamptz, PRIMARY KEY(load_id, chunk_key));
+CREATE TABLE IF NOT EXISTS ref.quarantine (load_id bigint, chunk_key text, row_ref text, raw jsonb, reason text);
+CREATE TABLE IF NOT EXISTS ref.releases (release_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, created_at timestamptz, settings jsonb, status text CHECK (status IN ('published','withdrawn')), yahoo_fingerprint jsonb);
+CREATE TABLE IF NOT EXISTS ref.release_loads (release_id bigint, load_id bigint, role text);
+CREATE TABLE IF NOT EXISTS ref.symbol_map (permno bigint, symbol text, valid_from date, valid_to date, source text, release_id bigint);
+CREATE TABLE IF NOT EXISTS ref.splice_links (release_id bigint, permno bigint, symbol text, first_yf_date date, link_day_returns_hash text, agreement jsonb, PRIMARY KEY(release_id, permno));
+CREATE TABLE IF NOT EXISTS kaggle_crsp.daily (load_id bigint, permno bigint, date date, shrcd int, exchcd int, prc double precision, ret double precision, shrout double precision, vwretd double precision, year int, month int, PRIMARY KEY(load_id, permno, date));
+CREATE TABLE IF NOT EXISTS kaggle_chars.mcgill (
+    load_id bigint,
+    date date,
+    ret_eom date,
+    permno double precision,
+    shrcd double precision,
+    exchcd double precision,
+    mspread double precision,
+    year double precision,
+    month double precision,
+    size_port double precision,
+    rf double precision,
+    stock_exret double precision,
+    stock_ticker text,
+    cusip text,
+    comp_name text,
+    eps_medest double precision,
+    eps_meanest double precision,
+    eps_stdevest double precision,
+    eps_actual double precision,
+    prc double precision,
+    market_equity double precision,
+    div12m_me double precision,
+    chcsho_12m double precision,
+    eqnpo_12m double precision,
+    ret_1_0 double precision,
+    ret_3_1 double precision,
+    ret_6_1 double precision,
+    ret_9_1 double precision,
+    ret_12_1 double precision,
+    ret_12_7 double precision,
+    ret_60_12 double precision,
+    seas_1_1an double precision,
+    seas_1_1na double precision,
+    seas_2_5an double precision,
+    seas_2_5na double precision,
+    at_gr1 double precision,
+    sale_gr1 double precision,
+    capx_gr1 double precision,
+    inv_gr1 double precision,
+    debt_gr3 double precision,
+    sale_gr3 double precision,
+    capx_gr3 double precision,
+    inv_gr1a double precision,
+    lti_gr1a double precision,
+    sti_gr1a double precision,
+    coa_gr1a double precision,
+    col_gr1a double precision,
+    cowc_gr1a double precision,
+    ncoa_gr1a double precision,
+    ncol_gr1a double precision,
+    nncoa_gr1a double precision,
+    fnl_gr1a double precision,
+    nfna_gr1a double precision,
+    tax_gr1a double precision,
+    be_gr1a double precision,
+    ebit_sale double precision,
+    gp_at double precision,
+    cop_at double precision,
+    ope_be double precision,
+    ni_be double precision,
+    ebit_bev double precision,
+    netis_at double precision,
+    eqnetis_at double precision,
+    dbnetis_at double precision,
+    oaccruals_at double precision,
+    oaccruals_ni double precision,
+    taccruals_at double precision,
+    taccruals_ni double precision,
+    noa_at double precision,
+    opex_at double precision,
+    at_turnover double precision,
+    sale_bev double precision,
+    rd_sale double precision,
+    cash_at double precision,
+    sale_emp_gr1 double precision,
+    emp_gr1 double precision,
+    ni_inc8q double precision,
+    noa_gr1a double precision,
+    ppeinv_gr1a double precision,
+    lnoa_gr1a double precision,
+    capx_gr2 double precision,
+    saleq_gr1 double precision,
+    niq_be double precision,
+    niq_at double precision,
+    niq_be_chg1 double precision,
+    niq_at_chg1 double precision,
+    rd5_at double precision,
+    dsale_dinv double precision,
+    dsale_drec double precision,
+    dgp_dsale double precision,
+    dsale_dsga double precision,
+    saleq_su double precision,
+    niq_su double precision,
+    capex_abn double precision,
+    op_atl1 double precision,
+    gp_atl1 double precision,
+    ope_bel1 double precision,
+    cop_atl1 double precision,
+    pi_nix double precision,
+    ocf_at double precision,
+    op_at double precision,
+    ocf_at_chg1 double precision,
+    at_be double precision,
+    ocfq_saleq_std double precision,
+    tangibility double precision,
+    earnings_variability double precision,
+    aliq_at double precision,
+    f_score double precision,
+    o_score double precision,
+    z_score double precision,
+    intrinsic_value double precision,
+    kz_index double precision,
+    ni_ar1 double precision,
+    ni_ivol double precision,
+    at_me double precision,
+    be_me double precision,
+    debt_me double precision,
+    netdebt_me double precision,
+    sale_me double precision,
+    ni_me double precision,
+    ocf_me double precision,
+    fcf_me double precision,
+    eqpo_me double precision,
+    eqnpo_me double precision,
+    rd_me double precision,
+    bev_mev double precision,
+    ebitda_mev double precision,
+    aliq_mat double precision,
+    eq_dur double precision,
+    beta_60m double precision,
+    resff3_12_1 double precision,
+    resff3_6_1 double precision,
+    mispricing_mgmt double precision,
+    mispricing_perf double precision,
+    ivol_capm_21d double precision,
+    iskew_capm_21d double precision,
+    coskew_21d double precision,
+    beta_dimson_21d double precision,
+    ivol_ff3_21d double precision,
+    iskew_ff3_21d double precision,
+    ivol_hxz4_21d double precision,
+    iskew_hxz4_21d double precision,
+    rmax5_21d double precision,
+    rmax1_21d double precision,
+    rvol_21d double precision,
+    rskew_21d double precision,
+    zero_trades_21d double precision,
+    dolvol_126d double precision,
+    dolvol_var_126d double precision,
+    turnover_126d double precision,
+    turnover_var_126d double precision,
+    zero_trades_126d double precision,
+    zero_trades_252d double precision,
+    ami_126d double precision,
+    ivol_capm_252d double precision,
+    prc_highprc_252d double precision,
+    betadown_252d double precision,
+    bidaskhl_21d double precision,
+    corr_1260d double precision,
+    betabab_1260d double precision,
+    rmax5_rvol_21d double precision,
+    age double precision,
+    qmj double precision,
+    qmj_prof double precision,
+    qmj_growth double precision,
+    qmj_safety double precision
+);
+CREATE TABLE IF NOT EXISTS market.daily_bars (load_id bigint, permno bigint, spell int, date date, close double precision, abs_prc double precision, midpoint_flag boolean, gap_return_approx boolean, final_flag boolean, PRIMARY KEY(load_id, permno, date));
+CREATE TABLE IF NOT EXISTS market.stock_spans (release_id bigint, symbol text, permno bigint, spell int, first_date date, last_date date, linked boolean, PRIMARY KEY(release_id, symbol));
+SELECT create_hypertable('kaggle_crsp.daily', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
+SELECT create_hypertable('market.daily_bars', 'date', chunk_time_interval => INTERVAL '1 year', if_not_exists => TRUE);
+ALTER TABLE kaggle_crsp.daily SET (timescaledb.compress, timescaledb.compress_segmentby = 'permno');
+ALTER TABLE market.daily_bars SET (timescaledb.compress, timescaledb.compress_segmentby = 'permno');
+CREATE OR REPLACE FUNCTION ref.guard_load() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'loads cannot be deleted'; END IF;
+ IF OLD.status IN ('complete', 'withdrawn') AND NOT
+   (OLD.status = 'complete' AND NEW.status = 'withdrawn' AND
+    (to_jsonb(NEW) - 'status') = (to_jsonb(OLD) - 'status')) THEN
+   RAISE EXCEPTION 'completed loads are immutable';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE OR REPLACE FUNCTION ref.reject_change() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'append-only table'; END $$;
+DROP TRIGGER IF EXISTS guard_load ON ref.loads;
+CREATE TRIGGER guard_load BEFORE UPDATE OR DELETE ON ref.loads FOR EACH ROW EXECUTE FUNCTION ref.guard_load();
+ALTER TABLE ref.loads ENABLE ALWAYS TRIGGER guard_load;
+DO $$ DECLARE t text; BEGIN
+ FOREACH t IN ARRAY ARRAY['releases','symbol_map','splice_links'] LOOP
+  EXECUTE format('DROP TRIGGER IF EXISTS frozen ON ref.%I', t);
+  EXECUTE format('CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON ref.%I FOR EACH ROW EXECUTE FUNCTION ref.reject_change()', t);
+  EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER frozen', t);
+ END LOOP;
+ FOREACH t IN ARRAY ARRAY['loads','releases','symbol_map','splice_links'] LOOP
+  EXECUTE format('DROP TRIGGER IF EXISTS no_truncate ON ref.%I', t);
+  EXECUTE format('CREATE TRIGGER no_truncate BEFORE TRUNCATE ON ref.%I FOR EACH STATEMENT EXECUTE FUNCTION ref.reject_change()', t);
+  EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER no_truncate', t);
+ END LOOP;
+END $$;

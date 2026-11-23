@@ -48,9 +48,13 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:
 
     # Subcommands: ggt db load-sp500, ggt db membership (versioned S&P 500 membership)
     register_membership_parsers(db_subs)
+    importer = db_subs.add_parser("import", help="Import market datasets")
+    import_subs = importer.add_subparsers(dest="import_command", required=True)
+    ddl = import_subs.add_parser("apply-ddl", help="Apply import schemas")
+    ddl.add_argument("--db-url", help="Database URL (defaults to configured database)")
 
 
-def run_db(args: argparse.Namespace) -> None:
+def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912
     """Executes database administration commands."""
     if args.db_command == "diag":
         _db_diag()
@@ -76,6 +80,16 @@ def run_db(args: argparse.Namespace) -> None:
         _db_export(args)
     elif args.db_command == "load-sp500":
         _exit_unless_zero(run_load_sp500(args))
+    elif args.db_command == "import":
+        from ggTrader.data.kaggle_import.ddl import apply_ddl
+        from ggTrader.data.universe_db import connect, to_psycopg_url
+
+        url = to_psycopg_url(args.db_url or get_db_connection_string())
+        conn = connect(url)
+        try:
+            apply_ddl(conn)
+        finally:
+            conn.close()
     elif args.db_command == "membership":
         _exit_unless_zero(run_membership(args))
 
