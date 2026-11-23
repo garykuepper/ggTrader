@@ -305,3 +305,31 @@ def test_dead_stock_loss_reaches_run_wfo(monkeypatch):
     monkeypatch.setattr(support, "run_vbt_wfo", lambda *a, **kw: calls.update(kw) or "ok")
     run_lab(["--wfo", "--strategy", "ensemble", "--source", "combined", "--dead-stock-loss", "0.5"])
     assert calls["dead_stock_loss"] == 0.5
+
+
+def test_dead_stock_loss_reaches_scorer_run(monkeypatch):
+    import pandas as pd
+
+    from ggTrader.lab.strategy import LabConfig
+    from ggTrader.lab.wfo import WfoNotRun
+
+    support = _patch_wfo_no_folds(monkeypatch)
+    seen = {}
+
+    def no_folds(*args, **kwargs):
+        seen.update(kwargs)
+        raise WfoNotRun("no folds")
+
+    monkeypatch.setattr(support, "run_wfo", no_folds)
+    support.run_vbt_wfo(
+        "ensemble",
+        "sp500",
+        LabConfig(),
+        pd.Timestamp("2020-01-01", tz="UTC"),
+        pd.Timestamp("2022-01-01", tz="UTC"),
+        market="equity",
+        base_config={},
+        source="combined",
+        dead_stock_loss=0.5,
+    )
+    assert seen["dead_stock_loss"] == 0.5
