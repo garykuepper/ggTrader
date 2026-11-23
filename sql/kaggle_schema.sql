@@ -201,18 +201,31 @@ BEGIN
  END IF;
  RETURN NEW;
 END $$;
+CREATE OR REPLACE FUNCTION ref.guard_release() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'releases cannot be deleted'; END IF;
+ IF (OLD.status = 'published' AND NEW.status = 'withdrawn' AND
+     (to_jsonb(NEW) - 'status') = (to_jsonb(OLD) - 'status')) IS NOT TRUE THEN
+  RAISE EXCEPTION 'releases are immutable';
+ END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS frozen ON ref.releases;
+DROP TRIGGER IF EXISTS guard_release ON ref.releases;
+CREATE TRIGGER guard_release BEFORE UPDATE OR DELETE ON ref.releases FOR EACH ROW EXECUTE FUNCTION ref.guard_release();
+ALTER TABLE ref.releases ENABLE ALWAYS TRIGGER guard_release;
 CREATE OR REPLACE FUNCTION ref.reject_change() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN RAISE EXCEPTION 'append-only table'; END $$;
 DROP TRIGGER IF EXISTS guard_load ON ref.loads;
 CREATE TRIGGER guard_load BEFORE UPDATE OR DELETE ON ref.loads FOR EACH ROW EXECUTE FUNCTION ref.guard_load();
 ALTER TABLE ref.loads ENABLE ALWAYS TRIGGER guard_load;
 DO $$ DECLARE t text; BEGIN
- FOREACH t IN ARRAY ARRAY['releases','symbol_map','splice_links'] LOOP
+ FOREACH t IN ARRAY ARRAY['release_loads','symbol_map','splice_links'] LOOP
   EXECUTE format('DROP TRIGGER IF EXISTS frozen ON ref.%I', t);
   EXECUTE format('CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON ref.%I FOR EACH ROW EXECUTE FUNCTION ref.reject_change()', t);
   EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER frozen', t);
  END LOOP;
- FOREACH t IN ARRAY ARRAY['loads','releases','symbol_map','splice_links'] LOOP
+ FOREACH t IN ARRAY ARRAY['loads','releases','release_loads','symbol_map','splice_links'] LOOP
   EXECUTE format('DROP TRIGGER IF EXISTS no_truncate ON ref.%I', t);
   EXECUTE format('CREATE TRIGGER no_truncate BEFORE TRUNCATE ON ref.%I FOR EACH STATEMENT EXECUTE FUNCTION ref.reject_change()', t);
   EXECUTE format('ALTER TABLE ref.%I ENABLE ALWAYS TRIGGER no_truncate', t);

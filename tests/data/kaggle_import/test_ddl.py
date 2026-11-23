@@ -84,7 +84,7 @@ def test_hypertables_exist(conn):
         }
 
 
-@pytest.mark.parametrize("table", ["releases", "symbol_map", "splice_links"])
+@pytest.mark.parametrize("table", ["symbol_map", "splice_links"])
 def test_frozen_tables_reject_update_delete_truncate(conn, table):
     with conn.cursor() as cur:
         if table == "splice_links":
@@ -93,7 +93,7 @@ def test_frozen_tables_reject_update_delete_truncate(conn, table):
             cur.execute(f"INSERT INTO ref.{table} DEFAULT VALUES")
     conn.commit()
     for statement in (
-        f"UPDATE ref.{table} SET {'status' if table == 'releases' else 'symbol'}=NULL",
+        f"UPDATE ref.{table} SET symbol=NULL",
         f"DELETE FROM ref.{table}",
         f"TRUNCATE ref.{table}",
     ):
@@ -131,3 +131,31 @@ def test_cli_apply_ddl_parses_and_runs():
         with psycopg2.connect(url) as conn, conn.cursor() as cur:
             cur.execute("SELECT to_regclass('market.daily_bars')")
             assert cur.fetchone()[0] == "market.daily_bars"
+
+
+def test_release_withdrawal_and_links_are_immutable(conn):
+    with conn.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        release_id = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id, load_id) VALUES (%s, 1)", (release_id,)
+        )
+    conn.commit()
+    for statement in (
+        "UPDATE ref.releases SET settings='{}'::jsonb",
+        "UPDATE ref.releases SET status='withdrawn', settings='{}'::jsonb",
+        "DELETE FROM ref.releases",
+        "DELETE FROM ref.release_loads",
+        "UPDATE ref.release_loads SET role='other'",
+        "TRUNCATE ref.releases",
+        "TRUNCATE ref.release_loads",
+    ):
+        with pytest.raises(psycopg2.Error), conn.cursor() as cur:
+            cur.execute(statement)
+        conn.rollback()
+    with conn.cursor() as cur:
+        cur.execute("UPDATE ref.releases SET status='withdrawn' WHERE release_id=%s", (release_id,))
+    conn.commit()
+    with pytest.raises(psycopg2.Error), conn.cursor() as cur:
+        cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (release_id,))
+    conn.rollback()
