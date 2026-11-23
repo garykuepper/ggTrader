@@ -14,7 +14,7 @@ from ggTrader.data.kaggle_import.loadlog import LoadFailed, begin_load, commit_c
 
 PARSER_VERSION = "mcgill-1"
 _TYPES = {
-    "date": pa.date32(),
+    "date": pa.string(),
     "text": pa.string(),
     "bigint": pa.float64(),
     "integer": pa.float64(),
@@ -50,7 +50,20 @@ def _prepare(table: pa.Table, load_id: int, offset: int):
     nulled = 0
     for name, kind in MCGILL_COLUMNS:
         values = table[name]
-        if kind in ("bigint", "integer"):
+        if kind == "date":
+            parsed = pc.strptime(values, format="%Y%m%d", unit="s", error_is_null=True)
+            invalid = pc.and_(
+                pc.is_valid(values),
+                pc.or_(
+                    pc.is_null(parsed),
+                    pc.fill_null(pc.not_equal(pc.strftime(parsed, format="%Y%m%d"), values), False),
+                ),
+            )
+            indices = pc.indices_nonzero(invalid)
+            if len(indices):
+                raise LoadFailed(f"Invalid {name} at row {offset + indices[0].as_py() + 2}")
+            values = pc.cast(parsed, pa.date32())
+        elif kind in ("bigint", "integer"):
             # Float parsing can round 2**53 + 1 down to 2**53.
             invalid = pc.fill_null(
                 pc.and_(

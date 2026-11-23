@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS kaggle_chars.mcgill (
     mspread double precision,
     year integer,
     month integer,
-    size_port double precision,
+    size_port text,
     rf double precision,
     stock_exret double precision,
     stock_ticker text,

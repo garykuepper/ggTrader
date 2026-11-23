@@ -2,6 +2,7 @@
 
 import csv
 import hashlib
+from datetime import date
 
 import psycopg2
 import pytest
@@ -29,11 +30,12 @@ def make_file(tmp_path, permno="123.0"):
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=names)
         writer.writeheader()
-        for i in range(10):
+        for _ in range(10):
             writer.writerow(
                 {
-                    "date": f"2020-01-{i + 1:02d}",
-                    "ret_eom": "2020-01-31",
+                    "date": "20000131",
+                    "ret_eom": "20000131",
+                    "size_port": "B",
                     "permno": permno,
                     "prc": "NaN",
                 }
@@ -189,3 +191,29 @@ def test_cli_requires_yes(conn, tmp_path, monkeypatch, capsys):
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM ref.loads WHERE status='complete'")
         assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.parametrize("column", ["date", "ret_eom"])
+def test_invalid_date_refused(conn, tmp_path, column):
+    path, sums = make_file(tmp_path)
+    with path.open(newline="") as f:
+        rows = list(csv.DictReader(f))
+    rows[0][column] = "20001341"
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=[name for name, _ in MCGILL_COLUMNS])
+        writer.writeheader()
+        writer.writerows(rows)
+    sums.write_text(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
+    with pytest.raises(LoadFailed, match=f"Invalid {column} at row 2"):
+        mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+
+
+def test_real_date_and_size_port_format(conn, tmp_path):
+    path, sums = make_file(tmp_path)
+    load = mcgill.load_mcgill(conn, path, sums, backup_dir=None)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT date, ret_eom, size_port FROM kaggle_chars.mcgill WHERE load_id=%s LIMIT 1",
+            (load,),
+        )
+        assert cur.fetchone() == (date(2000, 1, 31), date(2000, 1, 31), "B")
