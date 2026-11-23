@@ -21,6 +21,8 @@ and checkpoints after every end (resumable).
 Example:
     .venv/bin/python scripts/p5_equity_parity.py --phase new --run core17_ensemble_sp500
     .venv/bin/python scripts/p5_equity_parity.py --phase legacy --run core17_ensemble_sp500
+
+Valid only against its original revision.
 """
 
 from __future__ import annotations

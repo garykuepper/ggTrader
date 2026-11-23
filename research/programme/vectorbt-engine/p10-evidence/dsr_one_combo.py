@@ -33,7 +33,7 @@ def main(argv=None) -> int:
     es = pd.Timestamp(args.eval_start, tz="UTC")
     ee = pd.Timestamp(args.eval_end, tz="UTC")
     cfg = LabConfig(max_stocks=args.max_stocks or None) if args.max_stocks else LabConfig()
-    bars = load_run_bars(["sp500"], cfg, es, ee, args.snapshot)
+    bars = load_run_bars(["sp500"], cfg, es, ee, args.snapshot, source="snapshot")
     spy = bars.close["SPY"].dropna()
     sleeve, mask = sleeve_inputs(bars, "sp500", cfg, es, ee)
     grid = Ensemble.live_grid()

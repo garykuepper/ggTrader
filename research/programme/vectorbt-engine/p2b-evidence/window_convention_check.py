@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         universe_span=("2021-01-31", "2026-04-30"),
         start="2019-03-01",
         end="2026-04-29",
-    )
+     source="snapshot")
     close = bars.close.ffill()
     worst = dict.fromkeys(STATS, 0.0)
     identical = dict.fromkeys(STATS, 0)

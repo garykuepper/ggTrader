@@ -71,6 +71,7 @@ def _engine_curves(
     base_config: dict,
     snapshot: str | None,
     membership: MembershipSource,
+    source: str | None,
 ) -> tuple[dict[str, pd.Series], pd.Series, dict[str, Any]]:
     """Per-sleeve OOS curves, the SPY close and the provenance block, on the engine."""
     from ggTrader.engine.provenance import provenance as build_provenance
@@ -81,7 +82,7 @@ def _engine_curves(
     es = pd.Timestamp(eval_start, tz="UTC")
     ee = pd.Timestamp(eval_end, tz="UTC")
     bars = load_run_bars(
-        sorted({u for _, u in sleeves}), cfg, es, ee, snapshot, membership=membership
+        sorted({u for _, u in sleeves}), cfg, es, ee, snapshot, source=source, membership=membership
     )
     spy_close = bars.close["SPY"].dropna()
     curves: dict[str, pd.Series] = {}
@@ -141,13 +142,14 @@ def run_blend(
     window: int = 60,
     max_leverage: float = 1.0,
     snapshot: str | None = None,
+    source: str | None = None,
     membership: MembershipSource | None = None,
 ) -> BlendResult:
     """Run each (strategy, universe) sleeve through the gated WFO, blend the OOS
     curves (inverse-vol -> target-vol), persist as a lab run, return BlendResult.
 
-    Each sleeve runs through the vectorbt-engine walk-forward (``lab.wfo``) on the frozen tape
-    (``snapshot`` overrides the file); the ``lab_runs`` row carries the engine provenance block.
+    Each sleeve runs through the vectorbt-engine walk-forward (``lab.wfo``) using database bars
+    by default (``snapshot`` selects a tape file); the ``lab_runs`` row carries provenance.
     Only strategies ported to the engine contract can be sleeves. ``membership`` is the S&P 500
     list source (``None``: the one selected by ``GGT_MEMBERSHIP``, else an error); its vintage is
     stored in the run's provenance.
@@ -166,6 +168,7 @@ def run_blend(
         base_config,
         snapshot,
         resolve_source(membership),
+        source,
     )
 
     blend_eq, returns_df, diag = blend_curves(

@@ -134,6 +134,7 @@ def real_bars(n_symbols: int = 40, seed: int = 7, end: str = SMOKE_END):
         start=str(start.date()),
         end=legacy_exclusive_end(end),
         membership=FixtureMembershipSource("sp500_v1_2026-06-02"),
+        source="snapshot",
     )
     pool = [s for s in bars.symbols if s != "SPY" and bars.close[s].notna().sum() > 700]
     rng = np.random.default_rng(seed)

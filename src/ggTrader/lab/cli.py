@@ -1,7 +1,7 @@
 """CLI for the lab research bench: walk-forward a strategy (or blend sleeves) on the engine.
 
 ``ggt lab --wfo`` and ``ggt lab --blend`` run on the vectorbt engine (``lab.wfo``) and read the
-frozen tape snapshot. The pre-rebuild ``--engine``, ``--sweep``, ``--max-sector-count`` and the
+database bars by default. The pre-rebuild ``--engine``, ``--sweep``, ``--max-sector-count`` and the
 plain (no mode) run were removed in P5c; strategies that were not ported stay runnable at git tag
 ``legacy-engine-vbt0285`` (``scripts/legacy_env.sh``).
 """
@@ -102,8 +102,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--snapshot",
         default=None,
         metavar="PATH",
-        help="Parquet tape to read (default: the newest in data/snapshots).",
+        help="Parquet tape to read (selects snapshot source).",
     )
+    p.add_argument("--source", choices=("db", "snapshot"), default=None)
     add_membership_argument(p)
     p.add_argument(
         "--result-json",
@@ -157,6 +158,7 @@ def run_lab(argv: list[str] | None = None) -> str:
             window=args.blend_window,
             max_leverage=args.max_leverage,
             snapshot=args.snapshot,
+            source=args.source,
             membership=membership,
         )
         print(result.table)
@@ -179,6 +181,7 @@ def run_lab(argv: list[str] | None = None) -> str:
         base_config=dict(base_config),
         overrides=_parse_sweep_params(args.sweep_param) or None,
         snapshot=args.snapshot,
+        source=args.source,
         result_json=args.result_json,
         membership=membership,
     )

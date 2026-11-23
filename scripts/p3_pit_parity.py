@@ -179,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
         snapshot_path=args.snapshot,
         deep_verify=True,
         membership=membership,
+        source="snapshot",
     )
     close = bars.close
     history = membership.history()

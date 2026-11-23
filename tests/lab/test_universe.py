@@ -472,6 +472,7 @@ def _real_close() -> pd.DataFrame:
         end="2026-10-30",
         extra_symbols=["SPY", "TLT", "GLD", "PDBC", "BIL"],
         membership=FixtureMembershipSource("sp500_v1_2026-06-02"),
+        source="snapshot",
     ).close
 
 

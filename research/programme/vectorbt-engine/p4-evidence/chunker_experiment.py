@@ -8,7 +8,7 @@ from ggTrader.lab.strategies.v2.ensemble import Ensemble
 from ggTrader.lab.universe import pit_mask
 def cur(): return int(open('/proc/self/statm').read().split()[1])*4096/1e6
 def peak(): return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024
-bars = load_bars(universe="sp500", universe_span=("2021-01-31","2026-04-30"), extra_symbols=["SPY"], start="2019-03-01", end="2026-10-30")
+bars = load_bars(universe="sp500", universe_span=("2021-01-31","2026-04-30"), extra_symbols=["SPY"], start="2019-03-01", end="2026-10-30", source="snapshot")
 out = Ensemble().build(bars); mask = pit_mask(bars.close, min_history_bars=400, on_stale="ignore")
 cols = out.entries.columns
 close_t = tile_columns(bars.close, cols); mask_t = tile_columns(mask, cols)

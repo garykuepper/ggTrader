@@ -19,6 +19,8 @@ Reads the frozen Parquet snapshot only (no database, no network, no writes to ``
 Usage:
     systemd-run --user --scope -p MemoryMax=6G -p MemorySwapMax=0 \\
         .venv/bin/python scripts/p4_strategy_parity.py --section all
+
+Valid only against its original revision.
 """
 
 from __future__ import annotations

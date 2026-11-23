@@ -22,6 +22,8 @@ def test_vbt_wfo_writes_a_provenance_stamped_result(tmp_path, capsys) -> None:
             "--strategy",
             "ensemble",
             "--wfo",
+            "--source",
+            "snapshot",
             "--eval-start",
             "2021-01-31",
             "--eval-end",
@@ -59,6 +61,7 @@ def test_vbt_blend_runs_the_sleeves_on_the_engine_and_stamps_the_run(monkeypatch
         "2022-07-31",
         market="equity",
         base_config=dict(h.BASE),
+        source="snapshot",
     )
     assert result.run_id == "run-vbt"
     assert set(result.sleeve_equity) == {"ensemble@sp500", "cross_asset_sleeve@cross_asset_sleeve"}

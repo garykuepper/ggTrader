@@ -128,7 +128,9 @@ def load_run_inputs(spec: dict[str, Any], membership: MembershipSource) -> dict[
     data_start = str((es - pd.Timedelta(days=warmup_days)).date())
     end_bar = legacy_exclusive_end(spec["end"])
     if spec["universe"] == "cross_asset":
-        bars = load_bars(list(SLEEVE_UNIVERSE) + ["SPY"], start=data_start, end=end_bar)
+        bars = load_bars(
+            list(SLEEVE_UNIVERSE) + ["SPY"], start=data_start, end=end_bar, source="snapshot"
+        )
     else:
         bars = load_bars(
             universe=spec["universe"],
@@ -137,6 +139,7 @@ def load_run_inputs(spec: dict[str, Any], membership: MembershipSource) -> dict[
             start=data_start,
             end=end_bar,
             membership=membership,
+            source="snapshot",
         )
     spy_close = bars.close["SPY"].dropna()
     keep = (

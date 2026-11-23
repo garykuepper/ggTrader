@@ -87,7 +87,7 @@ def measure(budget_gib: float) -> dict[str, Any]:
         extra_symbols=EXTRA_SYMBOLS,
         start=BAR_WINDOW[0],
         end=BAR_WINDOW[1],
-    )
+     source="snapshot")
     out = Ensemble().build(bars)
     mask = pit_mask(bars.close, min_history_bars=400, on_stale="ignore")
     columns = out.entries.columns

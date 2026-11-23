@@ -203,3 +203,25 @@ def test_lab_wfo_with_no_valid_folds_prints_and_returns_the_message(monkeypatch,
     out = run_lab(["--strategy", "ensemble", "--wfo", "--eval-end", "2021-06-30"])
     assert out == _NO_FOLDS
     assert capsys.readouterr().out.splitlines()[-1] == _NO_FOLDS
+
+
+def test_cli_source_flag_parses():
+    from ggTrader.lab.cli import build_arg_parser
+
+    parser = build_arg_parser()
+    assert parser.parse_args(["--wfo"]).source is None
+    for source in ("db", "snapshot"):
+        assert parser.parse_args(["--wfo", "--source", source]).source == source
+
+
+def test_cli_conflicting_source_and_snapshot_is_error(monkeypatch):
+    from ggTrader.data.bars import resolve_source
+    from ggTrader.lab import cli
+    from ggTrader.lab.wfo import cli_support
+
+    monkeypatch.setattr(cli, "source_from_args", lambda args: object())
+    monkeypatch.setattr(
+        cli_support, "run_vbt_wfo", lambda *a, **kw: resolve_source(kw["source"], kw["snapshot"])
+    )
+    with pytest.raises(ValueError, match="source.*snapshot_path"):
+        cli.run_lab(["--wfo", "--strategy", "ensemble", "--source", "db", "--snapshot", "x"])

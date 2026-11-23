@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
         start=BAR_WINDOW[0],
         end=BAR_WINDOW[1],
         membership=membership,
+        source="snapshot",
     )
     frame = bars.legacy_frame()
     symbols_of = frame.columns.get_level_values(0)

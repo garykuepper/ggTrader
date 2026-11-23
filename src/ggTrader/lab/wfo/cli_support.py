@@ -30,7 +30,7 @@ def load_run_bars(
     eval_start: pd.Timestamp,
     eval_end: pd.Timestamp,
     snapshot: str | None = None,
-    source: str = "snapshot",
+    source: str | None = None,
     *,
     membership: MembershipSource | None = None,
 ) -> Bars:
@@ -94,6 +94,7 @@ def run_vbt_wfo(
     base_config: dict[str, Any],
     overrides: dict[str, list] | None = None,
     snapshot: str | None = None,
+    source: str | None = None,
     result_json: str | None = None,
     membership: MembershipSource | None = None,
 ) -> WfoResult | str:
@@ -110,7 +111,9 @@ def run_vbt_wfo(
         raise SystemExit(str(exc)) from exc
     cls = type(instance)
     membership = resolve_source(membership)
-    bars = load_run_bars([universe], cfg, eval_start, eval_end, snapshot, membership=membership)
+    bars = load_run_bars(
+        [universe], cfg, eval_start, eval_end, snapshot, source=source, membership=membership
+    )
     spy_close = bars.close["SPY"].dropna()
     sleeve, mask = sleeve_inputs(bars, universe, cfg, eval_start, eval_end, membership=membership)
     grid = cls.grid.override(overrides) if overrides else cls.grid

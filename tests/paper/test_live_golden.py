@@ -52,6 +52,7 @@ def tape_frame() -> pd.DataFrame:
         start=BAR_WINDOW[0],
         end=BAR_WINDOW[1],
         membership=SOURCE,
+        source="snapshot",
     )
     return bars.legacy_frame()
 
