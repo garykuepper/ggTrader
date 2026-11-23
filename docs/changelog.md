@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-23 (Kaggle import version one loaded)
+
+- Loaded CRSP and McGill and published a combined CRSP + Yahoo release so research can include stocks that later died. Load 1 has 68,879,302 CRSP daily rows, zero quarantined, 25,754 stocks, 1968-01-02 through 2024-12-31; load 2 has 273,373 McGill-FIAM rows, 3,349 stocks, 166 columns, 2000-01-31 through 2023-12-29; load 3 has 68,879,302 derived bars. McGill is read only by the symbol map and closing check 3.
+- Published release 1 has 916 linked Yahoo, 495 Yahoo-only, 24,838 placeholder and 3,034 spell columns; 72 links were demoted. Of the 25,754 CRSP stocks, 21,950 stop before the file ends. `load_bars(source="combined", release_id=None)` selects the newest published release; `ggt lab --source combined --release-id N --dead-stock-loss FLOAT` selects the release and loss fraction. The lab forces a sale at the last bar and blocks later orders; selling at the last price is optimistic about recovery. A window past 2024-12-31 is refused when a loaded column ends on that date.
+- The database grew from 14 GB to 17 GB; compressed CRSP daily is 1.9 GB and derived bars 0.9 GB, with about 150 GB free. The Yahoo tape remained unchanged: 5,777,834 daily rows, 1,443 symbols, 2000-01-03 through 2026-11-05; 13 of 13 batches matched main's own reader using SHA-256 over all five fields. All eight live data checks passed. Combined reads have a fixed cost of about 3–5 seconds; 916 stocks over all history took about two minutes and 1.8 GB.
+- Known limits: check 4 can accept CRSP rows in a demoted Yahoo-only column; check 5 compares most named stocks against the release's own records and permits missing optional names; checks 9–13 are covered by separately run tests, not run by the checker. The CRSP-end refusal uses each column's last valid bar date. The link manifest's Yahoo fingerprint is not rechecked at release build, and Yahoo symbols without an end-of-life record get no forced exit. A manually committed building release can still be published by a later direct database update. Yahoo rows inside the release horizon remain mutable; drift can prevent exact replay. See `docs/kaggle_import_runbook.md`.
+
 ## 2026-11-22 (Kaggle import infrastructure)
 
 - Added import schemas and resumable CRSP and McGill loaders with hash, backup and disk-space checks, plus pilot and restore-drill scripts. These provide traceable loads and a way to measure storage and verify backup recovery before a live import. Code has been tested on scratch databases; nothing has been loaded into the live database.

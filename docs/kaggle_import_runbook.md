@@ -1,6 +1,6 @@
 # Kaggle import runbook
 
-The import is code only and has been tested on scratch databases. Nothing has been loaded into the live database. The live database volume is treated as unbacked-up until the owner confirms otherwise. Do not load it without the owner gates below.
+**Live status (2026-11-23): loaded.** CRSP daily is load 1, McGill-FIAM load 2, and derived CRSP bars load 3; release 1 is published. The live steps were: take the pre-load baseline with main’s code, apply the schemas, load and compress CRSP, load McGill, derive and compress bars, build the release, then run the closing checks against that baseline. All eight data checks passed. If a release is wrong, use the withdrawal command in step 8 and investigate before publishing a replacement. The live database volume is treated as unbacked-up until the owner confirms otherwise. The gates below apply before further writes.
 
 Before the first load, save the closing checks' baseline on the target with the original code.
 After the load, supply it with `--compare-baseline PATH` and describe its origin with

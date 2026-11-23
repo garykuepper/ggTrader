@@ -139,10 +139,10 @@ src/ggTrader/
 ## Research data layer and point-in-time universe (vectorbt engine rebuild, P3)
 
 Research reads daily bars only through `ggTrader.data.bars.load_bars()`. It is read-only and
-never touches the network: the default source is the frozen Parquet tape in `data/snapshots/`,
-which `ggTrader.data.snapshot` verifies against `MANIFEST.json` (sha256, row count, date range)
-and refuses to use on any mismatch; the `db` source opens a server-enforced read-only session
-(`default_transaction_read_only=on`) and runs one SELECT. It returns per-field frames
+never touches the network: the default `db` source reads Yahoo daily bars in a server-enforced
+read-only session (`default_transaction_read_only=on`). The optional snapshot source reads the
+frozen Parquet tape in `data/snapshots/`; `ggTrader.data.snapshot` verifies it against
+`MANIFEST.json` (sha256, row count, date range) and refuses any mismatch. It returns per-field frames
 (`close`, `open`, `high`, `low`, `volume`: dates x symbols, UTC-midnight index), the requested
 symbols that have no bars (`missing_symbols`) and each symbol's last valid bar. Duplicate rows,
 non-midnight stamps and weekend stamps raise `BarsValidationError`; this assertion replaces the
@@ -159,7 +159,7 @@ The mask builder warns (policy `on_stale`) when the constituent list looks stale
 
 ---
 
-The optional combined source reads a published CRSP + Yahoo release, including stocks that later stopped trading. The lab applies the dead-stock rule in `lab/dead_stocks.py` and `lab/wfo/`: it sells an ended series on its last bar and blocks later orders. A total loss uses a simulation price of one billionth of the last price because the simulator rejects zero; recovery is therefore nearly zero. The rule is applied only in `run_wfo`; a driver calling `simulate_signal_out` or the engine directly with combined bars must apply `forced_exit_frames` itself.
+The optional combined source reads a published CRSP + Yahoo release, including stocks that later stopped trading; release 1 was published on 2026-11-23 and the default is the newest published release. A combined read takes about 3–5 seconds of fixed cost; 916 stocks over all history took about two minutes and 1.8 GB. Runs extending beyond the CRSP file end, 2024-12-31, are refused when a loaded column ends on that date. The lab applies the dead-stock rule in `lab/dead_stocks.py` and `lab/wfo/`: it sells an ended series on its last bar and blocks later orders. The default sale at the last price is optimistic about what holders recover. A total loss uses a simulation price of one billionth of the last price because the simulator rejects zero; recovery is therefore nearly zero. The rule is applied only in `run_wfo`; a driver calling `simulate_signal_out` or the engine directly with combined bars must apply `forced_exit_frames` itself.
 
 Intraday stops are rejected for combined bars: the loss adjustment changes closing prices, and precedence between a terminal loss and an intraday stop has not been defined.
 
