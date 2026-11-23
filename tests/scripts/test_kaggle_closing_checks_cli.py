@@ -380,3 +380,34 @@ def test_yahoo_comparison_handles_crsp_additions_and_rejects_bad_rows(monkeypatc
         assert measured["invalid_crsp_rows"] == 1
     if problem == "missing_source":
         assert measured["invalid_source_rows"] == 1
+
+
+def test_nested_plans_accept_quoted_timestamps_and_compressed_time_bounds(tmp_path):
+    import json
+
+    from scripts.kaggle_closing_checks import nested_plan_evidence
+
+    yahoo_symbol = (
+        "Index Cond: ((symbol = q.symbol) AND (symbol = ANY ('{SMCI,VC,AAPL,TTWO}'::text[])) "
+        "AND (\"interval\" = '1d'::text))"
+    )
+    quoted = (
+        "Vectorized Filter: ((\"timestamp\" < '2026-11-06 00:00:00'::timestamp without time zone) "
+        "AND (\"timestamp\" >= '2015-01-01 00:00:00'::timestamp without time zone))"
+    )
+    compressed = (
+        "Index Cond: ((load_id = l.load_id) AND (permno = s.permno) "
+        "AND (_ts_meta_min_1 <= '1991-12-31'::date) "
+        "AND (_ts_meta_max_1 >= '1990-01-01'::date))"
+    )
+    crsp_symbol = "Index Cond: ((release_id = '2'::bigint) AND (symbol = q.symbol))"
+    path = tmp_path / "plans.json"
+    for yahoo in (quoted, compressed):
+        path.write_text(
+            json.dumps(
+                {"yahoo": yahoo_symbol + "\n" + yahoo, "crsp": crsp_symbol + "\n" + compressed}
+            )
+        )
+        assert nested_plan_evidence(path)["status"] == "pass"
+    path.write_text(json.dumps({"yahoo": yahoo_symbol, "crsp": crsp_symbol + "\n" + compressed}))
+    assert nested_plan_evidence(path)["status"] == "fail"

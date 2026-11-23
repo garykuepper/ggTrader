@@ -760,7 +760,11 @@ def nested_plan_evidence(path: Path | None) -> dict:
             and re.search(
                 r"(?i)(?:filter|cond)[^\n]*\bsymbol\b[^\n]*(?:=|\bany\b|\bin\b)", plans[name]
             )
-            and re.search(r"(?i)\b(?:timestamp|date)\b\s*(?:>=|<=|>|<|=|\bbetween\b)", plans[name])
+            and re.search(
+                r'(?i)(?<![a-z0-9_])"?(?:timestamp|date|_ts_meta_(?:min|max)_1)"?\s*'
+                r"(?:>=|<=|>|<|=|\bbetween\b)",
+                plans[name],
+            )
             for name in ("yahoo", "crsp")
         )
     except (OSError, ValueError, AttributeError, TypeError):
