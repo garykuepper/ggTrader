@@ -309,3 +309,75 @@ def test_combined_helper_rejects_incomplete_reference(conn):
     with pytest.raises(psycopg2.Error, match="release .* is unavailable"), db.cursor() as cur:
         cur.execute("SELECT * FROM market._combined_linked(%s, ARRAY['TTWO'])", (rid,))
     db.rollback()
+
+
+def test_zero_yahoo_anchor_demotes_link_at_build_not_at_read(conn):
+    from ggTrader.data.kaggle_import.reader import read_combined
+
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE public.ohlcv SET close=0 WHERE symbol='TTWO' AND timestamp='2000-01-02'"
+        )
+    db.commit()
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT symbol, kind, possible_double FROM market.stock_spans "
+            "WHERE release_id=%s AND symbol IN ('TTWO','PERMNO-1') ORDER BY symbol",
+            (rid,),
+        )
+        assert cur.fetchall() == [("PERMNO-1", "placeholder", True), ("TTWO", "yahoo", True)]
+        cur.execute(
+            "SELECT settings->'demoted_links' FROM ref.releases WHERE release_id=%s", (rid,)
+        )
+        assert cur.fetchone()[0][0]["symbol"] == "TTWO"
+    assert read_combined(db, rid, ["TTWO"], None, None).close.tolist() == [0, 11, 12]
+
+
+def test_null_crsp_close_on_common_day_demotes_link(conn):
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE market.daily_bars SET close=NULL WHERE load_id=%s AND permno=1 "
+            "AND date='2000-01-02'",
+            (load,),
+        )
+    db.commit()
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT kind,possible_double FROM market.stock_spans "
+            "WHERE release_id=%s AND symbol='TTWO'",
+            (rid,),
+        )
+        assert cur.fetchone() == ("yahoo", True)
+        cur.execute(
+            "SELECT settings->'demoted_links' FROM ref.releases WHERE release_id=%s", (rid,)
+        )
+        assert cur.fetchone()[0][0]["reason"]
+
+
+def test_first_candidate_day_skipped_when_zero_then_next_day_used(conn):
+    db, load = conn
+    with db.cursor() as cur:
+        cur.execute(
+            "UPDATE market.daily_bars SET close=0 WHERE load_id=%s AND permno=1 "
+            "AND date='2000-01-02'",
+            (load,),
+        )
+        cur.execute(
+            "INSERT INTO market.daily_bars(load_id,permno,spell,date,close) "
+            "VALUES (%s,1,1,'2000-01-03',3)",
+            (load,),
+        )
+    db.commit()
+    links, settings = _inputs()
+    rid = build_release(db, crsp_bars_load=load, mcgill_load=None, links=links, settings=settings)
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT common_day FROM ref.splice_links WHERE release_id=%s AND symbol='TTWO'", (rid,)
+        )
+        assert cur.fetchone()[0] == date(2000, 1, 3)

@@ -28,7 +28,7 @@ def _native(value: Any) -> Any:
     return value
 
 
-def build_release(  # noqa: PLR0912, PLR0915 — publication is one atomic operation
+def build_release(  # noqa: C901, PLR0912, PLR0915 — publication is one atomic operation
     conn: connection,
     *,
     crsp_bars_load: int,
@@ -107,7 +107,7 @@ def build_release(  # noqa: PLR0912, PLR0915 — publication is one atomic opera
                 cur.execute(
                     """WITH candidates AS (SELECT * FROM
                     unnest(%s::text[],%s::bigint[]) AS c(symbol,permno)),
-                    y AS (SELECT o.symbol,o.timestamp::date AS day,
+                    y AS (SELECT o.symbol,o.timestamp::date AS day,o.close,
                     row_number() OVER (PARTITION BY o.symbol ORDER BY
                     o.timestamp) n
                           FROM public.ohlcv o JOIN candidates c ON
@@ -116,10 +116,27 @@ def build_release(  # noqa: PLR0912, PLR0915 — publication is one atomic opera
                     SELECT DISTINCT ON (y.symbol) y.symbol,y.day,b.spell
                     FROM y JOIN candidates c USING(symbol)
                     JOIN market.daily_bars b ON b.load_id=%s AND b.permno=c.permno AND b.date=y.day
-                    WHERE y.n<=5 ORDER BY y.symbol,y.day""",
+                    WHERE y.n<=5 AND y.close > 0 AND b.close > 0
+                    ORDER BY y.symbol,y.day""",
                     ([p[0] for p in pairs], [p[1] for p in pairs], crsp_bars_load),
                 )
                 common = cur.fetchall()
+            matched = {row[0] for row in common}
+            demoted = [
+                {
+                    "symbol": symbol,
+                    "reason": "no positive Yahoo and CRSP close on a common day "
+                    "among the first five Yahoo days",
+                }
+                for symbol, _ in pairs
+                if symbol not in matched
+            ]
+            if demoted:
+                links = links.copy()
+                links.loc[links.symbol.isin({item["symbol"] for item in demoted}), "status"] = (
+                    "unlinked"
+                )
+                pairs = [(symbol, permno) for symbol, permno in pairs if symbol in matched]
             yahoo = links.merge(facts, on="symbol", validate="one_to_one").merge(
                 pd.DataFrame(common, columns=["symbol", "common_day", "common_spell"]),
                 on="symbol",
@@ -161,6 +178,7 @@ def build_release(  # noqa: PLR0912, PLR0915 — publication is one atomic opera
                 max_gap=10,
                 derive_parser_version=versions["crsp-derived-bars"],
                 crsp_parser_version=crsp_version,
+                demoted_links=demoted,
             )
             fingerprint_data = dict(
                 sha256=fingerprint,
