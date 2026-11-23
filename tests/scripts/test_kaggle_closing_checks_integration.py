@@ -6,6 +6,7 @@ from urllib.parse import urlparse, urlunparse
 import psycopg2
 import pytest
 
+from ggTrader.data.kaggle_import.guards import checked_pg_url
 from scripts.kaggle_closing_checks import connect_target, run_checks
 from tests.data.kaggle_import.test_release import _inputs
 from tests.data.kaggle_import.test_release import conn as db_fixture
@@ -49,7 +50,7 @@ def test_read_only_and_report(conn, tmp_path, monkeypatch):
                 (rid, f"PERMNO-{number}", number),
             )
     db.commit()
-    original = urlparse(os.environ["GGT_TEST_DB_URL"])
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     readonly = connect_target(url)
     try:
@@ -240,7 +241,7 @@ def test_yahoo_key_comparison_detects_changed_combined_value(conn, monkeypatch):
     with db.cursor() as cur:
         cur.execute("DELETE FROM public.ohlcv WHERE timestamp='2000-01-02'")
     db.commit()
-    original = urlparse(os.environ["GGT_TEST_DB_URL"])
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     # Use an ordinary Yahoo-only name so no splice anchor is required.
     with db.cursor() as cur:
@@ -292,7 +293,7 @@ def test_named_audit_finds_unflagged_duplicate(conn):
             (rid,),
         )
     db.commit()
-    original = urlparse(os.environ["GGT_TEST_DB_URL"])
+    original = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(original._replace(path="/" + db.info.dbname))
     status, measured, _ = _check_named_stocks(db, url, rid)
     assert status == "fail" and measured["unflagged_duplicate_days"] >= 1
@@ -371,7 +372,7 @@ def healthy_release(conn, tmp_path, monkeypatch):
     rid = build_release(
         db, crsp_bars_load=derived, mcgill_load=mcgill, links=links, settings=settings
     )
-    source = urlparse(os.environ["GGT_TEST_DB_URL"])
+    source = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     url = urlunparse(source._replace(path="/" + db.info.dbname))
     monkeypatch.setenv("HEALTHY_SCRATCH_URL", url)
     return db, rid, url

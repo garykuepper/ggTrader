@@ -16,7 +16,11 @@ from urllib.parse import urlparse, urlunparse
 import psycopg2
 from psycopg2 import sql
 
-from ggTrader.data.kaggle_import.guards import verify_sha256
+from ggTrader.data.kaggle_import.guards import (
+    assert_connected_database,
+    checked_pg_url,
+    verify_sha256,
+)
 
 BACKUP = Path("/media/thesix/ggTrader-data/ggtraderdb-backup-20261122")
 TABLES = (
@@ -64,9 +68,7 @@ def restore_command(name: str) -> list[str]:
 
 def run(args: argparse.Namespace, report: dict) -> None:
     """Verify the dump, restore and check it, and clean up even after failure."""
-    parts = urlparse(args.scratch_url)
-    if parts.scheme not in ("postgres", "postgresql") or parts.query or parts.fragment:
-        raise ValueError("Scratch URL must be a PostgreSQL URL without query parameters")
+    checked_pg_url(args.scratch_url)
     verify_sha256(args.dump, args.sums)
     expected = parse_expected(args.expected)
     name = "ggt_restore_drill_" + uuid.uuid4().hex[:8]
@@ -79,8 +81,11 @@ def run(args: argparse.Namespace, report: dict) -> None:
         created = True
         report["database"] = name
         target = urlunparse(urlparse(args.scratch_url)._replace(path="/" + name))
+        checked_pg_url(target, expect_db=name)
         conn = psycopg2.connect(target)
         try:
+            assert_connected_database(conn, name)
+            conn.rollback()
             conn.autocommit = True
             with conn.cursor() as cur:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")

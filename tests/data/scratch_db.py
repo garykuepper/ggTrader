@@ -16,6 +16,7 @@ from urllib.parse import urlparse, urlunparse
 import psycopg2
 import pytest
 
+from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
 from ggTrader.data.universe_db import apply_ddl, connect, to_psycopg_url
 from ggTrader.utils.config import get_db_connection_string
 
@@ -28,7 +29,7 @@ def server_url() -> str:
     url = os.environ.get("GGT_TEST_DB_URL")
     if not url:
         pytest.skip("GGT_TEST_DB_URL is not set")
-    url = to_psycopg_url(url)
+    url = checked_pg_url(to_psycopg_url(url))
     try:
         production = to_psycopg_url(get_db_connection_string())
     except ValueError:
@@ -57,10 +58,11 @@ def scratch_database() -> Iterator[str]:
         cur.execute("SELECT rolname FROM pg_roles WHERE rolname = ANY(%s)", (list(ROLES),))
         roles_before = {row[0] for row in cur.fetchall()}
         cur.execute(f'CREATE DATABASE "{name}"')
-    scratch = urlunparse(urlparse(server)._replace(path=f"/{name}"))
+    scratch = checked_pg_url(urlunparse(urlparse(server)._replace(path=f"/{name}")), expect_db=name)
     try:
         conn = connect(scratch)
         try:
+            assert_connected_database(conn, name)
             apply_ddl(conn)
         finally:
             conn.close()

@@ -20,6 +20,7 @@ from psycopg2 import sql
 
 from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks, load_crsp
 from ggTrader.data.kaggle_import.ddl import apply_ddl
+from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
 
 DATA = Path("/media/thesix/ggTrader-data/market-data/crsp-kaggle")
 MARGIN = 40 * 1024**3
@@ -95,6 +96,7 @@ def measure(conn, started: float) -> dict:
 
 def run(args: argparse.Namespace) -> dict:
     """Run the four measurements and always remove the disposable database."""
+    checked_pg_url(args.scratch_url)
     counts = rows_by_year(args.file)
     year = args.year if args.year is not None else max(counts, key=counts.get)
     if year not in counts:
@@ -109,8 +111,10 @@ def run(args: argparse.Namespace) -> dict:
             cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(name)))
         created = True
         target = urlunparse(urlparse(args.scratch_url)._replace(path="/" + name))
+        checked_pg_url(target, expect_db=name)
         conn = psycopg2.connect(target)
         try:
+            assert_connected_database(conn, name)
             apply_ddl(conn)
             steps = {}
             for label, action in (

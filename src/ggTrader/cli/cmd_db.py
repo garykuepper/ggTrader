@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from sqlalchemy import text
 
@@ -104,13 +104,17 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
 
 
 def resolve_import_url(args: argparse.Namespace) -> str:
-    """Resolve the explicitly selected import target."""
+    """Resolve and validate the explicitly selected import target."""
+    from ggTrader.data.kaggle_import.guards import checked_pg_url
+
     if args.use_configured_db:
-        return get_db_connection_string()
-    value = os.environ.get(args.db_url_env)
-    if not value:
-        sys.exit(f"Environment variable {args.db_url_env} is unset or empty")
-    return value
+        value = get_db_connection_string()
+    else:
+        value = os.environ.get(args.db_url_env)
+        if not value:
+            sys.exit(f"Environment variable {args.db_url_env} is unset or empty")
+    value = value.replace("postgresql+psycopg2://", "postgresql://", 1)
+    return checked_pg_url(value)
 
 
 def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 — existing command dispatcher
@@ -174,6 +178,16 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 �
         except Exception:  # noqa: BLE001 — connection errors can contain credentials
             sys.exit("Database connection failed")
         try:
+            from ggTrader.data.kaggle_import.guards import assert_connected_database
+
+            expected_db = unquote(urlparse(url).path.lstrip("/"))
+            connected_db = assert_connected_database(conn, expected_db)
+            if (
+                args.import_command in ("crsp", "mcgill", "derive-bars")
+                and args.no_backup_check
+                and connected_db == "ggtrader"
+            ):
+                sys.exit("Backup check cannot be disabled for ggtrader")
             if args.import_command == "release":
                 _run_release_import(conn, args)
             elif args.import_command == "apply-ddl":

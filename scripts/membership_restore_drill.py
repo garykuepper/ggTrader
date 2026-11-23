@@ -31,6 +31,7 @@ from urllib.parse import unquote, urlparse, urlunparse
 
 import psycopg2
 
+from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
 from ggTrader.data.membership import redact
 from ggTrader.data.membership_export import EXPORT_DIR, export_universe
 from ggTrader.data.universe_db import connect, loader_url, verify_vintage
@@ -42,7 +43,8 @@ SCRATCH_PREFIX = "ggt_restore_drill_"
 
 def scratch_url(url: str, name: str) -> str:
     """The same server and login as ``url`` but database ``name``."""
-    return urlunparse(urlparse(url)._replace(path=f"/{name}"))
+    checked_pg_url(url)
+    return checked_pg_url(urlunparse(urlparse(url)._replace(path=f"/{name}")), expect_db=name)
 
 
 def restore_command(url: str, dump: Path) -> tuple[list[str], dict[str, str]]:
@@ -112,7 +114,7 @@ def guard_travelled(conn: psycopg2.extensions.connection) -> bool:
 
 def drill(dump: Path | None, out_dir: Path, keep: bool) -> dict:
     """Run the drill and return the report (``report['ok']`` is the overall verdict)."""
-    source_url = loader_url()
+    source_url = checked_pg_url(loader_url().replace("postgresql+psycopg2://", "postgresql://", 1))
     report: dict = {"steps": [], "ok": False}
 
     def step(name: str, ok: bool, detail: str) -> bool:
@@ -142,6 +144,8 @@ def drill(dump: Path | None, out_dir: Path, keep: bool) -> dict:
     target = scratch_url(source_url, name)
     try:
         bare = psycopg2.connect(target)
+        assert_connected_database(bare, name)
+        bare.rollback()
         bare.autocommit = True
         with bare.cursor() as cur:
             cur.execute("CREATE EXTENSION btree_gist")

@@ -66,13 +66,15 @@ def test_target_resolution_and_dry_run(monkeypatch, capsys):
     monkeypatch.delenv("TEST_IMPORT_URL", raising=False)
     with pytest.raises(SystemExit, match="TEST_IMPORT_URL"):
         cmd_db.resolve_import_url(args)
-    monkeypatch.setenv("TEST_IMPORT_URL", "secret-value")
-    assert cmd_db.resolve_import_url(args) == "secret-value"
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    assert cmd_db.resolve_import_url(args) == "postgresql://localhost/scratch"
     run_db(args)
     assert "Would apply" in capsys.readouterr().out
-    monkeypatch.setattr(cmd_db, "get_db_connection_string", lambda: "configured")
+    monkeypatch.setattr(
+        cmd_db, "get_db_connection_string", lambda: "postgresql://localhost/configured"
+    )
     args = parser.parse_args(base + ["--use-configured-db"])
-    assert cmd_db.resolve_import_url(args) == "configured"
+    assert cmd_db.resolve_import_url(args) == "postgresql://localhost/configured"
 
 
 def test_release_cli_parsing_and_requires_confirmation(monkeypatch, capsys):

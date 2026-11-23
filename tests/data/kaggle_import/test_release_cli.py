@@ -7,6 +7,7 @@ from urllib.parse import urlparse, urlunparse
 import pytest
 
 from ggTrader.cli.cmd_db import register_db_parser, run_db
+from ggTrader.data.kaggle_import.guards import checked_pg_url
 from tests.data.kaggle_import.test_release import _inputs
 from tests.data.kaggle_import.test_release import conn as db_fixture
 
@@ -16,7 +17,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.db]
 
 def test_build_list_withdraw(conn, monkeypatch, tmp_path, capsys):
     db, load = conn
-    url = urlparse(os.environ["GGT_TEST_DB_URL"])
+    url = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     monkeypatch.setenv("RELEASE_TEST_URL", urlunparse(url._replace(path="/" + db.info.dbname)))
     links, _ = _inputs()
     path = tmp_path / "links.csv"

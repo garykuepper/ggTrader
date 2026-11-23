@@ -4,6 +4,57 @@ import hashlib
 import shutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qsl, unquote, urlsplit
+
+_REDIRECT_KEYS = frozenset(
+    {
+        "dbname",
+        "database",
+        "host",
+        "hostaddr",
+        "port",
+        "user",
+        "service",
+        "options",
+        "target_session_attrs",
+    }
+)
+
+
+def checked_pg_url(url: str, *, expect_db: str | None = None) -> str:
+    """Reject connection URLs whose options could redirect a named database target."""
+    if not isinstance(url, str) or any(ch.isspace() or ord(ch) < 32 for ch in url) or "#" in url:
+        raise ValueError("Invalid PostgreSQL connection target")
+    try:
+        parts = urlsplit(url)
+        database = unquote(parts.path.removeprefix("/"))
+        options = parse_qsl(parts.query, keep_blank_values=True)
+        _ = parts.port
+    except (TypeError, ValueError):
+        raise ValueError("Invalid PostgreSQL connection target") from None
+    if (
+        parts.scheme not in ("postgresql", "postgres")
+        or not parts.path.startswith("/")
+        or not database
+        or "/" in database
+        or "\x00" in database
+        or any(key.lower() in _REDIRECT_KEYS for key, _ in options)
+    ):
+        raise ValueError("Invalid or redirecting PostgreSQL connection target")
+    if expect_db is not None and database != expect_db:
+        raise ValueError("PostgreSQL database target does not match the expected database")
+    return url
+
+
+def assert_connected_database(conn: Any, expected: str) -> str:
+    """Refuse to proceed unless the server confirms the expected database."""
+    with conn.cursor() as cur:
+        cur.execute("select current_database()")
+        row = cur.fetchone()
+    if row is None or row[0] != expected:
+        raise ValueError("Connected database does not match the expected database")
+    return str(row[0])
 
 
 class HashMismatch(Exception):

@@ -7,12 +7,19 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from ggTrader.data.bars import connect_readonly
+from ggTrader.data.kaggle_import.guards import checked_pg_url
 
 
 def yahoo_data(url: str, start: pd.Timestamp, end: pd.Timestamp) -> tuple:
     """Read Yahoo prices and whole-history lifetimes in a read-only session."""
+    from urllib.parse import unquote, urlsplit
+
+    from ggTrader.data.kaggle_import.guards import assert_connected_database
+
+    url = checked_pg_url(url.replace("postgresql+psycopg2://", "postgresql://", 1))
     conn = connect_readonly(url)
     try:
+        assert_connected_database(conn, unquote(urlsplit(url).path.lstrip("/")))
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT symbol, timestamp, close FROM ohlcv WHERE venue = 'yfinance' "

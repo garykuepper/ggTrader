@@ -3,6 +3,7 @@
 import pytest
 
 from ggTrader.data.bars import load_bars
+from ggTrader.data.kaggle_import.guards import checked_pg_url
 from tests.data.kaggle_import.test_release import _inputs
 from tests.data.kaggle_import.test_release import conn as db_fixture
 
@@ -54,7 +55,7 @@ def published(conn, monkeypatch):
     from urllib.parse import urlparse, urlunparse
 
     original = module.connect_readonly
-    url = urlparse(os.environ["GGT_TEST_DB_URL"])
+    url = urlparse(checked_pg_url(os.environ["GGT_TEST_DB_URL"]))
     scratch = urlunparse(url._replace(path="/" + db.info.dbname))
     monkeypatch.setattr(module, "connect_readonly", lambda: original(scratch))
     return db, load, rid

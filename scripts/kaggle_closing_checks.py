@@ -103,9 +103,19 @@ def initial_checks() -> list[dict]:
 
 def connect_target(url: str):
     """Open the same server-enforced read-only connection used by the data layer."""
-    from ggTrader.data.bars import connect_readonly
+    from urllib.parse import unquote, urlsplit
 
-    return connect_readonly(url)
+    from ggTrader.data.bars import connect_readonly
+    from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
+
+    url = checked_pg_url(url.replace("postgresql+psycopg2://", "postgresql://", 1))
+    conn = connect_readonly(url)
+    try:
+        assert_connected_database(conn, unquote(urlsplit(url).path.lstrip("/")))
+        return conn
+    except Exception:
+        conn.close()
+        raise
 
 
 def _symbols(conn, release_id: int) -> list[str]:
@@ -122,7 +132,22 @@ def _load(url: str, names: list[str], source: str, release_id: int | None = None
 
     # Every connection made by load_bars receives the explicit target, without changing config.
     original = bars.connect_readonly
-    with patch.object(bars, "connect_readonly", lambda: original(url)):
+    from urllib.parse import unquote, urlsplit
+
+    from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
+
+    url = checked_pg_url(url.replace("postgresql+psycopg2://", "postgresql://", 1))
+
+    def checked_connection():
+        conn = original(url)
+        try:
+            assert_connected_database(conn, unquote(urlsplit(url).path.lstrip("/")))
+            return conn
+        except Exception:
+            conn.close()
+            raise
+
+    with patch.object(bars, "connect_readonly", checked_connection):
         return bars.load_bars(names, start=start, source=source, release_id=release_id)
 
 

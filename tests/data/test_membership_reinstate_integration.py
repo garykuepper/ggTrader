@@ -237,8 +237,14 @@ def test_export_dumps_the_schema_and_it_restores_into_a_bare_database(db_url, tm
     with admin.cursor() as cur:
         cur.execute(f'CREATE DATABASE "{name}"')
     try:
-        target = urlunparse(urlparse(server)._replace(path=f"/{name}"))
+        from ggTrader.data.kaggle_import.guards import assert_connected_database, checked_pg_url
+
+        target = checked_pg_url(
+            urlunparse(urlparse(server)._replace(path=f"/{name}")), expect_db=name
+        )
         bare = psycopg2.connect(target)
+        assert_connected_database(bare, name)
+        bare.rollback()
         bare.autocommit = True
         with bare.cursor() as cur:
             cur.execute("CREATE EXTENSION btree_gist")  # the dump does not carry the extension
