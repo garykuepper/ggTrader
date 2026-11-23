@@ -36,8 +36,9 @@ for the reasons in S6 section 3 (tz-ambiguous stamps, serial fetch, crash on del
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from hashlib import sha256
 from typing import Any
 
 import numpy as np
@@ -344,6 +345,8 @@ def load_bars(
             frame.columns.name = "symbol"
             frames[name] = frame
 
+    provenance.update({"bars_sha256": bars_sha256(frames)} if source == "db" else {})
+
     loaded = set(frames["close"].columns)
     missing = tuple(s for s in requested if s not in loaded)
     last_valid = _last_valid_bar(frames["close"])
@@ -354,6 +357,29 @@ def load_bars(
         provenance=provenance,
         **frames,
     )
+
+
+def bars_sha256(bars_frames: Mapping[str, pd.DataFrame]) -> str:
+    """Fingerprint the ordered fields, dates, symbols and float values of a bars result."""
+    digest = sha256()
+    for name in BAR_FIELDS:
+        frame = bars_frames[name].sort_index(axis=1)
+        digest.update(name.encode("utf-8"))
+        for labels in (frame.index, frame.columns):
+            digest.update(len(labels).to_bytes(8, "big"))
+            digest.update(
+                pd.util.hash_pandas_object(labels, index=False).to_numpy(dtype="<u8").tobytes()
+            )
+        values = frame.to_numpy(dtype="<f8", copy=True)
+        values[np.isnan(values)] = np.nan
+        digest.update(values.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def tape_sha256_of(bars: Bars) -> str | None:
+    """Use the snapshot fingerprint when available, otherwise the database bars hash."""
+    metadata = bars.provenance or {}
+    return (metadata.get("snapshot") or {}).get("sha256") or metadata.get("bars_sha256")
 
 
 def _last_valid_bar(close: pd.DataFrame) -> pd.Series:

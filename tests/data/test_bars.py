@@ -543,3 +543,59 @@ def test_unknown_source_still_raises() -> None:
 )
 def test_resolve_source_table(source, path, expected) -> None:
     assert bars_mod.resolve_source(source, path) == expected
+
+
+def _hash_frames():
+    from ggTrader.data.bars import BAR_FIELDS
+
+    frame = pd.DataFrame(
+        {"BBB": [1.0, float("nan")], "AAA": [2.0, 3.0]},
+        index=pd.date_range("2024-01-01", periods=2),
+    )
+    return {name: frame.copy() for name in BAR_FIELDS}
+
+
+def test_bars_sha256_is_stable_and_order_independent():
+    from ggTrader.data.bars import bars_sha256
+
+    frames = _hash_frames()
+    shuffled = {name: frame[["AAA", "BBB"]] for name, frame in frames.items()}
+    assert bars_sha256(frames) == bars_sha256(shuffled) == bars_sha256(frames)
+
+
+def test_bars_sha256_changes_with_one_value():
+    from ggTrader.data.bars import bars_sha256
+
+    frames = _hash_frames()
+    original = bars_sha256(frames)
+    frames["open"].iloc[0, 0] += 1
+    assert bars_sha256(frames) != original
+
+
+def test_empty_bars_hash_does_not_raise():
+    from ggTrader.data.bars import BAR_FIELDS, bars_sha256
+
+    assert len(bars_sha256({name: pd.DataFrame() for name in BAR_FIELDS})) == 64
+
+
+def test_db_provenance_carries_bars_sha256(monkeypatch):
+    from ggTrader.data.bars import BAR_FIELDS, bars_sha256
+
+    monkeypatch.setattr("ggTrader.data.bars._read_db_long", lambda *args: _long())
+    bars = load_bars(["AAA", "BBB", "CCC"], source="db")
+    assert bars.provenance["bars_sha256"] == bars_sha256(
+        {name: bars.frame(name) for name in BAR_FIELDS}
+    )
+
+
+def test_tape_sha256_of_prefers_snapshot_hash():
+    from types import SimpleNamespace
+
+    from ggTrader.data.bars import tape_sha256_of
+
+    bars = SimpleNamespace(provenance={"snapshot": {"sha256": "snapshot"}, "bars_sha256": "db"})
+    assert tape_sha256_of(bars) == "snapshot"
+    bars.provenance = {"bars_sha256": "db"}
+    assert tape_sha256_of(bars) == "db"
+    bars.provenance = {}
+    assert tape_sha256_of(bars) is None

@@ -315,3 +315,18 @@ def test_the_membership_detail_block_is_informational(prov: dict) -> None:
     a, b = _with_membership(prov, SHA_A), _with_membership(prov, SHA_A)
     b["membership"] = {"kind": "db", "load_id": 7, "verified_at": "2026-11-08T00:00:00+00:00"}
     assert provenance.compare(a, b).flag == "SAME_STACK"
+
+
+def test_different_bars_hashes_are_not_comparable(prov):
+    import pandas as pd
+
+    from ggTrader.data.bars import BAR_FIELDS, bars_sha256
+
+    frames = {name: pd.DataFrame({"AAA": [1.0]}) for name in BAR_FIELDS}
+    first = bars_sha256(frames)
+    frames["close"].iloc[0, 0] = 2.0
+    second = bars_sha256(frames)
+    result = provenance.compare(
+        _mutated(prov, tape_sha256=first), _mutated(prov, tape_sha256=second)
+    )
+    assert (result.flag, result.comparable) == ("TAPE_DIFF", False)

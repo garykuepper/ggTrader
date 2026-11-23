@@ -119,9 +119,10 @@ def _engine_curves(
                 f"blend sleeve {label!r}: WFO produced no valid folds ({exc})"
             ) from None
         curves[label] = result.oos_equity
-    tape = (bars.provenance or {}).get("snapshot") or {}
+    from ggTrader.data.bars import tape_sha256_of
+
     stamp = build_provenance(
-        tape_sha256=tape.get("sha256"),
+        tape_sha256=tape_sha256_of(bars),
         extra={"strategy_sources": sources},
         membership=membership.provenance(date.fromisoformat(eval_end)),
     )

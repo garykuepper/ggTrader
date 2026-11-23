@@ -64,10 +64,11 @@ def _patch_persist(monkeypatch, calls=None):
     return calls
 
 
-def _patch_inputs(monkeypatch, idx, spy, symbols=("AAA",), seen=None):
+def _patch_inputs(monkeypatch, idx, spy, symbols=("AAA",), seen=None, provenance=None):
     """Replace the tape load and the per-sleeve inputs; ``seen`` records the universes asked."""
     bars = types.SimpleNamespace(
-        close=pd.DataFrame({"SPY": spy, "AAA": spy.values}, index=idx), provenance={}
+        close=pd.DataFrame({"SPY": spy, "AAA": spy.values}, index=idx),
+        provenance=provenance or {},
     )
     monkeypatch.setattr(cli_support, "load_run_bars", lambda *a, **k: bars)
 
@@ -208,9 +209,10 @@ def test_run_wfo_json_provenance_names_the_strategy_source(tmp_path, monkeypatch
     from ggTrader.lab.strategies import registry
 
     monkeypatch.setattr(cli_support, "result_payload", lambda *a, **k: {"strategy": k["strategy"]})
-    bars = type("B", (), {"provenance": {}, "summary": lambda self: {}})()
+    bars = type("B", (), {"provenance": {"bars_sha256": "db-hash"}, "summary": lambda self: {}})()
     out = cli_support.write_wfo_json(None, bars, str(tmp_path / "r.json"), strategy="ensemble")
     block = json.loads(out.read_text())["provenance"]
+    assert block["tape_sha256"] == "db-hash"
     assert "membership_sha256" not in block  # no source given: nothing is claimed
     expected = registry.source_sha256(registry.REGISTRY["ensemble"])
     assert block["strategy_sha256"] == expected["strategy_sha256"]
@@ -223,7 +225,7 @@ def test_run_blend_stamps_the_membership_vintage_in_the_provenance(monkeypatch):
     rng = np.random.default_rng(5)
     eq = _equity_from_returns(pd.Series(rng.normal(0.0004, 0.011, 400), index=idx))
     spy = _equity_from_returns(pd.Series(rng.normal(0.0003, 0.01, 400), index=idx))
-    _patch_inputs(monkeypatch, idx, spy)
+    _patch_inputs(monkeypatch, idx, spy, provenance={"bars_sha256": "db-hash"})
     monkeypatch.setattr(
         wfo_pkg,
         "run_wfo",
@@ -236,6 +238,7 @@ def test_run_blend_stamps_the_membership_vintage_in_the_provenance(monkeypatch):
     )
     _run([("ensemble", "sp500")])
     block = stamps["provenance"]
+    assert block["tape_sha256"] == "db-hash"
     assert block["membership"]["kind"] == "fixture"
     assert block["membership"]["fixture"] == "sp500_v1_2026-06-02"
     assert len(block["membership_sha256"]) == 64

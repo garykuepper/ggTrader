@@ -167,19 +167,20 @@ def write_wfo_json(
 ) -> Path:
     """Write the run record with a provenance block that names the tape, the definitions and
     (when given) the membership vintage; the payload itself is unchanged by it."""
+    from ggTrader.data.bars import tape_sha256_of
     from ggTrader.engine.provenance import provenance
     from ggTrader.lab.strategies import registry
     from ggTrader.utils.results import write_result_json
 
-    tape = (bars.provenance or {}).get("snapshot") or {}
     cls = registry.REGISTRY.get(str(fields.get("strategy")))
     # The strategy's own source is part of what produced the number; hash it so an edited
     # or out-of-tree strategy is identified by its result.
     block = provenance(
-        tape_sha256=tape.get("sha256"),
+        tape_sha256=tape_sha256_of(bars),
         extra=registry.source_sha256(cls) if cls else None,
         membership=None if membership is None else membership.provenance(_asof(fields)),
     )
+    tape = (bars.provenance or {}).get("snapshot") or {}
     payload = result_payload(result, bars_summary=bars.summary(), tape=tape or None, **fields)
     out = write_result_json(path, payload, provenance=block)
     print(f"  result JSON: {out}", flush=True)
