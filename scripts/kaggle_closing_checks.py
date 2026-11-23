@@ -249,9 +249,10 @@ def _check_named_stocks(conn, url: str, release_id: int) -> tuple[str, dict, str
     for name in names:
         if name not in catalog:
             cases[name] = {"status": "skipped", "reason": "name not in release"}
-    if selected:
-        bars = _load(url, selected, "combined", release_id)
-        for name in selected:
+    for offset in range(0, len(selected), 120):
+        batch = selected[offset : offset + 120]
+        bars = _load(url, batch, "combined", release_id)
+        for name in batch:
             subset = bars.flags[bars.flags.index.get_level_values("symbol") == name]
             sources = subset["source"].astype(str).value_counts().to_dict()
             close = bars.close[name].dropna() if name in bars.close else pd.Series(dtype=float)
@@ -482,15 +483,49 @@ def symbol_filter_in_plan(plan) -> bool:
     )
 
 
+def ten_stock_passes(value: dict, *, minimum_months: int) -> bool:
+    """Require paired coverage and all three return-comparison thresholds."""
+    return (
+        value.get("count", 0) >= minimum_months
+        and value.get("correlation") is not None
+        and value["correlation"] >= 0.9998
+        and value["mean_abs_points"] <= 0.02
+        and value["max_abs_points"] <= 1.6
+    )
+
+
 def _stock_comparison(conn, release_id: int, mapping: dict | None = None) -> tuple[str, dict, str]:
     """Compare month-end returns from derived close and adjusted Yahoo close."""
     import pandas as pd
 
+    minimum_months = 239 if mapping is None else 2
     mapping = TEN_STOCKS if mapping is None else mapping
     loads = _release_loads(conn, release_id)
     if "crsp-bars" not in loads:
         return "fail", {}, "release has no derived bars load"
+    source_path = loads["crsp-bars"][1] or ""
+    if not source_path.startswith("load:"):
+        return "fail", {}, "derived bars do not identify the original CRSP load"
+    raw_load = int(source_path.split(":", 1)[1])
     with conn.cursor() as cur:
+        cur.execute(
+            "SELECT permno,count(*) FROM kaggle_crsp.daily "
+            "WHERE load_id=%s AND permno=ANY(%s) GROUP BY permno",
+            (raw_load, list(mapping.values())),
+        )
+        raw_counts = dict(cur.fetchall())
+        dated_tickers = {}
+        if "mcgill" in loads:
+            cur.execute(
+                "SELECT stock_ticker,permno,min(date),max(date) FROM kaggle_chars.mcgill "
+                "WHERE load_id=%s AND stock_ticker=ANY(%s) AND permno IS NOT NULL "
+                "GROUP BY stock_ticker,permno ORDER BY stock_ticker,permno",
+                (loads["mcgill"][0], list(mapping)),
+            )
+            for ticker, permno, first, last in cur.fetchall():
+                dated_tickers.setdefault(ticker, []).append(
+                    {"permno": permno, "first_date": str(first), "last_date": str(last)}
+                )
         cur.execute(
             "SELECT permno,date,spell,close FROM market.daily_bars "
             "WHERE load_id=%s AND permno=ANY(%s) AND date >= DATE '2005-01-01' "
@@ -525,18 +560,19 @@ def _stock_comparison(conn, release_id: int, mapping: dict | None = None) -> tup
             .loc["2005-02":"2024-12"]
             .dropna()
         )
-        measured[ticker] = {"permno": permno, **return_statistics(paired.derived, paired.yahoo)}
+        measured[ticker] = {
+            "permno": permno,
+            "raw_rows": raw_counts.get(permno, 0),
+            "mcgill_dated_tickers": dated_tickers.get(ticker, []),
+            "mapping_source": "validate_crsp.py",
+            **return_statistics(paired.derived, paired.yahoo),
+        }
 
-    def good(value):
-        return (
-            value.get("count", 0) >= 2
-            and value.get("correlation") is not None
-            and value["correlation"] >= 0.9998
-            and value["mean_abs_points"] <= 0.02
-            and value["max_abs_points"] <= 1.6
-        )
-
-    return ("pass" if all(good(row) for row in measured.values()) else "fail"), measured, ""
+    passed = all(
+        row.get("raw_rows", 0) > 0 and ten_stock_passes(row, minimum_months=minimum_months)
+        for row in measured.values()
+    )
+    return ("pass" if passed else "fail"), measured, ""
 
 
 def _mcgill_comparison(
@@ -834,6 +870,16 @@ def run_checks(
         conn.close()
 
 
+def checks_succeeded(checks: list[dict]) -> bool:
+    """Require every check to pass or have one explicitly permitted absence."""
+    allowed_skips = {"no baseline given", "name not in release"}
+    return all(
+        item["status"] in ("pass", "covered_by_tests")
+        or (item["status"] == "skipped" and item.get("reason") in allowed_skips)
+        for item in checks
+    )
+
+
 def main() -> int:
     """Run the checks and save a report without printing the connection string."""
     args = build_parser().parse_args()
@@ -864,7 +910,7 @@ def main() -> int:
     for item in report["checks"]:
         print(f"{item['id']}  {item['status']:<16} {item['name']}")
     print(f"Report: {out}")
-    return 1 if any(item["status"] in ("fail", "skipped") for item in report["checks"]) else 0
+    return 0 if checks_succeeded(report["checks"]) else 1
 
 
 if __name__ == "__main__":

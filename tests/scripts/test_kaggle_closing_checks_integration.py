@@ -163,18 +163,25 @@ def test_returns_comparisons_on_synthetic_database(conn):
 
     db, derived = conn
     with db.cursor() as cur:
-        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
-        rid = cur.fetchone()[0]
-        cur.execute("SET LOCAL ggt.release_build = 'on'")
-        cur.execute(
-            "INSERT INTO ref.release_loads(release_id,load_id,role) VALUES (%s,%s,'crsp-bars')",
-            (rid, derived),
-        )
         cur.execute(
             "INSERT INTO ref.loads(dataset,status) VALUES "
             "('crsp-daily','complete'),('mcgill-fiam','complete') RETURNING load_id"
         )
         raw, mcgill = [row[0] for row in cur.fetchall()]
+        cur.execute(
+            "INSERT INTO ref.loads(dataset,status,file_path) "
+            "VALUES ('crsp-derived-bars','complete',%s) RETURNING load_id",
+            (f"load:{raw}",),
+        )
+        derived = cur.fetchone()[0]
+        cur.execute("INSERT INTO ref.releases(status) VALUES ('published') RETURNING release_id")
+        rid = cur.fetchone()[0]
+        cur.execute("SET LOCAL ggt.release_build = 'on'")
+        cur.execute(
+            "INSERT INTO ref.release_loads(release_id,load_id,role) "
+            "VALUES (%s,%s,'crsp-bars'),(%s,%s,'mcgill')",
+            (rid, derived, rid, mcgill),
+        )
         days = ["2005-01-31", "2005-02-28", "2005-03-31", "2005-04-29"]
         prices = [100.0, 110.0, 99.0, 118.8]
         returns = [0.0, 0.1, -0.1, 0.2]
@@ -194,13 +201,16 @@ def test_returns_comparisons_on_synthetic_database(conn):
                 (raw, day, ret),
             )
             cur.execute(
-                "INSERT INTO kaggle_chars.mcgill(load_id,permno,date,ret_eom,stock_exret,rf) "
-                "VALUES (%s,10,%s,%s,%s,0.01)",
+                "INSERT INTO kaggle_chars.mcgill(load_id,permno,date,ret_eom,stock_exret,rf,"
+                "stock_ticker) "
+                "VALUES (%s,10,%s,%s,%s,0.01,'EXAMPLE')",
                 (mcgill, day, day, ret - 0.01),
             )
     db.commit()
     status, measured, _ = _stock_comparison(db, rid, {"EXAMPLE": 10})
     assert status == "pass" and measured["EXAMPLE"]["count"] == 3
+    assert measured["EXAMPLE"]["raw_rows"] == 4
+    assert measured["EXAMPLE"]["mcgill_dated_tickers"][0]["permno"] == 10
     assert measured["EXAMPLE"]["mean_abs_points"] == pytest.approx(0, abs=1e-9)
     status, measured, _ = _mcgill_comparison(db, raw, mcgill, count=1)
     assert status == "pass" and measured["count"] == 4

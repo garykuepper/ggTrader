@@ -108,3 +108,26 @@ def test_duplicate_stock_days_require_both_flags():
     flags.iloc[1, 0] = False
     bad = duplicate_stock_days(flags, {"AAA": 1, "PERMNO-1": 1})
     assert len(bad) == 1 and bad[0]["permno"] == 1
+
+
+def test_exit_policy_only_allows_named_skips():
+    from scripts.kaggle_closing_checks import checks_succeeded
+
+    good = [
+        {"status": "pass", "reason": ""},
+        {"status": "covered_by_tests", "reason": ""},
+        {"status": "skipped", "reason": "no baseline given"},
+        {"status": "skipped", "reason": "name not in release"},
+    ]
+    assert checks_succeeded(good)
+    assert not checks_succeeded([*good, {"status": "skipped", "reason": "not implemented"}])
+    assert not checks_succeeded([*good, {"status": "fail", "reason": ""}])
+
+
+def test_ten_stock_comparison_requires_full_month_coverage():
+    from scripts.kaggle_closing_checks import ten_stock_passes
+
+    result = {"count": 238, "correlation": 1.0, "mean_abs_points": 0.0, "max_abs_points": 0.0}
+    assert not ten_stock_passes(result, minimum_months=239)
+    assert ten_stock_passes({**result, "count": 239}, minimum_months=239)
+    assert not ten_stock_passes({**result, "count": 239, "max_abs_points": 1.7}, minimum_months=239)
