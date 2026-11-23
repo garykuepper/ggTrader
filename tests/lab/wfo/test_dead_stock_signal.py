@@ -226,3 +226,27 @@ def test_negative_control_turning_off_rule_changes_equity(monkeypatch):
     )
     assert active.trades.loc[active.trades.col == 0, "exit_idx"].tolist() == [4]
     assert active.value.iloc[-1, 0] != control.value.iloc[-1, 0]
+
+
+def test_combined_intraday_stops_are_rejected():
+    bars = replace(
+        toy_bars(),
+        provenance={"source": "combined"},
+        spans=pd.DataFrame(columns=["symbol", "last_date"]),
+    )
+    with pytest.raises(ValueError, match="intraday.*combined"):
+        run_wfo(
+            "toy",
+            ToyHold,
+            LabConfig(),
+            bars,
+            bars.close.X,
+            "2020-06-01",
+            "2022-03-01",
+            "equity",
+            TOY_CONFIG,
+            ParamGrid.single({"delay": 3}),
+            allow_unmasked=True,
+            intraday_stops=True,
+            verbose=False,
+        )

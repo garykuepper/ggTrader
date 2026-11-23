@@ -579,6 +579,8 @@ def run_wfo(
     bars = inputs.as_bars(ohlcv)
     dead_frames = sim_close = None
     if bars.provenance.get("source") == "combined":
+        if intraday_stops:
+            raise ValueError("intraday stops are not supported for combined bars")
         from ggTrader.lab.dead_stocks import forced_exit_frames, simulation_close
 
         if bars.spans is None:
