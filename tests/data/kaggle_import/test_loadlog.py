@@ -1,5 +1,6 @@
 """Load-log integration tests on a throwaway database."""
 
+import getpass
 from pathlib import Path
 
 import psycopg2
@@ -215,3 +216,18 @@ def test_complete_only_read_helpers(conn, function, table):
     with conn.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM {function}(%s)", (running,))
         assert cur.fetchone()[0] == 1
+
+
+def test_load_provenance(conn):
+    load = begin(conn, slug_version="v1", download_date="2026-11-22")
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT loader_git_sha, loaded_by, checks, current_user "
+            "FROM ref.loads WHERE load_id=%s",
+            (load,),
+        )
+        sha, loaded_by, checks, db_user = cur.fetchone()
+    assert sha
+    assert loaded_by == f"{getpass.getuser()}@{db_user}"
+    assert checks["slug_version"] == "v1"
+    assert checks["download_date"] == "2026-11-22"

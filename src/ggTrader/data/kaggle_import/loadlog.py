@@ -1,10 +1,13 @@
 """Transactional bookkeeping for resumable imports."""
 
+import getpass
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from psycopg2.extensions import connection, cursor
 from psycopg2.extras import Json
+
+from ggTrader.data.universe_db import git_sha
 
 
 class LoadFailed(Exception):
@@ -30,6 +33,8 @@ def begin_load(  # noqa: PLR0913 — public import contract
     content_sha256: str,
     expected_chunks: Sequence[str] | None = None,
     allow_third: bool = False,
+    slug_version: str | None = None,
+    download_date: str | None = None,
 ) -> int:
     """Start or resume a load, respecting retained versions."""
     try:
@@ -54,12 +59,14 @@ def begin_load(  # noqa: PLR0913 — public import contract
                 )
                 if cur.fetchone()[0] >= 2 and not allow_third:
                     raise RetentionLimit(f"{dataset} already has two retained loads")
+                cur.execute("SELECT current_user")
+                loaded_by = f"{getpass.getuser()}@{cur.fetchone()[0]}"
                 cur.execute(
                     "INSERT INTO ref.loads(dataset,kaggle_slug,file_path,file_sha256,"
                     "parser_version,"
                     "content_sha256,rows_parsed,rows_accepted,rows_quarantined,"
-                    "started_at,status,checks) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,0,0,0,now(),'running',%s) RETURNING load_id",
+                    "started_at,status,checks,loader_git_sha,loaded_by) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,0,0,0,now(),'running',%s,%s,%s) RETURNING load_id",
                     (
                         dataset,
                         kaggle_slug,
@@ -67,7 +74,15 @@ def begin_load(  # noqa: PLR0913 — public import contract
                         file_sha256,
                         parser_version,
                         content_sha256,
-                        Json({"expected_chunks": list(expected_chunks or [])}),
+                        Json(
+                            {
+                                "expected_chunks": list(expected_chunks or []),
+                                "slug_version": slug_version,
+                                "download_date": download_date,
+                            }
+                        ),
+                        git_sha(),
+                        loaded_by,
                     ),
                 )
                 result = cur.fetchone()[0]
