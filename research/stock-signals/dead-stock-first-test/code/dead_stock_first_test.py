@@ -16,9 +16,12 @@ only closes the experiment) divided by that year's average pre-tax equity.
 
 from __future__ import annotations
 
+import gzip
+import io
 import json
 import math
 import os
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +39,7 @@ from replay import (
 )
 
 from ggTrader.lab.wfo.report import curve_summary
+from ggTrader.utils.io import atomic_write_bytes
 
 WINDOWS: dict[str, tuple[str, str]] = {
     "dev": ("2005-01-03", "2019-12-31"),
@@ -55,6 +59,14 @@ SPY_TOLERANCE = 1e-3
 MONOTONE_TOLERANCE = 1e-9  # relative; a rise above this as the loss grows is reported
 HELD_QTY = 1e-9  # shares below this are float dust, not a holding
 RESULTS_FOLDER = Path("results") / "dead_stock_first_test"
+PIN_RELEASE_ID = 1  # the holdout runs on this release and this raw CRSP load only
+PIN_CRSP_LOAD = 1
+DECOMPOSITION_COST = 0.00183  # the cost and tax set of the gap decomposition and the audits
+DECOMPOSITION_TAX = "low"
+HOLDINGS_LOSSES = (1.0, 0.5, 0.0)
+YAHOO_KINDS = ("linked_yahoo", "yahoo")
+CRSP_ONLY_KINDS = ("placeholder", "spell")
+AUDIT_GRACE_DAYS = 7  # CRSP may run this many calendar days past a Yahoo end without a flag
 SPAN_ROW_COLUMNS = ["symbol", "last_date", "has_successor", "total_loss"]
 
 
@@ -130,6 +142,73 @@ def claim_holdout(universe: str, results_dir: Path, *, git_head: str | None, com
     return claim
 
 
+def check_holdout_pins(release_id: int, crsp_load: int, *, git_dirty: bool) -> None:
+    """Holdout only: refuse unless the pinned release and CRSP load are used on a clean tree.
+
+    Raises:
+        SystemExit: naming the failed condition.
+    """
+    if release_id != PIN_RELEASE_ID:
+        raise SystemExit(
+            f"holdout refused: --release-id must be {PIN_RELEASE_ID}, got {release_id}"
+        )
+    if crsp_load != PIN_CRSP_LOAD:
+        raise SystemExit(f"holdout refused: --crsp-load must be {PIN_CRSP_LOAD}, got {crsp_load}")
+    if git_dirty:
+        raise SystemExit(
+            "holdout refused: the git working tree has uncommitted changes to tracked files; "
+            "commit them first so the run is tied to one commit"
+        )
+
+
+def git_tree_dirty(root: Path) -> bool:
+    """True when a tracked file differs from HEAD (``git status --untracked-files=no``)."""
+    done = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    return bool(done.stdout.strip())
+
+
+def trades_file(window: str, universe: str, results_dir: Path) -> Path:
+    """The side file with every cell's full trade list."""
+    return results_dir / f"{window}-{universe}-trades.csv.gz"
+
+
+def audit_file(window: str, universe: str, results_dir: Path) -> Path:
+    """The file the false-death audit writes on its own (``--audit-only``)."""
+    return results_dir / f"{window}-{universe}-audit.json"
+
+
+def refuse_existing_trades_file(window: str, universe: str, results_dir: Path) -> None:
+    """Holdout only: the trades side file is written once too.
+
+    Raises:
+        SystemExit: the file exists, naming it.
+    """
+    path = trades_file(window, universe, results_dir)
+    if window == "holdout" and path.exists():
+        raise SystemExit(f"refusing to run: {REFUSED} Found {path}.")
+
+
+def write_trades_csv(path: Path, trades: dict[str, list]) -> Path:
+    """Write every cell's fills as one gzip CSV (cell, date, symbol, qty, price, reason)."""
+    lines = ["cell,date,symbol,qty,price,reason"]
+    for cell, fills in trades.items():
+        for t in fills:
+            lines.append(
+                f"{cell},{pd.Timestamp(t.date).date()},{t.symbol},{t.qty!r},{t.price!r},{t.reason}"
+            )
+    buffer = io.BytesIO()
+    with gzip.GzipFile(fileobj=buffer, mode="wb", mtime=0) as handle:
+        handle.write(("\n".join(lines) + "\n").encode())
+    return atomic_write_bytes(path, buffer.getvalue())
+
+
 WINDOW_EDGE_DAYS = 7  # the window's first and last trading day must lie this close to its ends
 MAX_SPY_NAN_RUN = 5  # trading days
 
@@ -195,6 +274,83 @@ def validate_window_inputs(
     }
 
 
+def audit_false_deaths(
+    conn: Any,
+    release_spans: pd.DataFrame,
+    *,
+    crsp_load: int,
+    window_start: str,
+    window_end: str,
+    crsp_end: str,
+) -> dict[str, Any]:
+    """Which ended release series might not have died: CRSP keeps going after the series ended.
+
+    Metadata only: one grouped read-only query for each permno's last CRSP date (no prices or
+    returns). A span is checked when it has a permno and its last date lies inside
+    ``[window_start, window_end - 1 day]`` and before ``crsp_end``. It is suspect when CRSP runs
+    more than 7 calendar days past that date. A suspect that has a later spell of the same
+    company number in the release is marked ``has_later_spell`` (a data break, not a death).
+
+    Returns:
+        ``n_checked``, ``n_suspect``, ``suspects`` and ``multi_symbol_permnos`` (company numbers
+        with more than one Yahoo column in the release).
+    """
+    spans = release_spans.copy()
+    spans["permno"] = pd.to_numeric(spans["permno"], errors="coerce")
+    spans["last_date"] = pd.to_datetime(spans["last_date"])
+    low = pd.Timestamp(window_start)
+    high = pd.Timestamp(window_end) - pd.Timedelta(days=1)
+    stop = pd.Timestamp(crsp_end)
+    checked = spans[
+        spans["permno"].notna()
+        & (spans["last_date"] >= low)
+        & (spans["last_date"] <= high)
+        & (spans["last_date"] < stop)
+    ]
+    permnos = sorted({int(p) for p in checked["permno"]})
+    crsp_last: dict[int, pd.Timestamp] = {}
+    if permnos:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT permno, max(date) FROM kaggle_crsp.daily_of(%s) "
+                "WHERE permno = ANY(%s) GROUP BY permno",
+                (int(crsp_load), permnos),
+            )
+            crsp_last = {int(p): pd.Timestamp(d) for p, d in cur.fetchall() if d is not None}
+    spell = spans["spell"] if "spell" in spans.columns else pd.Series(0, index=spans.index)
+    latest_spell = spell.groupby(spans["permno"]).max()
+    suspects = []
+    grace = pd.Timedelta(days=AUDIT_GRACE_DAYS)
+    for row in checked.itertuples():
+        seen = crsp_last.get(int(row.permno))
+        if seen is not None and seen > row.last_date + grace:
+            has_later = bool(
+                "spell" in spans.columns and latest_spell.get(row.permno, row.spell) > row.spell
+            )
+            suspects.append(
+                {
+                    "symbol": row.symbol,
+                    "permno": int(row.permno),
+                    "kind": row.kind,
+                    "last_date": str(row.last_date.date()),
+                    "crsp_last_date": str(seen.date()),
+                    "has_later_spell": has_later,
+                }
+            )
+    yahoo = spans[spans["kind"].isin(YAHOO_KINDS) & spans["permno"].notna()]
+    names = yahoo.groupby("permno")["symbol"].apply(lambda col: sorted(set(col)))
+    multi = [{"permno": int(p), "symbols": syms} for p, syms in names.items() if len(syms) > 1]
+    return {
+        "n_checked": int(len(checked)),
+        "n_suspect": len(suspects),
+        "suspects": suspects,
+        "multi_symbol_permnos": multi,
+        "grace_calendar_days": AUDIT_GRACE_DAYS,
+        "window": {"start": window_start, "end": window_end},
+        "crsp_end": crsp_end,
+    }
+
+
 def _naive_index(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
     return index.tz_convert(None) if index.tz is not None else index
 
@@ -226,9 +382,41 @@ def yearly_turnover(result: BookResult) -> dict[str, float]:
     }
 
 
+def month_end_series(curve: pd.Series) -> list[list[Any]]:
+    """The last value of each calendar month as ``[date, value]`` pairs."""
+    stamps = _naive_index(pd.DatetimeIndex(curve.index))
+    last = pd.Series(curve.to_numpy(dtype=float), index=stamps)
+    last = last.groupby(stamps.to_period("M")).last()
+    dates = pd.Series(stamps, index=stamps).groupby(stamps.to_period("M")).last()
+    return [[str(dates[period].date()), float(value)] for period, value in last.items()]
+
+
+def _curve_stats(curve: pd.Series) -> dict[str, Any]:
+    """Sharpe and largest fall of a value curve; a curve that reaches zero or below is flagged.
+
+    The return-based statistics are not defined for a non-positive value, so such a curve
+    reports no Sharpe and a fall of 100 percent instead of crashing.
+    """
+    values = curve.to_numpy(dtype=float)
+    if len(values) >= 2 and np.isfinite(values).all() and (values > 0.0).all():
+        summary = curve_summary(curve)
+        return {
+            "sharpe": summary["sharpe"],
+            "max_drawdown_pct": summary["max_drawdown_pct"],
+            "nonpositive": False,
+        }
+    return {"sharpe": math.nan, "max_drawdown_pct": -100.0, "nonpositive": True}
+
+
 def _cell(result: BookResult) -> dict[str, Any]:
-    """The reported fields of one finished book."""
-    curve = curve_summary(result.pretax_equity)
+    """The reported fields of one finished book.
+
+    ``sharpe`` and ``max_drawdown_pct`` come from ``account_value`` (marks plus cash minus tax
+    still owed). The ``*_pretax_curve`` pair comes from ``pretax_equity``, which adds the taxes
+    already paid back: it is not an independent no-tax run.
+    """
+    account = _curve_stats(result.account_value)
+    pretax = _curve_stats(result.pretax_equity)
     turnover = yearly_turnover(result)
     return {
         "after_tax_final": result.after_tax_final,
@@ -237,16 +425,21 @@ def _cell(result: BookResult) -> dict[str, Any]:
         "tax_paid": result.tax_paid,
         "cost_paid": result.cost_paid,
         "unpaid_tax_left": result.unpaid_tax_left,
+        "unpaid_tax_flag": result.unpaid_tax_flag,
         "n_dead_exits": result.n_dead_exits,
         "dead_exit_writeoff": result.dead_exit_writeoff,
         "skipped_buys": result.skipped_buys,
-        "sharpe": curve["sharpe"],
-        "max_drawdown_pct": curve["max_drawdown_pct"],
+        "sharpe": account["sharpe"],
+        "max_drawdown_pct": account["max_drawdown_pct"],
+        "account_value_nonpositive": account["nonpositive"],
+        "sharpe_pretax_curve": pretax["sharpe"],
+        "max_drawdown_pct_pretax_curve": pretax["max_drawdown_pct"],
         "turnover_by_year": turnover,
         "mean_yearly_turnover": float(np.nanmean(list(turnover.values()))) if turnover else 0.0,
         "n_trades": len(result.trades),
         "chain_verified": result.chain_verified,
         "min_cash": result.min_cash,
+        "account_value_month_end": month_end_series(result.account_value),
     }
 
 
@@ -302,7 +495,11 @@ def coverage_block(
     start: str,
     end: str,
 ) -> dict[str, dict[str, Any]]:
-    """Per calendar year: how many stocks were eligible, died, and were held when they died."""
+    """Per calendar year: how many stocks were eligible, ended, and were held when they ended.
+
+    ``successors`` are series that end with a later CRSP spell of the same company number: a data
+    break (a halt or an exchange move), not a verified buy-out or merger.
+    """
     days = _naive_index(eligible.index)
     inside = (days >= pd.Timestamp(start)) & (days <= pd.Timestamp(end))
     window = eligible.set_axis(days, axis=0).loc[inside].reindex(columns=close.columns)
@@ -316,9 +513,9 @@ def coverage_block(
         str(int(y)): {
             "eligible_per_month_mean": float(per_month[y]),
             "ever_eligible_dead": 0,
-            "ever_eligible_bought_out": 0,
+            "ever_eligible_later_spell": 0,
             "held_at_death": 0,
-            "held_at_buyout": 0,
+            "held_at_later_spell": 0,
             "dollars_written_off": 0.0,
         }
         for y in per_month.index
@@ -329,14 +526,14 @@ def coverage_block(
         when = when.tz_convert(None) if when.tzinfo else when
         key = str(when.year)
         if symbol in ever and low <= when <= high and key in years:
-            field = "ever_eligible_bought_out" if symbol in successors else "ever_eligible_dead"
+            field = "ever_eligible_later_spell" if symbol in successors else "ever_eligible_dead"
             years[key][field] += 1
     for trade in trades:
         if trade.reason != DEAD_EXIT_REASON or str(trade.date.year) not in years:
             continue
         year = years[str(trade.date.year)]
         if trade.symbol in successors:
-            year["held_at_buyout"] += 1
+            year["held_at_later_spell"] += 1
             continue
         year["held_at_death"] += 1
         row = stamps.get_loc(trade.date)
@@ -476,6 +673,103 @@ def drop_file_end_rows(
     return spans.loc[~censored].reset_index(drop=True), int(in_window.sum())
 
 
+def holdings_audit(
+    trades: list,
+    month_ends: list[pd.Timestamp],
+    ends: pd.Series,
+    successors: frozenset[str],
+    kinds: dict[str, str] | None,
+) -> dict[str, Any]:
+    """Month-end holdings: how many, how many later die, and where their history comes from.
+
+    A holding is a symbol with shares left after the month-end's last trade. "Later die" means
+    its series ends without a later spell after that month-end (inside the window, since the
+    book never holds past it). The split puts each held stock-month into Yahoo-history columns
+    (release kind ``linked_yahoo`` or ``yahoo``) or CRSP-only columns (``placeholder`` or
+    ``spell``); without release kinds it is left empty.
+    """
+    death = {str(s): _naive_stamp(t) for s, t in ends.items() if str(s) not in successors}
+    qty: dict[str, float] = {}
+    pos = 0
+    rows = []
+    for stamp in month_ends:
+        while pos < len(trades) and _naive_stamp(trades[pos].date) <= stamp:
+            qty[trades[pos].symbol] = qty.get(trades[pos].symbol, 0.0) + trades[pos].qty
+            pos += 1
+        held = sorted(sym for sym, q in qty.items() if q > HELD_QTY)
+        dying = [sym for sym in held if sym in death and death[sym] > stamp]
+        row: dict[str, Any] = {
+            "date": str(stamp.date()),
+            "n_held": len(held),
+            "n_dead_holdings": len(dying),
+            "n_yahoo_history": None,
+            "n_crsp_only": None,
+        }
+        if kinds is not None:
+            row["n_yahoo_history"] = sum(kinds.get(sym) in YAHOO_KINDS for sym in held)
+            row["n_crsp_only"] = sum(kinds.get(sym) in CRSP_ONLY_KINDS for sym in held)
+        rows.append(row)
+    totals = {
+        "held_stock_months": sum(r["n_held"] for r in rows),
+        "dead_holding_months": sum(r["n_dead_holdings"] for r in rows),
+        "yahoo_history_stock_months": None,
+        "crsp_only_stock_months": None,
+    }
+    if kinds is not None:
+        totals["yahoo_history_stock_months"] = sum(r["n_yahoo_history"] for r in rows)
+        totals["crsp_only_stock_months"] = sum(r["n_crsp_only"] for r in rows)
+    return {"months": rows, "totals": totals}
+
+
+def _naive_stamp(stamp: Any) -> pd.Timestamp:
+    value = pd.Timestamp(stamp)
+    return value.tz_convert(None) if value.tzinfo is not None else value
+
+
+def decomposition_for_loss(
+    *,
+    spy_zero: float,
+    rule_loss0_zero: float,
+    rule_zero: float,
+    rule_cost_no_tax: float,
+    rule_final: float,
+    spy_final: float,
+) -> dict[str, Any]:
+    """Sequential steps in annual growth, in percentage points, from SPY to the rule.
+
+    Each argument is a yearly growth rate in percent: SPY with no cost and no tax; the rule at
+    loss 0.0 with none; the rule at this loss with none; the same with cost; the same with cost
+    and tax (the reported cell); and SPY with the same cost and tax. The four steps sum to
+    ``rule_final - spy_zero``; SPY's own cost and tax drag is a separate line, so the steps plus
+    the drag equal the reported gap exactly.
+    """
+    steps = {
+        "selection_effect_pp": rule_loss0_zero - spy_zero,
+        "dead_stock_effect_pp": rule_zero - rule_loss0_zero,
+        "trading_cost_effect_pp": rule_cost_no_tax - rule_zero,
+        "tax_effect_pp": rule_final - rule_cost_no_tax,
+    }
+    total = sum(steps.values())
+    spy_drag = spy_zero - spy_final
+    gap = rule_final - spy_final
+    return {
+        **steps,
+        "steps_sum_pp": total,
+        "rule_minus_spy_zero_cost_zero_tax_pp": rule_final - spy_zero,
+        "spy_cost_and_tax_drag_pp": spy_drag,
+        "total_gap_pp": gap,
+        "reconciles": bool(abs(total + spy_drag - gap) < 1e-9),
+        "annual_growth_pct": {
+            "spy_zero_cost_zero_tax": spy_zero,
+            "rule_loss0_zero_cost_zero_tax": rule_loss0_zero,
+            "rule_zero_cost_zero_tax": rule_zero,
+            "rule_cost_zero_tax": rule_cost_no_tax,
+            "rule_cost_and_tax": rule_final,
+            "spy_cost_and_tax": spy_final,
+        },
+    }
+
+
 def run_study(
     close: pd.DataFrame,
     spy_close: pd.Series,
@@ -486,6 +780,7 @@ def run_study(
     end: str,
     release_spans: pd.DataFrame | None = None,
     start_cash: float = START_CASH,
+    trade_sink: dict[str, list] | None = None,
 ) -> dict[str, Any]:
     """Run the fixed grid over one window and return every cell, the coverage and the checks.
 
@@ -497,12 +792,16 @@ def run_study(
             ``has_successor``, ``total_loss``): what the replay needs to find dead stocks.
         start: First day of the window.
         end: Last day of the window.
-        release_spans: The release's span rows with ``permno`` (for the one-company-one-column
-            check); ``None`` skips that check and says so.
+        release_spans: The release's span rows with ``permno`` and ``kind`` (for the
+            one-company-one-column check and the Yahoo versus CRSP-only split); ``None`` skips
+            those and says so.
         start_cash: Opening cash.
+        trade_sink: If given, filled with every cell's fills (key: the cell key, SPY cells
+            prefixed ``spy_``); the side file is written from it.
 
     Returns:
-        ``strategy`` (18 cells), ``spy`` (6 cells), ``coverage`` and ``sanity``.
+        ``strategy`` (18 cells), ``spy`` (6 cells), ``coverage``, ``sanity``, the holdings
+        audit, the gap decomposition and the other blocks listed in the module notes.
     """
     window_check = validate_window_inputs(close, spy_close, start, end)
     spans, n_censored = drop_file_end_rows(_normalise_spans(span_rows), end)
@@ -523,8 +822,26 @@ def run_study(
     flagged = spans.drop_duplicates("symbol").set_index("symbol")["has_successor"]
     successors = frozenset(s for s in ends.index if bool(flagged.get(s, False)))
     taxes = {name: TaxParams(*rates) for name, rates in TAXES.items()}
+    no_tax = TaxParams(0.0, 0.0)
+    prices = {loss: exit_close(close, spans, loss) for loss in LOSSES}
+
+    def book_of(loss: float, cost: float, params: TaxParams) -> BookResult:
+        return run_book(
+            close,
+            steps,
+            ends,
+            prices[loss],
+            params=params,
+            one_way_cost=cost,
+            start=start,
+            end=end,
+            successors=successors,
+            start_cash=start_cash,
+        )
+
     strategy: dict[str, dict[str, Any]] = {}
     spy: dict[str, dict[str, Any]] = {}
+    all_trades: dict[str, list] = {}
     for cost in COSTS:
         for tax, params in taxes.items():
             book = run_spy(
@@ -536,25 +853,13 @@ def run_study(
                 start_cash=start_cash,
             )
             spy[spy_key(cost, tax)] = {"one_way_cost": cost, "tax": tax, **_cell(book)}
-    reference_trades: list = []
+            all_trades[f"spy_{spy_key(cost, tax)}"] = book.trades
     doubles: list[dict[str, Any]] = []
     checked = False
     for loss in LOSSES:
-        prices = exit_close(close, spans, loss)
         for cost in COSTS:
             for tax, params in taxes.items():
-                book = run_book(
-                    close,
-                    steps,
-                    ends,
-                    prices,
-                    params=params,
-                    one_way_cost=cost,
-                    start=start,
-                    end=end,
-                    successors=successors,
-                    start_cash=start_cash,
-                )
+                book = book_of(loss, cost, params)
                 comparison = spy[spy_key(cost, tax)]["cagr_after_tax"]
                 strategy[cell_key(loss, cost, tax)] = {
                     "loss": loss,
@@ -563,14 +868,13 @@ def run_study(
                     **_cell(book),
                     "gap_cagr_after_tax_pp": (book.cagr_after_tax - comparison) * 100.0,
                 }
+                all_trades[cell_key(loss, cost, tax)] = book.trades
                 check = permno_double_holds(book.trades, release_spans)
                 checked = checked or check["checked"]
                 doubles += [
                     {"loss": loss, "cost": cost, "tax": tax, **v} for v in check["violations"]
                 ]
-                if (loss, cost, tax) == REFERENCE:
-                    reference_trades = book.trades
-        del prices
+    reference_trades = all_trades[cell_key(*REFERENCE)]
     held_at_death = sum(
         1 for t in reference_trades if t.reason == DEAD_EXIT_REASON and t.symbol not in successors
     )
@@ -583,6 +887,62 @@ def run_study(
         "reference_cell": cell_key(*REFERENCE),
     }
     paths = death_price_paths(reference_trades, close, successors)  # after the cells, read-only
+    # Extra, labelled runs (not part of the 18 + 6 grid): the same plan and exit prices with
+    # no cost and/or no tax, to split the gap to SPY into steps.
+    spy_zero = (
+        run_spy(
+            spy_close, params=no_tax, one_way_cost=0.0, start=start, end=end, start_cash=start_cash
+        ).cagr_after_tax
+        * 100.0
+    )
+    zero_cost: dict[float, float] = {}
+    for loss in sorted(set(LOSSES) | {0.0}):
+        zero_cost[loss] = book_of(loss, 0.0, no_tax).cagr_after_tax * 100.0
+    spy_final = spy[spy_key(DECOMPOSITION_COST, DECOMPOSITION_TAX)]["cagr_after_tax"] * 100.0
+    decomposition = {}
+    for loss in LOSSES:
+        final_cell = strategy[cell_key(loss, DECOMPOSITION_COST, DECOMPOSITION_TAX)]
+        part = decomposition_for_loss(
+            spy_zero=spy_zero,
+            rule_loss0_zero=zero_cost[0.0],
+            rule_zero=zero_cost[loss],
+            rule_cost_no_tax=book_of(loss, DECOMPOSITION_COST, no_tax).cagr_after_tax * 100.0,
+            rule_final=final_cell["cagr_after_tax"] * 100.0,
+            spy_final=spy_final,
+        )
+        part["matches_cell_gap"] = bool(
+            abs(part["total_gap_pp"] - final_cell["gap_cagr_after_tax_pp"]) < 1e-9
+        )
+        decomposition[f"loss{loss:g}"] = part
+    gap_decomposition = {
+        "cost": DECOMPOSITION_COST,
+        "tax": DECOMPOSITION_TAX,
+        "note": (
+            "Steps in yearly growth, percentage points: SPY with no cost and no tax, then the "
+            "rule's stock picking (loss 0.0, no cost, no tax), then dead-stock losses, then "
+            "trading costs, then taxes. SPY's own cost and tax drag is its own line."
+        ),
+        "by_loss": decomposition,
+    }
+    days = _window_days(close.index, start, end)
+    month_ends = list(pd.Series(days, index=days).groupby(days.to_period("M")).last())
+    kinds = None
+    if release_spans is not None and "kind" in release_spans.columns:
+        kinds = dict(zip(release_spans["symbol"], release_spans["kind"], strict=False))
+    holdings = {
+        cell_key(loss, DECOMPOSITION_COST, DECOMPOSITION_TAX): holdings_audit(
+            all_trades[cell_key(loss, DECOMPOSITION_COST, DECOMPOSITION_TAX)],
+            month_ends,
+            ends,
+            successors,
+            kinds,
+        )
+        for loss in HOLDINGS_LOSSES
+    }
+    if trade_sink is not None:
+        trade_sink.update(all_trades)
+    low, high = pd.Timestamp(start), pd.Timestamp(end)
+    in_window = [t for t in ends if low <= _naive_stamp(t) <= high]
     return {
         "strategy": strategy,
         "spy": spy,
@@ -590,9 +950,16 @@ def run_study(
         "sanity": sanity,
         "window_check": window_check,
         "death_price_paths": paths,
+        "gap_decomposition": gap_decomposition,
+        "holdings_audit": holdings,
         "n_file_end_censored": n_censored,
         "crsp_end": CRSP_END,
         "n_rebalance_steps": len(steps),
         "n_columns": int(close.shape[1]),
-        "n_ended_series_in_window": int(len(ends)),
+        "n_ended_series_in_window": len(in_window),
+        "n_ended_series_in_read": int(len(ends)),
+        "skipped_buys_note": (
+            "skipped_buys counts every target that could not be bought (no price that day, or "
+            "its series had ended); the ledger does not split the reasons."
+        ),
     }

@@ -27,8 +27,10 @@ Differences from the engine path, all deliberate:
   decision day or later stays selectable even if it has no bar on the execution day: the
   planner cannot know that on the decision day, and it never substitutes another stock. The
   ledger decides what to do with a buy that cannot be filled.
-* Stocks whose series ends with a successor (bought out or merged) follow the same rule, but
-  ``exit_close`` does not write their last price down. A span flagged both ``has_successor``
+* Stocks whose series ends with a successor (``has_successor``: the company number continues in
+  a later CRSP spell, a data break such as a halt or an exchange move; it is not a verified
+  buy-out or merger) follow the same rule, but ``exit_close`` does not write their last price
+  down. A span flagged both ``has_successor``
   and ``total_loss`` is contradictory and is refused.
 
 ``dead_loss`` is validated here for symmetry with the ledger call; the plan itself does not
@@ -176,7 +178,7 @@ def plan_trades(
 def _refuse_contradictory(spans: pd.DataFrame) -> None:
     """Raise when a span is both a successor (price kept) and a total loss (price floored).
 
-    The lab helper lets ``total_loss`` win, which would write a bought-out stock down.
+    The lab helper lets ``total_loss`` win, which would write a later-spell stock down.
     """
     if not {"has_successor", "total_loss"}.issubset(spans.columns):
         return
@@ -210,8 +212,9 @@ def span_end_dates(close: pd.DataFrame, spans: pd.DataFrame) -> pd.Series:
 def dead_exit_dates(close: pd.DataFrame, spans: pd.DataFrame) -> pd.Series:
     """Last bar date of the series that end inside the window and have no successor.
 
-    A stock bought out or merged (``has_successor``) is not a dead stock: it keeps its price
-    path and is handled by the ledger as an ordinary end of series.
+    A stock whose company number continues in a later CRSP spell (``has_successor``) is not
+    counted as a dead stock: it keeps its price path and is handled by the ledger as an
+    ordinary end of series.
 
     Args:
         close: Daily closes, trading days x symbols.

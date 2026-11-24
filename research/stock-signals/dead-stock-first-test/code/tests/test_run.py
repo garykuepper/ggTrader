@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import threading
 from pathlib import Path
+from types import SimpleNamespace
 
 import dead_stock_first_test as study
 import numpy as np
 import pandas as pd
 import pytest
+from ledger_run import BookResult
 from replay import Trade
 
 from ggTrader.utils.study import load_driver as load_driver_by_path
@@ -582,3 +585,616 @@ def test_run_py_has_help(capsys: pytest.CaptureFixture[str]) -> None:
         load_driver().main(["--help"])
     assert done.value.code == 0
     assert "--window" in capsys.readouterr().out
+
+
+# ---- fix round 3: statistics, evidence, audit, drift, pins, labels -------------------------
+
+
+def test_sharpe_and_drawdown_come_from_account_value_and_pretax_pair_is_kept() -> None:
+    days = pd.bdate_range("2010-01-04", periods=60)
+    pretax = pd.Series(np.linspace(100.0, 120.0, 60), index=days)
+    account = pd.Series(
+        np.linspace(100.0, 110.0, 60) * (1 + 0.01 * np.sin(np.arange(60))), index=days
+    )
+    book = BookResult(
+        pretax_equity=pretax,
+        after_tax_final=110.0,
+        tax_paid=10.0,
+        cost_paid=1.0,
+        n_dead_exits=0,
+        dead_exit_writeoff=0.0,
+        cagr_pretax=0.2,
+        cagr_after_tax=0.1,
+        trades=[],
+        account_value=account,
+        unpaid_tax_flag=True,
+    )
+    cell = study._cell(book)
+    from ggTrader.lab.wfo.report import curve_summary
+
+    assert cell["sharpe"] == pytest.approx(curve_summary(account)["sharpe"])
+    assert cell["max_drawdown_pct"] == pytest.approx(curve_summary(account)["max_drawdown_pct"])
+    assert cell["sharpe_pretax_curve"] == pytest.approx(curve_summary(pretax)["sharpe"])
+    assert cell["max_drawdown_pct_pretax_curve"] == pytest.approx(
+        curve_summary(pretax)["max_drawdown_pct"]
+    )
+    assert cell["unpaid_tax_flag"] is True
+    assert cell["account_value_month_end"][-1][0] == str(days[-1].date())
+
+
+def test_negative_final_value_does_not_crash_the_cell_or_the_gap() -> None:
+    days = pd.bdate_range("2010-01-04", periods=40)
+    account = pd.Series(np.linspace(100.0, -5.0, 40), index=days)
+    book = BookResult(
+        pretax_equity=pd.Series(np.linspace(100.0, 50.0, 40), index=days),
+        after_tax_final=-5.0,
+        tax_paid=0.0,
+        cost_paid=0.0,
+        n_dead_exits=0,
+        dead_exit_writeoff=0.0,
+        cagr_pretax=-0.5,
+        cagr_after_tax=-1.0,
+        trades=[],
+        account_value=account,
+        unpaid_tax_flag=True,
+    )
+    cell = study._cell(book)
+    assert cell["account_value_nonpositive"] is True
+    assert np.isnan(cell["sharpe"]) and cell["max_drawdown_pct"] == -100.0
+    parts = study.decomposition_for_loss(
+        spy_zero=8.0,
+        rule_loss0_zero=9.0,
+        rule_zero=7.0,
+        rule_cost_no_tax=6.0,
+        rule_final=-100.0,
+        spy_final=6.5,
+    )
+    assert parts["reconciles"] is True and parts["total_gap_pp"] == pytest.approx(-106.5)
+
+
+def test_every_cell_has_a_month_end_account_value_series(dead: dict) -> None:
+    for cell in [*dead["strategy"].values(), *dead["spy"].values()]:
+        series = cell["account_value_month_end"]
+        assert 20 <= len(series) <= 24 and all(len(row) == 2 for row in series)
+        assert series[-1][1] == pytest.approx(cell["after_tax_final"])
+        assert "unpaid_tax_flag" in cell and "sharpe_pretax_curve" in cell
+
+
+def test_gap_decomposition_reconciles_exactly(dead: dict) -> None:
+    block = dead["gap_decomposition"]
+    assert set(block["by_loss"]) == {"loss1", "loss0.5", "loss0"}
+    for name, part in block["by_loss"].items():
+        loss = float(name.removeprefix("loss"))
+        total = (
+            part["selection_effect_pp"]
+            + part["dead_stock_effect_pp"]
+            + part["trading_cost_effect_pp"]
+            + part["tax_effect_pp"]
+        )
+        assert total == pytest.approx(part["steps_sum_pp"])
+        assert total + part["spy_cost_and_tax_drag_pp"] == pytest.approx(part["total_gap_pp"])
+        assert part["reconciles"] is True and part["matches_cell_gap"] is True
+        cell = dead["strategy"][study.cell_key(loss, 0.00183, "low")]
+        assert part["total_gap_pp"] == pytest.approx(cell["gap_cagr_after_tax_pp"])
+        assert part["rule_minus_spy_zero_cost_zero_tax_pp"] == pytest.approx(total)
+    assert block["by_loss"]["loss0"]["dead_stock_effect_pp"] == pytest.approx(0.0)
+    assert block["by_loss"]["loss1"]["dead_stock_effect_pp"] < 0.0  # the dead stock is written off
+    assert block["by_loss"]["loss1"]["trading_cost_effect_pp"] < 0.0
+
+
+def test_holdings_audit_function_counts_dead_holdings_and_history_split() -> None:
+    days = pd.bdate_range("2010-01-04", "2010-04-30")
+    t = lambda d, sym, q: Trade(pd.Timestamp(d), sym, q, 10.0, "rebalance")  # noqa: E731
+    trades = [t("2010-01-05", "Y", 5.0), t("2010-01-05", "C", 5.0), t("2010-02-26", "Y", -5.0)]
+    ends = pd.Series(pd.to_datetime(["2010-03-15", "2010-03-20"]), index=["C", "Y"])
+    month_ends = [pd.Timestamp(d) for d in ("2010-01-29", "2010-02-26", "2010-03-31")]
+    kinds = {"Y": "linked_yahoo", "C": "placeholder"}
+    audit = study.holdings_audit(trades, month_ends, ends, frozenset({"Y"}), kinds)
+    rows = audit["months"]
+    assert [r["n_held"] for r in rows] == [2, 1, 1]
+    assert [r["n_dead_holdings"] for r in rows] == [1, 1, 0]  # C dies 2010-03-15; Y is later-spell
+    assert rows[0]["n_yahoo_history"] == 1 and rows[0]["n_crsp_only"] == 1
+    assert rows[1]["n_yahoo_history"] == 0 and rows[1]["n_crsp_only"] == 1
+    assert audit["totals"]["held_stock_months"] == 4
+    assert (
+        study.holdings_audit(trades, month_ends, ends, frozenset(), None)["months"][0][
+            "n_yahoo_history"
+        ]
+        is None
+    )
+    assert len(days) > 0
+
+
+def test_run_study_reports_holdings_for_the_three_losses(dead: dict) -> None:
+    assert set(dead["holdings_audit"]) == {
+        study.cell_key(loss, 0.00183, "low") for loss in (1.0, 0.5, 0.0)
+    }
+    months = dead["holdings_audit"][study.cell_key(1.0, 0.00183, "low")]["months"]
+    assert any(m["n_dead_holdings"] for m in months)  # D is held before its death
+    assert all(m["n_yahoo_history"] is None for m in months)  # no release kinds were passed
+
+
+def test_holdings_split_uses_release_kinds() -> None:
+    data = death_inputs()
+    kinds = pd.DataFrame(
+        {
+            "symbol": list(data["close"].columns),
+            "permno": range(len(data["close"].columns)),
+            "kind": ["yahoo"] * 6 + ["placeholder"] * (len(data["close"].columns) - 6),
+        }
+    )
+    result = run(data, release_spans=kinds)
+    totals = result["holdings_audit"][study.cell_key(1.0, 0.00183, "low")]["totals"]
+    assert (
+        totals["yahoo_history_stock_months"] + totals["crsp_only_stock_months"]
+        == totals["held_stock_months"]
+    )
+
+
+def test_n_ended_series_counts_only_the_window() -> None:
+    data = death_inputs()
+    close = data["close"]
+    close["W"] = 20.0
+    close.loc[close.index > "2009-06-30", "W"] = np.nan
+    data["eligible"] = pd.DataFrame(True, index=close.index, columns=close.columns)
+    data["span_rows"] = pd.concat(
+        [
+            data["span_rows"],
+            pd.DataFrame(
+                {
+                    "symbol": ["W"],
+                    "last_date": [pd.Timestamp("2009-06-30")],
+                    "has_successor": [False],
+                    "total_loss": [False],
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
+    result = run(data)
+    assert result["n_ended_series_in_window"] == 1
+    assert result["n_ended_series_in_read"] == 2
+
+
+def test_later_spell_labels_replace_the_buyout_labels(dead: dict) -> None:
+    year = dead["coverage"]["2011"]
+    assert "ever_eligible_later_spell" in year and "held_at_later_spell" in year
+    assert "ever_eligible_bought_out" not in year and "held_at_buyout" not in year
+
+
+def test_skipped_buys_note_says_the_reasons_are_not_split(dead: dict) -> None:
+    assert "does not split" in dead["skipped_buys_note"]
+    assert all("skipped_buys" in c for c in dead["strategy"].values())
+
+
+# trades side file
+
+
+def stub_run_study_with_trades(monkeypatch: pytest.MonkeyPatch, driver) -> None:
+    def fake(*_a, trade_sink=None, **_k):
+        if trade_sink is not None:
+            trade_sink["loss1_cost18.3bps_taxlow"] = [
+                Trade(pd.Timestamp("2020-01-03"), "AAA", 3.5, 10.0, "rebalance"),
+                Trade(pd.Timestamp("2020-02-03"), "AAA", -3.5, 11.0, "liquidation"),
+            ]
+            trade_sink["spy_cost18.3bps_taxlow"] = [
+                Trade(pd.Timestamp("2020-01-02"), "SPY", 1.0, 300.0, "rebalance")
+            ]
+        return {"strategy": {}, "spy": {}}
+
+    monkeypatch.setattr(driver.study, "run_study", fake)
+
+
+def test_trades_side_file_is_written_before_the_main_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    stub_run_study_with_trades(monkeypatch, driver)
+    real = driver.write_json
+    seen = []
+
+    def watching(path, payload, **kw):
+        seen.append((Path(path).name, (tmp_path / "holdout-A-trades.csv.gz").exists()))
+        return real(path, payload, **kw)
+
+    monkeypatch.setattr(driver, "write_json", watching)
+    driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path)
+    assert seen == [("holdout-A.json", True)]
+    with gzip.open(tmp_path / "holdout-A-trades.csv.gz", "rt") as handle:
+        rows = handle.read().splitlines()
+    assert rows[0] == "cell,date,symbol,qty,price,reason"
+    assert "loss1_cost18.3bps_taxlow,2020-01-03,AAA,3.5,10.0,rebalance" in rows
+    assert "spy_cost18.3bps_taxlow,2020-01-02,SPY,1.0,300.0,rebalance" in rows
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_existing_trades_file_refuses_the_holdout_before_the_claim(tmp_path: Path) -> None:
+    driver = load_driver()
+    (tmp_path / "holdout-A-trades.csv.gz").write_bytes(b"x")
+    with pytest.raises(SystemExit) as refused:
+        driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path)
+    assert "holdout-A-trades.csv.gz" in str(refused.value)
+    assert not (tmp_path / "holdout-A.claim").exists()
+
+
+def test_every_cell_of_a_real_run_lands_in_the_trade_file(tmp_path: Path) -> None:
+    sink: dict[str, list] = {}
+    data = death_inputs()
+    study.run_study(
+        data["close"],
+        data["spy_close"],
+        data["eligible"],
+        data["span_rows"],
+        start=START,
+        end=END,
+        trade_sink=sink,
+    )
+    assert len(sink) == 24 and sum(k.startswith("spy_") for k in sink) == 6
+    path = study.write_trades_csv(tmp_path / "t.csv.gz", sink)
+    with gzip.open(path, "rt") as handle:
+        cells = {line.split(",")[0] for line in handle.read().splitlines()[1:]}
+    assert cells == set(sink)
+
+
+# false-death audit
+
+
+class StubCursor:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def execute(self, sql, params):
+        self.conn.queries.append((sql, params))
+
+    def fetchall(self):
+        return self.conn.rows
+
+
+class StubConn:
+    def __init__(self, rows):
+        self.rows = rows
+        self.queries: list = []
+
+    def cursor(self):
+        return StubCursor(self)
+
+
+def audit_spans() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "symbol": [
+                "OK",
+                "FALSE",
+                "LATER1",
+                "LATER2",
+                "OUTSIDE",
+                "ALIVE",
+                "Y2A",
+                "Y2B",
+                "NOPERM",
+            ],
+            "permno": [1, 2, 3, 3, 4, 5, 6, 6, None],
+            "spell": [1, 1, 1, 2, 1, 1, 1, 1, 1],
+            "kind": [
+                "yahoo",
+                "linked_yahoo",
+                "spell",
+                "spell",
+                "yahoo",
+                "placeholder",
+                "yahoo",
+                "linked_yahoo",
+                "yahoo",
+            ],
+            "first_date": pd.to_datetime(["2000-01-03"] * 9),
+            "last_date": pd.to_datetime(
+                [
+                    "2012-05-01",
+                    "2012-05-01",
+                    "2012-05-01",
+                    "2015-01-02",
+                    "2022-05-01",
+                    "2024-12-31",
+                    "2012-06-01",
+                    "2012-06-01",
+                    "2012-05-01",
+                ]
+            ),
+        }
+    )
+
+
+def test_false_death_audit_flags_crsp_running_past_the_end() -> None:
+    conn = StubConn(
+        [
+            (1, pd.Timestamp("2012-05-05")),  # 4 days: inside the 7-day grace, fine
+            (2, pd.Timestamp("2014-03-03")),  # CRSP runs on for two years: suspect
+            (3, pd.Timestamp("2015-01-02")),  # a later spell of the same company
+            (6, pd.Timestamp("2012-06-01")),
+        ]
+    )
+    audit = study.audit_false_deaths(
+        conn,
+        audit_spans(),
+        crsp_load=1,
+        window_start="2005-01-03",
+        window_end="2019-12-31",
+        crsp_end="2024-12-31",
+    )
+    assert audit["n_checked"] == 6  # OUTSIDE (2022) and ALIVE (file end) and NOPERM are not
+    names = {s["symbol"]: s for s in audit["suspects"]}
+    assert set(names) == {"FALSE", "LATER1"}
+    assert names["FALSE"]["crsp_last_date"] == "2014-03-03" and names["FALSE"]["permno"] == 2
+    assert names["FALSE"]["has_later_spell"] is False and names["LATER1"]["has_later_spell"] is True
+    assert audit["n_suspect"] == 2
+    assert audit["multi_symbol_permnos"] == [{"permno": 6, "symbols": ["Y2A", "Y2B"]}]
+    sql, params = conn.queries[0]
+    assert "kaggle_crsp.daily_of" in sql and "max(date)" in sql and params[0] == 1
+    assert "close" not in sql.lower().replace("kaggle_crsp", "")  # no prices or returns read
+
+
+def test_audit_with_nothing_to_check_asks_the_database_nothing() -> None:
+    conn = StubConn([])
+    empty = audit_spans().iloc[0:0]
+    audit = study.audit_false_deaths(
+        conn,
+        empty,
+        crsp_load=1,
+        window_start="2005-01-03",
+        window_end="2019-12-31",
+        crsp_end="2024-12-31",
+    )
+    assert audit["n_checked"] == 0 and conn.queries == []
+
+
+def test_audit_only_never_claims_and_never_loads_prices(tmp_path: Path) -> None:
+    driver = load_driver()
+
+    def boom(*_a, **_k):
+        raise AssertionError("prices must not be loaded")
+
+    block = {"n_checked": 3, "n_suspect": 0, "suspects": [], "multi_symbol_permnos": []}
+    code = driver.main(
+        [*holdout_argv(), "--audit-only"],
+        loader=boom,
+        audit_loader=lambda _a: block,
+        results_dir=tmp_path,
+    )
+    assert code == 0
+    payload = json.loads((tmp_path / "holdout-A-audit.json").read_text())
+    assert payload["false_death_audit"] == block
+    assert list(tmp_path.glob("*.claim")) == [] and not (tmp_path / "holdout-A.json").exists()
+    # it may be repeated, and it still never touches the claim
+    driver.main(
+        [*holdout_argv(), "--audit-only"], audit_loader=lambda _a: block, results_dir=tmp_path
+    )
+
+
+def test_main_run_includes_the_audit_block(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+
+    def loader(args):
+        return {**fake_inputs(args), "false_death_audit": {"n_checked": 7}}
+
+    driver.main(
+        ["--window", "dev", "--universe", "A", "--release-id", "1"],
+        loader=loader,
+        results_dir=tmp_path,
+    )
+    result = json.loads((tmp_path / "dev-A.json").read_text())["result"]
+    assert result["false_death_audit"] == {"n_checked": 7}
+
+
+# drift
+
+
+def test_reader_carries_drift_into_its_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
+    import bars_reader
+
+    def fake_load_bars(symbols, start, end, *, source, release_id):
+        days = pd.DatetimeIndex(pd.bdate_range("2020-01-02", periods=3), tz="UTC")
+        frame = pd.DataFrame(1.0, index=days, columns=sorted(symbols))
+        drifted = "B" in symbols
+        return SimpleNamespace(
+            close=frame,
+            spans=pd.DataFrame({"symbol": [], "last_date": [], "has_successor": []}),
+            provenance={
+                "data_release": {"release_id": 1},
+                "bars_sha256": "x",
+                "drift": drifted,
+                "drift_symbols": ["B"] if drifted else [],
+            },
+        )
+
+    monkeypatch.setattr(bars_reader, "load_bars", fake_load_bars)
+    clean: dict = {}
+    bars_reader.read_close_batched(
+        ["A"], "2020-01-02", "2020-01-06", release_id=1, provenance_out=clean
+    )
+    assert clean["drift"] is False and clean["drift_symbols"] == []
+    found: dict = {}
+    bars_reader.read_close_batched(
+        ["A", "B", "C"], "2020-01-02", "2020-01-06", release_id=1, batch=1, provenance_out=found
+    )
+    assert found["drift"] is True and found["drift_symbols"] == ["B"]
+
+
+def test_linked_drift_preflight_reads_metadata_only() -> None:
+    import bars_reader
+
+    calls = []
+
+    class Cursor(StubCursor):
+        def execute(self, sql, params):
+            calls.append((sql, params))
+            self.rows = [("L1",), ("L2",)] if "FROM market.stock_spans" in sql else [("L2",)]
+
+        def fetchall(self):
+            return self.rows
+
+    class Conn:
+        def cursor(self):
+            return Cursor(self)
+
+    assert bars_reader.read_linked_drift(Conn(), 1) == ["L2"]
+    assert calls[1][1] == (1, ["L1", "L2"])
+    assert "ohlcv" not in calls[1][0].lower() and "daily" not in calls[1][0].lower()
+
+
+def test_holdout_refuses_on_drift_before_the_claim(tmp_path: Path) -> None:
+    driver = load_driver()
+    with pytest.raises(SystemExit) as refused:
+        driver.main(
+            holdout_argv(),
+            loader=lambda _a: pytest.fail("data was read"),
+            results_dir=tmp_path,
+            drift_preflight=lambda _a: ["LNK1", "LNK2"],
+        )
+    assert "drift" in str(refused.value) and "nothing was claimed" in str(refused.value)
+    assert list(tmp_path.glob("*")) == []
+
+
+def test_holdout_stops_after_the_read_when_drift_shows_up_and_keeps_the_claim(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+
+    def drifting(args):
+        data = fake_inputs(args)
+        data["data_provenance"] = {"candidates": {"drift": True, "drift_symbols": ["XYZ"]}}
+        return data
+
+    with pytest.raises(SystemExit) as refused:
+        driver.main(holdout_argv(), loader=drifting, results_dir=tmp_path)
+    assert "XYZ" in str(refused.value)
+    assert (tmp_path / "holdout-A.claim").exists() and not (tmp_path / "holdout-A.json").exists()
+
+
+def test_dev_records_drift_but_does_not_refuse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+
+    def drifting(args):
+        data = fake_inputs(args)
+        data["data_provenance"] = {"candidates": {"drift": True, "drift_symbols": ["XYZ"]}}
+        return data
+
+    driver.main(
+        ["--window", "dev", "--universe", "A", "--release-id", "1"],
+        loader=drifting,
+        results_dir=tmp_path,
+        drift_preflight=lambda _a: pytest.fail("dev must not run the holdout preflight"),
+    )
+    payload = json.loads((tmp_path / "dev-A.json").read_text())
+    assert payload["provenance"]["drift_symbols"] == ["XYZ"]
+
+
+# pins
+
+
+def test_pin_constants() -> None:
+    assert study.PIN_RELEASE_ID == 1 and study.PIN_CRSP_LOAD == 1
+
+
+@pytest.mark.parametrize(
+    ("release", "crsp", "dirty", "word"),
+    [(2, 1, False, "release-id"), (1, 2, False, "crsp-load"), (1, 1, True, "working tree")],
+)
+def test_holdout_pins_refuse_before_the_claim(
+    tmp_path: Path, release: int, crsp: int, dirty: bool, word: str
+) -> None:
+    driver = load_driver()
+    argv = ["--window", "holdout", "--universe", "A", "--release-id", str(release)]
+    argv += ["--crsp-load", str(crsp)]
+    with pytest.raises(SystemExit) as refused:
+        driver.main(
+            argv,
+            loader=lambda _a: pytest.fail("data was read"),
+            results_dir=tmp_path,
+            git_dirty=lambda: dirty,
+        )
+    assert word in str(refused.value)
+    assert list(tmp_path.glob("*")) == []
+
+
+def test_clean_pinned_holdout_passes_the_pins(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    assert (
+        driver.main(
+            holdout_argv(),
+            loader=fake_inputs,
+            results_dir=tmp_path,
+            git_dirty=lambda: False,
+            drift_preflight=lambda _a: [],
+        )
+        == 0
+    )
+
+
+def test_dev_ignores_the_pins(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    argv = ["--window", "dev", "--universe", "A", "--release-id", "2", "--crsp-load", "3"]
+    assert driver.main(argv, loader=fake_inputs, results_dir=tmp_path, git_dirty=lambda: True) == 0
+
+
+def test_git_tree_dirty_reads_tracked_changes_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen["cmd"] = cmd
+        return SimpleNamespace(stdout=" M some/file.py\n")
+
+    monkeypatch.setattr(study.subprocess, "run", fake_run)
+    assert study.git_tree_dirty(Path(".")) is True
+    assert seen["cmd"] == ["git", "status", "--porcelain", "--untracked-files=no"]
+    monkeypatch.setattr(study.subprocess, "run", lambda *a, **k: SimpleNamespace(stdout=""))
+    assert study.git_tree_dirty(Path(".")) is False
+
+
+def test_a_real_run_writes_valid_json_with_every_new_block(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No stubs: the whole result, including the new blocks, must serialise."""
+    driver = load_driver()
+    monkeypatch.setattr(study, "WINDOWS", {**study.WINDOWS, "dev": (START, END)})
+    data = death_inputs()
+    driver.main(
+        ["--window", "dev", "--universe", "A", "--release-id", "1"],
+        loader=lambda _a: {**data, "false_death_audit": {"n_checked": 0}},
+        results_dir=tmp_path,
+    )
+    payload = json.loads((tmp_path / "dev-A.json").read_text())
+    result = payload["result"]
+    for name in (
+        "strategy",
+        "spy",
+        "coverage",
+        "sanity",
+        "window_check",
+        "death_price_paths",
+        "gap_decomposition",
+        "holdings_audit",
+        "n_file_end_censored",
+        "n_rebalance_steps",
+        "n_columns",
+        "n_ended_series_in_window",
+        "n_ended_series_in_read",
+        "false_death_audit",
+    ):
+        assert name in result
+    assert payload["provenance"]["crsp_end"] == "2024-12-31"
+    assert (tmp_path / "dev-A-trades.csv.gz").exists()

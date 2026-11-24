@@ -23,6 +23,13 @@ SPANS_SQL = (
     "FROM market.stock_spans WHERE release_id = %s ORDER BY symbol"
 )
 DEFAULT_BATCH = 500
+# Which linked Yahoo columns changed since the release was published (a metadata check that
+# reads only the first few Yahoo closes next to each splice, never the window's prices).
+DRIFT_SQL = "SELECT symbol FROM market._combined_linked(%s, %s) WHERE drift ORDER BY symbol"
+LINKED_SQL = (
+    "SELECT symbol FROM market.stock_spans "
+    "WHERE release_id = %s AND kind = 'linked_yahoo' ORDER BY symbol"
+)
 
 
 def read_release_spans(conn: Any, release_id: int) -> pd.DataFrame:
@@ -44,6 +51,25 @@ def read_release_spans(conn: Any, release_id: int) -> pd.DataFrame:
         frame[name] = pd.to_datetime(frame[name])
     frame["possible_double"] = frame["possible_double"].fillna(False).astype(bool)
     return frame
+
+
+def read_linked_drift(conn: Any, release_id: int) -> list[str]:
+    """Linked Yahoo columns whose Yahoo rows no longer match the pinned release (drift).
+
+    One metadata read: the release's linked columns, then the release function's own drift
+    flag for them. It never reads the window's prices.
+
+    Returns:
+        The drifted symbols, sorted (empty when none).
+    """
+    with conn.cursor() as cur:
+        cur.execute(LINKED_SQL, (int(release_id),))
+        linked = [row[0] for row in cur.fetchall()]
+    if not linked:
+        return []
+    with conn.cursor() as cur:
+        cur.execute(DRIFT_SQL, (int(release_id), linked))
+        return sorted(row[0] for row in cur.fetchall())
 
 
 def symbol_batches(symbols: Sequence[str], batch: int) -> list[list[str]]:
@@ -72,7 +98,9 @@ def read_close_batched(
         release_id: The published release to read (always given, never "newest").
         batch: Symbols per ``load_bars`` call.
         provenance_out: If given, filled with ``data_release`` (from the first batch),
-            ``bars_sha256`` per batch (list) and ``n_batches``.
+            ``bars_sha256`` per batch (list), ``n_batches``, and ``drift`` (any batch reported
+            drift: the live Yahoo rows no longer match the pinned release) with the
+            ``drift_symbols`` seen (each batch's list is already cut at 50 by ``load_bars``).
 
     Returns:
         ``(close, spans)``: ``close`` is dates by symbols with sorted columns (only symbols with
@@ -86,6 +114,8 @@ def read_close_batched(
     closes: list[pd.DataFrame] = []
     spans: list[pd.DataFrame] = []
     hashes: list[str | None] = []
+    drift = False
+    drift_symbols: set[str] = set()
     data_release = None
     for part in parts:
         bars = load_bars(part, start, end, source="combined", release_id=release_id)
@@ -94,10 +124,18 @@ def read_close_batched(
             spans.append(bars.spans)
         hashes.append(bars.provenance.get("bars_sha256"))
         data_release = data_release or bars.provenance.get("data_release")
+        drift = drift or bool(bars.provenance.get("drift", False))
+        drift_symbols.update(bars.provenance.get("drift_symbols") or [])
         del bars  # frees open, high, low and volume before the next batch
     if provenance_out is not None:
         provenance_out.update(
-            {"data_release": data_release, "bars_sha256": hashes, "n_batches": len(parts)}
+            {
+                "data_release": data_release,
+                "bars_sha256": hashes,
+                "n_batches": len(parts),
+                "drift": drift,
+                "drift_symbols": sorted(drift_symbols),
+            }
         )
     close = pd.concat(closes, axis=1) if closes else pd.DataFrame()
     spans_frame = pd.concat(spans, ignore_index=True) if spans else pd.DataFrame()
