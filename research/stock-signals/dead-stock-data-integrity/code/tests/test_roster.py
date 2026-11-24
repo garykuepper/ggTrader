@@ -190,3 +190,51 @@ def test_build_roster_reads_both_files(tmp_path: Path, fake_conn: FakeConn) -> N
         "name_source",
     }
     assert expected <= set(out.columns)
+
+
+def _resolve(symbol_map: list[tuple], symbol: str, exit_date: str) -> Any:
+    """Run the ticker-to-PERMNO step through a fake connection holding one symbol map."""
+    conn = FakeConn(mcgill=[], symbol_map=symbol_map)
+    result = {
+        "result": {
+            "death_price_paths": {
+                "exits": [{"symbol": symbol, "exit_date": exit_date, "last_close": 10.0}]
+            }
+        }
+    }
+    out = roster.attach_names(conn, roster.parse_exits(result, "dev", "A"), 2, 1)
+    return out["permno"].iloc[0]
+
+
+def test_ticker_symbol_reuse_picks_span_covering_exit() -> None:
+    # HSP was reused: permno 80752 until 2003, permno 90110 (Hospira) 2005 to 2015.
+    hsp = [
+        (80752, "HSP", dt.date(2000, 6, 30), dt.date(2003, 8, 29), "mcgill", 1),
+        (90110, "HSP", dt.date(2005, 6, 30), dt.date(2015, 8, 31), "mcgill", 1),
+        (90110, "HSP", dt.date(2008, 12, 8), dt.date(2015, 9, 2), "return-match", 1),
+    ]
+    assert _resolve(hsp, "HSP", "2015-09-02") == 90110
+    assert _resolve(hsp, "HSP", "2002-01-15") == 80752
+
+
+def test_ticker_competing_covering_spans_take_latest_valid_from() -> None:
+    both = [
+        (111, "XYZ", dt.date(2000, 1, 31), dt.date(2012, 12, 31), "mcgill", 1),
+        (222, "XYZ", dt.date(2008, 1, 31), dt.date(2012, 12, 31), "mcgill", 1),
+    ]
+    assert _resolve(both, "XYZ", "2010-06-01") == 222
+
+
+def test_ticker_without_covering_span_takes_nearest_ending_span() -> None:
+    gap = [
+        (111, "XYZ", dt.date(1995, 1, 31), dt.date(2001, 12, 31), "mcgill", 1),
+        (222, "XYZ", dt.date(2003, 1, 31), dt.date(2009, 5, 31), "mcgill", 1),
+    ]
+    # Exit 2010-01-15 lies after both spans; 222 ended closer (about 8 months vs 8 years).
+    assert _resolve(gap, "XYZ", "2010-01-15") == 222
+    # Exit 2002-06-01 lies in the gap between spans; 111 ended 5 months earlier, 222 ends later.
+    assert _resolve(gap, "XYZ", "2002-06-01") == 111
+
+
+def test_ticker_missing_from_symbol_map_stays_empty() -> None:
+    assert pd.isna(_resolve([], "NOPE", "2010-01-15"))

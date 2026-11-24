@@ -17,7 +17,7 @@ values or say which line it departs from.
 - eval_end: 2024-12-31
 - max_leverage: 1.0
 - benchmark: none needed; no strategy is rerun by this study (SPY is the benchmark of the first test it audits)
-- costs: 0 bps; no trades are simulated by this study (the first test used 6.4, 18.3 and 40 bps per side)
+- costs: 0 percent of each trade's value; no trades are simulated by this study (the first test charged 0.064, 0.183 and 0.40 percent of each trade's value per side)
 - family_size: 1
 - seed: none (nothing in this study is random)
 
@@ -173,3 +173,13 @@ data itself shows it.
   only through `scripts/run_capped.sh`, one at a time. The trader stays stopped.
 - Phase 1 (Tasks 1-4) uses only our own database and result files. Phase 2 (Tasks 5-8, the SEC
   downloads) starts only after the owner's go.
+
+## Dated clarifications
+
+- **2026-11-24 (roster labels).** Every roster row gets a name-source label: `mcgill` (a McGill
+  row on or before the exit date), `mcgill_later` (only later McGill rows exist) or `none`.
+  Only rows with no McGill name get `none`. The three Yahoo-ticker exits (`ARG`, `FRX`, `HSP`)
+  are not unnamed by default: each is turned into a PERMNO through `ref.symbol_map` (release 1)
+  and is named when McGill has that PERMNO. In the real data all three are named (Airgas,
+  Forest Labs, Hospira). The sentence in section 1 that groups them with the unnamed stocks
+  means only that they are kept in the roster and labelled, never dropped.
