@@ -328,23 +328,25 @@
   ],
   "quarters_skipped": [],
   "request_count": {
-    "network_fetches": 2,
-    "cache_hits": 265,
+    "network_fetches": 24,
+    "cache_hits": 267,
     "corrupt_cache_refetches": 0
   },
   "summary": {
     "roster_rows": 141,
     "named_stocks": 133,
-    "name_matched": 96,
-    "confirmed_common": 90,
+    "name_matched": 108,
+    "confirmed_common": 101,
     "unconfirmed_unreadable": 6,
-    "non_common_only": 0,
+    "non_common_only": 1,
     "rejected_issuer_mismatch": 0,
     "ambiguous": 0,
-    "none": 37,
+    "none": 25,
     "name_unknown": 8,
-    "matched": 96,
-    "matched_rate_of_named": 0.7218045112781954
+    "matched": 107,
+    "matched_v1": 96,
+    "matched_v1_1_only": 11,
+    "matched_rate_of_named": 0.8045112781954887
   },
   "stocks": [
     {
@@ -356,6 +358,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -378,6 +381,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -404,6 +408,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -421,7 +426,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-87254",
@@ -441,6 +447,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -468,6 +475,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -494,6 +502,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -520,6 +529,7 @@
           "state": "unreadable"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "unconfirmed_unreadable",
       "notice": {
@@ -537,6 +547,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -546,26 +557,78 @@
       "permno": "25769",
       "stock_name": "KERR-MCGEE",
       "exit_date": "2006-08-10",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0001141185"
+      ],
+      "accessions": [
+        "0000876661-06-000692"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001141185",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-06-000692",
+        "document_path": "/Archives/edgar/data/1141185/000087666106000692/primary_doc.xml",
+        "index_sha256": "d6b34d90b07a5f966c2184092cafbcd424fc8ff612007894a6799e64b1f1f5c5",
+        "document_sha256": "8ecfdc52f2f332193083facbde6f37fd8a014a8c0e820ee8cf147531f217ebc1",
+        "notice": {
+          "issuer_cik": "0001141185",
+          "issuer_name": "KERR MCGEE CORP /DE",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2006-08-16"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-81178",
       "permno": "81178",
       "stock_name": "RSA SECURITY",
       "exit_date": "2006-09-15",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000932064"
+      ],
+      "accessions": [
+        "0001354457-06-000064"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000932064",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-06-000064",
+        "document_path": "/Archives/edgar/data/932064/000135445706000064/primary_doc.xml",
+        "index_sha256": "760b8844b5ad0cd7461a4992727ca9ea339f5419faf20d965a1f9e0fcd454971",
+        "document_sha256": "97a01ddc394052b45bde2bad8f311585c0142b29c05f9ee2eb0b3155a8c727c1",
+        "notice": {
+          "issuer_cik": "0000932064",
+          "issuer_name": "RSA SECURITY INC/DE/",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2006-09-15"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-76598",
@@ -586,6 +649,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -624,6 +688,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -653,7 +718,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-76769",
@@ -664,6 +730,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -677,6 +744,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -699,6 +767,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -737,6 +806,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -775,6 +845,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -813,6 +884,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -838,13 +910,39 @@
       "permno": "76656",
       "stock_name": "MEDIMMUNE INC",
       "exit_date": "2007-06-18",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000873591"
+      ],
+      "accessions": [
+        "0001354457-07-000178"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000873591",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000178",
+        "document_path": "/Archives/edgar/data/873591/000135445707000178/primary_doc.xml",
+        "index_sha256": "ddd081db6289456f825a8b99abe09079a895acdd04b386f871bb70cbcf9d6122",
+        "document_sha256": "6878c1cd7d1e0e1d8ef4d937b1bc101cdd9c553d055bf99ea763302f7eea07d1",
+        "notice": {
+          "issuer_cik": "0000873591",
+          "issuer_name": "MEDIMMUNE INC /DE",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-06-18"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-87587",
@@ -864,6 +962,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -902,6 +1001,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -931,6 +1031,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -944,6 +1045,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -966,6 +1068,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1004,6 +1107,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1042,6 +1146,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1080,6 +1185,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1118,6 +1224,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1156,6 +1263,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1194,6 +1302,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1232,6 +1341,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1257,13 +1367,40 @@
       "permno": "59184",
       "stock_name": "ANHEUSER BUSCH",
       "exit_date": "2008-11-17",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000310569"
+      ],
+      "accessions": [
+        "0000876661-08-000489",
+        "0000950137-08-014153"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000310569",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-08-000489",
+        "document_path": "/Archives/edgar/data/310569/000087666108000489/primary_doc.xml",
+        "index_sha256": "8704f9a8badb68f29b4d9400d9f94aad3bd8d7074877f0de917b886cc122c3a5",
+        "document_sha256": "4eaefa58f43c4539599f2c1ca85efcd5453ee8562a4df5255bc44e7185ec9fe0",
+        "notice": {
+          "issuer_cik": "0000310569",
+          "issuer_name": "ANHEUSER-BUSCH COMPANIES, INC.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-11-26"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-77103",
@@ -1283,6 +1420,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1312,6 +1450,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -1325,6 +1464,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -1334,12 +1474,25 @@
       "permno": "65832",
       "stock_name": "ALPHARMA INC-A",
       "exit_date": "2008-12-29",
-      "status": "none",
       "ciks": [],
       "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
+      "rejected_ciks": [
+        {
+          "cik": "0000730469",
+          "reason": "non_common_only",
+          "detail": "Class A Common Stock, Preferred Stock Purchase Rights"
+        }
+      ],
+      "cik_checks": [
+        {
+          "cik": "0000730469",
+          "state": "non_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "none",
+      "reason": "non_common_only",
+      "confirmation": "non_common_only",
       "notice": null
     },
     {
@@ -1351,6 +1504,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -1373,6 +1527,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1411,6 +1566,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1449,6 +1605,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1487,6 +1644,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1525,6 +1683,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1563,6 +1722,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1592,6 +1752,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -1601,13 +1762,39 @@
       "permno": "79641",
       "stock_name": "CONTL AIRLINES",
       "exit_date": "2010-09-30",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000319687"
+      ],
+      "accessions": [
+        "0000876661-10-000370"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000319687",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-10-000370",
+        "document_path": "/Archives/edgar/data/319687/000087666110000370/primary_doc.xml",
+        "index_sha256": "a4c7823e4bd50a94804b650a6706d8fbf243d1e36722a54572a3e0f7800651e5",
+        "document_sha256": "c965c256cdb648996f9e99aecabf856a87d79e9f98731b8d2ba5911b865eb530",
+        "notice": {
+          "issuer_cik": "0000319687",
+          "issuer_name": "CONTINENTAL AIRLINES INC /DE/",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Class B Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2010-10-04"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-92381",
@@ -1627,6 +1814,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1656,7 +1844,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-92182",
@@ -1667,7 +1856,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-91669",
@@ -1687,6 +1877,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1725,6 +1916,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1763,6 +1955,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1801,6 +1994,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1839,6 +2033,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1868,7 +2063,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-75101",
@@ -1888,6 +2084,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1926,6 +2123,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -1955,6 +2153,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -1977,6 +2176,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2006,6 +2206,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -2029,6 +2230,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2067,6 +2269,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2105,6 +2308,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2143,6 +2347,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2168,13 +2373,39 @@
       "permno": "77481",
       "stock_name": "EL PASO CO",
       "exit_date": "2012-05-24",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0001066107"
+      ],
+      "accessions": [
+        "0000876661-12-000250"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001066107",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-12-000250",
+        "document_path": "/Archives/edgar/data/1066107/000087666112000250/primary_doc.xml",
+        "index_sha256": "54c1fca653a1bdeebbdde6c1a2b3787f7a80ed1da4c087e5ce4b9dcecae33281",
+        "document_sha256": "053b8e6cc758be1ccfabcc87cf0091906ac0117bf41efe0338e757244c246a5a",
+        "notice": {
+          "issuer_cik": "0001066107",
+          "issuer_name": "EL PASO CORP/DE",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-05-25"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-77264",
@@ -2194,6 +2425,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2232,6 +2464,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2261,6 +2494,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -2283,6 +2517,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2321,6 +2556,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2359,6 +2595,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2384,13 +2621,39 @@
       "permno": "80557",
       "stock_name": "MCMORAN EXPLOR",
       "exit_date": "2013-06-03",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000064279"
+      ],
+      "accessions": [
+        "0000876661-13-000384"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000064279",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-13-000384",
+        "document_path": "/Archives/edgar/data/64279/000087666113000384/primary_doc.xml",
+        "index_sha256": "38f427ada1d1fa6bf42dfa82f4578fd2d7be0f833f896d9f17d0cf5b09546f27",
+        "document_sha256": "6c6b724998c7491db8c865f5de78a2ac267ccc7d001a2af054222312caa48e87",
+        "notice": {
+          "issuer_cik": "0000064279",
+          "issuer_name": "MCMORAN EXPLORATION CO /DE/",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2013-06-04"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-89644",
@@ -2410,6 +2673,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2439,6 +2703,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -2462,6 +2727,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2500,6 +2766,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2529,6 +2796,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -2551,6 +2819,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2590,6 +2859,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2628,6 +2898,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2653,13 +2924,39 @@
       "permno": "14062",
       "stock_name": "ATHLON ENERGY IN",
       "exit_date": "2014-11-12",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0001574648"
+      ],
+      "accessions": [
+        "0000876661-14-000579"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001574648",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-14-000579",
+        "document_path": "/Archives/edgar/data/1574648/000087666114000579/primary_doc.xml",
+        "index_sha256": "c16f30ebff8feed7a4263ebea38a11a64bf6c8e4869bbb506097350be8afca36",
+        "document_sha256": "5437571e4036439b6dfc304cd11527d4d63f33108c92386c17e3e528377c8d19",
+        "notice": {
+          "issuer_cik": "0001574648",
+          "issuer_name": "Athlon Energy Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock, par value $0.01 per share",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-11-14"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-13430",
@@ -2679,6 +2976,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2717,6 +3015,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2755,6 +3054,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2780,13 +3080,39 @@
       "permno": "27705",
       "stock_name": "INTL RECTIFIER",
       "exit_date": "2015-01-13",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000316793"
+      ],
+      "accessions": [
+        "0000876661-15-000015"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000316793",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-15-000015",
+        "document_path": "/Archives/edgar/data/316793/000087666115000015/primary_doc.xml",
+        "index_sha256": "ae0c078a7cc74b3de38fff65001c61ed8abf564016af4b0e1095c3521cd9d914",
+        "document_sha256": "bd87f9c8bba6b3ef998dda8e9294dfc1066fd416f465d855635f26151ae53e17",
+        "notice": {
+          "issuer_cik": "0000316793",
+          "issuer_name": "INTERNATIONAL RECTIFIER CORP /DE/",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-01-15"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-83413",
@@ -2806,6 +3132,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2844,6 +3171,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2882,6 +3210,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2920,6 +3249,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2958,6 +3288,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -2996,6 +3327,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3034,6 +3366,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3072,6 +3405,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3110,6 +3444,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3148,6 +3483,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3177,6 +3513,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3199,6 +3536,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3237,6 +3575,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3275,6 +3614,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3313,6 +3653,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3338,13 +3679,39 @@
       "permno": "68857",
       "stock_name": "CABLEVISION SYS",
       "exit_date": "2016-06-21",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0001053112"
+      ],
+      "accessions": [
+        "0000876661-16-001048"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001053112",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-001048",
+        "document_path": "/Archives/edgar/data/1053112/000087666116001048/primary_doc.xml",
+        "index_sha256": "35ba4d310993481ee14889093a7cc60015852cec680ffdd8e5baa0a645e91f7f",
+        "document_sha256": "e5bde479856c687f5bc8a906447dcc5c365803cb8f2d1bf84166d7a3336e790e",
+        "notice": {
+          "issuer_cik": "0001053112",
+          "issuer_name": "CABLEVISION SYSTEMS CORP /NY",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "NY Group Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-06-21"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-15553",
@@ -3364,6 +3731,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3402,6 +3770,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3440,6 +3809,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3478,6 +3848,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3507,6 +3878,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3529,6 +3901,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3567,6 +3940,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3596,6 +3970,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3609,7 +3984,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-14160",
@@ -3620,6 +3996,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3642,6 +4019,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3667,13 +4045,39 @@
       "permno": "50788",
       "stock_name": "ESTERLINE TECH",
       "exit_date": "2019-03-13",
-      "status": "none",
-      "ciks": [],
-      "accessions": [],
-      "by_cik": {},
-      "reason": "no_name_match",
-      "confirmation": "not_checked",
-      "notice": null
+      "ciks": [
+        "0000033619"
+      ],
+      "accessions": [
+        "0000876661-19-000241"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000033619",
+          "state": "confirmed_common"
+        }
+      ],
+      "rule_version": "v1.1",
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-19-000241",
+        "document_path": "/Archives/edgar/data/33619/000087666119000241/primary_doc.xml",
+        "index_sha256": "6288625dc90ef2efbb67f9b1a2acc83f57cf51394cc5a47ba8af24c23192b245",
+        "document_sha256": "7f2e7a3cc9811416875c600e0f36337bb9cc791923972de4cfc71ed4559d3cab",
+        "notice": {
+          "issuer_cik": "0000033619",
+          "issuer_name": "ESTERLINE TECHNOLOGIES CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2019-03-14"
+        },
+        "is_common_stock": true
+      }
     },
     {
       "symbol": "PERMNO-44506",
@@ -3693,6 +4097,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3731,6 +4136,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3760,6 +4166,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3782,6 +4189,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3820,6 +4228,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3849,6 +4258,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -3871,6 +4281,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3909,6 +4320,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3947,6 +4359,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -3985,6 +4398,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4023,6 +4437,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4052,6 +4467,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -4065,6 +4481,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -4078,6 +4495,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -4100,6 +4518,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4129,7 +4548,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-91983",
@@ -4149,6 +4569,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4187,6 +4608,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4225,6 +4647,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4254,7 +4677,8 @@
       "ciks": [],
       "accessions": [],
       "confirmation": "not_checked",
-      "notice": null
+      "notice": null,
+      "rule_version": null
     },
     {
       "symbol": "PERMNO-20142",
@@ -4274,6 +4698,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4303,6 +4728,7 @@
       "ciks": [],
       "accessions": [],
       "by_cik": {},
+      "rule_version": "v1.1",
       "reason": "no_name_match",
       "confirmation": "not_checked",
       "notice": null
@@ -4325,6 +4751,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4363,6 +4790,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4401,6 +4829,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4439,6 +4868,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4477,6 +4907,7 @@
           "state": "confirmed_common"
         }
       ],
+      "rule_version": "v1",
       "status": "matched",
       "confirmation": "confirmed_common",
       "notice": {
@@ -4605,12 +5036,16 @@
     "https://www.sec.gov/Archives/edgar/data/1027974/999999999706009042/": "82b3ec6248e31ab5ddcc6532885433cd2a9977b1423dec6a3e7792ea3063f404",
     "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/": "ed80f875cf065912c24140663c65f43120b05a38690c6557e5c2dc1a33b42234",
     "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/primary_doc.xml": "5fd78dcf6521d30a8a841dffb36805aa1c0dea7bf3f0115a88316b797a0005d8",
+    "https://www.sec.gov/Archives/edgar/data/1053112/000087666116001048/": "35ba4d310993481ee14889093a7cc60015852cec680ffdd8e5baa0a645e91f7f",
+    "https://www.sec.gov/Archives/edgar/data/1053112/000087666116001048/primary_doc.xml": "e5bde479856c687f5bc8a906447dcc5c365803cb8f2d1bf84166d7a3336e790e",
     "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/": "4cdf781e2a32f7857e6220e40a61f1b640cf0729dfc07d8c2afc4684913e3732",
     "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/primary_doc.xml": "de588e11d63c166dd91a44292cf0b2c384f9fd71dc3d1e9b38535ea70ad39d5a",
     "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/": "3167d4e2e5540801ad77b6c3785503521656c0ce52cbce2d0939243b072e213d",
     "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/primary_doc.xml": "a54f193801cb0f9dfd2cda4a358ed3500300346865d958f3f0da61a42c5ae7c7",
     "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/": "3dc92b74bca72a31ec21d7de86a9f7e041b3e5099acc185a0c6e8303170fbb0a",
     "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/primary_doc.xml": "51ba3b19659dd869ec5aceb02ea4100eac635aab1cb90dce3dd137f0c77beedf",
+    "https://www.sec.gov/Archives/edgar/data/1066107/000087666112000250/": "54c1fca653a1bdeebbdde6c1a2b3787f7a80ed1da4c087e5ce4b9dcecae33281",
+    "https://www.sec.gov/Archives/edgar/data/1066107/000087666112000250/primary_doc.xml": "053b8e6cc758be1ccfabcc87cf0091906ac0117bf41efe0338e757244c246a5a",
     "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/": "da1bf103b1093715069b3d4a7a3d477bbfbf15f92f0438645212ef1d84d3f51a",
     "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/primary_doc.xml": "8a08ce48fb88830842bd2b31dc990011b4a0a8d160cdbd365ab47e1b3a8ae278",
     "https://www.sec.gov/Archives/edgar/data/1084755/000135445712000213/": "621d9096152e554ec19edf8f44999eb4a238314c6b88821b479b698f796f8bb0",
@@ -4630,6 +5065,8 @@
     "https://www.sec.gov/Archives/edgar/data/1100962/000135445714000036/primary_doc.xml": "343cd68eae5f0c9dfb2c8942eba871329f86f33852357bc70db1427fa6c978fe",
     "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/": "77a8335f807711f476bface27d84d5f4a44e99a2de856ae9be5eab017bf26d1b",
     "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/primary_doc.xml": "f99de1ce9ed6cfa13f52d62f258fa408dd550a9f22ba3068831a921f6852345e",
+    "https://www.sec.gov/Archives/edgar/data/1141185/000087666106000692/": "d6b34d90b07a5f966c2184092cafbcd424fc8ff612007894a6799e64b1f1f5c5",
+    "https://www.sec.gov/Archives/edgar/data/1141185/000087666106000692/primary_doc.xml": "8ecfdc52f2f332193083facbde6f37fd8a014a8c0e820ee8cf147531f217ebc1",
     "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/": "2b92b436613bb02c096fa531f820d43684f9742e40c503a5e46b408fdda72f78",
     "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/primary_doc.xml": "025e84112da8fcf0f082ef6d2fc30821c1d061942c33f0c135db8664d808e3d6",
     "https://www.sec.gov/Archives/edgar/data/1144354/000087666116000942/": "511995d33e98d3d09e47803f1946cf1937e2e7fe1685f0b7592208a974923060",
@@ -4687,6 +5124,8 @@
     "https://www.sec.gov/Archives/edgar/data/1510580/000135445717000197/primary_doc.xml": "3a6d73ff9be062524f6cdf1a38f067db4d4cfe2648b3603412c7f6c51e6f807e",
     "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/": "9ddcd51914c7bf906d71f1a8c1be9261dadaf8511ddd6c47f42175c3905de57c",
     "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/primary_doc.xml": "dd83155f7e8830b7cc5d5aeea013f429b548c5f8274eb7ee4101f2523a508e6d",
+    "https://www.sec.gov/Archives/edgar/data/1574648/000087666114000579/": "c16f30ebff8feed7a4263ebea38a11a64bf6c8e4869bbb506097350be8afca36",
+    "https://www.sec.gov/Archives/edgar/data/1574648/000087666114000579/primary_doc.xml": "5437571e4036439b6dfc304cd11527d4d63f33108c92386c17e3e528377c8d19",
     "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/": "a0105d7dcbb532df1e19199a0c954a0e7f966bf9fbcdd2961229575c655f340b",
     "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/primary_doc.xml": "b7d11c4b7998a63c20a3730f26ffd849f6aea87cb59922c09a733bb8db009f96",
     "https://www.sec.gov/Archives/edgar/data/1614436/000135445716000585/": "4a78db11a849b2fc72250e0076b732d7df0b82a0510bcfdaddb8687ddb0db825",
@@ -4705,7 +5144,15 @@
     "https://www.sec.gov/Archives/edgar/data/203248/000087666112000125/primary_doc.xml": "fb2ef5c291d466fabec79f58e35685fcfc8b58870cb7f1c83cdf6e25bb9bf5f4",
     "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/": "765cc0777bd37fcc2806bd2f01c8f6efe1f7c476bfb57ef8568ac5a0da0f0c52",
     "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/primary_doc.xml": "11e7d553ef7e9d52fcfc42f2ec053b2600d613670f062eba501a2c744f97dfe0",
+    "https://www.sec.gov/Archives/edgar/data/310569/000087666108000489/": "8704f9a8badb68f29b4d9400d9f94aad3bd8d7074877f0de917b886cc122c3a5",
+    "https://www.sec.gov/Archives/edgar/data/310569/000087666108000489/primary_doc.xml": "4eaefa58f43c4539599f2c1ca85efcd5453ee8562a4df5255bc44e7185ec9fe0",
+    "https://www.sec.gov/Archives/edgar/data/316793/000087666115000015/": "ae0c078a7cc74b3de38fff65001c61ed8abf564016af4b0e1095c3521cd9d914",
+    "https://www.sec.gov/Archives/edgar/data/316793/000087666115000015/primary_doc.xml": "bd87f9c8bba6b3ef998dda8e9294dfc1066fd416f465d855635f26151ae53e17",
+    "https://www.sec.gov/Archives/edgar/data/319687/000087666110000370/": "a4c7823e4bd50a94804b650a6706d8fbf243d1e36722a54572a3e0f7800651e5",
+    "https://www.sec.gov/Archives/edgar/data/319687/000087666110000370/primary_doc.xml": "c965c256cdb648996f9e99aecabf856a87d79e9f98731b8d2ba5911b865eb530",
     "https://www.sec.gov/Archives/edgar/data/32258/999999999705034197/": "683aace96252ccdc82365531cf5bd98fd0bdb9a361f3dc0758417d6d9f8c6486",
+    "https://www.sec.gov/Archives/edgar/data/33619/000087666119000241/": "6288625dc90ef2efbb67f9b1a2acc83f57cf51394cc5a47ba8af24c23192b245",
+    "https://www.sec.gov/Archives/edgar/data/33619/000087666119000241/primary_doc.xml": "7f2e7a3cc9811416875c600e0f36337bb9cc791923972de4cfc71ed4559d3cab",
     "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/": "ccf1d14749c9b7ee5b3dc5d06d04de25a2ade2a6b789faab18f7f56cfd40a993",
     "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/primary_doc.xml": "779903f6e1f72221ccde52f374856dcf6335e362395846f118fb84de2afec00f",
     "https://www.sec.gov/Archives/edgar/data/350907/000135445715000186/": "5f07399fdb738d452f8cbba31ee85f9979df71b9eb48986fc15ef3bfd7357afe",
@@ -4714,12 +5161,16 @@
     "https://www.sec.gov/Archives/edgar/data/37748/000087666111000237/primary_doc.xml": "e21fef89ef8f58a381a0596c1271bf9ac8814b1ccf57b58d08a6f4de5dd2e942",
     "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/": "d5ae6455d55b320d0d60d76f9782a306a7e1b93ffb662570a5501c6d458ba1e4",
     "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/primary_doc.xml": "8f8cc05c1de7bf2dcdd34727d468f0d2af0be00d4a64d27f6214a0306eb29e0f",
+    "https://www.sec.gov/Archives/edgar/data/64279/000087666113000384/": "38f427ada1d1fa6bf42dfa82f4578fd2d7be0f833f896d9f17d0cf5b09546f27",
+    "https://www.sec.gov/Archives/edgar/data/64279/000087666113000384/primary_doc.xml": "6c6b724998c7491db8c865f5de78a2ac267ccc7d001a2af054222312caa48e87",
     "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/": "2f297b227a0542255b1e09fe35086a2756bc11331662269208cf4fb8904bc4c2",
     "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/primary_doc.xml": "f0bc6e7b0da18c547f7bcff2dd4c0cdb0cd1a37ca6e22ed618064efbe43b3518",
     "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/": "1864b47bc9da2154080012cde0dee5b92f706f0992ff6f8e21e76a60c0db91ef",
     "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/primary_doc.xml": "239cf0d901b288c8aaa8d88d24f56629f20ce8e4aadde4fd951cd10f4399fb44",
     "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/": "8dfc5743cd463aa432b168f691a0bc748027958c6ad75145a5d3159bc77f91a1",
     "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/primary_doc.xml": "5097ac9b7e6e810e2a23395bfa4c400b18af1b5b93732f62fc9279838c54a11d",
+    "https://www.sec.gov/Archives/edgar/data/730469/000087666109000042/": "da688d3d3f388154fc1f239bc2be1f8f008cb76cfdfcbeaf33cb1714d41233c7",
+    "https://www.sec.gov/Archives/edgar/data/730469/000087666109000042/primary_doc.xml": "426f71c4aed341544cc09ccf01dc363ccefe1fad676cc83a23cb571f14d8bfbf",
     "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/": "b7bb8c1a2479ac2251bee1a30d62f3fac833e4e69a895b09756a3991a82a806e",
     "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/primary_doc.xml": "0410c2738912483b1fa89b3ff6770e6ac29ff7c5e00e1aa13de2ab623684f527",
     "https://www.sec.gov/Archives/edgar/data/732834/000087666122001025/": "199117a1c712070947ece57f86006ab3cda39600f87a4a36c190a08915de01fc",
@@ -4754,6 +5205,8 @@
     "https://www.sec.gov/Archives/edgar/data/858803/000135445715000005/primary_doc.xml": "8d168d5182b920f2e9bdbda7719a8ead9783fc43ef93b85f0a1a31b227dcf83e",
     "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/": "10c521951702948bdd4be19fbffc8893c93d19152c629e306c5d2e58a6668aee",
     "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/primary_doc.xml": "56631c857692727cd3c92d4a7fe87834ec74f093cf7672da96fd7703da645b15",
+    "https://www.sec.gov/Archives/edgar/data/873591/000135445707000178/": "ddd081db6289456f825a8b99abe09079a895acdd04b386f871bb70cbcf9d6122",
+    "https://www.sec.gov/Archives/edgar/data/873591/000135445707000178/primary_doc.xml": "6878c1cd7d1e0e1d8ef4d937b1bc101cdd9c553d055bf99ea763302f7eea07d1",
     "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/": "036c2e3288b266be192a96c2937a1345fcc06c126a7e8f8066c7603b65d232e8",
     "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/primary_doc.xml": "d767552afef17a5ff97f3dfdc56e4d732175c76f0bf15885d01a2190e9db97eb",
     "https://www.sec.gov/Archives/edgar/data/888919/000087666115000532/": "0b960a8fb4213ecac3cac4d8ae25208800ce419e2e8c1efa419ae0ca88a2e1db",
@@ -4774,6 +5227,8 @@
     "https://www.sec.gov/Archives/edgar/data/914024/000087666113000062/primary_doc.xml": "228c1ff1aa6b77f213aa7e2c61dd16323731ddf2a3a54717d99f14802a87c52c",
     "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/": "8981119cc91e813cc5763b295135daaddf548b64131cb37699dda4ede1b94736",
     "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/primary_doc.xml": "5179024330701ece25d2ff4b45dd2381ec30d963396bc3a3c54e535372b421b7",
+    "https://www.sec.gov/Archives/edgar/data/932064/000135445706000064/": "760b8844b5ad0cd7461a4992727ca9ea339f5419faf20d965a1f9e0fcd454971",
+    "https://www.sec.gov/Archives/edgar/data/932064/000135445706000064/primary_doc.xml": "97a01ddc394052b45bde2bad8f311585c0142b29c05f9ee2eb0b3155a8c727c1",
     "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/": "3213a2284d176eadad8a042af9f7a6b83bcf652bc4c55ef59e43d14ed3a7e6f4",
     "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/primary_doc.xml": "91c99b861bf36af4b109a11b7207ac3e31a163be1017d770975c703bf7914fb5",
     "https://www.sec.gov/Archives/edgar/data/941548/000087666116000896/": "58644d7e8ff79e045b7d6ed519df8e2a6d8c307efe821fe330fb9a2b602dd23c",
@@ -4865,7 +5320,7 @@
     "https://www.sec.gov/files/form8-k.pdf": "730ab1de5550870134639fff1ccad3385186c3a08eafd8bd387db44b8bac5d70"
   },
   "provenance": {
-    "git_head": "f70117ab2547fa308f5c293c94769ee0f857e190",
+    "git_head": "ba313c7c8427e4bd00ca892d1f34dbea297cd98d",
     "git_dirty": false,
     "git_dirty_ignores": [
       "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
@@ -4876,10 +5331,10 @@
     "run_date": "2026-11-24",
     "roster_sha256": "3f010c9268243dfae29ff9a943fb3a4b970732d0bf1355f63961d9bcf9f5a72b",
     "code_sha256": {
-      "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py": "6f2c09c8b2201dac77c2772b596e322f0c255996f895f728cbc5c0697548b1ed",
-      "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py": "dcd604ad5877d6ca58a2dc963b34e46bc4d8cb46fcaa1acd10e8f1241303be10",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py": "0eb38593ccfe811f8b4c1078ec761e8637f2312928e42e1d1c42e3b3f6ab612b",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py": "ad25b668f94d25399c2d76bb8cafcf128bbc0dcae300266bd105b6289952804d",
       "research/stock-signals/dead-stock-data-integrity/code/sec_client.py": "b1914a7a32937b191e4e48768b03c8f2af203288ca571e694e568c037006f479",
-      "research/stock-signals/dead-stock-data-integrity/code/payout_table.py": "347b19a3e709501109a0878e5714ca29224d8921d0406a8b39216de7c7b04fd9",
+      "research/stock-signals/dead-stock-data-integrity/code/payout_table.py": "5dbcd90d7aed35beaa299f79b1027c69fa4d853a29817007396d0b0d9ff143ab",
       "research/stock-signals/dead-stock-data-integrity/code/dead_stock_data_integrity.py": "a641c267b5741cad8f79dfd47614bea0752f64ac927431226064680a581ea9a9",
       "research/stock-signals/_lib/sec_master_index.py": "421c3898c08c1286be2eabfc3a59513339a3e97a2d80d637431763c3c1dd3f1c",
       "research/stock-signals/_lib/sec_form25.py": "92654642d390010e0721ec9b35a606a1732ea9ad2ddce60407295ed51045d28f",
@@ -4901,6 +5356,10 @@
       "limit_quarters": null
     },
     "matching_rules": {
+      "rule_versions": [
+        "v1",
+        "v1.1"
+      ],
       "before_days": 30,
       "after_days": 180,
       "truncated_name_length": 16,
@@ -4915,7 +5374,10 @@
         "LTD",
         "PLC"
       ],
-      "abbreviations_sha256": "d5326cffcb65eee2e0f818b8fa22d2251e8f4fea9544ab2a3fa1b3e78e59f687"
+      "abbreviations_sha256": "d5326cffcb65eee2e0f818b8fa22d2251e8f4fea9544ab2a3fa1b3e78e59f687",
+      "plural_to_singular_sha256": "bffaf08636d9feb732c3777c57d3e50e61e46f4290e883430ccd6bfca34836ca",
+      "edgar_slash_tag_pattern": "/[A-Z]{2,4}/?$",
+      "share_class_pattern": "(?:\\s*-\\s*(?:CL(?:ASS)?\\.?\\s+)?[ABC]|,?\\s+CL(?:ASS)?\\.?\\s+[ABC])$"
     }
   }
 }

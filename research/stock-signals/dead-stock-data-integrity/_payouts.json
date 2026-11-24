@@ -6,18 +6,27 @@
     "roster_rows": 141,
     "by_class": {
       "bankruptcy_filed": 0,
-      "acquired_or_merged": 91,
+      "acquired_or_merged": 102,
       "delisted_other": 0,
       "no_8k_found": 5,
-      "no_filing_match": 37,
+      "no_filing_match": 26,
       "name_unknown": 8,
       "ambiguous_match": 0
     },
-    "documented_evidence": 91,
+    "documented_evidence": 102,
     "by_match_confidence": {
       "confirmed": 90,
-      "name_only": 6,
-      "none": 45
+      "name_only": 17,
+      "none": 34
+    },
+    "name_only_v1_1": 11,
+    "name_only_v1_unreadable": 6,
+    "name_only_other": 0,
+    "match_confidence_note": "v1.1-only matches are leads: the company name matched only after the extra cleaning rules and was not otherwise verified",
+    "by_match_rule_version": {
+      "v1": 96,
+      "v1.1": 11,
+      "none": 34
     },
     "by_class_and_confidence": {
       "bankruptcy_filed": {
@@ -26,7 +35,7 @@
       },
       "acquired_or_merged": {
         "confirmed": 88,
-        "name_only": 3
+        "name_only": 14
       },
       "delisted_other": {
         "confirmed": 0,
@@ -49,18 +58,52 @@
         "name_only": 0
       }
     },
-    "with_suggested_loss": 91,
+    "by_class_and_rule_version": {
+      "bankruptcy_filed": {
+        "v1": 0,
+        "v1.1": 0
+      },
+      "acquired_or_merged": {
+        "v1": 91,
+        "v1.1": 11
+      },
+      "delisted_other": {
+        "v1": 0,
+        "v1.1": 0
+      },
+      "no_8k_found": {
+        "v1": 5,
+        "v1.1": 0
+      },
+      "no_filing_match": {
+        "v1": 0,
+        "v1.1": 0
+      },
+      "name_unknown": {
+        "v1": 0,
+        "v1.1": 0
+      },
+      "ambiguous_match": {
+        "v1": 0,
+        "v1.1": 0
+      }
+    },
+    "with_suggested_loss": 102,
     "with_suggested_loss_confirmed": 88,
-    "with_suggested_loss_name_only": 3,
+    "with_suggested_loss_name_only": 14,
+    "with_suggested_loss_by_rule_version": {
+      "v1": 91,
+      "v1.1": 11
+    },
     "by_basis": {
-      "filing_evidence": 91,
+      "filing_evidence": 102,
       "literature_fill": 0,
-      "none": 50
+      "none": 39
     },
     "by_basis_and_confidence": {
       "filing_evidence": {
         "confirmed": 88,
-        "name_only": 3,
+        "name_only": 14,
         "none": 0
       },
       "literature_fill": {
@@ -71,11 +114,11 @@
       "none": {
         "confirmed": 2,
         "name_only": 3,
-        "none": 45
+        "none": 34
       }
     },
     "conflicts": 0,
-    "agrees": 70,
+    "agrees": 78,
     "events_fetch_errors": 0,
     "events_unavailable_or_incomplete": {
       "total": 0,
@@ -86,8 +129,8 @@
     "quarters_skipped": 0
   },
   "events_status_counts": {
-    "no_older_pages_needed": 36,
-    "ok": 60
+    "no_older_pages_needed": 43,
+    "ok": 64
   },
   "events_fetch_errors": [],
   "items_missing": 0,
@@ -367,6 +410,80 @@
           "9.01"
         ],
         "primary_document": "d65178d8k.htm"
+      }
+    ],
+    "14062": [
+      {
+        "accession": "0001104659-14-064704",
+        "filing_date": "2014-09-04",
+        "items": [
+          "2.02",
+          "7.01",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a14-20450_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-064788",
+        "filing_date": "2014-09-04",
+        "items": [
+          "2.01",
+          "9.01"
+        ],
+        "primary_document": "a14-20143_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-069680",
+        "filing_date": "2014-10-02",
+        "items": [
+          "1.01",
+          "5.02",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a14-21630_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-078406",
+        "filing_date": "2014-11-07",
+        "items": [
+          "1.01",
+          "9.01"
+        ],
+        "primary_document": "a14-24004_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-079768",
+        "filing_date": "2014-11-12",
+        "items": [
+          "9.01"
+        ],
+        "primary_document": "a14-23628_18ka.htm"
+      },
+      {
+        "accession": "0001193125-14-410612",
+        "filing_date": "2014-11-13",
+        "items": [
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "d820317d8k.htm"
+      },
+      {
+        "accession": "0001193125-14-444949",
+        "filing_date": "2014-12-17",
+        "items": [
+          "1.01",
+          "1.02",
+          "3.02"
+        ],
+        "primary_document": "d838313d8k.htm"
       }
     ],
     "14167": [
@@ -1302,6 +1419,89 @@
         "primary_document": "d784260d8k.htm"
       }
     ],
+    "25769": [
+      {
+        "accession": "0001141185-06-000064",
+        "filing_date": "2006-05-18",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "ubsconf8k.htm"
+      },
+      {
+        "accession": "0001141185-06-000066",
+        "filing_date": "2006-05-22",
+        "items": [
+          "1.01",
+          "9.01"
+        ],
+        "primary_document": "continuityagrmt8k.htm"
+      },
+      {
+        "accession": "0001141185-06-000068",
+        "filing_date": "2006-05-23",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "may23interimcall8k.htm"
+      },
+      {
+        "accession": "0001104659-06-043473",
+        "filing_date": "2006-06-26",
+        "items": [
+          "1.01",
+          "3.03",
+          "9.01"
+        ],
+        "primary_document": "a06-14345_18k.htm"
+      },
+      {
+        "accession": "0001141185-06-000073",
+        "filing_date": "2006-07-12",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "stockholdersmtg8k.htm"
+      },
+      {
+        "accession": "0001141185-06-000075",
+        "filing_date": "2006-08-01",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "hsrexpire8k.htm"
+      },
+      {
+        "accession": "0001104659-06-050754",
+        "filing_date": "2006-08-02",
+        "items": [
+          "8.01"
+        ],
+        "primary_document": "a06-17062_18k.htm"
+      },
+      {
+        "accession": "0001141185-06-000077",
+        "filing_date": "2006-08-03",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "earnings2q20068k.htm"
+      },
+      {
+        "accession": "0001141185-06-000082",
+        "filing_date": "2006-08-10",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "merger8k.htm"
+      }
+    ],
     "26382": [
       {
         "accession": "0001193125-11-123104",
@@ -1399,6 +1599,61 @@
           "9.01"
         ],
         "primary_document": "aah8k06142011.htm"
+      }
+    ],
+    "27705": [
+      {
+        "accession": "0001104659-14-073844",
+        "filing_date": "2014-10-27",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a14-23001_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-074877",
+        "filing_date": "2014-10-29",
+        "items": [
+          "2.02",
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "a14-23269_18k.htm"
+      },
+      {
+        "accession": "0001104659-14-076499",
+        "filing_date": "2014-11-04",
+        "items": [
+          "5.07",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a14-23596_18k.htm"
+      },
+      {
+        "accession": "0001104659-15-001048",
+        "filing_date": "2015-01-07",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a15-1418_18k.htm"
+      },
+      {
+        "accession": "0001104659-15-002030",
+        "filing_date": "2015-01-13",
+        "items": [
+          "1.02",
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a15-2113_18k.htm"
       }
     ],
     "37161": [
@@ -1785,6 +2040,57 @@
         "primary_document": "htm_54104.htm"
       }
     ],
+    "50788": [
+      {
+        "accession": "0001193125-19-011994",
+        "filing_date": "2019-01-18",
+        "items": [
+          "5.07",
+          "8.01"
+        ],
+        "primary_document": "d689928d8k.htm"
+      },
+      {
+        "accession": "0001193125-19-021003",
+        "filing_date": "2019-01-29",
+        "items": [
+          "7.01"
+        ],
+        "primary_document": "d673946d8k.htm"
+      },
+      {
+        "accession": "0001193125-19-023973",
+        "filing_date": "2019-01-31",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "d691667d8k.htm"
+      },
+      {
+        "accession": "0001193125-19-033941",
+        "filing_date": "2019-02-11",
+        "items": [
+          "5.07"
+        ],
+        "primary_document": "d671258d8k.htm"
+      },
+      {
+        "accession": "0000033619-19-000003",
+        "filing_date": "2019-03-14",
+        "items": [
+          "1.02",
+          "2.01",
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "9.01"
+        ],
+        "primary_document": "eslform8-kxmergerclosing.htm"
+      }
+    ],
     "53612": [
       {
         "accession": "0001193125-08-170072",
@@ -1937,6 +2243,128 @@
         "primary_document": "a11-4760_18k.htm"
       }
     ],
+    "59184": [
+      {
+        "accession": "0000950137-08-010893",
+        "filing_date": "2008-08-19",
+        "items": [
+          "8.01"
+        ],
+        "primary_document": "c34995e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-011971",
+        "filing_date": "2008-09-24",
+        "items": [
+          "9.01"
+        ],
+        "primary_document": "c35694ae8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-012212",
+        "filing_date": "2008-09-30",
+        "items": [
+          "5.02",
+          "9.01"
+        ],
+        "primary_document": "c35694e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-012310",
+        "filing_date": "2008-10-03",
+        "items": [
+          "2.02",
+          "5.02",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c46744e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-012775",
+        "filing_date": "2008-10-16",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c47097e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-013453",
+        "filing_date": "2008-11-06",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "c47505e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-013531",
+        "filing_date": "2008-11-07",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c47532e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-013648",
+        "filing_date": "2008-11-12",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c47620e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-013709",
+        "filing_date": "2008-11-14",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c47696e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-013967",
+        "filing_date": "2008-11-24",
+        "items": [
+          "1.02",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "c47821e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-014178",
+        "filing_date": "2008-12-02",
+        "items": [
+          "5.02",
+          "9.01"
+        ],
+        "primary_document": "c48014e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-014363",
+        "filing_date": "2008-12-11",
+        "items": [
+          "2.05"
+        ],
+        "primary_document": "c48201e8vk.htm"
+      },
+      {
+        "accession": "0000950137-08-014624",
+        "filing_date": "2008-12-30",
+        "items": [
+          "2.03"
+        ],
+        "primary_document": "c48457e8vk.htm"
+      }
+    ],
     "65883": [
       {
         "accession": "0000732713-06-000238",
@@ -1957,6 +2385,33 @@
           "9.01"
         ],
         "primary_document": "g04911e8vk.htm"
+      }
+    ],
+    "68857": [
+      {
+        "accession": "0001628280-16-015570",
+        "filing_date": "2016-05-05",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "a8k3-31x16.htm"
+      },
+      {
+        "accession": "0000947871-16-001286",
+        "filing_date": "2016-06-21",
+        "items": [
+          "1.01",
+          "2.01",
+          "2.03",
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "9.01"
+        ],
+        "primary_document": "ss1506472_8k.htm"
       }
     ],
     "70308": [
@@ -2556,6 +3011,98 @@
         "primary_document": "c09113e8vk.htm"
       }
     ],
+    "76656": [
+      {
+        "accession": "0001104659-07-025441",
+        "filing_date": "2007-04-03",
+        "items": [
+          "5.02",
+          "9.01"
+        ],
+        "primary_document": "a07-9759_18k.htm"
+      },
+      {
+        "accession": "0001104659-07-027717",
+        "filing_date": "2007-04-11",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "a07-10401_18k.htm"
+      },
+      {
+        "accession": "0001104659-07-027843",
+        "filing_date": "2007-04-12",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a07-10401_28k.htm"
+      },
+      {
+        "accession": "0001104659-07-030474",
+        "filing_date": "2007-04-23",
+        "items": [
+          "1.01",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a07-12079_18k.htm"
+      },
+      {
+        "accession": "0001104659-07-033492",
+        "filing_date": "2007-04-30",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "a07-12757_18k.htm"
+      },
+      {
+        "accession": "0001104659-07-037082",
+        "filing_date": "2007-05-08",
+        "items": [
+          "2.04",
+          "3.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a07-13524_18k.htm"
+      },
+      {
+        "accession": "0001104659-07-044678",
+        "filing_date": "2007-06-01",
+        "items": [
+          "5.01",
+          "5.02",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a07-15665_28k.htm"
+      },
+      {
+        "accession": "0001104659-07-048358",
+        "filing_date": "2007-06-18",
+        "items": [
+          "2.04",
+          "3.01",
+          "3.03",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a07-16884_28k.htm"
+      },
+      {
+        "accession": "0001104659-07-050469",
+        "filing_date": "2007-06-27",
+        "items": [
+          "8.01"
+        ],
+        "primary_document": "a07-17654_18k.htm"
+      }
+    ],
     "77103": [
       {
         "accession": "0001144204-08-050828",
@@ -2741,6 +3288,170 @@
         "primary_document": "d397184d8k.htm"
       }
     ],
+    "77481": [
+      {
+        "accession": "0001104659-12-012797",
+        "filing_date": "2012-02-27",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "a12-5847_18k.htm"
+      },
+      {
+        "accession": "0001193125-12-078775",
+        "filing_date": "2012-02-27",
+        "items": [
+          "1.01"
+        ],
+        "primary_document": "d306879d8k.htm"
+      },
+      {
+        "accession": "0001104659-12-014757",
+        "filing_date": "2012-03-01",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-6241_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-014963",
+        "filing_date": "2012-03-01",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-6241_38k.htm"
+      },
+      {
+        "accession": "0000898822-12-000094",
+        "filing_date": "2012-03-05",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "meetingadjournment8k33.htm"
+      },
+      {
+        "accession": "0001104659-12-017116",
+        "filing_date": "2012-03-09",
+        "items": [
+          "5.07",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-6891_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-020913",
+        "filing_date": "2012-03-26",
+        "items": [
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-7733_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-020915",
+        "filing_date": "2012-03-26",
+        "items": [
+          "2.03",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-7733_28k.htm"
+      },
+      {
+        "accession": "0001104659-12-021517",
+        "filing_date": "2012-03-28",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "a12-7733_48k.htm"
+      },
+      {
+        "accession": "0001104659-12-025520",
+        "filing_date": "2012-04-16",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-9747_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-026525",
+        "filing_date": "2012-04-19",
+        "items": [
+          "5.04",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-10056_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-032299",
+        "filing_date": "2012-05-03",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "a12-11076_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-035982",
+        "filing_date": "2012-05-10",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "a12-11912_18k.htm"
+      },
+      {
+        "accession": "0001104659-12-039630",
+        "filing_date": "2012-05-24",
+        "items": [
+          "2.01",
+          "5.02",
+          "9.01"
+        ],
+        "primary_document": "a12-12959_18k.htm"
+      },
+      {
+        "accession": "0001193125-12-246141",
+        "filing_date": "2012-05-24",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "d357798d8k.htm"
+      },
+      {
+        "accession": "0001193125-12-253764",
+        "filing_date": "2012-05-30",
+        "items": [
+          "2.01",
+          "3.01",
+          "3.03",
+          "4.01",
+          "5.01",
+          "5.02",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "d360854d8k.htm"
+      }
+    ],
     "78033": [
       {
         "accession": "0001104659-15-060111",
@@ -2784,6 +3495,215 @@
           "9.01"
         ],
         "primary_document": "a15-21593_18k.htm"
+      }
+    ],
+    "79641": [
+      {
+        "accession": "0000319687-10-000039",
+        "filing_date": "2010-07-02",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "f0701108k.htm"
+      },
+      {
+        "accession": "0000319687-10-000046",
+        "filing_date": "2010-07-22",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "primary_document": "f072210form8ker.htm"
+      },
+      {
+        "accession": "0000319687-10-000047",
+        "filing_date": "2010-07-22",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "f072210form8kiu.htm"
+      },
+      {
+        "accession": "0000950123-10-070774",
+        "filing_date": "2010-08-02",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "h74937e8vk.htm"
+      },
+      {
+        "accession": "0000319687-10-000054",
+        "filing_date": "2010-08-03",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "f080210form8k.htm"
+      },
+      {
+        "accession": "0000950123-10-071851",
+        "filing_date": "2010-08-03",
+        "items": [
+          "8.01"
+        ],
+        "primary_document": "h74959e8vk.htm"
+      },
+      {
+        "accession": "0000950123-10-073011",
+        "filing_date": "2010-08-05",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "h75070e8vk.htm"
+      },
+      {
+        "accession": "0000950152-10-000004",
+        "filing_date": "2010-08-20",
+        "items": [
+          "1.01",
+          "1.02",
+          "2.03",
+          "9.01"
+        ],
+        "primary_document": "h75584e8vk.htm"
+      },
+      {
+        "accession": "0000950123-10-081881",
+        "filing_date": "2010-08-30",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "h75753e8vk.htm"
+      },
+      {
+        "accession": "0000319687-10-000055",
+        "filing_date": "2010-09-02",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "f090110form8k.htm"
+      },
+      {
+        "accession": "0000950123-10-087139",
+        "filing_date": "2010-09-17",
+        "items": [
+          "5.07",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "h76230e8vk.htm"
+      },
+      {
+        "accession": "0000319687-10-000058",
+        "filing_date": "2010-09-22",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "form8k.htm"
+      },
+      {
+        "accession": "0001193125-10-222187",
+        "filing_date": "2010-10-01",
+        "items": [
+          "1.01",
+          "3.01",
+          "3.03",
+          "5.01",
+          "5.02",
+          "5.03",
+          "9.01"
+        ],
+        "primary_document": "d8k.htm"
+      },
+      {
+        "accession": "0000319687-10-000061",
+        "filing_date": "2010-10-04",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "form100110form8k.htm"
+      },
+      {
+        "accession": "0001193125-10-233145",
+        "filing_date": "2010-10-21",
+        "items": [
+          "2.02",
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "d8k.htm"
+      },
+      {
+        "accession": "0000319687-10-000070",
+        "filing_date": "2010-11-08",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "f110510form8k.htm"
+      },
+      {
+        "accession": "0000319687-10-000073",
+        "filing_date": "2010-11-17",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "form8k.htm"
+      },
+      {
+        "accession": "0001193125-10-265828",
+        "filing_date": "2010-11-22",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "d8k.htm"
+      },
+      {
+        "accession": "0000950155-10-000240",
+        "filing_date": "2010-12-06",
+        "items": [
+          "1.01",
+          "2.03",
+          "9.01"
+        ],
+        "primary_document": "e61238368frm8k.htm"
+      },
+      {
+        "accession": "0000319687-10-000074",
+        "filing_date": "2010-12-08",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "f120710form8k.htm"
+      },
+      {
+        "accession": "0001193125-10-276198",
+        "filing_date": "2010-12-08",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "d8k.htm"
+      },
+      {
+        "accession": "0001193125-10-285999",
+        "filing_date": "2010-12-22",
+        "items": [
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "d8k.htm"
       }
     ],
     "80032": [
@@ -2956,6 +3876,101 @@
           "9.01"
         ],
         "primary_document": "dp61754_8k.htm"
+      }
+    ],
+    "80557": [
+      {
+        "accession": "0001193125-13-203888",
+        "filing_date": "2013-05-07",
+        "items": [
+          "8.01"
+        ],
+        "primary_document": "d533338d8k.htm"
+      },
+      {
+        "accession": "0001193125-13-246744",
+        "filing_date": "2013-06-04",
+        "items": [
+          "1.01",
+          "1.02",
+          "2.01",
+          "2.04",
+          "3.03",
+          "5.01",
+          "5.03",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "d545883d8k.htm"
+      },
+      {
+        "accession": "0001193125-13-246884",
+        "filing_date": "2013-06-04",
+        "items": [
+          "3.01",
+          "5.02",
+          "5.07"
+        ],
+        "primary_document": "d549301d8k.htm"
+      }
+    ],
+    "81178": [
+      {
+        "accession": "0000950135-06-004154",
+        "filing_date": "2006-06-30",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "b61470rse8vk.htm"
+      },
+      {
+        "accession": "0000950135-06-004177",
+        "filing_date": "2006-06-30",
+        "items": [
+          "1.01",
+          "3.03",
+          "5.01",
+          "7.01",
+          "9.01"
+        ],
+        "primary_document": "b614778ke8vk.htm"
+      },
+      {
+        "accession": "0000950135-06-004350",
+        "filing_date": "2006-07-19",
+        "items": [
+          "2.02",
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "b61665rse8vk.htm"
+      },
+      {
+        "accession": "0000950135-06-004791",
+        "filing_date": "2006-08-04",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "b61881rse8vk.htm"
+      },
+      {
+        "accession": "0000950135-06-005518",
+        "filing_date": "2006-09-01",
+        "items": [
+          "1.01"
+        ],
+        "primary_document": "b62198rse8vk.htm"
+      },
+      {
+        "accession": "0000950135-06-005776",
+        "filing_date": "2006-09-15",
+        "items": [
+          "8.01",
+          "9.01"
+        ],
+        "primary_document": "b62396rse8vk.htm"
       }
     ],
     "81857": [
@@ -5833,7 +6848,7 @@
     }
   },
   "request_count": {
-    "network_fetches": 0,
+    "network_fetches": 11,
     "cache_hits": 96,
     "corrupt_cache_refetches": 0
   },
@@ -5841,11 +6856,16 @@
     "https://data.sec.gov/submissions/CIK0000009342.json": "54b8b9a5fa370c139b78159f644271d90692b29962625766b88d0fd67020f2c5",
     "https://data.sec.gov/submissions/CIK0000023666.json": "6e5b75cbd882340bf2f24f1947f98b87c8badfc32a358c10b3b730fc66bc087c",
     "https://data.sec.gov/submissions/CIK0000032258.json": "cbadc46520afe6a49bf97b6953953e324507ae7be2e19ab11549a3289312ceb8",
+    "https://data.sec.gov/submissions/CIK0000033619.json": "844cf57bf38ea9da02d71611cf5f591234897c34c57620df7073485bfed18a77",
     "https://data.sec.gov/submissions/CIK0000037748.json": "ef65f411f33583119e62b4fb9b705b2d423120e1dabc47c85107e43a241882d4",
     "https://data.sec.gov/submissions/CIK0000052795.json": "8838cffa0935e4d65d12edd7a1f60d1ce2598ab3baf31aae9b286b2e7eb09b29",
+    "https://data.sec.gov/submissions/CIK0000064279.json": "06ebc4c94931de114b180e81c21b687b7a624af87590a93982d28bd2a9e7175e",
     "https://data.sec.gov/submissions/CIK0000078066.json": "e477acf304110e99de567d9e5efd04353bf47fe2eac2db31247bf5563817ce85",
     "https://data.sec.gov/submissions/CIK0000078460.json": "f2e563de4789da4a3c832ce6c70da7b8ffa2d196a24a01c9f37828f0227d1131",
     "https://data.sec.gov/submissions/CIK0000203248.json": "4f5eab39a36d307660f6ce265a9893e84dbd33894617e0de3d1e1337edb1e2f4",
+    "https://data.sec.gov/submissions/CIK0000310569.json": "355089865a6e718955970eef50754bd3d824adebbaaf50aff5c1566f013cd09f",
+    "https://data.sec.gov/submissions/CIK0000316793.json": "e871ec447b099e1401799cd23a29f96349e374de50d191046ee3c8de856176a0",
+    "https://data.sec.gov/submissions/CIK0000319687.json": "39da4cb889dd59c0ea2c17756b0921361563e47658c315932a6c0f76de3d82b3",
     "https://data.sec.gov/submissions/CIK0000350563.json": "e0e965811c799ead9517ae97de283fc1a23e366af46fd96a8ba5c02869e6e558",
     "https://data.sec.gov/submissions/CIK0000350907.json": "61e0d3c9c3635d571b30b4458d25bdc3ba8531feefe9d150853369a0fe3f447a",
     "https://data.sec.gov/submissions/CIK0000702131.json": "17509aa6772e16067ea99ffd840db6be7edac4406be5869f9675469651b5112b",
@@ -5867,6 +6887,7 @@
     "https://data.sec.gov/submissions/CIK0000855654.json": "712fd010bd4b5f3b17ec5bc24146c264e79f1a14514c3ea7b78062a2734c2d78",
     "https://data.sec.gov/submissions/CIK0000858803.json": "386e299ed9f30b752f5aed68b78a58dc1e4be21f114c3c8b634532451607d256",
     "https://data.sec.gov/submissions/CIK0000869087.json": "5f4b7ee2cbd223b712af2c5f5c762cc36fca1ae4536b8a2d178473ef96a5bb77",
+    "https://data.sec.gov/submissions/CIK0000873591.json": "2b586b605b7db5155b70056239fc509f6b748cb3102ca04fc5d4ccbe68b0762b",
     "https://data.sec.gov/submissions/CIK0000881464.json": "a57568947065e6383ca8aab50a5c34277bb6674092c0bccfc605fd0fe4bc4b9b",
     "https://data.sec.gov/submissions/CIK0000888919.json": "67101424977ac7b6f24467bfa3c3c68e69106116108dd3256b18c21f4441a956",
     "https://data.sec.gov/submissions/CIK0000893160.json": "f39538e892bd740bef0a979fca5132d7ca30597454b9f5d8d60e5308f3fd5ae9",
@@ -5877,6 +6898,7 @@
     "https://data.sec.gov/submissions/CIK0000913885.json": "164e854a4d17ea7896e9068241b1018fd1f2f33f8364a364b3c25676a93b4463",
     "https://data.sec.gov/submissions/CIK0000914024.json": "a3a9ca2824f8e8f38c5e2b653881b9eddaff4c3ed0aeddc3c7025c381ba4d26a",
     "https://data.sec.gov/submissions/CIK0000921506.json": "79587430ff98faa8836045382e697a40ad01a185ffd3d43852b3dbd96a3a3556",
+    "https://data.sec.gov/submissions/CIK0000932064.json": "7076f55736151d90d2680e929388f44b967163595b62fef38d20d5685d0cd7cd",
     "https://data.sec.gov/submissions/CIK0000941548.json": "9259676c108ab55cfb3bf336f8d5da2577fc11cb844964f6abd5a5c6c71da7e0",
     "https://data.sec.gov/submissions/CIK0000946840.json": "7f0ad3692d38f4eba162f5240d0ac349a36cc10539afb7d2d405db33796d3b40",
     "https://data.sec.gov/submissions/CIK0000949699.json": "46d8c931b08666cc1bb74f7803ba2b6f4da322c55a8981ab2841d992e0c6556e",
@@ -5885,9 +6907,11 @@
     "https://data.sec.gov/submissions/CIK0001008817.json": "edd2694b90981fabf9cee9195dc34ab501f3919f4fdd95fd43ab97a5c52234d9",
     "https://data.sec.gov/submissions/CIK0001027974.json": "7e7b903f42c54bec0949ec2d2f98e64bbfd30ed076a5a1175436cf597ee67c7d",
     "https://data.sec.gov/submissions/CIK0001040426.json": "08b841e0449427b2d029a5394fd02473c642de185ba143362371fe6e55930c48",
+    "https://data.sec.gov/submissions/CIK0001053112.json": "583f38daeddf3023015fd43cb621ef63a571ef550891603d18e0c1df525e4dc3",
     "https://data.sec.gov/submissions/CIK0001057058.json": "0b22add8fdd3f5c19a38704295f7f70cd26978a8f60b865a17f8e488497c3087",
     "https://data.sec.gov/submissions/CIK0001058444.json": "f1d0c2e0cd3f3bb35fa996b16c617f39012fb4aafa32ca68a9eb968d6d469665",
     "https://data.sec.gov/submissions/CIK0001060736.json": "2160690ac4c65cb10a12194cf1ee491ee080b7853892905f375c8437fd4f07a7",
+    "https://data.sec.gov/submissions/CIK0001066107.json": "baee7d1c6c64aee05a26d9e52a869d51df8ec3f2850dc6a77ae063b35f116c08",
     "https://data.sec.gov/submissions/CIK0001071806.json": "a9b7110b4908a5737326b6106e7dea717248c669377e738045beb159165fcd54",
     "https://data.sec.gov/submissions/CIK0001084755.json": "596c841abe7841d5c9a4b9a966b6e0aca94f5f10524d9d06b81c28a56798d421",
     "https://data.sec.gov/submissions/CIK0001087432.json": "a6d6925b94c71c7592c4fedb66d13f819bc3c33318b405d67c89d27bb6a4e9c1",
@@ -5898,6 +6922,7 @@
     "https://data.sec.gov/submissions/CIK0001100412.json": "295dcbcfef2383c7db776bd21b9c0f800956de5866398209a046a85fa95285d0",
     "https://data.sec.gov/submissions/CIK0001100962.json": "c01525b7400180d369133a7eaaa6440f0224827d0ea5f0095c544a124727e0ff",
     "https://data.sec.gov/submissions/CIK0001109935.json": "1e17a80cf6b4fb05a636e6d7e7f74e1ed8fecf83655cf249870acd476ea8e8f0",
+    "https://data.sec.gov/submissions/CIK0001141185.json": "3fc1a62c3addaa3eb7c989c7de36b39fec76e500939f4b37b4d626cd40fcb0d8",
     "https://data.sec.gov/submissions/CIK0001141399.json": "d860e526886c2c42edd1187aa646792c91614543e6110a92deb1eb2658c31f70",
     "https://data.sec.gov/submissions/CIK0001144354.json": "066227d02c43f8fc00f3a9bfc21cd4a5c96399e4584773e8471301cd9263b9c8",
     "https://data.sec.gov/submissions/CIK0001159119.json": "826a91059d3bddf71ae8234da4c971c0e23defe45f4a5d71d2b9e96a17b625fe",
@@ -5927,6 +6952,7 @@
     "https://data.sec.gov/submissions/CIK0001495569.json": "9cdeda1f1cd545bfa6d6c0c8fa056d498aab5ef3b9ef0b04f4a4920be5ea6263",
     "https://data.sec.gov/submissions/CIK0001510580.json": "3fa0197aaa24e43365bfbc8cfe47c5347573b88a5dcd38a247e874eb8680512d",
     "https://data.sec.gov/submissions/CIK0001547282.json": "9277182f57b202eb06056bda46369d3f276a5087f24ec922b693772f6a8286e2",
+    "https://data.sec.gov/submissions/CIK0001574648.json": "7a14f81bc190c7748a63a9e7c8133d42b9d22b9a7f31900115126167c1d0bf46",
     "https://data.sec.gov/submissions/CIK0001607716.json": "b502ac12bbe1ccbde69fdb5b4bafdc07b910990cef4699b1ee21dfaa08c7dcb5",
     "https://data.sec.gov/submissions/CIK0001614436.json": "ae4aa54d3cc4ce8de16dfffd725dd9b0877d204db77dc732ee81aac479069add",
     "https://data.sec.gov/submissions/CIK0001639225.json": "b32655c8776ef3e53cc65d17fd8ddc8312ca9f22f69a7116f71b17d2da5ae1d9",
@@ -5944,12 +6970,16 @@
     "https://www.sec.gov/Archives/edgar/data/1027974/999999999706009042/": "82b3ec6248e31ab5ddcc6532885433cd2a9977b1423dec6a3e7792ea3063f404",
     "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/": "ed80f875cf065912c24140663c65f43120b05a38690c6557e5c2dc1a33b42234",
     "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/primary_doc.xml": "5fd78dcf6521d30a8a841dffb36805aa1c0dea7bf3f0115a88316b797a0005d8",
+    "https://www.sec.gov/Archives/edgar/data/1053112/000087666116001048/": "35ba4d310993481ee14889093a7cc60015852cec680ffdd8e5baa0a645e91f7f",
+    "https://www.sec.gov/Archives/edgar/data/1053112/000087666116001048/primary_doc.xml": "e5bde479856c687f5bc8a906447dcc5c365803cb8f2d1bf84166d7a3336e790e",
     "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/": "4cdf781e2a32f7857e6220e40a61f1b640cf0729dfc07d8c2afc4684913e3732",
     "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/primary_doc.xml": "de588e11d63c166dd91a44292cf0b2c384f9fd71dc3d1e9b38535ea70ad39d5a",
     "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/": "3167d4e2e5540801ad77b6c3785503521656c0ce52cbce2d0939243b072e213d",
     "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/primary_doc.xml": "a54f193801cb0f9dfd2cda4a358ed3500300346865d958f3f0da61a42c5ae7c7",
     "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/": "3dc92b74bca72a31ec21d7de86a9f7e041b3e5099acc185a0c6e8303170fbb0a",
     "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/primary_doc.xml": "51ba3b19659dd869ec5aceb02ea4100eac635aab1cb90dce3dd137f0c77beedf",
+    "https://www.sec.gov/Archives/edgar/data/1066107/000087666112000250/": "54c1fca653a1bdeebbdde6c1a2b3787f7a80ed1da4c087e5ce4b9dcecae33281",
+    "https://www.sec.gov/Archives/edgar/data/1066107/000087666112000250/primary_doc.xml": "053b8e6cc758be1ccfabcc87cf0091906ac0117bf41efe0338e757244c246a5a",
     "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/": "da1bf103b1093715069b3d4a7a3d477bbfbf15f92f0438645212ef1d84d3f51a",
     "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/primary_doc.xml": "8a08ce48fb88830842bd2b31dc990011b4a0a8d160cdbd365ab47e1b3a8ae278",
     "https://www.sec.gov/Archives/edgar/data/1084755/000135445712000213/": "621d9096152e554ec19edf8f44999eb4a238314c6b88821b479b698f796f8bb0",
@@ -5969,6 +6999,8 @@
     "https://www.sec.gov/Archives/edgar/data/1100962/000135445714000036/primary_doc.xml": "343cd68eae5f0c9dfb2c8942eba871329f86f33852357bc70db1427fa6c978fe",
     "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/": "77a8335f807711f476bface27d84d5f4a44e99a2de856ae9be5eab017bf26d1b",
     "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/primary_doc.xml": "f99de1ce9ed6cfa13f52d62f258fa408dd550a9f22ba3068831a921f6852345e",
+    "https://www.sec.gov/Archives/edgar/data/1141185/000087666106000692/": "d6b34d90b07a5f966c2184092cafbcd424fc8ff612007894a6799e64b1f1f5c5",
+    "https://www.sec.gov/Archives/edgar/data/1141185/000087666106000692/primary_doc.xml": "8ecfdc52f2f332193083facbde6f37fd8a014a8c0e820ee8cf147531f217ebc1",
     "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/": "2b92b436613bb02c096fa531f820d43684f9742e40c503a5e46b408fdda72f78",
     "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/primary_doc.xml": "025e84112da8fcf0f082ef6d2fc30821c1d061942c33f0c135db8664d808e3d6",
     "https://www.sec.gov/Archives/edgar/data/1144354/000087666116000942/": "511995d33e98d3d09e47803f1946cf1937e2e7fe1685f0b7592208a974923060",
@@ -6026,6 +7058,8 @@
     "https://www.sec.gov/Archives/edgar/data/1510580/000135445717000197/primary_doc.xml": "3a6d73ff9be062524f6cdf1a38f067db4d4cfe2648b3603412c7f6c51e6f807e",
     "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/": "9ddcd51914c7bf906d71f1a8c1be9261dadaf8511ddd6c47f42175c3905de57c",
     "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/primary_doc.xml": "dd83155f7e8830b7cc5d5aeea013f429b548c5f8274eb7ee4101f2523a508e6d",
+    "https://www.sec.gov/Archives/edgar/data/1574648/000087666114000579/": "c16f30ebff8feed7a4263ebea38a11a64bf6c8e4869bbb506097350be8afca36",
+    "https://www.sec.gov/Archives/edgar/data/1574648/000087666114000579/primary_doc.xml": "5437571e4036439b6dfc304cd11527d4d63f33108c92386c17e3e528377c8d19",
     "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/": "a0105d7dcbb532df1e19199a0c954a0e7f966bf9fbcdd2961229575c655f340b",
     "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/primary_doc.xml": "b7d11c4b7998a63c20a3730f26ffd849f6aea87cb59922c09a733bb8db009f96",
     "https://www.sec.gov/Archives/edgar/data/1614436/000135445716000585/": "4a78db11a849b2fc72250e0076b732d7df0b82a0510bcfdaddb8687ddb0db825",
@@ -6044,7 +7078,15 @@
     "https://www.sec.gov/Archives/edgar/data/203248/000087666112000125/primary_doc.xml": "fb2ef5c291d466fabec79f58e35685fcfc8b58870cb7f1c83cdf6e25bb9bf5f4",
     "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/": "765cc0777bd37fcc2806bd2f01c8f6efe1f7c476bfb57ef8568ac5a0da0f0c52",
     "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/primary_doc.xml": "11e7d553ef7e9d52fcfc42f2ec053b2600d613670f062eba501a2c744f97dfe0",
+    "https://www.sec.gov/Archives/edgar/data/310569/000087666108000489/": "8704f9a8badb68f29b4d9400d9f94aad3bd8d7074877f0de917b886cc122c3a5",
+    "https://www.sec.gov/Archives/edgar/data/310569/000087666108000489/primary_doc.xml": "4eaefa58f43c4539599f2c1ca85efcd5453ee8562a4df5255bc44e7185ec9fe0",
+    "https://www.sec.gov/Archives/edgar/data/316793/000087666115000015/": "ae0c078a7cc74b3de38fff65001c61ed8abf564016af4b0e1095c3521cd9d914",
+    "https://www.sec.gov/Archives/edgar/data/316793/000087666115000015/primary_doc.xml": "bd87f9c8bba6b3ef998dda8e9294dfc1066fd416f465d855635f26151ae53e17",
+    "https://www.sec.gov/Archives/edgar/data/319687/000087666110000370/": "a4c7823e4bd50a94804b650a6706d8fbf243d1e36722a54572a3e0f7800651e5",
+    "https://www.sec.gov/Archives/edgar/data/319687/000087666110000370/primary_doc.xml": "c965c256cdb648996f9e99aecabf856a87d79e9f98731b8d2ba5911b865eb530",
     "https://www.sec.gov/Archives/edgar/data/32258/999999999705034197/": "683aace96252ccdc82365531cf5bd98fd0bdb9a361f3dc0758417d6d9f8c6486",
+    "https://www.sec.gov/Archives/edgar/data/33619/000087666119000241/": "6288625dc90ef2efbb67f9b1a2acc83f57cf51394cc5a47ba8af24c23192b245",
+    "https://www.sec.gov/Archives/edgar/data/33619/000087666119000241/primary_doc.xml": "7f2e7a3cc9811416875c600e0f36337bb9cc791923972de4cfc71ed4559d3cab",
     "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/": "ccf1d14749c9b7ee5b3dc5d06d04de25a2ade2a6b789faab18f7f56cfd40a993",
     "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/primary_doc.xml": "779903f6e1f72221ccde52f374856dcf6335e362395846f118fb84de2afec00f",
     "https://www.sec.gov/Archives/edgar/data/350907/000135445715000186/": "5f07399fdb738d452f8cbba31ee85f9979df71b9eb48986fc15ef3bfd7357afe",
@@ -6053,12 +7095,16 @@
     "https://www.sec.gov/Archives/edgar/data/37748/000087666111000237/primary_doc.xml": "e21fef89ef8f58a381a0596c1271bf9ac8814b1ccf57b58d08a6f4de5dd2e942",
     "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/": "d5ae6455d55b320d0d60d76f9782a306a7e1b93ffb662570a5501c6d458ba1e4",
     "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/primary_doc.xml": "8f8cc05c1de7bf2dcdd34727d468f0d2af0be00d4a64d27f6214a0306eb29e0f",
+    "https://www.sec.gov/Archives/edgar/data/64279/000087666113000384/": "38f427ada1d1fa6bf42dfa82f4578fd2d7be0f833f896d9f17d0cf5b09546f27",
+    "https://www.sec.gov/Archives/edgar/data/64279/000087666113000384/primary_doc.xml": "6c6b724998c7491db8c865f5de78a2ac267ccc7d001a2af054222312caa48e87",
     "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/": "2f297b227a0542255b1e09fe35086a2756bc11331662269208cf4fb8904bc4c2",
     "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/primary_doc.xml": "f0bc6e7b0da18c547f7bcff2dd4c0cdb0cd1a37ca6e22ed618064efbe43b3518",
     "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/": "1864b47bc9da2154080012cde0dee5b92f706f0992ff6f8e21e76a60c0db91ef",
     "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/primary_doc.xml": "239cf0d901b288c8aaa8d88d24f56629f20ce8e4aadde4fd951cd10f4399fb44",
     "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/": "8dfc5743cd463aa432b168f691a0bc748027958c6ad75145a5d3159bc77f91a1",
     "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/primary_doc.xml": "5097ac9b7e6e810e2a23395bfa4c400b18af1b5b93732f62fc9279838c54a11d",
+    "https://www.sec.gov/Archives/edgar/data/730469/000087666109000042/": "da688d3d3f388154fc1f239bc2be1f8f008cb76cfdfcbeaf33cb1714d41233c7",
+    "https://www.sec.gov/Archives/edgar/data/730469/000087666109000042/primary_doc.xml": "426f71c4aed341544cc09ccf01dc363ccefe1fad676cc83a23cb571f14d8bfbf",
     "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/": "b7bb8c1a2479ac2251bee1a30d62f3fac833e4e69a895b09756a3991a82a806e",
     "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/primary_doc.xml": "0410c2738912483b1fa89b3ff6770e6ac29ff7c5e00e1aa13de2ab623684f527",
     "https://www.sec.gov/Archives/edgar/data/732834/000087666122001025/": "199117a1c712070947ece57f86006ab3cda39600f87a4a36c190a08915de01fc",
@@ -6093,6 +7139,8 @@
     "https://www.sec.gov/Archives/edgar/data/858803/000135445715000005/primary_doc.xml": "8d168d5182b920f2e9bdbda7719a8ead9783fc43ef93b85f0a1a31b227dcf83e",
     "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/": "10c521951702948bdd4be19fbffc8893c93d19152c629e306c5d2e58a6668aee",
     "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/primary_doc.xml": "56631c857692727cd3c92d4a7fe87834ec74f093cf7672da96fd7703da645b15",
+    "https://www.sec.gov/Archives/edgar/data/873591/000135445707000178/": "ddd081db6289456f825a8b99abe09079a895acdd04b386f871bb70cbcf9d6122",
+    "https://www.sec.gov/Archives/edgar/data/873591/000135445707000178/primary_doc.xml": "6878c1cd7d1e0e1d8ef4d937b1bc101cdd9c553d055bf99ea763302f7eea07d1",
     "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/": "036c2e3288b266be192a96c2937a1345fcc06c126a7e8f8066c7603b65d232e8",
     "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/primary_doc.xml": "d767552afef17a5ff97f3dfdc56e4d732175c76f0bf15885d01a2190e9db97eb",
     "https://www.sec.gov/Archives/edgar/data/888919/000087666115000532/": "0b960a8fb4213ecac3cac4d8ae25208800ce419e2e8c1efa419ae0ca88a2e1db",
@@ -6113,6 +7161,8 @@
     "https://www.sec.gov/Archives/edgar/data/914024/000087666113000062/primary_doc.xml": "228c1ff1aa6b77f213aa7e2c61dd16323731ddf2a3a54717d99f14802a87c52c",
     "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/": "8981119cc91e813cc5763b295135daaddf548b64131cb37699dda4ede1b94736",
     "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/primary_doc.xml": "5179024330701ece25d2ff4b45dd2381ec30d963396bc3a3c54e535372b421b7",
+    "https://www.sec.gov/Archives/edgar/data/932064/000135445706000064/": "760b8844b5ad0cd7461a4992727ca9ea339f5419faf20d965a1f9e0fcd454971",
+    "https://www.sec.gov/Archives/edgar/data/932064/000135445706000064/primary_doc.xml": "97a01ddc394052b45bde2bad8f311585c0142b29c05f9ee2eb0b3155a8c727c1",
     "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/": "3213a2284d176eadad8a042af9f7a6b83bcf652bc4c55ef59e43d14ed3a7e6f4",
     "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/primary_doc.xml": "91c99b861bf36af4b109a11b7207ac3e31a163be1017d770975c703bf7914fb5",
     "https://www.sec.gov/Archives/edgar/data/941548/000087666116000896/": "58644d7e8ff79e045b7d6ed519df8e2a6d8c307efe821fe330fb9a2b602dd23c",
@@ -6204,7 +7254,7 @@
     "https://www.sec.gov/files/form8-k.pdf": "730ab1de5550870134639fff1ccad3385186c3a08eafd8bd387db44b8bac5d70"
   },
   "provenance": {
-    "git_head": "f70117ab2547fa308f5c293c94769ee0f857e190",
+    "git_head": "ba313c7c8427e4bd00ca892d1f34dbea297cd98d",
     "git_dirty": false,
     "git_dirty_ignores": [
       "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
@@ -6215,10 +7265,10 @@
     "run_date": "2026-11-24",
     "roster_sha256": "3f010c9268243dfae29ff9a943fb3a4b970732d0bf1355f63961d9bcf9f5a72b",
     "code_sha256": {
-      "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py": "6f2c09c8b2201dac77c2772b596e322f0c255996f895f728cbc5c0697548b1ed",
-      "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py": "dcd604ad5877d6ca58a2dc963b34e46bc4d8cb46fcaa1acd10e8f1241303be10",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py": "0eb38593ccfe811f8b4c1078ec761e8637f2312928e42e1d1c42e3b3f6ab612b",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py": "ad25b668f94d25399c2d76bb8cafcf128bbc0dcae300266bd105b6289952804d",
       "research/stock-signals/dead-stock-data-integrity/code/sec_client.py": "b1914a7a32937b191e4e48768b03c8f2af203288ca571e694e568c037006f479",
-      "research/stock-signals/dead-stock-data-integrity/code/payout_table.py": "347b19a3e709501109a0878e5714ca29224d8921d0406a8b39216de7c7b04fd9",
+      "research/stock-signals/dead-stock-data-integrity/code/payout_table.py": "5dbcd90d7aed35beaa299f79b1027c69fa4d853a29817007396d0b0d9ff143ab",
       "research/stock-signals/dead-stock-data-integrity/code/dead_stock_data_integrity.py": "a641c267b5741cad8f79dfd47614bea0752f64ac927431226064680a581ea9a9",
       "research/stock-signals/_lib/sec_master_index.py": "421c3898c08c1286be2eabfc3a59513339a3e97a2d80d637431763c3c1dd3f1c",
       "research/stock-signals/_lib/sec_form25.py": "92654642d390010e0721ec9b35a606a1732ea9ad2ddce60407295ed51045d28f",
@@ -6240,6 +7290,10 @@
       "limit_quarters": null
     },
     "matching_rules": {
+      "rule_versions": [
+        "v1",
+        "v1.1"
+      ],
       "before_days": 30,
       "after_days": 180,
       "truncated_name_length": 16,
@@ -6254,9 +7308,12 @@
         "LTD",
         "PLC"
       ],
-      "abbreviations_sha256": "d5326cffcb65eee2e0f818b8fa22d2251e8f4fea9544ab2a3fa1b3e78e59f687"
+      "abbreviations_sha256": "d5326cffcb65eee2e0f818b8fa22d2251e8f4fea9544ab2a3fa1b3e78e59f687",
+      "plural_to_singular_sha256": "bffaf08636d9feb732c3777c57d3e50e61e46f4290e883430ccd6bfca34836ca",
+      "edgar_slash_tag_pattern": "/[A-Z]{2,4}/?$",
+      "share_class_pattern": "(?:\\s*-\\s*(?:CL(?:ASS)?\\.?\\s+)?[ABC]|,?\\s+CL(?:ASS)?\\.?\\s+[ABC])$"
     },
-    "form25_sha256": "fe1cdb5015a46b996068d672af052e4806815f9a30f2912e8d3a4b0320961874",
-    "form25_git_head": "f70117ab2547fa308f5c293c94769ee0f857e190"
+    "form25_sha256": "5913ae66bba65eaa4ffb69c6fc3cff2257650e843f37564166359449f6367c58",
+    "form25_git_head": "ba313c7c8427e4bd00ca892d1f34dbea297cd98d"
   }
 }
