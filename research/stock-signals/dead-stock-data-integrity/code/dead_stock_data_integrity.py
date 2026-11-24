@@ -26,6 +26,8 @@ EXAMPLES_PER_CHECK = 20
 # CRSP share codes 10/11 are ordinary common shares; exchange codes 1/3 are NYSE and Nasdaq.
 SHARE_CODES = [10, 11]
 EXCHANGE_CODES = [1, 3]
+# This study's own folder (code/ sits inside it); inputs are located from here, never from --out.
+STUDY_DIR = Path(__file__).resolve().parent.parent
 FETCH_CHUNK = 200_000
 SPELL_SYMBOL_RE = r"PERMNO-\d+~\d+"
 TRADE_FILES = ("dev-A", "dev-B", "holdout-A", "holdout-B")
@@ -64,8 +66,10 @@ BATCH_SQL = (
     "WHERE d.load_id = %s::bigint AND d.permno = ANY(%s::bigint[]) "
     "AND d.date >= %s::date AND d.date <= %s::date"
 )
-# daily_of() copies all 68 million rows of a load into memory on every call (one query ran more
-# than 12 minutes), so the scan reads the table by load id after the same completeness test.
+# A first probe through daily_of() with the stock-spans filter ran over 12 minutes and was
+# stopped, while the same question on the table by load id takes under a second (see
+# _hand_checks.md; the cause was not determined). The scan therefore reads the table by load id
+# after the same completeness test.
 LOAD_COMPLETE_SQL = "SELECT 1 FROM ref.loads WHERE load_id = %s::bigint AND status = 'complete'"
 ROSTER_RET_SQL = (
     "SELECT d.permno, d.date, d.ret FROM kaggle_crsp.daily d "
@@ -428,15 +432,34 @@ def compute_integrity(
     return result
 
 
-def _git(root: Path, *args: str) -> str:
-    """Run git in ``root`` and return its stripped output (empty if git is unavailable)."""
+def _git(root: Path, *args: str) -> str | None:
+    """Run git in ``root``; return its stripped output, or ``None`` if git itself fails.
+
+    An empty string is a real answer (for example a clean ``status``), so a failure must not
+    look like one.
+    """
     try:
         done = subprocess.run(
             ["git", *args], cwd=root, capture_output=True, text=True, timeout=15, check=True
         )
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return None
     return done.stdout.strip()
+
+
+def git_provenance(root: Path) -> dict[str, Any]:
+    """The commit the run started from and whether files differed from it.
+
+    Returns:
+        ``git_head`` (the commit hash, or ``"unknown"`` if git failed or gave nothing) and
+        ``git_dirty`` (True or False, or ``"unknown"`` if git could not be asked).
+    """
+    head = _git(root, "rev-parse", "HEAD")
+    status = _git(root, "status", "--porcelain")
+    return {
+        "git_head": head if head else "unknown",
+        "git_dirty": "unknown" if status is None else bool(status),
+    }
 
 
 def code_hashes(code_dir: Path) -> dict[str, str]:
@@ -474,7 +497,7 @@ def run_integrity(
         mcgill_load: McGill load id (company names).
         eval_start: Recorded in the provenance only.
         eval_end: Last scanned date (never after ``CRSP_END``).
-        out_dir: Study folder that receives ``_roster.csv`` and ``_integrity.json``.
+        out_dir: Folder that receives ``_roster.csv`` and ``_integrity.json`` (never read from).
         repo_root: Repository root (for git provenance and the default trade-file folder).
         trades_dir: Folder of the first test's trade files.
         run_date: Date of the run, recorded in the provenance.
@@ -487,7 +510,8 @@ def run_integrity(
     trades_dir = Path(trades_dir) if trades_dir else repo_root / FIRST_TEST_RESULTS
 
     require_complete_load(conn, crsp_load)
-    roster = roster_mod.build_roster(conn, out_dir, mcgill_load, release_id)
+    # The first test's result files sit beside this study's real folder, wherever --out points.
+    roster = roster_mod.build_roster(conn, STUDY_DIR, mcgill_load, release_id)
     permnos = sorted({int(p) for p in roster["permno"].dropna()})
     returns = read_roster_returns(conn, crsp_load, permnos, eval_end)
     roster = label_roster(roster, returns)
@@ -521,8 +545,7 @@ def run_integrity(
             "scan_start": SCAN_START,
             "batch_size": BATCH_SIZE,
             "reference_cell": ic.REFERENCE_CELL,
-            "git_head": _git(repo_root, "rev-parse", "HEAD"),
-            "git_dirty": bool(_git(repo_root, "status", "--porcelain")),
+            **git_provenance(repo_root),
             "code_sha256": code_hashes(Path(__file__).resolve().parent),
             "run_date": run_date,
             "permnos_in_scan_list": len(scan_permnos),

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
+import os
 from pathlib import Path
 
 import dead_stock_data_integrity as study
 import numpy as np
 import pandas as pd
 import pytest
+import roster as roster_mod
 import run
 
 pytestmark = pytest.mark.study
@@ -355,3 +358,136 @@ def test_roster_price_labels_do_not_depend_on_share_or_exchange_codes() -> None:
     roster = pd.DataFrame({"permno": pd.array([7], dtype="Int64"), "exit_date": [DATES[39]]})
     plain = study.label_roster(roster, stock[["permno", "date", "ret"]])
     assert plain.loc[0, "price_label"] == study.label_roster(roster, returns).loc[0, "price_label"]
+
+
+def _patch_scan(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stub every database read except the roster's own file reading."""
+    monkeypatch.setattr(study, "require_complete_load", lambda *a, **k: None)
+    monkeypatch.setattr(
+        study,
+        "read_roster_returns",
+        lambda *a, **k: pd.DataFrame(
+            {
+                "permno": pd.Series(dtype="int64"),
+                "date": pd.Series(dtype="datetime64[ns]"),
+                "ret": pd.Series(dtype="float64"),
+            }
+        ),
+    )
+    monkeypatch.setattr(study, "read_scan_permnos", lambda *a, **k: [10])
+    monkeypatch.setattr(study, "read_calendar", lambda *a, **k: pd.DatetimeIndex(DATES))
+    monkeypatch.setattr(
+        study,
+        "load_intervals",
+        lambda *a, **k: (_intervals(), {n: {"positions": 1} for n in _intervals()}),
+    )
+
+
+def _run(tmp_path: Path, **extra: object) -> dict:
+    return study.run_integrity(
+        None,
+        release_id=1,
+        crsp_load=1,
+        mcgill_load=2,
+        eval_start="2005-01-03",
+        eval_end="2024-12-31",
+        out_dir=tmp_path,
+        repo_root=tmp_path,
+        run_date="2026-11-24",
+        batches_fn=lambda conn, ids: iter([_stock(10, False)]),
+        **extra,
+    )
+
+
+def test_out_folder_does_not_change_where_the_roster_inputs_are_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_scan(monkeypatch)
+
+    def names_none(conn: object, stacked: pd.DataFrame, *a: object) -> pd.DataFrame:
+        return stacked.assign(name_source="none")
+
+    monkeypatch.setattr(roster_mod, "attach_names", names_none)
+    real_build = roster_mod.build_roster
+    seen: list[Path] = []
+
+    def spy(conn: object, study_root: Path, *a: object) -> pd.DataFrame:
+        seen.append(Path(study_root))
+        return real_build(conn, study_root, *a)
+
+    monkeypatch.setattr(roster_mod, "build_roster", spy)
+    out = tmp_path / "unrelated" / "elsewhere"
+    _run(out)
+    assert seen == [study.STUDY_DIR]
+    assert study.STUDY_DIR.name == "dead-stock-data-integrity"
+    # The 141 real exits of the first test were read although --out is an unrelated folder.
+    assert len(pd.read_csv(out / study.OUTPUT_ROSTER)) == 141
+
+
+def test_git_provenance_comes_from_git_and_never_hides_a_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    answers = {"rev-parse": "abc123", "status": " M file.py"}
+    monkeypatch.setattr(study, "_git", lambda root, *args: answers[args[0]])
+    assert study.git_provenance(tmp_path) == {"git_head": "abc123", "git_dirty": True}
+    answers["status"] = ""
+    assert study.git_provenance(tmp_path) == {"git_head": "abc123", "git_dirty": False}
+    monkeypatch.setattr(study, "_git", lambda root, *args: None)
+    assert study.git_provenance(tmp_path) == {"git_head": "unknown", "git_dirty": "unknown"}
+
+
+def test_git_failure_is_none_not_empty(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken(*a: object, **k: object) -> None:
+        raise FileNotFoundError("git")
+
+    monkeypatch.setattr(study.subprocess, "run", broken)
+    assert study._git(tmp_path, "status") is None
+
+
+def test_payload_records_head_dirty_flag_and_real_code_hashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_scan(monkeypatch)
+    monkeypatch.setattr(study.roster_mod, "build_roster", lambda *a, **k: _tiny_roster())
+    monkeypatch.setattr(
+        study, "_git", lambda root, *args: {"rev-parse": "deadbeef"}.get(args[0], " M x")
+    )
+    prov = _run(tmp_path)["provenance"]
+    assert prov["git_head"] == "deadbeef" and prov["git_dirty"] is True
+    code_dir = Path(study.__file__).resolve().parent
+    assert set(prov["code_sha256"]) == {
+        "run.py",
+        "dead_stock_data_integrity.py",
+        "integrity_checks.py",
+        "price_path.py",
+        "roster.py",
+    }
+    for name, digest in prov["code_sha256"].items():
+        assert digest == hashlib.sha256((code_dir / name).read_bytes()).hexdigest()
+
+
+def _tiny_roster() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "symbol": ["PERMNO-10"],
+            "permno": pd.array([10], dtype="Int64"),
+            "exit_date": [DATES[26]],
+            "name_source": ["mcgill"],
+        }
+    )
+
+
+def test_failed_replacement_keeps_the_previous_file_intact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dest = tmp_path / study.OUTPUT_JSON
+    dest.write_text('{"old": true}\n')
+
+    def fail(src: object, dst: object) -> None:
+        raise OSError("disk full while swapping the file in")
+
+    monkeypatch.setattr(os, "replace", fail)
+    with pytest.raises(OSError):
+        study.write_json(dest, {"new": True})
+    assert dest.read_text() == '{"old": true}\n'
+    assert list(tmp_path.glob("*.tmp")) == []
