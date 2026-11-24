@@ -79,10 +79,7 @@ Later: plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/202
 
 ## Standing research rules
 
-- Follow the [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md).
-- Part A: long free history, Holm-corrected t of at least 3, and at least +1.0 percentage point per year net since 1994.
-- B0 is a kill-only replay. B1 is a forward shadow book of at least 18 months.
-- Real money needs six months of clean Alpaca paper trading first.
+- **Reset 2026-11-20:** the owner wiped the old evidence rules (Part A, the t-stat bars, B0/B1, the six-month wait) for new work. New work follows four plain rules: test on data the strategy never saw; use only what was known each day and include stocks that later died; subtract costs and taxes and compare to SPY; paper trade first, and the owner decides when real money is earned. See [AGENTS.md](../AGENTS.md#research-rules-reset-2026-11-20). The older [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md) stays as history.
 - The paper trader has been stopped since 2026-11-06, and the owner will say when it returns.
 - The observation window's qualifying start and any reset are unresolved. Document unknowns.
 - Closed NO-GO under their registered tests: momentum, the classic factor screen, net issuance. Each applies only to its registered test. See the [research snapshot](../research/RESEARCH_SNAPSHOT.md).
