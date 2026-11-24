@@ -19,7 +19,24 @@
   },
   "data": {
     "tape": null,
-    "inputs": []
+    "inputs": [
+      {
+        "path": "results/dead_stock_first_test/dev-A-trades.csv.gz",
+        "sha256": "7db2e9d2a779592584dbca503f8a42fb19ef91e9c2d7aee2aaffe6ea439404a1"
+      },
+      {
+        "path": "results/dead_stock_first_test/dev-B-trades.csv.gz",
+        "sha256": "dba6c13e121d8eb1fef21e0074344bd49bf076b706c4ce30e442821853807714"
+      },
+      {
+        "path": "results/dead_stock_first_test/holdout-A-trades.csv.gz",
+        "sha256": "647f4b61690d5052a3c5699a2b24518ddda85dd26c7dd95addeea37ea4a7ae6e"
+      },
+      {
+        "path": "results/dead_stock_first_test/holdout-B-trades.csv.gz",
+        "sha256": "aa4631a60d5bfa369eb1afc6d4e579b2c7ef60144a20bffc8c32476e6478b45f"
+      }
+    ]
   },
   "code": [
     {
@@ -88,13 +105,7 @@
       "--universe",
       "A",
       "--release-id",
-      "1",
-      "(and",
-      "the",
-      "holdout,",
-      "and",
-      "universe",
-      "B)"
+      "1"
     ],
     "cwd": "."
   },
@@ -106,7 +117,7 @@
   "results": [
     {
       "path": "research/stock-signals/dead-stock-first-test/_dev-A.json",
-      "sha256": "b0272c6eef5049bdb1f7b7ff5a24386d80c6f12346f08cdfa45cc2d0949852cf"
+      "sha256": "beab59f3ae57b72786ac1ad96dd95c2e9fd1230f09e1f4a3e29d3f42f17475ed"
     },
     {
       "path": "research/stock-signals/dead-stock-first-test/_dev-B.json",
@@ -127,7 +138,7 @@
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Fixed-rule test over combined release 1; holdout run once per universe; data from the real database (not in the repo); verdict field carries no evidence label"
+    "note": "Command shown is the first of five: the same run.py with --window dev --universe B, --window holdout --universe A and B (each holdout run refuses a second run), and --audit-only. Data come from the real database and are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape; the verdict field carries no evidence label."
   },
-  "created_utc": "2026-11-24T08:32:37Z"
+  "created_utc": "2026-11-24T08:55:56Z"
 }

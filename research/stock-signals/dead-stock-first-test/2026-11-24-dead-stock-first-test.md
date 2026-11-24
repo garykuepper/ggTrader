@@ -7,9 +7,10 @@
 ## 1. The short answer
 
 - **The answer depends on a number we do not have.** The data holds the last price of a stock that stopped trading, but not what shareholders received. The study tried three readings: they got nothing back (loss 1.0), half (0.5), or the full last price (0.0). The result swings from far behind SPY to ahead of it depending on the reading.
-- **The 1.0 and 0.5 readings look wrong for this universe.** In both windows every dead stock the rule held, bar none, had a flat or rising price in its last month (141 of 141 in the main universe: 24 in the holdout and 117 in the development window), and none had collapsed. That is the usual look of a takeover, where holders are paid about the last price, not of a failure. So the 0.0 reading is the most realistic of the three, and 1.0 is a worst-case bound. This is a description of the prices, not a payout record.
-- **At the 0.0 reading the rule does not consistently beat SPY.** In the 2005 to 2019 development window it trailed SPY by about 2 points a year after tax at the middle cost (6.1% a year against 8.1%). In the 2020 to 2024 holdout, run once after the code was fixed, it led by about 1.6 points a year (14.1% against 12.5%), but the lead disappears at the highest cost (40 bps, 0.4 percent of each trade's value) and shrinks to 0.5 points under the higher tax set. It also had a larger fall (40.7% against 33.7%) and a lower return per unit of risk (Sharpe ratio 0.55 against 0.66).
-- **The wider stress universe was clearly worse.** Allowing every stock priced at $1 or more, with no size limit, the rule trailed SPY by more than 10 points a year in both windows even at the 0.0 reading.
+- **The registered headline was the 1.0 reading, and at it the rule lost badly.** The brief named "nothing back, 18.3 bps, low tax" as the headline. There the rule trailed SPY by 16.4 points a year in 2005 to 2019 (it lost money: 27,108 from 100,000) and by 7.3 points in 2020 to 2024.
+- **The 1.0 and 0.5 readings look too harsh for this universe.** In both windows not one of the dead stocks the rule held lost more than about 7% of its price in its last month (141 stocks: 24 in the holdout and 117 in the development window); most were flat and some were rising. That is the usual look of a takeover, where holders are paid about the last price, not of a failure. So the prices point toward the 0.0 reading as the closest of the three, and 1.0 is better read as a worst-case bound. This is an inference from prices, not a payout record, and I adopted that way of reading the three levels after seeing the development numbers (before the holdout was run); see section 7.
+- **At the 0.0 reading the rule does not consistently beat SPY.** In the 2005 to 2019 development window it trailed SPY by about 2 points a year after tax at the middle cost (6.1% a year against 8.1%). In the 2020 to 2024 holdout (a later period the rule had not been looked at on, run once after the code was fixed) it led by about 1.6 points a year (14.1% against 12.5%), but the lead disappears at the highest cost (40 bps, 0.4 percent of each trade's value) and shrinks to 0.5 points under the higher tax set. It also had a larger fall from its peak (40.7% against 33.7%) and a lower return per unit of risk (Sharpe ratio, higher is better: 0.55 against 0.66).
+- **The wider stress universe was clearly worse.** Allowing every stock priced at $1 or more, with no size limit, the rule trailed SPY by about 9.5 to 14 points a year at the 0.0 reading across the cost and tax settings in both windows, and by more at 0.5 and 1.0.
 - **This is a first look at one rule over two windows.** It is evidence, not a verdict. Paper trading comes before any real money, and the owner decides.
 
 ## 2. What was tested
@@ -19,7 +20,7 @@
 - **Data.** CRSP daily prices from our own database (25,754 stocks, 1968 to 2024), joined to Yahoo prices where a Yahoo history exists (published release 1). CRSP has no volume, so real trading size limits are not tested.
 - **Trading cost.** Charged on every buy and sell, dead-stock exits included: 6.4 bps (large US stocks) and 18.3 bps (small US stocks) from one large trader's published realised costs over 2009 to 2016, and 40 bps as a labelled stress level. A basis point (bps) is 0.01 percent.
 - **Taxes.** Two sets, short-term and long-term gains at 24% and 15% (low) or 35% and 20% (high), through a tax-lot ledger that tracks each purchase, sells highest-cost lots first and applies the 30-day wash-sale rule. Tax is paid from the account's own cash. SPY runs through the same ledger. Both are sold on the last day and the final tax paid.
-- **Windows.** Development 2005-01-03 to 2019-12-31, where the code was built and looked at. Holdout 2020-01-02 to 2024-12-31, run once. The program refuses a second run: the file `holdout-A.claim` records that it was started, and only the owner may delete it.
+- **Windows.** The holdout is the later period the rule had never been looked at on. Development 2005-01-03 to 2019-12-31, where the code was built and looked at. Holdout 2020-01-02 to 2024-12-31, run once. The program refuses a second run: the file `holdout-A.claim` records that it was started, and only the owner may delete it.
 - **Dead-stock exit.** A stock that stops trading is sold on its last day at its last price times (1 minus the loss). A stock still alive at the end of the data file (2024-12-31) is not treated as dead.
 
 ## 3. Results for the main universe (A)
@@ -43,7 +44,7 @@ Every combination is shown. None was picked afterwards. "Gap" is the rule's year
 | SPY | 18.3 bps | 179,793 | +12.5% | n/a | 175,099 | +11.9% | n/a |
 | SPY | 40 bps | 179,079 | +12.4% | n/a | 174,428 | +11.8% | n/a |
 
-Dead stocks held at death: 24. Price one month before the end versus the last price: under 0.5: 0; 0.5 to 0.9: 0; 0.9 to 1.1: 21; 1.1 or more: 3.
+Dead stocks held at death: 24. Last price divided by the price one month earlier: under 0.5: 0; 0.5 to 0.9: 0; 0.9 to 1.1: 21; 1.1 or more: 3.
 Skipped buys 5; mean yearly turnover 8.0; largest fall (loss 0.0, 18.3 bps, low tax) -40.7%; SPY largest fall -33.7%; Sharpe 0.55 vs SPY 0.66.
 
 ### Development, 2005 to 2019
@@ -63,7 +64,7 @@ Skipped buys 5; mean yearly turnover 8.0; largest fall (loss 0.0, 18.3 bps, low 
 | SPY | 18.3 bps | 320,298 | +8.1% | n/a | 307,340 | +7.8% | n/a |
 | SPY | 40 bps | 318,976 | +8.0% | n/a | 306,095 | +7.7% | n/a |
 
-Dead stocks held at death: 117. Price one month before the end versus the last price: under 0.5: 0; 0.5 to 0.9: 0; 0.9 to 1.1: 108; 1.1 or more: 9.
+Dead stocks held at death: 117. Last price divided by the price one month earlier: under 0.5: 0; 0.5 to 0.9: 0; 0.9 to 1.1: 108; 1.1 or more: 9.
 Skipped buys 28; mean yearly turnover 7.9; largest fall (loss 0.0, 18.3 bps, low tax) -66.9%; SPY largest fall -55.2%; Sharpe 0.35 vs SPY 0.51.
 
 ### Where the gap comes from
@@ -92,9 +93,77 @@ Growth per year: SPY untaxed and free 8.93%; rule (loss 0.0) untaxed and free 9.
 
 Before any cost or tax the stock picking beat SPY in both windows (a little in 2005 to 2019, a lot in 2020 to 2024). The rule trades about eight times its value each year (mean yearly turnover 7.9 and 8.0). Costs took about 1.7 to 1.9 points a year at 18.3 bps. Taxes took a further 1.5 points in the development window and 3.7 points in the holdout, because the rule realises short-term gains every month; SPY, held throughout, pays far less. So to match SPY after costs and tax the rule has to beat SPY by about 2 to 4 points a year before them, and it did that in one of the two windows.
 
+Two reading notes. In the development window at loss 1.0 the low-tax and high-tax columns are identical because the rule lost money, so no tax was ever owed. And in the tables above, "no cost, no tax" growth means the same rule run through the same ledger with costs and taxes set to zero.
+
+Sanity figures from the saved results: the main universe had about 990 to 997 eligible stocks a month (the stress universe 3,281 to 4,218). Of the stock-months the rule held at loss 1.0, 1,615 of 2,871 in the holdout and 4,141 of 8,765 in the development window were stocks with a Yahoo price history; the rest were CRSP-only, so the test depends on both sources. No growth or holdings charts were made; the month-end account values, holdings counts and every trade are in the saved result files for anyone who wants them.
+
+### Risk and trading volume for every combination (low tax; the high tax set changes these little)
+
+Sharpe ratio is the yearly return per unit of ups and downs; higher is better. Largest fall is the worst drop from a peak to a later low. Yearly turnover is how many times the account value is bought and sold in a year.
+
+#### Universe A, holdout 2020 to 2024
+
+| Dead-stock loss | Cost per side | Sharpe ratio | Largest fall from a peak | Yearly turnover (times the account value) |
+|---|---|---:|---:|---:|
+| 1.0 | 6.4 bps | 0.35 | -52.9% | 8.1 |
+| 1.0 | 18.3 bps | 0.32 | -54.1% | 8.1 |
+| 1.0 | 40 bps | 0.27 | -56.2% | 8.1 |
+| 0.5 | 6.4 bps | 0.46 | -45.5% | 8.0 |
+| 0.5 | 18.3 bps | 0.44 | -46.9% | 8.0 |
+| 0.5 | 40 bps | 0.40 | -49.4% | 8.1 |
+| 0.0 | 6.4 bps | 0.58 | -39.9% | 8.0 |
+| 0.0 | 18.3 bps | 0.55 | -40.7% | 8.0 |
+| 0.0 | 40 bps | 0.51 | -42.1% | 8.0 |
+| SPY | 18.3 bps | 0.66 | -33.7% | n/a |
+
+#### Universe A, development 2005 to 2019
+
+| Dead-stock loss | Cost per side | Sharpe ratio | Largest fall from a peak | Yearly turnover (times the account value) |
+|---|---|---:|---:|---:|
+| 1.0 | 6.4 bps | -0.14 | -79.7% | 8.4 |
+| 1.0 | 18.3 bps | -0.17 | -81.8% | 8.4 |
+| 1.0 | 40 bps | -0.24 | -85.5% | 8.4 |
+| 0.5 | 6.4 bps | 0.15 | -70.2% | 8.3 |
+| 0.5 | 18.3 bps | 0.11 | -70.5% | 8.3 |
+| 0.5 | 40 bps | 0.05 | -71.0% | 8.4 |
+| 0.0 | 6.4 bps | 0.38 | -66.6% | 7.8 |
+| 0.0 | 18.3 bps | 0.35 | -66.9% | 7.9 |
+| 0.0 | 40 bps | 0.30 | -67.5% | 8.0 |
+| SPY | 18.3 bps | 0.51 | -55.2% | n/a |
+
+#### Universe B, stress, holdout
+
+| Dead-stock loss | Cost per side | Sharpe ratio | Largest fall from a peak | Yearly turnover (times the account value) |
+|---|---|---:|---:|---:|
+| 1.0 | 6.4 bps | -0.07 | -78.3% | 8.7 |
+| 1.0 | 18.3 bps | -0.10 | -79.1% | 8.7 |
+| 1.0 | 40 bps | -0.15 | -80.4% | 8.7 |
+| 0.5 | 6.4 bps | 0.09 | -71.1% | 8.7 |
+| 0.5 | 18.3 bps | 0.06 | -72.1% | 8.7 |
+| 0.5 | 40 bps | 0.02 | -74.0% | 8.7 |
+| 0.0 | 6.4 bps | 0.25 | -63.7% | 8.7 |
+| 0.0 | 18.3 bps | 0.23 | -64.7% | 8.7 |
+| 0.0 | 40 bps | 0.18 | -66.5% | 8.7 |
+| SPY | 18.3 bps | 0.66 | -33.7% | n/a |
+
+#### Universe B, stress, development
+
+| Dead-stock loss | Cost per side | Sharpe ratio | Largest fall from a peak | Yearly turnover (times the account value) |
+|---|---|---:|---:|---:|
+| 1.0 | 6.4 bps | -0.36 | -95.4% | 8.5 |
+| 1.0 | 18.3 bps | -0.40 | -96.0% | 8.5 |
+| 1.0 | 40 bps | -0.47 | -96.9% | 8.6 |
+| 0.5 | 6.4 bps | -0.13 | -86.8% | 8.8 |
+| 0.5 | 18.3 bps | -0.17 | -88.6% | 8.8 |
+| 0.5 | 40 bps | -0.24 | -91.2% | 8.9 |
+| 0.0 | 6.4 bps | 0.10 | -75.8% | 8.9 |
+| 0.0 | 18.3 bps | 0.06 | -77.2% | 8.9 |
+| 0.0 | 40 bps | -0.01 | -79.6% | 9.0 |
+| SPY | 18.3 bps | 0.51 | -55.2% | n/a |
+
 ## 4. What the dead stocks were
 
-The CRSP file in our database has no delisting codes, so a takeover cannot be told from a failure directly. As a descriptive check (added after the first development run, recorded in the brief's amendments, and used to choose nothing) the study looked at each dead stock the rule held and compared its last price with its price 21 trading days earlier.
+The CRSP file in our database has no delisting codes, so a takeover cannot be told from a failure directly. As a descriptive check (added after the first development run and recorded in the brief's amendments; it changes no number, but it is how the three readings are interpreted) the study looked at each dead stock the rule held and compared its last price with its price 21 trading days earlier.
 
 | Window | Dead stocks held | Under 0.5 of earlier price | 0.5 to 0.9 | 0.9 to 1.1 | 1.1 or more |
 |---|---:|---:|---:|---:|---:|
@@ -107,7 +176,7 @@ In the main universe not one held dead stock collapsed before the end. That sugg
 
 ## 5. Stress universe B (price at least $1, no size limit)
 
-Same rule, same costs, same taxes; 7,658 stocks over the development read and 5,101 over the holdout read. Every cell is shown.
+Same rule, same costs, same taxes; the reads held 7,658 data series (development) and 5,101 (holdout); one company can have more than one series. Every cell is shown.
 
 ### Holdout, 2020 to 2024
 
@@ -153,6 +222,7 @@ At the 0.5 and 1.0 readings it is far worse still (holdout, 18.3 bps, low tax: m
 - **No margin, no shorting, no stocks that left before 1968, no spreads wider than the cost grid.** A failing stock can trade far below its last quoted price before it stops.
 - **One rule over two windows.** The holdout is five years. Two windows pointing in different directions (a loss to SPY, then a win) are what noise can produce.
 - **Unused tax losses at the end are not valued**, for the rule or for SPY.
+- **SPY is sold on the last day and its tax paid**, which penalises SPY compared with an investor who keeps holding it. This slightly favours the rule.
 - **Small details that favour the rule slightly:** the rule skips a buy on a stock's last day (5 buys in the holdout, 28 in development), and it sits in cash until the first trade at the end of its first month while SPY is bought on day one.
 - **Counting rules.** "21 and 252 trading days" are the stock's own valid closes, and "later spell" in the output means the same company continues under a later data record, not a verified takeover.
 
@@ -162,17 +232,29 @@ This is recorded so nobody has to guess what was fixed after seeing numbers.
 
 - **Before any run:** the rule, windows, costs, tax sets and universe were frozen in the brief. A cost grid of 5, 15 and 40 bps in the plan was replaced by 6.4, 18.3 and 40 after the library gave sourced figures.
 - **First real run (development):** crashed on a rounding error smaller than a billionth of a dollar in the cash check. Fixed; no result was affected.
-- **After the first development results were seen:** two additions were made, recorded as dated amendments in the brief. Stocks alive at the file end are not written down (needed only for the holdout). A descriptive price-path check was added. The development numbers did not change when the first was added (checked cell by cell).
-- **Two independent pre-holdout reviews** (Codex Sol and Claude Opus) found problems that were fixed before the holdout ran: tax owed after a wash sale could stay unpaid until the next January, Sharpe and largest fall were taken from a curve that added paid tax back, the saved output lacked the curves and trade lists the brief promised, a final value ignored unpaid tax, and the holdout lacked checks for Yahoo data drift and for pinned release, load and a clean working tree. All were fixed and re-reviewed. The development numbers moved by under 0.01 percent as a result.
+- **After the first development results were seen:** the changes below were made and recorded as dated amendments in the brief. Reading 1.0 as a worst-case bound, rather than as the headline, was decided at that point, after the development numbers were seen and before the holdout was run. The cost grid also changed, from 5, 15 and 40 to 6.4, 18.3 and 40, when the library gave sourced figures; you told the team to execute the plan but have not separately approved the 6.4 and 18.3 figures. Tax payment in January instead of on 31 December and the "later spell" wording are also recorded there. Stocks alive at the file end are not written down (needed only for the holdout). A descriptive price-path check was added. The development numbers did not change when the first was added (checked cell by cell).
+- **Two independent pre-holdout reviews** (Codex Sol and Claude Opus) found problems that were fixed before the holdout ran: tax owed after a wash sale could stay unpaid until the next January, Sharpe and largest fall were taken from a curve that added paid tax back, the saved output lacked the curves and trade lists the brief promised, a final value ignored unpaid tax, and the holdout lacked checks for Yahoo data drift and for pinned release, load and a clean working tree. All were fixed and re-reviewed. The development final values and yearly growth moved by under 0.01 percent as a result; the Sharpe ratio and largest fall changed more because their definition changed (headline cell, loss 0.0, 18.3 bps, low tax: Sharpe 0.40 to 0.35, largest fall minus 64.0% to minus 66.9%).
 - **Holdout run once per universe.** Its claim files remain. A metadata-only audit found no confirmed Yahoo-linked series that ended while the company lived on (1,539 checked, 0 suspects).
 - **Known small item left as it is:** one ledger test is named for three rounds of tax funding but does not exercise that limit.
 
 ## 8. Files
 
-All under `research/stock-signals/dead-stock-first-test/`. Results: `_dev-A.json`, `_dev-B.json`, `_holdout-A.json`, `_holdout-B.json`, `_holdout-A-audit.json`. Every trade of every cell is in four side files in the git-ignored folder `results/dead_stock_first_test` (dev and holdout, universe A and B) (git-ignored, too large to commit). Their SHA-256 values:. Code is in `code/`, the frozen brief and its amendments in `2026-11-23-dead-stock-first-test-brief.md`. Rebuild with `.venv/bin/python research/stock-signals/dead-stock-first-test/code/run.py --window dev --universe A --release-id 1`; the holdout command refuses to run again.
+All under `research/stock-signals/dead-stock-first-test/`. Results: `_dev-A.json`, `_dev-B.json`, `_holdout-A.json`, `_holdout-B.json`, `_holdout-A-audit.json`. Every trade of every cell is in four side files in the folder `results/dead_stock_first_test` (development and holdout, universe A and B), which git does not track because the files are large. Each file has a fingerprint (SHA-256) so a copy can be checked: Code is in `code/`, the frozen brief and its amendments in `2026-11-23-dead-stock-first-test-brief.md`. Rebuild with `.venv/bin/python research/stock-signals/dead-stock-first-test/code/run.py --window dev --universe A --release-id 1`; the holdout command refuses to run again.
 
 - `dev-A-trades.csv.gz` 7db2e9d2a779592584dbca503f8a42fb19ef91e9c2d7aee2aaffe6ea439404a1
 - `dev-B-trades.csv.gz` dba6c13e121d8eb1fef21e0074344bd49bf076b706c4ce30e442821853807714
 - `holdout-A-trades.csv.gz` 647f4b61690d5052a3c5699a2b24518ddda85dd26c7dd95addeea37ea4a7ae6e
 - `holdout-B-trades.csv.gz` aa4631a60d5bfa369eb1afc6d4e579b2c7ef60144a20bffc8c32476e6478b45f
 
+## 9. Words used
+
+- **Holdout:** the later period (2020 to 2024) that the rule was not looked at on while it was built; it was run once.
+- **CRSP:** a university database of US stock prices that keeps stocks that later stopped trading. **Release 1:** the published combined data set of CRSP and Yahoo prices in our own database.
+- **bps (basis points):** hundredths of a percent; 18.3 bps is 0.183 percent of the value of each trade.
+- **Tax-lot ledger:** a record of every purchase, so each sale is taxed on its own gain or loss. **Wash-sale rule:** a loss is not allowed for tax if you buy the same stock again within 30 days.
+- **Total-return prices:** prices that already include reinvested dividends.
+- **Sharpe ratio, largest fall, yearly turnover:** defined above the risk tables.
+- **Later spell:** the same company continues under a later record in the data (for example after a trading halt or an exchange move); it is not a verified takeover.
+- **Yahoo data drift:** the stored Yahoo prices changed since the data set was published; the holdout refuses to run if so. **Pinned release, load and clean working tree:** the run checks it uses exactly the published data and unchanged code.
+- **Metadata-only audit:** a check that reads only dates and labels, not prices, so it cannot reveal results. **Claim file:** a marker written when the holdout starts, so it cannot be run twice; only the owner may delete it.
+- **Fingerprint (SHA-256):** a code computed from a file's contents; any change to the file changes it.
