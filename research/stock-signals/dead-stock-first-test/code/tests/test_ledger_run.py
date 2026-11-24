@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from ledger_run import BookResult, TaxParams, run_book, run_spy
+from ledger_run import BookResult, TaxParams, _Execution, run_book, run_spy
 from replay import TargetStep, exit_close, plan_trades, span_end_dates
 
 from ggTrader.data.bars import Bars
@@ -543,3 +543,49 @@ def test_wash_sale_cross_year_disallows_loss() -> None:
     amended = [e for e in result.events if e.kind == "tax_adjustment"]
     assert [int(e.payload["year"]) for e in amended] == [2012]
     assert float(amended[0].payload["amount"]) == pytest.approx(0.24 * 10_000.0, abs=1e-6)
+
+
+# Seeds 86 and 117 overspent cash by about 1e-11 before the clamp existed.
+@pytest.mark.parametrize("seed", [*range(10), 86, 117])
+def test_scaled_buys_never_exceed_cash_by_rounding(seed: int) -> None:
+    """Many names, odd prices, cost 0.00064: cash binds and rounding must not overspend."""
+    rng = np.random.default_rng(seed)
+    days = pd.bdate_range("2019-01-02", "2019-12-31")
+    n = 60
+    walk = np.exp(np.cumsum(rng.normal(0.0, 0.01, size=(len(days), n)), axis=0))
+    close = pd.DataFrame(
+        rng.uniform(3.0, 400.0, size=n) * walk,
+        index=days,
+        columns=[f"S{i:02d}" for i in range(n)],
+    )
+    steps = []
+    for when in ("2019-01-02", "2019-03-01", "2019-05-01", "2019-07-01", "2019-09-03"):
+        names = rng.choice(close.columns, size=50, replace=False)
+        weights = rng.dirichlet(np.ones(50))
+        steps.append(step(when, {str(s): float(w) for s, w in zip(names, weights, strict=True)}))
+    result = run(close, steps, cost=0.00064)
+    assert result.min_cash >= 0.0
+    assert result.chain_verified
+    assert len([t for t in result.trades if t.reason == "rebalance" and t.qty > 0]) >= 50
+
+
+def make_execution(cash: float) -> _Execution:
+    columns = pd.Index(["A"])
+    return _Execution(columns, TAX, 0.001, cash, frozenset(), {})
+
+
+def test_buy_clamps_a_rounding_sized_excess_to_cash() -> None:
+    run_ = make_execution(1_000.0)
+    fill = 47.73431396484375 * 1.001
+    qty = 1_000.0 / fill * (1.0 + 3e-12)  # asks for a hair more than the cash allows
+    run_.buy("A", qty, 47.73431396484375, pd.Timestamp("2019-01-02"))
+    assert run_.book.cash >= 0.0
+    assert run_.book.cash < 1e-9
+    assert run_.trades[0].qty <= 1_000.0 / fill
+
+
+def test_buy_far_over_cash_is_a_logic_error_not_clamped() -> None:
+    run_ = make_execution(1_000.0)
+    with pytest.raises(ValueError, match=r"A.*2019-01-02.*cash"):
+        run_.buy("A", 100.0, 10.0, pd.Timestamp("2019-01-02"))
+    assert run_.trades == [] and run_.book.cash == 1_000.0

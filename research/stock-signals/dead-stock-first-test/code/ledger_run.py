@@ -71,6 +71,7 @@ TAX_LOTS_MODULE = "tax_lots_dead_stock_first_test"
 MAX_TAX_SALE_ROUNDS = 3  # a pro-rata sale can change the assessment, so repeat a few times
 MIN_TRADE_DOLLARS = 1e-6  # smaller trades are float dust, not decisions
 TAX_SALE_MARGIN = 1e-9  # sell this much extra (relative) so rounding cannot leave a sliver unpaid
+MAX_BUY_CLAMP = 1e-9  # a buy may be clamped to cash by this relative amount; more is a bug
 DAYS_PER_YEAR = 365.25
 __all__ = ["BookResult", "TaxLotBook", "TaxParams", "run_book", "run_spy"]
 
@@ -203,8 +204,25 @@ class _Execution:
         self._note_cash()
 
     def buy(self, symbol: str, qty: float, price: float, date: pd.Timestamp) -> None:
-        """Buy ``qty`` shares at ``price`` plus the cost."""
-        self.book.buy(symbol, qty, price * (1.0 + self.cost), date)
+        """Buy ``qty`` shares at ``price`` plus the cost, never spending more than the cash.
+
+        The scale factor of ``rebalance`` makes the buys add up to the cash only in exact
+        arithmetic; in floats the last buy can exceed it by about 1e-11. The quantity is clamped
+        here, at the one place that spends, down by whole ulps until the fill cost is at most the
+        book's cash. A larger gap (over ``MAX_BUY_CLAMP``, relative) is a logic bug and raises.
+        """
+        fill = price * (1.0 + self.cost)
+        cash = self.book.cash
+        if qty * fill > cash:
+            if qty * fill - cash > MAX_BUY_CLAMP * qty * fill:
+                raise ValueError(
+                    f"buy of {symbol} on {date.date()} wants {qty!r} shares at {fill!r} "
+                    f"but the book has only {cash!r} cash"
+                )
+            qty = min(qty, cash / fill)
+            while qty * fill > cash:
+                qty = float(np.nextafter(qty, 0.0))
+        self.book.buy(symbol, qty, fill, date)
         self.cost_paid += qty * price * self.cost
         self.trades.append(Trade(date, symbol, qty, price, REBALANCE_REASON))
         self.qty[symbol] = self.qty.get(symbol, 0.0) + qty
