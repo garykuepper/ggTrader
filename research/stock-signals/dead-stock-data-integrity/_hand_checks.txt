@@ -275,3 +275,222 @@ unreadable notices: [('TITAN CP', '9999999997-05-034197', 'SecNotFound: SEC URL'
 ```
 
 SHA-256 of the files counted: `_form25_matches.json` fe1cdb5015a46b996068d672af052e4806815f9a30f2912e8d3a4b0320961874, `_payouts.json` 352156b279039d2f6d8c2a8c55eff2ce16811f16617dd09c29d2f4b8288056b2, `_payouts.csv` c790ae93e73e6cec96aa7884de7a865acdd3daffc9f4ea773706e78003d9040f, `_integrity.json` e52826198d37a1599e63f41a3860bc60aeb8a0c711ef61eecf969c12e0b6dadc. Integrity rerun (read from `_integrity.json`): 345 spikes in 253 stocks, 251 gaps in 222, 249 unchanged-price runs in 158, 0 duplicates, bad prices and share counts; 20,379,285 rows of 9,422 stocks; flags inside holdings: 2 spikes in holdout-B, none elsewhere.
+
+## 12. Recount for the version 2 report (SEC phases rerun with matching rule v1.1; counts the report now uses)
+
+Run on 2026-11-24 from the repository root against the committed result files (`_form25_matches.json` SHA-256 5913ae66bba65eaa4ffb69c6fc3cff2257650e843f37564166359449f6367c58, `_payouts.json` e06db777561a580497e95a09fac0f83d7c13db882d5ab0fb50123b52b3062cce, `_payouts.csv` a219687d1c5cea60868656aca40887316cf0ba5b90c8a3254508acbf6c7ff2da, `_integrity.json` e52826198d37a1599e63f41a3860bc60aeb8a0c711ef61eecf969c12e0b6dadc, unchanged). The script reads those files and two result files of the closed first study (`_dev-A.json`, `_dev-B.json`, `_holdout-A.json`, `_holdout-B.json`, for the overlap of the wider list); no database, no network. "Strong" means item 2.01 present and the nearest acquisition-type 8-K (items 2.01, 3.03 or 5.01) within 30 days of the last trading day; "weaker" means no item 2.01; "weakest" means the nearest acquisition-type 8-K is more than 30 days away or one 8-K carries one item 3.03 or 5.01. Offsets are the filing date minus the last trading day. "Form 25 signed" is the signature date on the notice (the files do not keep the date the SEC received it).
+
+Script:
+
+```python
+"""Recount for the payout-evidence report, version 2 (reads the study's result files only)."""
+import csv, json, datetime as dt, collections as C
+D = "research/stock-signals/dead-stock-data-integrity/"
+F = "research/stock-signals/dead-stock-first-test/"
+m = json.load(open(D + "_form25_matches.json"))
+p = json.load(open(D + "_payouts.json"))
+rows = list(csv.DictReader(open(D + "_payouts.csv")))
+st = {s["permno"]: s for s in m["stocks"]}
+ev = p["events"]
+ACQ = {"2.01", "3.03", "5.01"}
+print("form25 summary:", m["summary"])
+print("requests: form25", m["request_count"], "payouts", p["request_count"])
+print("quarters", m["quarters_downloaded"][0], m["quarters_downloaded"][-1], len(m["quarters_downloaded"]), "skipped", m["quarters_skipped"])
+print("class x window:", sorted(C.Counter((r["evidence_class"], r["window"]) for r in rows).items()))
+print("class x confidence:", sorted(C.Counter((r["evidence_class"], r["match_confidence"] or "none") for r in rows).items()))
+print("class x rule:", sorted(C.Counter((r["evidence_class"], r["match_rule_version"] or "none") for r in rows).items()))
+print("rule x window x class(acq):", sorted(C.Counter((r["match_rule_version"], r["window"]) for r in rows if r["evidence_class"] == "acquired_or_merged").items()))
+print("conf x window (acq):", sorted(C.Counter((r["match_confidence"], r["window"]) for r in rows if r["evidence_class"] == "acquired_or_merged").items()))
+print("cross_check:", sorted(C.Counter(r["cross_check"] for r in rows).items()))
+print("label x class:", sorted(C.Counter((r["price_label"], r["evidence_class"]) for r in rows).items()))
+print("exchange x class:", sorted(C.Counter((r["exchcd"] or "none", r["evidence_class"]) for r in rows).items()))
+print("loss notes:", sorted(C.Counter(r["loss_note"] for r in rows).items()))
+print("loss x basis:", sorted(C.Counter((r["suggested_loss"] or "none", r["basis"]) for r in rows).items()))
+print("provisions (matched):", sorted(C.Counter(r["form25_provision"] or "-" for r in rows).items()))
+print("windowed 8-Ks:", sum(len(v) for v in ev.values()), "stocks:", len(ev), "item 1.03:", sum(1 for v in ev.values() for e in v if "1.03" in e["items"]))
+# evidence strength among acquired_or_merged
+acq = [r for r in rows if r["evidence_class"] == "acquired_or_merged"]
+def info(r):
+    exit_ = dt.date.fromisoformat(r["exit_date"])
+    filings = [(dt.date.fromisoformat(e["filing_date"]), e) for e in ev[r["permno"]] if ACQ & set(e["items"])]
+    items = sorted({i for _, e in filings for i in e["items"] if i in ACQ})
+    offs = sorted(((d - exit_).days for d, _ in filings), key=lambda x: (abs(x), x))
+    return items, len(filings), offs
+n = C.Counter(); weak = []
+for r in acq:
+    items, nf, offs = info(r)
+    near = offs[0]
+    w1 = "2.01" not in items
+    w2 = abs(near) > 30
+    w3 = nf == 1 and len(items) == 1 and items[0] in ("3.03", "5.01")
+    n["has_2.01"] += not w1; n["no_2.01"] += w1; n["nearest>30d"] += w2; n["single filing single item 3.03/5.01"] += w3
+    n["any weak"] += (w1 or w2 or w3); n["strong (2.01 and within 30d)"] += (not w1 and not w2)
+    n["acquisition-type filings: 1"] += (nf == 1)
+    if w1 or w2 or w3:
+        weak.append((r["stock_name"] or "?", r["exit_date"], r["window"], r["match_rule_version"], r["match_confidence"], ",".join(items), nf, near, w1, w2, w3))
+it = C.Counter()
+for r in acq:
+    got = {i for e in ev[r["permno"]] for i in e["items"]}
+    for c in ("2.01", "3.03", "5.01", "3.01"):
+        it[c] += c in got
+print("acquired stocks with item:", dict(it), "| exactly one of the three items:", sum(len(set(info(r)[0])) == 1 for r in acq))
+print("strength counts:", dict(n))
+print("weak list:", len(weak))
+for w in sorted(weak, key=lambda x: x[1]): print("  ", w)
+weakest = [w for w in weak if w[9] or w[10]]
+others = [w for w in weak if not (w[9] or w[10])]
+print("weakest (nearest acquisition-type filing > 30 days, or one filing carrying one item 3.03 or 5.01):", len(weakest), "| other no-2.01 stocks:", len(others))
+print("by match kind, weakest:", sorted(C.Counter((w[3], w[4]) for w in weakest).items()), "| no 2.01 all:", sorted(C.Counter((w[3], w[4]) for w in weak).items()))
+print("strong by match kind:", sorted(C.Counter((r["match_rule_version"], r["match_confidence"]) for r in acq if "2.01" in info(r)[0] and abs(info(r)[2][0]) <= 30).items()))
+print("2.01 filing offsets: nearest 2.01 within 30d:", sum(1 for r in acq if "2.01" in info(r)[0] and any(abs((dt.date.fromisoformat(e["filing_date"]) - dt.date.fromisoformat(r["exit_date"])).days) <= 30 for e in ev[r["permno"]] if "2.01" in e["items"])), "of", sum(1 for r in acq if "2.01" in info(r)[0]))
+print("named examples:")
+for r in acq:
+    if any(k in (r["stock_name"] or "") for k in ("CHAPARRAL", "CV THERA", "VENTANA", "TITAN", "PACIFICARE")):
+        print("  ", r["stock_name"], r["exit_date"], r["match_confidence"], r["match_rule_version"], info(r), [(e["filing_date"], e["items"]) for e in ev[r["permno"]] if ACQ & set(e["items"])])
+# v1.1-only table
+print("v1.1-only pairs:")
+for r in sorted((r for r in rows if r["match_rule_version"] == "v1.1"), key=lambda r: r["exit_date"]):
+    s = st[r["permno"]]; nt = s["notice"]["notice"]
+    items, nf, offs = info(r)
+    print("  |", r["stock_name"], "|", r["exit_date"], "|", nt["issuer_name"], "|", nt["signature_date"], "|", offs[0], "|", ",".join(items), "|", r["window"], "|", r["evidence_class"])
+# no_8k_found
+print("no_8k_found:")
+for r in rows:
+    if r["evidence_class"] == "no_8k_found":
+        s = st[r["permno"]]
+        print("  ", r["stock_name"], r["exit_date"], r["match_confidence"], r["form25_accession"], r["form25_provision"], sorted({i for e in ev[r["permno"]] for i in e["items"]}))
+# unmatched 26
+un = [s for s in m["stocks"] if s["status"] == "none"]
+nc = [s for s in m["stocks"] if s["confirmation"] == "non_common_only"]
+print("no_filing_match rows:", sum(r["evidence_class"] == "no_filing_match" for r in rows), "status none:", len(un), "non_common_only:", [s["stock_name"] for s in nc])
+nm = [r["stock_name"] for r in rows if r["evidence_class"] == "no_filing_match"]
+print("window of no_filing_match:", sorted(C.Counter(r["window"] for r in rows if r["evidence_class"] == "no_filing_match").items()))
+print("length16:", sum(len(x) == 16 for x in nm), "single word:", sum(len(x.replace('-', ' ').split()) == 1 for x in nm), "<=10 chars:", sum(len(x) <= 10 for x in nm))
+print(sorted(nm))
+print("name_unknown windows:", sorted(C.Counter(r["window"] for r in rows if r["evidence_class"] == "name_unknown").items()))
+# name-only v1 unreadable
+for r in rows:
+    if r["match_rule_version"] == "v1" and r["match_confidence"] == "name_only":
+        print("  v1 unreadable:", r["stock_name"], r["exit_date"], r["evidence_class"], r["form25_accession"])
+# B list overlap
+def exits(f):
+    d = json.load(open(F + f))
+    return d["result"]["death_price_paths"]["exits"]
+for w, a, b in (("dev", "_dev-A.json", "_dev-B.json"), ("holdout", "_holdout-A.json", "_holdout-B.json")):
+    ea, eb = exits(a), exits(b)
+    key = lambda e: (e.get("symbol"), e.get("exit_date") or e.get("last_date"))
+    print(w, "A", len(ea), "B", len(eb), "keys", list(eb[0].keys())[:6])
+    ka = {e["symbol"] for e in ea}; kb = {e["symbol"] for e in eb}
+    print("   overlap by symbol", len(ka & kb), "B only", len(kb - ka), "A only", len(ka - kb))
+```
+
+Output:
+
+```
+form25 summary: {'roster_rows': 141, 'named_stocks': 133, 'name_matched': 108, 'confirmed_common': 101, 'unconfirmed_unreadable': 6, 'non_common_only': 1, 'rejected_issuer_mismatch': 0, 'ambiguous': 0, 'none': 25, 'name_unknown': 8, 'matched': 107, 'matched_v1': 96, 'matched_v1_1_only': 11, 'matched_rate_of_named': 0.8045112781954887}
+requests: form25 {'network_fetches': 24, 'cache_hits': 267, 'corrupt_cache_refetches': 0} payouts {'network_fetches': 11, 'cache_hits': 96, 'corrupt_cache_refetches': 0}
+quarters [2005, 2] [2025, 1] 80 skipped []
+class x window: [(('acquired_or_merged', 'dev'), 85), (('acquired_or_merged', 'holdout'), 17), (('name_unknown', 'dev'), 6), (('name_unknown', 'holdout'), 2), (('no_8k_found', 'dev'), 5), (('no_filing_match', 'dev'), 21), (('no_filing_match', 'holdout'), 5)]
+class x confidence: [(('acquired_or_merged', 'confirmed'), 88), (('acquired_or_merged', 'name_only'), 14), (('name_unknown', 'none'), 8), (('no_8k_found', 'confirmed'), 2), (('no_8k_found', 'name_only'), 3), (('no_filing_match', 'none'), 26)]
+class x rule: [(('acquired_or_merged', 'v1'), 91), (('acquired_or_merged', 'v1.1'), 11), (('name_unknown', 'none'), 8), (('no_8k_found', 'v1'), 5), (('no_filing_match', 'none'), 26)]
+rule x window x class(acq): [(('v1', 'dev'), 74), (('v1', 'holdout'), 17), (('v1.1', 'dev'), 11)]
+conf x window (acq): [(('confirmed', 'dev'), 71), (('confirmed', 'holdout'), 17), (('name_only', 'dev'), 14)]
+cross_check: [('agrees', 78), ('not_comparable', 63)]
+label x class: [(('calm_like_deal', 'acquired_or_merged'), 78), (('calm_like_deal', 'name_unknown'), 7), (('calm_like_deal', 'no_8k_found'), 3), (('calm_like_deal', 'no_filing_match'), 19), (('unclear', 'acquired_or_merged'), 24), (('unclear', 'name_unknown'), 1), (('unclear', 'no_8k_found'), 2), (('unclear', 'no_filing_match'), 7)]
+exchange x class: [(('1', 'acquired_or_merged'), 48), (('1', 'no_8k_found'), 4), (('1', 'no_filing_match'), 13), (('3', 'acquired_or_merged'), 54), (('3', 'no_8k_found'), 1), (('3', 'no_filing_match'), 13), (('none', 'name_unknown'), 8)]
+loss notes: [('filings report an acquisition or merger event; payment amount and form not verified', 102), ('name_unknown: no company name in our data to match; no loss can be set', 8), ('no_8k_found: no acquisition, bankruptcy or delisting item found near the exit; no loss set', 5), ('no_filing_match: no Form 25 notice matched the company name; no loss can be set', 26)]
+loss x basis: [(('0.0', 'filing_evidence'), 102), (('none', 'none'), 39)]
+provisions (matched): [('-', 40), ('17 CFR 240.12d2-2(a)(3)', 101)]
+windowed 8-Ks: 656 stocks: 107 item 1.03: 0
+acquired stocks with item: {'2.01': 74, '3.03': 89, '5.01': 95, '3.01': 88} | exactly one of the three items: 12
+strength counts: {'has_2.01': 74, 'no_2.01': 28, 'nearest>30d': 4, 'single filing single item 3.03/5.01': 11, 'any weak': 28, 'strong (2.01 and within 30d)': 74, 'acquisition-type filings: 1': 84}
+weak list: 28
+   ('PACIFICARE HEALT', '2005-12-20', 'dev', 'v1', 'name_only', '5.01', 1, 59, True, True, True)
+   ('BURLINGTON RES', '2006-03-31', 'dev', 'v1', 'name_only', '3.03', 1, -1, True, False, True)
+   ('KERR-MCGEE', '2006-08-10', 'dev', 'v1.1', 'name_only', '3.03', 1, -45, True, True, True)
+   ('RSA SECURITY', '2006-09-15', 'dev', 'v1.1', 'name_only', '3.03,5.01', 1, -77, True, True, False)
+   ('PHELPS DODGE', '2007-03-19', 'dev', 'v1', 'confirmed', '5.01', 1, 4, True, False, True)
+   ('HYPERION SOLU', '2007-04-19', 'dev', 'v1', 'confirmed', '3.03,5.01', 2, -1, True, False, False)
+   ('NEW RIVER PHARMA', '2007-04-19', 'dev', 'v1', 'confirmed', '5.01', 1, 5, True, False, True)
+   ('WEBEX COMM', '2007-05-25', 'dev', 'v1', 'confirmed', '5.01', 1, 7, True, False, True)
+   ('MEDIMMUNE INC', '2007-06-18', 'dev', 'v1.1', 'name_only', '3.03,5.01', 3, 0, True, False, False)
+   ('CHAPARRAL STEEL', '2007-09-14', 'dev', 'v1', 'confirmed', '3.03', 1, -64, True, True, True)
+   ('VENTANA MED SYS', '2008-02-19', 'dev', 'v1', 'confirmed', '3.03', 1, -28, True, False, True)
+   ('GOLDEN TELECOM', '2008-02-28', 'dev', 'v1', 'confirmed', '5.01', 1, -9, True, False, True)
+   ('RESPIRONICS INC', '2008-03-14', 'dev', 'v1', 'confirmed', '3.03,5.01', 2, -2, True, False, False)
+   ('APP PHARMA', '2008-09-10', 'dev', 'v1', 'confirmed', '5.01', 1, 6, True, False, True)
+   ('LONGS DRG STRS', '2008-10-30', 'dev', 'v1', 'confirmed', '5.01', 1, -9, True, False, True)
+   ('ANHEUSER BUSCH', '2008-11-17', 'dev', 'v1.1', 'name_only', '3.03,5.01', 1, 7, True, False, False)
+   ('IMCLONE SYS INC', '2008-11-24', 'dev', 'v1', 'confirmed', '3.03,5.01', 3, 2, True, False, False)
+   ('UST INC', '2009-01-05', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 1, True, False, False)
+   ('CV THERAPEUTICS', '2009-04-17', 'dev', 'v1', 'confirmed', '3.03', 2, -30, True, False, False)
+   ('PEROT SYSTEMS', '2009-11-03', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 0, True, False, False)
+   ('STARENT NETWORKS', '2009-12-18', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 4, True, False, False)
+   ('BARE ESCENTUALS', '2010-03-12', 'dev', 'v1', 'confirmed', '3.03,5.01', 2, 0, True, False, False)
+   ('CONTL AIRLINES', '2010-09-30', 'dev', 'v1.1', 'name_only', '3.03,5.01', 1, 1, True, False, False)
+   ('ISILON SYSTEMS', '2010-12-20', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 1, True, False, False)
+   ('BALDOR ELEC', '2011-01-27', 'dev', 'v1', 'confirmed', '3.03,5.01', 2, 1, True, False, False)
+   ('INTL COAL GROUP', '2011-06-14', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 3, True, False, False)
+   ('KINETIC CONCEPTS', '2011-11-04', 'dev', 'v1', 'confirmed', '3.03,5.01', 1, 6, True, False, False)
+   ('INTL RECTIFIER', '2015-01-13', 'dev', 'v1.1', 'name_only', '3.03,5.01', 1, 0, True, False, False)
+weakest (nearest acquisition-type filing > 30 days, or one filing carrying one item 3.03 or 5.01): 12 | other no-2.01 stocks: 16
+by match kind, weakest: [(('v1', 'confirmed'), 8), (('v1', 'name_only'), 2), (('v1.1', 'name_only'), 2)] | no 2.01 all: [(('v1', 'confirmed'), 20), (('v1', 'name_only'), 2), (('v1.1', 'name_only'), 6)]
+strong by match kind: [(('v1', 'confirmed'), 68), (('v1', 'name_only'), 1), (('v1.1', 'name_only'), 5)]
+2.01 filing offsets: nearest 2.01 within 30d: 73 of 74
+named examples:
+   TITAN CP 2005-07-29 name_only v1 (['2.01', '3.03'], 2, [5, -70]) [('2005-05-20', ['3.03']), ('2005-08-03', ['2.01'])]
+   PACIFICARE HEALT 2005-12-20 name_only v1 (['5.01'], 1, [59]) [('2006-02-17', ['5.01'])]
+   CHAPARRAL STEEL 2007-09-14 confirmed v1 (['3.03'], 1, [-64]) [('2007-07-12', ['1.01', '3.03', '7.01', '9.01'])]
+   VENTANA MED SYS 2008-02-19 confirmed v1 (['3.03'], 1, [-28]) [('2008-01-22', ['1.01', '3.03', '9.01'])]
+   CV THERAPEUTICS 2009-04-17 confirmed v1 (['3.03'], 2, [-30, -56]) [('2009-02-20', ['1.01', '3.03', '5.03', '9.01']), ('2009-03-18', ['1.01', '3.03', '8.01', '9.01'])]
+v1.1-only pairs:
+  | KERR-MCGEE | 2006-08-10 | KERR MCGEE CORP /DE | 2006-08-16 | -45 | 3.03 | dev | acquired_or_merged
+  | RSA SECURITY | 2006-09-15 | RSA SECURITY INC/DE/ | 2006-09-15 | -77 | 3.03,5.01 | dev | acquired_or_merged
+  | MEDIMMUNE INC | 2007-06-18 | MEDIMMUNE INC /DE | 2007-06-18 | 0 | 3.03,5.01 | dev | acquired_or_merged
+  | ANHEUSER BUSCH | 2008-11-17 | ANHEUSER-BUSCH COMPANIES, INC. | 2008-11-26 | 7 | 3.03,5.01 | dev | acquired_or_merged
+  | CONTL AIRLINES | 2010-09-30 | CONTINENTAL AIRLINES INC /DE/ | 2010-10-04 | 1 | 3.03,5.01 | dev | acquired_or_merged
+  | EL PASO CO | 2012-05-24 | EL PASO CORP/DE | 2012-05-25 | 0 | 2.01,3.03,5.01 | dev | acquired_or_merged
+  | MCMORAN EXPLOR | 2013-06-03 | MCMORAN EXPLORATION CO /DE/ | 2013-06-04 | 1 | 2.01,3.03,5.01 | dev | acquired_or_merged
+  | ATHLON ENERGY IN | 2014-11-12 | Athlon Energy Inc. | 2014-11-14 | 1 | 2.01,3.03,5.01 | dev | acquired_or_merged
+  | INTL RECTIFIER | 2015-01-13 | INTERNATIONAL RECTIFIER CORP /DE/ | 2015-01-15 | 0 | 3.03,5.01 | dev | acquired_or_merged
+  | CABLEVISION SYS | 2016-06-21 | CABLEVISION SYSTEMS CORP /NY | 2016-06-21 | 0 | 2.01,3.03,5.01 | dev | acquired_or_merged
+  | ESTERLINE TECH | 2019-03-13 | ESTERLINE TECHNOLOGIES CORP | 2019-03-14 | 1 | 2.01,3.03,5.01 | dev | acquired_or_merged
+no_8k_found:
+   PREMCOR INC 2005-08-30 name_only 9999999997-05-038597  ['1.01', '1.02', '2.02', '7.01', '9.01']
+   SPINNAKER EXPLOR 2005-12-13 name_only 9999999997-06-001176  ['1.01', '2.02', '7.01', '8.01', '9.01']
+   VINTAGE PETE INC 2006-01-30 name_only 9999999997-06-005200  ['2.02', '8.01', '9.01']
+   MAVERICK TUBE CO 2006-10-05 confirmed 0000876661-06-000789 17 CFR 240.12d2-2(a)(3) ['1.01', '2.02', '5.02', '7.01', '8.01', '9.01']
+   PHARMION CORP 2008-03-07 confirmed 0001354457-08-000045 17 CFR 240.12d2-2(a)(3) ['1.01', '2.02', '5.02', '8.01', '9.01']
+no_filing_match rows: 26 status none: 26 non_common_only: ['ALPHARMA INC-A']
+window of no_filing_match: [('dev', 21), ('holdout', 5)]
+length16: 2 single word: 8 <=10 chars: 9
+['ABGENIX INC', 'ALPHARMA INC-A', 'AMERN NATL INS', 'BARR INC', 'CEPHEI', 'DADE', 'FOREST LABS', 'FOUNDATION', 'GBT', 'JAZZ PHARMA', 'JUNO', 'LYONDELL', 'NATIONWIDE FINL', 'OREGON STEEL', 'PHARMACEU RESOUR', 'PHILA CONSOL HLD', 'PRINCIPIA', 'PROMETHEUS BIO', 'SANTANDER CONS', 'SPARK', 'SPRINT NEXTEL', 'STANCORP FINL', 'UNITED DEFENSE', 'VALEANT PHARMA', 'VARIAN SEMI', 'VERITAS DGC INC']
+name_unknown windows: [('dev', 6), ('holdout', 2)]
+  v1 unreadable: TITAN CP 2005-07-29 acquired_or_merged 9999999997-05-034197
+  v1 unreadable: PREMCOR INC 2005-08-30 no_8k_found 9999999997-05-038597
+  v1 unreadable: SPINNAKER EXPLOR 2005-12-13 no_8k_found 9999999997-06-001176
+  v1 unreadable: PACIFICARE HEALT 2005-12-20 acquired_or_merged 9999999997-06-001182
+  v1 unreadable: VINTAGE PETE INC 2006-01-30 no_8k_found 9999999997-06-005200
+  v1 unreadable: BURLINGTON RES 2006-03-31 acquired_or_merged 9999999997-06-015753
+dev A 117 B 107 keys ['symbol', 'exit_date', 'last_close', 'close_21_trading_days_earlier', 'ratio', 'dollars_at_last_close']
+   overlap by symbol 24 B only 83 A only 93
+holdout A 24 B 35 keys ['symbol', 'exit_date', 'last_close', 'close_21_trading_days_earlier', 'ratio', 'dollars_at_last_close']
+   overlap by symbol 9 B only 26 A only 15
+```
+
+## 13. Which commit each run recorded, and what this rerun changed
+
+History is kept; sections 10 and 11 above are not edited. Section 11 says all phases ran on commit 0bb88e00; that is true of the price-row scan only. The recorded heads (from the `provenance` block of each result file) are:
+
+- Price-row scan, `_integrity.json`: head 0bb88e00d921fda873a701c19576571a82ce504f, clean tree, results unchanged since (counts identical to the first run).
+- Form 25 and payouts phases, the run behind this version: head ba313c7c8427e4bd00ca892d1f34dbea297cd98d, clean tree (`git_dirty` false); the earlier SEC run (section 11) recorded head f70117ab.
+
+Changes from the run in section 11 (rule v1 only) to this run (rule v1 plus the v1.1 second pass for stocks v1 left unmatched):
+
+- Evidence class acquired_or_merged: 91 to 102 (the 91 from v1 plus 11 v1.1-only leads; development 74 to 85, holdout 17 unchanged).
+- no_filing_match 37 to 26 (11 recovered; Alpharma found only a non-common notice); no_8k_found 5 and name_unknown 8 unchanged.
+- Form 25 matched 96 to 107 of 133 named (72 to 80 percent); checked (confirmed_common) 90 to 101, unreadable 6 unchanged.
+- match_confidence: confirmed 90 unchanged; name-only 6 to 17 (6 v1 with an unreadable notice plus 11 v1.1-only identity leads); within the 102: checked 88, name-only 3 to 14.
+- Agreements with price labels 70 to 78; conflicts 0; windowed 8-K reports 559 to 656; item 1.03 in none.
+- SEC downloads: Form 25 phase 2 to 24 (saved copies 265 to 267); payouts phase 0 to 11 (saved copies 96).
+- `loss_note` for the 102 now reads "filings report an acquisition or merger event; payment amount and form not verified" (the first run's csv said "holders were paid").

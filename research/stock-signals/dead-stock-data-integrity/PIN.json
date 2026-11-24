@@ -22,7 +22,7 @@
     "inputs": [
       {
         "path": "research/stock-signals/dead-stock-data-integrity/_payouts.csv",
-        "sha256": "c790ae93e73e6cec96aa7884de7a865acdd3daffc9f4ea773706e78003d9040f"
+        "sha256": "a219687d1c5cea60868656aca40887316cf0ba5b90c8a3254508acbf6c7ff2da"
       },
       {
         "path": "research/stock-signals/dead-stock-data-integrity/_roster.csv",
@@ -49,7 +49,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/payout_table.py",
-      "sha256": "347b19a3e709501109a0878e5714ca29224d8921d0406a8b39216de7c7b04fd9"
+      "sha256": "5dbcd90d7aed35beaa299f79b1027c69fa4d853a29817007396d0b0d9ff143ab"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/price_path.py",
@@ -69,15 +69,15 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py",
-      "sha256": "dcd604ad5877d6ca58a2dc963b34e46bc4d8cb46fcaa1acd10e8f1241303be10"
+      "sha256": "ad25b668f94d25399c2d76bb8cafcf128bbc0dcae300266bd105b6289952804d"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py",
-      "sha256": "6f2c09c8b2201dac77c2772b596e322f0c255996f895f728cbc5c0697548b1ed"
+      "sha256": "0eb38593ccfe811f8b4c1078ec761e8637f2312928e42e1d1c42e3b3f6ab612b"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/conftest.py",
-      "sha256": "5cf16d0b58aac6b3cb69b0b8c7429154af5b1bc1021d7799f946428fcee552fd"
+      "sha256": "52b4a71c4e6715acb9c65c355de597f54efd035a3a602970b501bb372f333f3b"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_integrity_checks.py",
@@ -85,7 +85,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_payout_table.py",
-      "sha256": "dfb0c95652afdc229ab57d2d2835b8b068a886e6f0dfed29f77f3a7146881e7a"
+      "sha256": "d9d81d1f5e1e26f490c92fd153f241c0febd9115f6f17ab9d8398dca25097ea6"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_price_path.py",
@@ -97,7 +97,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_run.py",
-      "sha256": "2f52b1673300946451c1c1af15aa21d320e9101ff01384d0db2dcc094dbe52b0"
+      "sha256": "cd7b09dfd8c4a79c062082d9389bfc95da2f78c4433aa892ff9f2d46ea9d27eb"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_client.py",
@@ -109,11 +109,11 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_filings.py",
-      "sha256": "3b559f8d9e5f8f57a5d6cd727c8b5b261ea4674934329cdd7c6e3ba07bbbd9ff"
+      "sha256": "866449291fa01dd5a8e4b1973af1fed9350c96238dab38d680a8158a46db7009"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_pilot.py",
-      "sha256": "0a541d6d5aa83a79852c96f10bade2bfc29221c0e074c5bb90e7332f5b83df59"
+      "sha256": "38fe4f4fcd9d91cd895b0f861fbc48e8e2cc06dde0c536c283717dfc12dbfdce"
     }
   ],
   "command": {
@@ -127,7 +127,8 @@
       "--crsp-load",
       "1",
       "--mcgill-load",
-      "2"
+      "2",
+      "--force"
     ],
     "cwd": "."
   },
@@ -139,7 +140,7 @@
   "results": [
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
-      "sha256": "fe1cdb5015a46b996068d672af052e4806815f9a30f2912e8d3a4b0320961874"
+      "sha256": "5913ae66bba65eaa4ffb69c6fc3cff2257650e843f37564166359449f6367c58"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_integrity.json",
@@ -147,12 +148,12 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_payouts.json",
-      "sha256": "352156b279039d2f6d8c2a8c55eff2ce16811f16617dd09c29d2f4b8288056b2"
+      "sha256": "e06db777561a580497e95a09fac0f83d7c13db882d5ab0fb50123b52b3062cce"
     }
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Command shown is the Phase 1 scan (reads our own database). The SEC phases ran as code/sec_pilot.py --phase form25 and then --phase payouts, each with --cache-dir, --out and a contact line in the SEC_USER_AGENT environment variable; they need network access unless the saved copies are present. The three result files were produced on a clean tree on the final code. The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
+    "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable; they need network access unless the saved copies are present. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
   },
-  "created_utc": "2026-11-24T22:44:11Z"
+  "created_utc": "2026-11-24T23:16:56Z"
 }
