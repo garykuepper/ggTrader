@@ -214,3 +214,26 @@ data itself shows it.
   `PAYMENT`, `SOUTHN` to `SOUTHERN`, `FINL` to `FINANCIAL`, `INS` to `INSURANCE`. The table was
   chosen by reading only the 133 company names in the roster file. No matching rule was chosen
   after seeing any SEC result.
+- **2026-11-24 (matching rule v1.1, made AFTER the first real run showed 37 named stocks without
+  a Form 25 match).** It fixes four generic defects in how company names are cleaned, applied
+  identically to roster and filer names:
+  (1) strip a trailing EDGAR state or status slash tag matching `/[A-Z]{2,4}/?$` (such as `/DE/`,
+  `/NEW`, `/MD/`) from the raw name before punctuation handling, leaving any interior slash untouched;
+  (2) strip a trailing share-class marker (`-A`, `-B`, `-C`, `CL A`, `CLASS A`, and the same for
+  `B` or `C`) before trailing suffix words are dropped;
+  (3) after v1 abbreviation expansion, fold a fixed whole-word list of twelve plurals to singular
+  (`TECHNOLOGIES` to `TECHNOLOGY`, `HOLDINGS` to `HOLDING`, `SYSTEMS` to `SYSTEM`,
+  `PHARMACEUTICALS` to `PHARMACEUTICAL`, `COMPANIES` to `COMPANY`, `LABS` to `LAB`,
+  `LABORATORIES` to `LABORATORY`, `INDUSTRIES` to `INDUSTRY`, `SERVICES` to `SERVICE`,
+  `PRODUCTS` to `PRODUCT`, `RESOURCES` to `RESOURCE`, `STORES` to `STORE`), then drop trailing v1
+  suffix words (`COMPANY` is already in that list); and
+  (4) for a 16-character cut-off roster name, allow a prefix match against the untrimmed v1.1
+  filer name (before trailing suffix words are dropped) so a cut-off suffix such as
+  `ATHLON ENERGY IN` still matches `Athlon Energy Inc.`.
+  Rule v1 is unchanged and always runs first. Rule v1.1 is applied only to named stocks that v1
+  left unmatched (status `none`), never to stocks v1 already matched or left ambiguous, and uses
+  the same filing window, ambiguity rule (two or more distinct CIKs), issuer validation and
+  common-share check as v1. Every stock matched only by v1.1 is labelled `v1.1` in every output
+  file and counted separately from v1 matches. Because v1.1 was written after seeing which stocks
+  missed in the first run, it is **not** a pre-registered rule; no ticker, CUSIP or fuzzy
+  matching is used.
