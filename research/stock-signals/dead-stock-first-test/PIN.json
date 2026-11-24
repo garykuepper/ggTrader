@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-first-test",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-first-test"
+  },
+  "engine": {
+    "git_sha": null,
+    "git_dirty": null,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": null,
+    "python": null,
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": []
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/dead_stock_first_test.py",
+      "sha256": "c783e1090524d5e2497abfe13c48d99418dc9cb4449cf78dd25fd0910492633f"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/ledger_run.py",
+      "sha256": "e3f155be0ca254b9e0e359e0175994cf8b4e2d8f52580a6ec57ff58d96b9c984"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/run.py",
+      "sha256": "1a254bea52e6a86b9a549cd16d07d1c3370d5d53e373be9c93e4755de441e793"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/scale_probe.py",
+      "sha256": "0db06576fa3740e33b9277b0e430738277502d01f769e230f7965db9cc207830"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_bars_reader.py",
+      "sha256": "a379f27d6d99ae3853ef3bdc57887399130ea4a78d9876eb22cf993eb189cfc2"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_ledger_run.py",
+      "sha256": "e3f834727ed54d84ecd56af708db6afefff75dbe5d0f307d248a4fa6d3ec66f1"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_replay.py",
+      "sha256": "937c4e47acf313a011774af2b9af2f27f962398a9b472d8f5aa95faa49a85f94"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_run.py",
+      "sha256": "95dda0b5bf7a57bbf4b6579ddf838ee5d8af6ad6948dce4cc0bd8cc762f0108d"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_scale_probe.py",
+      "sha256": "9da5e527f4bb49b99511a705b4ad2351fb309cce589e880e0c31b34775fe4bdb"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/tests/test_universe_frames.py",
+      "sha256": "f9588a45d3479689b9bd9fb14e8ce41da27e7e945c61dd6807a9922f949a7b28"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/code/universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    }
+  ],
+  "command": {
+    "argv": [
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-first-test/code/run.py",
+      "--window",
+      "dev",
+      "--universe",
+      "A",
+      "--release-id",
+      "1",
+      "(and",
+      "the",
+      "holdout,",
+      "and",
+      "universe",
+      "B)"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2005-01-03",
+    "eval_end": "2024-12-31"
+  },
+  "seed": null,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-first-test/_dev-A.json",
+      "sha256": "b0272c6eef5049bdb1f7b7ff5a24386d80c6f12346f08cdfa45cc2d0949852cf"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/_dev-B.json",
+      "sha256": "6cbe976b935f5ff11643ad3d0cb506d526d8f3baa5fae9cc897b3d4dd0e3a919"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/_holdout-A-audit.json",
+      "sha256": "87d1614b3626be80b95d9ac5f6d38a43b91cb04a724135e75b9c9b6282f1a552"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/_holdout-A.json",
+      "sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-first-test/_holdout-B.json",
+      "sha256": "5a51222673b9108cd6c82ca46fd340dac773c94852d3a1905b85ef547840ea74"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "Fixed-rule test over combined release 1; holdout run once per universe; data from the real database (not in the repo); verdict field carries no evidence label"
+  },
+  "created_utc": "2026-11-24T08:32:37Z"
+}

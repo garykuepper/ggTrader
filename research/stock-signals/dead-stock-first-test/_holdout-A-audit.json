@@ -1,0 +1,209 @@
+{
+  "study": "dead-stock-first-test",
+  "false_death_audit": {
+    "n_checked": 1539,
+    "n_suspect": 0,
+    "suspects": [],
+    "n_informational": 52,
+    "informational": {
+      "label": "informational only, never blocks: spell columns that end because a later spell of the same company continues, and unlinked yahoo columns whose permno is only a rejected link candidate",
+      "counts_by_kind": {
+        "yahoo": 15,
+        "spell": 37
+      },
+      "first_rows": [
+        {
+          "symbol": "BGCP",
+          "permno": 87487,
+          "kind": "yahoo",
+          "last_date": "2023-06-30",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "BMC",
+          "permno": 22596,
+          "kind": "yahoo",
+          "last_date": "2022-03-02",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "CCE",
+          "permno": 91975,
+          "kind": "yahoo",
+          "last_date": "2020-04-29",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "CMX",
+          "permno": 22356,
+          "kind": "yahoo",
+          "last_date": "2022-03-02",
+          "crsp_last_date": "2023-09-22",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "CXP",
+          "permno": 16499,
+          "kind": "yahoo",
+          "last_date": "2021-12-07",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "FTR",
+          "permno": 22323,
+          "kind": "yahoo",
+          "last_date": "2021-06-01",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "HAR",
+          "permno": 22380,
+          "kind": "yahoo",
+          "last_date": "2022-03-02",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "HRS",
+          "permno": 25582,
+          "kind": "yahoo",
+          "last_date": "2020-12-31",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "NCC",
+          "permno": 22722,
+          "kind": "yahoo",
+          "last_date": "2022-03-02",
+          "crsp_last_date": "2024-03-11",
+          "has_later_spell": false
+        },
+        {
+          "symbol": "PERMNO-11379~1",
+          "permno": 11379,
+          "kind": "spell",
+          "last_date": "2020-12-21",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-12789~1",
+          "permno": 12789,
+          "kind": "spell",
+          "last_date": "2022-10-03",
+          "crsp_last_date": "2024-04-12",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-14051~1",
+          "permno": 14051,
+          "kind": "spell",
+          "last_date": "2024-06-14",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-14093~2",
+          "permno": 14093,
+          "kind": "spell",
+          "last_date": "2024-09-05",
+          "crsp_last_date": "2024-11-20",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-14127~1",
+          "permno": 14127,
+          "kind": "spell",
+          "last_date": "2021-11-30",
+          "crsp_last_date": "2024-09-16",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-14675~1",
+          "permno": 14675,
+          "kind": "spell",
+          "last_date": "2020-06-08",
+          "crsp_last_date": "2020-06-18",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-15294~1",
+          "permno": 15294,
+          "kind": "spell",
+          "last_date": "2020-05-20",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-15491~1",
+          "permno": 15491,
+          "kind": "spell",
+          "last_date": "2020-02-06",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-15793~1",
+          "permno": 15793,
+          "kind": "spell",
+          "last_date": "2020-01-16",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-16086~1",
+          "permno": 16086,
+          "kind": "spell",
+          "last_date": "2020-10-29",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        },
+        {
+          "symbol": "PERMNO-16099~1",
+          "permno": 16099,
+          "kind": "spell",
+          "last_date": "2020-05-01",
+          "crsp_last_date": "2024-12-31",
+          "has_later_spell": true
+        }
+      ]
+    },
+    "multi_symbol_permnos": [],
+    "n_unlinked_candidate_permnos_with_several_symbols": 46,
+    "grace_calendar_days": 7,
+    "window": {
+      "start": "2020-01-02",
+      "end": "2024-12-31"
+    },
+    "crsp_end": "2024-12-31"
+  },
+  "provenance": {
+    "release_id": 1,
+    "crsp_load": 1,
+    "brief_commit": "df5c05b480a4d2a50904254364ee877a71628ec0",
+    "git_head": "f94ad33ffc3980f48d88a46569ea9cc7fd0968a0",
+    "window": {
+      "start": "2020-01-02",
+      "end": "2024-12-31"
+    },
+    "window_name": "holdout",
+    "universe": "A",
+    "crsp_end": "2024-12-31",
+    "command": [
+      "research/stock-signals/dead-stock-first-test/code/run.py",
+      "--window",
+      "holdout",
+      "--universe",
+      "A",
+      "--release-id",
+      "1",
+      "--audit-only"
+    ]
+  }
+}

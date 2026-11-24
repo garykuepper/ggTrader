@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-24 (dead-stock first test)
+
+- Ran the first honest test on the combined CRSP + Yahoo release: a fixed 12-1 momentum rule (top 50, monthly, next-day close) over liquid NYSE and Nasdaq stocks (price at least $5, 1,000 largest), dead ones included, against SPY after trading costs (6.4, 18.3 and 40 bps per side) and taxes (24%/15% and 35%/20%, through the tax-lot ledger), at dead-stock losses of 1.0, 0.5 and 0.0. Report: `research/stock-signals/dead-stock-first-test/2026-11-24-dead-stock-first-test.md`. The holdout (2020 to 2024) was run once per universe.
+- Result at the middle cost and low tax: at loss 0.0 the rule ended 243,212 (6.1% a year) against SPY 320,298 (8.1%) in 2005 to 2019 and 193,187 (14.1%) against 179,793 (12.5%) in 2020 to 2024; at losses 0.5 and 1.0 it trails SPY in both windows. All 141 dead stocks held in the main universe had a flat or rising price in their last month (takeover-like), so 1.0 is a worst-case bound. The wider stress universe ($1 or more, no size limit) trails SPY by more than 10 points a year at every loss level in both windows.
+- Study code is in `research/stock-signals/dead-stock-first-test/code/` (eligibility from raw CRSP rows, replay planner, tax-ledger execution, batched close reader, driver with a one-run holdout guard, false-death audit). Nothing in `src/` changed; the paper trader stays stopped.
+
 ## 2026-11-23 (Kaggle import version one loaded)
 
 - Loaded CRSP and McGill and published a combined CRSP + Yahoo release so research can include stocks that later died. Load 1 has 68,879,302 CRSP daily rows, zero quarantined, 25,754 stocks, 1968-01-02 through 2024-12-31; load 2 has 273,373 McGill-FIAM rows, 3,349 stocks, 166 columns, 2000-01-31 through 2023-12-29; load 3 has 68,879,302 derived bars. McGill is read only by the symbol map and closing check 3.
