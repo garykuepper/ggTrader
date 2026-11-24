@@ -283,10 +283,67 @@ def test_read_notice_returns_unreadable_when_the_document_or_index_is_missing_or
     assert out["status"] == "unreadable" and "500" in out["reason"]
 
 
-def test_read_notice_rejects_a_notice_for_a_different_issuer():
-    client = FakeClient({INDEX_URL: INDEX_HTML, XML_URL: NOTICE_XML})
-    out = read_notice(client, ACCESSION, "0000000009")
-    assert out["status"] == "unreadable"
+def test_read_notice_reports_a_valid_notice_about_a_different_issuer_as_a_mismatch():
+    other = NOTICE_XML.replace(b"0000051143", b"0000000777")
+    client = FakeClient({INDEX_URL: INDEX_HTML, XML_URL: other})
+    out = read_notice(client, ACCESSION, CIK)
+    assert out["status"] == "issuer_mismatch"
+    assert out["found_issuer_cik"] == "0000000777" and out["reason"]
+    assert client.requested == [INDEX_URL, XML_URL]  # both real URLs were read
+
+
+def test_match_roster_row_lists_each_ciks_own_accessions():
+    out = match_roster_row(
+        ROW,
+        [
+            cand("ALPHA CORP", "2010-07-01", cik="0000000001"),
+            cand("Alpha Corp.", "2010-07-02", cik="0000000002"),
+            cand("ALPHA CORP", "2010-07-03", cik="0000000001", form="25/A"),
+        ],
+    )
+    assert list(out["by_cik"]) == ["0000000001", "0000000002"]
+    assert len(out["by_cik"]["0000000001"]) == 2 and len(out["by_cik"]["0000000002"]) == 1
+
+
+def test_normalize_name_is_idempotent():
+    for name in ["SiRF Technology Holdings, Inc.", "LONGS DRG STRS", "ACME CO INC", "Inc.", "GBT"]:
+        once = normalize_name(name)
+        assert normalize_name(once) == once
+    for name in ABBREVIATIONS.values():
+        assert normalize_name(name) == normalize_name(normalize_name(name))
+
+
+def test_normalize_name_leaves_a_class_letter_after_inc_in_place():
+    # "INC-A" is not a trailing suffix word, so the roster name does not equal "Alpharma Inc".
+    assert normalize_name("ALPHARMA INC-A") == "ALPHARMA INC A"
+    row = dict(ROW, stock_name="ALPHARMA INC-A")
+    assert match_roster_row(row, [cand("Alpharma Inc", "2010-07-01")])["status"] == "none"
+
+
+def test_normalize_name_keeps_group_when_inc_follows():
+    assert normalize_name("GROUP INC") == "GROUP"
+    assert normalize_name("Shaw Group Inc") == "SHAW GROUP"
+
+
+def test_match_accepts_real_date_objects_as_well_as_iso_strings():
+    row = {"stock_name": "ALPHA CORP", "name_source": "mcgill", "exit_date": date(2010, 6, 30)}
+    inside = cand("ALPHA CORP", "2010-07-01")
+    inside["filing_date"] = date(2010, 7, 1)
+    assert match_roster_row(row, [inside])["status"] == "matched"
+
+
+def test_a_complete_16_character_name_matches_by_prefix_and_two_filers_make_it_ambiguous():
+    # Documented behaviour: a 16-character name is treated as cut off, even when complete.
+    row = dict(ROW, stock_name="ACME HOLDINGS CO")
+    assert len(row["stock_name"]) == 16
+    out = match_roster_row(
+        row,
+        [
+            cand("Acme Holdings Corp", "2010-07-01", cik="0000000001"),
+            cand("Acme Holdings Group Inc", "2010-07-02", cik="0000000002"),
+        ],
+    )
+    assert out["status"] == "ambiguous" and out["ciks"] == ["0000000001", "0000000002"]
 
 
 def test_module_exposes_only_the_documented_forms():

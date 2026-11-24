@@ -6,10 +6,11 @@ import io
 import json
 import zipfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 import sec_pilot
-from sec_client import SecFetchError, SecNotFound
+from sec_client import SecClient, SecFetchError, SecNotFound
 from sec_filings import master_index_url
 from sec_pilot import (
     OUTPUT_JSON,
@@ -60,14 +61,16 @@ def master_zip(rows: list[tuple[str, str, str, str, str]]) -> bytes:
     return buffer.getvalue()
 
 
-def filing_files(cik: str, accession: str, desc: str) -> dict[str, bytes]:
-    """The filing folder page and the notice document for one accession."""
+def filing_files(
+    cik: str, accession: str, desc: str, issuer: str | None = None
+) -> dict[str, bytes]:
+    """The filing folder page and the notice document; ``issuer`` defaults to ``cik``."""
     base = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{accession.replace('-', '')}/"
     page = (
         f"<html><a href='/Archives/edgar/data/{int(cik)}/{accession.replace('-', '')}"
         f"/primary_doc.xml'>x</a>{accession}</html>"
     ).encode()
-    xml = NOTICE.format(cik=cik, desc=desc).encode()
+    xml = NOTICE.format(cik=issuer or cik, desc=desc).encode()
     return {base: page, base + "primary_doc.xml": xml}
 
 
@@ -138,19 +141,127 @@ def test_needed_quarters_cover_exit_minus_30_to_plus_180_for_named_rows_only():
 def test_run_form25_counts_every_kind_of_result():
     payload = run_form25(good_client(), ROWS, run_date="2026-11-24")
     summary = payload["summary"]
-    assert (summary["matched"], summary["ambiguous"], summary["none"]) == (2, 1, 1)
-    assert summary["name_unknown"] == 1 and summary["named_stocks"] == 4
-    assert summary["exact_match_rate_of_named"] == 0.5
-    assert (summary["notices_readable"], summary["notices_unreadable"]) == (1, 1)
-    assert summary["notices_common_stock"] == 1
+    assert summary["confirmed_common"] == 1 and summary["unconfirmed_unreadable"] == 1
+    assert summary["matched"] == 2  # headline: confirmed_common + unconfirmed_unreadable
+    assert (summary["ambiguous"], summary["none"], summary["name_unknown"]) == (1, 1, 1)
+    assert summary["name_matched"] == 3 and summary["named_stocks"] == 4
+    assert summary["matched_rate_of_named"] == 0.5
+    assert summary["non_common_only"] == 0 and summary["rejected_issuer_mismatch"] == 0
     by_symbol = {s["symbol"]: s for s in payload["stocks"]}
     assert by_symbol["A"]["notice"]["status"] == "readable"
     assert by_symbol["A"]["notice"]["is_common_stock"] is True
+    assert by_symbol["A"]["confirmation"] == "confirmed_common"
     assert by_symbol["B"]["status"] == "ambiguous" and by_symbol["B"]["notice"] is None
+    assert by_symbol["C"]["status"] == "matched"
+    assert by_symbol["C"]["confirmation"] == "unconfirmed_unreadable"
     assert by_symbol["C"]["notice"]["status"] == "unreadable" and by_symbol["C"]["notice"]["reason"]
+    assert by_symbol["D"]["status"] == "none" and by_symbol["D"]["confirmation"] == "not_checked"
     assert by_symbol["E"]["status"] == "name_unknown"
+    assert {s["confirmation"] for s in payload["stocks"]} <= set(sec_pilot.CONFIRMATIONS)
     assert payload["quarters_skipped"] == [] and len(payload["quarters_downloaded"]) == 3
     assert payload["manifest"] and payload["request_count"]["network_fetches"] == 0
+
+
+def count_parts(summary: dict) -> int:
+    """The outcome counts that must add up to the roster size."""
+    keys = (
+        "confirmed_common",
+        "unconfirmed_unreadable",
+        "non_common_only",
+        "rejected_issuer_mismatch",
+        "ambiguous",
+        "none",
+        "name_unknown",
+    )
+    return sum(summary[k] for k in keys)
+
+
+def test_summary_counts_add_up_to_the_roster_size():
+    payload = run_form25(good_client(), ROWS)
+    assert count_parts(payload["summary"]) == len(ROWS) == payload["summary"]["roster_rows"]
+
+
+def test_an_exchange_named_like_the_stock_is_rejected_by_issuer_validation():
+    # The exchange's own CIK shares the stock's name in the index; its notice names another issuer.
+    acc = "0000876661-10-000001"
+    bodies = dict(good_client().bodies)
+    bodies[master_index_url(2010, 1)] = master_zip(
+        [("876661", "Alpha Corp", "25", "2010-03-02", acc)]
+    )
+    bodies.update(filing_files("0000876661", acc, "Common Stock", issuer="0000000777"))
+    payload = run_form25(FakeClient(bodies), ROWS[:1])
+    stock = payload["stocks"][0]
+    assert stock["status"] == "none" and stock["reason"] == "issuer_mismatch"
+    assert stock["confirmation"] == "rejected_issuer_mismatch" and stock["ciks"] == []
+    assert stock["rejected_ciks"][0]["cik"] == "0000876661"
+    assert stock["rejected_ciks"][0]["reason"] == "issuer_mismatch"
+    assert (
+        payload["summary"]["rejected_issuer_mismatch"] == 1 and payload["summary"]["matched"] == 0
+    )
+
+
+def test_a_rejected_party_is_dropped_and_the_real_issuer_stays():
+    real, exchange = "0000000001-10-000001", "0000876661-10-000001"
+    bodies = dict(good_client().bodies)
+    bodies[master_index_url(2010, 1)] = master_zip(
+        [
+            ("1", "Alpha Corp", "25", "2010-03-02", real),
+            ("876661", "Alpha Corp", "25", "2010-03-02", exchange),
+        ]
+    )
+    bodies.update(filing_files("0000000001", real, "Common Stock"))
+    bodies.update(filing_files("0000876661", exchange, "Common Stock", issuer="0000000001"))
+    stock = run_form25(FakeClient(bodies), ROWS[:1])["stocks"][0]
+    assert stock["status"] == "matched" and stock["ciks"] == ["0000000001"]
+    assert [r["cik"] for r in stock["rejected_ciks"]] == ["0000876661"]
+
+
+def test_a_warrants_only_filing_is_not_a_match():
+    acc = "0000000001-10-000001"
+    bodies = dict(good_client().bodies)
+    bodies[master_index_url(2010, 1)] = master_zip([("1", "Alpha Corp", "25", "2010-03-02", acc)])
+    bodies.update(filing_files("0000000001", acc, "Warrants to purchase Common Stock"))
+    payload = run_form25(FakeClient(bodies), ROWS[:1])
+    stock = payload["stocks"][0]
+    assert stock["status"] == "none" and stock["confirmation"] == "non_common_only"
+    assert stock["reason"] == "non_common_only" and stock["ciks"] == []
+    assert stock["rejected_ciks"][0]["reason"] == "non_common_only"
+    assert payload["summary"]["non_common_only"] == 1 and payload["summary"]["matched"] == 0
+
+
+def test_an_unreadable_html_notice_is_unconfirmed_but_kept():
+    acc = "0000000001-10-000001"
+    base = "https://www.sec.gov/Archives/edgar/data/1/000000000110000001/"
+    bodies = dict(good_client().bodies)
+    bodies[master_index_url(2010, 1)] = master_zip([("1", "Alpha Corp", "25", "2010-03-02", acc)])
+    bodies[base] = f"<html><a href='/x/primary_doc.htm'>x</a>{acc}</html>".encode()
+    stock = run_form25(FakeClient(bodies), ROWS[:1])["stocks"][0]  # no primary_doc.xml: 404
+    assert stock["status"] == "matched" and stock["confirmation"] == "unconfirmed_unreadable"
+    assert stock["ciks"] == ["0000000001"] and stock["notice"]["status"] == "unreadable"
+
+
+def test_two_roster_stocks_matching_the_same_filing_are_both_processed():
+    rows = [row("A", "ALPHA CORP", "2010-02-15"), row("A2", "Alpha Corp.", "2010-02-20")]
+    payload = run_form25(good_client(), rows)
+    assert [s["status"] for s in payload["stocks"]] == ["matched", "matched"]
+    assert [s["confirmation"] for s in payload["stocks"]] == ["confirmed_common"] * 2
+    assert payload["summary"]["confirmed_common"] == 2
+
+
+def test_a_form_25_and_its_amendment_from_one_cik_are_one_match():
+    first, amend = "0000000001-10-000001", "0000000001-10-000002"
+    bodies = dict(good_client().bodies)
+    bodies[master_index_url(2010, 1)] = master_zip(
+        [
+            ("1", "Alpha Corp", "25", "2010-03-02", first),
+            ("1", "Alpha Corp", "25/A", "2010-03-09", amend),
+        ]
+    )
+    bodies.update(filing_files("0000000001", first, "Common Stock"))
+    bodies.update(filing_files("0000000001", amend, "Common Stock"))
+    stock = run_form25(FakeClient(bodies), ROWS[:1])["stocks"][0]
+    assert stock["status"] == "matched" and stock["ciks"] == ["0000000001"]
+    assert stock["notice"]["accession"] == first
 
 
 def test_a_non_common_first_notice_is_passed_over_for_a_later_common_one():
@@ -193,8 +304,8 @@ def test_a_quarter_that_will_not_parse_or_download_counts_as_skipped():
 
 
 def test_summarize_with_no_named_stocks_has_no_rate():
-    stocks = [{"status": "name_unknown", "notice": None}]
-    assert summarize(stocks)["exact_match_rate_of_named"] is None
+    stocks = [{"status": "name_unknown", "confirmation": "not_checked", "notice": None}]
+    assert summarize(stocks)["matched_rate_of_named"] is None
 
 
 def write_roster(path: Path) -> Path:
@@ -224,7 +335,7 @@ def args_for(tmp_path: Path, *extra: str) -> list[str]:
 @pytest.fixture(autouse=True)
 def user_agent(monkeypatch: pytest.MonkeyPatch) -> None:
     """A made-up fair-access name, never a real address."""
-    monkeypatch.setenv("SEC_USER_AGENT", "ggTrader Study contact@example.test")
+    monkeypatch.setenv("SEC_USER_AGENT", "ggTrader test client")
 
 
 def test_main_refuses_to_overwrite_without_force(tmp_path: Path):
@@ -242,7 +353,7 @@ def test_main_refuses_to_overwrite_without_force(tmp_path: Path):
     assert stop.value.code == 2 and made == []
     assert (out / OUTPUT_JSON).read_text() == "{}"
     assert main(args_for(tmp_path, "--force"), client_factory=factory) == 0
-    assert json.loads((out / OUTPUT_JSON).read_text())["summary"]["matched"] == 1
+    assert json.loads((out / OUTPUT_JSON).read_text())["summary"]["confirmed_common"] == 1
 
 
 def test_main_needs_a_user_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -274,3 +385,62 @@ def test_main_stops_with_an_error_when_too_many_quarters_fail(
 def test_the_default_roster_is_the_study_roster():
     assert sec_pilot.STUDY_DIR.name == "dead-stock-data-integrity"
     assert (sec_pilot.STUDY_DIR / sec_pilot.ROSTER_FILE).is_file()
+
+
+class OpenerResponse:
+    """A minimal 200 response for a real ``SecClient`` driven by a fake opener."""
+
+    status = 200
+
+    def __init__(self, url: str, body: bytes) -> None:
+        self.url, self.headers, self._body = url, {}, io.BytesIO(body)
+
+    def read(self, size: int = -1) -> bytes:
+        return self._body.read(size)
+
+    def geturl(self) -> str:
+        return self.url
+
+    def close(self) -> None:
+        self._body.close()
+
+
+def test_the_user_agent_is_sent_but_never_written_to_any_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    agent = "ggTrader test client unique-7f3a91"
+    monkeypatch.setenv("SEC_USER_AGENT", agent)
+    bodies = good_client().bodies
+    seen: list[str | None] = []
+
+    def opener(request: Any) -> OpenerResponse:
+        seen.append(request.get_header("User-agent"))
+        return OpenerResponse(request.full_url, bodies[request.full_url])
+
+    def factory(ua: str, cache: Path) -> SecClient:
+        return SecClient(ua, cache, min_interval=0, opener=opener)
+
+    assert main(args_for(tmp_path), client_factory=factory) == 0
+    assert seen and set(seen) == {agent}
+    written = [p for p in tmp_path.rglob("*") if p.is_file()]
+    assert any(p.name == OUTPUT_JSON for p in written)
+    assert any(p.name == "SHA256SUMS.txt" for p in written)
+    assert all(agent.encode() not in p.read_bytes() for p in written)
+
+
+def test_the_result_file_is_written_through_the_atomic_json_writer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    from ggTrader.utils import io as atomic_io
+
+    assert sec_pilot.write_json is atomic_io.write_json
+    calls: list[tuple[Path, bool]] = []
+
+    def spy(path: Path, payload: Any, *, strict: bool = False, indent: int = 2) -> Path:
+        calls.append((Path(path), strict))
+        return atomic_io.write_json(path, payload, strict=strict, indent=indent)
+
+    monkeypatch.setattr(sec_pilot, "write_json", spy)
+    assert main(args_for(tmp_path), client_factory=lambda ua, cache: good_client()) == 0
+    assert calls == [(tmp_path / "out" / OUTPUT_JSON, True)]
+    assert not list((tmp_path / "out").glob("*.tmp"))

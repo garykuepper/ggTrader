@@ -61,41 +61,141 @@ def needed_quarters(rows: list[Mapping[str, Any]]) -> list[tuple[int, int]]:
     return sorted(wanted)
 
 
-def choose_notice(client: Any, accessions: list[str], cik: str) -> dict:
-    """Read the stock's Form 25 filings in filing order and keep the first common-stock one.
+# Per-stock confirmation levels (the only values allowed in the output).
+CONFIRMED_COMMON = "confirmed_common"
+UNCONFIRMED_UNREADABLE = "unconfirmed_unreadable"
+NON_COMMON_ONLY = "non_common_only"
+REJECTED_ISSUER_MISMATCH = "rejected_issuer_mismatch"
+NOT_CHECKED = "not_checked"
+CONFIRMATIONS = (
+    CONFIRMED_COMMON,
+    UNCONFIRMED_UNREADABLE,
+    NON_COMMON_ONLY,
+    REJECTED_ISSUER_MISMATCH,
+    NOT_CHECKED,
+)
 
-    If none is common stock, keep the first readable one (flagged), else the first failure.
+
+def check_cik(read: Callable[[str, str], dict], accessions: list[str], cik: str) -> dict:
+    """Decide what one name-matched CIK is, by reading its Form 25 notices in filing order.
+
+    A name match is only a lead. The CIK counts as the issuer only when a readable notice names
+    it as the issuer; a notice that names another issuer rejects it; notices that cannot be read
+    (an issuer-filed HTML Form 25, a 404) leave it unconfirmed.
+
+    Returns:
+        ``{"cik", "state", "notice"}``: ``state`` is ``confirmed_common`` (the first readable
+        notice whose security is common stock), ``non_common`` (readable notices, none common),
+        ``rejected`` (every readable notice names another issuer; none is about this CIK) or
+        ``unreadable``. ``notice`` is the deciding notice (or the first failure).
     """
     first_readable: dict | None = None
+    first_mismatch: dict | None = None
     first_failure: dict | None = None
     for accession in accessions:
-        notice = sec_filings.read_notice(client, accession, cik)
-        if notice["status"] == "readable":
+        notice = read(accession, cik)
+        if notice["status"] == sec_filings.STATUS_READABLE:
             is_common = sec_filings.notice_is_common_stock(notice["notice"]["security_description"])
             notice = {**notice, "is_common_stock": is_common}
             if is_common:
-                return notice
+                return {"cik": cik, "state": "confirmed_common", "notice": notice}
             first_readable = first_readable or notice
+        elif notice["status"] == sec_filings.STATUS_ISSUER_MISMATCH:
+            first_mismatch = first_mismatch or notice
         else:
             first_failure = first_failure or notice
-    return first_readable or first_failure or {"status": "unreadable", "reason": "no filings"}
+    if first_readable is not None:
+        return {"cik": cik, "state": "non_common", "notice": first_readable}
+    if first_mismatch is not None:
+        return {"cik": cik, "state": "rejected", "notice": first_mismatch}
+    return {
+        "cik": cik,
+        "state": "unreadable",
+        "notice": first_failure or {"status": "unreadable", "reason": "no filings"},
+    }
+
+
+def resolve_stock(match: dict, read: Callable[[str, str], dict]) -> dict:
+    """Turn a name match into the stock's final status, ciks, confirmation and notice.
+
+    Only CIKs confirmed as the issuer of a common-stock notice, or unconfirmed because no
+    notice could be read, stay. Two or more staying CIKs make the stock ``ambiguous`` (no pick).
+    """
+    if match["status"] == sec_filings.STATUS_NONE:
+        return {**match, "reason": "no_name_match", "confirmation": NOT_CHECKED, "notice": None}
+    checks = [check_cik(read, match["by_cik"][cik], cik) for cik in match["ciks"]]
+    kept = [c for c in checks if c["state"] in ("confirmed_common", "unreadable")]
+    dropped = [c for c in checks if c not in kept]
+    result: dict[str, Any] = {
+        "ciks": [c["cik"] for c in kept],
+        "accessions": [a for c in kept for a in match["by_cik"][c["cik"]]],
+        "rejected_ciks": [
+            {
+                "cik": c["cik"],
+                "reason": "issuer_mismatch" if c["state"] == "rejected" else "non_common_only",
+                "detail": c["notice"].get("reason")
+                or c["notice"]["notice"]["security_description"],
+            }
+            for c in dropped
+        ],
+        "cik_checks": [{"cik": c["cik"], "state": c["state"]} for c in checks],
+    }
+    if len(kept) > 1:
+        return {
+            **result,
+            "status": sec_filings.STATUS_AMBIGUOUS,
+            "confirmation": NOT_CHECKED,
+            "notice": None,
+        }
+    if not kept:
+        non_common = any(c["state"] == "non_common" for c in dropped)
+        return {
+            **result,
+            "status": sec_filings.STATUS_NONE,
+            "reason": "non_common_only" if non_common else "issuer_mismatch",
+            "confirmation": NON_COMMON_ONLY if non_common else REJECTED_ISSUER_MISMATCH,
+            "notice": None,
+        }
+    only = kept[0]
+    confirmed = only["state"] == "confirmed_common"
+    return {
+        **result,
+        "status": sec_filings.STATUS_MATCHED,
+        "confirmation": CONFIRMED_COMMON if confirmed else UNCONFIRMED_UNREADABLE,
+        "notice": only["notice"],
+    }
 
 
 def summarize(stocks: list[dict]) -> dict[str, Any]:
-    """Count the match statuses and what happened to the matched stocks' notices."""
-    counts = {"matched": 0, "ambiguous": 0, "none": 0, STATUS_NAME_UNKNOWN: 0}
+    """Count the stocks by outcome; the counts add up to the roster size.
+
+    ``matched`` (the headline) is ``confirmed_common + unconfirmed_unreadable``; both parts are
+    reported. ``name_matched`` counts the stocks the name rule found before any notice was read.
+    """
+    by_confirmation = {name: 0 for name in CONFIRMATIONS}
+    counts = {"ambiguous": 0, "none": 0, STATUS_NAME_UNKNOWN: 0}
     for stock in stocks:
-        counts[stock["status"]] += 1
-    notices = [s["notice"] for s in stocks if s["status"] == sec_filings.STATUS_MATCHED]
-    readable = [n for n in notices if n["status"] == "readable"]
+        if stock["status"] == sec_filings.STATUS_MATCHED:
+            by_confirmation[stock["confirmation"]] += 1
+        elif stock["confirmation"] in (NON_COMMON_ONLY, REJECTED_ISSUER_MISMATCH):
+            by_confirmation[stock["confirmation"]] += 1
+        else:
+            counts[stock["status"]] += 1
+    matched = by_confirmation[CONFIRMED_COMMON] + by_confirmation[UNCONFIRMED_UNREADABLE]
     named = len(stocks) - counts[STATUS_NAME_UNKNOWN]
     return {
-        **counts,
+        "roster_rows": len(stocks),
         "named_stocks": named,
-        "exact_match_rate_of_named": counts["matched"] / named if named else None,
-        "notices_readable": len(readable),
-        "notices_unreadable": len(notices) - len(readable),
-        "notices_common_stock": sum(1 for n in readable if n.get("is_common_stock")),
+        "name_matched": named - counts["none"],
+        CONFIRMED_COMMON: by_confirmation[CONFIRMED_COMMON],
+        UNCONFIRMED_UNREADABLE: by_confirmation[UNCONFIRMED_UNREADABLE],
+        NON_COMMON_ONLY: by_confirmation[NON_COMMON_ONLY],
+        REJECTED_ISSUER_MISMATCH: by_confirmation[REJECTED_ISSUER_MISMATCH],
+        "ambiguous": counts["ambiguous"],
+        "none": counts["none"],
+        STATUS_NAME_UNKNOWN: counts[STATUS_NAME_UNKNOWN],
+        "matched": matched,
+        "matched_rate_of_named": matched / named if named else None,
     }
 
 
@@ -138,6 +238,14 @@ def run_form25(
                     f"{len(skipped)} quarterly indexes failed (limit {max_skipped}); last: "
                     f"{year} Q{quarter}: {exc}"
                 ) from exc
+    memo: dict[tuple[str, str], dict] = {}
+
+    def read(accession: str, cik: str) -> dict:
+        """Read each filing once, even when several roster stocks lead to it."""
+        if (accession, cik) not in memo:
+            memo[(accession, cik)] = sec_filings.read_notice(client, accession, cik)
+        return memo[(accession, cik)]
+
     stocks = []
     for row in rows:
         result: dict[str, Any] = {
@@ -147,14 +255,15 @@ def run_form25(
             "exit_date": row["exit_date"],
         }
         if not is_named(row):
-            result.update(status=STATUS_NAME_UNKNOWN, ciks=[], accessions=[], notice=None)
+            result.update(
+                status=STATUS_NAME_UNKNOWN,
+                ciks=[],
+                accessions=[],
+                confirmation=NOT_CHECKED,
+                notice=None,
+            )
         else:
-            match = sec_filings.match_roster_row(row, candidates)
-            result.update(match)
-            if match["status"] == sec_filings.STATUS_MATCHED:
-                result["notice"] = choose_notice(client, match["accessions"], match["ciks"][0])
-            else:
-                result["notice"] = None
+            result.update(resolve_stock(sec_filings.match_roster_row(row, candidates), read))
         stocks.append(result)
     return {
         "phase": "form25",
@@ -220,9 +329,12 @@ def main(
     write_json(target, payload, strict=True)
     summary = payload["summary"]
     print(
-        f"matched {summary['matched']}, ambiguous {summary['ambiguous']}, none {summary['none']}, "
-        f"name unknown {summary['name_unknown']}; notices readable {summary['notices_readable']}, "
-        f"unreadable {summary['notices_unreadable']}; "
+        f"matched {summary['matched']} (confirmed common {summary['confirmed_common']}, "
+        f"unconfirmed {summary['unconfirmed_unreadable']}); "
+        f"name matched {summary['name_matched']}; "
+        f"non-common only {summary['non_common_only']}, issuer mismatch "
+        f"{summary['rejected_issuer_mismatch']}, ambiguous {summary['ambiguous']}, "
+        f"none {summary['none']}, name unknown {summary['name_unknown']}; "
         f"{len(payload['quarters_skipped'])} quarters skipped"
     )
     return 0

@@ -7,6 +7,7 @@ import re
 from collections.abc import Mapping
 from datetime import date, timedelta
 from typing import Any
+from xml.etree import ElementTree
 
 from sec_client import SecClient, SecFetchError
 from sec_form25 import parse_bound_exchange_notice
@@ -23,6 +24,11 @@ AFTER_DAYS = 180
 # The McGill company name is cut off at this many characters.
 TRUNCATED_NAME_LENGTH = 16
 STATUS_MATCHED = "matched"
+# A notice file larger than this is not parsed here (the shared parser has the same ceiling).
+MAX_NOTICE_BYTES = 1024 * 1024
+STATUS_READABLE = "readable"
+STATUS_UNREADABLE = "unreadable"
+STATUS_ISSUER_MISMATCH = "issuer_mismatch"
 STATUS_AMBIGUOUS = "ambiguous"
 STATUS_NONE = "none"
 # A security description counts as common stock when it has one of these words and none of
@@ -162,16 +168,23 @@ def match_roster_row(
 
     Returns:
         ``{"status", "ciks", "accessions"}``: one distinct CIK is ``matched``, two or more is
-        ``ambiguous``, none (or an unnamed row) is ``none``. Accessions are in filing order.
+        ``ambiguous``, none (or an unnamed row) is ``none``. Accessions are in filing order;
+        ``by_cik`` lists the accessions of each matched CIK. A name match is only a lead: the
+        caller must still check that the CIK is the notice's issuer (an exchange or another
+        party named in the index can share a name).
+
+    A complete legal name of exactly 16 characters is indistinguishable from a cut-off one and
+    matches by prefix too; two different filers that share the prefix make it ``ambiguous``.
     """
     name = row.get("stock_name")
     if row.get("name_source") == "none" or not isinstance(name, str) or not name.strip():
-        return {"status": STATUS_NONE, "ciks": [], "accessions": []}
+        return {"status": STATUS_NONE, "ciks": [], "accessions": [], "by_cik": {}}
     exit_date = _as_date(row["exit_date"])
     first = exit_date - timedelta(days=before_days)
     last = exit_date + timedelta(days=after_days)
     ciks: set[str] = set()
     hits: list[tuple[str, str]] = []
+    by_cik: dict[str, list[tuple[str, str]]] = {}
     for filing in candidates:
         if not first <= _as_date(filing["filing_date"]) <= last:
             continue
@@ -181,11 +194,14 @@ def match_roster_row(
         if matching:
             ciks.update(matching)
             hits.append((filing["filing_date"], filing["accession"]))
+            for cik in matching:
+                by_cik.setdefault(cik, []).append((filing["filing_date"], filing["accession"]))
     status = STATUS_NONE if not ciks else STATUS_MATCHED if len(ciks) == 1 else STATUS_AMBIGUOUS
     return {
         "status": status,
         "ciks": sorted(ciks),
         "accessions": [accession for _, accession in sorted(hits)],
+        "by_cik": {cik: [a for _, a in sorted(found)] for cik, found in sorted(by_cik.items())},
     }
 
 
@@ -195,20 +211,47 @@ def notice_is_common_stock(security_description: str) -> bool:
     return any(w in text for w in COMMON_WORDS) and not any(w in text for w in NOT_COMMON_WORDS)
 
 
+def _issuer_cik(document: bytes) -> int | None:
+    """The issuer CIK printed in an exchange notice, or None when it cannot be read simply.
+
+    This only lets the caller tell a notice about another issuer from a notice that is broken;
+    the shared parser still does the real validation.
+    """
+    if len(document) > MAX_NOTICE_BYTES:
+        return None
+    try:
+        text = document.decode("utf-8-sig")
+        if "<!DOCTYPE" in text.upper() or "<!ENTITY" in text.upper():
+            return None
+        nodes = ElementTree.fromstring(text).findall("issuer/cik")
+        return int(nodes[0].text.strip()) if len(nodes) == 1 and nodes[0].text else None
+    except (ElementTree.ParseError, UnicodeError, ValueError):
+        return None
+
+
 def read_notice(client: SecClient, accession: str, cik: str) -> dict:
     """Fetch and read one exchange-filed Form 25 notice, recording both file hashes.
 
     Returns:
         ``{"status": "readable", "accession", "index_sha256", "document_sha256",
-        "document_path", "notice": {...}}``, or ``{"status": "unreadable", "accession",
-        "reason"}`` when a file is missing or the notice is not an exchange-filed XML one (an
-        issuer-filed HTML Form 25 is not read).
+        "document_path", "notice": {...}}``; ``{"status": "issuer_mismatch", "accession",
+        "found_issuer_cik", "reason"}`` when a well-formed notice names a different issuer than
+        ``cik``; or ``{"status": "unreadable", "accession", "reason"}`` when a file is missing
+        or the notice is not an exchange-filed XML one (an issuer-filed HTML Form 25 is not read).
     """
     nodash = accession.replace("-", "")
     index_url = FILING_DIR_URL.format(cik=int(cik), accession_nodash=nodash)
     try:
         index_bytes = client.get(index_url)
         document_bytes = client.get(index_url + NOTICE_DOCUMENT)
+        found = _issuer_cik(document_bytes)
+        if found is not None and found != int(cik):
+            return {
+                "status": STATUS_ISSUER_MISMATCH,
+                "accession": accession,
+                "found_issuer_cik": f"{found:010d}",
+                "reason": f"notice issuer CIK {found:010d} is not {int(cik):010d}",
+            }
         bound = parse_bound_exchange_notice(
             index_bytes,
             document_bytes,
@@ -219,8 +262,8 @@ def read_notice(client: SecClient, accession: str, cik: str) -> dict:
         )
     except (SecFetchError, ValueError) as exc:
         return {
-            "status": "unreadable",
+            "status": STATUS_UNREADABLE,
             "accession": accession,
             "reason": f"{type(exc).__name__}: {exc}",
         }
-    return {"status": "readable", **bound}
+    return {"status": STATUS_READABLE, **bound}
