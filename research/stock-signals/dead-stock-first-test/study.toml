@@ -1,0 +1,14 @@
+# Study card. Read by scripts/study.py check; edit by hand.
+id = "dead-stock-first-test"
+category = "stock-signals"
+placement_rule = 9
+question = "Does a fixed 12-1 momentum rule over liquid NYSE and Nasdaq stocks, dead ones included, beat SPY after trading costs and taxes, at dead-stock losses of 1.0, 0.5 and 0.0?"
+kind = "screen"
+status = "open"
+verdict = ""
+aliases = []
+brief = "2026-11-23-dead-stock-first-test-brief.md"
+reports = []
+results = []
+uses_lib = []
+allow_paper_imports = false
