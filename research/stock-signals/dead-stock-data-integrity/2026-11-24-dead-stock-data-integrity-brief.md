@@ -183,3 +183,14 @@ data itself shows it.
   and is named when McGill has that PERMNO. In the real data all three are named (Airgas,
   Forest Labs, Hospira). The sentence in section 1 that groups them with the unnamed stocks
   means only that they are kept in the roster and labelled, never dropped.
+- **2026-11-24 (how the scan uses the share and exchange codes).** The sentence in section 3.2
+  ("The CRSP scan reads shares code 10 and 11, exchange codes 1 and 3, dates from 2004-01-01, in
+  batches of 500 permnos") means this and nothing more. The codes **choose which stocks are
+  scanned**: a permno is scanned when it is in the release's stock spans and has at least one row
+  since 2004-01-01 (up to the pinned end) with share code 10 or 11 and exchange code 1 or 3. For
+  every scanned permno the scan then reads **all** of its rows since 2004-01-01 with **no**
+  share-code or exchange-code filter on the rows, so a stock that moves between exchanges loses
+  no days and the gap check reports only real holes. (The first run on 2026-11-24 filtered the
+  rows as well and counted exchange moves as gaps; it was corrected the same day.) The trading
+  calendar for the gap check is still the set of dates on which at least 1,000 stocks that pass
+  the code filter have a row. Roster price labels use the stock's rows with no code filter.

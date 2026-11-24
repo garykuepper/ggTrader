@@ -43,7 +43,9 @@ CHECKS = (
 )
 SCAN_COLUMNS = ["permno", "date", "prc", "ret", "shrout"]
 
-# Parametrised SQL only: ids, dates and lists all travel as parameters.
+# Parametrised SQL only: ids, dates and lists all travel as parameters. The share and exchange
+# codes choose WHICH stocks are scanned (PERMNOS_SQL) and the trading calendar (CALENDAR_SQL);
+# they never thin a stock's own rows (BATCH_SQL), or a move between exchanges would look like a gap.
 PERMNOS_SQL = (
     "SELECT DISTINCT d.permno FROM kaggle_crsp.daily d "
     "WHERE d.load_id = %s::bigint AND d.shrcd = ANY(%s::int[]) AND d.exchcd = ANY(%s::int[]) "
@@ -59,8 +61,8 @@ CALENDAR_SQL = (
 )
 BATCH_SQL = (
     "SELECT d.permno, d.date, d.prc, d.ret, d.shrout FROM kaggle_crsp.daily d "
-    "WHERE d.load_id = %s::bigint AND d.permno = ANY(%s::bigint[]) AND d.shrcd = ANY(%s::int[]) "
-    "AND d.exchcd = ANY(%s::int[]) AND d.date >= %s::date AND d.date <= %s::date"
+    "WHERE d.load_id = %s::bigint AND d.permno = ANY(%s::bigint[]) "
+    "AND d.date >= %s::date AND d.date <= %s::date"
 )
 # daily_of() copies all 68 million rows of a load into memory on every call (one query ran more
 # than 12 minutes), so the scan reads the table by load id after the same completeness test.
@@ -104,7 +106,11 @@ def require_complete_load(conn: Any, load_id: int) -> None:
 
 
 def read_scan_permnos(conn: Any, release_id: int, crsp_load: int, eval_end: str) -> list[int]:
-    """Permnos that are in the release's stock spans and have rows under the scan filter."""
+    """Permnos in the release's stock spans with at least one qualifying row since the start.
+
+    A row qualifies when its share code is in ``SHARE_CODES`` and its exchange code in
+    ``EXCHANGE_CODES``. This is the only place those codes pick stocks.
+    """
     params = (
         int(crsp_load),
         SHARE_CODES,
@@ -135,8 +141,12 @@ def read_calendar(conn: Any, crsp_load: int, eval_end: str) -> pd.DatetimeIndex:
 
 
 def read_batch(conn: Any, crsp_load: int, permnos: list[int], eval_end: str) -> pd.DataFrame:
-    """One batch of CRSP rows (``SCAN_COLUMNS``) for the given permnos under the scan filter."""
-    params = (int(crsp_load), permnos, SHARE_CODES, EXCHANGE_CODES, SCAN_START, eval_end)
+    """All CRSP rows (``SCAN_COLUMNS``) of the given permnos since ``SCAN_START``.
+
+    No share or exchange code filter is applied to the rows: a stock that moved between
+    exchanges keeps every day, so the gap check sees only real holes.
+    """
+    params = (int(crsp_load), permnos, SCAN_START, eval_end)
     frame = _fetch_chunks(conn, BATCH_SQL, params, SCAN_COLUMNS)
     frame["date"] = pd.to_datetime(frame["date"])
     return frame

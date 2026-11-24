@@ -260,3 +260,98 @@ def test_spell_suffix_symbols_fold_into_their_permno() -> None:
     assert list(out["symbol"]) == ["PERMNO-38420", "PERMNO-38420"]
     assert info["spell_suffix_rows"] == 1 and info["ticker_rows"] == 0
     assert len(study.ic.holding_intervals(out, "c")) == 1
+
+
+class FakeCrsp:
+    """A fake connection holding CRSP-like rows; it filters rows only if the SQL asks for it."""
+
+    def __init__(self, rows: pd.DataFrame) -> None:
+        self.rows = rows
+        self.executed: list[tuple[str, tuple]] = []
+        self._out: list[tuple] = []
+
+    def cursor(self) -> FakeCrsp:
+        return self
+
+    def __enter__(self) -> FakeCrsp:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def execute(self, sql: str, params: tuple) -> None:
+        self.executed.append((sql, params))
+        frame = self.rows
+        if "d.ret FROM" in sql:
+            wanted = set(params[1])
+            frame = frame[frame["permno"].isin(wanted)]
+            self._out = list(frame[["permno", "date", "ret"]].itertuples(index=False, name=None))
+        elif "SELECT DISTINCT d.permno" in sql:
+            # PERMNOS_SQL: the codes choose stocks; one qualifying row is enough.
+            keep = frame[
+                frame["shrcd"].isin(params[1])
+                & frame["exchcd"].isin(params[2])
+                & (frame["date"] >= pd.Timestamp(params[3]))
+            ]
+            self._out = [(int(p),) for p in sorted(keep["permno"].unique())]
+        else:
+            # BATCH_SQL: only the permno list, dates; a code filter would only apply if present.
+            assert "shrcd" not in sql and "exchcd" not in sql
+            frame = frame[frame["permno"].isin(set(params[1]))]
+            frame = frame[frame["date"] >= pd.Timestamp(params[2])]
+            cols = ["permno", "date", "prc", "ret", "shrout"]
+            self._out = list(frame[cols].itertuples(index=False, name=None))
+
+    def fetchmany(self, n: int) -> list[tuple]:
+        rows, self._out = self._out[:n], self._out[n:]
+        return rows
+
+    def fetchall(self) -> list[tuple]:
+        rows, self._out = self._out, []
+        return rows
+
+
+def _two_exchange_stock() -> pd.DataFrame:
+    """One stock whose days 12 to 16 sit on exchange 2 (NYSE American); no day is missing."""
+    frame = _stock(30, False)
+    frame["shrcd"] = 11
+    frame["exchcd"] = 3
+    frame.loc[12:16, "exchcd"] = 2
+    return frame
+
+
+def test_exchange_move_creates_no_gap_flag() -> None:
+    conn = FakeCrsp(_two_exchange_stock())
+    batch = study.read_batch(conn, 1, [30], "2024-12-31")
+    assert len(batch) == 40
+    result = study.compute_integrity([batch], pd.DatetimeIndex(DATES), {})
+    assert result["gaps"]["rows_flagged"] == 0
+    # The old row filter would have dropped five days and made a five-day "gap".
+    old = _two_exchange_stock().query("exchcd in (1, 3)")
+    flags = study.ic.check_gaps(old, pd.DatetimeIndex(DATES))
+    assert list(flags["detail"]) == ["5 days missing"]
+
+
+def test_codes_pick_permnos_but_one_qualifying_row_is_enough() -> None:
+    frames = [
+        _two_exchange_stock(),  # moves between exchanges 3 and 2: qualifies
+        _stock(31, False).assign(shrcd=11, exchcd=2),  # never on exchange 1 or 3
+        _stock(32, False).assign(shrcd=73, exchcd=1),  # not an ordinary share
+    ]
+    conn = FakeCrsp(pd.concat(frames, ignore_index=True))
+    assert study.read_scan_permnos(conn, 1, 1, "2024-12-31") == [30]
+    sql, params = conn.executed[0]
+    assert sql is study.PERMNOS_SQL
+    assert params[1] == study.SHARE_CODES and params[2] == study.EXCHANGE_CODES
+    assert params[3] == study.SCAN_START and params[5] == 1
+
+
+def test_roster_price_labels_do_not_depend_on_share_or_exchange_codes() -> None:
+    assert "shrcd" not in study.ROSTER_RET_SQL and "exchcd" not in study.ROSTER_RET_SQL
+    stock = _two_exchange_stock().assign(permno=7)
+    conn = FakeCrsp(stock)
+    returns = study.read_roster_returns(conn, 1, [7], "2024-12-31")
+    assert len(returns) == 40
+    roster = pd.DataFrame({"permno": pd.array([7], dtype="Int64"), "exit_date": [DATES[39]]})
+    plain = study.label_roster(roster, stock[["permno", "date", "ret"]])
+    assert plain.loc[0, "price_label"] == study.label_roster(roster, returns).loc[0, "price_label"]
