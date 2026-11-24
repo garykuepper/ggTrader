@@ -25,7 +25,9 @@ SPANS_SQL = (
 DEFAULT_BATCH = 500
 # Which linked Yahoo columns changed since the release was published (a metadata check that
 # reads only the first few Yahoo closes next to each splice, never the window's prices).
-DRIFT_SQL = "SELECT symbol FROM market._combined_linked(%s, %s) WHERE drift ORDER BY symbol"
+DRIFT_SQL = (
+    "SELECT symbol FROM market._combined_linked(%s::bigint, %s::text[]) WHERE drift ORDER BY symbol"
+)
 LINKED_SQL = (
     "SELECT symbol FROM market.stock_spans "
     "WHERE release_id = %s AND kind = 'linked_yahoo' ORDER BY symbol"

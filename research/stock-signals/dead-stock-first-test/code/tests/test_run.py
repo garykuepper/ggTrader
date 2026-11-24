@@ -491,6 +491,52 @@ def test_result_write_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert list(tmp_path.glob("*.tmp")) == []
 
 
+def test_failed_rename_leaves_the_old_file_and_no_partial_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ggTrader.utils.io as io_module
+
+    old = tmp_path / "dev-A.json"
+    old.write_text("OLD CONTENT")
+    old_trades = tmp_path / "dev-A-trades.csv.gz"
+    old_trades.write_bytes(b"OLD TRADES")
+
+    def failing_replace(*_a, **_k):
+        raise OSError("rename failed")
+
+    monkeypatch.setattr(io_module.os, "replace", failing_replace)
+    with pytest.raises(OSError, match="rename failed"):
+        io_module.write_json(old, {"new": "content"})
+    with pytest.raises(OSError, match="rename failed"):
+        study.write_trades_csv(
+            old_trades, {"c": [Trade(pd.Timestamp("2020-01-02"), "A", 1.0, 2.0, "rebalance")]}
+        )
+    assert old.read_text() == "OLD CONTENT"
+    assert old_trades.read_bytes() == b"OLD TRADES"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["dev-A-trades.csv.gz", "dev-A.json"]
+
+
+def test_main_keeps_the_previous_dev_result_when_the_rename_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import ggTrader.utils.io as io_module
+
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    (tmp_path / "dev-A.json").write_text("OLD CONTENT")
+    monkeypatch.setattr(
+        io_module.os, "replace", lambda *a, **k: (_ for _ in ()).throw(OSError("x"))
+    )
+    with pytest.raises(OSError):
+        driver.main(
+            ["--window", "dev", "--universe", "A", "--release-id", "1"],
+            loader=fake_inputs,
+            results_dir=tmp_path,
+        )
+    assert (tmp_path / "dev-A.json").read_text() == "OLD CONTENT"
+    assert not list(tmp_path.glob("*.tmp"))
+
+
 def test_cli_has_no_results_dir_flag() -> None:
     parser = load_driver().build_parser()
     with pytest.raises(SystemExit):
@@ -1101,7 +1147,9 @@ def test_reader_carries_drift_into_its_provenance(monkeypatch: pytest.MonkeyPatc
     assert found["drift"] is True and found["drift_symbols"] == ["B"]
 
 
-def test_linked_drift_preflight_reads_metadata_only() -> None:
+def test_linked_drift_preflight_calls_the_release_function_with_its_real_signature() -> None:
+    import re
+
     import bars_reader
 
     calls = []
@@ -1119,8 +1167,17 @@ def test_linked_drift_preflight_reads_metadata_only() -> None:
             return Cursor(self)
 
     assert bars_reader.read_linked_drift(Conn(), 1) == ["L2"]
-    assert calls[1][1] == (1, ["L1", "L2"])
-    assert "ohlcv" not in calls[1][0].lower() and "daily" not in calls[1][0].lower()
+    sql, params = calls[1]
+    # market._combined_linked(bigint, text[]) is the release function that computes the drift
+    # flag. It is read-only and performs exactly these price reads: the first few Yahoo closes
+    # next to each splice (one close on the common day and the closes that follow the first
+    # Yahoo date) and the matching CRSP bar of that day. It reads nothing of the study window.
+    assert re.search(r"market\._combined_linked\(%s::bigint, %s::text\[\]\)", sql)
+    assert params == (1, ["L1", "L2"])
+    schema = repo_root(__file__) / "sql" / "kaggle_schema.sql"
+    text = schema.read_text()
+    assert "market._combined_linked(p_release_id bigint, p_symbols text[])" in text
+    assert "RETURNS TABLE (symbol text" in text and "drift boolean" in text
 
 
 def test_holdout_refuses_on_drift_before_the_claim(tmp_path: Path) -> None:
@@ -1273,3 +1330,74 @@ def test_a_real_run_writes_valid_json_with_every_new_block(
         assert name in result
     assert payload["provenance"]["crsp_end"] == "2024-12-31"
     assert (tmp_path / "dev-A-trades.csv.gz").exists()
+
+
+# both audit entry points classify with the full release spans
+
+
+def release_with_a_later_spell_outside_the_universe() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            "symbol": ["LINK", "PERMNO-9-2", "OTHER"],
+            "permno": [9, 9, 4],
+            "spell": [1, 2, 1],
+            "kind": ["linked_yahoo", "spell", "placeholder"],
+            "first_date": pd.to_datetime(["2000-01-03", "2013-01-02", "2000-01-03"]),
+            "last_date": pd.to_datetime(["2012-05-01", "2020-06-01", "2024-12-31"]),
+        }
+    )
+
+
+@pytest.mark.parametrize("entry", ["main_run", "audit_only"])
+def test_audit_sees_later_spells_that_never_qualify_for_the_universe(
+    entry: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import bars_reader
+    import universe_frames
+
+    import ggTrader.data.bars as bars_module
+
+    driver = load_driver()
+    release = release_with_a_later_spell_outside_the_universe()
+    queried = []
+
+    class Conn(StubConn):
+        def cursor(self):
+            return StubCursor(self)
+
+        def close(self):
+            pass
+
+    conn = Conn([(9, pd.Timestamp("2020-06-01"))])
+    monkeypatch.setattr(bars_module, "connect_readonly", lambda: conn)
+    monkeypatch.setattr(bars_reader, "read_release_spans", lambda _c, _r: release)
+    args = SimpleNamespace(window="dev", universe="A", release_id=1, crsp_load=1, audit_only=False)
+    if entry == "audit_only":
+        audit = driver.read_audit(args)
+    else:
+        days = pd.DatetimeIndex(pd.bdate_range("2004-01-01", "2019-12-31"))
+        monkeypatch.setattr(universe_frames, "month_end_fields", lambda *_a, **_k: pd.DataFrame())
+
+        def only_link_is_eligible(_fields, spans, *, universe, daily_index):
+            frame = pd.DataFrame(False, index=daily_index, columns=spans["symbol"].tolist())
+            frame["LINK"] = True  # the later spell PERMNO-9-2 never qualifies
+            return frame
+
+        monkeypatch.setattr(universe_frames, "eligibility", only_link_is_eligible)
+
+        def fake_close(symbols, start, end, *, release_id, provenance_out=None, **_k):
+            index = pd.DatetimeIndex(pd.bdate_range(start, end), tz="UTC")
+            if provenance_out is not None:
+                provenance_out.update({"drift": False, "drift_symbols": []})
+            spans = pd.DataFrame({"symbol": [], "last_date": [], "has_successor": []})
+            return pd.DataFrame(1.0, index=index, columns=list(symbols)), spans
+
+        monkeypatch.setattr(bars_reader, "read_close_batched", fake_close)
+        audit = driver.read_inputs(args)["false_death_audit"]
+        assert days[0] < days[-1]
+    queried.extend(conn.queries)
+    assert audit["n_suspect"] == 0 and audit["suspects"] == []
+    assert audit["n_informational"] == 1
+    row = audit["informational"]["first_rows"][0]
+    assert row["symbol"] == "LINK" and row["has_later_spell"] is True
+    assert queried  # the audit did ask CRSP for the last date of permno 9

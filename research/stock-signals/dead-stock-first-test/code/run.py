@@ -100,9 +100,11 @@ def read_inputs(args: argparse.Namespace) -> dict[str, Any]:
     ).reindex(columns=close.columns, fill_value=False)
     conn = connect_readonly()
     try:
+        # The full release spans, as in --audit-only: "has a later spell" must see spells that
+        # never qualify for the universe, so both entry points classify identically.
         audit = study.audit_false_deaths(
             conn,
-            wanted,
+            release_spans,
             crsp_load=args.crsp_load,
             window_start=start,
             window_end=end,
