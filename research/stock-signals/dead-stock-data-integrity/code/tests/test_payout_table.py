@@ -66,6 +66,7 @@ def match(
     *,
     accession: str = "0000000001-10-000001",
     notice: bool = True,
+    rule_version: str = "v1",
 ) -> dict[str, Any]:
     """A per-stock record as the Form 25 phase writes it."""
     deciding = None
@@ -85,6 +86,7 @@ def match(
         "ciks": ciks,
         "accessions": [accession] if status == "matched" else [],
         "notice": deciding if status == "matched" else None,
+        "rule_version": rule_version,
     }
 
 
@@ -798,6 +800,113 @@ def test_main_payouts_writes_match_rule_version_into_csv_and_summary(tmp_path: P
     with (out / "_payouts.csv").open(newline="") as handle:
         rows = list(csv.DictReader(handle))
     assert rows[0]["match_rule_version"] == "v1.1"
+    # Even with a confirmed Form 25 notice, a v1.1-only match is a lead (name_only), not confirmed.
+    assert rows[0]["match_confidence"] == "name_only"
     assert rows[1]["match_rule_version"] == ""
+    assert rows[1]["match_confidence"] == ""
     cov = json.loads((out / "_payouts.json").read_text())["coverage_summary"]
     assert cov["by_match_rule_version"] == {"v1": 0, "v1.1": 1, "none": 1}
+    assert cov["by_match_confidence"] == {"confirmed": 0, "name_only": 1, "none": 1}
+    assert cov["name_only_v1_1"] == 1
+    assert cov["name_only_v1_unreadable"] == 0
+    assert cov["match_confidence_note"] == (
+        "v1.1-only matches are leads: the company name matched only after the extra cleaning "
+        "rules and was not otherwise verified"
+    )
+
+
+def test_v11_matches_are_name_only_leads_and_counts_add_up():
+    roster = pd.DataFrame(
+        [
+            roster_row(1, label="calm_like_deal"),  # v1 + confirmed notice -> confirmed
+            roster_row(2, label="calm_like_deal"),  # v1 + unreadable notice -> name_only
+            roster_row(3, label="calm_like_deal"),  # v1.1 + confirmed notice -> name_only
+            roster_row(4, label="collapse_like", exchcd=3.0),  # v1.1 + unreadable -> name_only
+            roster_row(5, label="unclear"),  # no match -> blank
+            roster_row(6, source="none", name=None),  # unnamed -> blank
+        ]
+    )
+    matches = {
+        1: match(confirmation="confirmed_common", rule_version="v1"),
+        2: match(confirmation="unconfirmed_unreadable", notice=False, rule_version="v1"),
+        3: match(confirmation="confirmed_common", rule_version="v1.1"),
+        4: match(confirmation="unconfirmed_unreadable", notice=False, rule_version="v1.1"),
+        5: match("none", "not_checked", rule_version="v1.1"),
+    }
+    events = {
+        1: [event(["2.01"])],
+        2: [event(["2.01"])],
+        3: [event(["2.01"])],
+        4: [event(["1.03"])],
+    }
+    table = build_payout_table(roster, matches, {}, events).set_index("permno")
+    assert table["match_confidence"].to_dict() == {
+        1: "confirmed",
+        2: "name_only",
+        3: "name_only",
+        4: "name_only",
+        5: "",
+        6: "",
+    }
+    assert table["match_rule_version"].to_dict() == {
+        1: "v1",
+        2: "v1",
+        3: "v1.1",
+        4: "v1.1",
+        5: "",
+        6: "",
+    }
+    # The Form 25 notice details still populate for a v1.1 match whose notice was readable.
+    assert table.loc[3, "form25_security"] == "Common Stock"
+
+    cov = coverage_summary(table)
+    assert cov["roster_rows"] == 6
+    assert cov["by_match_confidence"] == {"confirmed": 1, "name_only": 3, "none": 2}
+    assert sum(cov["by_match_confidence"].values()) == cov["roster_rows"]
+    assert cov["name_only_v1_1"] == 2
+    assert cov["name_only_v1_unreadable"] == 1
+    assert (
+        cov["name_only_v1_1"] + cov["name_only_v1_unreadable"]
+        == cov["by_match_confidence"]["name_only"]
+    )
+    assert cov["by_match_rule_version"] == {"v1": 2, "v1.1": 2, "none": 2}
+    assert sum(cov["by_match_rule_version"].values()) == cov["roster_rows"]
+    assert cov["by_class_and_confidence"]["acquired_or_merged"] == {
+        "confirmed": 1,
+        "name_only": 2,
+    }
+    assert cov["by_class_and_confidence"]["bankruptcy_filed"] == {
+        "confirmed": 0,
+        "name_only": 1,
+    }
+    assert cov["with_suggested_loss"] == 4
+    assert cov["with_suggested_loss_confirmed"] == 1
+    assert cov["with_suggested_loss_name_only"] == 3
+    assert (
+        cov["with_suggested_loss_confirmed"] + cov["with_suggested_loss_name_only"]
+        == cov["with_suggested_loss"]
+    )
+    assert cov["with_suggested_loss_by_rule_version"] == {"v1": 2, "v1.1": 2}
+    assert cov["by_basis_and_confidence"]["filing_evidence"] == {
+        "confirmed": 1,
+        "name_only": 2,
+        "none": 0,
+    }
+    assert cov["by_basis_and_confidence"]["literature_fill"] == {
+        "confirmed": 0,
+        "name_only": 1,
+        "none": 0,
+    }
+    assert cov["match_confidence_note"] == (
+        "v1.1-only matches are leads: the company name matched only after the extra cleaning "
+        "rules and was not otherwise verified"
+    )
+
+
+def test_match_without_rule_version_is_never_confirmed():
+    roster = pd.DataFrame([roster_row(1)])
+    unversioned = match(confirmation="confirmed_common")
+    del unversioned["rule_version"]
+    table = build_payout_table(roster, {1: unversioned}, {}, {1: [event(["2.01"])]})
+    assert table["match_confidence"].iloc[0] == "name_only"
+    assert table["match_rule_version"].iloc[0] == ""

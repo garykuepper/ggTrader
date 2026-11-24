@@ -495,3 +495,30 @@ def test_v11_keeps_ambiguity_window_edges_and_unnamed_rules():
     unnamed = {"stock_name": None, "name_source": "none", "exit_date": "2010-06-30"}
     out = sec_filings.match_roster_row_v11(unnamed, [cand("ALPHA CORP", "2010-07-01")])
     assert out["status"] == "none" and out["rule_version"] == "v1.1"
+
+
+def test_v11_known_limitation_bare_hyphen_class_suffix_strips_alpha_a():
+    # Known false-positive class: v1.1 strips a trailing -A/-B/-C marker even when no corporate
+    # suffix precedes it, so a company whose own name ends in "-A" collapses onto "ALPHA INC".
+    # Because the Form 25 notice check only verifies the picked CIK against its own filing, v1.1
+    # matches are always classified as name-only identity leads and never confirmed.
+    assert sec_filings.normalize_name_v11("ALPHA-A") == "ALPHA"
+    row = dict(ROW, stock_name="ALPHA-A")
+    filings = [cand("ALPHA INC", "2010-07-01", cik="0000000001")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched" and out["rule_version"] == "v1.1"
+
+
+def test_v11_known_limitation_complete_16_char_name_prefix_collision():
+    # Known limitation: "ACME SYSTEMS INC" is a complete 16-character name, not a truncated one,
+    # yet v1.1 treats every 16-character roster name as a prefix over untrimmed words; after
+    # folding SYSTEMS -> SYSTEM, "ACME SYSTEM INC" is a prefix of "ACME SYSTEM INCOME FUND".
+    # The Form 25 notice check only proves the filing belongs to the picked CIK, not that the
+    # picked CIK is the roster stock, which is why v1.1-only leads are never marked "confirmed".
+    row = dict(ROW, stock_name="ACME SYSTEMS INC")
+    assert len(row["stock_name"]) == 16
+    filings = [cand("ACME SYSTEM INCOME FUND", "2010-07-01", cik="0000000001")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched" and out["rule_version"] == "v1.1"

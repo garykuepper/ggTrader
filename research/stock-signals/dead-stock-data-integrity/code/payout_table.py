@@ -32,6 +32,10 @@ CONFIDENCE_NONE = ""
 CONFIDENCES = (CONFIDENCE_CONFIRMED, CONFIDENCE_NAME_ONLY)
 RULE_VERSION_NONE = ""
 RULE_VERSIONS = sec_filings.RULE_VERSIONS
+V11_LEAD_NOTE = (
+    "v1.1-only matches are leads: the company name matched only after the extra cleaning "
+    "rules and was not otherwise verified"
+)
 
 BASIS_FILING = "filing_evidence"
 BASIS_LITERATURE = "literature_fill"
@@ -232,12 +236,22 @@ def classify(row: Mapping[str, Any], match: Mapping[str, Any] | None, events: li
 
 
 def match_confidence(match: Mapping[str, Any] | None, evidence_class: str) -> str:
-    """``confirmed`` (a readable notice named the issuer), ``name_only`` or blank."""
+    """``confirmed`` (v1 match with a readable common-stock notice), ``name_only`` or blank.
+
+    A stock matched only under rule v1.1 is an identity lead and never ``confirmed``, even when
+    its Form 25 notice was readable for that CIK (the notice check verifies the chosen CIK, not
+    that it is the roster stock).
+    """
     if match is None or evidence_class not in (*DOCUMENTED_CLASSES, sec_filings.EVIDENCE_NONE):
         return CONFIDENCE_NONE
-    if match.get("confirmation") == "confirmed_common":
-        return CONFIDENCE_CONFIRMED
-    if match.get("confirmation") == "unconfirmed_unreadable":
+    confirmation = match.get("confirmation")
+    version = match.get("rule_version")
+    if confirmation == "confirmed_common":
+        if version == sec_filings.RULE_VERSION_V1:
+            return CONFIDENCE_CONFIRMED
+        # Rule v1.1 (or any match lacking an explicit v1 tag) stays a name-only lead.
+        return CONFIDENCE_NAME_ONLY
+    if confirmation == "unconfirmed_unreadable":
         return CONFIDENCE_NAME_ONLY
     return CONFIDENCE_NONE
 
@@ -347,7 +361,9 @@ def coverage_summary(
 ) -> dict[str, Any]:
     """Counts of the table: per class, per confidence, how many have a loss, and the conflicts.
 
-    Confirmed and name-only matches are always counted apart.
+    Confirmed and name-only matches are always counted apart, and ``name_only`` is further split
+    into v1.1-only identity leads (``name_only_v1_1``) and v1 matches whose notice was unreadable
+    (``name_only_v1_unreadable``).
 
     Args:
         table: the output of ``build_payout_table``.
@@ -362,6 +378,11 @@ def coverage_summary(
     statuses = table["events_status"].fillna("")
     bad = statuses[(statuses != "") & ~statuses.isin(EVENTS_STATUS_COMPLETE)]
     unavailable = {str(k): int(v) for k, v in bad.value_counts().items()}
+    name_only_mask = confidence == CONFIDENCE_NAME_ONLY
+    name_only_v1_1 = int((name_only_mask & (rule_version == sec_filings.RULE_VERSION_V11)).sum())
+    name_only_v1_unreadable = int(
+        (name_only_mask & (rule_version == sec_filings.RULE_VERSION_V1)).sum()
+    )
     return {
         "roster_rows": len(table),
         "by_class": by_class,
@@ -371,6 +392,9 @@ def coverage_summary(
             CONFIDENCE_NAME_ONLY: int((confidence == CONFIDENCE_NAME_ONLY).sum()),
             "none": int((confidence == CONFIDENCE_NONE).sum()),
         },
+        "name_only_v1_1": name_only_v1_1,
+        "name_only_v1_unreadable": name_only_v1_unreadable,
+        "match_confidence_note": V11_LEAD_NOTE,
         "by_match_rule_version": {
             **{v: int((rule_version == v).sum()) for v in RULE_VERSIONS},
             "none": int((rule_version == RULE_VERSION_NONE).sum()),
