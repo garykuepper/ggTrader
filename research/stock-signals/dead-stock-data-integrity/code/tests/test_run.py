@@ -7,13 +7,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from types import ModuleType
 
 import dead_stock_data_integrity as study
 import numpy as np
 import pandas as pd
 import pytest
 import roster as roster_mod
-import run
 
 pytestmark = pytest.mark.study
 
@@ -113,21 +113,21 @@ def test_examples_are_capped_at_twenty_but_every_flag_is_counted() -> None:
     assert len(result["bad_price"]["examples"]) == study.EXAMPLES_PER_CHECK
 
 
-def test_batches_are_500_permnos_each() -> None:
-    sizes = [len(b) for b in run.permno_batches(list(range(1203)), size=500)]
+def test_batches_are_500_permnos_each(run_module: ModuleType) -> None:
+    sizes = [len(b) for b in run_module.permno_batches(list(range(1203)), size=500)]
     assert sizes == [500, 500, 203]
     assert [len(b) for b in study.permno_batches(list(range(1203)))] == [500, 500, 203]
 
 
-def test_refuses_eval_end_after_crsp_end(tmp_path: Path) -> None:
+def test_refuses_eval_end_after_crsp_end(tmp_path: Path, run_module: ModuleType) -> None:
     with pytest.raises(SystemExit):
-        run.main(_argv(tmp_path, "--eval-end", "2025-01-02"))
+        run_module.main(_argv(tmp_path, "--eval-end", "2025-01-02"))
 
 
-def test_refuses_to_overwrite_without_force(tmp_path: Path) -> None:
+def test_refuses_to_overwrite_without_force(tmp_path: Path, run_module: ModuleType) -> None:
     (tmp_path / study.OUTPUT_JSON).write_text("{}")
     with pytest.raises(SystemExit):
-        run.main(_argv(tmp_path))
+        run_module.main(_argv(tmp_path))
 
 
 def _argv(out: Path, *extra: str) -> list[str]:

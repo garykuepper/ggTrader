@@ -1,11 +1,14 @@
 """Put the study's code on sys.path and share the file-read counter between test files."""
 
+import importlib.util
+import sys
 from pathlib import Path
+from types import ModuleType
 from typing import Any
 
 import pytest
 
-from ggTrader.utils.study import bootstrap
+from ggTrader.utils.study import bootstrap, study_dir
 
 bootstrap(__file__)
 
@@ -53,3 +56,22 @@ class OpenCounter:
 def open_counter(monkeypatch: pytest.MonkeyPatch) -> Any:
     """A factory: ``open_counter(path)`` starts counting reads of ``path`` and returns the count."""
     return lambda target: OpenCounter(monkeypatch, target)
+
+
+RUN_MODULE_NAME = "dead_stock_data_integrity_run"
+
+
+@pytest.fixture(scope="session")
+def run_module() -> ModuleType:
+    """This study's ``code/run.py``, loaded by file path under a name no other study uses.
+
+    Every study has a ``run.py``; a bare ``import run`` picks up whichever one is first in
+    ``sys.modules`` when the study tier collects all studies together.
+    """
+    path = study_dir(__file__) / "code" / "run.py"
+    spec = importlib.util.spec_from_file_location(RUN_MODULE_NAME, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[RUN_MODULE_NAME] = module
+    spec.loader.exec_module(module)
+    return module
