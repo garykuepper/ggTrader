@@ -21,16 +21,8 @@
     "tape": null,
     "inputs": [
       {
-        "path": "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
-        "sha256": "80e45bd165143e5fff7691ec11d3e70b979f00d737edafa995c03a67ca8b8083"
-      },
-      {
-        "path": "research/stock-signals/dead-stock-data-integrity/_payouts.json",
-        "sha256": "84ea412c1299409421b36d178a4b003c2ac2dff9691c2526ffa30905fb446d41"
-      },
-      {
         "path": "research/stock-signals/dead-stock-data-integrity/_payouts.csv",
-        "sha256": "871f6c9bad61e546978b965c83aa543ad3c52a270e8e49dd7279aeba84f3c141"
+        "sha256": "c790ae93e73e6cec96aa7884de7a865acdd3daffc9f4ea773706e78003d9040f"
       },
       {
         "path": "research/stock-signals/dead-stock-data-integrity/_roster.csv",
@@ -49,7 +41,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/dead_stock_data_integrity.py",
-      "sha256": "755b7c226c4ad865ccaef1bd1f377cf5a44be4278fe30c37cc07512d3de168c5"
+      "sha256": "a641c267b5741cad8f79dfd47614bea0752f64ac927431226064680a581ea9a9"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/integrity_checks.py",
@@ -57,7 +49,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/payout_table.py",
-      "sha256": "c8a4c913092f6d561b2807725c88c1a1594f25e64572ea0b78c720b2af67b9e4"
+      "sha256": "347b19a3e709501109a0878e5714ca29224d8921d0406a8b39216de7c7b04fd9"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/price_path.py",
@@ -81,11 +73,11 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py",
-      "sha256": "75a624ebd4810de9c598475597fe001a25a98f15d8b21a3f5dd91d21a4bb7ce9"
+      "sha256": "6f2c09c8b2201dac77c2772b596e322f0c255996f895f728cbc5c0697548b1ed"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/conftest.py",
-      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+      "sha256": "5cf16d0b58aac6b3cb69b0b8c7429154af5b1bc1021d7799f946428fcee552fd"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_integrity_checks.py",
@@ -93,7 +85,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_payout_table.py",
-      "sha256": "b9e704db986831b60151e02ffd0e5d3584c298c17f63be5ed47d9f3672ae42ac"
+      "sha256": "dfb0c95652afdc229ab57d2d2835b8b068a886e6f0dfed29f77f3a7146881e7a"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_price_path.py",
@@ -121,7 +113,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_pilot.py",
-      "sha256": "efd4754b186c3d8b0853bf037cab854d36b6e8c84cb36e4f0b7ad81314348bb0"
+      "sha256": "0a541d6d5aa83a79852c96f10bade2bfc29221c0e074c5bb90e7332f5b83df59"
     }
   ],
   "command": {
@@ -146,13 +138,21 @@
   "seed": null,
   "results": [
     {
+      "path": "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
+      "sha256": "fe1cdb5015a46b996068d672af052e4806815f9a30f2912e8d3a4b0320961874"
+    },
+    {
       "path": "research/stock-signals/dead-stock-data-integrity/_integrity.json",
-      "sha256": "d501479e88101eac1d8407d997d5b8ec4e2860da8d628fc9531162a14f420416"
+      "sha256": "e52826198d37a1599e63f41a3860bc60aeb8a0c711ef61eecf969c12e0b6dadc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/_payouts.json",
+      "sha256": "352156b279039d2f6d8c2a8c55eff2ce16811f16617dd09c29d2f4b8288056b2"
     }
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Command shown is the Phase 1 scan (reads our own database). The SEC phases ran as code/sec_pilot.py --phase form25 and then --phase payouts with a contact line in the SEC_USER_AGENT environment variable; they need network access and the SEC site may change, so their files are pinned as inputs (hashes), not as re-runnable results: _form25_matches.json had no provenance block (added by hand at close) and _payouts.json was written on a working tree with uncommitted files and no stored diff, which the study tool will not pin as a result. The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
+    "note": "Command shown is the Phase 1 scan (reads our own database). The SEC phases ran as code/sec_pilot.py --phase form25 and then --phase payouts, each with --cache-dir, --out and a contact line in the SEC_USER_AGENT environment variable; they need network access unless the saved copies are present. The three result files were produced on a clean tree on the final code. The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
   },
-  "created_utc": "2026-11-24T22:29:53Z"
+  "created_utc": "2026-11-24T22:44:11Z"
 }

@@ -8,7 +8,7 @@
 ## 1. In short
 
 - **The first test could not tell why its dead stocks stopped trading.** Its answer swung from far behind SPY (the S&P 500 fund) to ahead of it depending on a guess: did holders get nothing back, half, or the full last price? This study looked for the SEC's own record of each stock's end.
-- **For 91 of the 141 stocks the filings point to a takeover or merger.** For each of the 91, the company filed a report with the SEC within 90 days of its last trading day that carried at least one of three item numbers the SEC uses for an acquisition, a change in who controls the company, or a change in shareholder rights. That is 74 of the 117 stocks in the development window (2005 to 2019) and 17 of the 24 in the holdout window (2020 to 2024). Of the 91, 87 rest on a notice we could read and check, and 4 on a company-name match alone (section 3).
+- **For 91 of the 141 stocks the filings point to a takeover or merger.** For each of the 91, the company filed a report with the SEC within 90 days of its last trading day that carried at least one of three item numbers the SEC uses for an acquisition, a change in who controls the company, or a change in shareholder rights. That is 74 of the 117 stocks in the development window (2005 to 2019) and 17 of the 24 in the holdout window (2020 to 2024). Of the 91, 88 rest on a notice we could read and check, and 3 on a company-name match alone (section 3).
 - **For the other 50 the filings tell us nothing.** 37 found no matching notice by company name, 8 have no company name in our data, and 5 found a notice but no acquisition-type item. The question stays open for these 50.
 - **No bankruptcy turned up among the 141.** None of the 96 stocks whose filings we read carried the SEC's bankruptcy item. That agrees with the earlier finding that none of the 141 fell more than about 7 percent in its last month. It is not proof that no holder lost money: 45 stocks have no filings to read at all.
 - **The suggested loss is 0.0 for the 91, and no figure for the other 50.** 0.0 means holders got the full last price, the "full last price" reading of the first test. The two published substitute losses (30 percent and 55 percent, from the research literature) were available for bankruptcies but were not needed, because no bankruptcy was found.
@@ -24,7 +24,7 @@
 - **The match to a company.** For each stock with a name (133 of 141), we looked for a Form 25, the notice that a stock is being taken off an exchange, filed under a company name matching the stock's name, in the window from 30 days before its last trading day to 180 days after.
 - **The filings.** We read 80 quarterly index files of the SEC's filing database (EDGAR), from 2005 quarter 2 to 2024, with none skipped. Then, for each matched stock, we read its list of 8-K reports within 90 days either side of the last trading day.
 - **How we asked.** A contact line supplied by the owner was sent to the SEC with every request, as the SEC requires. It is not written anywhere in this study.
-- **What it cost the SEC site.** The Form 25 phase made 261 downloads and the 8-K phase 96 (one filing list per matched stock), so 357 in all. None of the 8-K list downloads failed, and no 8-K had a missing item list.
+- **What it cost the SEC site.** The first run made 261 downloads for the Form 25 phase and 96 for the 8-K phase (one filing list per matched stock), 357 in all. The clean rerun on the final code (section 10) used the saved copies of nearly all of them and made 2 new downloads. In neither run did an 8-K list download fail, and no 8-K had a missing item list.
 
 **What was not done.**
 
@@ -36,11 +36,11 @@
 
 ### 3.1 How many stocks have evidence, by class and window
 
-The evidence class says what the filings showed for each stock. The table is every one of the 141 stocks, from `_payouts.csv` (counted again in section 10 of [`_hand_checks.txt`](../_hand_checks.txt)).
+The evidence class says what the filings showed for each stock. The table is every one of the 141 stocks, from `_payouts.csv` (counted again in section 11 of [`_hand_checks.txt`](../_hand_checks.txt)).
 
 | Evidence class | Development (117) | Holdout (24) | All (141) | Read from a notice we could check | Matched by name only |
 | :--- | ---: | ---: | ---: | ---: | ---: |
-| `acquired_or_merged` | 74 | 17 | 91 | 87 | 4 |
+| `acquired_or_merged` | 74 | 17 | 91 | 88 | 3 |
 | `no_8k_found` | 5 | 0 | 5 | 2 | 3 |
 | `no_filing_match` | 32 | 5 | 37 | 0 | 0 |
 | `name_unknown` | 6 | 2 | 8 | 0 | 0 |
@@ -57,16 +57,17 @@ The evidence class says what the filings showed for each stock. The table is eve
 | Result | Stocks |
 | :--- | ---: |
 | Stocks with a company name | 133 |
-| Matched one filing company, notice read and checked (`confirmed_common`) | 89 |
-| Matched one filing company by name, notice could not be read (`unconfirmed_unreadable`) | 7 |
+| Matched one filing company, notice read and checked (`confirmed_common`) | 90 |
+| Matched one filing company by name, notice could not be read (`unconfirmed_unreadable`) | 6 |
 | Found no matching filing (`no_name_match`) | 37 |
 | More than one company matched (ambiguous), or a different company's notice (issuer mismatch) | 0 |
 | Stocks with no company name | 8 |
 
 - **The match rate is 96 of 133 named stocks, 72 percent.**
-- **How the 89 checked matches were made.** 75 had names that were equal after cleaning (capitals, punctuation and endings such as INC and CORP removed, and a fixed list of short forms such as CONTL for CONTINENTAL spelled out). 14 matched by the 16-character rule: our name source cuts company names off at 16 characters, so a name of exactly 16 characters was allowed to match a company whose cleaned name starts with it (for example `AMYLIN PHARMACEU`). 29 roster names are exactly 16 characters long, and 26 of them matched.
-- **What "checked" means.** We opened the notice itself and confirmed that the company named in it as the issuer is the one we matched and that the security named is common or ordinary shares, not preferred shares, warrants, notes or rights. All 89 passed, and no notice was rejected for naming a different issuer.
-- **The 7 name-only matches.** In 6 of them (Titan, Premcor, Spinnaker, PacifiCare, Vintage Petroleum, Burlington Resources) the exits are from 2005 and 2006 and the notice's file was not found at the expected address (the accession numbers all begin 9999999997). The seventh (Momenta, 2020) is a notice whose filing page the SEC server failed to deliver after three tries. Of the 7, four carry acquisition evidence and three carry none.
+- **How the 90 checked matches were made.** 76 had names that were equal after cleaning (capitals, punctuation and endings such as INC and CORP removed, and a fixed list of short forms such as CONTL for CONTINENTAL spelled out). 14 matched by the 16-character rule: our name source cuts company names off at 16 characters, so a name of exactly 16 characters was allowed to match a company whose cleaned name starts with it (for example `AMYLIN PHARMACEU`). 29 roster names are exactly 16 characters long, and 26 of them matched.
+- **What "checked" means.** We opened the notice itself and confirmed that the company named in it as the issuer is the one we matched and that the security named is common or ordinary shares, not preferred shares, warrants, notes or rights. All 90 passed, and no notice was rejected for naming a different issuer.
+- **The 6 name-only matches.** All six (Titan, Premcor, Spinnaker, PacifiCare, Vintage Petroleum, Burlington Resources) are exits from 2005 and 2006, and the notice's file was not found at the expected address (the accession numbers all begin 9999999997). Three carry acquisition evidence (Titan, PacifiCare, Burlington) and three carry none (Premcor, Spinnaker, Vintage).
+- **A reproducibility note.** The first run had 89 checked and 7 name-only matches. The seventh was Momenta (2020, a holdout stock): the SEC server failed to deliver its filing page after three tries. In the clean rerun the page was delivered (2 new downloads), the notice was read and checked, and Momenta became a checked match. So "could not be read" can be a passing server failure; the six 2005 and 2006 cases gave the same "not found" answer in both runs, which points to a missing file rather than a failed download. Nothing else changed between the runs: the same 96 of 133 stocks matched, the same 37 did not, and every evidence class kept its count.
 
 ### 3.3 The 37 stocks with no matching filing
 
@@ -110,7 +111,7 @@ What this does **not** tell us:
 
 | Evidence class | Exchange | Suggested loss | Basis | Stocks |
 | :--- | :--- | ---: | :--- | ---: |
-| `acquired_or_merged` | any | 0.0 | filing evidence | 91 (74 development, 17 holdout; 87 checked, 4 name-only) |
+| `acquired_or_merged` | any | 0.0 | filing evidence | 91 (74 development, 17 holdout; 88 checked, 3 name-only) |
 | `bankruptcy_filed` | NYSE or AMEX | 0.30 | literature fill | 0 |
 | `bankruptcy_filed` | Nasdaq | 0.55 | literature fill | 0 |
 | all other classes | any | none | none | 50 |
@@ -133,7 +134,7 @@ The full note is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-st
 ## 8. Gaps that remain
 
 - **50 stocks have no evidence:** 37 with no matching filing, 8 with no company name, 5 with a match but no acquisition item.
-- **4 of the 91 and 3 of the 5 rest on name-only matches** (6 of the 7 are 2005 to 2006 exits). The matching company was never confirmed through its notice.
+- **3 of the 91 and 3 of the 5 rest on name-only matches** (all six are 2005 to 2006 exits). The matching company was never confirmed through its notice.
 - **Notices that could not be read.** The notices for six of the 2005 to 2006 matches were not found at the expected address, and why was not checked.
 - **Items only.** The label reads the SEC's item numbers. No filing text, deal price or payment form was read.
 - **No volume.** The CRSP file has no volume, so how much of a position could be sold is unknown, here and in the first test.
@@ -143,22 +144,30 @@ The full note is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-st
 
 ## 9. Decisions made along the way, and what each costs if wrong
 
-- **Prefix rule for 16-character names (ruling R5).** McGill cuts names at 16 characters, so an exact match would miss those. A 16-character name matches a filer whose cleaned name starts with it; two different filers starting with it give `ambiguous`, and nothing is picked. Cost if wrong: a wrong company could be matched (none was ambiguous or rejected; 14 of 89 checked matches used the rule) or a right one missed (3 of the 37 misses are 16-character names).
-- **Two confidence levels (ruling R11).** `confirmed` (notice read, issuer and common shares checked) and `name_only` (unique name match, notice unreadable). Cost if wrong: a name-only match could attach another company's 8-K to a stock. Four of the 91 depend on it, so those four are counted separately in every table.
+- **Prefix rule for 16-character names (ruling R5).** McGill cuts names at 16 characters, so an exact match would miss those. A 16-character name matches a filer whose cleaned name starts with it; two different filers starting with it give `ambiguous`, and nothing is picked. Cost if wrong: a wrong company could be matched (none was ambiguous or rejected; 14 of 90 checked matches used the rule) or a right one missed (3 of the 37 misses are 16-character names).
+- **Two confidence levels (ruling R11).** `confirmed` (notice read, issuer and common shares checked) and `name_only` (unique name match, notice unreadable). Cost if wrong: a name-only match could attach another company's 8-K to a stock. Three of the 91 depend on it, so those three are counted separately in every table.
 - **Seven evidence classes (ruling R14).** The brief had six; `ambiguous_match` was added for names matching two or more companies, and non-common-only or rejected notices were folded into `no_filing_match`. Cost if wrong: none seen, since 0 stocks fell into it. A failed download is not an eighth class (ruling R15); it is counted apart (0 occurred).
 - **Who built and checked it.** Antigravity Gemini 4 Neon built the price-label, integrity-check, download-client and 8-K tasks, Claude Sonnet the rest, and ChatGPT Codex Sol reviewed every task. The Phase 2 whole-study reviews (Sol and Opus) are still to come. Cost if wrong: a build or number nobody independent read; the reviews are where that is caught.
 - **The contact line.** A privacy guard blocked the first attempt to use the owner's own contact line in a command. It was not worked around: the owner typed it into a private card and it was set as an environment variable. Cost: a delay.
 
-## 10. How the study was closed
+## 10. How the run went, and how the study was closed
 
 - **Report name and place.** This report keeps the file name that was asked for, `2026-11-24-dead-stock-payout-evidence.md`, but sits in the folder `phase-2/`. The study tool accepts only names of the form date, study name and an optional `-brief`, `-nogo` or `-amendment` at the top of the study folder, and the earlier note already holds the plain name for 2026-11-24.
-- **Results file.** `_form25_matches.json` was written without the provenance block (the record of what produced a file) that the study tool requires in every results file. A block was added by hand on 2026-11-24; nothing else in the file changed, and the original file's SHA-256 (also recorded in `_payouts.json`) can be recovered as the block explains.
-- **Pin.** `_payouts.json` was written with a working tree that had uncommitted files and no stored difference, so the tool will not pin it as a result. `PIN.json` pins `_integrity.json` as the result and records the SHA-256 of the SEC result files and the roster as inputs. That is "partly" reproducible: the SEC files will change as the SEC site changes, and a re-run needs a contact line and network access.
+- **The first run and what review found.** The three result phases first ran on code that had been reviewed and committed, and the report was first written from that run. Reviewing the code that writes the result files then found problems, fixed one after another with tests:
+  1. The Form 25 phase wrote no provenance block (the record of which commit, code files, roster and rules made a file), which the study tool requires. The code now writes the block in both SEC phases, and the second phase refuses a Form 25 file that does not carry a complete one.
+  2. A result file that was a symbolic link (a shortcut to another file) could have hidden a changed code file from the "is the working tree clean" test. Only the three result files, by their exact names, are now left out of that test, and both phases refuse to run if an output path is a link.
+  3. The checks on that block were too loose. They now need a real 40-character commit, a true or false clean flag, exact hashes (a stray new line no longer passes), a marker that the run was a full one and not a trial, and the same roster and short-form name list as in the code now.
+  4. The list of fingerprinted code files left out the shared parsers of the downloaded indexes and notices and two shared helper files; all four were added.
+  5. The Form 25 file and the roster file are each read once, so the fingerprint recorded is that of the bytes actually used.
+  6. A test helper was moved so the tests also pass in the study tier's second test mode.
+  The wording of the loss note in `_payouts.csv` was also changed from "holders were paid" to "filings report an acquisition or merger event; payment amount and form not verified", because the filings show an event, not a payment.
+- **The clean rerun.** After the last fix the controller reran all three result phases (the price-row scan, the Form 25 matching and the payouts) from a clean committed tree. Every number in this report comes from those reruns. Compared with the first run: 90 checked and 6 name-only matches (was 89 and 7); of the 91 with a suggested loss, 88 checked and 3 name-only (was 87 and 4); 76 checked matches with equal cleaned names (was 75); the SEC downloads were 2 (was 357). The price-row scan and every evidence class count came out the same.
+- **Pin.** `PIN.json` pins `_integrity.json`, `_form25_matches.json` and `_payouts.json` as results, and the roster and `_payouts.csv` as inputs, by SHA-256. Reproducibility is "partly": the price-row scan needs our database, and the SEC phases need network access and a contact line (the saved copies make a rerun cheap and the SEC site may change).
 
 ## 11. Files
 
 - Brief: [2026-11-24-dead-stock-data-integrity-brief.md](../2026-11-24-dead-stock-data-integrity-brief.md); earlier note: [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-stock-data-integrity.md).
-- Results: `_integrity.json`, `_roster.csv`, `_form25_matches.json`, `_payouts.json`, `_payouts.csv` (every one of the 141 stocks, one row each); hand checks: [`_hand_checks.txt`](../_hand_checks.txt) (sections 9 and 10 belong to this report).
+- Results: `_integrity.json`, `_roster.csv`, `_form25_matches.json`, `_payouts.json`, `_payouts.csv` (every one of the 141 stocks, one row each); hand checks: [`_hand_checks.txt`](../_hand_checks.txt) (sections 9, 10 and 11 belong to this report; section 10 is the first run's count and section 11 the recount on the clean rerun).
 - Code: [`code/`](../code/) (the download client, the Form 25 and 8-K readers, the payout table and the driver for the SEC phases, `code/sec_pilot.py`).
 
 ## 12. Words used
@@ -168,6 +177,7 @@ The full note is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-st
 - **8-K and its items:** the report a company files when something material happens. Each report lists item numbers saying what kind: 1.03 bankruptcy or receivership; 2.01 completion of an acquisition or disposition of assets; 3.01 notice of delisting; 3.03 material change to shareholder rights; 5.01 change in control.
 - **CIK:** the SEC's number for a filing company. **Accession number:** the SEC's number for one filing.
 - **Master index:** the SEC's quarterly list of every filing, with company, form type and date.
+- **Provenance:** the record inside a result file of which commit, code, roster and rules produced it.
 - **Evidence class:** which of the seven groups the filings put a stock in. **Confirmed or name-only:** whether the notice was opened and checked, or the stock was matched by name alone.
 - **Literature fill:** a published average loss used when the true figure is missing; not a measurement of these stocks.
 - **Permno:** CRSP's permanent number for one stock, which survives ticker changes. **CRSP:** a university database of US stock prices that keeps stocks that later stopped trading.
