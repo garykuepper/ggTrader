@@ -80,3 +80,20 @@ def test_constants_and_zero_baseline_guard() -> None:
 
     zero_start = pd.Series([0.0] + [10.0] * 21)
     assert classify_path(zero_start) == {"ratio": None, "daily_std": None, "label": "unclear"}
+
+
+def test_daily_std_uses_last_21_returns_with_sample_ddof() -> None:
+    """Protect the window and ddof convention against a hand-computed value.
+
+    Returns alternate +1% and -1% (11 gains, 10 losses) over the last 22 closes; an old, wild
+    close before them must not matter. Sample std (ddof=1) is sqrt((21e-4 - 0.01**2/21) / 20).
+    """
+    returns = [0.01 if i % 2 == 0 else -0.01 for i in range(21)]
+    closes = [500.0, 100.0]
+    for r in returns:
+        closes.append(closes[-1] * (1.0 + r))
+    out = classify_path(pd.Series(closes))
+    expected = (21 * 1e-4 - 0.01**2 / 21) / 20
+    assert out["daily_std"] == pytest.approx(expected**0.5, rel=1e-9)
+    # Population std (ddof=0) would give about 0.009988; the sample value is about 0.010235.
+    assert out["daily_std"] > 0.0101

@@ -356,6 +356,13 @@ def test_evidence_item_rules_and_priority_across_multiple_events():
     assert evidence_class([{"items": []}]) == "no_8k_found"
 
 
+def test_bankruptcy_wins_over_acquisition_in_separate_filings():
+    """Two separate 8-Ks (1.03 first, 2.01 later, and the reverse) both give bankruptcy."""
+    first = [{"items": ["1.03"]}, {"items": ["2.01"]}]
+    assert evidence_class(first) == "bankruptcy_filed"
+    assert evidence_class(list(reversed(first))) == "bankruptcy_filed"
+
+
 def test_count_items_missing_counts_empty_item_events():
     assert count_items_missing([]) == 0
     events = [

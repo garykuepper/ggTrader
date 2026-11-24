@@ -363,7 +363,8 @@ def older_page_urls(submissions: dict[str, Any]) -> list[str]:
 def _parse_items(raw: Any) -> list[str]:
     """Normalize an 8-K ``items`` cell into a list of stripped non-empty item codes.
 
-    Handles both comma-separated strings (brief fixtures) and lists of strings (live EDGAR JSON).
+    The real SEC ``items`` field is a comma-separated string such as ``"2.01,9.01"``. Lists of
+    strings are an extra accepted input (tests and hand-built records), not the SEC format.
     """
     if raw is None:
         return []
@@ -493,6 +494,11 @@ def evidence_class(events: list[dict[str, Any]]) -> str:
     Applies the fixed priority table across all item codes present in ``events``:
     ``1.03`` -> ``bankruptcy_filed``; else any of ``2.01``, ``3.03``, ``5.01`` ->
     ``acquired_or_merged``; else ``3.01`` -> ``delisted_other``; else ``no_8k_found``.
+
+    Bankruptcy wins whenever any filing in the window carries item 1.03, even if another filing
+    carries acquisition items, and regardless of the order or dates of the filings. The function
+    does not tell separate events apart (for example a bankruptcy filing followed months later
+    by a sale of the assets); that is a known limit of reading items alone.
     """
     all_items: set[str] = set()
     for event in events:
