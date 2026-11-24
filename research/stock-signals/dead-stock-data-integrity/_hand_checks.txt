@@ -167,3 +167,85 @@ _holdout-B.json 35
 ```
 
 So dev-B holds 107 and holdout-B 35 dead-stock exits, the same as the first test report's section 4 table. Run from the repository root.
+
+## 9. Meanings of the 8-K item numbers (checked against the SEC's own instructions)
+
+Fetched once on 2026-11-24 by the controller (the study's builders and this report make no network requests): the SEC's instructions for Form 8-K, https://www.sec.gov/files/form8-k.pdf. File size 1,075,450 bytes, SHA-256 `730ab1de5550870134639fff1ccad3385186c3a08eafd8bd387db44b8bac5d70` (recomputed from the saved copy when this section was written: same value). The text was extracted from the PDF; the five heading lines below are the lines (line numbers of the extracted text file) that name the five items the study's rules use:
+
+```
+398: Item 1.03 Bankruptcy or Receivership.
+543: Item 2.01 Completion of Acquisition or Disposition of Assets.
+995: Item 3.01 Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard;
+1136: Item 3.03 Material Modification to Rights of Security Holders.
+1243: Item 5.01 Changes in Control of Registrant.
+```
+
+So the labels in the brief match the SEC's own item titles: 1.03 Bankruptcy or Receivership; 2.01 Completion of Acquisition or Disposition of Assets; 3.01 Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard; 3.03 Material Modification to Rights of Security Holders; 5.01 Changes in Control of Registrant. Note that item 2.01 covers an acquisition **or a disposition** of assets, by the filing company itself, and that items 3.03 and 5.01 are not limited to a company being bought; the report states this as a limit of the evidence classes.
+
+## 10. Counts used in the payout-evidence report (computed from the result files, not typed)
+
+Run once on 2026-11-24 from the repository root (reads `_form25_matches.json`, `_payouts.json` and `_payouts.csv` of this folder and the study's own name-cleaning function; no database, no network). Script:
+
+```python
+import csv, json, sys, collections as C
+sys.path.insert(0, "research/stock-signals/dead-stock-data-integrity/code")
+sys.path.insert(0, "research/stock-signals/_lib")
+import sec_filings as sf
+d = "research/stock-signals/dead-stock-data-integrity/"
+m = json.load(open(d + "_form25_matches.json"))
+p = json.load(open(d + "_payouts.json"))
+rows = list(csv.DictReader(open(d + "_payouts.csv")))
+print("summary:", m["summary"])
+print("request counts: form25", m["request_count"], "| payouts", p["request_count"])
+print("class x window:", sorted(C.Counter((r["evidence_class"], r["window"]) for r in rows).items()))
+print("class x confidence:", sorted(C.Counter((r["evidence_class"], r["match_confidence"] or "none") for r in rows).items()))
+print("loss x basis x confidence:", sorted(C.Counter((r["suggested_loss"] or "none", r["basis"], r["match_confidence"] or "none") for r in rows).items()))
+print("cross_check:", sorted(C.Counter(r["cross_check"] for r in rows).items()))
+print("label x class:", sorted(C.Counter((r["price_label"], r["evidence_class"]) for r in rows).items()))
+print("exchange x class:", sorted(C.Counter((r["exchcd"] or "none", r["evidence_class"]) for r in rows).items()))
+ev = p["events"]
+n = C.Counter(); lone = 0; no201 = 0; k = 0
+for r in rows:
+    if r["evidence_class"] != "acquired_or_merged":
+        continue
+    items = {i for e in ev[r["permno"]] for i in e["items"]}
+    for c in ("2.01", "3.03", "5.01", "3.01"):
+        n[c] += c in items
+    no201 += "2.01" not in items
+    lone += len(items & {"2.01", "3.03", "5.01"}) == 1
+print("acquired stocks with item:", dict(n), "| without 2.01:", no201, "| exactly one acquisition item:", lone)
+allc = C.Counter(i for v in ev.values() for e in v for i in e["items"])
+print("windowed 8-K events:", sum(len(v) for v in ev.values()), "stocks:", len(ev), "| item 1.03 count:", allc.get("1.03", 0))
+ex = pre = 0
+for s in m["stocks"]:
+    if s["confirmation"] == "confirmed_common":
+        a = sf.normalize_name(s["stock_name"]); b = sf.normalize_name(s["notice"]["notice"]["issuer_name"])
+        ex += a == b; pre += a != b
+print("confirmed notices: equal after cleaning", ex, "| matched by 16-character prefix rule", pre)
+print("names exactly 16 characters:", sum(len(s["stock_name"]) == 16 for s in m["stocks"]), "of which matched",
+      sum(len(s["stock_name"]) == 16 and s["status"] == "matched" for s in m["stocks"]))
+un = [s["stock_name"] for s in m["stocks"] if s["status"] == "none"]
+print("unmatched:", len(un), {s.get("reason") for s in m["stocks"] if s["status"] == "none"})
+print(un)
+print("unreadable notices:", [(s["stock_name"], s["notice"]["accession"], s["notice"]["reason"][:20]) for s in m["stocks"] if s["confirmation"] == "unconfirmed_unreadable"])
+```
+
+Output:
+
+```
+summary: {'roster_rows': 141, 'named_stocks': 133, 'name_matched': 96, 'confirmed_common': 89, 'unconfirmed_unreadable': 7, 'non_common_only': 0, 'rejected_issuer_mismatch': 0, 'ambiguous': 0, 'none': 37, 'name_unknown': 8, 'matched': 96, 'matched_rate_of_named': 0.7218045112781954}
+request counts: form25 {'network_fetches': 261, 'cache_hits': 4, 'corrupt_cache_refetches': 0} | payouts {'network_fetches': 96, 'cache_hits': 0, 'corrupt_cache_refetches': 0}
+class x window: [(('acquired_or_merged', 'dev'), 74), (('acquired_or_merged', 'holdout'), 17), (('name_unknown', 'dev'), 6), (('name_unknown', 'holdout'), 2), (('no_8k_found', 'dev'), 5), (('no_filing_match', 'dev'), 32), (('no_filing_match', 'holdout'), 5)]
+class x confidence: [(('acquired_or_merged', 'confirmed'), 87), (('acquired_or_merged', 'name_only'), 4), (('name_unknown', 'none'), 8), (('no_8k_found', 'confirmed'), 2), (('no_8k_found', 'name_only'), 3), (('no_filing_match', 'none'), 37)]
+loss x basis x confidence: [(('0.0', 'filing_evidence', 'confirmed'), 87), (('0.0', 'filing_evidence', 'name_only'), 4), (('none', 'none', 'confirmed'), 2), (('none', 'none', 'name_only'), 3), (('none', 'none', 'none'), 45)]
+cross_check: [('agrees', 70), ('not_comparable', 71)]
+label x class: [(('calm_like_deal', 'acquired_or_merged'), 70), (('calm_like_deal', 'name_unknown'), 7), (('calm_like_deal', 'no_8k_found'), 3), (('calm_like_deal', 'no_filing_match'), 27), (('unclear', 'acquired_or_merged'), 21), (('unclear', 'name_unknown'), 1), (('unclear', 'no_8k_found'), 2), (('unclear', 'no_filing_match'), 10)]
+exchange x class: [(('1', 'acquired_or_merged'), 39), (('1', 'no_8k_found'), 4), (('1', 'no_filing_match'), 22), (('3', 'acquired_or_merged'), 52), (('3', 'no_8k_found'), 1), (('3', 'no_filing_match'), 15), (('none', 'name_unknown'), 8)]
+acquired stocks with item: {'2.01': 69, '3.03': 78, '5.01': 85, '3.01': 80} | without 2.01: 22 | exactly one acquisition item: 11
+windowed 8-K events: 559 stocks: 96 | item 1.03 count: 0
+confirmed notices: equal after cleaning 75 | matched by 16-character prefix rule 14
+names exactly 16 characters: 29 of which matched 26
+unmatched: 37 {'no_name_match'}
+['UNITED DEFENSE', 'ABGENIX INC', 'KERR-MCGEE', 'RSA SECURITY', 'VERITAS DGC INC', 'OREGON STEEL', 'MEDIMMUNE INC', 'DADE', 'LYONDELL', 'ANHEUSER BUSCH', 'PHILA CONSOL HLD', 'BARR INC', 'ALPHARMA INC-A', 'NATIONWIDE FINL', 'VALEANT PHARMA', 'CONTL AIRLINES', 'VARIAN SEMI', 'JAZZ PHARMA', 'EL PASO CO', 'PHARMACEU RESOUR', 'MCMORAN EXPLOR', 'SPRINT NEXTEL', 'FOREST LABS', 'ATHLON ENERGY IN', 'INTL RECTIFIER', 'STANCORP FINL', 'CABLEVISION SYS', 'CEPHEI', 'JUNO', 'FOUNDATION', 'ESTERLINE TECH', 'SPARK', 'PRINCIPIA', 'SANTANDER CONS', 'AMERN NATL INS', 'GBT', 'PROMETHEUS BIO']
+unreadable notices: [('TITAN CP', '9999999997-05-034197', 'SecNotFound: SEC URL'), ('PREMCOR INC', '9999999997-05-038597', 'SecNotFound: SEC URL'), ('SPINNAKER EXPLOR', '9999999997-06-001176', 'SecNotFound: SEC URL'), ('PACIFICARE HEALT', '9999999997-06-001182', 'SecNotFound: SEC URL'), ('VINTAGE PETE INC', '9999999997-06-005200', 'SecNotFound: SEC URL'), ('BURLINGTON RES', '9999999997-06-015753', 'SecNotFound: SEC URL'), ('MOMENTA PHARMA', '0001354457-20-000548', 'SecFetchError: Faile')]
+```

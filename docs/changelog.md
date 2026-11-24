@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-24 (dead-stock data integrity)
+
+- Audited the 141 dead stocks the first test held in its main list (117 development, 24 holdout), without rerunning any strategy. Part one scanned our own CRSP price rows (20,379,285 rows, 9,422 stocks) with six fixed checks: 845 flags (345 one-day spikes, 251 runs of missing days, 249 runs of an unchanged price), only 2 on days the first test held the stock. Part two looked for the SEC's own record: 96 of 133 named stocks matched a Form 25 (89 with the notice read and checked, 7 by name only, 37 unmatched, 8 unnamed), and 91 of the 141 carry an 8-K item for an acquisition, a change of control or a change in shareholder rights (suggested loss 0.0 on that evidence); 50 have none; no bankruptcy item turned up. The filings do not say whether holders got cash or shares or how much. Report: `research/stock-signals/dead-stock-data-integrity/phase-2/2026-11-24-dead-stock-payout-evidence.md`; price-row note: `research/stock-signals/dead-stock-data-integrity/2026-11-24-dead-stock-data-integrity.md`.
+- Study code is in `research/stock-signals/dead-stock-data-integrity/code/` (roster, price labels, integrity checks, SEC download client, Form 25 and 8-K readers, payout table). The SEC phases need network access and a contact line in the `SEC_USER_AGENT` environment variable; the contact line is not stored anywhere in the repo. Nothing in `src/` changed; the paper trader stays stopped.
+
 ## 2026-11-24 (dead-stock first test)
 
 - Ran the first honest test on the combined CRSP + Yahoo release: a fixed 12-1 momentum rule (top 50, monthly, next-day close) over liquid NYSE and Nasdaq stocks (price at least $5, 1,000 largest), dead ones included, against SPY after trading costs (6.4, 18.3 and 40 bps per side) and taxes (24%/15% and 35%/20%, through the tax-lot ledger), at dead-stock losses of 1.0, 0.5 and 0.0. Report: `research/stock-signals/dead-stock-first-test/2026-11-24-dead-stock-first-test.md`. The holdout (2020 to 2024) was run once per universe.

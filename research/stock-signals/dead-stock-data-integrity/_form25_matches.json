@@ -1,0 +1,4767 @@
+{
+  "phase": "form25",
+  "run_date": "2026-11-24",
+  "limit_quarters": null,
+  "roster_rows": 141,
+  "quarters_needed": 80,
+  "quarters_downloaded": [
+    [
+      2005,
+      2
+    ],
+    [
+      2005,
+      3
+    ],
+    [
+      2005,
+      4
+    ],
+    [
+      2006,
+      1
+    ],
+    [
+      2006,
+      2
+    ],
+    [
+      2006,
+      3
+    ],
+    [
+      2006,
+      4
+    ],
+    [
+      2007,
+      1
+    ],
+    [
+      2007,
+      2
+    ],
+    [
+      2007,
+      3
+    ],
+    [
+      2007,
+      4
+    ],
+    [
+      2008,
+      1
+    ],
+    [
+      2008,
+      2
+    ],
+    [
+      2008,
+      3
+    ],
+    [
+      2008,
+      4
+    ],
+    [
+      2009,
+      1
+    ],
+    [
+      2009,
+      2
+    ],
+    [
+      2009,
+      3
+    ],
+    [
+      2009,
+      4
+    ],
+    [
+      2010,
+      1
+    ],
+    [
+      2010,
+      2
+    ],
+    [
+      2010,
+      3
+    ],
+    [
+      2010,
+      4
+    ],
+    [
+      2011,
+      1
+    ],
+    [
+      2011,
+      2
+    ],
+    [
+      2011,
+      3
+    ],
+    [
+      2011,
+      4
+    ],
+    [
+      2012,
+      1
+    ],
+    [
+      2012,
+      2
+    ],
+    [
+      2012,
+      3
+    ],
+    [
+      2012,
+      4
+    ],
+    [
+      2013,
+      1
+    ],
+    [
+      2013,
+      2
+    ],
+    [
+      2013,
+      3
+    ],
+    [
+      2013,
+      4
+    ],
+    [
+      2014,
+      1
+    ],
+    [
+      2014,
+      2
+    ],
+    [
+      2014,
+      3
+    ],
+    [
+      2014,
+      4
+    ],
+    [
+      2015,
+      1
+    ],
+    [
+      2015,
+      2
+    ],
+    [
+      2015,
+      3
+    ],
+    [
+      2015,
+      4
+    ],
+    [
+      2016,
+      1
+    ],
+    [
+      2016,
+      2
+    ],
+    [
+      2016,
+      3
+    ],
+    [
+      2016,
+      4
+    ],
+    [
+      2017,
+      1
+    ],
+    [
+      2017,
+      2
+    ],
+    [
+      2017,
+      3
+    ],
+    [
+      2017,
+      4
+    ],
+    [
+      2018,
+      1
+    ],
+    [
+      2018,
+      2
+    ],
+    [
+      2018,
+      3
+    ],
+    [
+      2018,
+      4
+    ],
+    [
+      2019,
+      1
+    ],
+    [
+      2019,
+      2
+    ],
+    [
+      2019,
+      3
+    ],
+    [
+      2019,
+      4
+    ],
+    [
+      2020,
+      1
+    ],
+    [
+      2020,
+      2
+    ],
+    [
+      2020,
+      3
+    ],
+    [
+      2020,
+      4
+    ],
+    [
+      2021,
+      1
+    ],
+    [
+      2021,
+      2
+    ],
+    [
+      2021,
+      3
+    ],
+    [
+      2021,
+      4
+    ],
+    [
+      2022,
+      1
+    ],
+    [
+      2022,
+      2
+    ],
+    [
+      2022,
+      3
+    ],
+    [
+      2022,
+      4
+    ],
+    [
+      2023,
+      1
+    ],
+    [
+      2023,
+      2
+    ],
+    [
+      2023,
+      3
+    ],
+    [
+      2023,
+      4
+    ],
+    [
+      2024,
+      1
+    ],
+    [
+      2024,
+      2
+    ],
+    [
+      2024,
+      3
+    ],
+    [
+      2024,
+      4
+    ],
+    [
+      2025,
+      1
+    ]
+  ],
+  "quarters_skipped": [],
+  "request_count": {
+    "network_fetches": 261,
+    "cache_hits": 4,
+    "corrupt_cache_refetches": 0
+  },
+  "summary": {
+    "roster_rows": 141,
+    "named_stocks": 133,
+    "name_matched": 96,
+    "confirmed_common": 89,
+    "unconfirmed_unreadable": 7,
+    "non_common_only": 0,
+    "rejected_issuer_mismatch": 0,
+    "ambiguous": 0,
+    "none": 37,
+    "name_unknown": 8,
+    "matched": 96,
+    "matched_rate_of_named": 0.7218045112781954
+  },
+  "stocks": [
+    {
+      "symbol": "PERMNO-89260",
+      "permno": "89260",
+      "stock_name": "UNITED DEFENSE",
+      "exit_date": "2005-06-24",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-48696",
+      "permno": "48696",
+      "stock_name": "TITAN CP",
+      "exit_date": "2005-07-29",
+      "ciks": [
+        "0000032258"
+      ],
+      "accessions": [
+        "9999999997-05-034197"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000032258",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-05-034197",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/32258/999999999705034197/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-89374",
+      "permno": "89374",
+      "stock_name": "PREMCOR INC",
+      "exit_date": "2005-08-30",
+      "ciks": [
+        "0001159119"
+      ],
+      "accessions": [
+        "9999999997-05-038597"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001159119",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-05-038597",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/1159119/999999999705038597/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-87283",
+      "permno": "87283",
+      "stock_name": "",
+      "exit_date": "2005-10-06",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-87254",
+      "permno": "87254",
+      "stock_name": "SPINNAKER EXPLOR",
+      "exit_date": "2005-12-13",
+      "ciks": [
+        "0001089697"
+      ],
+      "accessions": [
+        "9999999997-06-001176"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001089697",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-06-001176",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/1089697/999999999706001176/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-90879",
+      "permno": "90879",
+      "stock_name": "PACIFICARE HEALT",
+      "exit_date": "2005-12-20",
+      "ciks": [
+        "0001027974"
+      ],
+      "accessions": [
+        "9999999997-06-001182",
+        "9999999997-06-009042"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001027974",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-06-001182",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/1027974/999999999706001182/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-76272",
+      "permno": "76272",
+      "stock_name": "VINTAGE PETE INC",
+      "exit_date": "2006-01-30",
+      "ciks": [
+        "0000809428"
+      ],
+      "accessions": [
+        "9999999997-06-005200"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000809428",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-06-005200",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/809428/999999999706005200/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-75333",
+      "permno": "75333",
+      "stock_name": "BURLINGTON RES",
+      "exit_date": "2006-03-31",
+      "ciks": [
+        "0000833320"
+      ],
+      "accessions": [
+        "9999999997-06-015753"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000833320",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "9999999997-06-015753",
+        "reason": "SecNotFound: SEC URL not found (HTTP 404): https://www.sec.gov/Archives/edgar/data/833320/999999999706015753/primary_doc.xml"
+      }
+    },
+    {
+      "symbol": "PERMNO-86235",
+      "permno": "86235",
+      "stock_name": "ABGENIX INC",
+      "exit_date": "2006-03-31",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-25769",
+      "permno": "25769",
+      "stock_name": "KERR-MCGEE",
+      "exit_date": "2006-08-10",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-81178",
+      "permno": "81178",
+      "stock_name": "RSA SECURITY",
+      "exit_date": "2006-09-15",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-76598",
+      "permno": "76598",
+      "stock_name": "MAVERICK TUBE CO",
+      "exit_date": "2006-10-05",
+      "ciks": [
+        "0000869087"
+      ],
+      "accessions": [
+        "0000876661-06-000789",
+        "0000876661-06-000793"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000869087",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-06-000789",
+        "document_path": "/Archives/edgar/data/869087/000087666106000789/primary_doc.xml",
+        "index_sha256": "10c521951702948bdd4be19fbffc8893c93d19152c629e306c5d2e58a6668aee",
+        "document_sha256": "56631c857692727cd3c92d4a7fe87834ec74f093cf7672da96fd7703da645b15",
+        "notice": {
+          "issuer_cik": "0000869087",
+          "issuer_name": "MAVERICK TUBE CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2006-10-06"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-65883",
+      "permno": "65883",
+      "stock_name": "BELLSOUTH CP",
+      "exit_date": "2006-12-29",
+      "ciks": [
+        "0000732713"
+      ],
+      "accessions": [
+        "0000876661-07-000016"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000732713",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-07-000016",
+        "document_path": "/Archives/edgar/data/732713/000087666107000016/primary_doc.xml",
+        "index_sha256": "b7bb8c1a2479ac2251bee1a30d62f3fac833e4e69a895b09756a3991a82a806e",
+        "document_sha256": "0410c2738912483b1fa89b3ff6770e6ac29ff7c5e00e1aa13de2ab623684f527",
+        "notice": {
+          "issuer_cik": "0000732713",
+          "issuer_name": "BELLSOUTH CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "null,Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-01-04"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-75900",
+      "permno": "75900",
+      "stock_name": "",
+      "exit_date": "2007-01-03",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-76769",
+      "permno": "76769",
+      "stock_name": "VERITAS DGC INC",
+      "exit_date": "2007-01-11",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-75308",
+      "permno": "75308",
+      "stock_name": "OREGON STEEL",
+      "exit_date": "2007-01-23",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-17806",
+      "permno": "17806",
+      "stock_name": "PHELPS DODGE",
+      "exit_date": "2007-03-19",
+      "ciks": [
+        "0000078066"
+      ],
+      "accessions": [
+        "0000876661-07-000308"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000078066",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-07-000308",
+        "document_path": "/Archives/edgar/data/78066/000087666107000308/primary_doc.xml",
+        "index_sha256": "9ccb5810e6dccd2eb93dc9d5a6dd9ddc4764ba72605e3a9a077521578d5c483a",
+        "document_sha256": "f6320cc37627314ef42772a13b1e81559ea6405678d93d7482c0a359a04a6f23",
+        "notice": {
+          "issuer_cik": "0000078066",
+          "issuer_name": "PHELPS DODGE CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Shares",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-03-21"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-82551",
+      "permno": "82551",
+      "stock_name": "HYPERION SOLU",
+      "exit_date": "2007-04-19",
+      "ciks": [
+        "0001001113"
+      ],
+      "accessions": [
+        "0001354457-07-000113"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001001113",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000113",
+        "document_path": "/Archives/edgar/data/1001113/000135445707000113/primary_doc.xml",
+        "index_sha256": "9dd092705b1ecbbc6047f9ba62642b430e34ccd1e2458e4680a44b0d632efd49",
+        "document_sha256": "089119e05e47ad0dedb7c565e832839fc2e91aec212a5d849788348ff280f687",
+        "notice": {
+          "issuer_cik": "0001001113",
+          "issuer_name": "HYPERION SOLUTIONS CORP",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-04-19"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90321",
+      "permno": "90321",
+      "stock_name": "NEW RIVER PHARMA",
+      "exit_date": "2007-04-19",
+      "ciks": [
+        "0001288379"
+      ],
+      "accessions": [
+        "0001354457-07-000115"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001288379",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000115",
+        "document_path": "/Archives/edgar/data/1288379/000135445707000115/primary_doc.xml",
+        "index_sha256": "f58ecbdb5f61b437c6cf8db4ac1bc8ccbfb27286025915ca20e6ee3eebfac094",
+        "document_sha256": "bee4f881f8e042ad1f7629cd268e23ec199d14dc1e8334279e389c024ac61fdc",
+        "notice": {
+          "issuer_cik": "0001288379",
+          "issuer_name": "NEW RIVER PHARMACEUTICALS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-04-19"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88478",
+      "permno": "88478",
+      "stock_name": "WEBEX COMM",
+      "exit_date": "2007-05-25",
+      "ciks": [
+        "0001109935"
+      ],
+      "accessions": [
+        "0001354457-07-000150"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001109935",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000150",
+        "document_path": "/Archives/edgar/data/1109935/000135445707000150/primary_doc.xml",
+        "index_sha256": "77a8335f807711f476bface27d84d5f4a44e99a2de856ae9be5eab017bf26d1b",
+        "document_sha256": "f99de1ce9ed6cfa13f52d62f258fa408dd550a9f22ba3068831a921f6852345e",
+        "notice": {
+          "issuer_cik": "0001109935",
+          "issuer_name": "WEBEX COMMUNICATIONS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-05-25"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-76656",
+      "permno": "76656",
+      "stock_name": "MEDIMMUNE INC",
+      "exit_date": "2007-06-18",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-87587",
+      "permno": "87587",
+      "stock_name": "AQUANTIVE INC",
+      "exit_date": "2007-08-10",
+      "ciks": [
+        "0001071806"
+      ],
+      "accessions": [
+        "0001354457-07-000241"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001071806",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000241",
+        "document_path": "/Archives/edgar/data/1071806/000135445707000241/primary_doc.xml",
+        "index_sha256": "da1bf103b1093715069b3d4a7a3d477bbfbf15f92f0438645212ef1d84d3f51a",
+        "document_sha256": "8a08ce48fb88830842bd2b31dc990011b4a0a8d160cdbd365ab47e1b3a8ae278",
+        "notice": {
+          "issuer_cik": "0001071806",
+          "issuer_name": "AQUANTIVE INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-08-10"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90802",
+      "permno": "90802",
+      "stock_name": "CHAPARRAL STEEL",
+      "exit_date": "2007-09-14",
+      "ciks": [
+        "0001319048"
+      ],
+      "accessions": [
+        "0001354457-07-000276"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001319048",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-07-000276",
+        "document_path": "/Archives/edgar/data/1319048/000135445707000276/primary_doc.xml",
+        "index_sha256": "ccbe9dd22f5240ae10eee3d823851416609164e4dd5e22259cbb5ca1ac368eb2",
+        "document_sha256": "83ff4a78dcd6b2e653522c59a3ca581d8ce509ea2c2df8b5bf0670f014ac9e0c",
+        "notice": {
+          "issuer_cik": "0001319048",
+          "issuer_name": "Chaparral Steel CO",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2007-09-14"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-89680",
+      "permno": "89680",
+      "stock_name": "DADE",
+      "exit_date": "2007-11-06",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-75444",
+      "permno": "75444",
+      "stock_name": "LYONDELL",
+      "exit_date": "2007-12-20",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-54798",
+      "permno": "54798",
+      "stock_name": "MGI PHARMA, INC",
+      "exit_date": "2008-01-28",
+      "ciks": [
+        "0000702131"
+      ],
+      "accessions": [
+        "0001354457-08-000018"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000702131",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000018",
+        "document_path": "/Archives/edgar/data/702131/000135445708000018/primary_doc.xml",
+        "index_sha256": "2f297b227a0542255b1e09fe35086a2756bc11331662269208cf4fb8904bc4c2",
+        "document_sha256": "f0bc6e7b0da18c547f7bcff2dd4c0cdb0cd1a37ca6e22ed618064efbe43b3518",
+        "notice": {
+          "issuer_cik": "0000702131",
+          "issuer_name": "MGI PHARMA INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-01-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-83807",
+      "permno": "83807",
+      "stock_name": "VENTANA MED SYS",
+      "exit_date": "2008-02-19",
+      "ciks": [
+        "0000893160"
+      ],
+      "accessions": [
+        "0001354457-08-000027"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000893160",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000027",
+        "document_path": "/Archives/edgar/data/893160/000135445708000027/primary_doc.xml",
+        "index_sha256": "533a9f6933d4743d1936bb27dab5440070cad36834401e7d0a059da546bca94f",
+        "document_sha256": "46b2555e207fe5667cbe64e164aa3eba7b680547d570d37e3350d86be590a1cb",
+        "notice": {
+          "issuer_cik": "0000893160",
+          "issuer_name": "VENTANA MEDICAL SYSTEMS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-02-19"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-87233",
+      "permno": "87233",
+      "stock_name": "GOLDEN TELECOM",
+      "exit_date": "2008-02-28",
+      "ciks": [
+        "0001089874"
+      ],
+      "accessions": [
+        "0001354457-08-000039"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001089874",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000039",
+        "document_path": "/Archives/edgar/data/1089874/000135445708000039/primary_doc.xml",
+        "index_sha256": "879ef8e7821d1835b7e8f0c41e964f14417ae4ef769595e3d9cf13e7097196c1",
+        "document_sha256": "2db24cc845276e66d302aff28baee8cbea77f2c14094008f15f10be9b6f97155",
+        "notice": {
+          "issuer_cik": "0001089874",
+          "issuer_name": "GOLDEN TELECOM INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-02-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-89918",
+      "permno": "89918",
+      "stock_name": "PHARMION CORP",
+      "exit_date": "2008-03-07",
+      "ciks": [
+        "0001203866"
+      ],
+      "accessions": [
+        "0001354457-08-000045"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001203866",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000045",
+        "document_path": "/Archives/edgar/data/1203866/000135445708000045/primary_doc.xml",
+        "index_sha256": "dd6792071961bbe93bf979166481aaeed5cf621f4d74899bc662aa440ea3f5bd",
+        "document_sha256": "a8d2d7ad3bb84a7c98c9ad5ad46f1424ee0acb0445ee6b6d70a59fdcbbd7cc37",
+        "notice": {
+          "issuer_cik": "0001203866",
+          "issuer_name": "PHARMION CORP",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-03-07"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-11927",
+      "permno": "11927",
+      "stock_name": "RESPIRONICS INC",
+      "exit_date": "2008-03-14",
+      "ciks": [
+        "0000780434"
+      ],
+      "accessions": [
+        "0001354457-08-000048"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000780434",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000048",
+        "document_path": "/Archives/edgar/data/780434/000135445708000048/primary_doc.xml",
+        "index_sha256": "b4f85e4f86a635cc5507354ddc617fd87bfcbcabe557d03e64eca260a8e3d314",
+        "document_sha256": "d70cfaa2f5a965d746fefccc52277f2913794377e6376546a852e71da5241526",
+        "notice": {
+          "issuer_cik": "0000780434",
+          "issuer_name": "RESPIRONICS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-03-14"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90309",
+      "permno": "90309",
+      "stock_name": "NAVTEQ CP",
+      "exit_date": "2008-07-09",
+      "ciks": [
+        "0000834208"
+      ],
+      "accessions": [
+        "0000876661-08-000279"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000834208",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-08-000279",
+        "document_path": "/Archives/edgar/data/834208/000087666108000279/primary_doc.xml",
+        "index_sha256": "f73970c0560ba4f29b2a1e364928bf626e34346bd0aa8eaa724fa31ecdf64644",
+        "document_sha256": "409492176eb9c31d0257a57fef09d2f23fd080b4a2c9c1dfdc0de1dd99ea5ca2",
+        "notice": {
+          "issuer_cik": "0000834208",
+          "issuer_name": "NAVTEQ CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock, $0.001 par value",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-07-11"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-89265",
+      "permno": "89265",
+      "stock_name": "APP PHARMA",
+      "exit_date": "2008-09-10",
+      "ciks": [
+        "0001141399"
+      ],
+      "accessions": [
+        "0001354457-08-000253"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001141399",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000253",
+        "document_path": "/Archives/edgar/data/1141399/000135445708000253/primary_doc.xml",
+        "index_sha256": "2b92b436613bb02c096fa531f820d43684f9742e40c503a5e46b408fdda72f78",
+        "document_sha256": "025e84112da8fcf0f082ef6d2fc30821c1d061942c33f0c135db8664d808e3d6",
+        "notice": {
+          "issuer_cik": "0001141399",
+          "issuer_name": "APP Pharmaceuticals, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-09-10"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-53612",
+      "permno": "53612",
+      "stock_name": "LONGS DRG STRS",
+      "exit_date": "2008-10-30",
+      "ciks": [
+        "0000764762"
+      ],
+      "accessions": [
+        "0000876661-08-000456"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000764762",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-08-000456",
+        "document_path": "/Archives/edgar/data/764762/000087666108000456/primary_doc.xml",
+        "index_sha256": "b946a7168e0cc2bf6a4c6696278fc0276a91ad0e6b399a003f4c0c6259aef43c",
+        "document_sha256": "fa710d2d7e82592c319d25826efad890fedbda6f58be4427489fa09d56e385fe",
+        "notice": {
+          "issuer_cik": "0000764762",
+          "issuer_name": "LONGS DRUG STORES CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-11-04"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-59184",
+      "permno": "59184",
+      "stock_name": "ANHEUSER BUSCH",
+      "exit_date": "2008-11-17",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-77103",
+      "permno": "77103",
+      "stock_name": "IMCLONE SYS INC",
+      "exit_date": "2008-11-24",
+      "ciks": [
+        "0000765258"
+      ],
+      "accessions": [
+        "0001354457-08-000337"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000765258",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-08-000337",
+        "document_path": "/Archives/edgar/data/765258/000135445708000337/primary_doc.xml",
+        "index_sha256": "e7350247d5be33b19c0e50cd9a26ffe4f13dbc816a7115c9cb2cb9b246602fa1",
+        "document_sha256": "3f8e62119ffcedc07934056c8c6d03e62f3876d4eed739c7f7244fc656cc3cb2",
+        "notice": {
+          "issuer_cik": "0000765258",
+          "issuer_name": "IMCLONE SYSTEMS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2008-11-24"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-79617",
+      "permno": "79617",
+      "stock_name": "PHILA CONSOL HLD",
+      "exit_date": "2008-12-01",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-11415",
+      "permno": "11415",
+      "stock_name": "BARR INC",
+      "exit_date": "2008-12-22",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-65832",
+      "permno": "65832",
+      "stock_name": "ALPHARMA INC-A",
+      "exit_date": "2008-12-29",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-84644",
+      "permno": "84644",
+      "stock_name": "NATIONWIDE FINL",
+      "exit_date": "2008-12-31",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-15077",
+      "permno": "15077",
+      "stock_name": "UST INC",
+      "exit_date": "2009-01-05",
+      "ciks": [
+        "0000811669"
+      ],
+      "accessions": [
+        "0000876661-09-000050"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000811669",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-09-000050",
+        "document_path": "/Archives/edgar/data/811669/000087666109000050/primary_doc.xml",
+        "index_sha256": "300acf92d4a5678a34eb05a6a917adc6553e673efd7eb7ab17933a57bb165ff7",
+        "document_sha256": "6f5073a174a8295f99782078edb0400a0641103279408e7dc496d62371f488c7",
+        "notice": {
+          "issuer_cik": "0000811669",
+          "issuer_name": "UST INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2009-01-09"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-85668",
+      "permno": "85668",
+      "stock_name": "CV THERAPEUTICS",
+      "exit_date": "2009-04-17",
+      "ciks": [
+        "0000921506"
+      ],
+      "accessions": [
+        "0001354457-09-000091"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000921506",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-09-000091",
+        "document_path": "/Archives/edgar/data/921506/000135445709000091/primary_doc.xml",
+        "index_sha256": "8981119cc91e813cc5763b295135daaddf548b64131cb37699dda4ede1b94736",
+        "document_sha256": "5179024330701ece25d2ff4b45dd2381ec30d963396bc3a3c54e535372b421b7",
+        "notice": {
+          "issuer_cik": "0000921506",
+          "issuer_name": "CV THERAPEUTICS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2009-04-17"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-92339",
+      "permno": "92339",
+      "stock_name": "METAVANTE TECHNO",
+      "exit_date": "2009-10-01",
+      "ciks": [
+        "0001399768"
+      ],
+      "accessions": [
+        "0000876661-09-000395"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001399768",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-09-000395",
+        "document_path": "/Archives/edgar/data/1399768/000087666109000395/primary_doc.xml",
+        "index_sha256": "633c160819d27bc3be49c83adb0f1c504f688349c2bc41916adb02d8d6c79ed2",
+        "document_sha256": "26ac89414853f16a5649a667e6500885ab40cb730b1bf2493d8b69b1b011da13",
+        "notice": {
+          "issuer_cik": "0001399768",
+          "issuer_name": "Metavante Technologies, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2009-10-02"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-86602",
+      "permno": "86602",
+      "stock_name": "PEROT SYSTEMS",
+      "exit_date": "2009-11-03",
+      "ciks": [
+        "0000894253"
+      ],
+      "accessions": [
+        "0000876661-09-000431"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000894253",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-09-000431",
+        "document_path": "/Archives/edgar/data/894253/000087666109000431/primary_doc.xml",
+        "index_sha256": "5cfc09871d3dcfef9549720b8aba18ffbe8a8f1f0f7cba5f6019b39d2e387178",
+        "document_sha256": "11cdf976091d6c28241181614b31f0c7fd62f0e73d4168cd455197051a9701d7",
+        "notice": {
+          "issuer_cik": "0000894253",
+          "issuer_name": "PEROT SYSTEMS CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE INC",
+          "security_description": "Class A common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2009-11-04"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-92104",
+      "permno": "92104",
+      "stock_name": "STARENT NETWORKS",
+      "exit_date": "2009-12-18",
+      "ciks": [
+        "0001391672"
+      ],
+      "accessions": [
+        "0001354457-09-000342"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001391672",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-09-000342",
+        "document_path": "/Archives/edgar/data/1391672/000135445709000342/primary_doc.xml",
+        "index_sha256": "79262bdbcc17418a84f6a13772690bce0fb0b8b06add84a55f4baa7d8aa058cd",
+        "document_sha256": "ef8014661aaebce8f8b4977d3cc2e37fd68075d8b4427c94318c456df896babd",
+        "notice": {
+          "issuer_cik": "0001391672",
+          "issuer_name": "Starent Networks, Corp.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2009-12-18"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-91462",
+      "permno": "91462",
+      "stock_name": "BARE ESCENTUALS",
+      "exit_date": "2010-03-12",
+      "ciks": [
+        "0001295557"
+      ],
+      "accessions": [
+        "0001354457-10-000060"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001295557",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-10-000060",
+        "document_path": "/Archives/edgar/data/1295557/000135445710000060/primary_doc.xml",
+        "index_sha256": "98e5e9d35701b5c11502b8e624775aa46c8b731e806ad8b3e7500a6caec485c9",
+        "document_sha256": "0c1c4177cd638ed1eacef16363177ade0c5dbfb32ce8c7f5211a76cd0635473c",
+        "notice": {
+          "issuer_cik": "0001295557",
+          "issuer_name": "BARE ESCENTUALS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2010-03-12"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-68340",
+      "permno": "68340",
+      "stock_name": "VALEANT PHARMA",
+      "exit_date": "2010-09-27",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-79641",
+      "permno": "79641",
+      "stock_name": "CONTL AIRLINES",
+      "exit_date": "2010-09-30",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-92381",
+      "permno": "92381",
+      "stock_name": "ABRAXIS BIOSCIEN",
+      "exit_date": "2010-10-15",
+      "ciks": [
+        "0001409012"
+      ],
+      "accessions": [
+        "0001354457-10-000268"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001409012",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-10-000268",
+        "document_path": "/Archives/edgar/data/1409012/000135445710000268/primary_doc.xml",
+        "index_sha256": "76a3e88719dcd9f1fd3442df0ea239c6e38fa20f4c288eeba61b3e18f72ed2e6",
+        "document_sha256": "2c81f0d643789c0a00209a6e55d338dc755b6b6f6329c5336339d32f89396e44",
+        "notice": {
+          "issuer_cik": "0001409012",
+          "issuer_name": "Abraxis BioScience, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2010-10-15"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-92552",
+      "permno": "92552",
+      "stock_name": "",
+      "exit_date": "2010-10-21",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-92182",
+      "permno": "92182",
+      "stock_name": "",
+      "exit_date": "2010-11-10",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-91669",
+      "permno": "91669",
+      "stock_name": "ISILON SYSTEMS",
+      "exit_date": "2010-12-20",
+      "ciks": [
+        "0001373671"
+      ],
+      "accessions": [
+        "0001354457-10-000336"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001373671",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-10-000336",
+        "document_path": "/Archives/edgar/data/1373671/000135445710000336/primary_doc.xml",
+        "index_sha256": "f3e8a023c5d8b065c9d31ec84f6eedaa7241e78d1e558d4b6d488e03ab298e02",
+        "document_sha256": "a2dc5943a2856b2208948ceb3b8e354bc66282abd4032d064db7c39aaaa69a0d",
+        "notice": {
+          "issuer_cik": "0001373671",
+          "issuer_name": "Isilon Systems, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2010-12-21"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-58755",
+      "permno": "58755",
+      "stock_name": "BALDOR ELEC",
+      "exit_date": "2011-01-27",
+      "ciks": [
+        "0000009342"
+      ],
+      "accessions": [
+        "0000876661-11-000025"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000009342",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-11-000025",
+        "document_path": "/Archives/edgar/data/9342/000087666111000025/primary_doc.xml",
+        "index_sha256": "3213a2284d176eadad8a042af9f7a6b83bcf652bc4c55ef59e43d14ed3a7e6f4",
+        "document_sha256": "91c99b861bf36af4b109a11b7207ac3e31a163be1017d770975c703bf7914fb5",
+        "notice": {
+          "issuer_cik": "0000009342",
+          "issuer_name": "BALDOR ELECTRIC CO",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-01-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-26382",
+      "permno": "26382",
+      "stock_name": "MASSEY ENERGY",
+      "exit_date": "2011-06-01",
+      "ciks": [
+        "0000037748"
+      ],
+      "accessions": [
+        "0000876661-11-000237"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000037748",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-11-000237",
+        "document_path": "/Archives/edgar/data/37748/000087666111000237/primary_doc.xml",
+        "index_sha256": "46e8d05e26e53bd783e8cfbd0d4bd8a335fb3bbec43a3e3c9ca0fe638f4d6c44",
+        "document_sha256": "e21fef89ef8f58a381a0596c1271bf9ac8814b1ccf57b58d08a6f4de5dd2e942",
+        "notice": {
+          "issuer_cik": "0000037748",
+          "issuer_name": "MASSEY ENERGY CO",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-06-02"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90994",
+      "permno": "90994",
+      "stock_name": "INTL COAL GROUP",
+      "exit_date": "2011-06-14",
+      "ciks": [
+        "0001320934"
+      ],
+      "accessions": [
+        "0000876661-11-000253"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001320934",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-11-000253",
+        "document_path": "/Archives/edgar/data/1320934/000087666111000253/primary_doc.xml",
+        "index_sha256": "9fe37f01e4b2bb29cf67f60b6fcd92287f043fa40ca5ead443e97efce2be0ee8",
+        "document_sha256": "86e9153d1223daaed17cb6f05d0a7b4b1d0e77ccdc2c30f820de4b5c055de251",
+        "notice": {
+          "issuer_cik": "0001320934",
+          "issuer_name": "International Coal Group, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-06-16"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-87633",
+      "permno": "87633",
+      "stock_name": "SAVVIS",
+      "exit_date": "2011-07-14",
+      "ciks": [
+        "0001058444"
+      ],
+      "accessions": [
+        "0001354457-11-000170"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001058444",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-11-000170",
+        "document_path": "/Archives/edgar/data/1058444/000135445711000170/primary_doc.xml",
+        "index_sha256": "3167d4e2e5540801ad77b6c3785503521656c0ce52cbce2d0939243b072e213d",
+        "document_sha256": "a54f193801cb0f9dfd2cda4a358ed3500300346865d958f3f0da61a42c5ae7c7",
+        "notice": {
+          "issuer_cik": "0001058444",
+          "issuer_name": "SAVVIS, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-07-15"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-93247",
+      "permno": "93247",
+      "stock_name": "",
+      "exit_date": "2011-09-08",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-75101",
+      "permno": "75101",
+      "stock_name": "TIMBERLAND CO",
+      "exit_date": "2011-09-13",
+      "ciks": [
+        "0000814361"
+      ],
+      "accessions": [
+        "0000876661-11-000396"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000814361",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-11-000396",
+        "document_path": "/Archives/edgar/data/814361/000087666111000396/primary_doc.xml",
+        "index_sha256": "6a6b0fef0881139a88a032c02701724847545cb0fd95990ef8ad58fb9cdf81c6",
+        "document_sha256": "686dad330e805f8d77c6212ac14276485b07a8f4d3c580be6c4374788cc066a2",
+        "notice": {
+          "issuer_cik": "0000814361",
+          "issuer_name": "TIMBERLAND CO",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-09-14"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90044",
+      "permno": "90044",
+      "stock_name": "KINETIC CONCEPTS",
+      "exit_date": "2011-11-04",
+      "ciks": [
+        "0000831967"
+      ],
+      "accessions": [
+        "0000876661-11-000479"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000831967",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-11-000479",
+        "document_path": "/Archives/edgar/data/831967/000087666111000479/primary_doc.xml",
+        "index_sha256": "2d7498c421fa9e25fc4dbd0cf14516e1f15d8d92a2ce17f7d2e49e1ed5d752e3",
+        "document_sha256": "16d6da640e4674df3185b75e00378383581d806ea21c0dbd8cfa5d1111aba176",
+        "notice": {
+          "issuer_cik": "0000831967",
+          "issuer_name": "KINETIC CONCEPTS INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2011-11-08"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-86791",
+      "permno": "86791",
+      "stock_name": "VARIAN SEMI",
+      "exit_date": "2011-11-09",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-91971",
+      "permno": "91971",
+      "stock_name": "PHARMASSET",
+      "exit_date": "2012-01-17",
+      "ciks": [
+        "0001301081"
+      ],
+      "accessions": [
+        "0001354457-12-000017"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001301081",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-12-000017",
+        "document_path": "/Archives/edgar/data/1301081/000135445712000017/primary_doc.xml",
+        "index_sha256": "4ff00deb8b621c406e4a106be56be04de12fb72f354f5f69fb2780ed8755fed1",
+        "document_sha256": "72bf4d4a6b677227499f1c93306da7d47663cbc1ba6d556e921fb7446920d165",
+        "notice": {
+          "issuer_cik": "0001301081",
+          "issuer_name": "Pharmasset Inc",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-01-17"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-92096",
+      "permno": "92096",
+      "stock_name": "JAZZ PHARMA",
+      "exit_date": "2012-01-17",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-91113",
+      "permno": "91113",
+      "stock_name": "HEALTHSPRING",
+      "exit_date": "2012-01-30",
+      "ciks": [
+        "0001339553"
+      ],
+      "accessions": [
+        "0000876661-12-000041",
+        "0001143313-12-000008"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001339553",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-12-000041",
+        "document_path": "/Archives/edgar/data/1339553/000087666112000041/primary_doc.xml",
+        "index_sha256": "44b5d34a771f1f7ba86e237bc6e103c167356da3c7aaf32d9bf9c6261665f41f",
+        "document_sha256": "076d4e0b7d3d89ae48b5bb281e6fbbd14585387e89099be913987de5125b6333",
+        "notice": {
+          "issuer_cik": "0001339553",
+          "issuer_name": "HealthSpring, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-01-31"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-76091",
+      "permno": "76091",
+      "stock_name": "SOUTHN UNION CO",
+      "exit_date": "2012-03-26",
+      "ciks": [
+        "0000203248"
+      ],
+      "accessions": [
+        "0000876661-12-000125"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000203248",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-12-000125",
+        "document_path": "/Archives/edgar/data/203248/000087666112000125/primary_doc.xml",
+        "index_sha256": "7b50595fb5267c7054a5ce3a0da44e30c683e59f4e0759c5518a4ac19d93c7b5",
+        "document_sha256": "fb2ef5c291d466fabec79f58e35685fcfc8b58870cb7f1c83cdf6e25bb9bf5f4",
+        "notice": {
+          "issuer_cik": "0000203248",
+          "issuer_name": "SOUTHERN UNION CO",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-03-27"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-92018",
+      "permno": "92018",
+      "stock_name": "RSC HOLDINGS INC",
+      "exit_date": "2012-04-30",
+      "ciks": [
+        "0001389305"
+      ],
+      "accessions": [
+        "0000876661-12-000194"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001389305",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-12-000194",
+        "document_path": "/Archives/edgar/data/1389305/000087666112000194/primary_doc.xml",
+        "index_sha256": "c95368eaa7912b1f076cc7a054d70a5366bf874dba50b0e52084eaf603a77be6",
+        "document_sha256": "eef2b516521173d0c204d90679b0cee0100e7347e65bb63818f851d4ac471fa9",
+        "notice": {
+          "issuer_cik": "0001389305",
+          "issuer_name": "RSC Holdings Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-05-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-12456",
+      "permno": "12456",
+      "stock_name": "MOTOROLA MOBILIT",
+      "exit_date": "2012-05-21",
+      "ciks": [
+        "0001495569"
+      ],
+      "accessions": [
+        "0000876661-12-000244"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001495569",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-12-000244",
+        "document_path": "/Archives/edgar/data/1495569/000087666112000244/primary_doc.xml",
+        "index_sha256": "cbac02e584afa3d10440e8897e07e7b6eaac40c8a8b98e1dee9b12617aa33e0a",
+        "document_sha256": "6d754263e1daf622d25ba2bcb01e115123e9216b77427dc49d00572647e9ccf9",
+        "notice": {
+          "issuer_cik": "0001495569",
+          "issuer_name": "Motorola Mobility Holdings, Inc",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-05-22"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-77481",
+      "permno": "77481",
+      "stock_name": "EL PASO CO",
+      "exit_date": "2012-05-24",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-77264",
+      "permno": "77264",
+      "stock_name": "AMYLIN PHARMACEU",
+      "exit_date": "2012-08-08",
+      "ciks": [
+        "0000881464"
+      ],
+      "accessions": [
+        "0001354457-12-000174"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000881464",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-12-000174",
+        "document_path": "/Archives/edgar/data/881464/000135445712000174/primary_doc.xml",
+        "index_sha256": "036c2e3288b266be192a96c2937a1345fcc06c126a7e8f8066c7603b65d232e8",
+        "document_sha256": "d767552afef17a5ff97f3dfdc56e4d732175c76f0bf15885d01a2190e9db97eb",
+        "notice": {
+          "issuer_cik": "0000881464",
+          "issuer_name": "AMYLIN PHARMACEUTICALS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-08-08"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-87182",
+      "permno": "87182",
+      "stock_name": "QUEST SOFTWARE",
+      "exit_date": "2012-09-27",
+      "ciks": [
+        "0001088033"
+      ],
+      "accessions": [
+        "0001354457-12-000210"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001088033",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-12-000210",
+        "document_path": "/Archives/edgar/data/1088033/000135445712000210/primary_doc.xml",
+        "index_sha256": "250f16540ee7fd838cefe3f566cf59d9d002364585d683a719d26d2f9f0f8366",
+        "document_sha256": "77b5d07a3a17e47bc84f662a803ee37e86a53f550533fd9bd5d7e95edd0f77dd",
+        "notice": {
+          "issuer_cik": "0001088033",
+          "issuer_name": "QUEST SOFTWARE INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-09-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-61138",
+      "permno": "61138",
+      "stock_name": "PHARMACEU RESOUR",
+      "exit_date": "2012-09-28",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-87013",
+      "permno": "87013",
+      "stock_name": "ARIBA",
+      "exit_date": "2012-09-28",
+      "ciks": [
+        "0001084755"
+      ],
+      "accessions": [
+        "0001354457-12-000213"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001084755",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-12-000213",
+        "document_path": "/Archives/edgar/data/1084755/000135445712000213/primary_doc.xml",
+        "index_sha256": "621d9096152e554ec19edf8f44999eb4a238314c6b88821b479b698f796f8bb0",
+        "document_sha256": "b83c9192a7e938794b96eaca79964f5f90b98f442048ef939bf49dbfc8105ae8",
+        "notice": {
+          "issuer_cik": "0001084755",
+          "issuer_name": "ARIBA INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2012-10-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-80032",
+      "permno": "80032",
+      "stock_name": "SHAW GROUP INC",
+      "exit_date": "2013-02-12",
+      "ciks": [
+        "0000914024"
+      ],
+      "accessions": [
+        "0000876661-13-000062"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000914024",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-13-000062",
+        "document_path": "/Archives/edgar/data/914024/000087666113000062/primary_doc.xml",
+        "index_sha256": "b7861b31d33035e2cb197034113ee6dcd8823b9d2be219d25ae3dba9b8e07fff",
+        "document_sha256": "228c1ff1aa6b77f213aa7e2c61dd16323731ddf2a3a54717d99f14802a87c52c",
+        "notice": {
+          "issuer_cik": "0000914024",
+          "issuer_name": "SHAW GROUP INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2013-02-13"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-83928",
+      "permno": "83928",
+      "stock_name": "CYMER INC",
+      "exit_date": "2013-05-30",
+      "ciks": [
+        "0000897067"
+      ],
+      "accessions": [
+        "0001354457-13-000098"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000897067",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-13-000098",
+        "document_path": "/Archives/edgar/data/897067/000135445713000098/primary_doc.xml",
+        "index_sha256": "3fe722ca46eafd0a38cef6a852b92a492830f5440324735c91c3fd4d9a7c8e6e",
+        "document_sha256": "594bdbb1808e61150cdced04392b63e92c138dfe69c0cce1c811c6e1445b5ed2",
+        "notice": {
+          "issuer_cik": "0000897067",
+          "issuer_name": "CYMER INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2013-05-30"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-80557",
+      "permno": "80557",
+      "stock_name": "MCMORAN EXPLOR",
+      "exit_date": "2013-06-03",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-89644",
+      "permno": "89644",
+      "stock_name": "VIRGIN MEDIA",
+      "exit_date": "2013-06-07",
+      "ciks": [
+        "0001270400"
+      ],
+      "accessions": [
+        "0001354457-13-000113"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001270400",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-13-000113",
+        "document_path": "/Archives/edgar/data/1270400/000135445713000113/primary_doc.xml",
+        "index_sha256": "4f4984ca421f6dfd32b7e56fd47796a7ee261583d65ac5f844cff2195cbe70a7",
+        "document_sha256": "f5f600f3256a2271b8095a0c5e2f517547536c908b176d401d15345d60fcb866",
+        "notice": {
+          "issuer_cik": "0001270400",
+          "issuer_name": "VIRGIN MEDIA INC.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2013-06-07"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-39087",
+      "permno": "39087",
+      "stock_name": "SPRINT NEXTEL",
+      "exit_date": "2013-07-10",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-84281",
+      "permno": "84281",
+      "stock_name": "VIROPHARMA INC",
+      "exit_date": "2014-01-23",
+      "ciks": [
+        "0000946840"
+      ],
+      "accessions": [
+        "0001354457-14-000008",
+        "0001354457-14-000009"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000946840",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-14-000008",
+        "document_path": "/Archives/edgar/data/946840/000135445714000008/primary_doc.xml",
+        "index_sha256": "914b4030ad184fd62c735e09c97770a7f0284f21608f365b95c9cb56d3754c83",
+        "document_sha256": "c351e098adf24dc45701b18aaf136c71e93414360397e057f43171d70cf07fd6",
+        "notice": {
+          "issuer_cik": "0000946840",
+          "issuer_name": "VIROPHARMA INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-01-24"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88436",
+      "permno": "88436",
+      "stock_name": "ENDO HEALTH SOL",
+      "exit_date": "2014-02-28",
+      "ciks": [
+        "0001100962"
+      ],
+      "accessions": [
+        "0001354457-14-000036"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001100962",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-14-000036",
+        "document_path": "/Archives/edgar/data/1100962/000135445714000036/primary_doc.xml",
+        "index_sha256": "a3fe099adb4b27267d1a9cb4bc44bc860b34a53856bb94048f68cea40ea1aca5",
+        "document_sha256": "343cd68eae5f0c9dfb2c8942eba871329f86f33852357bc70db1427fa6c978fe",
+        "notice": {
+          "issuer_cik": "0001100962",
+          "issuer_name": "ENDO HEALTH SOLUTIONS INC.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-02-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "FRX",
+      "permno": "45241",
+      "stock_name": "FOREST LABS",
+      "exit_date": "2014-07-01",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-90280",
+      "permno": "90280",
+      "stock_name": "IDENIX PHARMACEU",
+      "exit_date": "2014-08-05",
+      "ciks": [
+        "0001093649"
+      ],
+      "accessions": [
+        "0001354457-14-000119"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001093649",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-14-000119",
+        "document_path": "/Archives/edgar/data/1093649/000135445714000119/primary_doc.xml",
+        "index_sha256": "38a8a969d96a24d851f5b0326bee712df83c992cb4687569206298d3ff3f6ece",
+        "document_sha256": "96d11c7785bafba9d2ebd08a5f77f6a2e6916052e5495586dabfaa62aea8ccbd",
+        "notice": {
+          "issuer_cik": "0001093649",
+          "issuer_name": "IDENIX PHARMACEUTICALS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-08-05"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-22840",
+      "permno": "22840",
+      "stock_name": "HILLSHIRE BRANDS",
+      "exit_date": "2014-08-28",
+      "ciks": [
+        "0000023666"
+      ],
+      "accessions": [
+        "0000876661-14-000477",
+        "0000876882-14-000027"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000023666",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-14-000477",
+        "document_path": "/Archives/edgar/data/23666/000087666114000477/primary_doc.xml",
+        "index_sha256": "765cc0777bd37fcc2806bd2f01c8f6efe1f7c476bfb57ef8568ac5a0da0f0c52",
+        "document_sha256": "11e7d553ef7e9d52fcfc42f2ec053b2600d613670f062eba501a2c744f97dfe0",
+        "notice": {
+          "issuer_cik": "0000023666",
+          "issuer_name": "Hillshire Brands Co",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-08-28"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-87785",
+      "permno": "87785",
+      "stock_name": "INTERMUNE INC",
+      "exit_date": "2014-09-26",
+      "ciks": [
+        "0001087432"
+      ],
+      "accessions": [
+        "0001354457-14-000150"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001087432",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-14-000150",
+        "document_path": "/Archives/edgar/data/1087432/000135445714000150/primary_doc.xml",
+        "index_sha256": "80801cb3272d9868fc18b99bef1b2f710ce27fd9e63a8a7827bc877470f1cd6f",
+        "document_sha256": "57996a0f0792feebce24b2bb3ace2c315aaf68a1c0a612aeec73ecea777da676",
+        "notice": {
+          "issuer_cik": "0001087432",
+          "issuer_name": "INTERMUNE INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-09-29"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-14062",
+      "permno": "14062",
+      "stock_name": "ATHLON ENERGY IN",
+      "exit_date": "2014-11-12",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-13430",
+      "permno": "13430",
+      "stock_name": "BURGER KING WORL",
+      "exit_date": "2014-12-12",
+      "ciks": [
+        "0001547282"
+      ],
+      "accessions": [
+        "0000876661-14-000650"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001547282",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-14-000650",
+        "document_path": "/Archives/edgar/data/1547282/000087666114000650/primary_doc.xml",
+        "index_sha256": "9ddcd51914c7bf906d71f1a8c1be9261dadaf8511ddd6c47f42175c3905de57c",
+        "document_sha256": "dd83155f7e8830b7cc5d5aeea013f429b548c5f8274eb7ee4101f2523a508e6d",
+        "notice": {
+          "issuer_cik": "0001547282",
+          "issuer_name": "Burger King Worldwide, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-12-15"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-80049",
+      "permno": "80049",
+      "stock_name": "TRIQUINT SEMICON",
+      "exit_date": "2014-12-31",
+      "ciks": [
+        "0000913885"
+      ],
+      "accessions": [
+        "0001354457-14-000220"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000913885",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-14-000220",
+        "document_path": "/Archives/edgar/data/913885/000135445714000220/primary_doc.xml",
+        "index_sha256": "a5c668daf67c9213d67108066afd83d40b17e007612287f4457c18cddd8308e4",
+        "document_sha256": "986f38eaa8e5cfcfdedb7088974c1afd2a6b1e9900ec4ee3cba7451fc01ae95d",
+        "notice": {
+          "issuer_cik": "0000913885",
+          "issuer_name": "TRIQUINT SEMICONDUCTOR INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2014-12-31"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-76383",
+      "permno": "76383",
+      "stock_name": "AVANIR PHARMACEU",
+      "exit_date": "2015-01-12",
+      "ciks": [
+        "0000858803"
+      ],
+      "accessions": [
+        "0001354457-15-000005"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000858803",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000005",
+        "document_path": "/Archives/edgar/data/858803/000135445715000005/primary_doc.xml",
+        "index_sha256": "3922166d745b34b414fb580fcca4a05e14f841ba1155bd72b3d95b233d7883ce",
+        "document_sha256": "8d168d5182b920f2e9bdbda7719a8ead9783fc43ef93b85f0a1a31b227dcf83e",
+        "notice": {
+          "issuer_cik": "0000858803",
+          "issuer_name": "AVANIR PHARMACEUTICALS, INC.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-01-13"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-27705",
+      "permno": "27705",
+      "stock_name": "INTL RECTIFIER",
+      "exit_date": "2015-01-13",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-83413",
+      "permno": "83413",
+      "stock_name": "SAPIENT CORP",
+      "exit_date": "2015-02-05",
+      "ciks": [
+        "0001008817"
+      ],
+      "accessions": [
+        "0001354457-15-000020"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001008817",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000020",
+        "document_path": "/Archives/edgar/data/1008817/000135445715000020/primary_doc.xml",
+        "index_sha256": "4dc8e797435037dcd97e72a7c97d4e450cad071f3ab89f0ff62075be29222932",
+        "document_sha256": "daf636a97d6f2ab67b8728f139c289175ad4df963aff4ef90f51a034c29e0d0d",
+        "notice": {
+          "issuer_cik": "0001008817",
+          "issuer_name": "SAPIENT CORP",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-02-06"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-75646",
+      "permno": "75646",
+      "stock_name": "ALLERGAN INC",
+      "exit_date": "2015-03-16",
+      "ciks": [
+        "0000850693"
+      ],
+      "accessions": [
+        "0000876661-15-000127"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000850693",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-15-000127",
+        "document_path": "/Archives/edgar/data/850693/000087666115000127/primary_doc.xml",
+        "index_sha256": "5afbf42764efb9a59d4ef7fb47220a451bee604d1ad33f5fe29e1a9d793e507b",
+        "document_sha256": "2702dd12081421b302e71756b0936d59478345e7ed5e772e1f6e1cc8c03764e8",
+        "notice": {
+          "issuer_cik": "0000850693",
+          "issuer_name": "ALLERGAN INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-03-17"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-14448",
+      "permno": "14448",
+      "stock_name": "AUSPEX PHARMA",
+      "exit_date": "2015-05-04",
+      "ciks": [
+        "0001454189"
+      ],
+      "accessions": [
+        "0001354457-15-000083"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001454189",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000083",
+        "document_path": "/Archives/edgar/data/1454189/000135445715000083/primary_doc.xml",
+        "index_sha256": "69174df7ef65202348a684e4432feab0d662728fb85ad3ad9ffbc827c202e009",
+        "document_sha256": "41d90e22e83ea98ffc1474ca00d89b35cc1774e91473c227f37ffc14100a5d2b",
+        "notice": {
+          "issuer_cik": "0001454189",
+          "issuer_name": "Auspex Pharmaceuticals, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-05-05"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-82513",
+      "permno": "82513",
+      "stock_name": "PHARMACYCLICS",
+      "exit_date": "2015-05-22",
+      "ciks": [
+        "0000949699"
+      ],
+      "accessions": [
+        "0001354457-15-000099"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000949699",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000099",
+        "document_path": "/Archives/edgar/data/949699/000135445715000099/primary_doc.xml",
+        "index_sha256": "7ac7f808732c2cfe77fb0aa93981475a4d9a611af8220eeff37e68c4585cc348",
+        "document_sha256": "14d972aa7376adcad31197ec797c8874f09a53295ee263f2550ab7fb6fa5ae85",
+        "notice": {
+          "issuer_cik": "0000949699",
+          "issuer_name": "PHARMACYCLICS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-05-26"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-13942",
+      "permno": "13942",
+      "stock_name": "RECEPTOS INC",
+      "exit_date": "2015-08-27",
+      "ciks": [
+        "0001463729"
+      ],
+      "accessions": [
+        "0001354457-15-000159"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001463729",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000159",
+        "document_path": "/Archives/edgar/data/1463729/000135445715000159/primary_doc.xml",
+        "index_sha256": "be3cec73e681a99c94b747e7fbbf2c78b2a97a62239618ff0eafbd6bb4b88ecf",
+        "document_sha256": "a12786c070e12524818662d7ad35b2879b511ebc69a7712fcb29c446e63812a9",
+        "notice": {
+          "issuer_cik": "0001463729",
+          "issuer_name": "Receptos, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-08-27"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "HSP",
+      "permno": "90110",
+      "stock_name": "HOSPIRA",
+      "exit_date": "2015-09-02",
+      "ciks": [
+        "0001274057"
+      ],
+      "accessions": [
+        "0000876661-15-000403"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001274057",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-15-000403",
+        "document_path": "/Archives/edgar/data/1274057/000087666115000403/primary_doc.xml",
+        "index_sha256": "0b394dabbdd2347f22684ec21f0806559e423a13651d509d8fcaaf8992adc6f3",
+        "document_sha256": "b1a066873b0efabd38982b743ce16e569e4d4feba310cb235bf45740d164f022",
+        "notice": {
+          "issuer_cik": "0001274057",
+          "issuer_name": "HOSPIRA INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-09-03"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-76100",
+      "permno": "76100",
+      "stock_name": "THORATEC CORP",
+      "exit_date": "2015-10-08",
+      "ciks": [
+        "0000350907"
+      ],
+      "accessions": [
+        "0001354457-15-000186"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000350907",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-15-000186",
+        "document_path": "/Archives/edgar/data/350907/000135445715000186/primary_doc.xml",
+        "index_sha256": "5f07399fdb738d452f8cbba31ee85f9979df71b9eb48986fc15ef3bfd7357afe",
+        "document_sha256": "e561ca305d0e46152fdfc3399790ec023882d74b0a23f2bcc883d875fa22d04a",
+        "notice": {
+          "issuer_cik": "0000350907",
+          "issuer_name": "THORATEC CORP",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-10-08"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-78033",
+      "permno": "78033",
+      "stock_name": "HCC INS HLDGS IN",
+      "exit_date": "2015-10-27",
+      "ciks": [
+        "0000888919"
+      ],
+      "accessions": [
+        "0000876661-15-000532"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000888919",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-15-000532",
+        "document_path": "/Archives/edgar/data/888919/000087666115000532/primary_doc.xml",
+        "index_sha256": "0b960a8fb4213ecac3cac4d8ae25208800ce419e2e8c1efa419ae0ca88a2e1db",
+        "document_sha256": "d24a68dfbdaa551fa61703633cd19be432dabd4da96bb1ac382e79f60ba2240f",
+        "notice": {
+          "issuer_cik": "0000888919",
+          "issuer_name": "HCC INSURANCE HOLDINGS INC/DE/",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-10-27"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-80079",
+      "permno": "80079",
+      "stock_name": "CYTEC INDUSTRIES",
+      "exit_date": "2015-12-08",
+      "ciks": [
+        "0000912513"
+      ],
+      "accessions": [
+        "0000876661-15-000623"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000912513",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-15-000623",
+        "document_path": "/Archives/edgar/data/912513/000087666115000623/primary_doc.xml",
+        "index_sha256": "5af2fdf97af52bb2b469e2211c4f682000da408e2c7f5806fb2dc29eb39f8ec2",
+        "document_sha256": "8ca4ad87b30c6752c1b355df67c3107600ded29a4612a1c50601f6ef4c7bff66",
+        "notice": {
+          "issuer_cik": "0000912513",
+          "issuer_name": "CYTEC INDUSTRIES INC/DE/",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2015-12-09"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88516",
+      "permno": "88516",
+      "stock_name": "DYAX CORP",
+      "exit_date": "2016-01-21",
+      "ciks": [
+        "0000907562"
+      ],
+      "accessions": [
+        "0001354457-16-000271"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000907562",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-16-000271",
+        "document_path": "/Archives/edgar/data/907562/000135445716000271/primary_doc.xml",
+        "index_sha256": "4ca87fa387209972bb7b0dca3dd1f33dad6e143d7f693c46b4d991c74926d544",
+        "document_sha256": "2662d498c6372be3b8f4298751dfe4353f99cfeaa41fde11d6e5f36f4c7a820f",
+        "notice": {
+          "issuer_cik": "0000907562",
+          "issuer_name": "DYAX CORP",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-01-22"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-86809",
+      "permno": "86809",
+      "stock_name": "STANCORP FINL",
+      "exit_date": "2016-03-07",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-81857",
+      "permno": "81857",
+      "stock_name": "CAMERON INTL",
+      "exit_date": "2016-04-01",
+      "ciks": [
+        "0000941548"
+      ],
+      "accessions": [
+        "0000876661-16-000896"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000941548",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-000896",
+        "document_path": "/Archives/edgar/data/941548/000087666116000896/primary_doc.xml",
+        "index_sha256": "58644d7e8ff79e045b7d6ed519df8e2a6d8c307efe821fe330fb9a2b602dd23c",
+        "document_sha256": "1ea584145427027c95e436de13b2e89987713b3b7646b1a97238dfac3d2e783c",
+        "notice": {
+          "issuer_cik": "0000941548",
+          "issuer_name": "CAMERON INTERNATIONAL CORP",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-04-04"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90833",
+      "permno": "90833",
+      "stock_name": "HEARTLAND PAYMNT",
+      "exit_date": "2016-04-22",
+      "ciks": [
+        "0001144354"
+      ],
+      "accessions": [
+        "0000876661-16-000942"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001144354",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-000942",
+        "document_path": "/Archives/edgar/data/1144354/000087666116000942/primary_doc.xml",
+        "index_sha256": "511995d33e98d3d09e47803f1946cf1937e2e7fe1685f0b7592208a974923060",
+        "document_sha256": "444f15759ccb64f17526376ca327f94d21c5a8ac973136313978e69b2fc5c99f",
+        "notice": {
+          "issuer_cik": "0001144354",
+          "issuer_name": "HEARTLAND PAYMENT SYSTEMS INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Shares",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-04-25"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "ARG",
+      "permno": "70308",
+      "stock_name": "AIRGAS",
+      "exit_date": "2016-05-31",
+      "ciks": [
+        "0000804212"
+      ],
+      "accessions": [
+        "0000876661-16-000991"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000804212",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-000991",
+        "document_path": "/Archives/edgar/data/804212/000087666116000991/primary_doc.xml",
+        "index_sha256": "505d731bef4193901ab06bfcf05e067488ecd746dfd9a88bfd1514c1db175792",
+        "document_sha256": "94925c0a5db4af963ebeb7b4fa6289ed3dcfd74ccbf105caea7c33d96680c12a",
+        "notice": {
+          "issuer_cik": "0000804212",
+          "issuer_name": "AIRGAS INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-05-23"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-86097",
+      "permno": "86097",
+      "stock_name": "WASTE CONNECTION",
+      "exit_date": "2016-05-31",
+      "ciks": [
+        "0001057058"
+      ],
+      "accessions": [
+        "0000876661-16-001000"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001057058",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-001000",
+        "document_path": "/Archives/edgar/data/1057058/000087666116001000/primary_doc.xml",
+        "index_sha256": "4cdf781e2a32f7857e6220e40a61f1b640cf0729dfc07d8c2afc4684913e3732",
+        "document_sha256": "de588e11d63c166dd91a44292cf0b2c384f9fd71dc3d1e9b38535ea70ad39d5a",
+        "notice": {
+          "issuer_cik": "0001057058",
+          "issuer_name": "Waste Connections US, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-06-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-68857",
+      "permno": "68857",
+      "stock_name": "CABLEVISION SYS",
+      "exit_date": "2016-06-21",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-15553",
+      "permno": "15553",
+      "stock_name": "AGL RESOURCES",
+      "exit_date": "2016-06-30",
+      "ciks": [
+        "0001004155"
+      ],
+      "accessions": [
+        "0000876661-16-001060"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001004155",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-001060",
+        "document_path": "/Archives/edgar/data/1004155/000087666116001060/primary_doc.xml",
+        "index_sha256": "67aba451cc20fc4e5609698d5d9380058a8e5df637fb8c5184e113ad92418057",
+        "document_sha256": "851517bc3192e04858c2e808ddf0683e7954a5c11f0d4dacccba7d64cab0ca49",
+        "notice": {
+          "issuer_cik": "0001004155",
+          "issuer_name": "AGL RESOURCES INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-07-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-37161",
+      "permno": "37161",
+      "stock_name": "TECO ENERGY",
+      "exit_date": "2016-06-30",
+      "ciks": [
+        "0000350563"
+      ],
+      "accessions": [
+        "0000876661-16-001067"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000350563",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-001067",
+        "document_path": "/Archives/edgar/data/350563/000087666116001067/primary_doc.xml",
+        "index_sha256": "ccf1d14749c9b7ee5b3dc5d06d04de25a2ade2a6b789faab18f7f56cfd40a993",
+        "document_sha256": "779903f6e1f72221ccde52f374856dcf6335e362395846f118fb84de2afec00f",
+        "notice": {
+          "issuer_cik": "0000350563",
+          "issuer_name": "TECO ENERGY INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-07-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-90374",
+      "permno": "90374",
+      "stock_name": "DREAMWORKS ANIMA",
+      "exit_date": "2016-08-22",
+      "ciks": [
+        "0001297401"
+      ],
+      "accessions": [
+        "0001354457-16-000471"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001297401",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-16-000471",
+        "document_path": "/Archives/edgar/data/1297401/000135445716000471/primary_doc.xml",
+        "index_sha256": "1137b53d2caa1a2575732a6cf816c9efd80f80788eaab2f9c28c3de670658fdd",
+        "document_sha256": "2494af842243f8ce2b53c101821faf1b668dd737a11a37b9626b44343ad9e1b0",
+        "notice": {
+          "issuer_cik": "0001297401",
+          "issuer_name": "DreamWorks Animation SKG, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-08-22"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-49971",
+      "permno": "49971",
+      "stock_name": "PIEDMONT NAT GAS",
+      "exit_date": "2016-10-03",
+      "ciks": [
+        "0000078460"
+      ],
+      "accessions": [
+        "0000876661-16-001312"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000078460",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-16-001312",
+        "document_path": "/Archives/edgar/data/78460/000087666116001312/primary_doc.xml",
+        "index_sha256": "67028f3369e4c566563d0869c29426dd4cbf2a9760889872618f281b0566c34a",
+        "document_sha256": "4f647a3c56b59ab468457813eedc72aac19ffabad43737c47a892581ba67c313",
+        "notice": {
+          "issuer_cik": "0000078460",
+          "issuer_name": "PIEDMONT NATURAL GAS CO INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-10-04"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88331",
+      "permno": "88331",
+      "stock_name": "CEPHEI",
+      "exit_date": "2016-11-04",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-15088",
+      "permno": "15088",
+      "stock_name": "VIRGIN AMERICA",
+      "exit_date": "2016-12-13",
+      "ciks": [
+        "0001614436"
+      ],
+      "accessions": [
+        "0001354457-16-000585"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001614436",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-16-000585",
+        "document_path": "/Archives/edgar/data/1614436/000135445716000585/primary_doc.xml",
+        "index_sha256": "4a78db11a849b2fc72250e0076b732d7df0b82a0510bcfdaddb8687ddb0db825",
+        "document_sha256": "2585f28e7422d27022996fc2953810f7fa9eb90164ef62020af49f90cbb80521",
+        "notice": {
+          "issuer_cik": "0001614436",
+          "issuer_name": "Virgin America Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2016-12-14"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-14695",
+      "permno": "14695",
+      "stock_name": "KITE PHARMA",
+      "exit_date": "2017-10-02",
+      "ciks": [
+        "0001510580"
+      ],
+      "accessions": [
+        "0001354457-17-000197"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001510580",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-17-000197",
+        "document_path": "/Archives/edgar/data/1510580/000135445717000197/primary_doc.xml",
+        "index_sha256": "ec38d0de5ca1b549465e1729814eb3e8d22ff747e6ae4754fd4f8351107d9149",
+        "document_sha256": "3a6d73ff9be062524f6cdf1a38f067db4d4cfe2648b3603412c7f6c51e6f807e",
+        "notice": {
+          "issuer_cik": "0001510580",
+          "issuer_name": "Kite Pharma, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "NASDAQ Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2017-10-03"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-15134",
+      "permno": "15134",
+      "stock_name": "JUNO",
+      "exit_date": "2018-03-05",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-16544",
+      "permno": "16544",
+      "stock_name": "",
+      "exit_date": "2018-03-08",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-14160",
+      "permno": "14160",
+      "stock_name": "FOUNDATION",
+      "exit_date": "2018-07-30",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-85319",
+      "permno": "85319",
+      "stock_name": "SYNTEL INC",
+      "exit_date": "2018-10-09",
+      "ciks": [
+        "0001040426"
+      ],
+      "accessions": [
+        "0001354457-18-000403"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001040426",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-18-000403",
+        "document_path": "/Archives/edgar/data/1040426/000135445718000403/primary_doc.xml",
+        "index_sha256": "ed80f875cf065912c24140663c65f43120b05a38690c6557e5c2dc1a33b42234",
+        "document_sha256": "5fd78dcf6521d30a8a841dffb36805aa1c0dea7bf3f0115a88316b797a0005d8",
+        "notice": {
+          "issuer_cik": "0001040426",
+          "issuer_name": "SYNTEL INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2018-10-09"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-50788",
+      "permno": "50788",
+      "stock_name": "ESTERLINE TECH",
+      "exit_date": "2019-03-13",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-44506",
+      "permno": "44506",
+      "stock_name": "INTEGRATED DEVIC",
+      "exit_date": "2019-03-29",
+      "ciks": [
+        "0000703361"
+      ],
+      "accessions": [
+        "0001354457-19-000166"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000703361",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-19-000166",
+        "document_path": "/Archives/edgar/data/703361/000135445719000166/primary_doc.xml",
+        "index_sha256": "1864b47bc9da2154080012cde0dee5b92f706f0992ff6f8e21e76a60c0db91ef",
+        "document_sha256": "239cf0d901b288c8aaa8d88d24f56629f20ce8e4aadde4fd951cd10f4399fb44",
+        "notice": {
+          "issuer_cik": "0000703361",
+          "issuer_name": "INTEGRATED DEVICE TECHNOLOGY INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2019-03-29"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88790",
+      "permno": "88790",
+      "stock_name": "ARRAY BIOPHARMA",
+      "exit_date": "2019-07-29",
+      "ciks": [
+        "0001100412"
+      ],
+      "accessions": [
+        "0001354457-19-000376"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001100412",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-19-000376",
+        "document_path": "/Archives/edgar/data/1100412/000135445719000376/primary_doc.xml",
+        "index_sha256": "f0b7857267e79ee752c5548dbf596c5aa579a549d4a281353b0b6ace8e14fe85",
+        "document_sha256": "8fa0a6b5f1580155581f649c2f70ccbcffd716fcf3d6dd659ee5b2660baab8e3",
+        "notice": {
+          "issuer_cik": "0001100412",
+          "issuer_name": "ARRAY BIOPHARMA INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2019-07-30"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-15183",
+      "permno": "15183",
+      "stock_name": "SPARK",
+      "exit_date": "2019-12-16",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-17883",
+      "permno": "17883",
+      "stock_name": "FORTY SEVEN",
+      "exit_date": "2020-04-06",
+      "ciks": [
+        "0001667633"
+      ],
+      "accessions": [
+        "0001354457-20-000142"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001667633",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-20-000142",
+        "document_path": "/Archives/edgar/data/1667633/000135445720000142/primary_doc.xml",
+        "index_sha256": "dd9f0009f88ec5ce11859c27b69a3a5c73a2a4bf2b9516b2ceb073da81a65a22",
+        "document_sha256": "d42781c161d9ff06be7bba1e9739d4505740fdb3b608a36c46e01e531031b643",
+        "notice": {
+          "issuer_cik": "0001667633",
+          "issuer_name": "Forty Seven, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2020-04-07"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-46077",
+      "permno": "46077",
+      "stock_name": "ANIXTER INTL",
+      "exit_date": "2020-06-19",
+      "ciks": [
+        "0000052795"
+      ],
+      "accessions": [
+        "0000876661-20-000518"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000052795",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-20-000518",
+        "document_path": "/Archives/edgar/data/52795/000087666120000518/primary_doc.xml",
+        "index_sha256": "d5ae6455d55b320d0d60d76f9782a306a7e1b93ffb662570a5501c6d458ba1e4",
+        "document_sha256": "8f8cc05c1de7bf2dcdd34727d468f0d2af0be00d4a64d27f6214a0306eb29e0f",
+        "notice": {
+          "issuer_cik": "0000052795",
+          "issuer_name": "ANIXTER INTERNATIONAL INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2020-06-22"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-18126",
+      "permno": "18126",
+      "stock_name": "PRINCIPIA",
+      "exit_date": "2020-09-25",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-90233",
+      "permno": "90233",
+      "stock_name": "MOMENTA PHARMA",
+      "exit_date": "2020-09-30",
+      "ciks": [
+        "0001235010"
+      ],
+      "accessions": [
+        "0001354457-20-000548"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001235010",
+          "state": "unreadable"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "unconfirmed_unreadable",
+      "notice": {
+        "status": "unreadable",
+        "accession": "0001354457-20-000548",
+        "reason": "SecFetchError: Failed to fetch https://www.sec.gov/Archives/edgar/data/1235010/000135445720000548/ after 3 attempts: HTTP 504 fetching https://www.sec.gov/Archives/edgar/data/1235010/000135445720000548/"
+      }
+    },
+    {
+      "symbol": "PERMNO-14982",
+      "permno": "14982",
+      "stock_name": "VIVINT SOLAR",
+      "exit_date": "2020-10-07",
+      "ciks": [
+        "0001607716"
+      ],
+      "accessions": [
+        "0000876661-20-000896"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001607716",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-20-000896",
+        "document_path": "/Archives/edgar/data/1607716/000087666120000896/primary_doc.xml",
+        "index_sha256": "a0105d7dcbb532df1e19199a0c954a0e7f966bf9fbcdd2961229575c655f340b",
+        "document_sha256": "b7d11c4b7998a63c20a3730f26ffd849f6aea87cb59922c09a733bb8db009f96",
+        "notice": {
+          "issuer_cik": "0001607716",
+          "issuer_name": "Vivint Solar, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2020-10-08"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-43757",
+      "permno": "43757",
+      "stock_name": "IMMUNOMEDICS INC",
+      "exit_date": "2020-10-22",
+      "ciks": [
+        "0000722830"
+      ],
+      "accessions": [
+        "0001354457-20-000622"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000722830",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-20-000622",
+        "document_path": "/Archives/edgar/data/722830/000135445720000622/primary_doc.xml",
+        "index_sha256": "8dfc5743cd463aa432b168f691a0bc748027958c6ad75145a5d3159bc77f91a1",
+        "document_sha256": "5097ac9b7e6e810e2a23395bfa4c400b18af1b5b93732f62fc9279838c54a11d",
+        "notice": {
+          "issuer_cik": "0000722830",
+          "issuer_name": "IMMUNOMEDICS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2020-10-23"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-18790",
+      "permno": "18790",
+      "stock_name": "LIVONGO HEALTH",
+      "exit_date": "2020-10-29",
+      "ciks": [
+        "0001639225"
+      ],
+      "accessions": [
+        "0001354457-20-000658"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001639225",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-20-000658",
+        "document_path": "/Archives/edgar/data/1639225/000135445720000658/primary_doc.xml",
+        "index_sha256": "ffd42aefb2de572449ad8c64967c159da97eabe254b744401a084ef22c6340cf",
+        "document_sha256": "8dd1142bb1281a681565e7d8484624f499a095a2d1d192d4b75ab2d90b04a72f",
+        "notice": {
+          "issuer_cik": "0001639225",
+          "issuer_name": "Livongo Health, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "The Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2020-10-30"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-89509",
+      "permno": "89509",
+      "stock_name": "CIMAREX ENERGY",
+      "exit_date": "2021-09-30",
+      "ciks": [
+        "0001168054"
+      ],
+      "accessions": [
+        "0000876661-21-001438"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001168054",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-21-001438",
+        "document_path": "/Archives/edgar/data/1168054/000087666121001438/primary_doc.xml",
+        "index_sha256": "2f6555007082deca32870b28f57c1ad1b19786c290786153fa4a6b146218338e",
+        "document_sha256": "6d560a71241883fb1a23d9deee7768714fa89cb48f0ec947ae539201f7b3c24b",
+        "notice": {
+          "issuer_cik": "0001168054",
+          "issuer_name": "CIMAREX ENERGY CO",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2021-10-01"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-14414",
+      "permno": "14414",
+      "stock_name": "SANTANDER CONS",
+      "exit_date": "2022-01-28",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-13507",
+      "permno": "13507",
+      "stock_name": "AMERN NATL INS",
+      "exit_date": "2022-05-24",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-15638",
+      "permno": "15638",
+      "stock_name": "GBT",
+      "exit_date": "2022-10-04",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-13262",
+      "permno": "13262",
+      "stock_name": "CHEMOCENTRYX",
+      "exit_date": "2022-10-19",
+      "ciks": [
+        "0001340652"
+      ],
+      "accessions": [
+        "0001354457-22-000581"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001340652",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-22-000581",
+        "document_path": "/Archives/edgar/data/1340652/000135445722000581/primary_doc.xml",
+        "index_sha256": "7a0013e708636d3efcaa32eb5e85ee0e9dddf7a48c775a6326ef42763bd4cb0f",
+        "document_sha256": "ce5ed9099cab70d69290038d1de7cf0606db9ab8e01f35862b4f9612fd83dfc7",
+        "notice": {
+          "issuer_cik": "0001340652",
+          "issuer_name": "ChemoCentryx, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2022-10-20"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-64899",
+      "permno": "64899",
+      "stock_name": "",
+      "exit_date": "2022-11-10",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-91983",
+      "permno": "91983",
+      "stock_name": "CONTL RESOURCES",
+      "exit_date": "2022-11-22",
+      "ciks": [
+        "0000732834"
+      ],
+      "accessions": [
+        "0000876661-22-001025"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000732834",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-22-001025",
+        "document_path": "/Archives/edgar/data/732834/000087666122001025/primary_doc.xml",
+        "index_sha256": "199117a1c712070947ece57f86006ab3cda39600f87a4a36c190a08915de01fc",
+        "document_sha256": "922825b0137c34e3e2876e2a9f72afceb84c308f736a6f39001292a2e01a5268",
+        "notice": {
+          "issuer_cik": "0000732834",
+          "issuer_name": "CONTINENTAL RESOURCES, INC",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2022-11-23"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-19177",
+      "permno": "19177",
+      "stock_name": "1LIFE HEALTHCARE",
+      "exit_date": "2023-02-22",
+      "ciks": [
+        "0001404123"
+      ],
+      "accessions": [
+        "0001354457-23-000108"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001404123",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-23-000108",
+        "document_path": "/Archives/edgar/data/1404123/000135445723000108/primary_doc.xml",
+        "index_sha256": "d7c031dcc384769a92d742dd538d34f7940b90e3ae0097bdf623427a7908f75d",
+        "document_sha256": "9fe82d24e37e032400f8213f0dc6f66d681f74c18bfa2fef3cd7fc09e14f293c",
+        "notice": {
+          "issuer_cik": "0001404123",
+          "issuer_name": "1Life Healthcare Inc",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-02-22"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-20470",
+      "permno": "20470",
+      "stock_name": "SIGNIFY HEALTH",
+      "exit_date": "2023-03-28",
+      "ciks": [
+        "0001828182"
+      ],
+      "accessions": [
+        "0000876661-23-000295"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001828182",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-23-000295",
+        "document_path": "/Archives/edgar/data/1828182/000087666123000295/primary_doc.xml",
+        "index_sha256": "52082ed306a63126602df109704050efa4e0cf71bb9fb2b8dae1e5a33c28477a",
+        "document_sha256": "098fd06e2b1dca679bcefffb0a30f41849e61b69332cdf05f633c562cc2df3d6",
+        "notice": {
+          "issuer_cik": "0001828182",
+          "issuer_name": "Signify Health, Inc.",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-03-29"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-16939",
+      "permno": "16939",
+      "stock_name": "",
+      "exit_date": "2023-05-02",
+      "status": "name_unknown",
+      "ciks": [],
+      "accessions": [],
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-20142",
+      "permno": "20142",
+      "stock_name": "CVENT HOLDING",
+      "exit_date": "2023-06-14",
+      "ciks": [
+        "0001827075"
+      ],
+      "accessions": [
+        "0001354457-23-000399"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001827075",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-23-000399",
+        "document_path": "/Archives/edgar/data/1827075/000135445723000399/primary_doc.xml",
+        "index_sha256": "69ef9ad9112d37a2a314c5a87551644ae7f966cbda1d5fbdac59e02b310772d4",
+        "document_sha256": "b919d6245e46de972aa9fca37b5a9a61d65222606e75c974e3bfcf17914510d2",
+        "notice": {
+          "issuer_cik": "0001827075",
+          "issuer_name": "CVENT HOLDING CORP.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-06-15"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-20870",
+      "permno": "20870",
+      "stock_name": "PROMETHEUS BIO",
+      "exit_date": "2023-06-15",
+      "status": "none",
+      "ciks": [],
+      "accessions": [],
+      "by_cik": {},
+      "reason": "no_name_match",
+      "confirmation": "not_checked",
+      "notice": null
+    },
+    {
+      "symbol": "PERMNO-14167",
+      "permno": "14167",
+      "stock_name": "IVERIC BIO",
+      "exit_date": "2023-07-10",
+      "ciks": [
+        "0001410939"
+      ],
+      "accessions": [
+        "0001354457-23-000493"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001410939",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-23-000493",
+        "document_path": "/Archives/edgar/data/1410939/000135445723000493/primary_doc.xml",
+        "index_sha256": "c79235b071ce92158dd63b12327bb5aa8f36e1eb9aed56fd3fd6dfb755b94a9e",
+        "document_sha256": "ee02ed077c49d40de861a5e7b5b8ab7a62c3a6d4bab62cdb2c7f8dfe58ab4036",
+        "notice": {
+          "issuer_cik": "0001410939",
+          "issuer_name": "IVERIC bio, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-07-11"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-16068",
+      "permno": "16068",
+      "stock_name": "REATA PHARMS",
+      "exit_date": "2023-09-25",
+      "ciks": [
+        "0001358762"
+      ],
+      "accessions": [
+        "0001354457-23-000700"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001358762",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-23-000700",
+        "document_path": "/Archives/edgar/data/1358762/000135445723000700/primary_doc.xml",
+        "index_sha256": "e74bf17d2d421b1d2b3ebf18f2987387fef0fd863280c2ac0bece8216aff01b0",
+        "document_sha256": "22efebd9f9636edfadf12a45730cdb176b9b7761bb2e7a29453c36baecf85559",
+        "notice": {
+          "issuer_cik": "0001358762",
+          "issuer_name": "REATA PHARMACEUTICALS INC",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Class A Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-09-26"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-88949",
+      "permno": "88949",
+      "stock_name": "SEAGEN",
+      "exit_date": "2023-12-13",
+      "ciks": [
+        "0001060736"
+      ],
+      "accessions": [
+        "0001354457-23-000938"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001060736",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-23-000938",
+        "document_path": "/Archives/edgar/data/1060736/000135445723000938/primary_doc.xml",
+        "index_sha256": "3dc92b74bca72a31ec21d7de86a9f7e041b3e5099acc185a0c6e8303170fbb0a",
+        "document_sha256": "51ba3b19659dd869ec5aceb02ea4100eac635aab1cb90dce3dd137f0c77beedf",
+        "notice": {
+          "issuer_cik": "0001060736",
+          "issuer_name": "Seagen Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2023-12-14"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-75860",
+      "permno": "75860",
+      "stock_name": "IMMUNOGEN",
+      "exit_date": "2024-02-09",
+      "ciks": [
+        "0000855654"
+      ],
+      "accessions": [
+        "0001354457-24-000070"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0000855654",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0001354457-24-000070",
+        "document_path": "/Archives/edgar/data/855654/000135445724000070/primary_doc.xml",
+        "index_sha256": "c391fe72f80335c01fd17b2f683f850ffe300ca3f0dc8031c1bf9311d02f9f22",
+        "document_sha256": "db7be652fdf1e85eacf50932596990d3ebc98f938b19d74b734aeb11eb8bace8",
+        "notice": {
+          "issuer_cik": "0000855654",
+          "issuer_name": "ImmunoGen, Inc.",
+          "exchange_cik": "0001354457",
+          "exchange_name": "Nasdaq Stock Market LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2024-02-12"
+        },
+        "is_common_stock": true
+      }
+    },
+    {
+      "symbol": "PERMNO-21186",
+      "permno": "21186",
+      "stock_name": "WESTROCK CO",
+      "exit_date": "2024-07-05",
+      "ciks": [
+        "0001732845"
+      ],
+      "accessions": [
+        "0000876661-24-000561"
+      ],
+      "rejected_ciks": [],
+      "cik_checks": [
+        {
+          "cik": "0001732845",
+          "state": "confirmed_common"
+        }
+      ],
+      "status": "matched",
+      "confirmation": "confirmed_common",
+      "notice": {
+        "status": "readable",
+        "accession": "0000876661-24-000561",
+        "document_path": "/Archives/edgar/data/1732845/000087666124000561/primary_doc.xml",
+        "index_sha256": "32e2f69fbbe70232c0d7e629d03f1acea49a59701f88ec959841d40464b0f96f",
+        "document_sha256": "e6b921934e56054b8bbe67dc2ad6b01c11182d02e81985b1af6da641034f96fb",
+        "notice": {
+          "issuer_cik": "0001732845",
+          "issuer_name": "WestRock Co",
+          "exchange_cik": "0000876661",
+          "exchange_name": "NEW YORK STOCK EXCHANGE LLC",
+          "security_description": "Common Stock",
+          "rule_provision": "17 CFR 240.12d2-2(a)(3)",
+          "signature_date": "2024-07-08"
+        },
+        "is_common_stock": true
+      }
+    }
+  ],
+  "manifest": {
+    "https://www.sec.gov/Archives/edgar/data/1001113/000135445707000113/": "9dd092705b1ecbbc6047f9ba62642b430e34ccd1e2458e4680a44b0d632efd49",
+    "https://www.sec.gov/Archives/edgar/data/1001113/000135445707000113/primary_doc.xml": "089119e05e47ad0dedb7c565e832839fc2e91aec212a5d849788348ff280f687",
+    "https://www.sec.gov/Archives/edgar/data/1004155/000087666116001060/": "67aba451cc20fc4e5609698d5d9380058a8e5df637fb8c5184e113ad92418057",
+    "https://www.sec.gov/Archives/edgar/data/1004155/000087666116001060/primary_doc.xml": "851517bc3192e04858c2e808ddf0683e7954a5c11f0d4dacccba7d64cab0ca49",
+    "https://www.sec.gov/Archives/edgar/data/1008817/000135445715000020/": "4dc8e797435037dcd97e72a7c97d4e450cad071f3ab89f0ff62075be29222932",
+    "https://www.sec.gov/Archives/edgar/data/1008817/000135445715000020/primary_doc.xml": "daf636a97d6f2ab67b8728f139c289175ad4df963aff4ef90f51a034c29e0d0d",
+    "https://www.sec.gov/Archives/edgar/data/1027974/999999999706001182/": "e43e00c159a4716406ec23bc7b44392f26e3303c83fc9c258f181174f7f89f3d",
+    "https://www.sec.gov/Archives/edgar/data/1027974/999999999706009042/": "82b3ec6248e31ab5ddcc6532885433cd2a9977b1423dec6a3e7792ea3063f404",
+    "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/": "ed80f875cf065912c24140663c65f43120b05a38690c6557e5c2dc1a33b42234",
+    "https://www.sec.gov/Archives/edgar/data/1040426/000135445718000403/primary_doc.xml": "5fd78dcf6521d30a8a841dffb36805aa1c0dea7bf3f0115a88316b797a0005d8",
+    "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/": "4cdf781e2a32f7857e6220e40a61f1b640cf0729dfc07d8c2afc4684913e3732",
+    "https://www.sec.gov/Archives/edgar/data/1057058/000087666116001000/primary_doc.xml": "de588e11d63c166dd91a44292cf0b2c384f9fd71dc3d1e9b38535ea70ad39d5a",
+    "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/": "3167d4e2e5540801ad77b6c3785503521656c0ce52cbce2d0939243b072e213d",
+    "https://www.sec.gov/Archives/edgar/data/1058444/000135445711000170/primary_doc.xml": "a54f193801cb0f9dfd2cda4a358ed3500300346865d958f3f0da61a42c5ae7c7",
+    "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/": "3dc92b74bca72a31ec21d7de86a9f7e041b3e5099acc185a0c6e8303170fbb0a",
+    "https://www.sec.gov/Archives/edgar/data/1060736/000135445723000938/primary_doc.xml": "51ba3b19659dd869ec5aceb02ea4100eac635aab1cb90dce3dd137f0c77beedf",
+    "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/": "da1bf103b1093715069b3d4a7a3d477bbfbf15f92f0438645212ef1d84d3f51a",
+    "https://www.sec.gov/Archives/edgar/data/1071806/000135445707000241/primary_doc.xml": "8a08ce48fb88830842bd2b31dc990011b4a0a8d160cdbd365ab47e1b3a8ae278",
+    "https://www.sec.gov/Archives/edgar/data/1084755/000135445712000213/": "621d9096152e554ec19edf8f44999eb4a238314c6b88821b479b698f796f8bb0",
+    "https://www.sec.gov/Archives/edgar/data/1084755/000135445712000213/primary_doc.xml": "b83c9192a7e938794b96eaca79964f5f90b98f442048ef939bf49dbfc8105ae8",
+    "https://www.sec.gov/Archives/edgar/data/1087432/000135445714000150/": "80801cb3272d9868fc18b99bef1b2f710ce27fd9e63a8a7827bc877470f1cd6f",
+    "https://www.sec.gov/Archives/edgar/data/1087432/000135445714000150/primary_doc.xml": "57996a0f0792feebce24b2bb3ace2c315aaf68a1c0a612aeec73ecea777da676",
+    "https://www.sec.gov/Archives/edgar/data/1088033/000135445712000210/": "250f16540ee7fd838cefe3f566cf59d9d002364585d683a719d26d2f9f0f8366",
+    "https://www.sec.gov/Archives/edgar/data/1088033/000135445712000210/primary_doc.xml": "77b5d07a3a17e47bc84f662a803ee37e86a53f550533fd9bd5d7e95edd0f77dd",
+    "https://www.sec.gov/Archives/edgar/data/1089697/999999999706001176/": "d0bd64bcccd40ce347f0c8674dc1c607c12d34f6f9f365d80d017a77a5b98349",
+    "https://www.sec.gov/Archives/edgar/data/1089874/000135445708000039/": "879ef8e7821d1835b7e8f0c41e964f14417ae4ef769595e3d9cf13e7097196c1",
+    "https://www.sec.gov/Archives/edgar/data/1089874/000135445708000039/primary_doc.xml": "2db24cc845276e66d302aff28baee8cbea77f2c14094008f15f10be9b6f97155",
+    "https://www.sec.gov/Archives/edgar/data/1093649/000135445714000119/": "38a8a969d96a24d851f5b0326bee712df83c992cb4687569206298d3ff3f6ece",
+    "https://www.sec.gov/Archives/edgar/data/1093649/000135445714000119/primary_doc.xml": "96d11c7785bafba9d2ebd08a5f77f6a2e6916052e5495586dabfaa62aea8ccbd",
+    "https://www.sec.gov/Archives/edgar/data/1100412/000135445719000376/": "f0b7857267e79ee752c5548dbf596c5aa579a549d4a281353b0b6ace8e14fe85",
+    "https://www.sec.gov/Archives/edgar/data/1100412/000135445719000376/primary_doc.xml": "8fa0a6b5f1580155581f649c2f70ccbcffd716fcf3d6dd659ee5b2660baab8e3",
+    "https://www.sec.gov/Archives/edgar/data/1100962/000135445714000036/": "a3fe099adb4b27267d1a9cb4bc44bc860b34a53856bb94048f68cea40ea1aca5",
+    "https://www.sec.gov/Archives/edgar/data/1100962/000135445714000036/primary_doc.xml": "343cd68eae5f0c9dfb2c8942eba871329f86f33852357bc70db1427fa6c978fe",
+    "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/": "77a8335f807711f476bface27d84d5f4a44e99a2de856ae9be5eab017bf26d1b",
+    "https://www.sec.gov/Archives/edgar/data/1109935/000135445707000150/primary_doc.xml": "f99de1ce9ed6cfa13f52d62f258fa408dd550a9f22ba3068831a921f6852345e",
+    "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/": "2b92b436613bb02c096fa531f820d43684f9742e40c503a5e46b408fdda72f78",
+    "https://www.sec.gov/Archives/edgar/data/1141399/000135445708000253/primary_doc.xml": "025e84112da8fcf0f082ef6d2fc30821c1d061942c33f0c135db8664d808e3d6",
+    "https://www.sec.gov/Archives/edgar/data/1144354/000087666116000942/": "511995d33e98d3d09e47803f1946cf1937e2e7fe1685f0b7592208a974923060",
+    "https://www.sec.gov/Archives/edgar/data/1144354/000087666116000942/primary_doc.xml": "444f15759ccb64f17526376ca327f94d21c5a8ac973136313978e69b2fc5c99f",
+    "https://www.sec.gov/Archives/edgar/data/1159119/999999999705038597/": "7a0457e40bae2a4ec214e31eb4b615d5f58a6128d2c1562066c6e0a1d9a0c407",
+    "https://www.sec.gov/Archives/edgar/data/1168054/000087666121001438/": "2f6555007082deca32870b28f57c1ad1b19786c290786153fa4a6b146218338e",
+    "https://www.sec.gov/Archives/edgar/data/1168054/000087666121001438/primary_doc.xml": "6d560a71241883fb1a23d9deee7768714fa89cb48f0ec947ae539201f7b3c24b",
+    "https://www.sec.gov/Archives/edgar/data/1203866/000135445708000045/": "dd6792071961bbe93bf979166481aaeed5cf621f4d74899bc662aa440ea3f5bd",
+    "https://www.sec.gov/Archives/edgar/data/1203866/000135445708000045/primary_doc.xml": "a8d2d7ad3bb84a7c98c9ad5ad46f1424ee0acb0445ee6b6d70a59fdcbbd7cc37",
+    "https://www.sec.gov/Archives/edgar/data/1270400/000135445713000113/": "4f4984ca421f6dfd32b7e56fd47796a7ee261583d65ac5f844cff2195cbe70a7",
+    "https://www.sec.gov/Archives/edgar/data/1270400/000135445713000113/primary_doc.xml": "f5f600f3256a2271b8095a0c5e2f517547536c908b176d401d15345d60fcb866",
+    "https://www.sec.gov/Archives/edgar/data/1274057/000087666115000403/": "0b394dabbdd2347f22684ec21f0806559e423a13651d509d8fcaaf8992adc6f3",
+    "https://www.sec.gov/Archives/edgar/data/1274057/000087666115000403/primary_doc.xml": "b1a066873b0efabd38982b743ce16e569e4d4feba310cb235bf45740d164f022",
+    "https://www.sec.gov/Archives/edgar/data/1288379/000135445707000115/": "f58ecbdb5f61b437c6cf8db4ac1bc8ccbfb27286025915ca20e6ee3eebfac094",
+    "https://www.sec.gov/Archives/edgar/data/1288379/000135445707000115/primary_doc.xml": "bee4f881f8e042ad1f7629cd268e23ec199d14dc1e8334279e389c024ac61fdc",
+    "https://www.sec.gov/Archives/edgar/data/1295557/000135445710000060/": "98e5e9d35701b5c11502b8e624775aa46c8b731e806ad8b3e7500a6caec485c9",
+    "https://www.sec.gov/Archives/edgar/data/1295557/000135445710000060/primary_doc.xml": "0c1c4177cd638ed1eacef16363177ade0c5dbfb32ce8c7f5211a76cd0635473c",
+    "https://www.sec.gov/Archives/edgar/data/1297401/000135445716000471/": "1137b53d2caa1a2575732a6cf816c9efd80f80788eaab2f9c28c3de670658fdd",
+    "https://www.sec.gov/Archives/edgar/data/1297401/000135445716000471/primary_doc.xml": "2494af842243f8ce2b53c101821faf1b668dd737a11a37b9626b44343ad9e1b0",
+    "https://www.sec.gov/Archives/edgar/data/1301081/000135445712000017/": "4ff00deb8b621c406e4a106be56be04de12fb72f354f5f69fb2780ed8755fed1",
+    "https://www.sec.gov/Archives/edgar/data/1301081/000135445712000017/primary_doc.xml": "72bf4d4a6b677227499f1c93306da7d47663cbc1ba6d556e921fb7446920d165",
+    "https://www.sec.gov/Archives/edgar/data/1319048/000135445707000276/": "ccbe9dd22f5240ae10eee3d823851416609164e4dd5e22259cbb5ca1ac368eb2",
+    "https://www.sec.gov/Archives/edgar/data/1319048/000135445707000276/primary_doc.xml": "83ff4a78dcd6b2e653522c59a3ca581d8ce509ea2c2df8b5bf0670f014ac9e0c",
+    "https://www.sec.gov/Archives/edgar/data/1320934/000087666111000253/": "9fe37f01e4b2bb29cf67f60b6fcd92287f043fa40ca5ead443e97efce2be0ee8",
+    "https://www.sec.gov/Archives/edgar/data/1320934/000087666111000253/primary_doc.xml": "86e9153d1223daaed17cb6f05d0a7b4b1d0e77ccdc2c30f820de4b5c055de251",
+    "https://www.sec.gov/Archives/edgar/data/1339553/000087666112000041/": "44b5d34a771f1f7ba86e237bc6e103c167356da3c7aaf32d9bf9c6261665f41f",
+    "https://www.sec.gov/Archives/edgar/data/1339553/000087666112000041/primary_doc.xml": "076d4e0b7d3d89ae48b5bb281e6fbbd14585387e89099be913987de5125b6333",
+    "https://www.sec.gov/Archives/edgar/data/1340652/000135445722000581/": "7a0013e708636d3efcaa32eb5e85ee0e9dddf7a48c775a6326ef42763bd4cb0f",
+    "https://www.sec.gov/Archives/edgar/data/1340652/000135445722000581/primary_doc.xml": "ce5ed9099cab70d69290038d1de7cf0606db9ab8e01f35862b4f9612fd83dfc7",
+    "https://www.sec.gov/Archives/edgar/data/1358762/000135445723000700/": "e74bf17d2d421b1d2b3ebf18f2987387fef0fd863280c2ac0bece8216aff01b0",
+    "https://www.sec.gov/Archives/edgar/data/1358762/000135445723000700/primary_doc.xml": "22efebd9f9636edfadf12a45730cdb176b9b7761bb2e7a29453c36baecf85559",
+    "https://www.sec.gov/Archives/edgar/data/1373671/000135445710000336/": "f3e8a023c5d8b065c9d31ec84f6eedaa7241e78d1e558d4b6d488e03ab298e02",
+    "https://www.sec.gov/Archives/edgar/data/1373671/000135445710000336/primary_doc.xml": "a2dc5943a2856b2208948ceb3b8e354bc66282abd4032d064db7c39aaaa69a0d",
+    "https://www.sec.gov/Archives/edgar/data/1389305/000087666112000194/": "c95368eaa7912b1f076cc7a054d70a5366bf874dba50b0e52084eaf603a77be6",
+    "https://www.sec.gov/Archives/edgar/data/1389305/000087666112000194/primary_doc.xml": "eef2b516521173d0c204d90679b0cee0100e7347e65bb63818f851d4ac471fa9",
+    "https://www.sec.gov/Archives/edgar/data/1391672/000135445709000342/": "79262bdbcc17418a84f6a13772690bce0fb0b8b06add84a55f4baa7d8aa058cd",
+    "https://www.sec.gov/Archives/edgar/data/1391672/000135445709000342/primary_doc.xml": "ef8014661aaebce8f8b4977d3cc2e37fd68075d8b4427c94318c456df896babd",
+    "https://www.sec.gov/Archives/edgar/data/1399768/000087666109000395/": "633c160819d27bc3be49c83adb0f1c504f688349c2bc41916adb02d8d6c79ed2",
+    "https://www.sec.gov/Archives/edgar/data/1399768/000087666109000395/primary_doc.xml": "26ac89414853f16a5649a667e6500885ab40cb730b1bf2493d8b69b1b011da13",
+    "https://www.sec.gov/Archives/edgar/data/1404123/000135445723000108/": "d7c031dcc384769a92d742dd538d34f7940b90e3ae0097bdf623427a7908f75d",
+    "https://www.sec.gov/Archives/edgar/data/1404123/000135445723000108/primary_doc.xml": "9fe82d24e37e032400f8213f0dc6f66d681f74c18bfa2fef3cd7fc09e14f293c",
+    "https://www.sec.gov/Archives/edgar/data/1409012/000135445710000268/": "76a3e88719dcd9f1fd3442df0ea239c6e38fa20f4c288eeba61b3e18f72ed2e6",
+    "https://www.sec.gov/Archives/edgar/data/1409012/000135445710000268/primary_doc.xml": "2c81f0d643789c0a00209a6e55d338dc755b6b6f6329c5336339d32f89396e44",
+    "https://www.sec.gov/Archives/edgar/data/1410939/000135445723000493/": "c79235b071ce92158dd63b12327bb5aa8f36e1eb9aed56fd3fd6dfb755b94a9e",
+    "https://www.sec.gov/Archives/edgar/data/1410939/000135445723000493/primary_doc.xml": "ee02ed077c49d40de861a5e7b5b8ab7a62c3a6d4bab62cdb2c7f8dfe58ab4036",
+    "https://www.sec.gov/Archives/edgar/data/1454189/000135445715000083/": "69174df7ef65202348a684e4432feab0d662728fb85ad3ad9ffbc827c202e009",
+    "https://www.sec.gov/Archives/edgar/data/1454189/000135445715000083/primary_doc.xml": "41d90e22e83ea98ffc1474ca00d89b35cc1774e91473c227f37ffc14100a5d2b",
+    "https://www.sec.gov/Archives/edgar/data/1463729/000135445715000159/": "be3cec73e681a99c94b747e7fbbf2c78b2a97a62239618ff0eafbd6bb4b88ecf",
+    "https://www.sec.gov/Archives/edgar/data/1463729/000135445715000159/primary_doc.xml": "a12786c070e12524818662d7ad35b2879b511ebc69a7712fcb29c446e63812a9",
+    "https://www.sec.gov/Archives/edgar/data/1495569/000087666112000244/": "cbac02e584afa3d10440e8897e07e7b6eaac40c8a8b98e1dee9b12617aa33e0a",
+    "https://www.sec.gov/Archives/edgar/data/1495569/000087666112000244/primary_doc.xml": "6d754263e1daf622d25ba2bcb01e115123e9216b77427dc49d00572647e9ccf9",
+    "https://www.sec.gov/Archives/edgar/data/1510580/000135445717000197/": "ec38d0de5ca1b549465e1729814eb3e8d22ff747e6ae4754fd4f8351107d9149",
+    "https://www.sec.gov/Archives/edgar/data/1510580/000135445717000197/primary_doc.xml": "3a6d73ff9be062524f6cdf1a38f067db4d4cfe2648b3603412c7f6c51e6f807e",
+    "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/": "9ddcd51914c7bf906d71f1a8c1be9261dadaf8511ddd6c47f42175c3905de57c",
+    "https://www.sec.gov/Archives/edgar/data/1547282/000087666114000650/primary_doc.xml": "dd83155f7e8830b7cc5d5aeea013f429b548c5f8274eb7ee4101f2523a508e6d",
+    "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/": "a0105d7dcbb532df1e19199a0c954a0e7f966bf9fbcdd2961229575c655f340b",
+    "https://www.sec.gov/Archives/edgar/data/1607716/000087666120000896/primary_doc.xml": "b7d11c4b7998a63c20a3730f26ffd849f6aea87cb59922c09a733bb8db009f96",
+    "https://www.sec.gov/Archives/edgar/data/1614436/000135445716000585/": "4a78db11a849b2fc72250e0076b732d7df0b82a0510bcfdaddb8687ddb0db825",
+    "https://www.sec.gov/Archives/edgar/data/1614436/000135445716000585/primary_doc.xml": "2585f28e7422d27022996fc2953810f7fa9eb90164ef62020af49f90cbb80521",
+    "https://www.sec.gov/Archives/edgar/data/1639225/000135445720000658/": "ffd42aefb2de572449ad8c64967c159da97eabe254b744401a084ef22c6340cf",
+    "https://www.sec.gov/Archives/edgar/data/1639225/000135445720000658/primary_doc.xml": "8dd1142bb1281a681565e7d8484624f499a095a2d1d192d4b75ab2d90b04a72f",
+    "https://www.sec.gov/Archives/edgar/data/1667633/000135445720000142/": "dd9f0009f88ec5ce11859c27b69a3a5c73a2a4bf2b9516b2ceb073da81a65a22",
+    "https://www.sec.gov/Archives/edgar/data/1667633/000135445720000142/primary_doc.xml": "d42781c161d9ff06be7bba1e9739d4505740fdb3b608a36c46e01e531031b643",
+    "https://www.sec.gov/Archives/edgar/data/1732845/000087666124000561/": "32e2f69fbbe70232c0d7e629d03f1acea49a59701f88ec959841d40464b0f96f",
+    "https://www.sec.gov/Archives/edgar/data/1732845/000087666124000561/primary_doc.xml": "e6b921934e56054b8bbe67dc2ad6b01c11182d02e81985b1af6da641034f96fb",
+    "https://www.sec.gov/Archives/edgar/data/1827075/000135445723000399/": "69ef9ad9112d37a2a314c5a87551644ae7f966cbda1d5fbdac59e02b310772d4",
+    "https://www.sec.gov/Archives/edgar/data/1827075/000135445723000399/primary_doc.xml": "b919d6245e46de972aa9fca37b5a9a61d65222606e75c974e3bfcf17914510d2",
+    "https://www.sec.gov/Archives/edgar/data/1828182/000087666123000295/": "52082ed306a63126602df109704050efa4e0cf71bb9fb2b8dae1e5a33c28477a",
+    "https://www.sec.gov/Archives/edgar/data/1828182/000087666123000295/primary_doc.xml": "098fd06e2b1dca679bcefffb0a30f41849e61b69332cdf05f633c562cc2df3d6",
+    "https://www.sec.gov/Archives/edgar/data/203248/000087666112000125/": "7b50595fb5267c7054a5ce3a0da44e30c683e59f4e0759c5518a4ac19d93c7b5",
+    "https://www.sec.gov/Archives/edgar/data/203248/000087666112000125/primary_doc.xml": "fb2ef5c291d466fabec79f58e35685fcfc8b58870cb7f1c83cdf6e25bb9bf5f4",
+    "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/": "765cc0777bd37fcc2806bd2f01c8f6efe1f7c476bfb57ef8568ac5a0da0f0c52",
+    "https://www.sec.gov/Archives/edgar/data/23666/000087666114000477/primary_doc.xml": "11e7d553ef7e9d52fcfc42f2ec053b2600d613670f062eba501a2c744f97dfe0",
+    "https://www.sec.gov/Archives/edgar/data/32258/999999999705034197/": "683aace96252ccdc82365531cf5bd98fd0bdb9a361f3dc0758417d6d9f8c6486",
+    "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/": "ccf1d14749c9b7ee5b3dc5d06d04de25a2ade2a6b789faab18f7f56cfd40a993",
+    "https://www.sec.gov/Archives/edgar/data/350563/000087666116001067/primary_doc.xml": "779903f6e1f72221ccde52f374856dcf6335e362395846f118fb84de2afec00f",
+    "https://www.sec.gov/Archives/edgar/data/350907/000135445715000186/": "5f07399fdb738d452f8cbba31ee85f9979df71b9eb48986fc15ef3bfd7357afe",
+    "https://www.sec.gov/Archives/edgar/data/350907/000135445715000186/primary_doc.xml": "e561ca305d0e46152fdfc3399790ec023882d74b0a23f2bcc883d875fa22d04a",
+    "https://www.sec.gov/Archives/edgar/data/37748/000087666111000237/": "46e8d05e26e53bd783e8cfbd0d4bd8a335fb3bbec43a3e3c9ca0fe638f4d6c44",
+    "https://www.sec.gov/Archives/edgar/data/37748/000087666111000237/primary_doc.xml": "e21fef89ef8f58a381a0596c1271bf9ac8814b1ccf57b58d08a6f4de5dd2e942",
+    "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/": "d5ae6455d55b320d0d60d76f9782a306a7e1b93ffb662570a5501c6d458ba1e4",
+    "https://www.sec.gov/Archives/edgar/data/52795/000087666120000518/primary_doc.xml": "8f8cc05c1de7bf2dcdd34727d468f0d2af0be00d4a64d27f6214a0306eb29e0f",
+    "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/": "2f297b227a0542255b1e09fe35086a2756bc11331662269208cf4fb8904bc4c2",
+    "https://www.sec.gov/Archives/edgar/data/702131/000135445708000018/primary_doc.xml": "f0bc6e7b0da18c547f7bcff2dd4c0cdb0cd1a37ca6e22ed618064efbe43b3518",
+    "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/": "1864b47bc9da2154080012cde0dee5b92f706f0992ff6f8e21e76a60c0db91ef",
+    "https://www.sec.gov/Archives/edgar/data/703361/000135445719000166/primary_doc.xml": "239cf0d901b288c8aaa8d88d24f56629f20ce8e4aadde4fd951cd10f4399fb44",
+    "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/": "8dfc5743cd463aa432b168f691a0bc748027958c6ad75145a5d3159bc77f91a1",
+    "https://www.sec.gov/Archives/edgar/data/722830/000135445720000622/primary_doc.xml": "5097ac9b7e6e810e2a23395bfa4c400b18af1b5b93732f62fc9279838c54a11d",
+    "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/": "b7bb8c1a2479ac2251bee1a30d62f3fac833e4e69a895b09756a3991a82a806e",
+    "https://www.sec.gov/Archives/edgar/data/732713/000087666107000016/primary_doc.xml": "0410c2738912483b1fa89b3ff6770e6ac29ff7c5e00e1aa13de2ab623684f527",
+    "https://www.sec.gov/Archives/edgar/data/732834/000087666122001025/": "199117a1c712070947ece57f86006ab3cda39600f87a4a36c190a08915de01fc",
+    "https://www.sec.gov/Archives/edgar/data/732834/000087666122001025/primary_doc.xml": "922825b0137c34e3e2876e2a9f72afceb84c308f736a6f39001292a2e01a5268",
+    "https://www.sec.gov/Archives/edgar/data/764762/000087666108000456/": "b946a7168e0cc2bf6a4c6696278fc0276a91ad0e6b399a003f4c0c6259aef43c",
+    "https://www.sec.gov/Archives/edgar/data/764762/000087666108000456/primary_doc.xml": "fa710d2d7e82592c319d25826efad890fedbda6f58be4427489fa09d56e385fe",
+    "https://www.sec.gov/Archives/edgar/data/765258/000135445708000337/": "e7350247d5be33b19c0e50cd9a26ffe4f13dbc816a7115c9cb2cb9b246602fa1",
+    "https://www.sec.gov/Archives/edgar/data/765258/000135445708000337/primary_doc.xml": "3f8e62119ffcedc07934056c8c6d03e62f3876d4eed739c7f7244fc656cc3cb2",
+    "https://www.sec.gov/Archives/edgar/data/780434/000135445708000048/": "b4f85e4f86a635cc5507354ddc617fd87bfcbcabe557d03e64eca260a8e3d314",
+    "https://www.sec.gov/Archives/edgar/data/780434/000135445708000048/primary_doc.xml": "d70cfaa2f5a965d746fefccc52277f2913794377e6376546a852e71da5241526",
+    "https://www.sec.gov/Archives/edgar/data/78066/000087666107000308/": "9ccb5810e6dccd2eb93dc9d5a6dd9ddc4764ba72605e3a9a077521578d5c483a",
+    "https://www.sec.gov/Archives/edgar/data/78066/000087666107000308/primary_doc.xml": "f6320cc37627314ef42772a13b1e81559ea6405678d93d7482c0a359a04a6f23",
+    "https://www.sec.gov/Archives/edgar/data/78460/000087666116001312/": "67028f3369e4c566563d0869c29426dd4cbf2a9760889872618f281b0566c34a",
+    "https://www.sec.gov/Archives/edgar/data/78460/000087666116001312/primary_doc.xml": "4f647a3c56b59ab468457813eedc72aac19ffabad43737c47a892581ba67c313",
+    "https://www.sec.gov/Archives/edgar/data/804212/000087666116000991/": "505d731bef4193901ab06bfcf05e067488ecd746dfd9a88bfd1514c1db175792",
+    "https://www.sec.gov/Archives/edgar/data/804212/000087666116000991/primary_doc.xml": "94925c0a5db4af963ebeb7b4fa6289ed3dcfd74ccbf105caea7c33d96680c12a",
+    "https://www.sec.gov/Archives/edgar/data/809428/999999999706005200/": "24156055f0b7683a164a6ab5b8a5e6975839b4ff65ae0b23b6c50f65fdeb61b7",
+    "https://www.sec.gov/Archives/edgar/data/811669/000087666109000050/": "300acf92d4a5678a34eb05a6a917adc6553e673efd7eb7ab17933a57bb165ff7",
+    "https://www.sec.gov/Archives/edgar/data/811669/000087666109000050/primary_doc.xml": "6f5073a174a8295f99782078edb0400a0641103279408e7dc496d62371f488c7",
+    "https://www.sec.gov/Archives/edgar/data/814361/000087666111000396/": "6a6b0fef0881139a88a032c02701724847545cb0fd95990ef8ad58fb9cdf81c6",
+    "https://www.sec.gov/Archives/edgar/data/814361/000087666111000396/primary_doc.xml": "686dad330e805f8d77c6212ac14276485b07a8f4d3c580be6c4374788cc066a2",
+    "https://www.sec.gov/Archives/edgar/data/831967/000087666111000479/": "2d7498c421fa9e25fc4dbd0cf14516e1f15d8d92a2ce17f7d2e49e1ed5d752e3",
+    "https://www.sec.gov/Archives/edgar/data/831967/000087666111000479/primary_doc.xml": "16d6da640e4674df3185b75e00378383581d806ea21c0dbd8cfa5d1111aba176",
+    "https://www.sec.gov/Archives/edgar/data/833320/999999999706015753/": "c2c22735e868c06fe461e67d8645edde988c423e8ce87210f74ec3b114b5d512",
+    "https://www.sec.gov/Archives/edgar/data/834208/000087666108000279/": "f73970c0560ba4f29b2a1e364928bf626e34346bd0aa8eaa724fa31ecdf64644",
+    "https://www.sec.gov/Archives/edgar/data/834208/000087666108000279/primary_doc.xml": "409492176eb9c31d0257a57fef09d2f23fd080b4a2c9c1dfdc0de1dd99ea5ca2",
+    "https://www.sec.gov/Archives/edgar/data/850693/000087666115000127/": "5afbf42764efb9a59d4ef7fb47220a451bee604d1ad33f5fe29e1a9d793e507b",
+    "https://www.sec.gov/Archives/edgar/data/850693/000087666115000127/primary_doc.xml": "2702dd12081421b302e71756b0936d59478345e7ed5e772e1f6e1cc8c03764e8",
+    "https://www.sec.gov/Archives/edgar/data/855654/000135445724000070/": "c391fe72f80335c01fd17b2f683f850ffe300ca3f0dc8031c1bf9311d02f9f22",
+    "https://www.sec.gov/Archives/edgar/data/855654/000135445724000070/primary_doc.xml": "db7be652fdf1e85eacf50932596990d3ebc98f938b19d74b734aeb11eb8bace8",
+    "https://www.sec.gov/Archives/edgar/data/858803/000135445715000005/": "3922166d745b34b414fb580fcca4a05e14f841ba1155bd72b3d95b233d7883ce",
+    "https://www.sec.gov/Archives/edgar/data/858803/000135445715000005/primary_doc.xml": "8d168d5182b920f2e9bdbda7719a8ead9783fc43ef93b85f0a1a31b227dcf83e",
+    "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/": "10c521951702948bdd4be19fbffc8893c93d19152c629e306c5d2e58a6668aee",
+    "https://www.sec.gov/Archives/edgar/data/869087/000087666106000789/primary_doc.xml": "56631c857692727cd3c92d4a7fe87834ec74f093cf7672da96fd7703da645b15",
+    "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/": "036c2e3288b266be192a96c2937a1345fcc06c126a7e8f8066c7603b65d232e8",
+    "https://www.sec.gov/Archives/edgar/data/881464/000135445712000174/primary_doc.xml": "d767552afef17a5ff97f3dfdc56e4d732175c76f0bf15885d01a2190e9db97eb",
+    "https://www.sec.gov/Archives/edgar/data/888919/000087666115000532/": "0b960a8fb4213ecac3cac4d8ae25208800ce419e2e8c1efa419ae0ca88a2e1db",
+    "https://www.sec.gov/Archives/edgar/data/888919/000087666115000532/primary_doc.xml": "d24a68dfbdaa551fa61703633cd19be432dabd4da96bb1ac382e79f60ba2240f",
+    "https://www.sec.gov/Archives/edgar/data/893160/000135445708000027/": "533a9f6933d4743d1936bb27dab5440070cad36834401e7d0a059da546bca94f",
+    "https://www.sec.gov/Archives/edgar/data/893160/000135445708000027/primary_doc.xml": "46b2555e207fe5667cbe64e164aa3eba7b680547d570d37e3350d86be590a1cb",
+    "https://www.sec.gov/Archives/edgar/data/894253/000087666109000431/": "5cfc09871d3dcfef9549720b8aba18ffbe8a8f1f0f7cba5f6019b39d2e387178",
+    "https://www.sec.gov/Archives/edgar/data/894253/000087666109000431/primary_doc.xml": "11cdf976091d6c28241181614b31f0c7fd62f0e73d4168cd455197051a9701d7",
+    "https://www.sec.gov/Archives/edgar/data/897067/000135445713000098/": "3fe722ca46eafd0a38cef6a852b92a492830f5440324735c91c3fd4d9a7c8e6e",
+    "https://www.sec.gov/Archives/edgar/data/897067/000135445713000098/primary_doc.xml": "594bdbb1808e61150cdced04392b63e92c138dfe69c0cce1c811c6e1445b5ed2",
+    "https://www.sec.gov/Archives/edgar/data/907562/000135445716000271/": "4ca87fa387209972bb7b0dca3dd1f33dad6e143d7f693c46b4d991c74926d544",
+    "https://www.sec.gov/Archives/edgar/data/907562/000135445716000271/primary_doc.xml": "2662d498c6372be3b8f4298751dfe4353f99cfeaa41fde11d6e5f36f4c7a820f",
+    "https://www.sec.gov/Archives/edgar/data/912513/000087666115000623/": "5af2fdf97af52bb2b469e2211c4f682000da408e2c7f5806fb2dc29eb39f8ec2",
+    "https://www.sec.gov/Archives/edgar/data/912513/000087666115000623/primary_doc.xml": "8ca4ad87b30c6752c1b355df67c3107600ded29a4612a1c50601f6ef4c7bff66",
+    "https://www.sec.gov/Archives/edgar/data/913885/000135445714000220/": "a5c668daf67c9213d67108066afd83d40b17e007612287f4457c18cddd8308e4",
+    "https://www.sec.gov/Archives/edgar/data/913885/000135445714000220/primary_doc.xml": "986f38eaa8e5cfcfdedb7088974c1afd2a6b1e9900ec4ee3cba7451fc01ae95d",
+    "https://www.sec.gov/Archives/edgar/data/914024/000087666113000062/": "b7861b31d33035e2cb197034113ee6dcd8823b9d2be219d25ae3dba9b8e07fff",
+    "https://www.sec.gov/Archives/edgar/data/914024/000087666113000062/primary_doc.xml": "228c1ff1aa6b77f213aa7e2c61dd16323731ddf2a3a54717d99f14802a87c52c",
+    "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/": "8981119cc91e813cc5763b295135daaddf548b64131cb37699dda4ede1b94736",
+    "https://www.sec.gov/Archives/edgar/data/921506/000135445709000091/primary_doc.xml": "5179024330701ece25d2ff4b45dd2381ec30d963396bc3a3c54e535372b421b7",
+    "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/": "3213a2284d176eadad8a042af9f7a6b83bcf652bc4c55ef59e43d14ed3a7e6f4",
+    "https://www.sec.gov/Archives/edgar/data/9342/000087666111000025/primary_doc.xml": "91c99b861bf36af4b109a11b7207ac3e31a163be1017d770975c703bf7914fb5",
+    "https://www.sec.gov/Archives/edgar/data/941548/000087666116000896/": "58644d7e8ff79e045b7d6ed519df8e2a6d8c307efe821fe330fb9a2b602dd23c",
+    "https://www.sec.gov/Archives/edgar/data/941548/000087666116000896/primary_doc.xml": "1ea584145427027c95e436de13b2e89987713b3b7646b1a97238dfac3d2e783c",
+    "https://www.sec.gov/Archives/edgar/data/946840/000135445714000008/": "914b4030ad184fd62c735e09c97770a7f0284f21608f365b95c9cb56d3754c83",
+    "https://www.sec.gov/Archives/edgar/data/946840/000135445714000008/primary_doc.xml": "c351e098adf24dc45701b18aaf136c71e93414360397e057f43171d70cf07fd6",
+    "https://www.sec.gov/Archives/edgar/data/949699/000135445715000099/": "7ac7f808732c2cfe77fb0aa93981475a4d9a611af8220eeff37e68c4585cc348",
+    "https://www.sec.gov/Archives/edgar/data/949699/000135445715000099/primary_doc.xml": "14d972aa7376adcad31197ec797c8874f09a53295ee263f2550ab7fb6fa5ae85",
+    "https://www.sec.gov/Archives/edgar/full-index/2005/QTR2/master.zip": "8c4327cccb25b0095f046cbb644d3a6dfa4e99b2c8214d01a8a0ce2b5521e522",
+    "https://www.sec.gov/Archives/edgar/full-index/2005/QTR3/master.zip": "03e7d404c92935a8b1c5f94ccf8dfbd12615897b9a1e37a5fa9278b67e62f3c6",
+    "https://www.sec.gov/Archives/edgar/full-index/2005/QTR4/master.zip": "969bbfedc41f8570d285cb9f989de6684408ef6b59a1c484187fbd706c393535",
+    "https://www.sec.gov/Archives/edgar/full-index/2006/QTR1/master.zip": "01eb8404693d8ac77d3c49bca93d362dff37493360dab579bd5563ca0382c7d4",
+    "https://www.sec.gov/Archives/edgar/full-index/2006/QTR2/master.zip": "19c62a628e06af7d41f5627dfa8b44fc51e93d105e666cf9a580c1f73c42f5b4",
+    "https://www.sec.gov/Archives/edgar/full-index/2006/QTR3/master.zip": "7f228fc1e185fc51f3df5ddecf865d94f13e0890324149f8664fa231b1dd7b45",
+    "https://www.sec.gov/Archives/edgar/full-index/2006/QTR4/master.zip": "1a996e0656b7decbb9e6cc0c29d1a4ae675a87a9cae3356578c9500554dbcd64",
+    "https://www.sec.gov/Archives/edgar/full-index/2007/QTR1/master.zip": "42530da69586cd245f6438569d0d6e503a0be4262012df63857875bc35a5bb7f",
+    "https://www.sec.gov/Archives/edgar/full-index/2007/QTR2/master.zip": "8b0a107b96632654c65a418e9fc187e27ebb14aa37d5ff209e8a3bdd60148122",
+    "https://www.sec.gov/Archives/edgar/full-index/2007/QTR3/master.zip": "7c7acf94b6135897b9cfc8aac1685bd3e9b3c228dcd211a84e557231997c3904",
+    "https://www.sec.gov/Archives/edgar/full-index/2007/QTR4/master.zip": "e5e0106471718e6d26d3d52f1400d442a6eaf1de9875dc564d93bfac6e3c7730",
+    "https://www.sec.gov/Archives/edgar/full-index/2008/QTR1/master.zip": "94b36c99650de1f3630b594c0aaa9d1985a918005e30c4b2bb6bff85ac0ab22e",
+    "https://www.sec.gov/Archives/edgar/full-index/2008/QTR2/master.zip": "89a759c971432f1d4028855354f0a441267566bfb5b99e9652c061ca2a00edce",
+    "https://www.sec.gov/Archives/edgar/full-index/2008/QTR3/master.zip": "6c0885de71d57a8224f225c98a8a390d302db956357ccf06b5e6fb995e3b1fd2",
+    "https://www.sec.gov/Archives/edgar/full-index/2008/QTR4/master.zip": "1bd4aee27b0851a6a2c87e7fda8b74f578eee24e5b4e46ef32a5919656a7e621",
+    "https://www.sec.gov/Archives/edgar/full-index/2009/QTR1/master.zip": "289dc64513c40f8dcb8ae34c84cee39b8a682bf4e3955aa6223c537f73324c21",
+    "https://www.sec.gov/Archives/edgar/full-index/2009/QTR2/master.zip": "0b30ae3a0f55897da3ac28de4c349c59e7fbd71d294a5a85e52e34f9da81e289",
+    "https://www.sec.gov/Archives/edgar/full-index/2009/QTR3/master.zip": "9fca364a6a1ccaad11e0e347919e5ba175acf1e366c0caf3ffaefb8d8ae77d6d",
+    "https://www.sec.gov/Archives/edgar/full-index/2009/QTR4/master.zip": "848546e7c8c9a11375012721c934486fc0acb4f33e3b9fadf5069b945f4e7220",
+    "https://www.sec.gov/Archives/edgar/full-index/2010/QTR1/master.zip": "eefd05d69cadbe0ddb001cc8c0350a0d33f2c85907b84741b1fd4f0f3b4a53a0",
+    "https://www.sec.gov/Archives/edgar/full-index/2010/QTR2/master.zip": "b316aa03e491746bc660a5a1aeb41af6c5d7a57b86e4fb50d980533cde691ff7",
+    "https://www.sec.gov/Archives/edgar/full-index/2010/QTR3/master.zip": "30473128295a8a982805f6446a96a8f8a2c74389980585a573b1f4c486496ac1",
+    "https://www.sec.gov/Archives/edgar/full-index/2010/QTR4/master.zip": "cb3d9c536d338e2cc1d5ee909efd441622ba3e3b859b7f0da85532ccd5c3753b",
+    "https://www.sec.gov/Archives/edgar/full-index/2011/QTR1/master.zip": "0e465ac2f7acc5deb26c1372e14ed7df0f74864c81d900c80d518f4db8983a26",
+    "https://www.sec.gov/Archives/edgar/full-index/2011/QTR2/master.zip": "661367477cbfc8887941bd8b4debfcccdb56373b51e214b58ace018a4c1507e8",
+    "https://www.sec.gov/Archives/edgar/full-index/2011/QTR3/master.zip": "6b89834467a111c7479e5ce13c4700ca7b8d5c4ccc15e5c5748d71aabbdc31cc",
+    "https://www.sec.gov/Archives/edgar/full-index/2011/QTR4/master.zip": "b1afe52c3dcded427fb0ddb035c729164b285c0c03eda3d5118ff469ce982165",
+    "https://www.sec.gov/Archives/edgar/full-index/2012/QTR1/master.zip": "ba3f7385a294d43cbb5cdc01899fece279e7d47f5ddec4e6fc415028e31c326d",
+    "https://www.sec.gov/Archives/edgar/full-index/2012/QTR2/master.zip": "fd8621144501b384e8fbd329d85defae38615faae58eb0d852ea129a55cce5c1",
+    "https://www.sec.gov/Archives/edgar/full-index/2012/QTR3/master.zip": "30daa8f330c91dc0ae5c2479b614690f5e6beb6f9f4ddf62169bc1036650724a",
+    "https://www.sec.gov/Archives/edgar/full-index/2012/QTR4/master.zip": "2b0f126c7a82791ed2b1c988287ef40e0735dff3f57c52845041e951298b6070",
+    "https://www.sec.gov/Archives/edgar/full-index/2013/QTR1/master.zip": "d834545279598ecfa6a4132f889749ece13e648f082bad530063ab1e424f0e91",
+    "https://www.sec.gov/Archives/edgar/full-index/2013/QTR2/master.zip": "967f27891125bd8e93099003e9f63464195f10dfb77ff8c02e4a262086106473",
+    "https://www.sec.gov/Archives/edgar/full-index/2013/QTR3/master.zip": "d1729719cdf567821076759bad50c28907af744b2a2e1f49a882067086d127be",
+    "https://www.sec.gov/Archives/edgar/full-index/2013/QTR4/master.zip": "39e0ea040d7309c7aab5756b77cefb521df2c56fdc08569d5f7a37dae7e4d00e",
+    "https://www.sec.gov/Archives/edgar/full-index/2014/QTR1/master.zip": "d5d2004d46ca5b6c24da633c758e9557cc020e8362ed33dff23ded30315dc489",
+    "https://www.sec.gov/Archives/edgar/full-index/2014/QTR2/master.zip": "7c723f7753b284ac83dd65875a56e3bdde3469b1787b92269676d09bfec8556d",
+    "https://www.sec.gov/Archives/edgar/full-index/2014/QTR3/master.zip": "033cbbe2793523f17fa64ecc38fbb15ac932220bad9bad697f5859bb4b3df898",
+    "https://www.sec.gov/Archives/edgar/full-index/2014/QTR4/master.zip": "d2b894ef121246e0c0873ce36e8c0c9bead73667428cfe10461bad4b71f5b2d8",
+    "https://www.sec.gov/Archives/edgar/full-index/2015/QTR1/master.zip": "2192100e742ab78eb9c24e9c00dae80706b461e65d38c7eb367f2d0cdbd5045a",
+    "https://www.sec.gov/Archives/edgar/full-index/2015/QTR2/master.zip": "c7337a8c3fa39c4603ddfa77b50c1a59c870ef7bce053a1bf475e1ce2363a9a7",
+    "https://www.sec.gov/Archives/edgar/full-index/2015/QTR3/master.zip": "d2b823c673c8a2607b0c98361cda881c1c8f7de04154e1acb38d286305190b06",
+    "https://www.sec.gov/Archives/edgar/full-index/2015/QTR4/master.zip": "400af7789a5df80143105a99546e4ee80ac40b09fe2c6b6376226a9a0c4610a6",
+    "https://www.sec.gov/Archives/edgar/full-index/2016/QTR1/master.zip": "e5464ede84d58230e756a5aa4360064ed8ff59fefa89cb1a3f19d68c7ef29d76",
+    "https://www.sec.gov/Archives/edgar/full-index/2016/QTR2/master.zip": "d4b1189defb38f0144ad446eeb5d49ece0f1c71b62c1a998a9fb6dec37ae078f",
+    "https://www.sec.gov/Archives/edgar/full-index/2016/QTR3/master.zip": "de2edc589835aaedec1d5ebe416e908b5c1f4d51a1d5bffd93d8e534eeb48c7d",
+    "https://www.sec.gov/Archives/edgar/full-index/2016/QTR4/master.zip": "71bb61700db5a617f2f7668097715384008c80d90eb7aeabb8fc19ff470d5982",
+    "https://www.sec.gov/Archives/edgar/full-index/2017/QTR1/master.zip": "36570640d665f4cad33328a1a33a66b66df913c7733e774b4e6526aafc6a0562",
+    "https://www.sec.gov/Archives/edgar/full-index/2017/QTR2/master.zip": "7ed6a1a4311e0bde92cae00614d142aa3ec97f5395799b4c9b245ab049f3c5bd",
+    "https://www.sec.gov/Archives/edgar/full-index/2017/QTR3/master.zip": "91c866668fd6bd26542d5af168f1518ae3a074aa8058ad817404b61acedcca8c",
+    "https://www.sec.gov/Archives/edgar/full-index/2017/QTR4/master.zip": "07a4f50fbfeea8c4d88f5c10bc9ab54d7cdd63f8deab4dfc470c59c901d38310",
+    "https://www.sec.gov/Archives/edgar/full-index/2018/QTR1/master.zip": "8770b3f5abb3a3096aaf41d1ddb9d3cbfff420520023544c21755fea4e103b23",
+    "https://www.sec.gov/Archives/edgar/full-index/2018/QTR2/master.zip": "f55f78d23b0bb49f20fb2facb6e7b5c4c42f7c08fa70606e2890f49951c9ef99",
+    "https://www.sec.gov/Archives/edgar/full-index/2018/QTR3/master.zip": "2922a0ff11b925eafd4ba725376c17e52a94bcd83d13c968f15573a3e98ce20e",
+    "https://www.sec.gov/Archives/edgar/full-index/2018/QTR4/master.zip": "a21b8de23e5fd47a3588c345dc8e0e48a84bd786ec00e614e4d4cd37334af6b5",
+    "https://www.sec.gov/Archives/edgar/full-index/2019/QTR1/master.zip": "cbd9bdbbea59e3522b3720e56cec3bedcf536c0cb5352fd3018fa0d688074723",
+    "https://www.sec.gov/Archives/edgar/full-index/2019/QTR2/master.zip": "c03e49fad44d64e7658170699712569b05c40b6476c623b3e37d7dd3378fd69d",
+    "https://www.sec.gov/Archives/edgar/full-index/2019/QTR3/master.zip": "bd469c03a642518ee1e65974f10f3e6d17a6fa8e8b30066c4c6fba6e79bc5719",
+    "https://www.sec.gov/Archives/edgar/full-index/2019/QTR4/master.zip": "8d56a5687f5cf71a51f528a0bc1f858c2c10e5848a4b4842efd68a39934d2609",
+    "https://www.sec.gov/Archives/edgar/full-index/2020/QTR1/master.zip": "79f2b604c29a07c6875b1539ded5356199d5a72c96648bb0d9d65decc4e593e9",
+    "https://www.sec.gov/Archives/edgar/full-index/2020/QTR2/master.zip": "56c4c469cb72b1fb4d5ead8d73314ffa8ce2ee4a1cd9d0f6ab23ba513e0ed770",
+    "https://www.sec.gov/Archives/edgar/full-index/2020/QTR3/master.zip": "09732968d555ccb0a003caea405eda3ff550265302c8587a93de4c7e153c5d79",
+    "https://www.sec.gov/Archives/edgar/full-index/2020/QTR4/master.zip": "d9f1ed2bdf5213a8617a93247b467189151ea541d422c087a8d7f4e486dc9592",
+    "https://www.sec.gov/Archives/edgar/full-index/2021/QTR1/master.zip": "ec1d845fa6a412f689c39f4157857f8f4f72b3beb4d4fa4e24702f94e355cd7b",
+    "https://www.sec.gov/Archives/edgar/full-index/2021/QTR2/master.zip": "57e28ec57c8ca46f3156fd556a86d60744ffe53069e5735f433d78be13782109",
+    "https://www.sec.gov/Archives/edgar/full-index/2021/QTR3/master.zip": "5ce5a540dd7bb47a383e0559fd91146a73a5b8c79c48b3c9c53bd4cb89ea3c1f",
+    "https://www.sec.gov/Archives/edgar/full-index/2021/QTR4/master.zip": "624968ab602ebc9849cf539cae25f9122c52d962c59fce46f885efd4c487fed8",
+    "https://www.sec.gov/Archives/edgar/full-index/2022/QTR1/master.zip": "799c2ec6553815d193492390b2cd2ffe9c36394e2e76d6a36974bd33a05eb17e",
+    "https://www.sec.gov/Archives/edgar/full-index/2022/QTR2/master.zip": "14704227306cbdd92258947cd07116dea113c6b1c22037a759b20d111d9ce997",
+    "https://www.sec.gov/Archives/edgar/full-index/2022/QTR3/master.zip": "d30841e8db837690db3869fed8950fed60aba5c529c043d52cfda5dbf59b6bab",
+    "https://www.sec.gov/Archives/edgar/full-index/2022/QTR4/master.zip": "cbd57a996094850b6976f188996d7ab6d785da60fa167edc55c3f68767992adc",
+    "https://www.sec.gov/Archives/edgar/full-index/2023/QTR1/master.zip": "df42dc3b95eabcc5fb4d13d2dc04054d8fd26e1821bb6077ac5734ecafebdb90",
+    "https://www.sec.gov/Archives/edgar/full-index/2023/QTR2/master.zip": "36532da06490f537e6b1cd8a6995882669ff27f7ef6265057c00b53e54d3fde9",
+    "https://www.sec.gov/Archives/edgar/full-index/2023/QTR3/master.zip": "b49a1413afa4e246690c1485f8ed420d0f5b0403784dcdaf81cab5f2c15f2f0b",
+    "https://www.sec.gov/Archives/edgar/full-index/2023/QTR4/master.zip": "8f67c0f986f5f2ee7365715989608fc583207410e00870c48932db57ed5d6246",
+    "https://www.sec.gov/Archives/edgar/full-index/2024/QTR1/master.zip": "a52929d2403025bcede60ed9bf8cf98555d6eb22a6d2a53e623e3fee44833e6b",
+    "https://www.sec.gov/Archives/edgar/full-index/2024/QTR2/master.zip": "40a81b647e5f1e2a77afa979df20d8f6c50ca03770ae7792b3cc81fea10355a1",
+    "https://www.sec.gov/Archives/edgar/full-index/2024/QTR3/master.zip": "b0be3429e4750f734e15da05732e8d34f2e4432211b15f23089a85fd112bf87e",
+    "https://www.sec.gov/Archives/edgar/full-index/2024/QTR4/master.zip": "25891fdae75f442b22d66df304d864fd0085990b2ab9e640ed6782e9188fcfca",
+    "https://www.sec.gov/Archives/edgar/full-index/2025/QTR1/master.zip": "324fab20636d995dc6e125a28fe4db31c8558760cfa2306eaffca41967ecefd5"
+  },
+  "provenance": {
+    "added_after_run": true,
+    "added_on": "2026-11-24",
+    "why": "The Form 25 phase of code/sec_pilot.py wrote this file without a provenance block, and scripts/study.py requires one in every _*.json file. The block was added by hand when the study was closed; no other value in the file was changed.",
+    "original_sha256": "6a20b454d3658b104a5958d4473ec731774cc6104f8ff16d2f220db94fcbf66a",
+    "how_to_recover_the_original": "Delete the 'provenance' key, serialise with json.dumps(data, indent=2) and a final newline; the SHA-256 of the result is original_sha256 (and is the form25_sha256 recorded in _payouts.json).",
+    "roster_sha256": "3f010c9268243dfae29ff9a943fb3a4b970732d0bf1355f63961d9bcf9f5a72b",
+    "run_date": "2026-11-24",
+    "git_head": null,
+    "note": "The commit the run started from was not recorded by the Form 25 phase. The payouts phase, run next, recorded 902be63fe758c65fd75db22db5a12eadeea52782 (see _payouts.json)."
+  }
+}
