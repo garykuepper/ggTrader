@@ -15,8 +15,8 @@
     },
     "documented_evidence": 91,
     "by_match_confidence": {
-      "confirmed": 89,
-      "name_only": 7,
+      "confirmed": 90,
+      "name_only": 6,
       "none": 45
     },
     "by_class_and_confidence": {
@@ -25,8 +25,8 @@
         "name_only": 0
       },
       "acquired_or_merged": {
-        "confirmed": 87,
-        "name_only": 4
+        "confirmed": 88,
+        "name_only": 3
       },
       "delisted_other": {
         "confirmed": 0,
@@ -50,8 +50,8 @@
       }
     },
     "with_suggested_loss": 91,
-    "with_suggested_loss_confirmed": 87,
-    "with_suggested_loss_name_only": 4,
+    "with_suggested_loss_confirmed": 88,
+    "with_suggested_loss_name_only": 3,
     "by_basis": {
       "filing_evidence": 91,
       "literature_fill": 0,
@@ -59,8 +59,8 @@
     },
     "by_basis_and_confidence": {
       "filing_evidence": {
-        "confirmed": 87,
-        "name_only": 4,
+        "confirmed": 88,
+        "name_only": 3,
         "none": 0
       },
       "literature_fill": {
@@ -5833,8 +5833,8 @@
     }
   },
   "request_count": {
-    "network_fetches": 96,
-    "cache_hits": 0,
+    "network_fetches": 0,
+    "cache_hits": 96,
     "corrupt_cache_refetches": 0
   },
   "manifest": {
@@ -5978,6 +5978,8 @@
     "https://www.sec.gov/Archives/edgar/data/1168054/000087666121001438/primary_doc.xml": "6d560a71241883fb1a23d9deee7768714fa89cb48f0ec947ae539201f7b3c24b",
     "https://www.sec.gov/Archives/edgar/data/1203866/000135445708000045/": "dd6792071961bbe93bf979166481aaeed5cf621f4d74899bc662aa440ea3f5bd",
     "https://www.sec.gov/Archives/edgar/data/1203866/000135445708000045/primary_doc.xml": "a8d2d7ad3bb84a7c98c9ad5ad46f1424ee0acb0445ee6b6d70a59fdcbbd7cc37",
+    "https://www.sec.gov/Archives/edgar/data/1235010/000135445720000548/": "b62ae44f78b76e5bd12dd01109121479b0eaf33c9a37d6205e6a4757f3bcba0d",
+    "https://www.sec.gov/Archives/edgar/data/1235010/000135445720000548/primary_doc.xml": "5ceeb9c790f458a9acee6d13d07cb7228d99f2390bba8bcb400f2c221c625494",
     "https://www.sec.gov/Archives/edgar/data/1270400/000135445713000113/": "4f4984ca421f6dfd32b7e56fd47796a7ee261583d65ac5f844cff2195cbe70a7",
     "https://www.sec.gov/Archives/edgar/data/1270400/000135445713000113/primary_doc.xml": "f5f600f3256a2271b8095a0c5e2f517547536c908b176d401d15345d60fcb866",
     "https://www.sec.gov/Archives/edgar/data/1274057/000087666115000403/": "0b394dabbdd2347f22684ec21f0806559e423a13651d509d8fcaaf8992adc6f3",
@@ -6202,9 +6204,59 @@
     "https://www.sec.gov/files/form8-k.pdf": "730ab1de5550870134639fff1ccad3385186c3a08eafd8bd387db44b8bac5d70"
   },
   "provenance": {
-    "git_head": "902be63fe758c65fd75db22db5a12eadeea52782",
-    "git_dirty": true,
+    "git_head": "f70117ab2547fa308f5c293c94769ee0f857e190",
+    "git_dirty": false,
+    "git_dirty_ignores": [
+      "research/stock-signals/dead-stock-data-integrity/_form25_matches.json",
+      "research/stock-signals/dead-stock-data-integrity/_payouts.csv",
+      "research/stock-signals/dead-stock-data-integrity/_payouts.json"
+    ],
+    "phase": "payouts",
+    "run_date": "2026-11-24",
     "roster_sha256": "3f010c9268243dfae29ff9a943fb3a4b970732d0bf1355f63961d9bcf9f5a72b",
-    "form25_sha256": "6a20b454d3658b104a5958d4473ec731774cc6104f8ff16d2f220db94fcbf66a"
+    "code_sha256": {
+      "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py": "6f2c09c8b2201dac77c2772b596e322f0c255996f895f728cbc5c0697548b1ed",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_filings.py": "dcd604ad5877d6ca58a2dc963b34e46bc4d8cb46fcaa1acd10e8f1241303be10",
+      "research/stock-signals/dead-stock-data-integrity/code/sec_client.py": "b1914a7a32937b191e4e48768b03c8f2af203288ca571e694e568c037006f479",
+      "research/stock-signals/dead-stock-data-integrity/code/payout_table.py": "347b19a3e709501109a0878e5714ca29224d8921d0406a8b39216de7c7b04fd9",
+      "research/stock-signals/dead-stock-data-integrity/code/dead_stock_data_integrity.py": "a641c267b5741cad8f79dfd47614bea0752f64ac927431226064680a581ea9a9",
+      "research/stock-signals/_lib/sec_master_index.py": "421c3898c08c1286be2eabfc3a59513339a3e97a2d80d637431763c3c1dd3f1c",
+      "research/stock-signals/_lib/sec_form25.py": "92654642d390010e0721ec9b35a606a1732ea9ad2ddce60407295ed51045d28f",
+      "src/ggTrader/utils/study.py": "a54ae6ac836e6ab5698a8b7579b1ab10aa173f169cdd150257632eda06f5474b",
+      "src/ggTrader/utils/io.py": "fc1840df04c4c28f9f04993aecac7aabe9c82a4eb6b4a92d75f3680e1dcb8322"
+    },
+    "quarter_window": {
+      "first": [
+        2005,
+        2
+      ],
+      "last": [
+        2025,
+        1
+      ],
+      "start": "2005-04-01",
+      "end": "2025-03-31",
+      "needed": 80,
+      "limit_quarters": null
+    },
+    "matching_rules": {
+      "before_days": 30,
+      "after_days": 180,
+      "truncated_name_length": 16,
+      "event_window_days": 90,
+      "suffix_words": [
+        "CO",
+        "COMPANY",
+        "CORP",
+        "INC",
+        "LLC",
+        "LP",
+        "LTD",
+        "PLC"
+      ],
+      "abbreviations_sha256": "d5326cffcb65eee2e0f818b8fa22d2251e8f4fea9544ab2a3fa1b3e78e59f687"
+    },
+    "form25_sha256": "fe1cdb5015a46b996068d672af052e4806815f9a30f2912e8d3a4b0320961874",
+    "form25_git_head": "f70117ab2547fa308f5c293c94769ee0f857e190"
   }
 }
