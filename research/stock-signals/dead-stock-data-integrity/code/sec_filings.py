@@ -116,6 +116,36 @@ ABBREVIATIONS: dict[str, str] = {
     "INS": "INSURANCE",
 }
 
+# Matching rule versions recorded on every per-stock match result and in provenance.
+RULE_VERSION_V1 = "v1"
+RULE_VERSION_V11 = "v1.1"
+RULE_VERSIONS: tuple[str, ...] = (RULE_VERSION_V1, RULE_VERSION_V11)
+
+# v1.1 raw-string regexes (kept as strings so provenance records the exact patterns used).
+# Trailing EDGAR state or status slash tag (e.g. "/DE/", "/MD/", "/NEW"); interior slashes stay.
+EDGAR_SLASH_TAG_PATTERN = r"/[A-Z]{2,4}/?$"
+_EDGAR_SLASH_TAG_RE = re.compile(EDGAR_SLASH_TAG_PATTERN)
+# Trailing share-class marker (-A/-B/-C, CL A, CLASS A, etc.) stripped before suffix stripping.
+SHARE_CLASS_PATTERN = r"(?:\s*-\s*(?:CL(?:ASS)?\.?\s+)?[ABC]|,?\s+CL(?:ASS)?\.?\s+[ABC])$"
+_SHARE_CLASS_RE = re.compile(SHARE_CLASS_PATTERN)
+
+# Whole-word plural forms folded to singular in v1.1 after v1 abbreviation expansion.
+# Written after the first real run showed 37 unmatched named stocks (not pre-registered).
+PLURAL_TO_SINGULAR: dict[str, str] = {
+    "TECHNOLOGIES": "TECHNOLOGY",
+    "HOLDINGS": "HOLDING",
+    "SYSTEMS": "SYSTEM",
+    "PHARMACEUTICALS": "PHARMACEUTICAL",
+    "COMPANIES": "COMPANY",
+    "LABS": "LAB",
+    "LABORATORIES": "LABORATORY",
+    "INDUSTRIES": "INDUSTRY",
+    "SERVICES": "SERVICE",
+    "PRODUCTS": "PRODUCT",
+    "RESOURCES": "RESOURCE",
+    "STORES": "STORE",
+}
+
 
 def master_index_url(year: int, quarter: int) -> str:
     """The SEC quarterly master index archive for one year and quarter."""
@@ -217,7 +247,13 @@ def match_roster_row(
     """
     name = row.get("stock_name")
     if row.get("name_source") == "none" or not isinstance(name, str) or not name.strip():
-        return {"status": STATUS_NONE, "ciks": [], "accessions": [], "by_cik": {}}
+        return {
+            "status": STATUS_NONE,
+            "ciks": [],
+            "accessions": [],
+            "by_cik": {},
+            "rule_version": RULE_VERSION_V1,
+        }
     exit_date = _as_date(row["exit_date"])
     first = exit_date - timedelta(days=before_days)
     last = exit_date + timedelta(days=after_days)
@@ -241,6 +277,117 @@ def match_roster_row(
         "ciks": sorted(ciks),
         "accessions": [accession for _, accession in sorted(hits)],
         "by_cik": {cik: [a for _, a in sorted(found)] for cik, found in sorted(by_cik.items())},
+        "rule_version": RULE_VERSION_V1,
+    }
+
+
+def _v11_words(name: str) -> list[str]:
+    """Clean a raw company name into v1.1 words before trailing corporate-suffix removal."""
+    # Uppercase and trim outer spaces so trailing regexes see a consistent raw string end.
+    text = name.strip().upper()
+    # (a) Drop a trailing EDGAR slash tag (/DE/, /NEW, /MD/) before punctuation becomes spaces.
+    without_tag = _EDGAR_SLASH_TAG_RE.sub("", text).strip()
+    if without_tag:
+        text = without_tag
+    # (b) Drop a trailing share-class marker (-A/-B/-C, CL A, CLASS A) before suffix stripping.
+    without_class = _SHARE_CLASS_RE.sub("", text).strip()
+    if without_class:
+        text = without_class
+    # Replace remaining punctuation with spaces and split into whole words, matching v1.
+    words = re.sub(r"[^A-Z0-9]+", " ", text).split()
+    # Apply the unchanged v1 whole-word abbreviation table identically on both sides.
+    words = [ABBREVIATIONS.get(word, word) for word in words]
+    # (c) Fold the fixed whole-word plural table to singular so TECH and TECHNOLOGIES match.
+    words = [PLURAL_TO_SINGULAR.get(word, word) for word in words]
+    return words
+
+
+def normalize_name_v11_untrimmed(name: str) -> str:
+    """Clean a company name with v1.1 steps (a)-(c), keeping trailing corporate suffix words.
+
+    Used for 16-character cut-off prefix checks so a truncated suffix such as
+    ``ATHLON ENERGY IN`` still matches ``Athlon Energy Inc.`` before ``INC`` is dropped.
+    """
+    return " ".join(_v11_words(name))
+
+
+def normalize_name_v11(name: str) -> str:
+    """Clean a company name under rule v1.1, applied identically to roster and filer names.
+
+    Runs steps (a) trailing EDGAR slash tag removal, (b) trailing share-class marker removal,
+    and (c) v1 abbreviation expansion plus whole-word plural-to-singular folding, then drops
+    trailing v1 ``SUFFIX_WORDS`` (``COMPANY`` is already in that set; the last word is kept).
+    """
+    words = _v11_words(name)
+    # Drop trailing corporate suffixes (including COMPANY from COMPANIES), never the last word.
+    while len(words) > 1 and words[-1] in SUFFIX_WORDS:
+        words.pop()
+    return " ".join(words)
+
+
+def _name_matches_v11(roster_name: str, raw_length: int, filer_name: str) -> bool:
+    """v1.1 match: equal cleaned names, or untrimmed prefix for a 16-character cut-off."""
+    wanted = normalize_name_v11(roster_name)
+    if not wanted:
+        return False
+    if normalize_name_v11(filer_name) == wanted:
+        return True
+    if raw_length == TRUNCATED_NAME_LENGTH:
+        wanted_untrimmed = normalize_name_v11_untrimmed(roster_name)
+        return bool(wanted_untrimmed) and normalize_name_v11_untrimmed(filer_name).startswith(
+            wanted_untrimmed
+        )
+    return False
+
+
+def match_roster_row_v11(
+    row: Mapping[str, Any],
+    candidates: list[dict],
+    before_days: int = BEFORE_DAYS,
+    after_days: int = AFTER_DAYS,
+) -> dict:
+    """Match one roster stock under rule v1.1 (second pass only for stocks v1 left unmatched).
+
+    Uses the same filing-date window, unnamed-row rule and ambiguity rule (two or more distinct
+    CIKs) as ``match_roster_row``, but matches with ``normalize_name_v11`` and
+    ``normalize_name_v11_untrimmed`` (for 16-character cut-off names).
+
+    Returns:
+        The same dict shape as ``match_roster_row``, with ``rule_version: "v1.1"``.
+    """
+    name = row.get("stock_name")
+    if row.get("name_source") == "none" or not isinstance(name, str) or not name.strip():
+        return {
+            "status": STATUS_NONE,
+            "ciks": [],
+            "accessions": [],
+            "by_cik": {},
+            "rule_version": RULE_VERSION_V11,
+        }
+    exit_date = _as_date(row["exit_date"])
+    first = exit_date - timedelta(days=before_days)
+    last = exit_date + timedelta(days=after_days)
+    ciks: set[str] = set()
+    hits: list[tuple[str, str]] = []
+    by_cik: dict[str, list[tuple[str, str]]] = {}
+    for filing in candidates:
+        if not first <= _as_date(filing["filing_date"]) <= last:
+            continue
+        matching = [
+            p["cik"] for p in filing["parties"] if _name_matches_v11(name, len(name), p["name"])
+        ]
+        if matching:
+            ciks.update(matching)
+            hits.append((filing["filing_date"], filing["accession"]))
+            for cik in matching:
+                by_cik.setdefault(cik, []).append((filing["filing_date"], filing["accession"]))
+    status = STATUS_NONE if not ciks else STATUS_MATCHED if len(ciks) == 1 else STATUS_AMBIGUOUS
+    return {
+        "status": status,
+        "ciks": sorted(ciks),
+        "accessions": [accession for _, accession in sorted(hits)],
+        "by_cik": {cik: [a for _, a in sorted(found)] for cik, found in sorted(by_cik.items())},
+        "rule_version": RULE_VERSION_V11,
     }
 
 

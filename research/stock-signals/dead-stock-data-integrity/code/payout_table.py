@@ -30,6 +30,8 @@ CONFIDENCE_CONFIRMED = "confirmed"
 CONFIDENCE_NAME_ONLY = "name_only"
 CONFIDENCE_NONE = ""
 CONFIDENCES = (CONFIDENCE_CONFIRMED, CONFIDENCE_NAME_ONLY)
+RULE_VERSION_NONE = ""
+RULE_VERSIONS = sec_filings.RULE_VERSIONS
 
 BASIS_FILING = "filing_evidence"
 BASIS_LITERATURE = "literature_fill"
@@ -123,6 +125,7 @@ TABLE_COLUMNS = (
     "price_label",
     "evidence_class",
     "match_confidence",
+    "match_rule_version",
     "form25_accession",
     "form25_provision",
     "form25_security",
@@ -239,6 +242,16 @@ def match_confidence(match: Mapping[str, Any] | None, evidence_class: str) -> st
     return CONFIDENCE_NONE
 
 
+def match_rule_version(match: Mapping[str, Any] | None, evidence_class: str) -> str:
+    """``v1``, ``v1.1``, or blank when the stock has no usable Form 25 match."""
+    if match is None or evidence_class not in (*DOCUMENTED_CLASSES, sec_filings.EVIDENCE_NONE):
+        return RULE_VERSION_NONE
+    version = match.get("rule_version")
+    if isinstance(version, str) and version in RULE_VERSIONS:
+        return version
+    return RULE_VERSION_NONE
+
+
 def cross_check(evidence_class: str, price_label: Any) -> str:
     """Compare the filing's story with the price path's label.
 
@@ -311,6 +324,7 @@ def build_payout_table(
                 "price_label": row.get("price_label"),
                 "evidence_class": evidence,
                 "match_confidence": confidence,
+                "match_rule_version": match_rule_version(match, evidence),
                 "form25_accession": _text(accession),
                 "form25_provision": _text(details.get("rule_provision")),
                 "form25_security": _text(details.get("security_description")),
@@ -342,6 +356,7 @@ def coverage_summary(
     """
     classes = table["evidence_class"]
     confidence = table["match_confidence"]
+    rule_version = table["match_rule_version"].fillna("")
     has_loss = table["suggested_loss"].notna()
     by_class = {name: int((classes == name).sum()) for name in EVIDENCE_CLASSES}
     statuses = table["events_status"].fillna("")
@@ -356,13 +371,24 @@ def coverage_summary(
             CONFIDENCE_NAME_ONLY: int((confidence == CONFIDENCE_NAME_ONLY).sum()),
             "none": int((confidence == CONFIDENCE_NONE).sum()),
         },
+        "by_match_rule_version": {
+            **{v: int((rule_version == v).sum()) for v in RULE_VERSIONS},
+            "none": int((rule_version == RULE_VERSION_NONE).sum()),
+        },
         "by_class_and_confidence": {
             name: {c: int(((classes == name) & (confidence == c)).sum()) for c in CONFIDENCES}
+            for name in EVIDENCE_CLASSES
+        },
+        "by_class_and_rule_version": {
+            name: {v: int(((classes == name) & (rule_version == v)).sum()) for v in RULE_VERSIONS}
             for name in EVIDENCE_CLASSES
         },
         "with_suggested_loss": int(has_loss.sum()),
         "with_suggested_loss_confirmed": int((has_loss & (confidence == "confirmed")).sum()),
         "with_suggested_loss_name_only": int((has_loss & (confidence == "name_only")).sum()),
+        "with_suggested_loss_by_rule_version": {
+            v: int((has_loss & (rule_version == v)).sum()) for v in RULE_VERSIONS
+        },
         "by_basis": {basis: int((table["basis"] == basis).sum()) for basis in BASES},
         "by_basis_and_confidence": {
             basis: {

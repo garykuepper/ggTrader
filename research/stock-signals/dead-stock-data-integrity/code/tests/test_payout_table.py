@@ -728,3 +728,76 @@ def test_main_payouts_compares_the_form25_roster_hash_with_the_buffer_it_used(
     with pytest.raises(SystemExit) as stop:
         main(argv, client_factory=lambda ua, cache: sec_client())
     assert stop.value.code == 2
+
+
+# ---- rule_version propagation and v1.1 matching-rules validation -------------------------------
+
+
+def test_payout_table_carries_match_rule_version_and_counts_it():
+    assert "match_rule_version" in TABLE_COLUMNS
+    roster = pd.DataFrame(
+        [
+            roster_row(1, label="calm_like_deal"),
+            roster_row(2, label="calm_like_deal"),
+            roster_row(3, label="unclear"),
+            roster_row(4, source="none", name=None),
+        ]
+    )
+    matches = {
+        1: {**match(), "rule_version": "v1"},
+        2: {**match(), "rule_version": "v1.1"},
+        3: {**match("none", "not_checked"), "rule_version": "v1.1"},
+    }
+    events = {1: [event(["2.01"])], 2: [event(["2.01"])]}
+    table = build_payout_table(roster, matches, {}, events).set_index("permno")
+    assert table["match_rule_version"].to_dict() == {1: "v1", 2: "v1.1", 3: "", 4: ""}
+    cov = coverage_summary(table)
+    assert cov["by_match_rule_version"] == {"v1": 1, "v1.1": 1, "none": 2}
+    assert cov["by_class_and_rule_version"]["acquired_or_merged"] == {"v1": 1, "v1.1": 1}
+    assert cov["with_suggested_loss_by_rule_version"] == {"v1": 1, "v1.1": 1}
+
+
+@pytest.mark.parametrize(
+    "kind",
+    ["drop_v11", "change_plural_hash", "newline_plural_hash", "change_regex", "change_share_class"],
+)
+def test_main_payouts_refuses_old_v1_only_or_changed_v11_matching_rules(tmp_path: Path, kind: str):
+    def change(prov: dict[str, Any]) -> None:
+        rules = dict(prov["matching_rules"])
+        if kind == "drop_v11":
+            for key in (
+                "plural_to_singular_sha256",
+                "rule_versions",
+                "edgar_slash_tag_pattern",
+                "share_class_pattern",
+            ):
+                rules.pop(key, None)
+        elif kind == "change_plural_hash":
+            rules["plural_to_singular_sha256"] = "f" * 64
+        elif kind == "newline_plural_hash":
+            rules["plural_to_singular_sha256"] += "\n"
+        elif kind == "change_regex":
+            rules["edgar_slash_tag_pattern"] = r"/[A-Z]{2}/$"
+        else:
+            rules["share_class_pattern"] = r"-[AB]$"
+        prov["matching_rules"] = rules
+
+    assert _refused(tmp_path, change) == []
+
+
+def test_main_payouts_writes_match_rule_version_into_csv_and_summary(tmp_path: Path):
+    argv = write_inputs(tmp_path)
+    payload = form25_with_provenance(tmp_path / "roster.csv")
+    payload["stocks"] = [
+        {**payload["stocks"][0], "rule_version": "v1.1"},
+        {**payload["stocks"][1], "rule_version": "v1.1"},
+    ]
+    (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(payload))
+    assert main(argv, client_factory=lambda ua, cache: sec_client()) == 0
+    out = tmp_path / "out"
+    with (out / "_payouts.csv").open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]["match_rule_version"] == "v1.1"
+    assert rows[1]["match_rule_version"] == ""
+    cov = json.loads((out / "_payouts.json").read_text())["coverage_summary"]
+    assert cov["by_match_rule_version"] == {"v1": 0, "v1.1": 1, "none": 1}

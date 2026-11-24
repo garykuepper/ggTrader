@@ -101,19 +101,25 @@ def needed_quarters(rows: list[Mapping[str, Any]]) -> list[tuple[int, int]]:
 
 
 def matching_rules() -> dict[str, Any]:
-    """The constants that decide a name match and the filing windows, with a hash of the word list.
+    """The constants that decide a name match and the filing windows, with word-list hashes.
 
-    ``abbreviations_sha256`` fingerprints the fixed short-form table, so a changed table shows up
-    in the result file even if nobody remembers editing it.
+    ``abbreviations_sha256`` and ``plural_to_singular_sha256`` fingerprint the fixed v1 and v1.1
+    word tables, and the regex strings record the v1.1 raw-string strips, so any rule change shows
+    up in the result file and stops a stale Form 25 file from being reused.
     """
-    table = json.dumps(sorted(sec_filings.ABBREVIATIONS.items()), ensure_ascii=True)
+    abbrev_table = json.dumps(sorted(sec_filings.ABBREVIATIONS.items()), ensure_ascii=True)
+    plural_table = json.dumps(sorted(sec_filings.PLURAL_TO_SINGULAR.items()), ensure_ascii=True)
     return {
+        "rule_versions": list(sec_filings.RULE_VERSIONS),
         "before_days": sec_filings.BEFORE_DAYS,
         "after_days": sec_filings.AFTER_DAYS,
         "truncated_name_length": sec_filings.TRUNCATED_NAME_LENGTH,
         "event_window_days": sec_filings.EVENT_WINDOW_DAYS,
         "suffix_words": sorted(sec_filings.SUFFIX_WORDS),
-        "abbreviations_sha256": hashlib.sha256(table.encode("ascii")).hexdigest(),
+        "abbreviations_sha256": hashlib.sha256(abbrev_table.encode("ascii")).hexdigest(),
+        "plural_to_singular_sha256": hashlib.sha256(plural_table.encode("ascii")).hexdigest(),
+        "edgar_slash_tag_pattern": sec_filings.EDGAR_SLASH_TAG_PATTERN,
+        "share_class_pattern": sec_filings.SHARE_CLASS_PATTERN,
     }
 
 
@@ -271,6 +277,8 @@ def form25_provenance_problems(prov: Any, roster_sha256: str) -> list[str]:
     current = matching_rules()
     if not isinstance(rules, dict) or not HEX64.fullmatch(str(rules.get("abbreviations_sha256"))):
         problems.append("matching_rules has no abbreviations_sha256")
+    elif not HEX64.fullmatch(str(rules.get("plural_to_singular_sha256"))):
+        problems.append("matching_rules has no plural_to_singular_sha256")
     elif rules != current:
         problems.append("matching_rules differ from the rules in the code now")
     return problems
@@ -359,6 +367,7 @@ def resolve_stock(match: dict, read: Callable[[str, str], dict]) -> dict:
             for c in dropped
         ],
         "cik_checks": [{"cik": c["cik"], "state": c["state"]} for c in checks],
+        "rule_version": match.get("rule_version", sec_filings.RULE_VERSION_V1),
     }
     if len(kept) > 1:
         return {
@@ -390,13 +399,20 @@ def summarize(stocks: list[dict]) -> dict[str, Any]:
     """Count the stocks by outcome; the counts add up to the roster size.
 
     ``matched`` (the headline) is ``confirmed_common + unconfirmed_unreadable``; both parts are
-    reported. ``name_matched`` counts the stocks the name rule found before any notice was read.
+    reported, alongside ``matched_v1`` and ``matched_v1_1_only`` (which also add up to
+    ``matched``). ``name_matched`` counts the stocks the name rules found before notice checks.
     """
     by_confirmation = {name: 0 for name in CONFIRMATIONS}
     counts = {"ambiguous": 0, "none": 0, STATUS_NAME_UNKNOWN: 0}
+    matched_v1 = 0
+    matched_v1_1_only = 0
     for stock in stocks:
         if stock["status"] == sec_filings.STATUS_MATCHED:
             by_confirmation[stock["confirmation"]] += 1
+            if stock.get("rule_version") == sec_filings.RULE_VERSION_V11:
+                matched_v1_1_only += 1
+            else:
+                matched_v1 += 1
         elif stock["confirmation"] in (NON_COMMON_ONLY, REJECTED_ISSUER_MISMATCH):
             by_confirmation[stock["confirmation"]] += 1
         else:
@@ -415,6 +431,8 @@ def summarize(stocks: list[dict]) -> dict[str, Any]:
         "none": counts["none"],
         STATUS_NAME_UNKNOWN: counts[STATUS_NAME_UNKNOWN],
         "matched": matched,
+        "matched_v1": matched_v1,
+        "matched_v1_1_only": matched_v1_1_only,
         "matched_rate_of_named": matched / named if named else None,
     }
 
@@ -481,9 +499,15 @@ def run_form25(
                 accessions=[],
                 confirmation=NOT_CHECKED,
                 notice=None,
+                rule_version=None,
             )
         else:
-            result.update(resolve_stock(sec_filings.match_roster_row(row, candidates), read))
+            match = sec_filings.match_roster_row(row, candidates)
+            # Rule v1.1 runs only when v1 leaves the stock with status none (never on v1 matches
+            # or ambiguities) and uses the same candidate list and notice validation.
+            if match["status"] == sec_filings.STATUS_NONE:
+                match = sec_filings.match_roster_row_v11(row, candidates)
+            result.update(resolve_stock(match, read))
         stocks.append(result)
     return {
         "phase": "form25",
@@ -650,7 +674,9 @@ def main(
     write_json(target, payload, strict=True)
     summary = payload["summary"]
     print(
-        f"matched {summary['matched']} (confirmed common {summary['confirmed_common']}, "
+        f"matched {summary['matched']} (v1 {summary['matched_v1']}, "
+        f"v1.1 only {summary['matched_v1_1_only']}; "
+        f"confirmed common {summary['confirmed_common']}, "
         f"unconfirmed {summary['unconfirmed_unreadable']}); "
         f"name matched {summary['name_matched']}; "
         f"non-common only {summary['non_common_only']}, issuer mismatch "

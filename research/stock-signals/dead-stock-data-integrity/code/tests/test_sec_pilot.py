@@ -666,3 +666,91 @@ def test_a_roster_changed_after_the_read_cannot_change_the_recorded_hash(
     assert main(argv, client_factory=factory) == 0
     prov = json.loads((tmp_path / "out" / OUTPUT_JSON).read_text())["provenance"]
     assert prov["roster_sha256"] == used  # the bytes parsed, not the file as it is later
+
+
+# ---- matching rule v1.1 second-pass orchestration and provenance -------------------------------
+
+
+def test_run_form25_runs_v11_only_on_v1_none_and_labels_results(monkeypatch: pytest.MonkeyPatch):
+    import sec_filings
+
+    v11_called_for: list[str] = []
+    real_v11 = sec_filings.match_roster_row_v11
+
+    def spy_v11(row_item: Any, candidates: list[dict], **kwargs: Any) -> dict:
+        v11_called_for.append(str(row_item.get("stock_name")))
+        return real_v11(row_item, candidates, **kwargs)
+
+    monkeypatch.setattr(sec_filings, "match_roster_row_v11", spy_v11)
+
+    rows = [
+        row("V1_OK", "ALPHA CORP", "2010-02-15"),
+        row("V1_AMB", "BETA CORP", "2010-02-20"),
+        row("V11_OK", "ESTERLINE TECH", "2010-02-20"),
+        row("V11_CUT", "ATHLON ENERGY IN", "2010-02-20"),
+        row("V11_WARR", "ALPHARMA INC-A", "2010-02-20"),
+        row("STILL_NONE", "ZETA CORP", "2010-02-20"),
+        row("UNNAMED", "", "2010-03-01", source="none"),
+    ]
+    acc_est = "0000000010-10-000001"
+    acc_ath = "0000000011-10-000001"
+    acc_alp = "0000000012-10-000001"
+    bodies: dict[str, object] = {
+        master_index_url(2010, 2): master_zip([]),
+        master_index_url(2010, 3): master_zip([]),
+        master_index_url(2010, 1): master_zip(
+            [
+                ("1", "Alpha Corp", "25", "2010-03-02", ACC_A),
+                ("2", "Beta Corp", "25", "2010-03-03", ACC_B1),
+                ("3", "BETA CORP.", "25", "2010-03-04", ACC_B2),
+                ("10", "Esterline Technologies Corp", "25", "2010-03-05", acc_est),
+                ("11", "Athlon Energy Inc.", "25", "2010-03-06", acc_ath),
+                ("12", "ALPHARMA INC", "25", "2010-03-07", acc_alp),
+            ]
+        ),
+    }
+    bodies.update(filing_files("0000000001", ACC_A, "Common Stock"))
+    bodies.update(filing_files("0000000010", acc_est, "Common Stock"))
+    # Athlon has no primary_doc.xml -> unconfirmed_unreadable under v1.1
+    # Alpharma has warrants only -> rejected as non_common_only under v1.1
+    bodies.update(filing_files("0000000012", acc_alp, "Warrants to purchase Common Stock"))
+
+    payload = run_form25(FakeClient(bodies), rows, run_date="2026-11-24")
+    # v1.1 must NEVER run for V1_OK (v1 matched), V1_AMB (v1 ambiguous), or UNNAMED.
+    assert v11_called_for == [
+        "ESTERLINE TECH",
+        "ATHLON ENERGY IN",
+        "ALPHARMA INC-A",
+        "ZETA CORP",
+    ]
+    by_sym = {s["symbol"]: s for s in payload["stocks"]}
+    assert by_sym["V1_OK"]["status"] == "matched" and by_sym["V1_OK"]["rule_version"] == "v1"
+    assert by_sym["V1_AMB"]["status"] == "ambiguous" and by_sym["V1_AMB"]["rule_version"] == "v1"
+    assert by_sym["V11_OK"]["status"] == "matched" and by_sym["V11_OK"]["rule_version"] == "v1.1"
+    assert by_sym["V11_OK"]["confirmation"] == "confirmed_common"
+    assert by_sym["V11_CUT"]["status"] == "matched" and by_sym["V11_CUT"]["rule_version"] == "v1.1"
+    assert by_sym["V11_CUT"]["confirmation"] == "unconfirmed_unreadable"
+    assert by_sym["V11_WARR"]["status"] == "none" and by_sym["V11_WARR"]["rule_version"] == "v1.1"
+    assert by_sym["V11_WARR"]["confirmation"] == "non_common_only"
+    assert by_sym["STILL_NONE"]["status"] == "none"
+    assert by_sym["STILL_NONE"]["rule_version"] == "v1.1"
+    assert (
+        by_sym["UNNAMED"]["status"] == "name_unknown" and by_sym["UNNAMED"]["rule_version"] is None
+    )
+
+    summary = payload["summary"]
+    assert summary["matched"] == 3
+    assert summary["matched_v1"] == 1
+    assert summary["matched_v1_1_only"] == 2
+    assert summary["matched_v1"] + summary["matched_v1_1_only"] == summary["matched"]
+    assert count_parts(summary) == len(rows) == summary["roster_rows"]
+
+
+def test_matching_rules_provenance_records_v11_constants(tmp_path: Path):
+    import sec_filings
+
+    rules = run_form25_main(tmp_path)["provenance"]["matching_rules"]
+    assert rules["rule_versions"] == ["v1", "v1.1"]
+    assert len(rules["plural_to_singular_sha256"]) == 64
+    assert rules["edgar_slash_tag_pattern"] == sec_filings.EDGAR_SLASH_TAG_PATTERN
+    assert rules["share_class_pattern"] == sec_filings.SHARE_CLASS_PATTERN

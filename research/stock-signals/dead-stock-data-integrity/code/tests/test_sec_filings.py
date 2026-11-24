@@ -348,3 +348,150 @@ def test_a_complete_16_character_name_matches_by_prefix_and_two_filers_make_it_a
 
 def test_module_exposes_only_the_documented_forms():
     assert sec_filings.FORM25_FORMS == frozenset({"25", "25/A", "25-NSE", "25-NSE/A"})
+
+
+# ---- matching rule v1.1 (second pass only for stocks v1 left unmatched) ------------------------
+
+
+def test_v1_results_carry_rule_version_v1():
+    assert match_roster_row(ROW, [cand("ALPHA CORP", "2010-07-01")])["rule_version"] == "v1"
+    assert match_roster_row(ROW, [])["rule_version"] == "v1"
+    unnamed = {"stock_name": "", "name_source": "none", "exit_date": "2010-06-30"}
+    assert match_roster_row(unnamed, [cand("ALPHA CORP", "2010-07-01")])["rule_version"] == "v1"
+
+
+def test_v11_matches_cut_off_inc_suffix_while_v1_misses():
+    # "ATHLON ENERGY IN" is 16 characters; v1 strips INC from the filer before prefix check.
+    row = dict(ROW, stock_name="ATHLON ENERGY IN")
+    assert len(row["stock_name"]) == 16
+    filings = [cand("Athlon Energy Inc.", "2010-07-01", cik="0001575189")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched"
+    assert out["ciks"] == ["0001575189"]
+    assert out["rule_version"] == "v1.1"
+    assert sec_filings.normalize_name_v11_untrimmed("Athlon Energy Inc.") == "ATHLON ENERGY INC"
+    assert sec_filings.normalize_name_v11_untrimmed("ATHLON ENERGY IN") == "ATHLON ENERGY IN"
+
+
+def test_v11_strips_share_class_markers_before_suffix_stripping():
+    row = dict(ROW, stock_name="ALPHARMA INC-A")
+    filings = [cand("ALPHARMA INC", "2010-07-01", cik="0000730469")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched" and out["rule_version"] == "v1.1"
+    for variant in (
+        "ALPHARMA INC-A",
+        "ALPHARMA INC-B",
+        "ALPHARMA INC-C",
+        "ALPHARMA INC CL A",
+        "ALPHARMA INC CLASS A",
+        "ALPHARMA INC CLASS B",
+        "ALPHARMA INC - CL C",
+        "ALPHARMA INC, CLASS A",
+    ):
+        assert sec_filings.normalize_name_v11(variant) == "ALPHARMA"
+    # Bare trailing A (not hyphenated, not CL/CLASS) and unsupported class letters stay intact.
+    assert sec_filings.normalize_name_v11("STUDIO A") == "STUDIO A"
+    assert sec_filings.normalize_name_v11("ALPHARMA INC-D") == "ALPHARMA INC D"
+
+
+def test_hcc_prefix_stays_matched_under_v1_and_also_matches_under_v11():
+    row = dict(ROW, stock_name="HCC INS HLDGS IN")
+    assert len(row["stock_name"]) == 16
+    filings = [cand("HCC INSURANCE HOLDINGS INC/DE/", "2010-07-01", cik="0000888919")]
+    v1_out = match_roster_row(row, filings)
+    assert v1_out["status"] == "matched" and v1_out["rule_version"] == "v1"
+    v11_out = sec_filings.match_roster_row_v11(row, filings)
+    assert v11_out["status"] == "matched" and v11_out["rule_version"] == "v1.1"
+
+
+def test_v11_strips_trailing_edgar_slash_tags_only():
+    assert sec_filings.normalize_name_v11("CYTEC INDUSTRIES INC/DE/") == "CYTEC INDUSTRY"
+    assert sec_filings.normalize_name_v11("ACME CORP/NEW") == "ACME"
+    assert sec_filings.normalize_name_v11("ACME CORP/MD/") == "ACME"
+    assert sec_filings.normalize_name_v11_untrimmed("ACME CORP/DE/") == "ACME CORP"
+    # Interior slashes (and non-tag words after a slash) are not stripped.
+    assert sec_filings.normalize_name_v11("AT&T/EDISON") == "AT T EDISON"
+    assert sec_filings.normalize_name_v11("AT&T/ED CORP") == "AT T ED"
+    row = dict(ROW, stock_name="CYTEC INDS INC")
+    filings = [cand("CYTEC INDUSTRIES INC/DE/", "2010-07-01", cik="0000912513")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched" and out["rule_version"] == "v1.1"
+
+
+def test_v11_folds_plurals_to_singular_including_esterline_tech():
+    row = dict(ROW, stock_name="ESTERLINE TECH")
+    filings = [cand("Esterline Technologies Corp", "2010-07-01", cik="0000033619")]
+    assert match_roster_row(row, filings)["status"] == "none"
+    out = sec_filings.match_roster_row_v11(row, filings)
+    assert out["status"] == "matched" and out["rule_version"] == "v1.1"
+    assert (
+        sec_filings.normalize_name_v11("ESTERLINE TECH")
+        == sec_filings.normalize_name_v11("ESTERLINE TECHS")
+        == sec_filings.normalize_name_v11("Esterline Technology Corp")
+        == sec_filings.normalize_name_v11("Esterline Technologies Corp")
+        == "ESTERLINE TECHNOLOGY"
+    )
+    # COMPANIES folds to COMPANY, which is then stripped by SUFFIX_WORDS.
+    assert sec_filings.normalize_name_v11("ACME COMPANIES") == "ACME"
+    assert sec_filings.normalize_name_v11_untrimmed("ACME COMPANIES") == "ACME COMPANY"
+    # Whole words only, and every table entry maps cleanly.
+    assert len(sec_filings.PLURAL_TO_SINGULAR) == 12
+    for plural, singular in sec_filings.PLURAL_TO_SINGULAR.items():
+        assert sec_filings.normalize_name_v11_untrimmed(f"ACME {plural}") == f"ACME {singular}"
+
+
+def test_v11_normalize_is_idempotent():
+    samples = [
+        "ATHLON ENERGY IN",
+        "ALPHARMA INC-A",
+        "HCC INSURANCE HOLDINGS INC/DE/",
+        "Esterline Technologies Corp",
+        "ACME COMPANIES",
+        "AT&T/EDISON",
+        "Inc.",
+    ]
+    for name in samples:
+        once = sec_filings.normalize_name_v11(name)
+        assert sec_filings.normalize_name_v11(once) == once
+
+
+def test_v11_keeps_ambiguity_window_edges_and_unnamed_rules():
+    row = dict(ROW, stock_name="ESTERLINE TECH")
+    both = [
+        cand("Esterline Technologies Corp", "2010-07-01", cik="0000000001"),
+        cand("Esterline Technology Inc/DE/", "2010-07-02", cik="0000000002"),
+    ]
+    amb = sec_filings.match_roster_row_v11(row, both)
+    assert amb["status"] == "ambiguous" and amb["ciks"] == ["0000000001", "0000000002"]
+    assert amb["rule_version"] == "v1.1"
+    # Window edges: -30 / +180 inclusive, -31 / +181 excluded.
+    assert (
+        sec_filings.match_roster_row_v11(row, [cand("Esterline Technologies Corp", "2010-05-31")])[
+            "status"
+        ]
+        == "matched"
+    )
+    assert (
+        sec_filings.match_roster_row_v11(row, [cand("Esterline Technologies Corp", "2010-05-30")])[
+            "status"
+        ]
+        == "none"
+    )
+    assert (
+        sec_filings.match_roster_row_v11(row, [cand("Esterline Technologies Corp", "2010-12-27")])[
+            "status"
+        ]
+        == "matched"
+    )
+    assert (
+        sec_filings.match_roster_row_v11(row, [cand("Esterline Technologies Corp", "2010-12-28")])[
+            "status"
+        ]
+        == "none"
+    )
+    unnamed = {"stock_name": None, "name_source": "none", "exit_date": "2010-06-30"}
+    out = sec_filings.match_roster_row_v11(unnamed, [cand("ALPHA CORP", "2010-07-01")])
+    assert out["status"] == "none" and out["rule_version"] == "v1.1"
