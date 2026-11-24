@@ -343,3 +343,49 @@ def test_month_end_fields_never_writes() -> None:
     sql = conn.cur.calls[0][0].lower()
     for word in ("insert", "update", "delete", "drop", "create", "alter"):
         assert word not in sql.split()
+
+
+def test_missing_identifier_before_duplicate_columns_keeps_one_column() -> None:
+    spans = make_spans(
+        [
+            ("NO-ID", float("nan"), "yahoo", "1990-01-01", "2030-01-01", False),
+            ("ZZZ", 7, "yahoo", "2000-01-03", "2030-01-01", True),
+            ("PERMNO-7", 7, "placeholder", "1990-01-01", "2030-01-01", True),
+        ]
+    )
+    fields = make_fields([{"permno": 7, "month_end": m} for m in MONTH_ENDS])
+    out = run(fields, spans)
+    assert not out["NO-ID"].any()
+    assert not out["ZZZ"].any()
+    assert out["PERMNO-7"].all()
+    assert (out.sum(axis=1) <= 1).all()
+
+
+def test_missing_month_end_price_fails_instead_of_reusing_an_older_row() -> None:
+    import datetime as dt
+
+    # The latest January row has no price and an excluded share code; an older January row
+    # (price 6, common stock) must not stand in for it.
+    rows = [
+        (10, dt.date(2019, 12, 31), 11, 1, 20.0, 2.0e7),
+        (10, dt.date(2020, 1, 31), 73, 1, None, None),
+    ]
+    conn = StubConn(rows)
+    fields = month_end_fields(conn, 3, "2019-12-01", "2020-03-31")
+    sql = conn.cur.calls[0][0].lower()
+    assert "prc is not null" not in sql
+    assert fields["abs_prc"].dtype == float
+    assert fields["abs_prc"].isna().tolist() == [False, True]
+    for universe in ("A", "B"):
+        out = run(fields, simple_spans(10), universe=universe)
+        assert out.loc["2020-01-02":"2020-01-31", "P10"].all()  # December row governs January
+        assert not out.loc["2020-02-03":"2020-02-28", "P10"].any()  # NaN price row fails
+
+
+def test_nan_price_row_fails_both_rules_even_without_rank_limit() -> None:
+    nan = float("nan")
+    fields = make_fields(
+        [{"permno": 1, "month_end": m, "abs_prc": nan, "cap": nan} for m in MONTH_ENDS]
+    )
+    for universe in ("A", "B"):
+        assert not run(fields, simple_spans(1), universe=universe)["P1"].any()

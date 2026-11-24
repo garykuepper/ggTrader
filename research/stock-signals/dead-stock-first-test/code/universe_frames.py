@@ -1,6 +1,6 @@
 """Point-in-time eligibility (which stocks could be held each day) from raw CRSP rows.
 
-Two steps. ``month_end_fields`` reads, in one read-only query, the last priced row of every
+Two steps. ``month_end_fields`` reads, in one read-only query, the last row of every
 calendar month for every stock from the raw CRSP table (share code, exchange code, absolute
 price, market value). ``eligibility`` is pure pandas: a stock is eligible on a day when the
 **previous** calendar month's row passes the universe rule and the stock's column in the
@@ -35,12 +35,13 @@ SPAN_COLUMNS = ["symbol", "permno", "kind", "first_date", "last_date"]
 # Lower number wins when two columns of one company are eligible on the same day.
 KIND_PRIORITY = {"placeholder": 0, "spell": 1, "linked_yahoo": 2, "yahoo": 3}
 
-# One read: the last row of each calendar month that has a price, per stock, from one load.
+# One read: the last row of each calendar month per stock, from one load. A missing price on
+# that row is kept (it fails the price test) rather than falling back to an older row.
 MONTH_END_SQL = """
 SELECT DISTINCT ON (permno, date_trunc('month', date))
        permno, date AS month_end, shrcd, exchcd, abs(prc) AS abs_prc, abs(prc) * shrout AS cap
 FROM kaggle_crsp.daily_of(%s)
-WHERE date >= %s::date AND date <= %s::date AND prc IS NOT NULL
+WHERE date >= %s::date AND date <= %s::date
 ORDER BY permno, date_trunc('month', date), date DESC
 """
 
@@ -60,7 +61,7 @@ UNIVERSE_RULES: dict[str, UniverseRule] = {
 
 
 def month_end_fields(conn: Any, load_id: int, start: str, end: str) -> pd.DataFrame:
-    """Read each stock's last priced row of every month from the raw CRSP rows.
+    """Read each stock's last row of every month from the raw CRSP rows.
 
     Args:
         conn: An open read-only connection (from ``ggTrader.data.bars.connect_readonly``).
@@ -70,7 +71,8 @@ def month_end_fields(conn: Any, load_id: int, start: str, end: str) -> pd.DataFr
 
     Returns:
         Columns ``permno, month_end, shrcd, exchcd, abs_prc, cap``: one row per permno per
-        calendar month, ``month_end`` being the date of that last priced row. ``cap`` is
+        calendar month, ``month_end`` being the date of that last row. ``abs_prc`` and ``cap``
+        are NaN when the row has no price (such a row fails the price test). ``cap`` is
         absolute price times shares outstanding; it is used for ranking only, so the file's
         share units do not matter.
     """
@@ -120,7 +122,8 @@ def _passing_by_month(fields: pd.DataFrame, rule: UniverseRule) -> dict[pd.Perio
 def _one_column_per_company(mask: np.ndarray, spans: pd.DataFrame, permno: pd.Series) -> np.ndarray:
     """Keep, on each day, at most one true column per permno (highest priority first)."""
     priority = spans["kind"].map(KIND_PRIORITY).fillna(len(KIND_PRIORITY)).to_numpy()
-    for _, positions in permno.dropna().groupby(permno.dropna()).indices.items():
+    # groupby drops missing ids but keeps positions in the full column order.
+    for _, positions in permno.groupby(permno).indices.items():
         if len(positions) < 2:
             continue
         cols = np.array(positions)
