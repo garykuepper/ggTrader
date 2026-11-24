@@ -14,6 +14,7 @@ import price_path
 import roster as roster_mod
 
 from ggTrader.utils.io import atomic_write_text, write_json
+from ggTrader.utils.study import study_dir
 
 # CRSP ends here; the brief reads nothing later.
 CRSP_END = "2024-12-31"
@@ -27,7 +28,7 @@ EXAMPLES_PER_CHECK = 20
 SHARE_CODES = [10, 11]
 EXCHANGE_CODES = [1, 3]
 # This study's own folder (code/ sits inside it); inputs are located from here, never from --out.
-STUDY_DIR = Path(__file__).resolve().parent.parent
+STUDY_DIR = study_dir(__file__)
 FETCH_CHUNK = 200_000
 SPELL_SYMBOL_RE = r"PERMNO-\d+~\d+"
 TRADE_FILES = ("dev-A", "dev-B", "holdout-A", "holdout-B")
@@ -68,7 +69,7 @@ BATCH_SQL = (
 )
 # A first probe through daily_of() with the stock-spans filter ran over 12 minutes and was
 # stopped, while the same question on the table by load id takes under a second (see
-# _hand_checks.md; the cause was not determined). The scan therefore reads the table by load id
+# _hand_checks.txt; the cause was not determined). The scan therefore reads the table by load id
 # after the same completeness test.
 LOAD_COMPLETE_SQL = "SELECT 1 FROM ref.loads WHERE load_id = %s::bigint AND status = 'complete'"
 ROSTER_RET_SQL = (
