@@ -10,11 +10,11 @@
     "scan_start": "2004-01-01",
     "batch_size": 500,
     "reference_cell": "loss0_cost18.3bps_taxlow",
-    "git_head": "7b9faeecaa089eed9822a1b3ac0cb34c6e41e2a6",
-    "git_dirty": true,
+    "git_head": "a36927c8ead01cbd6b055dfe9fba51e2e29647cd",
+    "git_dirty": false,
     "code_sha256": {
       "run.py": "138c83ac62839a057d79d3dcba4a391dd63da9b1b920e50f570f8a48e113e42e",
-      "dead_stock_data_integrity.py": "7ef59fa80412277a290f62c294caff1fa53f1d9ef74d7a363889c7587cadf80c",
+      "dead_stock_data_integrity.py": "4ed34dd6a5366e93ee2710e02fa0ae23126570c36a7acd86549c7d511d1cfe03",
       "integrity_checks.py": "d9dae59ba5652bab10c1527297de656f9aa3e6e59dbdc6f69f4c67ec6c483712",
       "price_path.py": "15a21f30ea2c359bc372ab01c9353c8e8047e1b458c725ee556dba348ca9343b",
       "roster.py": "dbca6c4ffc14ea13882d98ab7e73db0da05142a585e6dcc260657bcd0c4b6113"
@@ -22,7 +22,7 @@
     "run_date": "2026-11-24",
     "permnos_in_scan_list": 9422,
     "permnos_scanned": 9422,
-    "rows_scanned": 20009825,
+    "rows_scanned": 20379285,
     "batches": 19
   },
   "calendar": {
@@ -66,8 +66,8 @@
     }
   },
   "spikes": {
-    "rows_flagged": 342,
-    "stocks_flagged": 251,
+    "rows_flagged": 345,
+    "stocks_flagged": 253,
     "examples": [
       {
         "permno": 14153,
@@ -198,20 +198,14 @@
     }
   },
   "gaps": {
-    "rows_flagged": 220,
-    "stocks_flagged": 195,
+    "rows_flagged": 251,
+    "stocks_flagged": 222,
     "examples": [
       {
         "permno": 77263,
         "date": "2005-12-27",
         "detail": "4253 days missing",
         "magnitude": 4253.0
-      },
-      {
-        "permno": 81761,
-        "date": "2005-10-05",
-        "detail": "3865 days missing",
-        "magnitude": 3865.0
       },
       {
         "permno": 92218,
@@ -226,10 +220,28 @@
         "magnitude": 3523.0
       },
       {
+        "permno": 89986,
+        "date": "2008-09-29",
+        "detail": "3410 days missing",
+        "magnitude": 3410.0
+      },
+      {
         "permno": 86067,
         "date": "2004-06-14",
         "detail": "3250 days missing",
         "magnitude": 3250.0
+      },
+      {
+        "permno": 88937,
+        "date": "2009-07-07",
+        "detail": "3245 days missing",
+        "magnitude": 3245.0
+      },
+      {
+        "permno": 90682,
+        "date": "2007-04-24",
+        "detail": "3018 days missing",
+        "magnitude": 3018.0
       },
       {
         "permno": 52231,
@@ -238,22 +250,40 @@
         "magnitude": 2998.0
       },
       {
+        "permno": 11441,
+        "date": "2004-11-01",
+        "detail": "2601 days missing",
+        "magnitude": 2601.0
+      },
+      {
         "permno": 79280,
         "date": "2006-04-07",
         "detail": "2529 days missing",
         "magnitude": 2529.0
       },
       {
-        "permno": 79033,
-        "date": "2009-02-05",
-        "detail": "2399 days missing",
-        "magnitude": 2399.0
-      },
-      {
         "permno": 84321,
         "date": "2011-11-03",
         "detail": "2384 days missing",
         "magnitude": 2384.0
+      },
+      {
+        "permno": 91522,
+        "date": "2012-11-02",
+        "detail": "2363 days missing",
+        "magnitude": 2363.0
+      },
+      {
+        "permno": 87656,
+        "date": "2006-02-01",
+        "detail": "2238 days missing",
+        "magnitude": 2238.0
+      },
+      {
+        "permno": 91437,
+        "date": "2011-09-30",
+        "detail": "2023 days missing",
+        "magnitude": 2023.0
       },
       {
         "permno": 82163,
@@ -290,48 +320,18 @@
         "date": "2004-05-25",
         "detail": "1798 days missing",
         "magnitude": 1798.0
-      },
-      {
-        "permno": 11393,
-        "date": "2004-03-26",
-        "detail": "1766 days missing",
-        "magnitude": 1766.0
-      },
-      {
-        "permno": 81593,
-        "date": "2008-09-29",
-        "detail": "1762 days missing",
-        "magnitude": 1762.0
-      },
-      {
-        "permno": 82567,
-        "date": "2004-10-14",
-        "detail": "1744 days missing",
-        "magnitude": 1744.0
-      },
-      {
-        "permno": 83827,
-        "date": "2008-02-06",
-        "detail": "1682 days missing",
-        "magnitude": 1682.0
-      },
-      {
-        "permno": 91428,
-        "date": "2016-02-25",
-        "detail": "1637 days missing",
-        "magnitude": 1637.0
       }
     ],
     "flags_inside_holdings": {
       "dev-A": 0,
-      "dev-B": 1,
+      "dev-B": 0,
       "holdout-A": 0,
       "holdout-B": 0
     }
   },
   "stale": {
-    "rows_flagged": 239,
-    "stocks_flagged": 152,
+    "rows_flagged": 249,
+    "stocks_flagged": 158,
     "examples": [
       {
         "permno": 22582,
@@ -538,16 +538,9 @@
         "examples": []
       },
       "gaps": {
-        "flags_inside": 1,
-        "stocks_inside": 1,
-        "examples": [
-          {
-            "permno": 92449,
-            "date": "2012-12-31",
-            "detail": "1600 days missing",
-            "magnitude": 1600.0
-          }
-        ]
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
       },
       "stale": {
         "flags_inside": 0,

@@ -6,13 +6,14 @@ one run of `code/run.py` on 2026-11-24. No number here was measured any other wa
 
 ## Short version
 
-- The price database we loaded (CRSP) has very few damaged rows. Of 20,009,825 daily rows
+- The price database we loaded (CRSP) has very few damaged rows. Of 20,379,285 daily rows
   checked, three of the six checks found nothing at all (duplicate rows, missing prices,
-  missing share counts). The other three found 342 one-day spikes, 220 long gaps and 239
+  missing share counts). The other three found 345 one-day spikes, 251 long gaps and 249
   stretches of an unchanged price.
-- Only **three** flags, out of 801, fall on a day the first test actually held that stock. One
-  gap (in the "wider universe" development run) and two spikes (in the "wider universe" holdout
-  run). The main (A) runs have none.
+- Only **two** flags, out of 845, fall on a day the first test actually held that stock. Both are
+  spikes in the "wider universe" (B) holdout run. The main (A) runs and the B development run
+  have none. (An earlier version of this scan also showed a held gap; it was an error of the
+  scan and is explained under "Limits".)
 - Of the 141 dead stocks the first test held, 133 have a company name. All 141 have a price
   label; 107 look "calm like a deal" in their last month and 34 are "unclear". None looks like a
   collapse.
@@ -36,11 +37,12 @@ one run of `code/run.py` on 2026-11-24. No number here was measured any other wa
 
 ## What was scanned
 
-- 9,422 stocks and 20,009,825 daily rows, read in 19 batches of up to 500 stocks. The rows are
-  ordinary common shares on the NYSE or Nasdaq from 2004-01-01 to 2024-12-31 (the end of the
-  CRSP file).
+- 9,422 stocks and 20,379,285 daily rows, read in 19 batches of up to 500 stocks, from
+  2004-01-01 to 2024-12-31 (the end of the CRSP file). A stock is scanned when it has at least
+  one row since 2004-01-01 as an ordinary common share on the NYSE or Nasdaq; for those stocks
+  every row since 2004-01-01 is read, whatever exchange it was on that day.
 - The trading calendar used for the gap check has 5,285 dates, each a day on which at least
-  1,000 of those stocks have a row.
+  1,000 NYSE or Nasdaq ordinary shares have a row.
 
 ## The 141 dead stocks
 
@@ -59,9 +61,9 @@ one run of `code/run.py` on 2026-11-24. No number here was measured any other wa
 | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Duplicate rows | 0 | 0 | 0 | 0 | 0 | 0 |
 | Price missing or zero | 0 | 0 | 0 | 0 | 0 | 0 |
-| Spikes that reverse next day | 342 | 251 | 0 | 0 | 0 | 2 |
-| Gaps of 5 or more missing days | 220 | 195 | 0 | 1 | 0 | 0 |
-| Same price on 10 rows in a row | 239 | 152 | 0 | 0 | 0 | 0 |
+| Spikes that reverse next day | 345 | 253 | 0 | 0 | 0 | 2 |
+| Gaps of 5 or more missing days | 251 | 222 | 0 | 0 | 0 | 0 |
+| Same price on 10 rows in a row | 249 | 158 | 0 | 0 | 0 | 0 |
 | Share count missing at month end | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Positions the first test opened (reference setting): dev-A 2,982, dev-B 3,268, holdout-A 993,
@@ -80,44 +82,60 @@ that no map entry covered, so the nearest entry was used (0 in the holdout files
 
 - **Duplicates, missing prices, missing share counts (all 0):** a clean result. Nothing here
   could move a result.
-- **Spikes (342):** the day's return is probably a bad print or a data error, because the price
+- **Spikes (345):** the day's return is probably a bad print or a data error, because the price
   came straight back. A spike inside a holding could change one day's profit or loss for that
   position, and it could change which stocks rank high that day. The data here does not say
   whether the first test's trades were affected.
-- **Gaps (220):** days with no row. Many are long (the largest are over 3,000 trading days,
-  roughly twelve years or more, where a stock disappears from the file and returns). A gap inside
-  a holding means the test had no price for those days; how it handled them was not read here.
-- **Same price on 10 rows (239):** can be an error, but can also be real: a stock waiting to be
+- **Gaps (251):** days with no row. Many are long (the seven largest are over 3,000 trading
+  days, roughly twelve years or more, where a stock disappears from the file and returns).
+  None falls inside a holding, so none could have touched the first test's trades.
+- **Same price on 10 rows (249):** can be an error, but can also be real: a stock waiting to be
   bought out often trades at almost the same price for weeks. Flagged only; not judged.
 - **None of these checks** says what a holder received when a stock was closed out. That is the
   question Phase 2 (company filings) is for.
 
-## The three largest flags inside holdings
+## The largest flags inside holdings
 
-Only three exist, so these are all of them. "Inside a holding" is taken from the first test's
-trade files; the file does not give the position's start or end in this output, so the size of
-the position and the effect on its profit are **not measured**.
+Only two exist, so these are all of them. "Inside a holding" is taken from the first test's
+trade files; this output does not give the position's start, end or size, so the effect on its
+profit is **not measured**. Both are in the B (stress) holdout file.
 
-1. **Gap, permno 92449, first missing day 2012-12-31, "1,600 days missing"** (dev-B).
-2. **Spike, permno 16680, 2024-07-24**, return +0.5632 then -0.3237 the next day (holdout-B).
-3. **Spike, permno 14873, 2020-06-10**, return +0.5173 then -0.3029 the next day (holdout-B).
+1. **Spike, permno 16680, 2024-07-24**, return +0.5632 then -0.3237 the next day.
+2. **Spike, permno 14873, 2020-06-10**, return +0.5173 then -0.3029 the next day.
+
+The gap on permno 92449 that an earlier version of this note listed as a held flag is gone. It
+was never a hole in the data (see "Limits").
 
 For comparison, the largest flags anywhere (held or not) are a spike on permno 14153 on
-2013-10-03 (return +4.57, then -0.82), a gap on permno 77263 from 2005-12-27 (4,253 days) and an
-unchanged price of 10.595 on permno 22582 for 34 rows from 2023-07-21.
+2013-10-03 (return +4.57, then -0.82), a gap on permno 77263 from 2005-12-27 (4,253 days
+missing) and an unchanged price of 10.595 on permno 22582 for 34 rows from 2023-07-21. The
+largest spike and stale examples are the same as in the earlier version; the gap list changed
+(permno 81761, 3,865 days, no longer appears among the largest, and permnos 89986 and 88937 now do).
 
 ## Limits of this note
 
-- The scan reads only ordinary shares on exchange codes 1 and 3 (NYSE and Nasdaq) as the brief
-  fixed. A stock that moved to another exchange for a while would show a gap here that is a
-  filter effect. The one gap I looked at (permno 77263) was a real hole in the file with the same
-  exchange code on both sides, but I did not check the others.
+- **An earlier version of the scan was wrong about gaps and was corrected the same day.** It
+  kept only the rows where a stock was an ordinary share on the NYSE or Nasdaq, so a stock that
+  spent some years on another exchange (for example NYSE American) lost those days and the gap
+  check reported the hole. That version counted 220 gaps on 195 stocks (and 342 spikes and 239
+  stale runs), and listed one gap inside a holding (permno 92449, "1,600 days missing"), which
+  was exactly its years on NYSE American. The corrected scan reads every row of each selected
+  stock: 251 gaps on 222 stocks, 345 spikes and 249 stale runs, and no held gap. The gap count
+  went up because stocks are now followed over their whole history, not just the filtered
+  years; I did not separately trace each new gap. The brief carries a dated clarification.
+- The stocks scanned are still chosen by the brief's rule (ordinary shares, NYSE or Nasdaq).
+  A stock that never had such a row since 2004 is not scanned at all.
+- Permno 77263 (flagged 4,253 days missing from 2005-12-27) was looked up with no filter: it
+  has rows in 2005 and then none until 2022, so that hole is real in the file. The other large
+  gaps were not looked up one by one.
 - A flag inside a holding says only that the date overlaps. It is not an estimate of harm.
-- The run's code was not yet committed when it ran (`git_dirty` is true in the provenance); the
-  SHA-256 of each code file is recorded there instead.
+- The numbers come from a run on a committed state of the code (`git_dirty` is false in the
+  provenance); the SHA-256 of each code file is recorded too.
 - Each CRSP read used the table directly with the load id after the same "load is complete"
   test that `daily_of()` makes; `daily_of()` itself took over 12 minutes per call because it
   copies the whole load every time.
+- 266 dev-A and 189 dev-B ticker rows fell on a date that no symbol-map entry covered, so the
+  nearest entry was used; the effect was not measured.
 
 ## Decision for the owner
 
