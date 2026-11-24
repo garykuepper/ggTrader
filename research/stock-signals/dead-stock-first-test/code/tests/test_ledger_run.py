@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from ledger_run import BookResult, TaxParams, run_book, run_spy
-from replay import TargetStep, dead_exit_dates, exit_close, plan_trades, span_end_dates
+from replay import TargetStep, exit_close, plan_trades, span_end_dates
 
 from ggTrader.data.bars import Bars
 from ggTrader.engine import portfolio as engine_portfolio
@@ -40,6 +40,7 @@ def empty_exits() -> pd.Series:
 
 
 def run(close, steps, *, exits=None, ex=None, params=TAX, cost=0.0, **kwargs) -> BookResult:
+    kwargs.setdefault("successors", frozenset())
     return run_book(
         close,
         steps,
@@ -103,14 +104,14 @@ def dying_fixture(loss: float, successor: bool = False) -> tuple:
 def test_dead_exit_loss_reaches_ledger_in_death_year() -> None:
     close, spans, ex1, steps = dying_fixture(1.0)
     ex0 = exit_close(close, spans, 0.0)
-    exits = dead_exit_dates(close, spans)
+    exits = span_end_dates(close, spans)
     dead = run(close, steps, exits=exits, ex=ex1)
     flat = run(close, steps, exits=exits, ex=ex0)
     sold = [t for t in dead.trades if t.reason == "dead_exit"]
     assert [t.symbol for t in sold] == ["D"]
     written_off = -sold[0].qty * (10.0 - sold[0].price)  # dollars lost: qty is negative
     assert dead.n_dead_exits == 1
-    assert dead.dead_exit_loss_realised == pytest.approx(written_off, abs=1e-6)
+    assert dead.dead_exit_writeoff == pytest.approx(written_off, abs=1e-6)
     # X gain 100,000 and D loss 50,000 land in 2012: the tax falls by rate x loss.
     assert flat.tax_paid == pytest.approx(0.24 * 100_000.0, abs=1e-6)
     assert dead.tax_paid == pytest.approx(0.24 * (100_000.0 - written_off), abs=1e-6)
@@ -125,11 +126,11 @@ def test_dead_exit_loss_zero_realises_nothing_extra() -> None:
     result = run(
         close,
         [step("2019-01-02", {"D": 1.0})],
-        exits=dead_exit_dates(close, spans),
+        exits=span_end_dates(close, spans),
         ex=exit_close(close, spans, 0.0),
     )
     assert result.n_dead_exits == 1
-    assert result.dead_exit_loss_realised == pytest.approx(0.0, abs=1e-9)
+    assert result.dead_exit_writeoff == pytest.approx(0.0, abs=1e-9)
     assert result.tax_paid == 0.0
     assert result.after_tax_final == pytest.approx(CASH, abs=1e-6)
 
@@ -153,7 +154,7 @@ def test_successor_stock_sold_on_last_bar_at_unchanged_price() -> None:
     assert sold[0].date == pd.Timestamp("2019-06-14")
     assert sold[0].price == 50.0
     assert result.n_dead_exits == 0
-    assert result.dead_exit_loss_realised == 0.0
+    assert result.dead_exit_writeoff == 0.0
     assert result.after_tax_final == pytest.approx(CASH, abs=1e-6)
 
 
@@ -172,6 +173,7 @@ def test_spy_twin_uses_same_costs_and_rates() -> None:
         spy.to_frame(),
         params=TAX,
         one_way_cost=0.0015,
+        successors=frozenset(),
         **kwargs,
     )
     assert real.after_tax_final == pytest.approx(twin.after_tax_final, rel=1e-12)
@@ -181,11 +183,12 @@ def test_spy_twin_uses_same_costs_and_rates() -> None:
 
 def test_ledger_chain_verifies() -> None:
     close, spans, ex, steps = dying_fixture(1.0)
-    result = run(close, steps, exits=dead_exit_dates(close, spans), ex=ex, cost=0.001)
+    result = run(close, steps, exits=span_end_dates(close, spans), ex=ex, cost=0.001)
     assert result.chain_verified is True
 
 
-def test_taxes_never_exceed_gains_when_all_losers() -> None:
+def test_all_loser_book_pays_no_tax_and_loses_money() -> None:
+    """Only shows zero tax on losers (the wash and carry paths have their own tests)."""
     days = pd.bdate_range("2019-01-02", "2020-06-30")
     down = 100.0 * np.exp(-np.linspace(0.0, 0.6, len(days)))
     close = frame(days, A=down, B=down * 0.5)
@@ -196,7 +199,10 @@ def test_taxes_never_exceed_gains_when_all_losers() -> None:
     ]
     result = run(close, steps, cost=0.001)
     assert result.tax_paid == 0.0
+    assert result.unpaid_tax_left == 0.0
     assert result.after_tax_final < CASH
+    # With no tax paid, the after-tax result is the pre-tax one.
+    assert result.after_tax_final == pytest.approx(result.pretax_equity.iloc[-1], abs=1e-6)
 
 
 def test_year_start_tax_sells_pro_rata_when_cash_is_short() -> None:
@@ -232,7 +238,7 @@ def test_buy_of_a_stock_whose_series_already_ended_is_skipped() -> None:
     result = run(
         close,
         [step("2019-02-01", {"A": 0.5, "D": 0.5})],
-        exits=dead_exit_dates(close, spans),
+        exits=span_end_dates(close, spans),
         ex=exit_close(close, spans, 1.0),
         params=NO_TAX,
     )
@@ -289,6 +295,7 @@ def test_cash_never_negative() -> None:
         one_way_cost=0.02,
         start="2019-01-02",
         end="2019-12-31",
+        successors=frozenset(),
     )
     assert len(steps) >= 10
     assert result.min_cash >= -1e-9
@@ -322,6 +329,7 @@ def test_matches_engine_without_dead_stocks() -> None:
         start=start,
         end=end,
         start_cash=CASH,
+        successors=frozenset(),
     )
     utc = close.copy()
     utc.index = utc.index.tz_localize("UTC")
@@ -363,3 +371,175 @@ def test_floor_constant_is_the_lab_floor() -> None:
     close, spans, ex, _ = dying_fixture(1.0)
     last = pd.Timestamp("2012-06-15")
     assert ex.loc[last, "D"] == pytest.approx(10.0 * SIM_PRICE_FLOOR)
+
+
+def test_last_day_target_is_not_bought_then_sold() -> None:
+    days = pd.bdate_range("2019-01-02", "2019-06-28")
+    close = frame(days, A=10.0, B=20.0)
+    base = [step("2019-01-02", {"A": 1.0})]
+    last = str(days[-1].date())
+    with_last = run(close, [*base, step(last, {"B": 1.0})], cost=0.001)
+    without = run(close, base, cost=0.001)
+    assert len(with_last.trades) == len(without.trades)
+    assert with_last.cost_paid == pytest.approx(without.cost_paid, abs=1e-9)
+    assert with_last.after_tax_final == pytest.approx(without.after_tax_final, abs=1e-9)
+    assert "B" not in {t.symbol for t in with_last.trades}
+    np.testing.assert_allclose(
+        with_last.pretax_equity.to_numpy(), without.pretax_equity.to_numpy(), atol=1e-9
+    )
+
+
+def test_window_of_fewer_than_two_trading_days_is_refused() -> None:
+    days = pd.bdate_range("2019-01-02", "2019-01-31")
+    close = frame(days, A=10.0)
+    for end in ("2019-01-02", "2018-12-31"):
+        with pytest.raises(ValueError, match="two trading days"):
+            run_book(
+                close,
+                [],
+                empty_exits(),
+                close,
+                params=TAX,
+                one_way_cost=0.0,
+                start="2019-01-02",
+                end=end,
+                successors=frozenset(),
+            )
+        with pytest.raises(ValueError, match="two trading days"):
+            run_spy(close["A"], params=TAX, one_way_cost=0.0, start="2019-01-02", end=end)
+
+
+def two_endings(drop_cell: bool = False) -> tuple:
+    """Dead stock D and bought-out stock S, both held, both ending in mid-June."""
+    days = pd.bdate_range("2019-01-02", "2019-12-31")
+    gone = days > "2019-06-14"
+    close = frame(days, D=np.where(gone, np.nan, 10.0), S=np.where(gone, np.nan, 50.0), A=20.0)
+    spans = pd.DataFrame(
+        {
+            "symbol": ["D", "S"],
+            "last_date": [pd.Timestamp("2019-06-14")] * 2,
+            "has_successor": [False, True],
+        }
+    )
+    ex = exit_close(close, spans, 1.0)
+    if drop_cell:
+        ex.loc["2019-06-14", "D"] = np.nan
+    steps = [step("2019-01-02", {"D": 0.3, "S": 0.3, "A": 0.4})]
+    return close, spans, ex, steps
+
+
+def test_successors_is_required_and_must_be_known_and_only_dead_are_counted() -> None:
+    close, spans, ex, steps = two_endings()
+    ends = span_end_dates(close, spans)
+    kwargs = dict(params=TAX, one_way_cost=0.0, start="2019-01-02", end="2019-12-31")
+    with pytest.raises(TypeError):
+        run_book(close, steps, ends, ex, **kwargs)
+    with pytest.raises(ValueError, match="X1"):
+        run_book(close, steps, ends, ex, successors=frozenset({"S", "X1"}), **kwargs)
+    ok = run_book(close, steps, ends, ex, successors=frozenset({"S"}), **kwargs)
+    assert ok.n_dead_exits == 1  # D only
+    assert ok.dead_exit_writeoff == pytest.approx(0.3 * CASH * (1 - SIM_PRICE_FLOOR), abs=1e-6)
+    sold = {t.symbol: t.price for t in ok.trades if t.reason == "dead_exit"}
+    assert sold["S"] == 50.0 and sold["D"] == pytest.approx(10.0 * SIM_PRICE_FLOOR)
+    assert run_book(close, steps, ends, ex, successors=frozenset(), **kwargs).n_dead_exits == 2
+
+
+def test_missing_exit_price_of_a_held_stock_raises_with_symbol_and_date() -> None:
+    close, spans, ex, steps = two_endings(drop_cell=True)
+    with pytest.raises(ValueError, match=r"D on 2019-06-14"):
+        run(close, steps, exits=span_end_dates(close, spans), ex=ex)
+    # A stock that is not held on its exit date needs no exit price.
+    run(close, [step("2019-01-02", {"A": 1.0})], exits=span_end_dates(close, spans), ex=ex)
+
+
+def assessed_total(result: BookResult) -> float:
+    """Sum of every tax assessment and later correction the book recorded."""
+    return sum(
+        float(e.payload["amount"])
+        for e in result.events
+        if e.kind in ("tax_assessment", "tax_adjustment")
+    )
+
+
+def test_funding_sale_is_pro_rata_across_positions_and_taxed() -> None:
+    days = pd.bdate_range("2019-01-02", "2020-03-31")
+    a = np.where(days >= "2019-09-03", 30.0, np.where(days >= "2019-03-01", 20.0, 10.0))
+    b = np.where(days >= "2019-09-03", 20.0, np.where(days >= "2019-03-01", 15.0, 10.0))
+    c = np.where(days >= "2019-03-01", 20.0, 10.0)
+    close = frame(days, A=a, B=b, C=c)
+    steps = [
+        step("2019-01-02", {"A": 1 / 3, "B": 1 / 3, "C": 1 / 3}),
+        step("2019-06-03", {"A": 0.5, "B": 0.5}),  # C's gain is realised and reinvested
+    ]
+    result = run(close, steps)
+    qty = {}  # shares bought per (symbol, date)
+    for t in result.trades:
+        if t.reason == "rebalance" and t.qty > 0:
+            qty[(t.symbol, t.date.strftime("%Y-%m-%d"))] = t.qty
+    funding = [t for t in result.trades if t.reason == "tax_sale"]
+    assert {t.symbol for t in funding} == {"A", "B"}
+    sold = {t.symbol: -t.qty for t in funding}
+    held_a = qty[("A", "2019-01-02")] + qty[("A", "2019-06-03")]
+    held_b = qty[("B", "2019-01-02")] + qty[("B", "2019-06-03")]
+    assert sold["A"] / held_a == pytest.approx(sold["B"] / held_b, rel=1e-6)
+    # HIFO takes the June lots first; the sale is smaller than each June lot.
+    assert sold["A"] < qty[("A", "2019-06-03")] and sold["B"] < qty[("B", "2019-06-03")]
+    # The funding sales went through the book and realised a gain in 2020.
+    realised = sum(
+        float(e.payload["gain"])
+        for e in result.events
+        if e.kind == "sell" and e.date == funding[0].date
+    )
+    assert realised == pytest.approx(sold["A"] * (30.0 - 20.0) + sold["B"] * (20.0 - 15.0))
+    # Hand figure: 2019 tax on C's gain, 2020 tax on the June lots (short term) and the January
+    # lots (long term at the final sale, after more than a year).
+    c_gain = qty[("C", "2019-01-02")] * 10.0
+    short = qty[("A", "2019-06-03")] * 10.0 + qty[("B", "2019-06-03")] * 5.0
+    long_ = qty[("A", "2019-01-02")] * 20.0 + qty[("B", "2019-01-02")] * 10.0
+    expected = 0.24 * c_gain + 0.24 * short + 0.15 * long_
+    assert assessed_total(result) == pytest.approx(expected, rel=1e-9)
+    assert result.tax_paid + result.unpaid_tax_left == pytest.approx(assessed_total(result))
+    assert result.unpaid_tax_left == 0.0
+    assert result.min_cash >= -1e-9
+
+
+def test_cash_short_after_three_rounds_leaves_unpaid_tax_and_cash_floor() -> None:
+    days = pd.bdate_range("2019-01-02", "2020-03-31")
+    c = np.where(days >= "2019-03-01", 20.0, 10.0)
+    d = np.where(days >= "2019-12-02", 0.01, 10.0)  # the reinvested money collapses
+    close = frame(days, C=c, D=d)
+    steps = [step("2019-01-02", {"C": 1.0}), step("2019-06-03", {"D": 1.0})]
+    result = run(close, steps)
+    tax_2019 = 0.24 * CASH  # C doubled: 100,000 gain, realised in June
+    assert assessed_total(result) == pytest.approx(tax_2019, rel=1e-9)
+    assert result.unpaid_tax_left > 0.9 * tax_2019
+    assert 0.0 < result.tax_paid < 0.1 * tax_2019
+    assert result.tax_paid + result.unpaid_tax_left == pytest.approx(tax_2019, rel=1e-9)
+    assert result.min_cash >= -1e-9
+    sold = [t for t in result.trades if t.reason == "tax_sale"]
+    assert [t.symbol for t in sold] == ["D"]  # everything that could be sold was sold
+    assert result.chain_verified
+
+
+def test_wash_sale_cross_year_disallows_loss() -> None:
+    days = pd.bdate_range("2012-01-02", "2013-03-28")
+    x = np.where(days >= "2012-06-01", 200.0, 100.0)
+    w = np.where(days >= "2012-06-01", 8.0, 10.0)
+    close = frame(days, X=x, W=w)
+    steps = [
+        step("2012-01-03", {"X": 0.5, "W": 0.5}),
+        step("2012-12-20", {}),  # sell everything: X gains 50,000, W loses 10,000
+        step("2013-01-10", {"W": 1.0}),  # re-buy W within 30 days, in the next year
+    ]
+    result = run(close, steps)
+    # The 2012 tax was assessed on 2013-01-02 with the loss allowed (9,600), then corrected up.
+    assert result.tax_paid == pytest.approx(0.24 * 50_000.0, abs=1e-6)  # loss disallowed
+    assert result.tax_paid > 0.24 * 40_000.0 + 1.0  # not the 9,600 the loss would give
+    assert result.unpaid_tax_left == 0.0
+    adjust = [e for e in result.events if e.kind == "wash_adjustment"]
+    assert len(adjust) == 1
+    assert float(adjust[0].payload["disallowed"]) == pytest.approx(10_000.0, abs=1e-6)
+    assert float(adjust[0].payload["basis_per_share"]) == pytest.approx(8.0 + 2.0, abs=1e-9)
+    amended = [e for e in result.events if e.kind == "tax_adjustment"]
+    assert [int(e.payload["year"]) for e in amended] == [2012]
+    assert float(amended[0].payload["amount"]) == pytest.approx(0.24 * 10_000.0, abs=1e-6)

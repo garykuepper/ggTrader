@@ -27,9 +27,13 @@ Order of events on each trading day of the window:
    A held stock with no close that day is marked at its last print and cannot be traded.
 
 On the last day of the window everything is sold at the day's close (at its last print if the
-stock has no bar), the final year is assessed (R12) and the tax paid from cash; the rebalance of
-that day is dropped because it would only buy what is sold the same minute. ``TaxLotBook``
-applies the wash-sale rule itself, so a loss sold and re-bought within thirty days is deferred.
+stock has no bar), the final year is assessed (R12) and the tax paid from cash. A target step
+dated on the last day is ignored on purpose: buying it and selling it at the same close would
+only charge a pointless round trip of cost, so the final-day target is never executed. A window
+needs at least two trading days (a one-day window would execute nothing) or ``ValueError``.
+
+``TaxLotBook`` applies the wash-sale rule itself, so a loss sold and re-bought within thirty
+days is deferred.
 Every buy fills at ``price * (1 + c)`` and every sell at ``price * (1 - c)``, so the cost is in
 the lot basis and the proceeds; ``Trade.price`` is the price before cost. The book's loss
 carry-forward and no-outside-income rules are taken as they are (R15).
@@ -47,6 +51,7 @@ from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -104,8 +109,9 @@ class BookResult:
         tax_paid: All tax paid out of the book.
         cost_paid: All trading cost, dead exits included (``qty * price * c`` per fill).
         n_dead_exits: Held stocks sold at the end of their series that are not successors.
-        dead_exit_loss_realised: Dollars written off by the dead-stock loss on those exits
-            (quantity times last close minus sale price, before cost).
+        dead_exit_writeoff: Dollars written off by the dead-stock loss on those exits
+            (quantity times last close minus sale price, before cost). It is not the tax-ledger
+            loss: that one also includes cost and is netted by the book.
         cagr_pretax: Yearly rate from the start cash to the last pre-tax equity (calendar days
             over 365.25).
         cagr_after_tax: The same from the start cash to ``after_tax_final``.
@@ -115,6 +121,8 @@ class BookResult:
             day, or the series had ended).
         chain_verified: ``book.verify_chain()`` after the run.
         min_cash: Lowest book cash seen after any fill or payment (never below zero).
+        events: The book's hash-chained ledger events (buys, sells, wash adjustments, tax
+            assessments and payments), for audit.
     """
 
     pretax_equity: pd.Series
@@ -122,7 +130,7 @@ class BookResult:
     tax_paid: float
     cost_paid: float
     n_dead_exits: int
-    dead_exit_loss_realised: float
+    dead_exit_writeoff: float
     cagr_pretax: float
     cagr_after_tax: float
     trades: list[Trade]
@@ -130,6 +138,7 @@ class BookResult:
     skipped_buys: int = 0
     chain_verified: bool = True
     min_cash: float = 0.0
+    events: tuple[Any, ...] = ()
 
 
 def _naive(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
@@ -213,7 +222,12 @@ class _Execution:
             return
         j = self.pos[symbol]
         last = float(raw_row[j])
-        price = float(exit_row[j]) if math.isfinite(exit_row[j]) else last
+        price = float(exit_row[j])
+        if not (math.isfinite(price) and price > 0.0 and math.isfinite(last)):
+            raise ValueError(
+                f"no usable exit price for {symbol} on {date.date()}: "
+                f"exit_close gives {price}, last close {last}"
+            )
         qty = self.qty[symbol]
         self.sell(symbol, qty, price, date, DEAD_EXIT_REASON)
         if symbol not in self.successors:
@@ -305,46 +319,53 @@ class _Execution:
 def run_book(
     close: pd.DataFrame,
     steps: list[TargetStep],
-    dead_exits: pd.Series,
+    span_ends: pd.Series,
     exit_close: pd.DataFrame,
     *,
     params: TaxParams,
     one_way_cost: float,
     start: str,
     end: str,
+    successors: frozenset[str],
     start_cash: float = 100_000.0,
-    successors: Collection[str] = frozenset(),
 ) -> BookResult:
     """Trade ``steps`` through a tax-lot book over the trading days in ``[start, end]``.
 
     Args:
         close: Daily closes, trading days x symbols (NaN where there is no bar).
         steps: Rebalance targets; each ``TargetStep.date`` must be a trading day in the window.
-        dead_exits: Symbol to the last bar of its series, for every series that ends in the
-            window, successors included (``replay.span_end_dates``).
+            A step dated on the last day is ignored (the final day only liquidates).
+        span_ends: The output of ``replay.span_end_dates``: symbol to the last bar of its
+            series, for ALL series that end in the window, bought-out and merged stocks
+            included. (Not ``replay.dead_exit_dates``, which leaves the successors out.)
         exit_close: ``close`` with each ending stock's last bar replaced by its sale price
-            (``replay.exit_close``); read only on those last bars.
+            (``replay.exit_close``). Every held stock that ends needs a finite, positive price
+            there on its last bar.
         params: Tax rates.
         one_way_cost: Cost per side as a fraction of traded value.
         start: First day of the window, ``YYYY-MM-DD``.
         end: Last day of the window; everything is sold on that day.
+        successors: Required. The symbols of ``span_ends`` that are bought-out or merged
+            stocks (``has_successor`` in the release spans). They are sold on their last bar
+            like the others but are not counted as dead exits. Every one must be in
+            ``span_ends``. There is no default: forgetting it would count successors as dead.
         start_cash: Opening cash.
-        successors: Symbols in ``dead_exits`` that are bought-out or merged stocks, which are
-            not counted as dead exits (their price is unchanged by ``exit_close``).
 
     Returns:
         A ``BookResult``.
 
     Raises:
-        ValueError: on an empty window, a step outside the window or a negative cost.
+        ValueError: on a window of fewer than two trading days, a step outside the window, a
+            bad cost, a successor that is not in ``span_ends``, or a held stock that ends
+            without a usable exit price.
     """
     if one_way_cost < 0.0 or one_way_cost >= 1.0:
         raise ValueError("one_way_cost must be in [0, 1)")
     index = _naive(close.index)
     inside = (index >= pd.Timestamp(start)) & (index <= pd.Timestamp(end))
     days = index[inside]
-    if len(days) == 0:
-        raise ValueError("no trading days in the window")
+    if len(days) < 2:
+        raise ValueError("the window needs at least two trading days")
     raw = close.to_numpy(dtype=float)[inside]
     marks = close.ffill().to_numpy(dtype=float)[inside]
     exit_px = (
@@ -358,7 +379,10 @@ def run_book(
         if when not in days:
             raise ValueError(f"step date {when.date()} is not a trading day in the window")
         by_date[when] = item
-    ended = {str(s): _naive_stamp(t) for s, t in dead_exits.items()}
+    ended = {str(s): _naive_stamp(t) for s, t in span_ends.items()}
+    unknown = sorted(set(successors) - set(ended))
+    if unknown:
+        raise ValueError(f"successors not in span_ends: {', '.join(unknown)}")
     exits_on: dict[pd.Timestamp, list[str]] = {}
     for symbol, when in ended.items():
         exits_on.setdefault(when, []).append(symbol)
@@ -374,7 +398,7 @@ def run_book(
             run.settle_tax(day, raw[p])
         if p == last:
             run.liquidate(day, marks[p])
-        elif day in by_date:
+        elif day in by_date:  # the last day only liquidates; its target is never executed
             run.rebalance(by_date[day].targets, day, raw[p], marks[p])
         equity[p] = run.marks(marks[p]) + run.book.cash + run.tax_paid
     after_tax = float(run.book.cash)
@@ -385,7 +409,7 @@ def run_book(
         tax_paid=float(run.tax_paid),
         cost_paid=float(run.cost_paid),
         n_dead_exits=run.n_dead,
-        dead_exit_loss_realised=float(run.dead_loss),
+        dead_exit_writeoff=float(run.dead_loss),
         cagr_pretax=_cagr(start_cash, float(equity[-1]), span_days),
         cagr_after_tax=_cagr(start_cash, after_tax, span_days),
         trades=run.trades,
@@ -393,6 +417,7 @@ def run_book(
         skipped_buys=run.skipped,
         chain_verified=bool(run.book.verify_chain()),
         min_cash=float(run.min_cash),
+        events=run.book.events,
     )
 
 
@@ -421,8 +446,8 @@ def run_spy(
     frame = spy_close.rename("SPY").to_frame()
     index = _naive(frame.index)
     inside = (index >= pd.Timestamp(start)) & (index <= pd.Timestamp(end))
-    if not inside.any():
-        raise ValueError("no trading days in the window")
+    if inside.sum() < 2:
+        raise ValueError("the window needs at least two trading days")
     first = frame.index[inside][0]
     twin = TargetStep(decision_date=first, date=first, targets={"SPY": 1.0})
     return run_book(
@@ -434,5 +459,6 @@ def run_spy(
         one_way_cost=one_way_cost,
         start=start,
         end=end,
+        successors=frozenset(),
         start_cash=start_cash,
     )
