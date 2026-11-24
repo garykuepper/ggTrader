@@ -14,7 +14,7 @@
 
 ## How to reproduce
 
-Run these from the repository root, in this order. Prerequisites: release 1, CRSP load 1 and McGill load 2 in the `ggtrader` database; the contact line the SEC requires in the environment variable `SEC_USER_AGENT` (never written to a file); the saved SEC files in `/media/thesix/ggTrader-data/sec-delistings` (without them everything is downloaded again, about 360 requests). Each command needs `--force` because the result files already exist.
+Run these from the repository root, in this order. Prerequisites: release 1, CRSP load 1 and McGill load 2 in the `ggtrader` database; the contact line the SEC requires in the environment variable `SEC_USER_AGENT` (never written to a file); the saved SEC files in `/media/thesix/ggTrader-data/sec-delistings` (without them everything is downloaded again, about 360 requests; the Form 25 phase needs network access and `SEC_USER_AGENT` even with the saved folder, because six "not found" notices (HTTP 404) are never saved and are requested again; the payouts phase uses saved copies except for any filing list that was not saved). Each command needs `--force` because the result files already exist.
 
     .venv/bin/python research/stock-signals/dead-stock-data-integrity/code/run.py --phase integrity --release-id 1 --crsp-load 1 --mcgill-load 2 --force
     .venv/bin/python research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py --phase form25 --cache-dir /media/thesix/ggTrader-data/sec-delistings --out research/stock-signals/dead-stock-data-integrity --force

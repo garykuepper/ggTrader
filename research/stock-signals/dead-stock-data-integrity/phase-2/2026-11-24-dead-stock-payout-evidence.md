@@ -2,13 +2,13 @@
 
 **Date:** 2026-11-24 (version 2: rewritten after a second matching pass and four independent reviews)
 **Study:** `research/stock-signals/dead-stock-data-integrity` (an audit; the brief was frozen on 2026-11-24 before any real run, and one dated amendment, the second matching pass, was added after the first run; no strategy was rerun)
-**Question:** For the 141 dead stocks the first test held in its main stock list, what do the SEC's public filings say about why each one stopped trading, and which loss figures could a later rerun of the first test use for each stock?
+**Question:** For the 141 dead stocks the first test held in its main stock list, what do the public filings of the SEC (the US Securities and Exchange Commission, the securities regulator) say about why each one stopped trading, and which loss figures could a later rerun of the first test use for each stock?
 **Earlier note:** the first half of this study, a scan of our own price rows, is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-stock-data-integrity.md) (section 6 gives its headline).
 
 ## 1. In short
 
 - **The first test could not tell why its dead stocks stopped trading.** A dead stock is one that stopped trading before the end of the data. The first test's answer swung from far behind SPY (the S&P 500 fund) to ahead of it depending on a guess: did holders get nothing back, half, or the full last price? This study looked for the SEC's own record of each stock's end.
-- **For 102 of the 141 stocks the filings report an acquisition-type event.** Within 90 days of the stock's last trading day the company filed a report with the SEC carrying at least one of three item numbers the SEC uses for an acquisition, a change of control, or a change in shareholder rights. That is 85 of the 117 stocks in the development window (2005 to 2019) and 17 of the 24 in the holdout window (2020 to 2024). Of the 102, 88 rest on a notice we could read and check and 14 on a company-name match alone (section 3).
+- **For 102 of the 141 stocks the filings report an acquisition-type event.** Within 90 days of the stock's last trading day the company filed a report with the SEC carrying at least one of three item numbers the SEC uses for an acquisition, a change of control, or a change in shareholder rights. That is 85 of the 117 stocks in the development window (2005 to 2019, the period the first test used while building its rule) and 17 of the 24 in the holdout window (2020 to 2024, the later period it ran once). Of the 102, 88 rest on a notice we could read and check and 14 on a company-name match alone (section 3).
 - **The strength of that evidence varies.** 74 of the 102 carry the SEC's acquisition-completed item (2.01); 28 do not, and 12 of those rest on a single weak signal. Section 4 lists them apart.
 - **For the other 39 the filings tell us nothing:** 26 had no matching notice by company name, 8 have no company name in our data, and 5 matched a company but carried no acquisition-type item.
 - **No bankruptcy turned up among the 141.** None of the 107 stocks whose filings we read carried the SEC's bankruptcy item. That agrees with the earlier finding that none of the 141 fell more than about 7 percent in its last month. It is not proof that no holder lost money (section 8 says why the search is narrow).
@@ -25,7 +25,7 @@
 - **The match to a company.** For each stock with a name (133 of 141), we looked for a Form 25, the notice that a stock is being taken off an exchange, filed under a company name matching the stock's name, in the window from 30 days before its last trading day to 180 days after.
 - **The filings.** The SEC (the US securities regulator) keeps every company filing on its free public site, EDGAR. We read 80 quarterly index files, from 2005 quarter 2 to 2025 quarter 1, with none skipped (the 180-day window after a July 2024 exit reaches January 2025; the brief's "nothing later than 2024-12-31" applies to price data, not to filings). Then, for each matched stock, we read its list of 8-K reports, the report a company files when something material happens, within 90 days either side of the last trading day.
 - **How we asked.** A contact line supplied by the owner was sent to the SEC with every request, as the SEC requires. It is not written in any file of this study.
-- **What it cost the SEC site.** The first run made 357 downloads. The later runs used saved copies: the clean rerun made 2 new downloads and the run with the second matching pass made 35 (24 plus 11). In no run did an 8-K list download fail, and no 8-K had a missing item list.
+- **What it cost the SEC site.** The first run made 357 downloads. The later runs used saved copies: the clean rerun made 2 new downloads and the run with the second matching pass made 35 (24 plus 11). These counts include only files fetched and saved; a request that the SEC answers with "not found" (HTTP 404) is never saved and is not counted, so each rerun asks again for the six unreadable 2005 and 2006 notices. In no run did an 8-K list download fail, and no 8-K had a missing item list.
 
 **What was not done.**
 
@@ -49,7 +49,7 @@ Each stock falls in one group. The table counts all 141 (from `_payouts.csv`, re
 | `delisted_other` | only a delisting notice | 0 | 0 | 0 | 0 | 0 |
 | `ambiguous_match` | the name matched more than one company | 0 | 0 | 0 | 0 | 0 |
 
-- **"Notice read and checked"** means we opened the Form 25 notice and confirmed that the company named in it as the issuer is the one we matched and that the security named is common or ordinary shares. **"Name match only"** means the company was found by name but its notice was not readable (6 stocks) or the match came from the second pass and its identity was not otherwise verified (11 stocks); section 3.2 and 3.3 explain each.
+- **"Notice read and checked"** means we opened the Form 25 notice and confirmed that the company named in it as the issuer (the company whose shares the notice is about) is the one we matched and that the security named is common or ordinary shares. **"Name match only"** means the company was found by name but its notice was not readable (6 stocks) or the match came from the second pass and its identity was not otherwise verified (11 stocks); section 3.2 and 3.3 explain each.
 - **Share with evidence.** 102 of 141 is 72 percent; 85 of 117 is 73 percent in the development window; 17 of 24 is 71 percent in the holdout.
 - **By exchange.** Of the 102, 48 traded on the New York Stock Exchange and 54 on Nasdaq. Of the 141, 65 were on the first, 68 on the second, and 8 (the unnamed ones) have no exchange recorded.
 - **Against the price label.** The earlier note labelled each stock's last month of prices. Of the 102, 78 were labelled "calm like a deal" and 24 "unclear". Of the 34 "unclear" stocks, 24 have acquisition evidence and 10 do not. No stock was labelled as a collapse.
@@ -99,8 +99,6 @@ Each stock falls in one group. The table counts all 141 (from `_payouts.csv`, re
 | ESTERLINE TECH | 2019-03-13 | ESTERLINE TECHNOLOGIES CORP | 2019-03-14 | +1 | 2.01, 3.03, 5.01 |
 
 "Form 25 signed" is the date on the notice itself (the files do not keep the date the SEC received it). A minus sign means the 8-K was filed before the last trading day, a plus sign after.
-
-To the eye these pairs look like well-known takeovers. That is the author's general knowledge, not evidence in the files, and it is why they are labelled leads.
 
 ### 3.4 The 39 stocks with no evidence
 
@@ -158,7 +156,7 @@ PacifiCare is the weakest of all: one 8-K, carrying only item 5.01, filed 59 day
 | Group | Exchange | Suggested loss | Basis | Stocks |
 | :--- | :--- | ---: | :--- | ---: |
 | acquisition, merger or change of control | any | 0.0 | the filings (an assumed scenario, see below) | 102 (85 development, 17 holdout; 88 checked, 14 name match only) |
-| bankruptcy | NYSE or AMEX | 0.30 | literature fill | 0 |
+| bankruptcy | NYSE or AMEX (American Stock Exchange, now NYSE American) | 0.30 | literature fill | 0 |
 | bankruptcy | Nasdaq | 0.55 | literature fill | 0 |
 | all other groups | any | none | none | 39 |
 
@@ -166,7 +164,7 @@ PacifiCare is the weakest of all: one 8-K, carrying only item 5.01, filed 59 day
 - **Why 0.0 is a reasonable reading for acquisitions, and what it is not.** It is the brief's assumed scenario, fixed before any run. In a takeover the last traded price already tracks what the buyer pays, in cash or in shares, so selling at the last price is a close stand-in for being paid out. It is not a measured payout: the filings do not give amounts or form, and a premium paid after the last trade, or a deal that closes below the last price, would move the true figure.
 - **The literature fills were not used.** A literature fill is a published average loss that researchers have used when the data does not show what a delisted stock was worth; it is not a measurement of these stocks. 0.30 comes from Shumway (1997), *The Delisting Bias in CRSP Data*, Journal of Finance 52(1), 327-340: page 340 (library PDF page 15) says omitted delisting returns average about -30 percent, and Table I on page 329 (library PDF page 4) gives -41.56 percent for NYSE and AMEX performance delistings where a return exists. 0.55 comes from Shumway and Warther (1999), *The Delisting Bias in CRSP's Nasdaq Data and Its Implications for the Size Effect*, Journal of Finance 54(6), 2361-2379: the abstract on page 2361 (library PDF page 2), equation 3 on page 2370 (page 11) and the conclusion on page 2378 (page 19) give -55 percent for Nasdaq. Both copies in our library are marked "unverified", and the page numbers come from the library's text, not from the printed journals. Their ids and fingerprints are in `_payouts.json` under `literature_fills`.
 - **For the other 39 stocks the table gives no figure.** A later rerun would keep all three readings (1.0, 0.5 and 0.0) for them, as the brief says.
-- **A tax note.** The first test treated every exit as a taxable sale at the last price. Stock-for-stock deals and some foreign reincorporations are often tax-free exchanges for the holder, so that treatment slightly overcharges tax on those stocks. This gives a direction only; it was not measured.
+- **A tax note.** The first test treated every exit as a taxable sale at the last price. Stock-for-stock deals and some foreign reincorporations are often tax-free exchanges for the holder, so that treatment overcharges tax on those stocks. This gives a direction only; it was not measured.
 
 ## 6. Phase 1 headline: our own price rows
 
@@ -211,7 +209,7 @@ The full note is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-st
 
 - **The run.** The price-row scan, the Form 25 matching and the payouts ran first on reviewed code. Reviews of the code that writes the result files then found problems, which were fixed with tests (the details are in the technical log at the end). The three phases were then rerun from a clean saved state of the code, once more after the second matching pass was added, and every number in this report comes from that last rerun.
 - **What changed between runs.** Run 1: 96 matched (89 checked, 7 unreadable), 91 acquisitions. Run 2, same rules on clean code: 96 matched (90 checked, 6 unreadable), 91 acquisitions, because one SEC download that failed the first time succeeded. Run 3, with the second pass: 107 matched (101 checked, 6 unreadable), 102 acquisitions (88 checked, 14 name-only). The price-row scan was identical in all runs.
-- **To reproduce all three phases,** run these from the repository root. You need release 1 and CRSP load 1 (and McGill load 2) in the `ggtrader` database, the contact line in the environment variable `SEC_USER_AGENT`, and the saved SEC files in `/media/thesix/ggTrader-data/sec-delistings` (a rerun without them downloads everything again, about 360 requests). Each command needs `--force` because the result files already exist.
+- **To reproduce all three phases,** run these from the repository root. You need release 1 and CRSP load 1 (and McGill load 2) in the `ggtrader` database, the contact line in the environment variable `SEC_USER_AGENT`, and, to save time, the saved SEC files in `/media/thesix/ggTrader-data/sec-delistings` (without them everything is downloaded again, about 360 requests). The Form 25 phase needs network access and `SEC_USER_AGENT` even with the saved folder, because the six "not found" notices (HTTP 404) are never saved and are requested again each time; the payouts phase uses saved copies except for any filing list that was not saved. Each command needs `--force` because the result files already exist.
 
   ```
   .venv/bin/python research/stock-signals/dead-stock-data-integrity/code/run.py --phase integrity --release-id 1 --crsp-load 1 --mcgill-load 2 --force
@@ -219,7 +217,7 @@ The full note is [2026-11-24-dead-stock-data-integrity.md](../2026-11-24-dead-st
   .venv/bin/python research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py --phase payouts --cache-dir /media/thesix/ggTrader-data/sec-delistings --out research/stock-signals/dead-stock-data-integrity --force
   ```
 
-- **The pin.** `PIN.json` fingerprints the code and the results so a later change is caught; it pins the three result files and records the roster and `_payouts.csv` as inputs. It is marked "partly" reproducible because the price scan needs our database and the SEC phases need network access unless the saved copies are present.
+- **The pin.** `PIN.json` fingerprints the code and the results so a later change is caught; it pins the three result files and records the roster and `_payouts.csv` as inputs. It is marked "partly" reproducible because the price scan needs our database, the Form 25 phase always needs network access and the contact line (even with the saved folder, since "not found" answers are never saved), and the payouts phase needs network access for any filing list that was not saved.
 - **Report place.** This report keeps the file name that was asked for but sits in the folder `phase-2/`: the study tool accepts only a plainly named report at the top of the study folder, and the earlier note already holds that name.
 
 ## 12. Files

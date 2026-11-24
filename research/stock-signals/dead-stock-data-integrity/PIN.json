@@ -153,7 +153,7 @@
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable; they need network access unless the saved copies are present. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
+    "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable. The Form 25 phase needs network access and SEC_USER_AGENT even with the saved folder, because six notices return HTTP 404 and 404 answers are never saved, so they are requested again on every run; the payouts phase uses the saved copies except for any filing list that was not saved. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
   },
-  "created_utc": "2026-11-24T23:16:56Z"
+  "created_utc": "2026-11-24T23:23:05Z"
 }
