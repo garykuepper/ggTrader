@@ -703,16 +703,14 @@ def test_a_hash_with_a_trailing_newline_is_refused(tmp_path: Path, kind: str):
 
 
 def test_main_payouts_reads_the_roster_once_and_compares_that_hash(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, open_counter: Any
 ):
     import hashlib
-
-    from test_sec_pilot import OpenCounter
 
     argv = write_inputs(tmp_path)
     roster = tmp_path / "roster.csv"
     used = hashlib.sha256(roster.read_bytes()).hexdigest()
-    counter = OpenCounter(monkeypatch, roster)
+    counter = open_counter(roster)
     assert main(argv, client_factory=lambda ua, cache: sec_client()) == 0
     assert counter.reads == ["read_bytes"]
     prov = json.loads((tmp_path / "out" / "_payouts.json").read_text())["provenance"]

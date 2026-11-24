@@ -637,52 +637,13 @@ def test_both_phases_refuse_an_output_folder_that_is_a_symlink(tmp_path: Path):
     assert stop.value.code == 2
 
 
-class OpenCounter:
-    """Counts every way the test can see a file being read: bytes, text and ``open``."""
-
-    def __init__(self, monkeypatch: pytest.MonkeyPatch, target: Path) -> None:
-        self.reads: list[str] = []
-        real_bytes, real_text, real_open = Path.read_bytes, Path.read_text, Path.open
-
-        inside = [False]  # read_bytes and read_text call open themselves: count them once
-
-        def note(path: Path, how: str) -> None:
-            if path == target:
-                self.reads.append(how)
-
-        def read_bytes(path: Path) -> bytes:
-            note(path, "read_bytes")
-            inside[0] = True
-            try:
-                return real_bytes(path)
-            finally:
-                inside[0] = False
-
-        def read_text(path: Path, *a: Any, **k: Any) -> str:
-            note(path, "read_text")
-            inside[0] = True
-            try:
-                return real_text(path, *a, **k)
-            finally:
-                inside[0] = False
-
-        def open_(path: Path, *a: Any, **k: Any) -> Any:
-            if not inside[0]:
-                note(path, "open")
-            return real_open(path, *a, **k)
-
-        monkeypatch.setattr(Path, "read_bytes", read_bytes)
-        monkeypatch.setattr(Path, "read_text", read_text)
-        monkeypatch.setattr(Path, "open", open_)
-
-
 def test_the_form25_phase_reads_the_roster_once_and_records_that_hash(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, open_counter: Any
 ):
     argv = args_for(tmp_path)
     roster = tmp_path / "roster.csv"
     original = roster.read_bytes()
-    counter = OpenCounter(monkeypatch, roster)
+    counter = open_counter(roster)
     assert main(argv, client_factory=lambda ua, cache: good_client()) == 0
     assert counter.reads == ["read_bytes"]
     prov = json.loads((tmp_path / "out" / OUTPUT_JSON).read_text())["provenance"]
