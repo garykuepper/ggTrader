@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import email.message
 import hashlib
 import io
 import json
 import urllib.error
 import urllib.request
+import urllib.response
+from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +18,7 @@ import pytest
 import sec_client
 from sec_client import (
     ALLOWED_HOSTS,
+    DEFAULT_MAX_BYTES,
     SecClient,
     SecFetchError,
     SecNotFound,
@@ -29,7 +34,7 @@ DEFAULT_UA = "ggTrader Study contact@example.test"
 
 
 class FakeResponse:
-    """Minimal stand-in for urllib's HTTPResponse."""
+    """Minimal stand-in for urllib's HTTPResponse with headers and chunked read support."""
 
     def __init__(
         self,
@@ -37,18 +42,32 @@ class FakeResponse:
         status: int = 200,
         final_url: str | None = None,
         *,
+        headers: dict[str, str] | None = None,
+        chunks: list[bytes] | None = None,
         expose_geturl: bool = True,
     ) -> None:
-        self._body = body
+        self._stream = io.BytesIO(body)
+        self._chunks: deque[bytes] | None = deque(chunks) if chunks is not None else None
         self.status = status
+        self.headers: dict[str, str] = dict(headers) if headers is not None else {}
         self._final_url = final_url
         self._expose_geturl = expose_geturl
         if final_url is not None and not expose_geturl:
             self.url = final_url
         self.closed = False
+        self.read_calls = 0
 
-    def read(self) -> bytes:
-        return self._body
+    def read(self, size: int = -1) -> bytes:
+        self.read_calls += 1
+        if self._chunks is not None:
+            if not self._chunks:
+                return b""
+            chunk = self._chunks.popleft()
+            if size is not None and size >= 0 and len(chunk) > size:
+                self._chunks.appendleft(chunk[size:])
+                return chunk[:size]
+            return chunk
+        return self._stream.read(size)
 
     def geturl(self) -> str | None:
         if not self._expose_geturl:
@@ -66,17 +85,20 @@ class FakeResponse:
 
 
 class FakeOpener:
-    """Scripted fake URL opener that records calls, headers, and injected sleeps."""
+    """Scripted fake URL opener that records calls, per-call headers, and injected sleeps."""
 
     def __init__(
         self,
         responses: list[FakeResponse | BaseException],
         sleeps: list[float],
+        advance_clock: Callable[[float], None],
     ) -> None:
         self._responses = list(responses)
         self.sleeps = sleeps
+        self.advance_clock = advance_clock
         self.calls = 0
         self.last_headers: dict[str, str] = {}
+        self.headers_per_call: list[dict[str, str]] = []
         self.requested_urls: list[str] = []
 
     def __call__(self, request: urllib.request.Request) -> FakeResponse:
@@ -87,6 +109,7 @@ class FakeOpener:
         if ua is not None:
             headers["User-Agent"] = ua
         self.last_headers = headers
+        self.headers_per_call.append(headers)
 
         idx = min(self.calls - 1, len(self._responses) - 1)
         outcome = self._responses[idx]
@@ -100,12 +123,14 @@ def make_client(
     *,
     body: bytes = b"",
     status: int = 200,
+    headers: dict[str, str] | None = None,
     min_interval: float = 0.25,
     user_agent: str = DEFAULT_UA,
     final_url: str | None = None,
     expose_geturl: bool = True,
     responses: list[FakeResponse | BaseException] | None = None,
     start_time: float = 100.0,
+    max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> tuple[SecClient, FakeOpener]:
     """Create a SecClient wired to an instant fake clock, sleep recorder, and fake opener."""
     now = [start_time]
@@ -113,6 +138,9 @@ def make_client(
 
     def fake_clock() -> float:
         return now[0]
+
+    def advance_clock(seconds: float) -> None:
+        now[0] += seconds
 
     def fake_sleep(seconds: float) -> None:
         sleeps.append(seconds)
@@ -122,10 +150,16 @@ def make_client(
         responses
         if responses is not None
         else [
-            FakeResponse(body=body, status=status, final_url=final_url, expose_geturl=expose_geturl)
+            FakeResponse(
+                body=body,
+                status=status,
+                final_url=final_url,
+                headers=headers,
+                expose_geturl=expose_geturl,
+            )
         ]
     )
-    opener = FakeOpener(script, sleeps)
+    opener = FakeOpener(script, sleeps, advance_clock)
     client = SecClient(
         user_agent=user_agent,
         cache_dir=cache_dir,
@@ -133,13 +167,22 @@ def make_client(
         opener=opener,
         sleep=fake_sleep,
         clock=fake_clock,
+        max_bytes=max_bytes,
     )
     return client, opener
 
 
-def make_http_error(code: int, url: str = URL, msg: str = "error") -> urllib.error.HTTPError:
-    """Build a urllib HTTPError with an empty response stream."""
-    return urllib.error.HTTPError(url=url, code=code, msg=msg, hdrs=None, fp=io.BytesIO(b""))
+def make_http_error(
+    code: int,
+    url: str = URL,
+    msg: str = "error",
+    headers: dict[str, str] | None = None,
+) -> urllib.error.HTTPError:
+    """Build a urllib HTTPError with optional headers and an empty response stream."""
+    hdrs = email.message.Message()
+    for key, value in (headers or {}).items():
+        hdrs[key] = value
+    return urllib.error.HTTPError(url=url, code=code, msg=msg, hdrs=hdrs, fp=io.BytesIO(b""))
 
 
 # --- Brief-specified tests (7 core cases) ---
@@ -450,3 +493,374 @@ def test_load_user_agent_strips_and_client_rejects_blank(tmp_path: Path) -> None
     )
     with pytest.raises(SecUserAgentMissing):
         SecClient("   ", tmp_path)
+
+
+# --- Manual redirect validation, pacing, and default opener ---
+
+
+def test_default_opener_disables_automatic_redirects(tmp_path: Path) -> None:
+    """Verify the default OpenerDirector surfaces 302 as HTTPError instead of following it."""
+    opener = sec_client._build_default_opener()
+    redirect_handlers = [
+        h for h in opener.handlers if isinstance(h, urllib.request.HTTPRedirectHandler)
+    ]
+    assert len(redirect_handlers) == 1
+    assert isinstance(redirect_handlers[0], sec_client._NoRedirectHandler)
+
+    # Confirm OpenerDirector with a fake HTTPS transport stops at 302 without issuing a second call.
+    calls: list[str] = []
+
+    class _FakeHTTPSHandler(urllib.request.HTTPSHandler):
+        def https_open(self, req: urllib.request.Request) -> Any:
+            calls.append(req.full_url)
+            hdrs = email.message.Message()
+            hdrs["Location"] = "https://evil.example/steal"
+            resp = urllib.response.addinfourl(io.BytesIO(b""), hdrs, req.full_url, code=302)
+            resp.msg = "Found"
+            return resp
+
+    test_opener = urllib.request.build_opener(
+        _FakeHTTPSHandler(),
+        sec_client._NoRedirectHandler(),
+    )
+    with pytest.raises(urllib.error.HTTPError) as exc_info:
+        test_opener.open(urllib.request.Request(URL))
+    assert exc_info.value.code == 302
+    assert exc_info.value.headers.get("Location") == "https://evil.example/steal"
+    assert calls == [URL]
+    exc_info.value.close()
+
+    # Wire the same no-redirect opener into SecClient and confirm it refuses before hop 2.
+    calls.clear()
+    client = SecClient(user_agent=DEFAULT_UA, cache_dir=tmp_path, opener=test_opener.open)
+    with pytest.raises(ValueError, match="allowed"):
+        client.get(URL)
+    assert calls == [URL]
+
+
+@pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
+def test_redirect_to_www_sec_gov_followed_and_cached_under_original_url(
+    tmp_path: Path,
+    status: int,
+) -> None:
+    target = "https://www.sec.gov/Archives/edgar/data/320193/index.json"
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=status, headers={"Location": target}),
+            FakeResponse(status=200, body=b'{"ok": 1}'),
+        ],
+    )
+    assert client.get(URL) == b'{"ok": 1}'
+    assert opener.requested_urls == [URL, target]
+    assert opener.calls == 2
+
+    # Cached under the original URL only; second get hits cache with no extra network call.
+    orig_key = hashlib.sha256(URL.encode("utf-8")).hexdigest()
+    target_key = hashlib.sha256(target.encode("utf-8")).hexdigest()
+    assert (tmp_path / f"{orig_key}.body").exists()
+    assert (tmp_path / f"{orig_key}.meta.json").exists()
+    assert not (tmp_path / f"{target_key}.body").exists()
+    assert client.manifest() == {URL: hashlib.sha256(b'{"ok": 1}').hexdigest()}
+
+    assert client.get(URL) == b'{"ok": 1}'
+    assert opener.calls == 2
+
+
+def test_redirect_via_http_error_and_relative_location_followed(tmp_path: Path) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            make_http_error(
+                302, url=URL, headers={"Location": "/submissions/CIK0000320193_v2.json"}
+            ),
+            FakeResponse(status=200, body=b'{"v": 2}'),
+        ],
+    )
+    assert client.get(URL) == b'{"v": 2}'
+    assert opener.requested_urls == [
+        URL,
+        "https://data.sec.gov/submissions/CIK0000320193_v2.json",
+    ]
+
+
+def test_redirect_to_http_www_sec_gov_refused_without_second_request(tmp_path: Path) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=302, headers={"Location": "http://www.sec.gov/plain.json"}),
+            FakeResponse(status=200, body=b"should-never-be-fetched"),
+        ],
+    )
+    with pytest.raises(ValueError, match="https"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert opener.requested_urls == [URL]
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_redirect_to_evil_host_refused_without_second_request(tmp_path: Path) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=302, headers={"Location": "https://evil.example/steal"}),
+            FakeResponse(status=200, body=b"should-never-be-fetched"),
+        ],
+    )
+    with pytest.raises(ValueError, match="allowed"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert opener.requested_urls == [URL]
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_redirect_to_lookalike_host_refused_without_second_request(tmp_path: Path) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(
+                status=301,
+                headers={"Location": "https://www.sec.gov.evil.example/submissions/1.json"},
+            ),
+            FakeResponse(status=200, body=b"should-never-be-fetched"),
+        ],
+    )
+    with pytest.raises(ValueError, match="allowed"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert list(tmp_path.glob("*.body")) == []
+
+
+@pytest.mark.parametrize(
+    "bad_location",
+    [
+        "https://user:pass@www.sec.gov/submissions/1.json",
+        "https://user@www.sec.gov/submissions/1.json",
+        "https://@www.sec.gov/submissions/1.json",
+    ],
+)
+def test_redirect_with_userinfo_refused_without_second_request(
+    tmp_path: Path,
+    bad_location: str,
+) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=302, headers={"Location": bad_location}),
+            FakeResponse(status=200, body=b"should-never-be-fetched"),
+        ],
+    )
+    with pytest.raises(ValueError, match="credentials"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_redirect_chain_allowed_then_forbidden_refused_at_forbidden_hop(tmp_path: Path) -> None:
+    hop1 = "https://www.sec.gov/Archives/edgar/hop1.json"
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=302, headers={"Location": hop1}),
+            FakeResponse(status=302, headers={"Location": "https://evil.example/hop2"}),
+            FakeResponse(status=200, body=b"should-never-be-fetched"),
+        ],
+    )
+    with pytest.raises(ValueError, match="allowed"):
+        client.get(URL)
+    assert opener.calls == 2
+    assert opener.requested_urls == [URL, hop1]
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_redirect_four_hops_raises_sec_fetch_error(tmp_path: Path) -> None:
+    hops = [f"https://www.sec.gov/Archives/edgar/hop{i}.json" for i in range(1, 5)]
+    client, opener = make_client(
+        tmp_path,
+        responses=[
+            FakeResponse(status=302, headers={"Location": hops[0]}),
+            FakeResponse(status=302, headers={"Location": hops[1]}),
+            FakeResponse(status=302, headers={"Location": hops[2]}),
+            FakeResponse(status=302, headers={"Location": hops[3]}),
+            FakeResponse(status=200, body=b"too-far"),
+        ],
+    )
+    with pytest.raises(SecFetchError, match="Too many redirects"):
+        client.get(URL)
+    # Four requests were sent (initial + 3 allowed hops); the 4th redirect is refused before hop4.
+    assert opener.calls == 4
+    assert opener.requested_urls == [URL, hops[0], hops[1], hops[2]]
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_redirect_three_hops_succeeds_and_paces_each_hop_with_user_agent(tmp_path: Path) -> None:
+    ua = "Redirect Pacing Study contact@example.test"
+    hops = [f"https://www.sec.gov/Archives/edgar/hop{i}.json" for i in range(1, 4)]
+    client, opener = make_client(
+        tmp_path,
+        min_interval=0.25,
+        user_agent=ua,
+        responses=[
+            FakeResponse(status=302, headers={"Location": hops[0]}),
+            FakeResponse(status=307, headers={"Location": hops[1]}),
+            FakeResponse(status=308, headers={"Location": hops[2]}),
+            FakeResponse(status=200, body=b"final-body"),
+        ],
+    )
+    assert client.get(URL) == b"final-body"
+    assert opener.calls == 4
+    assert opener.requested_urls == [URL, hops[0], hops[1], hops[2]]
+    assert opener.sleeps == [pytest.approx(0.25), pytest.approx(0.25), pytest.approx(0.25)]
+    assert len(opener.headers_per_call) == 4
+    assert all(hdrs["User-Agent"] == ua for hdrs in opener.headers_per_call)
+
+
+# --- Response size ceiling (max_bytes) ---
+
+
+def test_oversized_chunked_body_without_content_length_rejected_and_not_cached(
+    tmp_path: Path,
+) -> None:
+    resp = FakeResponse(status=200, chunks=[b"aaaa", b"bbbb", b"cccc", b"dddd"])
+    client, opener = make_client(tmp_path, responses=[resp], max_bytes=10)
+    with pytest.raises(SecFetchError, match="response too large"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert resp.closed is True
+    # Stopped reading as soon as 11 bytes were seen, without draining the fourth chunk.
+    assert resp.read_calls == 3
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_oversized_content_length_refused_early_without_reading_or_caching(tmp_path: Path) -> None:
+    resp = FakeResponse(
+        status=200,
+        body=b"x" * 20,
+        headers={"Content-Length": "20"},
+    )
+    client, opener = make_client(tmp_path, responses=[resp], max_bytes=10)
+    with pytest.raises(SecFetchError, match="response too large"):
+        client.get(URL)
+    assert opener.calls == 1
+    assert resp.read_calls == 0
+    assert resp.closed is True
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_body_exactly_at_max_bytes_is_accepted_and_cached(tmp_path: Path) -> None:
+    payload = b"0123456789"
+    resp = FakeResponse(
+        status=200,
+        chunks=[b"0123", b"4567", b"89"],
+        headers={"Content-Length": str(len(payload))},
+    )
+    client, opener = make_client(tmp_path, responses=[resp], max_bytes=10)
+    assert client.get(URL) == payload
+    assert client.get(URL) == payload
+    assert opener.calls == 1
+    assert len(list(tmp_path.glob("*.body"))) == 1
+
+
+# --- Additional coverage: XML/ZIP payloads, cache-hit pacing, first-URL validation, meta write ---
+
+
+def test_primary_doc_xml_body_accepted_and_cached(tmp_path: Path) -> None:
+    xml_url = "https://www.sec.gov/Archives/edgar/data/320193/0001/primary_doc.xml"
+    xml_body = (
+        b'<?xml version="1.0" encoding="UTF-8"?><edgarSubmission><form>25</form></edgarSubmission>'
+    )
+    client, opener = make_client(tmp_path, status=200, body=xml_body)
+    assert client.get(xml_url) == xml_body
+    assert client.get(xml_url) == xml_body
+    assert opener.calls == 1
+    assert len(list(tmp_path.glob("*.body"))) == 1
+
+
+def test_html_error_page_for_zip_url_is_refused(tmp_path: Path) -> None:
+    zip_url = "https://www.sec.gov/Archives/edgar/full-index/2020/QTR1/master.zip"
+    client, _ = make_client(
+        tmp_path,
+        status=200,
+        body=b"<html><body>Request Rate Threshold Exceeded</body></html>",
+    )
+    with pytest.raises(SecFetchError, match="HTML"):
+        client.get(zip_url)
+    assert list(tmp_path.glob("*.body")) == []
+
+
+def test_cache_hit_does_not_sleep_or_reset_pacing_clock(tmp_path: Path) -> None:
+    url_1 = URL + "?part=1"
+    url_2 = URL + "?part=2"
+    client, opener = make_client(
+        tmp_path,
+        min_interval=0.25,
+        responses=[FakeResponse(b"one"), FakeResponse(b"two")],
+    )
+    # First real request at t=100.0; no sleep.
+    assert client.get(url_1) == b"one"
+    assert opener.sleeps == []
+
+    # Advance 0.10s and serve a cache hit: must not sleep and must not move _last_request_at.
+    opener.advance_clock(0.10)
+    assert client.get(url_1) == b"one"
+    assert opener.calls == 1
+    assert opener.sleeps == []
+
+    # Advance 0.05s (0.15s total since first real request); second real request waits only 0.10s.
+    opener.advance_clock(0.05)
+    assert client.get(url_2) == b"two"
+    assert opener.calls == 2
+    assert opener.sleeps == [pytest.approx(0.10, abs=1e-9)]
+
+
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "https://www.sec.gov.evil.example/submissions/CIK0000320193.json",
+        "https://data.sec.gov.evil.example/submissions/CIK0000320193.json",
+        "https://user:pass@www.sec.gov/submissions/CIK0000320193.json",
+        "https://user@data.sec.gov/submissions/CIK0000320193.json",
+        "https://www.sec.gov@evil.example/submissions/CIK0000320193.json",
+    ],
+)
+def test_first_url_lookalike_host_and_userinfo_refused(tmp_path: Path, bad_url: str) -> None:
+    client, opener = make_client(tmp_path, body=b"never")
+    with pytest.raises(ValueError):
+        client.get(bad_url)
+    assert opener.calls == 0
+
+
+def test_metadata_write_failure_after_body_write_leaves_no_usable_cache(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, opener = make_client(
+        tmp_path,
+        responses=[FakeResponse(b"first-body"), FakeResponse(b"second-body")],
+    )
+    real_replace = sec_client.os.replace
+    replace_calls = 0
+
+    def fail_on_meta(src: Any, dst: Any) -> None:
+        nonlocal replace_calls
+        replace_calls += 1
+        if replace_calls == 2:
+            raise OSError("simulated metadata write failure")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(sec_client.os, "replace", fail_on_meta)
+
+    with pytest.raises(OSError, match="simulated metadata write failure"):
+        client.get(URL)
+
+    # First replace wrote .body; second replace failed on .meta.json and cleaned up cleanly.
+    assert replace_calls == 2
+    assert list(tmp_path.glob("*.meta.json")) == []
+    assert list(tmp_path.glob("*.tmp")) == []
+    assert list(tmp_path.glob("*.body")) == []
+
+    # Next get cannot use any partial cache entry and refetches from the opener.
+    assert client.get(URL) == b"second-body"
+    assert opener.calls == 2
+    assert client.get(URL) == b"second-body"
+    assert opener.calls == 2

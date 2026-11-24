@@ -20,13 +20,17 @@ ALLOWED_HOSTS: set[str] = {"www.sec.gov", "data.sec.gov"}
 ENV_USER_AGENT = "SEC_USER_AGENT"
 DEFAULT_MIN_INTERVAL = 0.25
 DEFAULT_TIMEOUT = 30.0
+DEFAULT_MAX_BYTES = 128 * 1024 * 1024
 MAX_ATTEMPTS = 3
+MAX_REDIRECTS = 3
 INITIAL_RETRY_DELAY = 2.0
 RETRYABLE_STATUSES: frozenset[int] = frozenset({403, 429})
+REDIRECT_STATUSES: frozenset[int] = frozenset({301, 302, 303, 307, 308})
 HTML_ALLOWED_SUFFIXES = (".htm", ".html", "/")
 HTML_PREFIXES = (b"<html", b"<!doctype html")
 SHA256SUMS_FILENAME = "SHA256SUMS.txt"
 _HASH_CHUNK_BYTES = 65536
+_READ_CHUNK_BYTES = 1024 * 1024
 
 
 class SecUserAgentMissing(RuntimeError):
@@ -95,18 +99,100 @@ def _atomic_write_bytes(path: Path, data: bytes) -> Path:
     return path
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Stop urllib from following 3xx responses so every hop is validated and paced."""
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: Any,
+        code: int,
+        msg: str,
+        headers: Any,
+        newurl: str,
+    ) -> None:
+        return None
+
+
+def _build_default_opener() -> urllib.request.OpenerDirector:
+    """Create the default opener with automatic redirect following disabled."""
+    return urllib.request.build_opener(_NoRedirectHandler())
+
+
 def _validate_url(url: str) -> None:
-    """Ensure ``url`` uses HTTPS and targets one of ``ALLOWED_HOSTS``."""
+    """Ensure ``url`` uses HTTPS, has no userinfo, and targets one of ``ALLOWED_HOSTS``."""
     parsed = urllib.parse.urlsplit(url)
     if parsed.scheme.lower() != "https":
         raise ValueError(f"SEC URL must use https scheme: {url!r}")
-    if parsed.username is not None or parsed.password is not None:
+    if parsed.username is not None or parsed.password is not None or "@" in parsed.netloc:
         raise ValueError(f"SEC URL must not embed credentials: {url!r}")
     host = (parsed.hostname or "").lower()
     if host not in ALLOWED_HOSTS:
         raise ValueError(
             f"Host {host!r} is not in allowed SEC hosts {sorted(ALLOWED_HOSTS)}: {url!r}"
         )
+
+
+def _get_header(obj: Any, name: str) -> str | None:
+    """Read HTTP header ``name`` case-insensitively from a response or ``HTTPError``."""
+    headers = getattr(obj, "headers", None)
+    if headers is None:
+        return None
+    if isinstance(headers, Mapping):
+        target = name.lower()
+        for key, value in headers.items():
+            if isinstance(key, str) and key.lower() == target:
+                return str(value) if value is not None else None
+        return None
+    getter = getattr(headers, "get", None)
+    if callable(getter):
+        value = getter(name)
+        if value is not None:
+            return str(value)
+    return None
+
+
+def _resolve_redirect_target(current_url: str, status: int, response_or_error: Any) -> str:
+    """Resolve and validate a redirect ``Location`` header before issuing the next hop."""
+    location = _get_header(response_or_error, "Location")
+    if location is None or not location.strip():
+        raise SecFetchError(
+            f"HTTP {status} redirect without Location header fetching {current_url}"
+        )
+    target = urllib.parse.urljoin(current_url, location.strip())
+    _validate_url(target)
+    return target
+
+
+def _check_content_length(response: Any, max_bytes: int, url: str) -> None:
+    """Reject a response before reading its body when ``Content-Length`` exceeds ``max_bytes``."""
+    raw = _get_header(response, "Content-Length")
+    if raw is None:
+        return
+    try:
+        length = int(raw.strip())
+    except ValueError:
+        return
+    if length > max_bytes:
+        raise SecFetchError(
+            f"response too large: Content-Length {length} exceeds limit {max_bytes} for {url}"
+        )
+
+
+def _read_bounded(response: Any, max_bytes: int, url: str) -> bytes:
+    """Read ``response`` in chunks up to ``max_bytes + 1``, refusing oversized bodies."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        to_read = min(_READ_CHUNK_BYTES, (max_bytes - total) + 1)
+        chunk = response.read(to_read)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise SecFetchError(f"response too large: exceeded {max_bytes} bytes fetching {url}")
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 def _extract_final_url(response: Any) -> str | None:
@@ -185,22 +271,27 @@ class SecClient:
         user_agent: str,
         cache_dir: Path,
         min_interval: float = DEFAULT_MIN_INTERVAL,
-        opener: Callable[..., Any] = urllib.request.urlopen,
+        opener: Callable[..., Any] | None = None,
         sleep: Callable[[float], Any] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        max_bytes: int = DEFAULT_MAX_BYTES,
     ) -> None:
         cleaned_ua = user_agent.strip() if isinstance(user_agent, str) else ""
         if not cleaned_ua:
             raise SecUserAgentMissing("SecClient requires a non-empty SEC fair-access User-Agent.")
         if min_interval < 0:
             raise ValueError(f"min_interval must be non-negative, got {min_interval!r}")
+        if max_bytes <= 0:
+            raise ValueError(f"max_bytes must be positive, got {max_bytes!r}")
 
         self._user_agent = cleaned_ua
         self._cache_dir = Path(cache_dir)
         self._min_interval = float(min_interval)
         self._opener = opener
+        self._default_opener = _build_default_opener() if opener is None else None
         self._sleep = sleep
         self._clock = clock
+        self._max_bytes = int(max_bytes)
         self._last_request_at: float | None = None
 
         self.corrupt_cache_refetches = 0
@@ -257,9 +348,14 @@ class SecClient:
             "status": status,
         }
         meta_bytes = (json.dumps(meta, indent=2, sort_keys=True) + "\n").encode("utf-8")
-        # Write the body atomically before metadata so a crash never leaves a half-written cache.
+        # Write body atomically first, then metadata; remove body if metadata write fails
+        # so an interrupted write never leaves an orphan .body entry on disk.
         _atomic_write_bytes(body_path, body)
-        _atomic_write_bytes(meta_path, meta_bytes)
+        try:
+            _atomic_write_bytes(meta_path, meta_bytes)
+        except BaseException:
+            body_path.unlink(missing_ok=True)
+            raise
 
     def _throttle(self) -> None:
         if self._last_request_at is not None and self._min_interval > 0:
@@ -269,54 +365,74 @@ class SecClient:
                 self._sleep(remaining)
 
     def _call_opener(self, request: urllib.request.Request) -> Any:
-        # Real urlopen needs a timeout so hung sockets cannot stall a run; fake openers take 1 arg.
+        # Default opener disables redirects and sets a timeout; injected test openers take 1 arg.
+        if self._opener is None:
+            assert self._default_opener is not None
+            return self._default_opener.open(request, timeout=DEFAULT_TIMEOUT)
         if self._opener is urllib.request.urlopen:
             return self._opener(request, timeout=DEFAULT_TIMEOUT)
         return self._opener(request)
 
-    def _attempt_once(self, url: str, request: urllib.request.Request) -> tuple[int, bytes]:
+    def _attempt_once(
+        self,
+        original_url: str,
+        current_url: str,
+        request: urllib.request.Request,
+    ) -> tuple[int, bytes | None, str | None]:
         try:
             response = self._call_opener(request)
         except urllib.error.HTTPError as exc:
             try:
+                if exc.code in REDIRECT_STATUSES:
+                    final_url = _extract_final_url(exc)
+                    if final_url is not None and final_url != current_url:
+                        _validate_url(final_url)
+                    target = _resolve_redirect_target(current_url, exc.code, exc)
+                    return exc.code, None, target
                 final_url = _extract_final_url(exc)
                 if final_url is not None:
                     _validate_url(final_url)
                 if exc.code == 404:
-                    raise SecNotFound(f"SEC URL not found (HTTP 404): {url}") from exc
+                    raise SecNotFound(f"SEC URL not found (HTTP 404): {current_url}") from exc
                 if _is_retryable_status(exc.code):
-                    raise _RetryableFetchError(f"HTTP {exc.code} fetching {url}") from exc
-                raise SecFetchError(f"HTTP {exc.code} fetching {url}") from exc
+                    raise _RetryableFetchError(f"HTTP {exc.code} fetching {current_url}") from exc
+                raise SecFetchError(f"HTTP {exc.code} fetching {current_url}") from exc
             finally:
                 close = getattr(exc, "close", None)
                 if callable(close):
                     close()
         except (urllib.error.URLError, OSError, http.client.HTTPException) as exc:
-            raise _RetryableFetchError(f"Network error fetching {url}: {exc}") from exc
+            raise _RetryableFetchError(f"Network error fetching {current_url}: {exc}") from exc
 
         try:
             final_url = _extract_final_url(response)
             if final_url is not None:
                 _validate_url(final_url)
             status = _extract_status(response)
+            if status in REDIRECT_STATUSES:
+                target = _resolve_redirect_target(current_url, status, response)
+                return status, None, target
             if status == 404:
-                raise SecNotFound(f"SEC URL not found (HTTP 404): {url}")
+                raise SecNotFound(f"SEC URL not found (HTTP 404): {current_url}")
             if _is_retryable_status(status):
-                raise _RetryableFetchError(f"HTTP {status} fetching {url}")
+                raise _RetryableFetchError(f"HTTP {status} fetching {current_url}")
             if status != 200:
-                raise SecFetchError(f"Unexpected HTTP {status} fetching {url}")
+                raise SecFetchError(f"Unexpected HTTP {status} fetching {current_url}")
+            _check_content_length(response, self._max_bytes, current_url)
             try:
-                body = response.read()
+                body = _read_bounded(response, self._max_bytes, current_url)
             except (urllib.error.URLError, OSError, http.client.HTTPException) as exc:
-                raise _RetryableFetchError(f"Stream read error fetching {url}: {exc}") from exc
+                raise _RetryableFetchError(
+                    f"Stream read error fetching {current_url}: {exc}"
+                ) from exc
         finally:
             close = getattr(response, "close", None)
             if callable(close):
                 close()
 
-        if _is_unexpected_html(url, body):
-            raise SecFetchError(f"Refused HTML response for non-HTML SEC URL: {url}")
-        return status, body
+        if _is_unexpected_html(original_url, body):
+            raise SecFetchError(f"Refused HTML response for non-HTML SEC URL: {original_url}")
+        return status, body, None
 
     def get(self, url: str) -> bytes:
         """Fetch ``url`` from cache if valid, otherwise download with fair-access guards.
@@ -328,10 +444,11 @@ class SecClient:
             Raw response bytes as received from SEC EDGAR.
 
         Raises:
-            ValueError: If ``url`` (or a post-redirect final URL) uses a non-HTTPS scheme or a
-                host outside ``ALLOWED_HOSTS``.
+            ValueError: If ``url`` (or any redirect target) uses a non-HTTPS scheme, embeds
+                userinfo, or targets a host outside ``ALLOWED_HOSTS``.
             SecNotFound: Immediately on HTTP 404 (subclass of ``SecFetchError``).
-            SecFetchError: On non-200 failure, unexpected HTML payload, or after retry exhaustion.
+            SecFetchError: On non-200 failure, redirect limit exceeded, oversized body,
+                unexpected HTML payload, or after retry exhaustion.
         """
         _validate_url(url)
         cached = self._read_verified_cache(url)
@@ -339,33 +456,51 @@ class SecClient:
             self.cache_hits += 1
             return cached
 
-        request = urllib.request.Request(url, headers={"User-Agent": self._user_agent})
-        last_error: Exception | None = None
+        current_url = url
+        redirects = 0
 
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            if attempt == 1:
-                self._throttle()
-            try:
-                status, body = self._attempt_once(url, request)
-            except _RetryableFetchError as exc:
-                last_error = exc
+        while True:
+            request = urllib.request.Request(current_url, headers={"User-Agent": self._user_agent})
+            last_error: Exception | None = None
+            next_url: str | None = None
+
+            for attempt in range(1, MAX_ATTEMPTS + 1):
+                if attempt == 1:
+                    self._throttle()
+                try:
+                    status, body, redirect_target = self._attempt_once(url, current_url, request)
+                except _RetryableFetchError as exc:
+                    last_error = exc
+                    self._last_request_at = self._clock()
+                    if attempt < MAX_ATTEMPTS:
+                        delay = max(INITIAL_RETRY_DELAY * (2 ** (attempt - 1)), self._min_interval)
+                        self._sleep(delay)
+                    continue
+                except BaseException:
+                    self._last_request_at = self._clock()
+                    raise
+
                 self._last_request_at = self._clock()
-                if attempt < MAX_ATTEMPTS:
-                    delay = max(INITIAL_RETRY_DELAY * (2 ** (attempt - 1)), self._min_interval)
-                    self._sleep(delay)
-                continue
-            except BaseException:
-                self._last_request_at = self._clock()
-                raise
-            else:
-                self._last_request_at = self._clock()
+                if redirect_target is not None:
+                    next_url = redirect_target
+                    break
+                assert body is not None
+                # Cache under the original requested URL so later gets hit the cache directly.
                 self._write_cache(url, status, body)
                 self.network_fetches += 1
                 return body
+            else:
+                raise SecFetchError(
+                    f"Failed to fetch {current_url} after {MAX_ATTEMPTS} attempts: {last_error}"
+                ) from last_error
 
-        raise SecFetchError(
-            f"Failed to fetch {url} after {MAX_ATTEMPTS} attempts: {last_error}"
-        ) from last_error
+            assert next_url is not None
+            if redirects >= MAX_REDIRECTS:
+                raise SecFetchError(
+                    f"Too many redirects (more than {MAX_REDIRECTS}) fetching {url}"
+                )
+            redirects += 1
+            current_url = next_url
 
     def manifest(self) -> dict[str, str]:
         """Return ``{url: sha256}`` for every cached body, sorted by URL.
