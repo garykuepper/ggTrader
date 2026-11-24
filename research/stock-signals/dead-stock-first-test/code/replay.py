@@ -22,10 +22,14 @@ Differences from the engine path, all deliberate:
   also decides on the first day of its window; this study does not (the brief fixes it).
 * A decision acts on the next trading day in ``close.index``. A decision with no next trading
   day, or whose next trading day falls after ``end``, produces no step.
-* A stock is never chosen for an execution day on or after its last bar (the lab's
-  ``entry_ok`` mask), because a stale score would otherwise keep a dead stock on the list.
-* Stocks whose series ends with a successor (bought out or merged) are removed from new
-  entries the same way, but ``exit_close`` does not write their last price down.
+* Only information through the decision day is used. A stock whose last bar is before the
+  decision day is dropped (its score is stale, forward-filled). A stock whose last bar is the
+  decision day or later stays selectable even if it has no bar on the execution day: the
+  planner cannot know that on the decision day, and it never substitutes another stock. The
+  ledger decides what to do with a buy that cannot be filled.
+* Stocks whose series ends with a successor (bought out or merged) follow the same rule, but
+  ``exit_close`` does not write their last price down. A span flagged both ``has_successor``
+  and ``total_loss`` is contradictory and is refused.
 
 ``dead_loss`` is validated here for symmetry with the ledger call; the plan itself does not
 depend on it (the loss only sets the sale price, through ``exit_close``).
@@ -148,7 +152,7 @@ def plan_trades(
         return []
     scores = momentum_scores(close, lookback, skip).reindex(pd.DatetimeIndex(days)).to_numpy()
     allowed = _aligned_eligibility(eligible, close, days)
-    entry_ok = forced_exit_frames(close, spans).entry_ok
+    ended = span_end_dates(close, spans).reindex(close.columns)
     symbols = np.array(close.columns)
     last_exec = _localize(pd.Timestamp(end), index)
     steps: list[TargetStep] = []
@@ -157,12 +161,29 @@ def plan_trades(
         if pos >= len(index) or index[pos] > last_exec:
             continue
         date = index[pos]
-        usable = np.flatnonzero(allowed[i] & np.isfinite(scores[i]) & entry_ok.iloc[pos].to_numpy())
+        # Known on the decision day: the series already stopped before it.
+        already_dead = (ended < decision).to_numpy()
+        usable = np.flatnonzero(allowed[i] & np.isfinite(scores[i]) & ~already_dead)
         order = np.argsort(-scores[i][usable], kind="stable")
         top = usable[order[:top_n]]
         targets = {str(s): 1.0 / len(top) for s in symbols[top]} if len(top) else {}
         steps.append(TargetStep(decision_date=decision, date=date, targets=targets))
     return steps
+
+
+def _refuse_contradictory(spans: pd.DataFrame) -> None:
+    """Raise when a span is both a successor (price kept) and a total loss (price floored).
+
+    The lab helper lets ``total_loss`` win, which would write a bought-out stock down.
+    """
+    if not {"has_successor", "total_loss"}.issubset(spans.columns):
+        return
+    both = spans["has_successor"].fillna(False).astype(bool) & spans["total_loss"].fillna(
+        False
+    ).astype(bool)
+    if both.any():
+        names = ", ".join(sorted(spans.loc[both, "symbol"].astype(str)))
+        raise ValueError(f"spans flag both has_successor and total_loss for: {names}")
 
 
 def span_end_dates(close: pd.DataFrame, spans: pd.DataFrame) -> pd.Series:
@@ -176,6 +197,7 @@ def span_end_dates(close: pd.DataFrame, spans: pd.DataFrame) -> pd.Series:
         Symbol to the last bar on or before its span end, only for spans that end within
         ``close.index``.
     """
+    _refuse_contradictory(spans)
     exits = forced_exit_frames(close, spans).exits
     flags = exits.to_numpy()
     ended = flags.any(axis=0)
@@ -211,4 +233,5 @@ def exit_close(close: pd.DataFrame, spans: pd.DataFrame, loss: float) -> pd.Data
     last price times (1 minus ``loss``), never exactly zero (``SIM_PRICE_FLOOR``); a stock with
     a successor keeps its last price.
     """
+    _refuse_contradictory(spans)
     return simulation_close(close, spans, loss)

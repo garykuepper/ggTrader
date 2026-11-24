@@ -197,29 +197,61 @@ def test_halted_stock_valued_at_last_print() -> None:
 
 def test_no_entry_after_death() -> None:
     close = make_close()
-    # The strongest stock dies on 2019-06-14 but its stale score would keep it on top.
+    # The strongest stock dies on 2019-06-14 but its stale, forward-filled score would keep it
+    # on top; the eligibility frame here allows it on every day, so the planner itself must
+    # drop it once its last bar is before the decision day.
     close["S02"] = runaway(close)
     last = pd.Timestamp("2019-06-14")
     close.loc[close.index > last, "S02"] = np.nan
     spans = make_spans([("S02", last)])
     steps = plan(close, spans=spans, top_n=3)
-    before = [s for s in steps if s.date < last]
-    after = [s for s in steps if s.date >= last]
-    assert before and after
-    assert all("S02" in s.targets for s in before)
-    assert all("S02" not in s.targets for s in after)
+    alive = [s for s in steps if s.decision_date <= last]
+    dead = [s for s in steps if s.decision_date > last]
+    assert alive and dead
+    assert all("S02" in s.targets for s in alive)
+    assert all("S02" not in s.targets for s in dead)
+    assert all(len(s.targets) == 3 for s in dead)
 
 
-def test_no_entry_on_the_execution_day_of_the_last_bar() -> None:
+def test_stock_whose_last_bar_is_tomorrow_is_still_chosen_today() -> None:
     close = make_close()
     close["S02"] = runaway(close)
     decision = month_ends(close.index, START, END)[5]
     next_day = close.index[close.index.get_loc(decision) + 1]
-    close.loc[close.index > next_day, "S02"] = np.nan
-    steps = plan(close, spans=make_spans([("S02", next_day)]), top_n=3)
+    close.loc[close.index > decision, "S02"] = np.nan  # no bar on the execution day
+    steps = plan(close, spans=make_spans([("S02", decision)]), top_n=3)
     step = next(s for s in steps if s.decision_date == decision)
     assert step.date == next_day
-    assert "S02" not in step.targets
+    assert "S02" in step.targets  # unfillable buys are the ledger's problem, not a substitute
+
+
+def test_decisions_identical_when_only_future_span_endings_differ() -> None:
+    base = make_close()
+    base["S02"] = runaway(base)
+    decisions = month_ends(base.index, START, END)
+    decision = decisions[4]
+    soon = base.index[base.index.get_loc(decision) + 1]
+    later = base.index[base.index.get_loc(decision) + 30]
+
+    def with_ending(last: pd.Timestamp | None):
+        close = base.copy()
+        spans = empty_spans()
+        if last is not None:
+            close.loc[close.index > last, "S02"] = np.nan
+            spans = make_spans([("S02", last)])
+        return plan(close, spans=spans, top_n=3), close
+
+    first, close_first = with_ending(soon)
+    second, close_second = with_ending(later)
+    third, _ = with_ending(None)
+    # Closes agree through the decision day, so everything up to it must agree.
+    pd.testing.assert_frame_equal(close_first.loc[:decision], close_second.loc[:decision])
+    for steps in (second, third):
+        for ours, theirs in zip(first, steps, strict=True):
+            if ours.decision_date <= soon:
+                assert ours.targets == theirs.targets
+    chosen = next(s for s in first if s.decision_date == decision)
+    assert "S02" in chosen.targets
 
 
 def test_dead_exit_dates_only_inside_the_window() -> None:
@@ -304,3 +336,49 @@ def test_weights_follow_xs_momentum_convention() -> None:
 def test_module_exposes_planner_constants() -> None:
     assert replay.REBALANCE_REASON == "rebalance"
     assert replay.DEAD_EXIT_REASON == "dead_exit"
+
+
+def test_span_with_both_successor_and_total_loss_is_refused() -> None:
+    close = make_close()
+    spans = pd.DataFrame(
+        {
+            "symbol": ["S01"],
+            "last_date": [pd.Timestamp("2019-03-15")],
+            "has_successor": [True],
+            "total_loss": [True],
+        }
+    )
+    with pytest.raises(ValueError, match="S01"):
+        exit_close(close, spans, 0.5)
+    with pytest.raises(ValueError, match="S01"):
+        dead_exit_dates(close, spans)
+    with pytest.raises(ValueError, match="S01"):
+        span_end_dates(close, spans)
+    with pytest.raises(ValueError, match="S01"):
+        plan(close, spans=spans)
+
+
+def test_successor_alone_keeps_last_price_at_full_loss() -> None:
+    close = make_close()
+    last = pd.Timestamp("2019-03-15")
+    spans = pd.DataFrame(
+        {
+            "symbol": ["S01"],
+            "last_date": [last],
+            "has_successor": [True],
+            "total_loss": [False],
+        }
+    )
+    out = exit_close(close, spans, 1.0)
+    assert out.loc[last, "S01"] == close.loc[last, "S01"]
+    assert dead_exit_dates(close, spans).empty
+
+
+def test_total_loss_alone_goes_to_the_floor() -> None:
+    close = make_close()
+    last = pd.Timestamp("2019-03-15")
+    spans = pd.DataFrame(
+        {"symbol": ["S01"], "last_date": [last], "has_successor": [False], "total_loss": [True]}
+    )
+    out = exit_close(close, spans, 0.0)
+    assert out.loc[last, "S01"] == pytest.approx(close.loc[last, "S01"] * SIM_PRICE_FLOOR)
