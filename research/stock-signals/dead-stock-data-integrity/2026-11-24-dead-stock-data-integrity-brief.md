@@ -194,3 +194,23 @@ data itself shows it.
   rows as well and counted exchange moves as gaps; it was corrected the same day.) The trading
   calendar for the gap check is still the set of dates on which at least 1,000 stocks that pass
   the code filter have a row. Roster price labels use the stock's rows with no code filter.
+- **2026-11-24 (how names are matched to SEC filers).** Company names in the McGill table are
+  cut off at 16 characters. A roster name that is exactly 16 characters long is treated as cut
+  off: it matches a filer when the filer's cleaned-up name **starts with** the roster's
+  cleaned-up name (so `AMYLIN PHARMACEU` matches `Amylin Pharmaceuticals`). A roster name
+  shorter than 16 characters must equal the filer's cleaned-up name exactly. There is no other
+  loose matching. If a cut-off name starts the names of two or more different filers (two
+  different CIK numbers), the stock is marked `ambiguous` and no filer is picked. Cleaning a
+  name means: capitals, punctuation turned into spaces, repeated spaces collapsed, whole-word
+  short forms spelled out the same way on both sides, then trailing `INC`, `CORP`, `CO`,
+  `COMPANY`, `LTD`, `LLC`, `LP` and `PLC` dropped. The short forms are fixed in this table
+  (short form to full word): `CP` to `CORP`, `CORPORATION` to `CORP`, `INCORPORATED` to `INC`,
+  `INDS` to `INDUSTRIES`, `INTL` to `INTERNATIONAL`, `HLDGS` to `HOLDINGS`, `GRP` to `GROUP`,
+  `TECH` to `TECHNOLOGY`, `TECHS` to `TECHNOLOGIES`, `SYS` to `SYSTEMS`, `PHARMACEUTICAL`,
+  `PHARMA` and `PHARMS` to `PHARMACEUTICALS`, `DRG` to `DRUG`, `STRS` to `STORES`, `AMERN` to
+  `AMERICAN`, `NATL` to `NATIONAL`, `NAT` to `NATURAL`, `ELEC` to `ELECTRIC`, `MED` to
+  `MEDICAL`, `CONTL` to `CONTINENTAL`, `EXPLOR` to `EXPLORATION`, `RES` to `RESOURCES`, `PETE`
+  to `PETROLEUM`, `COMM` to `COMMUNICATIONS`, `SOLU` and `SOL` to `SOLUTIONS`, `PAYMNT` to
+  `PAYMENT`, `SOUTHN` to `SOUTHERN`, `FINL` to `FINANCIAL`, `INS` to `INSURANCE`. The table was
+  chosen by reading only the 133 company names in the roster file. No matching rule was chosen
+  after seeing any SEC result.
