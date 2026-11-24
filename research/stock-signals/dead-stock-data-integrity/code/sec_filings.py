@@ -1,23 +1,62 @@
-"""Find each dead stock's SEC Form 25 notice: quarterly index, name matching, notice reading."""
+"""Read dead stocks' SEC Form 25 notices and Form 8-K exit events."""
 
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from collections.abc import Mapping
 from datetime import date, timedelta
 from typing import Any
 from xml.etree import ElementTree
 
-from sec_client import SecClient, SecFetchError
+from sec_client import SecClient, SecFetchError, SecNotFound
 from sec_form25 import parse_bound_exchange_notice
 from sec_master_index import parse_listing_archive
 
 MASTER_INDEX_URL = "https://www.sec.gov/Archives/edgar/full-index/{year}/QTR{quarter}/master.zip"
 FILING_DIR_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{accession_nodash}/"
+SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+SUBMISSIONS_PAGE_URL = "https://data.sec.gov/submissions/{name}"
 NOTICE_DOCUMENT = "primary_doc.xml"
 # Forms that announce a stock leaving an exchange; 8-A12B (a listing) is dropped on purpose.
 FORM25_FORMS: frozenset[str] = frozenset({"25", "25/A", "25-NSE", "25-NSE/A"})
+# Current-report forms inspected for exit evidence around the delisting date.
+FORM8K_FORMS: frozenset[str] = frozenset({"8-K", "8-K/A"})
+# Default symmetric window (in days) around the exit date for Form 8-K evidence.
+EVENT_WINDOW_DAYS = 90
+_SUBMISSIONS_FIELDS = ("form", "filingDate", "items", "accessionNumber", "primaryDocument")
+_SAFE_PAGE_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+# Closed set of outcome codes returned by fetch_events_with_status.
+EVENTS_STATUS_OK = "ok"
+EVENTS_STATUS_NO_OLDER_PAGES_NEEDED = "no_older_pages_needed"
+EVENTS_STATUS_NOT_FOUND = "not_found"
+EVENTS_STATUS_OLDER_PAGE_NOT_FOUND = "older_page_not_found"
+EVENTS_STATUSES: frozenset[str] = frozenset(
+    {
+        EVENTS_STATUS_OK,
+        EVENTS_STATUS_NO_OLDER_PAGES_NEEDED,
+        EVENTS_STATUS_NOT_FOUND,
+        EVENTS_STATUS_OLDER_PAGE_NOT_FOUND,
+    }
+)
+# Exit-evidence classes for Form 8-K items, applied in fixed priority order below.
+EVIDENCE_BANKRUPTCY = "bankruptcy_filed"
+EVIDENCE_ACQUIRED = "acquired_or_merged"
+EVIDENCE_DELISTED_OTHER = "delisted_other"
+EVIDENCE_NONE = "no_8k_found"
+# Fixed priority table from the Task 7 brief; first matching rule wins across all window events.
+# Item meanings (as understood; verify against the SEC Form 8-K instructions before use):
+#   1.03: bankruptcy or receivership
+#   2.01: completion of an acquisition or disposition of assets
+#   3.01: notice of delisting
+#   3.03: material change to the rights of shareholders
+#   5.01: change in control of the company
+EVIDENCE_ITEM_RULES: tuple[tuple[str, frozenset[str]], ...] = (
+    (EVIDENCE_BANKRUPTCY, frozenset({"1.03"})),
+    (EVIDENCE_ACQUIRED, frozenset({"2.01", "3.03", "5.01"})),
+    (EVIDENCE_DELISTED_OTHER, frozenset({"3.01"})),
+)
 # The window around the exit date in which a Form 25 can belong to the exit (brief section 5).
 BEFORE_DAYS = 30
 AFTER_DAYS = 180
@@ -267,3 +306,303 @@ def read_notice(client: SecClient, accession: str, cik: str) -> dict:
             "reason": f"{type(exc).__name__}: {exc}",
         }
     return {"status": STATUS_READABLE, **bound}
+
+
+def submissions_url(cik: str) -> str:
+    """Return the SEC EDGAR submissions JSON URL for ``cik``, zero-padded to 10 digits.
+
+    Args:
+        cik: Numeric CIK string (padded or unpadded).
+
+    Returns:
+        HTTPS URL on ``data.sec.gov`` for the company's submissions JSON.
+
+    Raises:
+        ValueError: If ``cik`` is not a positive integer under 10 digits.
+    """
+    value = int(cik)
+    if not 0 < value < 10**10:
+        raise ValueError(f"CIK out of range: {cik!r}")
+    return SUBMISSIONS_URL.format(cik=value)
+
+
+def _validate_page_name(name: Any) -> str:
+    """Ensure an older submissions page filename cannot escape ``/submissions/``."""
+    if not isinstance(name, str) or name in (".", "..") or not _SAFE_PAGE_NAME_RE.fullmatch(name):
+        raise ValueError(f"Invalid submissions page name: {name!r}")
+    return name
+
+
+def older_page_urls(submissions: dict[str, Any]) -> list[str]:
+    """Return the SEC URLs for older submissions pages listed in ``filings.files``.
+
+    Args:
+        submissions: Parsed top-level SEC submissions JSON object.
+
+    Returns:
+        List of ``https://data.sec.gov/submissions/<name>`` URLs in listed order.
+
+    Raises:
+        ValueError: If an entry in ``filings.files`` lacks a safe filename.
+    """
+    filings = submissions.get("filings")
+    if not isinstance(filings, Mapping):
+        return []
+    files = filings.get("files")
+    if not isinstance(files, list):
+        return []
+    urls: list[str] = []
+    for entry in files:
+        if not isinstance(entry, Mapping) or "name" not in entry:
+            raise ValueError(f"Invalid submissions file entry: {entry!r}")
+        name = _validate_page_name(entry["name"])
+        urls.append(SUBMISSIONS_PAGE_URL.format(name=name))
+    return urls
+
+
+def _parse_items(raw: Any) -> list[str]:
+    """Normalize an 8-K ``items`` cell into a list of stripped non-empty item codes.
+
+    Handles both comma-separated strings (brief fixtures) and lists of strings (live EDGAR JSON).
+    """
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return [part.strip() for part in raw.split(",") if part.strip()]
+    if isinstance(raw, list):
+        codes: list[str] = []
+        for elem in raw:
+            if isinstance(elem, str):
+                codes.extend(part.strip() for part in elem.split(",") if part.strip())
+        return codes
+    raise ValueError(f"Unexpected 8-K items value: {raw!r}")
+
+
+def _try_date(value: Any) -> date | None:
+    """Parse an ISO date string or pass a ``date`` through; return None when blank or invalid."""
+    if isinstance(value, date):
+        return value
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return date.fromisoformat(value.strip())
+    except ValueError:
+        return None
+
+
+def _earliest_filing_date(block: Mapping[str, Any] | None) -> date | None:
+    """Return the earliest valid ``filingDate`` in a submissions block, or None if empty."""
+    if not isinstance(block, Mapping):
+        return None
+    raw_dates = block.get("filingDate")
+    if not isinstance(raw_dates, list):
+        return None
+    parsed = [d for raw in raw_dates if (d := _try_date(raw)) is not None]
+    return min(parsed) if parsed else None
+
+
+def _page_overlaps_window(entry: Mapping[str, Any], start: date, end: date) -> bool:
+    """True unless an older page's valid ``filingFrom``/``filingTo`` lies outside the window."""
+    page_from = _try_date(entry.get("filingFrom"))
+    page_to = _try_date(entry.get("filingTo"))
+    # Fetch conservatively whenever range metadata is missing or inverted.
+    if page_from is None or page_to is None or page_from > page_to:
+        return True
+    return page_from <= end and page_to >= start
+
+
+def _iter_block_rows(block: Mapping[str, Any] | None) -> list[tuple[Any, Any, Any, Any, Any]]:
+    """Validate and zip the five parallel filing arrays from a ``recent`` or archive block."""
+    if not isinstance(block, Mapping) or not block:
+        return []
+    try:
+        columns = [block[field] for field in _SUBMISSIONS_FIELDS]
+    except KeyError as exc:
+        raise ValueError(f"Submissions block missing required array: {exc}") from exc
+    if not all(isinstance(col, list) for col in columns) or len({len(c) for c in columns}) != 1:
+        raise ValueError("Submissions block parallel arrays must be lists of equal length")
+    return list(zip(*columns, strict=True))
+
+
+def extract_8k_events(
+    submissions: dict[str, Any],
+    pages: list[dict[str, Any]],
+    around: date,
+    days: int = EVENT_WINDOW_DAYS,
+) -> list[dict[str, Any]]:
+    """Extract Form 8-K and 8-K/A filings filed within ``days`` of ``around``.
+
+    Reads the parallel arrays ``form``, ``filingDate``, ``items``, ``accessionNumber`` and
+    ``primaryDocument`` from ``submissions["filings"]["recent"]`` and each older page in
+    ``pages``. Events with empty ``items`` are preserved so callers can count ``items_missing``.
+
+    Args:
+        submissions: Parsed top-level SEC submissions JSON object.
+        pages: Parsed older submissions archive JSON objects.
+        around: Center date for the event window (typically the stock's exit date).
+        days: Symmetric half-window in calendar days (both ends included).
+
+    Returns:
+        List of ``{"accession", "filing_date", "items", "primary_document"}`` dicts sorted by
+        ``filing_date`` then ``accession``, deduplicated by accession number.
+
+    Raises:
+        ValueError: If ``days`` is negative or a submissions block has malformed parallel arrays.
+    """
+    if days < 0:
+        raise ValueError(f"days must be non-negative, got {days}")
+    center = _as_date(around)
+    window_start = center - timedelta(days=days)
+    window_end = center + timedelta(days=days)
+
+    filings = submissions.get("filings")
+    recent = filings.get("recent") if isinstance(filings, Mapping) else None
+    blocks: list[Mapping[str, Any] | None] = [recent, *pages]
+
+    events: list[dict[str, Any]] = []
+    seen_accessions: set[str] = set()
+    for block in blocks:
+        for form, filed, raw_items, accession, document in _iter_block_rows(block):
+            if not isinstance(form, str) or form.strip() not in FORM8K_FORMS:
+                continue
+            filed_date = _try_date(filed)
+            if filed_date is None or not window_start <= filed_date <= window_end:
+                continue
+            acc_str = "" if accession is None else str(accession).strip()
+            # Avoid double-counting a boundary filing that appears in both recent and page 1.
+            if acc_str and acc_str in seen_accessions:
+                continue
+            if acc_str:
+                seen_accessions.add(acc_str)
+            events.append(
+                {
+                    "accession": acc_str,
+                    "filing_date": filed_date.isoformat(),
+                    "items": _parse_items(raw_items),
+                    "primary_document": "" if document is None else str(document),
+                }
+            )
+
+    events.sort(key=lambda event: (event["filing_date"], event["accession"]))
+    return events
+
+
+def evidence_class(events: list[dict[str, Any]]) -> str:
+    """Classify a stock's exit from its window 8-K items using ``EVIDENCE_ITEM_RULES``.
+
+    Applies the fixed priority table across all item codes present in ``events``:
+    ``1.03`` -> ``bankruptcy_filed``; else any of ``2.01``, ``3.03``, ``5.01`` ->
+    ``acquired_or_merged``; else ``3.01`` -> ``delisted_other``; else ``no_8k_found``.
+    """
+    all_items: set[str] = set()
+    for event in events:
+        items = event.get("items") or ()
+        all_items.update(code.strip() for code in items if isinstance(code, str) and code.strip())
+    for label, codes in EVIDENCE_ITEM_RULES:
+        if all_items & codes:
+            return label
+    return EVIDENCE_NONE
+
+
+def count_items_missing(events: list[dict[str, Any]]) -> int:
+    """Count extracted 8-K events whose ``items`` list is empty."""
+    return sum(1 for event in events if not event.get("items"))
+
+
+def fetch_events_with_status(
+    client: SecClient,
+    cik: str,
+    around: date,
+    days: int = EVENT_WINDOW_DAYS,
+) -> tuple[list[dict[str, Any]], str]:
+    """Fetch 8-K/8-K/A events near ``around`` and report the retrieval status.
+
+    Older archive pages listed in ``filings.files`` are fetched only when the ``recent`` block
+    does not already reach strictly before ``around - days`` (and when a page's optional
+    ``filingFrom``/``filingTo`` range overlaps the window). An HTTP 404 (``SecNotFound``) on the
+    main submissions URL returns ``([], "not_found")`` instead of raising; a 404 on a needed
+    older page skips that page and returns ``(events, "older_page_not_found")``.
+
+    Args:
+        client: ``SecClient`` (or fake with ``get(url) -> bytes``).
+        cik: Company CIK string.
+        around: Center date of the search window.
+        days: Symmetric half-window in calendar days.
+
+    Returns:
+        ``(events, status)`` where ``events`` is sorted by ``filing_date`` then ``accession`` and
+        ``status`` is in ``EVENTS_STATUSES``: ``"ok"``, ``"no_older_pages_needed"``,
+        ``"not_found"``, or ``"older_page_not_found"``.
+
+    Raises:
+        SecFetchError: On non-404 HTTP or transport errors.
+        ValueError: On invalid CIK, negative ``days``, or malformed JSON/arrays.
+    """
+    if days < 0:
+        raise ValueError(f"days must be non-negative, got {days}")
+    center = _as_date(around)
+    window_start = center - timedelta(days=days)
+    window_end = center + timedelta(days=days)
+
+    try:
+        raw = client.get(submissions_url(cik))
+    except SecNotFound:
+        return [], EVENTS_STATUS_NOT_FOUND
+
+    submissions = json.loads(raw.decode("utf-8"))
+    if not isinstance(submissions, dict):
+        raise ValueError(f"Submissions payload is not a JSON object for CIK {cik!r}")
+
+    older_urls = older_page_urls(submissions)
+    if not older_urls:
+        return extract_8k_events(submissions, [], center, days=days), EVENTS_STATUS_OK
+
+    filings = submissions.get("filings")
+    recent = filings.get("recent") if isinstance(filings, Mapping) else None
+    earliest_recent = _earliest_filing_date(recent)
+    # Require strictly earlier than window_start so boundary-day filings on page 1 are not missed.
+    if earliest_recent is not None and earliest_recent < window_start:
+        return (
+            extract_8k_events(submissions, [], center, days=days),
+            EVENTS_STATUS_NO_OLDER_PAGES_NEEDED,
+        )
+
+    file_entries = filings["files"] if isinstance(filings, Mapping) else []
+    needed_urls = [
+        url
+        for entry, url in zip(file_entries, older_urls, strict=True)
+        if _page_overlaps_window(entry, window_start, window_end)
+    ]
+    if not needed_urls:
+        return (
+            extract_8k_events(submissions, [], center, days=days),
+            EVENTS_STATUS_NO_OLDER_PAGES_NEEDED,
+        )
+
+    pages: list[dict[str, Any]] = []
+    missing_older_page = False
+    for page_url in needed_urls:
+        try:
+            page_raw = client.get(page_url)
+        except SecNotFound:
+            missing_older_page = True
+            continue
+        page_doc = json.loads(page_raw.decode("utf-8"))
+        if not isinstance(page_doc, dict):
+            raise ValueError(f"Older submissions page is not a JSON object: {page_url}")
+        pages.append(page_doc)
+
+    events = extract_8k_events(submissions, pages, center, days=days)
+    status = EVENTS_STATUS_OLDER_PAGE_NOT_FOUND if missing_older_page else EVENTS_STATUS_OK
+    return events, status
+
+
+def fetch_events(
+    client: SecClient,
+    cik: str,
+    around: date,
+    days: int = EVENT_WINDOW_DAYS,
+) -> list[dict[str, Any]]:
+    """Fetch 8-K and 8-K/A events for ``cik`` within ``days`` of ``around``, sorted by date."""
+    events, _ = fetch_events_with_status(client, cik, around, days=days)
+    return events
