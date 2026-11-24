@@ -589,3 +589,70 @@ def test_buy_far_over_cash_is_a_logic_error_not_clamped() -> None:
     with pytest.raises(ValueError, match=r"A.*2019-01-02.*cash"):
         run_.buy("A", 100.0, 10.0, pd.Timestamp("2019-01-02"))
     assert run_.trades == [] and run_.book.cash == 1_000.0
+
+
+def test_revised_tax_is_paid_the_day_a_january_rebuy_raises_it() -> None:
+    days = pd.bdate_range("2012-01-02", "2013-03-28")
+    x = np.where(days >= "2012-06-01", 200.0, 100.0)
+    w = np.where(days >= "2012-06-01", 8.0, 10.0)
+    close = frame(days, X=x, W=w)
+    steps = [
+        step("2012-01-03", {"X": 0.5, "W": 0.5}),
+        step("2012-12-20", {}),  # X gains 50,000, W loses 10,000
+        step("2013-01-10", {"W": 1.0}),  # re-buy W within 30 days: the loss is disallowed
+    ]
+    result = run(close, steps)
+    rebuy_day = pd.Timestamp("2013-01-10")
+    raised = [e for e in result.events if e.kind == "tax_adjustment" and e.date == rebuy_day]
+    assert len(raised) == 1
+    assert int(raised[0].payload["year"]) == 2012
+    assert float(raised[0].payload["amount"]) == pytest.approx(0.24 * 10_000.0, abs=1e-6)
+    assert float(raised[0].payload["revised_tax"]) > 0.24 * 40_000.0  # was 9,600 when assessed
+    # The extra tax is paid that same day: by the end of the 10th, payments equal assessments.
+    kinds = ("tax_assessment", "tax_adjustment")
+    assessed = sum(
+        float(e.payload["amount"]) for e in result.events if e.kind in kinds and e.date <= rebuy_day
+    )
+    paid = sum(
+        float(e.payload["amount"])
+        for e in result.events
+        if e.kind == "tax_payment" and e.date <= rebuy_day
+    )
+    assert paid == pytest.approx(assessed, abs=1e-6)
+    assert paid == pytest.approx(0.24 * 50_000.0, abs=1e-6)
+    assert any(e.kind == "tax_payment" and e.date == rebuy_day for e in result.events)
+    assert result.min_cash >= -1e-9
+    assert result.unpaid_tax_left == 0.0 and result.unpaid_tax_flag is False
+
+
+def test_account_value_curve_ends_at_after_tax_final_and_matches_pretax_without_tax() -> None:
+    close, spans, ex, steps = dying_fixture(1.0)
+    ends = span_end_dates(close, spans)
+    taxed = run(close, steps, exits=ends, ex=ex, cost=0.001)
+    assert taxed.account_value.iloc[-1] == pytest.approx(taxed.after_tax_final, abs=1e-6)
+    gap = taxed.pretax_equity - taxed.account_value
+    assert gap.iloc[-1] == pytest.approx(taxed.tax_paid, abs=1e-6)
+    assert (gap >= -1e-9).all()
+    free = run(close, steps, exits=ends, ex=ex, cost=0.001, params=NO_TAX)
+    np.testing.assert_allclose(
+        free.account_value.to_numpy(), free.pretax_equity.to_numpy(), atol=1e-9
+    )
+    assert free.account_value.index.equals(free.pretax_equity.index)
+
+
+def test_unpaid_tax_at_the_end_is_netted_and_flagged() -> None:
+    days = pd.bdate_range("2019-01-02", "2020-03-31")
+    c = np.where(days >= "2019-03-01", 20.0, 10.0)
+    d = np.where(days >= "2019-12-02", 0.01, 10.0)  # the reinvested money collapses
+    close = frame(days, C=c, D=d)
+    steps = [step("2019-01-02", {"C": 1.0}), step("2019-06-03", {"D": 1.0})]
+    result = run(close, steps)
+    assert result.unpaid_tax_left > 0.9 * 0.24 * CASH
+    assert result.unpaid_tax_flag is True
+    # Nothing is left but the bill: the final value is the cash (zero) minus the unpaid tax.
+    assert result.after_tax_final == pytest.approx(-result.unpaid_tax_left, abs=1e-6)
+    assert result.after_tax_final < 0.0
+    assert result.account_value.iloc[-1] == pytest.approx(result.after_tax_final, abs=1e-6)
+    assert result.cagr_after_tax == -1.0
+    paid = run(close, [step("2019-01-02", {"C": 1.0})])
+    assert paid.unpaid_tax_flag is False

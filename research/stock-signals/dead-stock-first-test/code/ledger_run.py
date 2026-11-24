@@ -10,10 +10,12 @@ dataclasses.
 
 Order of events on each trading day of the window:
 
-1. Dead exits and successor exits due that day: every held stock whose series ends on this
+1. Dead exits and later-spell exits due that day: every held stock whose series ends on this
    bar is sold on that last bar at ``exit_close``'s price (written down by the dead-stock loss
-   for a dead stock, unchanged for a bought-out or merged one). A stock whose series has ended
-   is never bought again; such a buy is skipped.
+   for a dead stock, unchanged for a stock that continues in a later spell). A stock whose
+   series has ended is never bought again; such a buy is skipped. ("Later spell" is the
+   release's ``has_successor``: the company number continues in a later CRSP spell, a data
+   break such as a halt or an exchange move. It is not a verified buy-out or merger.)
 2. Tax: on the first trading day of a new year the old years are assessed (``year_end``) and
    paid from the book's own cash (requirements R9: no outside top-up, no tax reserve). When cash
    is short, positions are first sold pro rata, through the book and with cost, enough to cover
@@ -25,6 +27,10 @@ Order of events on each trading day of the window:
    short, so cash never goes negative. A target stock with no close that day (halted, or ended)
    is not bought, its cash is kept and ``skipped_buys`` counts it; no other stock replaces it.
    A held stock with no close that day is marked at its last print and cannot be traded.
+4. Revised tax: after the day's actions (a rebalance, or only exits), tax the book still owes
+   above a dust level is settled the same way (pay from cash, else sell pro rata, three rounds).
+   This matters when a January re-buy disallows a December loss (wash sale) and raises a year
+   that was already assessed and paid.
 
 On the last day of the window everything is sold at the day's close (at its last print if the
 stock has no bar), the final year is assessed (R12) and the tax paid from cash. A target step
@@ -38,8 +44,11 @@ Every buy fills at ``price * (1 + c)`` and every sell at ``price * (1 - c)``, so
 the lot basis and the proceeds; ``Trade.price`` is the price before cost. The book's loss
 carry-forward and no-outside-income rules are taken as they are (R15).
 
-Pre-tax equity on a day is the marks plus book cash plus all tax paid so far; the after-tax
-final value is the book's cash after the last liquidation and payment.
+Two curves are reported. ``account_value`` is what the account is worth on each day: marks plus
+book cash less any tax still owed; its last point is ``after_tax_final``. ``pretax_equity`` adds
+the tax paid so far back to that: it is a bookkeeping view, not an independent no-tax replay
+(selling to pay tax and the tax-driven path are still in it). ``after_tax_final`` is the cash
+after the last liquidation and payment minus any tax that stayed unpaid (``unpaid_tax_flag``).
 """
 
 from __future__ import annotations
@@ -48,7 +57,7 @@ import importlib.util
 import math
 import sys
 from collections.abc import Collection
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -72,6 +81,8 @@ MAX_TAX_SALE_ROUNDS = 3  # a pro-rata sale can change the assessment, so repeat 
 MIN_TRADE_DOLLARS = 1e-6  # smaller trades are float dust, not decisions
 TAX_SALE_MARGIN = 1e-9  # sell this much extra (relative) so rounding cannot leave a sliver unpaid
 MAX_BUY_CLAMP = 1e-9  # a buy may be clamped to cash by this relative amount; more is a bug
+UNPAID_DUST = 1e-9  # unpaid tax below this share of the start cash is rounding, not a bill
+UNPAID_FLAG = 1e-6  # unpaid tax above this share of the start cash is flagged in the result
 DAYS_PER_YEAR = 365.25
 __all__ = ["BookResult", "TaxLotBook", "TaxParams", "run_book", "run_spy"]
 
@@ -105,8 +116,10 @@ class BookResult:
 
     Attributes:
         pretax_equity: Marks plus cash plus tax paid so far, one value per trading day of the
-            window.
-        after_tax_final: Book cash after the last liquidation and the final tax payment.
+            window. Paid taxes are added back, but the path is the tax-affected one (funding
+            sales happened); it is not an independent replay without tax.
+        after_tax_final: Book cash after the last liquidation and the final tax payment, minus
+            any assessed tax still unpaid (``unpaid_tax_left``); it can be below the cash.
         tax_paid: All tax paid out of the book.
         cost_paid: All trading cost, dead exits included (``qty * price * c`` per fill).
         n_dead_exits: Held stocks sold at the end of their series that are not successors.
@@ -124,6 +137,10 @@ class BookResult:
         min_cash: Lowest book cash seen after any fill or payment (never below zero).
         events: The book's hash-chained ledger events (buys, sells, wash adjustments, tax
             assessments and payments), for audit.
+        account_value: Marks plus book cash minus tax still owed, one value per trading day,
+            after all payments; its last point equals ``after_tax_final``. Use this one for
+            returns, drawdown and Sharpe of the real account.
+        unpaid_tax_flag: True when ``unpaid_tax_left`` exceeds 1e-6 of the start cash.
     """
 
     pretax_equity: pd.Series
@@ -140,6 +157,8 @@ class BookResult:
     chain_verified: bool = True
     min_cash: float = 0.0
     events: tuple[Any, ...] = ()
+    account_value: pd.Series = field(default_factory=lambda: pd.Series(dtype=float))
+    unpaid_tax_flag: bool = False
 
 
 def _naive(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
@@ -354,7 +373,7 @@ def run_book(
         steps: Rebalance targets; each ``TargetStep.date`` must be a trading day in the window.
             A step dated on the last day is ignored (the final day only liquidates).
         span_ends: The output of ``replay.span_end_dates``: symbol to the last bar of its
-            series, for ALL series that end in the window, bought-out and merged stocks
+            series, for ALL series that end in the window, later-spell stocks
             included. (Not ``replay.dead_exit_dates``, which leaves the successors out.)
         exit_close: ``close`` with each ending stock's last bar replaced by its sale price
             (``replay.exit_close``). Every held stock that ends needs a finite, positive price
@@ -363,10 +382,11 @@ def run_book(
         one_way_cost: Cost per side as a fraction of traded value.
         start: First day of the window, ``YYYY-MM-DD``.
         end: Last day of the window; everything is sold on that day.
-        successors: Required. The symbols of ``span_ends`` that are bought-out or merged
-            stocks (``has_successor`` in the release spans). They are sold on their last bar
-            like the others but are not counted as dead exits. Every one must be in
-            ``span_ends``. There is no default: forgetting it would count successors as dead.
+        successors: Required. The symbols of ``span_ends`` that continue in a later CRSP spell
+            of the same company (``has_successor`` in the release spans: a data break such as a
+            halt or an exchange move, not a verified buy-out). They are sold on their last bar
+            like the others at an unchanged price but are not counted as dead exits. Every one
+            must be in ``span_ends``. There is no default: forgetting it would count them as dead.
         start_cash: Opening cash.
 
     Returns:
@@ -406,6 +426,7 @@ def run_book(
         exits_on.setdefault(when, []).append(symbol)
     run = _Execution(close.columns, params, one_way_cost, start_cash, successors, ended)
     equity = np.empty(len(days))
+    value = np.empty(len(days))
     last = len(days) - 1
     for p, day in enumerate(days):
         for symbol in exits_on.get(day, []):
@@ -418,8 +439,13 @@ def run_book(
             run.liquidate(day, marks[p])
         elif day in by_date:  # the last day only liquidates; its target is never executed
             run.rebalance(by_date[day].targets, day, raw[p], marks[p])
-        equity[p] = run.marks(marks[p]) + run.book.cash + run.tax_paid
-    after_tax = float(run.book.cash)
+        if p != last and run.book.unpaid_tax > UNPAID_DUST * start_cash:
+            run.settle_tax(day, raw[p])  # a revised year (wash sale) is paid the same day
+        held = run.marks(marks[p])
+        equity[p] = held + run.book.cash + run.tax_paid
+        value[p] = held + run.book.cash - run.book.unpaid_tax
+    unpaid = float(run.book.unpaid_tax)
+    after_tax = float(run.book.cash) - unpaid
     span_days = (days[-1] - days[0]).days
     return BookResult(
         pretax_equity=pd.Series(equity, index=close.index[inside], name="pretax_equity"),
@@ -431,11 +457,13 @@ def run_book(
         cagr_pretax=_cagr(start_cash, float(equity[-1]), span_days),
         cagr_after_tax=_cagr(start_cash, after_tax, span_days),
         trades=run.trades,
-        unpaid_tax_left=float(run.book.unpaid_tax),
+        unpaid_tax_left=unpaid,
         skipped_buys=run.skipped,
         chain_verified=bool(run.book.verify_chain()),
         min_cash=float(run.min_cash),
         events=run.book.events,
+        account_value=pd.Series(value, index=close.index[inside], name="account_value"),
+        unpaid_tax_flag=bool(unpaid > UNPAID_FLAG * start_cash),
     )
 
 
