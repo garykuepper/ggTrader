@@ -1,0 +1,689 @@
+{
+  "study": "dead-stock-data-integrity",
+  "phase": "integrity",
+  "provenance": {
+    "release_id": 1,
+    "crsp_load": 1,
+    "mcgill_load": 2,
+    "eval_start": "2005-01-03",
+    "eval_end": "2024-12-31",
+    "scan_start": "2004-01-01",
+    "batch_size": 500,
+    "reference_cell": "loss0_cost18.3bps_taxlow",
+    "git_head": "7b9faeecaa089eed9822a1b3ac0cb34c6e41e2a6",
+    "git_dirty": true,
+    "code_sha256": {
+      "run.py": "138c83ac62839a057d79d3dcba4a391dd63da9b1b920e50f570f8a48e113e42e",
+      "dead_stock_data_integrity.py": "7ef59fa80412277a290f62c294caff1fa53f1d9ef74d7a363889c7587cadf80c",
+      "integrity_checks.py": "d9dae59ba5652bab10c1527297de656f9aa3e6e59dbdc6f69f4c67ec6c483712",
+      "price_path.py": "15a21f30ea2c359bc372ab01c9353c8e8047e1b458c725ee556dba348ca9343b",
+      "roster.py": "dbca6c4ffc14ea13882d98ab7e73db0da05142a585e6dcc260657bcd0c4b6113"
+    },
+    "run_date": "2026-11-24",
+    "permnos_in_scan_list": 9422,
+    "permnos_scanned": 9422,
+    "rows_scanned": 20009825,
+    "batches": 19
+  },
+  "calendar": {
+    "dates": 5285,
+    "min_stocks_per_date": 1000,
+    "first": "2004-01-02",
+    "last": "2024-12-31"
+  },
+  "roster": {
+    "stocks": 141,
+    "with_name": 133,
+    "name_source": {
+      "mcgill": 133,
+      "none": 8
+    },
+    "price_label": {
+      "calm_like_deal": 107,
+      "unclear": 34
+    }
+  },
+  "duplicates": {
+    "rows_flagged": 0,
+    "stocks_flagged": 0,
+    "examples": [],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 0,
+      "holdout-A": 0,
+      "holdout-B": 0
+    }
+  },
+  "bad_price": {
+    "rows_flagged": 0,
+    "stocks_flagged": 0,
+    "examples": [],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 0,
+      "holdout-A": 0,
+      "holdout-B": 0
+    }
+  },
+  "spikes": {
+    "rows_flagged": 342,
+    "stocks_flagged": 251,
+    "examples": [
+      {
+        "permno": 14153,
+        "date": "2013-10-03",
+        "detail": "ret=4.5680, next_ret=-0.8190, 2d=1.0076",
+        "magnitude": 4.568
+      },
+      {
+        "permno": 15785,
+        "date": "2016-02-08",
+        "detail": "ret=4.5613, next_ret=-0.8218, 2d=0.9912",
+        "magnitude": 4.5613
+      },
+      {
+        "permno": 16465,
+        "date": "2016-11-17",
+        "detail": "ret=4.5166, next_ret=-0.8210, 2d=0.9874",
+        "magnitude": 4.5166
+      },
+      {
+        "permno": 13552,
+        "date": "2013-05-03",
+        "detail": "ret=4.5010, next_ret=-0.8160, 2d=1.0123",
+        "magnitude": 4.501
+      },
+      {
+        "permno": 13958,
+        "date": "2014-06-04",
+        "detail": "ret=4.4957, next_ret=-0.8178, 2d=1.0012",
+        "magnitude": 4.4957
+      },
+      {
+        "permno": 13958,
+        "date": "2014-06-19",
+        "detail": "ret=4.4927, next_ret=-0.8190, 2d=0.9939",
+        "magnitude": 4.4927
+      },
+      {
+        "permno": 15293,
+        "date": "2016-05-27",
+        "detail": "ret=4.4897, next_ret=-0.8174, 2d=1.0025",
+        "magnitude": 4.4897
+      },
+      {
+        "permno": 13958,
+        "date": "2014-06-06",
+        "detail": "ret=4.4890, next_ret=-0.8177, 2d=1.0006",
+        "magnitude": 4.489
+      },
+      {
+        "permno": 15293,
+        "date": "2016-10-03",
+        "detail": "ret=4.4787, next_ret=-0.8145, 2d=1.0164",
+        "magnitude": 4.4787
+      },
+      {
+        "permno": 15293,
+        "date": "2016-04-27",
+        "detail": "ret=4.4697, next_ret=-0.8181, 2d=0.9949",
+        "magnitude": 4.4697
+      },
+      {
+        "permno": 14153,
+        "date": "2013-10-29",
+        "detail": "ret=4.4057, next_ret=-0.8147, 2d=1.0015",
+        "magnitude": 4.4057
+      },
+      {
+        "permno": 47387,
+        "date": "2017-09-11",
+        "detail": "ret=4.4018, next_ret=-0.8096, 2d=1.0286",
+        "magnitude": 4.4018
+      },
+      {
+        "permno": 14173,
+        "date": "2013-10-01",
+        "detail": "ret=4.3302, next_ret=-0.8098, 2d=1.0140",
+        "magnitude": 4.3302
+      },
+      {
+        "permno": 13958,
+        "date": "2014-06-27",
+        "detail": "ret=4.3284, next_ret=-0.8120, 2d=1.0018",
+        "magnitude": 4.3284
+      },
+      {
+        "permno": 15639,
+        "date": "2015-10-12",
+        "detail": "ret=4.2576, next_ret=-0.8098, 2d=1.0000",
+        "magnitude": 4.2576
+      },
+      {
+        "permno": 16465,
+        "date": "2016-11-25",
+        "detail": "ret=4.1764, next_ret=-0.8021, 2d=1.0244",
+        "magnitude": 4.1764
+      },
+      {
+        "permno": 16012,
+        "date": "2016-06-01",
+        "detail": "ret=4.1626, next_ret=-0.8073, 2d=0.9950",
+        "magnitude": 4.1626
+      },
+      {
+        "permno": 47387,
+        "date": "2017-08-25",
+        "detail": "ret=4.1569, next_ret=-0.8005, 2d=1.0289",
+        "magnitude": 4.1569
+      },
+      {
+        "permno": 62958,
+        "date": "2014-04-11",
+        "detail": "ret=4.1481, next_ret=-0.8060, 2d=0.9987",
+        "magnitude": 4.1481
+      },
+      {
+        "permno": 15293,
+        "date": "2015-08-27",
+        "detail": "ret=4.1359, next_ret=-0.8062, 2d=0.9955",
+        "magnitude": 4.1359
+      }
+    ],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 0,
+      "holdout-A": 0,
+      "holdout-B": 2
+    }
+  },
+  "gaps": {
+    "rows_flagged": 220,
+    "stocks_flagged": 195,
+    "examples": [
+      {
+        "permno": 77263,
+        "date": "2005-12-27",
+        "detail": "4253 days missing",
+        "magnitude": 4253.0
+      },
+      {
+        "permno": 81761,
+        "date": "2005-10-05",
+        "detail": "3865 days missing",
+        "magnitude": 3865.0
+      },
+      {
+        "permno": 92218,
+        "date": "2010-04-01",
+        "detail": "3682 days missing",
+        "magnitude": 3682.0
+      },
+      {
+        "permno": 77624,
+        "date": "2006-10-12",
+        "detail": "3523 days missing",
+        "magnitude": 3523.0
+      },
+      {
+        "permno": 86067,
+        "date": "2004-06-14",
+        "detail": "3250 days missing",
+        "magnitude": 3250.0
+      },
+      {
+        "permno": 52231,
+        "date": "2009-04-27",
+        "detail": "2998 days missing",
+        "magnitude": 2998.0
+      },
+      {
+        "permno": 79280,
+        "date": "2006-04-07",
+        "detail": "2529 days missing",
+        "magnitude": 2529.0
+      },
+      {
+        "permno": 79033,
+        "date": "2009-02-05",
+        "detail": "2399 days missing",
+        "magnitude": 2399.0
+      },
+      {
+        "permno": 84321,
+        "date": "2011-11-03",
+        "detail": "2384 days missing",
+        "magnitude": 2384.0
+      },
+      {
+        "permno": 82163,
+        "date": "2005-12-29",
+        "detail": "2004 days missing",
+        "magnitude": 2004.0
+      },
+      {
+        "permno": 13939,
+        "date": "2017-04-19",
+        "detail": "1936 days missing",
+        "magnitude": 1936.0
+      },
+      {
+        "permno": 87227,
+        "date": "2004-03-08",
+        "detail": "1916 days missing",
+        "magnitude": 1916.0
+      },
+      {
+        "permno": 83622,
+        "date": "2006-11-10",
+        "detail": "1907 days missing",
+        "magnitude": 1907.0
+      },
+      {
+        "permno": 88471,
+        "date": "2007-02-22",
+        "detail": "1817 days missing",
+        "magnitude": 1817.0
+      },
+      {
+        "permno": 11803,
+        "date": "2004-05-25",
+        "detail": "1798 days missing",
+        "magnitude": 1798.0
+      },
+      {
+        "permno": 11393,
+        "date": "2004-03-26",
+        "detail": "1766 days missing",
+        "magnitude": 1766.0
+      },
+      {
+        "permno": 81593,
+        "date": "2008-09-29",
+        "detail": "1762 days missing",
+        "magnitude": 1762.0
+      },
+      {
+        "permno": 82567,
+        "date": "2004-10-14",
+        "detail": "1744 days missing",
+        "magnitude": 1744.0
+      },
+      {
+        "permno": 83827,
+        "date": "2008-02-06",
+        "detail": "1682 days missing",
+        "magnitude": 1682.0
+      },
+      {
+        "permno": 91428,
+        "date": "2016-02-25",
+        "detail": "1637 days missing",
+        "magnitude": 1637.0
+      }
+    ],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 1,
+      "holdout-A": 0,
+      "holdout-B": 0
+    }
+  },
+  "stale": {
+    "rows_flagged": 239,
+    "stocks_flagged": 152,
+    "examples": [
+      {
+        "permno": 22582,
+        "date": "2023-07-21",
+        "detail": "34 rows at 10.595",
+        "magnitude": 34.0
+      },
+      {
+        "permno": 23451,
+        "date": "2024-10-09",
+        "detail": "31 rows at 11.05",
+        "magnitude": 31.0
+      },
+      {
+        "permno": 12221,
+        "date": "2004-06-25",
+        "detail": "29 rows at 13.815",
+        "magnitude": 29.0
+      },
+      {
+        "permno": 22574,
+        "date": "2024-03-18",
+        "detail": "24 rows at 10.735",
+        "magnitude": 24.0
+      },
+      {
+        "permno": 12221,
+        "date": "2004-08-11",
+        "detail": "22 rows at 13.815",
+        "magnitude": 22.0
+      },
+      {
+        "permno": 27617,
+        "date": "2006-06-28",
+        "detail": "22 rows at 18.15",
+        "magnitude": 22.0
+      },
+      {
+        "permno": 15664,
+        "date": "2015-09-24",
+        "detail": "21 rows at 9.7",
+        "magnitude": 21.0
+      },
+      {
+        "permno": 22582,
+        "date": "2023-09-28",
+        "detail": "21 rows at 10.84",
+        "magnitude": 21.0
+      },
+      {
+        "permno": 20417,
+        "date": "2022-09-14",
+        "detail": "20 rows at 10.37",
+        "magnitude": 20.0
+      },
+      {
+        "permno": 22548,
+        "date": "2024-03-05",
+        "detail": "20 rows at 11.065",
+        "magnitude": 20.0
+      },
+      {
+        "permno": 15664,
+        "date": "2015-11-12",
+        "detail": "19 rows at 9.575",
+        "magnitude": 19.0
+      },
+      {
+        "permno": 27617,
+        "date": "2006-09-11",
+        "detail": "19 rows at 18.4",
+        "magnitude": 19.0
+      },
+      {
+        "permno": 15017,
+        "date": "2015-03-26",
+        "detail": "18 rows at 9.845",
+        "magnitude": 18.0
+      },
+      {
+        "permno": 22303,
+        "date": "2024-07-01",
+        "detail": "18 rows at 10.805",
+        "magnitude": 18.0
+      },
+      {
+        "permno": 78910,
+        "date": "2012-10-24",
+        "detail": "18 rows at 3.09",
+        "magnitude": 18.0
+      },
+      {
+        "permno": 87533,
+        "date": "2012-02-01",
+        "detail": "18 rows at 5.77",
+        "magnitude": 18.0
+      },
+      {
+        "permno": 87533,
+        "date": "2017-10-03",
+        "detail": "18 rows at 22.475",
+        "magnitude": 18.0
+      },
+      {
+        "permno": 13378,
+        "date": "2012-12-10",
+        "detail": "17 rows at 9.775",
+        "magnitude": 17.0
+      },
+      {
+        "permno": 15664,
+        "date": "2017-09-06",
+        "detail": "17 rows at 10.01",
+        "magnitude": 17.0
+      },
+      {
+        "permno": 19489,
+        "date": "2020-06-16",
+        "detail": "17 rows at 12.85",
+        "magnitude": 17.0
+      }
+    ],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 0,
+      "holdout-A": 0,
+      "holdout-B": 0
+    }
+  },
+  "shares": {
+    "rows_flagged": 0,
+    "stocks_flagged": 0,
+    "examples": [],
+    "flags_inside_holdings": {
+      "dev-A": 0,
+      "dev-B": 0,
+      "holdout-A": 0,
+      "holdout-B": 0
+    }
+  },
+  "holdings_overlap": {
+    "dev-A": {
+      "duplicates": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "bad_price": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "spikes": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "gaps": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "stale": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "shares": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "positions": 2982,
+      "trade_file": {
+        "file": "dev-A-trades.csv.gz",
+        "sha256": "7db2e9d2a779592584dbca503f8a42fb19ef91e9c2d7aee2aaffe6ea439404a1",
+        "trade_rows_all_cells": 216341,
+        "trade_rows_reference_cell": 12154,
+        "spell_suffix_rows": 45,
+        "ticker_rows": 5659,
+        "mapped_rows": 5659,
+        "unmapped_rows": 0,
+        "unmapped_symbols": {},
+        "fallback_rows": 266,
+        "positions": 2982,
+        "positions_open_at_end": 0,
+        "stocks_held": 1366
+      }
+    },
+    "dev-B": {
+      "duplicates": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "bad_price": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "spikes": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "gaps": {
+        "flags_inside": 1,
+        "stocks_inside": 1,
+        "examples": [
+          {
+            "permno": 92449,
+            "date": "2012-12-31",
+            "detail": "1600 days missing",
+            "magnitude": 1600.0
+          }
+        ]
+      },
+      "stale": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "shares": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "positions": 3268,
+      "trade_file": {
+        "file": "dev-B-trades.csv.gz",
+        "sha256": "dba6c13e121d8eb1fef21e0074344bd49bf076b706c4ce30e442821853807714",
+        "trade_rows_all_cells": 220914,
+        "trade_rows_reference_cell": 12295,
+        "spell_suffix_rows": 183,
+        "ticker_rows": 1192,
+        "mapped_rows": 1192,
+        "unmapped_rows": 0,
+        "unmapped_symbols": {},
+        "fallback_rows": 189,
+        "positions": 3268,
+        "positions_open_at_end": 0,
+        "stocks_held": 1805
+      }
+    },
+    "holdout-A": {
+      "duplicates": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "bad_price": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "spikes": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "gaps": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "stale": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "shares": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "positions": 993,
+      "trade_file": {
+        "file": "holdout-A-trades.csv.gz",
+        "sha256": "647f4b61690d5052a3c5699a2b24518ddda85dd26c7dd95addeea37ea4a7ae6e",
+        "trade_rows_all_cells": 72696,
+        "trade_rows_reference_cell": 4038,
+        "spell_suffix_rows": 0,
+        "ticker_rows": 2197,
+        "mapped_rows": 2197,
+        "unmapped_rows": 0,
+        "unmapped_symbols": {},
+        "fallback_rows": 0,
+        "positions": 993,
+        "positions_open_at_end": 0,
+        "stocks_held": 609
+      }
+    },
+    "holdout-B": {
+      "duplicates": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "bad_price": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "spikes": {
+        "flags_inside": 2,
+        "stocks_inside": 2,
+        "examples": [
+          {
+            "permno": 16680,
+            "date": "2024-07-24",
+            "detail": "ret=0.5632, next_ret=-0.3237, 2d=1.0571",
+            "magnitude": 0.5632
+          },
+          {
+            "permno": 14873,
+            "date": "2020-06-10",
+            "detail": "ret=0.5173, next_ret=-0.3029, 2d=1.0578",
+            "magnitude": 0.5173
+          }
+        ]
+      },
+      "gaps": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "stale": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "shares": {
+        "flags_inside": 0,
+        "stocks_inside": 0,
+        "examples": []
+      },
+      "positions": 1072,
+      "trade_file": {
+        "file": "holdout-B-trades.csv.gz",
+        "sha256": "aa4631a60d5bfa369eb1afc6d4e579b2c7ef60144a20bffc8c32476e6478b45f",
+        "trade_rows_all_cells": 74118,
+        "trade_rows_reference_cell": 4117,
+        "spell_suffix_rows": 8,
+        "ticker_rows": 445,
+        "mapped_rows": 445,
+        "unmapped_rows": 0,
+        "unmapped_symbols": {},
+        "fallback_rows": 0,
+        "positions": 1072,
+        "positions_open_at_end": 0,
+        "stocks_held": 727
+      }
+    }
+  }
+}
