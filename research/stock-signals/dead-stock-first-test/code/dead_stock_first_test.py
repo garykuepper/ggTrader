@@ -66,6 +66,8 @@ DECOMPOSITION_TAX = "low"
 HOLDINGS_LOSSES = (1.0, 0.5, 0.0)
 YAHOO_KINDS = ("linked_yahoo", "yahoo")
 CRSP_ONLY_KINDS = ("placeholder", "spell")
+SUSPECT_KIND = "linked_yahoo"  # a confirmed link: the only kind that can be a false death
+INFORMATIONAL_ROWS = 20
 AUDIT_GRACE_DAYS = 7  # CRSP may run this many calendar days past a Yahoo end without a flag
 SPAN_ROW_COLUMNS = ["symbol", "last_date", "has_successor", "total_loss"]
 
@@ -287,13 +289,16 @@ def audit_false_deaths(
 
     Metadata only: one grouped read-only query for each permno's last CRSP date (no prices or
     returns). A span is checked when it has a permno and its last date lies inside
-    ``[window_start, window_end - 1 day]`` and before ``crsp_end``. It is suspect when CRSP runs
-    more than 7 calendar days past that date. A suspect that has a later spell of the same
-    company number in the release is marked ``has_later_spell`` (a data break, not a death).
+    ``[window_start, window_end - 1 day]`` and before ``crsp_end``. It is flagged when CRSP runs
+    more than 7 calendar days past that date. Only a flagged ``linked_yahoo`` span (a confirmed
+    link) with no later spell of the same company number is a suspect; every other flagged row
+    (spell columns with a later spell, unlinked ``yahoo`` columns) is informational and never
+    blocks.
 
     Returns:
-        ``n_checked``, ``n_suspect``, ``suspects`` and ``multi_symbol_permnos`` (company numbers
-        with more than one Yahoo column in the release).
+        ``n_checked``, ``n_suspect``, ``suspects``, ``n_informational``, ``informational``
+        (counts by kind and the first 20 rows) and ``multi_symbol_permnos`` (company numbers with
+        more than one linked Yahoo column).
     """
     spans = release_spans.copy()
     spans["permno"] = pd.to_numeric(spans["permno"], errors="coerce")
@@ -319,32 +324,55 @@ def audit_false_deaths(
             crsp_last = {int(p): pd.Timestamp(d) for p, d in cur.fetchall() if d is not None}
     spell = spans["spell"] if "spell" in spans.columns else pd.Series(0, index=spans.index)
     latest_spell = spell.groupby(spans["permno"]).max()
-    suspects = []
+    suspects: list[dict[str, Any]] = []
+    informational: list[dict[str, Any]] = []
     grace = pd.Timedelta(days=AUDIT_GRACE_DAYS)
     for row in checked.itertuples():
         seen = crsp_last.get(int(row.permno))
-        if seen is not None and seen > row.last_date + grace:
-            has_later = bool(
-                "spell" in spans.columns and latest_spell.get(row.permno, row.spell) > row.spell
-            )
-            suspects.append(
-                {
-                    "symbol": row.symbol,
-                    "permno": int(row.permno),
-                    "kind": row.kind,
-                    "last_date": str(row.last_date.date()),
-                    "crsp_last_date": str(seen.date()),
-                    "has_later_spell": has_later,
-                }
-            )
-    yahoo = spans[spans["kind"].isin(YAHOO_KINDS) & spans["permno"].notna()]
-    names = yahoo.groupby("permno")["symbol"].apply(lambda col: sorted(set(col)))
+        if seen is None or seen <= row.last_date + grace:
+            continue
+        has_later = bool(
+            "spell" in spans.columns and latest_spell.get(row.permno, row.spell) > row.spell
+        )
+        entry = {
+            "symbol": row.symbol,
+            "permno": int(row.permno),
+            "kind": row.kind,
+            "last_date": str(row.last_date.date()),
+            "crsp_last_date": str(seen.date()),
+            "has_later_spell": has_later,
+        }
+        # Only a confirmed link with no later spell can be a Yahoo series that stopped while
+        # the company lives. A spell column ends because the company continues in a later
+        # spell, and an unlinked Yahoo column's permno is only a rejected link candidate.
+        if row.kind == SUSPECT_KIND and not has_later:
+            suspects.append(entry)
+        else:
+            informational.append(entry)
+    by_kind: dict[str, int] = {}
+    for entry in informational:
+        by_kind[entry["kind"]] = by_kind.get(entry["kind"], 0) + 1
+    linked = spans[(spans["kind"] == SUSPECT_KIND) & spans["permno"].notna()]
+    names = linked.groupby("permno")["symbol"].apply(lambda col: sorted(set(col)))
     multi = [{"permno": int(p), "symbols": syms} for p, syms in names.items() if len(syms) > 1]
+    unlinked = spans[(spans["kind"] == "yahoo") & spans["permno"].notna()]
+    unlinked_names = unlinked.groupby("permno")["symbol"].nunique()
     return {
         "n_checked": int(len(checked)),
         "n_suspect": len(suspects),
         "suspects": suspects,
+        "n_informational": len(informational),
+        "informational": {
+            "label": (
+                "informational only, never blocks: spell columns that end because a later spell "
+                "of the same company continues, and unlinked yahoo columns whose permno is only "
+                "a rejected link candidate"
+            ),
+            "counts_by_kind": by_kind,
+            "first_rows": informational[:INFORMATIONAL_ROWS],
+        },
         "multi_symbol_permnos": multi,
+        "n_unlinked_candidate_permnos_with_several_symbols": int((unlinked_names > 1).sum()),
         "grace_calendar_days": AUDIT_GRACE_DAYS,
         "window": {"start": window_start, "end": window_end},
         "crsp_end": crsp_end,

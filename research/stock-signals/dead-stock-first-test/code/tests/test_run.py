@@ -910,33 +910,108 @@ def audit_spans() -> pd.DataFrame:
     )
 
 
-def test_false_death_audit_flags_crsp_running_past_the_end() -> None:
+def test_false_death_audit_counts_only_confirmed_links_without_a_later_spell() -> None:
     conn = StubConn(
         [
             (1, pd.Timestamp("2012-05-05")),  # 4 days: inside the 7-day grace, fine
-            (2, pd.Timestamp("2014-03-03")),  # CRSP runs on for two years: suspect
-            (3, pd.Timestamp("2015-01-02")),  # a later spell of the same company
+            (2, pd.Timestamp("2014-03-03")),  # linked_yahoo ended, CRSP runs on: suspect
+            (3, pd.Timestamp("2015-01-02")),  # spell column with a later spell: informational
             (6, pd.Timestamp("2012-06-01")),
+            (7, pd.Timestamp("2013-01-02")),  # unlinked yahoo candidate: informational
+            (8, pd.Timestamp("2012-05-02")),  # a linked_yahoo that really died: nothing
         ]
+    )
+    spans = pd.concat(
+        [
+            audit_spans(),
+            pd.DataFrame(
+                {
+                    "symbol": ["CAND", "DIED"],
+                    "permno": [7, 8],
+                    "spell": [1, 1],
+                    "kind": ["yahoo", "linked_yahoo"],
+                    "first_date": pd.to_datetime(["2000-01-03"] * 2),
+                    "last_date": pd.to_datetime(["2012-05-01"] * 2),
+                }
+            ),
+        ],
+        ignore_index=True,
     )
     audit = study.audit_false_deaths(
         conn,
-        audit_spans(),
+        spans,
         crsp_load=1,
         window_start="2005-01-03",
         window_end="2019-12-31",
         crsp_end="2024-12-31",
     )
-    assert audit["n_checked"] == 6  # OUTSIDE (2022) and ALIVE (file end) and NOPERM are not
-    names = {s["symbol"]: s for s in audit["suspects"]}
-    assert set(names) == {"FALSE", "LATER1"}
-    assert names["FALSE"]["crsp_last_date"] == "2014-03-03" and names["FALSE"]["permno"] == 2
-    assert names["FALSE"]["has_later_spell"] is False and names["LATER1"]["has_later_spell"] is True
-    assert audit["n_suspect"] == 2
-    assert audit["multi_symbol_permnos"] == [{"permno": 6, "symbols": ["Y2A", "Y2B"]}]
+    assert audit["n_checked"] == 8  # OUTSIDE (2022), ALIVE (file end) and NOPERM are not checked
+    assert [s["symbol"] for s in audit["suspects"]] == ["FALSE"]
+    assert audit["n_suspect"] == 1
+    assert audit["suspects"][0]["permno"] == 2 and audit["suspects"][0]["kind"] == "linked_yahoo"
+    assert audit["suspects"][0]["crsp_last_date"] == "2014-03-03"
+    assert audit["n_informational"] == 2
+    info = audit["informational"]
+    assert info["counts_by_kind"] == {"spell": 1, "yahoo": 1}
+    assert {r["symbol"] for r in info["first_rows"]} == {"LATER1", "CAND"}
+    assert "never blocks" in info["label"]
+    spell_row = next(r for r in info["first_rows"] if r["symbol"] == "LATER1")
+    assert spell_row["has_later_spell"] is True
+    for name in ("n_checked", "n_suspect", "suspects", "multi_symbol_permnos"):
+        assert name in audit
+    assert audit["grace_calendar_days"] == 7 and audit["crsp_end"] == "2024-12-31"
+    assert audit["window"] == {"start": "2005-01-03", "end": "2019-12-31"}
     sql, params = conn.queries[0]
     assert "kaggle_crsp.daily_of" in sql and "max(date)" in sql and params[0] == 1
     assert "close" not in sql.lower().replace("kaggle_crsp", "")  # no prices or returns read
+
+
+def test_multi_symbol_permnos_use_linked_yahoo_only() -> None:
+    spans = pd.DataFrame(
+        {
+            "symbol": ["L1", "L2", "U1", "U2", "ONE"],
+            "permno": [10, 10, 20, 20, 30],
+            "spell": [1] * 5,
+            "kind": ["linked_yahoo", "linked_yahoo", "yahoo", "yahoo", "linked_yahoo"],
+            "first_date": pd.to_datetime(["2000-01-03"] * 5),
+            "last_date": pd.to_datetime(["2024-12-31"] * 5),
+        }
+    )
+    audit = study.audit_false_deaths(
+        StubConn([]),
+        spans,
+        crsp_load=1,
+        window_start="2005-01-03",
+        window_end="2019-12-31",
+        crsp_end="2024-12-31",
+    )
+    assert audit["multi_symbol_permnos"] == [{"permno": 10, "symbols": ["L1", "L2"]}]
+    assert audit["n_unlinked_candidate_permnos_with_several_symbols"] == 1
+
+
+def test_informational_rows_are_cut_at_twenty() -> None:
+    n = 30
+    spans = pd.DataFrame(
+        {
+            "symbol": [f"Y{i}" for i in range(n)],
+            "permno": list(range(100, 100 + n)),
+            "spell": [1] * n,
+            "kind": ["yahoo"] * n,
+            "first_date": pd.to_datetime(["2000-01-03"] * n),
+            "last_date": pd.to_datetime(["2012-05-01"] * n),
+        }
+    )
+    conn = StubConn([(100 + i, pd.Timestamp("2015-01-02")) for i in range(n)])
+    audit = study.audit_false_deaths(
+        conn,
+        spans,
+        crsp_load=1,
+        window_start="2005-01-03",
+        window_end="2019-12-31",
+        crsp_end="2024-12-31",
+    )
+    assert audit["n_suspect"] == 0 and audit["n_informational"] == 30
+    assert len(audit["informational"]["first_rows"]) == 20
 
 
 def test_audit_with_nothing_to_check_asks_the_database_nothing() -> None:
