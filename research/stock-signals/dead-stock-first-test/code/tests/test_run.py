@@ -10,6 +10,7 @@ import dead_stock_first_test as study
 import numpy as np
 import pandas as pd
 import pytest
+from replay import Trade
 
 from ggTrader.utils.study import load_driver as load_driver_by_path
 from ggTrader.utils.study import repo_root, study_dir
@@ -217,6 +218,143 @@ def test_turnover_excludes_the_final_liquidation(clean: dict) -> None:
     cell = clean["spy"][study.spy_key(0.00183, "low")]
     assert cell["turnover_by_year"]["2010"] == pytest.approx(1.0, rel=0.05)  # the one purchase
     assert cell["turnover_by_year"]["2011"] == pytest.approx(0.0, abs=1e-9)
+
+
+def runaway_inputs(last_day: str) -> dict:
+    """Like ``death_inputs`` but the runaway stock D stops on ``last_day`` (and has a span row)."""
+    data = death_inputs()
+    close = data["close"]
+    last = pd.Timestamp(last_day)
+    close["D"] = 10.0 * np.exp(0.004 * np.arange(len(close)))
+    close.loc[close.index > last, "D"] = np.nan
+    data["span_rows"] = pd.DataFrame(
+        {"symbol": ["D"], "last_date": [last], "has_successor": [False], "total_loss": [False]}
+    )
+    return data
+
+
+def test_stock_alive_at_the_file_end_is_not_a_dead_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(study, "CRSP_END", "2011-03-31")
+    result = run(runaway_inputs("2011-03-31"))
+    assert result["n_file_end_censored"] == 1
+    assert result["sanity"]["held_at_death"] == 0
+    assert result["sanity"]["no_dead_stock_held"] is True
+    assert result["coverage"]["2011"]["ever_eligible_dead"] == 0
+    assert result["coverage"]["2011"]["held_at_death"] == 0
+    assert result["death_price_paths"]["exits"] == []
+    for cost in COSTS:
+        for tax in TAXES:
+            cells = [result["strategy"][study.cell_key(x, cost, tax)] for x in LOSSES]
+            assert all(c["n_dead_exits"] == 0 and c["dead_exit_writeoff"] == 0.0 for c in cells)
+            # sold at the raw last close on the window's last day: the loss level never matters
+            assert len({c["after_tax_final"] for c in cells}) == 1
+
+
+def test_stock_that_died_a_day_before_the_file_end_is_a_dead_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(study, "CRSP_END", "2011-03-31")
+    result = run(runaway_inputs("2011-03-30"))
+    assert result["n_file_end_censored"] == 0
+    assert result["sanity"]["held_at_death"] == 1
+    assert result["coverage"]["2011"]["ever_eligible_dead"] == 1
+    mid = study.cell_key(1.0, 0.00183, "low")
+    best = study.cell_key(0.0, 0.00183, "low")
+    assert result["strategy"][mid]["n_dead_exits"] == 1
+    assert result["strategy"][mid]["after_tax_final"] < result["strategy"][best]["after_tax_final"]
+
+
+def test_development_window_has_no_censored_rows(dead: dict) -> None:
+    assert dead["n_file_end_censored"] == 0
+    assert dead["crsp_end"] == "2024-12-31"
+    assert study.WINDOWS["dev"][1] < study.CRSP_END
+
+
+def test_censored_rows_are_dropped_and_counted() -> None:
+    spans = pd.DataFrame(
+        {
+            "symbol": ["A", "B", "C"],
+            "last_date": pd.to_datetime(["2024-12-31", "2024-12-30", "2023-05-01"]),
+            "has_successor": [False] * 3,
+            "total_loss": [False] * 3,
+        }
+    )
+    kept, count = study.drop_file_end_rows(spans, "2024-12-31")
+    assert list(kept["symbol"]) == ["B", "C"] and count == 1
+    kept, count = study.drop_file_end_rows(spans, "2019-12-31")
+    assert list(kept["symbol"]) == ["B", "C"] and count == 0  # outside a window: not counted
+
+
+@pytest.mark.parametrize(
+    ("ratio", "bucket"),
+    [
+        (0.4999, "lt_0.5"),
+        (0.5, "0.5_to_0.9"),
+        (0.8999, "0.5_to_0.9"),
+        (0.9, "0.9_to_1.1"),
+        (1.0999, "0.9_to_1.1"),
+        (1.1, "ge_1.1"),
+        (3.0, "ge_1.1"),
+        (None, "no_history"),
+        (float("nan"), "no_history"),
+    ],
+)
+def test_ratio_bucket_edges(ratio: float | None, bucket: str) -> None:
+    assert study.ratio_bucket(ratio) == bucket
+    assert 10.0 * 0.5 / 10.0 == 0.5 and 9.0 / 10.0 == 0.9 and 11.0 / 10.0 == 1.1
+
+
+def test_death_price_paths_buckets_and_no_history() -> None:
+    days = pd.bdate_range("2010-01-04", periods=40)
+    exit_day = days[30]
+    earlier = days[30 - 21]
+    close = pd.DataFrame(100.0, index=days, columns=["LOW", "MID", "EQ", "UP", "SHORT"])
+    for name, ratio in {"LOW": 0.2, "MID": 0.5, "EQ": 1.0, "UP": 1.1}.items():
+        close.loc[earlier, name] = 100.0 / ratio  # last / earlier == ratio
+    close.loc[days[:5], "SHORT"] = np.nan
+    trades = [
+        Trade(exit_day, name, -10.0, 1e-9, "dead_exit") for name in ("LOW", "MID", "EQ", "UP")
+    ]
+    trades.append(
+        Trade(days[10], "SHORT", -10.0, 1e-9, "dead_exit")
+    )  # fewer than 21 days of history
+    trades.append(Trade(exit_day, "EQ", -1.0, 1.0, "rebalance"))  # not a dead exit: ignored
+    block = study.death_price_paths(trades, close, frozenset())
+    assert block["descriptive_only"] is True and block["note"]
+    counts = {name: b["count"] for name, b in block["buckets"].items()}
+    assert counts == {"lt_0.5": 1, "0.5_to_0.9": 1, "0.9_to_1.1": 1, "ge_1.1": 1, "no_history": 1}
+    assert block["buckets"]["lt_0.5"]["dollars"] == pytest.approx(10.0 * 100.0)
+    row = next(e for e in block["exits"] if e["symbol"] == "SHORT")
+    assert row["ratio"] is None and row["bucket"] == "no_history"
+    low = next(e for e in block["exits"] if e["symbol"] == "LOW")
+    assert low["ratio"] == pytest.approx(0.2)
+    assert low["last_close"] == 100.0 and low["exit_date"] == str(exit_day.date())
+
+
+def test_death_price_paths_skips_successors() -> None:
+    days = pd.bdate_range("2010-01-04", periods=40)
+    close = pd.DataFrame(100.0, index=days, columns=["BUY"])
+    trades = [Trade(days[30], "BUY", -10.0, 100.0, "dead_exit")]
+    block = study.death_price_paths(trades, close, frozenset({"BUY"}))
+    assert block["exits"] == []
+
+
+def test_death_block_reports_the_held_death(dead: dict) -> None:
+    block = dead["death_price_paths"]
+    assert block["descriptive_only"] is True
+    assert [e["symbol"] for e in block["exits"]] == ["D"]
+    assert block["exits"][0]["ratio"] == pytest.approx(np.exp(0.004 * 21))  # runaway path
+    assert block["buckets"]["0.9_to_1.1"]["count"] == 1  # exp(0.084) = 1.088
+    assert block["buckets"]["0.9_to_1.1"]["dollars"] == block["exits"][0]["dollars_at_last_close"]
+
+
+def test_death_block_never_changes_a_cell(dead: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(study, "death_price_paths", lambda *a, **k: {})
+    without = run(death_inputs())
+    assert without["strategy"] == dead["strategy"]
+    assert without["spy"] == dead["spy"]
+    assert without["coverage"] == dead["coverage"]
+    assert without["sanity"] == dead["sanity"]
 
 
 def fake_inputs(*_args) -> dict:

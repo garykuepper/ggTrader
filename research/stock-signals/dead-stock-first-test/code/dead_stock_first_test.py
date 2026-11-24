@@ -387,6 +387,95 @@ def loss_monotone_check(strategy: dict[str, dict[str, Any]]) -> dict[str, Any]:
     return {"violations": violations}
 
 
+RATIO_BUCKETS = ("lt_0.5", "0.5_to_0.9", "0.9_to_1.1", "ge_1.1", "no_history")
+DEATH_PATH_DAYS = 21  # trading days before the last close
+DEATH_PATH_NOTE = (
+    "Descriptive only: a flat or rising price just before the end suggests a buy-out, a "
+    "collapse suggests a failure; this never feeds any result cell and chooses nothing."
+)
+
+
+def ratio_bucket(ratio: float | None) -> str:
+    """The bucket of last close over the close 21 trading days earlier.
+
+    Lower edges belong to the upper bucket: exactly 0.5 is ``0.5_to_0.9``, exactly 0.9 is
+    ``0.9_to_1.1`` and exactly 1.1 is ``ge_1.1``. A missing or unusable ratio is ``no_history``.
+    """
+    if ratio is None or not math.isfinite(ratio):
+        return "no_history"
+    if ratio < 0.5:
+        return "lt_0.5"
+    if ratio < 0.9:
+        return "0.5_to_0.9"
+    if ratio < 1.1:
+        return "0.9_to_1.1"
+    return "ge_1.1"
+
+
+def death_price_paths(
+    trades: list, close: pd.DataFrame, successors: frozenset[str]
+) -> dict[str, Any]:
+    """What the price did before each dead stock the rule held (descriptive, never a cell input).
+
+    The CRSP file has no delisting codes, so a buy-out (holders paid) cannot be told from a
+    failure; this block only shows the run-up to each death.
+    """
+    stamps = _naive_index(close.index)
+    exits: list[dict[str, Any]] = []
+    buckets = {name: {"count": 0, "dollars": 0.0} for name in RATIO_BUCKETS}
+    for trade in trades:
+        if trade.reason != DEAD_EXIT_REASON or trade.symbol in successors:
+            continue
+        row = stamps.get_loc(trade.date)
+        col = close.columns.get_loc(trade.symbol)
+        last = float(close.iat[row, col])
+        earlier = float(close.iat[row - DEATH_PATH_DAYS, col]) if row >= DEATH_PATH_DAYS else None
+        usable = earlier is not None and math.isfinite(earlier) and earlier > 0.0
+        ratio = last / earlier if usable else None
+        dollars = abs(trade.qty) * last
+        name = ratio_bucket(ratio)
+        buckets[name]["count"] += 1
+        buckets[name]["dollars"] += dollars
+        exits.append(
+            {
+                "symbol": trade.symbol,
+                "exit_date": str(trade.date.date()),
+                "last_close": last,
+                "close_21_trading_days_earlier": earlier if usable else None,
+                "ratio": ratio,
+                "dollars_at_last_close": dollars,
+                "bucket": name,
+            }
+        )
+    return {
+        "descriptive_only": True,
+        "note": DEATH_PATH_NOTE,
+        "reference_cell": cell_key(*REFERENCE),
+        "exits": exits,
+        "buckets": buckets,
+    }
+
+
+def drop_file_end_rows(
+    spans: pd.DataFrame, end: str, crsp_end: str | None = None
+) -> tuple[pd.DataFrame, int]:
+    """Remove ended-series rows that end on or after the CRSP file's last day (censored).
+
+    A stock that is alive on the file's last day has an unknown future: its series did not die,
+    it was cut off. Such a row must not be sold at the dead-stock loss; the stock is simply
+    held until the window's last day like any other.
+
+    Returns:
+        The kept rows and the number dropped that fall inside the window (``last_date`` from
+        the CRSP end through the window end; zero for a window that ends before the file does).
+    """
+    limit = pd.Timestamp(CRSP_END if crsp_end is None else crsp_end)
+    last = pd.to_datetime(spans["last_date"])
+    censored = last >= limit
+    in_window = censored & (last <= pd.Timestamp(end))
+    return spans.loc[~censored].reset_index(drop=True), int(in_window.sum())
+
+
 def run_study(
     close: pd.DataFrame,
     spy_close: pd.Series,
@@ -416,7 +505,9 @@ def run_study(
         ``strategy`` (18 cells), ``spy`` (6 cells), ``coverage`` and ``sanity``.
     """
     window_check = validate_window_inputs(close, spy_close, start, end)
-    spans = _normalise_spans(span_rows)
+    spans, n_censored = drop_file_end_rows(_normalise_spans(span_rows), end)
+    if pd.Timestamp(end) < pd.Timestamp(CRSP_END) and n_censored:
+        raise AssertionError("a window that ends before the CRSP file ends has censored rows")
     steps: list[TargetStep] = plan_trades(  # the plan does not depend on the loss: once
         close,
         eligible,
@@ -491,12 +582,16 @@ def run_study(
         "one_permno_one_column": {"checked": checked, "violations": doubles},
         "reference_cell": cell_key(*REFERENCE),
     }
+    paths = death_price_paths(reference_trades, close, successors)  # after the cells, read-only
     return {
         "strategy": strategy,
         "spy": spy,
         "coverage": coverage_block(eligible, close, ends, successors, reference_trades, start, end),
         "sanity": sanity,
         "window_check": window_check,
+        "death_price_paths": paths,
+        "n_file_end_censored": n_censored,
+        "crsp_end": CRSP_END,
         "n_rebalance_steps": len(steps),
         "n_columns": int(close.shape[1]),
         "n_ended_series_in_window": int(len(ends)),
