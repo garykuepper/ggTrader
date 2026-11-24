@@ -105,3 +105,48 @@ Command: `git show ba4b7f83:research/stock-signals/dead-stock-data-integrity/_in
 {'spikes': (342, 251), 'gaps': (220, 195), 'stale': (239, 152)}
 [{'permno': 92449, 'date': '2012-12-31', 'detail': '1600 days missing', 'magnitude': 1600.0}]
 ```
+
+## 5. Missing or zero values in the loaded CRSP rows (load 1, from 2004-01-01, every row, no exchange filter)
+
+```sql
+SELECT count(*) AS n_rows,
+  count(*) FILTER (WHERE prc IS NULL) AS prc_null,
+  count(*) FILTER (WHERE prc = 0) AS prc_zero,
+  count(*) FILTER (WHERE ret IS NULL) AS ret_null,
+  count(*) FILTER (WHERE shrout IS NULL) AS shrout_null,
+  count(*) FILTER (WHERE shrout <= 0) AS shrout_nonpositive
+FROM kaggle_crsp.daily
+WHERE load_id = 1 AND date >= '2004-01-01';
+```
+
+Output (0.3 s):
+
+```
+n_rows | prc_null | prc_zero | ret_null | shrout_null | shrout_nonpositive
+21392301 | 0 | 0 | 0 | 0 | 0
+```
+
+## 6. What the importer counted as nulled values for load 1
+
+```sql
+SELECT load_id, status, checks->>'nulled_values' AS nulled_values
+FROM ref.loads WHERE load_id = 1;
+```
+
+Output (0.0 s):
+
+```
+load_id | status | nulled_values
+1 | complete | 0
+```
+
+What the two outputs mean (read from the importer comment and code in `src/ggTrader/data/kaggle_import/crsp.py`):
+the importer turns any number in the price columns that is not a finite number (NaN or infinity) into an empty value (NULL)
+and adds the count of such values to `nulled_values`. A count of 0 therefore means the uploaded file contained no such
+values in those columns. Query 5 adds that, from 2004-01-01 on, no row in the table has an empty price, a zero price, an
+empty return or an empty or non-positive share count. The 21,392,301 rows in query 5 are all rows of every stock from
+2004-01-01; the scan in the note read 20,379,285 of them (the rows of the 9,422 stocks it selected).
+
+## 7. Sum of the 20 largest gap examples (computed from `_integrity.json`, not from the database)
+
+Sum of the `magnitude` field of the 20 gap examples = 52,895 missing stock-days (the smallest of the 20 is 1,798).
