@@ -1,9 +1,10 @@
 """Driver for the dead-stock first test: one window and one universe per run.
 
 ``--window dev`` writes ``results/dead_stock_first_test/dev-<universe>.json`` (or ``--out``).
-``--window holdout`` writes only ``holdout-<universe>.json`` there and refuses to run when that
-file exists: the holdout is looked at once. Both windows are pinned in
-``dead_stock_first_test.WINDOWS``; there is no way to pass dates.
+``--window holdout`` writes only ``holdout-<universe>.json`` there. Before it reads anything it
+claims the holdout with ``holdout-<universe>.claim`` (exclusive create) and refuses to run when
+the claim or the result exists: the holdout is looked at once; only the owner deletes a claim.
+Both windows are pinned in ``dead_stock_first_test.WINDOWS``; there is no way to pass dates.
 """
 
 from __future__ import annotations
@@ -40,12 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--release-id", type=int, required=True, help="published release, pinned")
     parser.add_argument("--crsp-load", type=int, default=1, help="raw CRSP load for eligibility")
     parser.add_argument("--out", type=Path, default=None, help="dev only: results JSON to write")
-    parser.add_argument(
-        "--results-dir",
-        type=Path,
-        default=DEFAULT_RESULTS_DIR,
-        help="folder for the default file names (a test hook; the holdout file lives here)",
-    )
     return parser
 
 
@@ -137,11 +132,19 @@ def main(
     argv: list[str] | None = None,
     *,
     loader: Callable[[argparse.Namespace], dict[str, Any]] | None = None,
+    results_dir: Path | None = None,
 ) -> int:
-    """Run one window and universe and write its results JSON (a ``loader`` replaces the reads)."""
+    """Run one window and universe and write its results JSON.
+
+    ``loader`` and ``results_dir`` are for tests only: there is no command-line or environment
+    way to move the results folder, so the holdout guard cannot be bypassed from outside.
+    """
     command = list(sys.argv if argv is None else ["run.py", *argv])
     args = build_parser().parse_args(argv)
-    target = study.resolve_output(args.window, args.universe, args.out, args.results_dir)
+    folder = DEFAULT_RESULTS_DIR if results_dir is None else results_dir
+    target = study.resolve_output(args.window, args.universe, args.out, folder)
+    if args.window == "holdout":  # claim before reading any holdout data
+        study.claim_holdout(args.universe, folder, git_head=git_sha(ROOT), command=command)
     start, end = study.WINDOWS[args.window]
     inputs = (loader or read_inputs)(args)
     result = study.run_study(
@@ -170,8 +173,6 @@ def main(
             "command": command,
         },
     }
-    if args.window == "holdout":  # look again at the last moment: another run may have finished
-        study.resolve_output(args.window, args.universe, args.out, args.results_dir)
     write_json(target, payload)
     print(f"wrote {target}")
     return 0

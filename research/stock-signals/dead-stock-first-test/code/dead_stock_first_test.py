@@ -1,7 +1,8 @@
 """Study logic for the dead-stock first test: the fixed grid, the sanity checks, the guard.
 
-Everything here is pure (frames in, a plain dict out) except ``resolve_output``, which only
-looks at a path. ``run.py`` wires the database reads and writes the JSON.
+Everything here is pure (frames in, a plain dict out) except the holdout guard
+(``resolve_output``, ``claim_holdout``), which touches the results folder.
+``run.py`` wires the database reads and writes the JSON.
 
 The fixed grid (the brief's registered values, never tuned): dead-stock loss 1.0, 0.5, 0.0
 (the share of its last price a holder loses when a stock stops trading), one-way cost 6.4,
@@ -15,7 +16,10 @@ only closes the experiment) divided by that year's average pre-tax equity.
 
 from __future__ import annotations
 
+import json
 import math
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -68,22 +72,127 @@ def spy_key(cost: float, tax: str) -> str:
     return f"cost{_bps(cost)}bps_tax{tax}"
 
 
+REFUSED = (
+    "a holdout attempt was already started; only the owner may delete the claim. "
+    "The holdout is looked at once."
+)
+
+
+def holdout_files(universe: str, results_dir: Path) -> tuple[Path, Path]:
+    """The holdout's result file and its claim file in ``results_dir``."""
+    return results_dir / f"holdout-{universe}.json", results_dir / f"holdout-{universe}.claim"
+
+
 def resolve_output(window: str, universe: str, out: Path | None, results_dir: Path) -> Path:
-    """Where this run writes, refusing a second holdout run.
+    """Where this run writes, refusing a holdout that was already started.
 
     The holdout always writes ``holdout-<universe>.json`` in ``results_dir`` (``out`` is
-    ignored) and stops with ``SystemExit`` naming the file when it already exists. A development
-    run may be repeated.
+    ignored) and stops with ``SystemExit`` naming the file when the result or its claim
+    exists. A development run may be repeated and has no claim.
     """
     if window == "holdout":
-        target = results_dir / f"holdout-{universe}.json"
-        if target.exists():
-            raise SystemExit(
-                f"refusing to run: the holdout was already run and {target} exists. "
-                "The holdout is looked at once; the owner must say so before it is repeated."
-            )
+        target, claim = holdout_files(universe, results_dir)
+        for path in (target, claim):
+            if path.exists():
+                raise SystemExit(f"refusing to run: {REFUSED} Found {path}.")
         return target
     return out if out is not None else results_dir / f"dev-{universe}.json"
+
+
+def claim_holdout(universe: str, results_dir: Path, *, git_head: str | None, command: list[str]):
+    """Claim the holdout before any holdout data is read: an exclusive create of the claim file.
+
+    Two runs started together cannot both succeed (``O_EXCL``). The claim is never deleted by
+    code, so a crash after it leaves it in place on purpose: the owner decides.
+
+    Returns:
+        The claim path.
+
+    Raises:
+        SystemExit: the claim or the result already exists, naming the file.
+    """
+    target, claim = holdout_files(universe, results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        raise SystemExit(f"refusing to run: {REFUSED} Found {target}.")
+    try:
+        fd = os.open(claim, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        raise SystemExit(f"refusing to run: {REFUSED} Found {claim}.") from None
+    note = {
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "git_head": git_head,
+        "command": command,
+    }
+    with os.fdopen(fd, "w") as handle:
+        json.dump(note, handle, indent=2)
+        handle.write("\n")
+    return claim
+
+
+WINDOW_EDGE_DAYS = 7  # the window's first and last trading day must lie this close to its ends
+MAX_SPY_NAN_RUN = 5  # trading days
+
+
+def _window_days(index: pd.DatetimeIndex, start: str, end: str) -> pd.DatetimeIndex:
+    days = _naive_index(pd.DatetimeIndex(index))
+    return days[(days >= pd.Timestamp(start)) & (days <= pd.Timestamp(end))]
+
+
+def validate_window_inputs(
+    close: pd.DataFrame, spy_close: pd.Series, start: str, end: str
+) -> dict[str, Any]:
+    """Refuse inputs whose strategy and SPY histories do not cover the same window.
+
+    Checks, before any cell runs: (a) both indexes have a first trading day within 7 calendar
+    days after ``start`` and a last within 7 days before ``end``; (b) the two first days and
+    the two last days inside the window are identical; (c) SPY has a close on its first and
+    last day and no run of more than 5 missing closes inside the window.
+
+    Returns:
+        Small facts for the results file (the dates and the SPY missing-close count).
+
+    Raises:
+        ValueError: naming the problem.
+    """
+    low, high = pd.Timestamp(start), pd.Timestamp(end)
+    edge = pd.Timedelta(days=WINDOW_EDGE_DAYS)
+    ends: dict[str, tuple[pd.Timestamp, pd.Timestamp]] = {}
+    for name, index in (("strategy close", close.index), ("SPY close", spy_close.index)):
+        days = _window_days(index, start, end)
+        if len(days) == 0:
+            raise ValueError(f"{name} has no trading day inside {start}..{end}")
+        if days[0] > low + edge:
+            raise ValueError(f"{name} starts late: first day {days[0].date()} for window {start}")
+        if days[-1] < high - edge:
+            raise ValueError(f"{name} ends early: last day {days[-1].date()} for window {end}")
+        ends[name] = (days[0], days[-1])
+    if ends["strategy close"][0] != ends["SPY close"][0]:
+        raise ValueError(
+            f"first day differs: strategy {ends['strategy close'][0].date()}, "
+            f"SPY {ends['SPY close'][0].date()}"
+        )
+    if ends["strategy close"][1] != ends["SPY close"][1]:
+        raise ValueError(
+            f"last day differs: strategy {ends['strategy close'][1].date()}, "
+            f"SPY {ends['SPY close'][1].date()}"
+        )
+    stamps = _naive_index(pd.DatetimeIndex(spy_close.index))
+    inside = (stamps >= low) & (stamps <= high)
+    missing = spy_close.isna().to_numpy()[inside]
+    if missing[0] or missing[-1]:
+        raise ValueError("SPY has no close on the first or last day of the window")
+    longest = run = 0
+    for flag in missing:
+        run = run + 1 if flag else 0
+        longest = max(longest, run)
+    if longest > MAX_SPY_NAN_RUN:
+        raise ValueError(f"SPY is missing {longest} closes in a row inside the window")
+    return {
+        "first_day": str(ends["SPY close"][0].date()),
+        "last_day": str(ends["SPY close"][1].date()),
+        "spy_missing_closes": int(missing.sum()),
+    }
 
 
 def _naive_index(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
@@ -306,6 +415,7 @@ def run_study(
     Returns:
         ``strategy`` (18 cells), ``spy`` (6 cells), ``coverage`` and ``sanity``.
     """
+    window_check = validate_window_inputs(close, spy_close, start, end)
     spans = _normalise_spans(span_rows)
     steps: list[TargetStep] = plan_trades(  # the plan does not depend on the loss: once
         close,
@@ -386,6 +496,7 @@ def run_study(
         "spy": spy,
         "coverage": coverage_block(eligible, close, ends, successors, reference_trades, start, end),
         "sanity": sanity,
+        "window_check": window_check,
         "n_rebalance_steps": len(steps),
         "n_columns": int(close.shape[1]),
         "n_ended_series_in_window": int(len(ends)),

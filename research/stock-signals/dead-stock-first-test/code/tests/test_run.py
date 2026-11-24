@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import dead_stock_first_test as study
@@ -11,7 +12,7 @@ import pandas as pd
 import pytest
 
 from ggTrader.utils.study import load_driver as load_driver_by_path
-from ggTrader.utils.study import study_dir
+from ggTrader.utils.study import repo_root, study_dir
 
 pytestmark = pytest.mark.study
 
@@ -225,34 +226,217 @@ def fake_inputs(*_args) -> dict:
     return data
 
 
+def stub_study(monkeypatch: pytest.MonkeyPatch, driver) -> None:
+    monkeypatch.setattr(driver.study, "run_study", lambda *a, **k: {"strategy": {}, "spy": {}})
+
+
+def holdout_argv(universe: str = "A") -> list[str]:
+    return ["--window", "holdout", "--universe", universe, "--release-id", "1"]
+
+
 def test_holdout_runs_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     driver = load_driver()
-    monkeypatch.setattr(driver.study, "run_study", lambda *a, **k: {"strategy": {}, "spy": {}})
-    argv = ["--window", "holdout", "--universe", "A", "--release-id", "1"]
-    argv += ["--results-dir", str(tmp_path)]
-    assert driver.main(argv, loader=fake_inputs) == 0
+    stub_study(monkeypatch, driver)
+    assert driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path) == 0
     target = tmp_path / "holdout-A.json"
     payload = json.loads(target.read_text())
     assert payload["provenance"]["window"] == {"start": "2020-01-02", "end": "2024-12-31"}
     first = target.read_text()
     with pytest.raises(SystemExit) as refused:
-        driver.main(argv, loader=fake_inputs)
-    assert "holdout-A.json" in str(refused.value)
+        driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path)
+    assert "holdout-A.json" in str(refused.value) or "holdout-A.claim" in str(refused.value)
+    assert "only the owner may delete the claim" in str(refused.value)
     assert target.read_text() == first  # untouched
 
 
-def test_holdout_ignores_out_and_dev_may_rerun(
+def test_second_holdout_refuses_even_without_a_result(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     driver = load_driver()
-    monkeypatch.setattr(driver.study, "run_study", lambda *a, **k: {"strategy": {}, "spy": {}})
-    elsewhere = tmp_path / "elsewhere.json"
-    base = ["--universe", "B", "--release-id", "1", "--results-dir", str(tmp_path)]
-    driver.main(["--window", "holdout", "--out", str(elsewhere), *base], loader=fake_inputs)
-    assert (tmp_path / "holdout-B.json").exists() and not elsewhere.exists()
-    for _ in range(2):  # a development run may be repeated
-        driver.main(["--window", "dev", *base], loader=fake_inputs)
+
+    def crash(*_a, **_k):
+        raise RuntimeError("database went away")
+
+    monkeypatch.setattr(driver.study, "run_study", crash)
+    with pytest.raises(RuntimeError):
+        driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path)
+    assert not (tmp_path / "holdout-A.json").exists()
+    claim = tmp_path / "holdout-A.claim"
+    assert claim.exists()  # a crash leaves the claim on purpose
+    note = json.loads(claim.read_text())
+    assert note["started_at"] and "git_head" in note and "--window" in " ".join(note["command"])
+    loaded = []
+    with pytest.raises(SystemExit) as refused:
+        driver.main(holdout_argv(), loader=lambda a: loaded.append(a), results_dir=tmp_path)
+    assert "holdout-A.claim" in str(refused.value)
+    assert loaded == []  # refused before reading any data
+    assert claim.exists()  # never deleted by code
+
+
+def test_claim_is_taken_before_any_data_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    seen = []
+
+    def loader(args):
+        seen.append((tmp_path / "holdout-A.claim").exists())
+        return fake_inputs(args)
+
+    stub_study(monkeypatch, driver)
+    driver.main(holdout_argv(), loader=loader, results_dir=tmp_path)
+    assert seen == [True]
+
+
+def test_concurrent_holdout_claims_only_one_wins(tmp_path: Path) -> None:
+    barrier = threading.Barrier(8)
+    outcomes: list[str] = []
+
+    def attempt() -> None:
+        barrier.wait()
+        try:
+            study.claim_holdout("A", tmp_path, git_head="abc", command=["x"])
+            outcomes.append("won")
+        except SystemExit:
+            outcomes.append("refused")
+
+    threads = [threading.Thread(target=attempt) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert sorted(outcomes) == ["refused"] * 7 + ["won"]
+
+
+def test_precreated_claim_refuses(tmp_path: Path) -> None:
+    (tmp_path / "holdout-B.claim").write_text("{}")
+    with pytest.raises(SystemExit) as refused:
+        study.resolve_output("holdout", "B", None, tmp_path)
+    assert "holdout-B.claim" in str(refused.value)
+    with pytest.raises(SystemExit):
+        study.claim_holdout("B", tmp_path, git_head=None, command=[])
+
+
+def test_dev_run_has_no_claim_and_may_repeat(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    argv = ["--window", "dev", "--universe", "B", "--release-id", "1"]
+    for _ in range(2):
+        driver.main(argv, loader=fake_inputs, results_dir=tmp_path)
     assert (tmp_path / "dev-B.json").exists()
+    assert list(tmp_path.glob("*.claim")) == []
+
+
+def test_holdout_ignores_out(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    elsewhere = tmp_path / "elsewhere.json"
+    driver.main(
+        [*holdout_argv("B"), "--out", str(elsewhere)], loader=fake_inputs, results_dir=tmp_path
+    )
+    assert (tmp_path / "holdout-B.json").exists() and not elsewhere.exists()
+
+
+def test_result_write_is_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    driver = load_driver()
+    stub_study(monkeypatch, driver)
+    used = []
+    real = driver.write_json
+    monkeypatch.setattr(driver, "write_json", lambda *a, **k: used.append(a[0]) or real(*a, **k))
+    driver.main(holdout_argv(), loader=fake_inputs, results_dir=tmp_path)
+    assert used == [tmp_path / "holdout-A.json"]
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_cli_has_no_results_dir_flag() -> None:
+    parser = load_driver().build_parser()
+    with pytest.raises(SystemExit):
+        parser.parse_args([*holdout_argv(), "--results-dir", "/tmp/elsewhere"])
+    assert "--results-dir" not in parser.format_help()
+
+
+def test_default_results_folder_is_the_canonical_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    driver = load_driver()
+    canonical = repo_root(__file__) / "results" / "dead_stock_first_test"
+    assert canonical == driver.DEFAULT_RESULTS_DIR
+    asked = []
+
+    def stop(window, universe, out, folder):
+        asked.append(folder)
+        raise KeyboardInterrupt  # nothing is touched: stop right after the folder is chosen
+
+    monkeypatch.setattr(driver.study, "resolve_output", stop)
+    with pytest.raises(KeyboardInterrupt):
+        driver.main(holdout_argv())
+    assert asked == [canonical]
+
+
+def spy_copy(data: dict, **changes) -> dict:
+    return {**data, **changes}
+
+
+def check_window(close: pd.DataFrame, spy: pd.Series) -> dict:
+    return study.validate_window_inputs(close, spy, START, END)
+
+
+def test_valid_window_is_accepted() -> None:
+    facts = check_window(make_close(), make_spy())
+    assert facts == {"first_day": START, "last_day": END, "spy_missing_closes": 0}
+
+
+def test_spy_ending_a_year_early_is_refused() -> None:
+    spy = make_spy()
+    short = spy[spy.index <= "2010-12-31"]
+    with pytest.raises(ValueError, match="SPY close ends early"):
+        check_window(make_close(), short)
+    with pytest.raises(ValueError, match="ends early"):
+        run({**no_death_inputs(), "spy_close": short})
+
+
+def test_spy_starting_late_is_refused() -> None:
+    spy = make_spy()
+    with pytest.raises(ValueError, match="SPY close starts late"):
+        check_window(make_close(), spy[spy.index >= "2010-03-01"])
+
+
+def test_strategy_close_ending_early_is_refused() -> None:
+    close = make_close()
+    with pytest.raises(ValueError, match="strategy close ends early"):
+        check_window(close[close.index <= "2011-10-31"], make_spy())
+
+
+def test_first_and_last_days_must_match_exactly() -> None:
+    spy = make_spy()
+    with pytest.raises(ValueError, match="first day differs"):
+        check_window(make_close(), spy[spy.index != START])  # SPY's first is 2010-01-05
+    with pytest.raises(ValueError, match="last day differs"):
+        check_window(make_close(), spy[spy.index != END])
+
+
+def test_spy_nan_run_longer_than_five_days_is_refused() -> None:
+    spy = make_spy()
+    spy.loc["2010-06-01":"2010-06-08"] = np.nan  # six trading days
+    with pytest.raises(ValueError, match="6 closes in a row"):
+        check_window(make_close(), spy)
+    shorter = make_spy()
+    shorter.loc["2010-06-01":"2010-06-03"] = np.nan
+    assert check_window(make_close(), shorter)["spy_missing_closes"] == 3
+
+
+def test_spy_nan_on_the_last_day_is_refused() -> None:
+    spy = make_spy()
+    spy.loc[END] = np.nan
+    with pytest.raises(ValueError, match="first or last day"):
+        check_window(make_close(), spy)
+
+
+def test_window_with_a_utc_index_is_accepted() -> None:
+    close, spy = make_close(), make_spy()
+    close.index = close.index.tz_localize("UTC")
+    spy.index = spy.index.tz_localize("UTC")
+    assert check_window(close, spy)["first_day"] == START
 
 
 def test_run_py_has_help(capsys: pytest.CaptureFixture[str]) -> None:
