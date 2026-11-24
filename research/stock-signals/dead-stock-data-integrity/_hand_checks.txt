@@ -150,3 +150,20 @@ empty return or an empty or non-positive share count. The 21,392,301 rows in que
 ## 7. Sum of the 20 largest gap examples (computed from `_integrity.json`, not from the database)
 
 Sum of the `magnitude` field of the 20 gap examples = 52,895 missing stock-days (the smallest of the 20 is 1,798).
+
+## 8. Dead-stock counts of the B (wider) lists, taken from the first test's result files
+
+Run once on 2026-11-24 (reads two JSON files of the closed first study; it does not touch the database):
+
+```
+python3 -c "import json; [print(n, len(json.load(open('research/stock-signals/dead-stock-first-test/'+n))['result']['death_price_paths']['exits'])) for n in ('_dev-B.json','_holdout-B.json')]"
+```
+
+Output:
+
+```
+_dev-B.json 107
+_holdout-B.json 35
+```
+
+So dev-B holds 107 and holdout-B 35 dead-stock exits, the same as the first test report's section 4 table. Run from the repository root.

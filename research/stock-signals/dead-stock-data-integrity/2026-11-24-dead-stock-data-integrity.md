@@ -59,7 +59,8 @@ in [`_hand_checks.txt`](_hand_checks.txt).
   evidence of anything.
 - **The file looks pre-cleaned.** A direct count over all 21,392,301 rows from 2004-01-01 found
   no empty prices, no zero prices, no empty returns and no empty or non-positive share counts
-  (see the last section); the importer also counted 0 non-finite values. Real price histories
+  (see the last section); the importer also counted 0 non-finite values (numbers that are not
+  ordinary numbers, such as "not a number" or infinity). Real price histories
   normally contain some missing values, so this looks like a file from which such rows were
   removed before upload. That is an inference from zero counts, not something shown.
   If true, a short hole of a few missing days is invisible to us, because the days are simply not
@@ -70,18 +71,24 @@ in [`_hand_checks.txt`](_hand_checks.txt).
   mistake in our own scan, explained in the last section.)
 - **Which stocks are labelled.** The 141 dead stocks listed here are those held in the **main
   (A) lists only** (117 in dev and 24 in holdout). The first test also held more dead stocks in
-  the wider (B) lists: 107 in dev-B and 35 in holdout-B (its report, section 4:
+  the wider (B) lists: 107 in dev-B and 35 in holdout-B (counted from its result files in
+  section 8 of `_hand_checks.txt`, and shown in its report, section 4:
   [2026-11-24-dead-stock-first-test.md](../dead-stock-first-test/2026-11-24-dead-stock-first-test.md)).
   Those were not named or labelled here.
 - **Names and labels.** Of the 141, 133 have a company name. All 141 have a price label: 107 look
   "calm like a deal" in their last month and 34 are "unclear". None looks like a collapse.
-- **What the labels are not.** "Calm like a deal" only describes how the price moved in the last
-  month (little change, small daily swings). It is **not** evidence of what holders were paid.
-  The plain facts: the 141 last prices run from $7.18 to $310.00 (middle value $61.28), so they
-  are ordinary prices, not pennies. The 34 "unclear" stocks all had daily swings above 1 percent
-  (the smallest was 1.06 percent) and a last price of at least 0.947 times the price 21 trading
-  days earlier (the highest was 1.52 times); 12 of them ended more than 10 percent above the
-  earlier price.
+- **What the labels are not.** "Calm like a deal" only describes the stock's recorded returns in
+  its last month (little change, small day-to-day variation). It is **not** evidence of what
+  holders were paid. The labels are built from the recorded daily returns (which include
+  dividends), chained into a total-return path, not from raw price changes; the window is the
+  last 21 available return observations (whether they were consecutive trading days was not
+  established). The plain facts: the 141 last prices recorded by the first test run from $7.18 to
+  $310.00 (middle value $61.28), so they are ordinary prices, not pennies. For the 34 "unclear"
+  stocks, the total-return path at the last day stood at about 0.947 times its value 21
+  observations earlier or higher (the minimum is 0.9468, the maximum 1.52); 12 of them ended more
+  than 10 percent above it. Each also had a standard deviation of its daily returns above 1
+  percent (a measure of how much the daily return varies around its average; the lowest of the 34
+  was 1.06 percent). That is the stock's typical variation, not its smallest daily move.
 - This note does not say how much any result would change. That was not measured.
 
 ## What was scanned
@@ -97,10 +104,12 @@ in [`_hand_checks.txt`](_hand_checks.txt).
 
 - **Names:** 133 of 141 have a company name from McGill. 8 have none (all stay in the list and
   are labelled).
-- **Price labels** (from each stock's last month of returns up to its last day; descriptive only,
-  they never set a payout): `calm_like_deal` 107 (dev 91, holdout 16), `unclear` 34 (dev 26,
+- **Price labels** (from each stock's recorded returns over its last 21 available observations,
+  chained into a total-return path that includes dividends; descriptive only, they never set a
+  payout): `calm_like_deal` 107 (dev 91, holdout 16), `unclear` 34 (dev 26,
   holdout 8). No stock is labelled `collapse_like`, `drifting_down` or `too_short`.
-- What this means: for most of these stocks the price did not crash before it stopped trading.
+- What this means: for most of these stocks the recorded returns show no collapse before it
+  stopped trading.
   That fits a buyout or merger, but it does not prove one. The label cannot tell a cash buyout
   from a quiet delisting. Evidence from company filings is Phase 2 and has not started.
 
@@ -131,13 +140,14 @@ covered, so the nearest entry was used (0 in the holdout files).
 
 - **Duplicates, missing prices, missing share counts (all 0):** nothing found by these narrow
   checks (see "What 'found nothing' means" above); not a proof that the data is correct.
-- **Spikes (345):** the price jumped by more than half in one day and came straight back the
-  next, which may mean a wrong price was recorded for that day. A spike inside a holding could
+- **Spikes (345):** a recorded one-day return of more than +50% or less than -50%, followed by a
+  return that brings the two-day total back to within 10 percent of where it started. That may
+  mean a wrong price was recorded for that day. A spike inside a holding could
   change one day's profit or loss for that position, and a spike could change which stocks rank
   high that day, whether or not the stock was held. Whether it did was not measured. The largest
   spikes repeat on a few permnos with very similar sizes: in the 20 largest examples, permnos
   13958 and 15293 appear four times each, and 14153, 16465 and 47387 twice each; every one is a
-  rise of about 413 to 457 percent followed by a fall of about 80 to 82 percent. That may be one
+  recorded one-day return of about +413% to +457% followed by about -80% to -82%. That may be one
   recurring quirk in the data rather than twenty separate events; the cause was not checked.
 - **Gaps (251):** days with no row. Many are long (the seven largest are over 3,000 trading
   days, roughly twelve years or more, where a stock disappears from the file and returns). A
@@ -162,18 +172,16 @@ Only two exist, so these are all of them. "Inside a holding" is taken from the f
 trade files; this output does not give the position's start, end or size, so the effect on its
 profit is **not measured**. Both are in the B (wider list) holdout file.
 
-1. **Spike, permno 16680, 2024-07-24**: the price rose 56.3 percent, then fell 32.4 percent the
-   next day.
-2. **Spike, permno 14873, 2020-06-10**: the price rose 51.7 percent, then fell 30.3 percent the
-   next day.
+1. **Spike, permno 16680, 2024-07-24**: a recorded one-day return of +56.3% followed by -32.4%.
+2. **Spike, permno 14873, 2020-06-10**: a recorded one-day return of +51.7% followed by -30.3%.
 
 The gap on permno 92449 that an earlier version of this note listed as a held flag is gone. It
 was never a hole in the data (see the last section).
 
 For comparison, the largest flags anywhere (held or not) are a spike on permno 14153 on
-2013-10-03 (a rise of 456.8 percent, then a fall of 81.9 percent), a gap on permno 77263 from
+2013-10-03 (a recorded one-day return of +456.8% followed by -81.9%), a gap on permno 77263 from
 2005-12-27 (4,253 days missing) and an unchanged price of 10.595 on permno 22582 for 34 rows from
-2023-07-21. The largest spike and stale examples are the same as in the earlier version; the gap
+2023-07-21. The largest spike and unchanged-price examples are the same as in the earlier version; the gap
 list changed (permno 81761, 3,865 days, no longer appears among the largest, and permnos 89986
 and 88937 now do).
 
@@ -230,6 +238,8 @@ These figures are **not** in the current `_integrity.json`. The commands and out
   load 1 is 0: the importer replaces any number that is not a finite number (NaN or infinity)
   with an empty value and counts them, so 0 means the uploaded file had none. The scan in this
   note read 20,379,285 of those rows (the 9,422 selected stocks).
+- **Dead stocks in the B lists (section 8 there).** 107 (dev-B) and 35 (holdout-B), counted from
+  the exit lists in the first test's result files `_dev-B.json` and `_holdout-B.json`.
 - **The sum of the 20 largest gap examples (section 7 there).** 52,895 missing stock-days, added
   up from `_integrity.json`; only the 20 largest are stored, so the true total over all 251 gaps
   is at least this.
