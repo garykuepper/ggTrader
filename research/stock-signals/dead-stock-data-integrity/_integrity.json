@@ -10,11 +10,11 @@
     "scan_start": "2004-01-01",
     "batch_size": 500,
     "reference_cell": "loss0_cost18.3bps_taxlow",
-    "git_head": "3f9c1f866794a416a9c36d102ed51d9aa291950d",
+    "git_head": "0bb88e00d921fda873a701c19576571a82ce504f",
     "git_dirty": false,
     "code_sha256": {
       "run.py": "138c83ac62839a057d79d3dcba4a391dd63da9b1b920e50f570f8a48e113e42e",
-      "dead_stock_data_integrity.py": "755b7c226c4ad865ccaef1bd1f377cf5a44be4278fe30c37cc07512d3de168c5",
+      "dead_stock_data_integrity.py": "a641c267b5741cad8f79dfd47614bea0752f64ac927431226064680a581ea9a9",
       "integrity_checks.py": "d9dae59ba5652bab10c1527297de656f9aa3e6e59dbdc6f69f4c67ec6c483712",
       "price_path.py": "15a21f30ea2c359bc372ab01c9353c8e8047e1b458c725ee556dba348ca9343b",
       "roster.py": "dbca6c4ffc14ea13882d98ab7e73db0da05142a585e6dcc260657bcd0c4b6113"
