@@ -15,6 +15,7 @@ from payout_table import (
     LITERATURE_FILLS,
     TABLE_COLUMNS,
     build_payout_table,
+    clean_exchange,
     coverage_summary,
     suggested_loss,
 )
@@ -140,6 +141,16 @@ def test_literature_fills_name_both_papers():
     assert "Shumway and Warther (1999)" in LITERATURE_FILLS[(3,)]["source"]
 
 
+def test_literature_fills_carry_their_qualification():
+    for fill in LITERATURE_FILLS.values():
+        assert fill["source_status"] == "unverified library copy"
+        assert fill["meaning"] == (
+            "missing-delisting-return fill used in the literature, "
+            "not a measurement of these stocks"
+        )
+        assert fill["library_id"] and fill["locators"] and fill["doi"]
+
+
 def test_the_seven_evidence_classes():
     assert EVIDENCE_CLASSES == (
         "bankruptcy_filed",
@@ -210,7 +221,7 @@ def test_match_confidence_and_basis_for_confirmed_and_name_only_stocks():
     assert table["suggested_loss"].iloc[0] == 0.0 and table["suggested_loss"].iloc[1] == 0.0
     assert table["basis"].to_dict() == {
         1: "filing_evidence",
-        2: "filing_evidence_name_only",
+        2: "filing_evidence",
         3: "none",
     }
     # An unreadable notice has no accession or provision of its own.
@@ -219,7 +230,7 @@ def test_match_confidence_and_basis_for_confirmed_and_name_only_stocks():
     assert table.loc[1, "form25_security"] == "Common Stock"
 
 
-def test_name_only_literature_fill_keeps_the_loss_but_marks_the_basis():
+def test_name_only_bankruptcy_keeps_the_literature_basis_and_counts_apart():
     roster = pd.DataFrame([roster_row(1, exchcd=3.0)])
     table = build_payout_table(
         roster,
@@ -228,7 +239,53 @@ def test_name_only_literature_fill_keeps_the_loss_but_marks_the_basis():
         {1: [event(["1.03"])]},
     )
     assert table["suggested_loss"].iloc[0] == 0.55
-    assert table["basis"].iloc[0] == "filing_evidence_name_only"
+    assert table["basis"].iloc[0] == "literature_fill"  # the basis names the number's source
+    assert table["match_confidence"].iloc[0] == "name_only"
+    cov = coverage_summary(table)
+    assert cov["by_basis_and_confidence"]["literature_fill"] == {
+        "confirmed": 0,
+        "name_only": 1,
+        "none": 0,
+    }
+    assert cov["by_basis"] == {"filing_evidence": 0, "literature_fill": 1, "none": 0}
+    assert "filing_evidence_name_only" not in json.dumps(cov)
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [(3.0, 3), (3, 3), (1.0, 1), (None, None), (float("nan"), None), (float("inf"), None)]
+    + [(float("-inf"), None), ("3", None), ("NYSE", None), (3.5, None), (True, None)],
+)
+def test_clean_exchange_only_trusts_finite_whole_numbers(code: Any, expected: int | None):
+    assert clean_exchange(code) == expected
+    assert suggested_loss("bankruptcy_filed", code)[0] == (
+        {1: 0.30, 2: 0.30, 3: 0.55}.get(expected) if expected else None
+    )
+
+
+def test_events_unavailable_or_incomplete_counts_every_non_ok_status():
+    roster = pd.DataFrame([roster_row(i) for i in range(1, 7)])
+    matches = {i: match() for i in range(1, 7)}
+    status = {
+        1: "ok",
+        2: "no_older_pages_needed",
+        3: "fetch_error",
+        4: "not_found",
+        5: "older_page_not_found",
+        6: "some_new_status",
+    }
+    table = build_payout_table(roster, matches, {}, {}, events_status=status)
+    gap = coverage_summary(table)["events_unavailable_or_incomplete"]
+    assert gap["total"] == 4
+    assert gap["by_status"] == {
+        "fetch_error": 1,
+        "not_found": 1,
+        "older_page_not_found": 1,
+        "some_new_status": 1,
+    }
+    assert "no 8-K was filed" in gap["note"] and "could not be read" in gap["note"]
+    unmatched = build_payout_table(roster, {}, {}, {})  # nothing fetched: no gap to report
+    assert coverage_summary(unmatched)["events_unavailable_or_incomplete"]["total"] == 0
 
 
 def test_evidence_class_comes_from_the_eight_k_items_and_event_accessions_are_listed():
@@ -375,12 +432,23 @@ def test_run_payouts_fetches_events_only_for_matched_stocks():
     assert payload["coverage_summary"]["roster_rows"] == 2
 
 
+def test_run_payouts_reads_the_exchange_code_from_csv_text():
+    client = FakeClient({SUBMISSIONS_URL: submissions_body("1.03")})
+    rows = [{**roster_row(1), "permno": "1", "exchcd": "3.0"}]
+    table, payload = run_payouts(client, rows, {"stocks": FORM25_PAYLOAD["stocks"][:1]})
+    assert table["suggested_loss"].iloc[0] == 0.55 and table["basis"].iloc[0] == "literature_fill"
+    assert payload["literature_fills"]["3"]["source_status"] == "unverified library copy"
+    assert payload["coverage_summary"]["events_unavailable_or_incomplete"]["total"] == 0
+
+
 def test_run_payouts_records_a_failed_events_fetch_and_carries_on():
     client = FakeClient({SUBMISSIONS_URL: sec_pilot.SecFetchError("HTTP 500")})
     rows = [{**roster_row(1), "permno": "1", "exchcd": "1"}]
     table, payload = run_payouts(client, rows, {"stocks": FORM25_PAYLOAD["stocks"][:1]})
     assert payload["events_status_counts"] == {"fetch_error": 1}
     assert table["events_status"].iloc[0] == "fetch_error"
+    gap = payload["coverage_summary"]["events_unavailable_or_incomplete"]
+    assert gap["by_status"] == {"fetch_error": 1}
 
 
 def test_main_payouts_writes_csv_json_and_checksums(tmp_path: Path):

@@ -350,6 +350,8 @@ def run_payouts(
             errors.append({"permno": permno, "reason": f"{type(exc).__name__}: {exc}"})
     roster = pd.DataFrame(rows)
     roster["last_close"] = pd.to_numeric(roster["last_close"], errors="coerce")
+    # Exchange codes arrive as text from the csv; the table only trusts real numbers.
+    roster["exchcd"] = pd.to_numeric(roster["exchcd"], errors="coerce")
     table = payout_table.build_payout_table(roster, matches, {}, events, events_status=statuses)
     items_missing = sum(sec_filings.count_items_missing(found) for found in events.values())
     skipped = form25.get("quarters_skipped") or []

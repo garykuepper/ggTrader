@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import numbers
 from collections.abc import Mapping
 from typing import Any
 
@@ -31,9 +32,19 @@ CONFIDENCE_NONE = ""
 CONFIDENCES = (CONFIDENCE_CONFIRMED, CONFIDENCE_NAME_ONLY)
 
 BASIS_FILING = "filing_evidence"
-BASIS_FILING_NAME_ONLY = "filing_evidence_name_only"
 BASIS_LITERATURE = "literature_fill"
 BASIS_NONE = "none"
+BASES = (BASIS_FILING, BASIS_LITERATURE, BASIS_NONE)
+
+# Events statuses that mean the filing list was read in full; any other value is a gap.
+EVENTS_STATUS_COMPLETE = (
+    sec_filings.EVENTS_STATUS_OK,
+    sec_filings.EVENTS_STATUS_NO_OLDER_PAGES_NEEDED,
+)
+EVENTS_UNAVAILABLE_NOTE = (
+    "A stock with one of these statuses has no evidence because its filing list could not be "
+    "read in full; that does not mean no 8-K was filed."
+)
 
 CROSS_CONFLICT = "conflict"
 CROSS_AGREES = "agrees"
@@ -45,9 +56,18 @@ LABEL_COLLAPSE = "collapse_like"
 # Fills for the return a CRSP file leaves missing when a stock is dropped for bad performance.
 # The papers sit in gg-library as ``ec9f9e4b98`` (Shumway 1997) and ``c5d15fa3c6`` (Shumway and
 # Warther 1999); both are marked "unverified" there (status of the copy, not of the numbers).
+LITERATURE_SOURCE_STATUS = "unverified library copy"
+LITERATURE_MEANING = (
+    "missing-delisting-return fill used in the literature, not a measurement of these stocks"
+)
 LITERATURE_FILLS: dict[tuple[int, ...], dict[str, Any]] = {
     (1, 2): {
         "loss": 0.30,
+        "source_status": LITERATURE_SOURCE_STATUS,
+        "meaning": LITERATURE_MEANING,
+        "library_id": "ec9f9e4b98",
+        "library_sha256": "ec9f9e4b9815b57b0c1900c2c908a0e466b0d0e03b5b0eb29fddb130d1b00895",
+        "doi": "10.1111/j.1540-6261.1997.tb03818.x",
         "source": (
             "Shumway (1997), The Delisting Bias in CRSP Data, Journal of Finance 52(1), 327-340"
         ),
@@ -60,6 +80,11 @@ LITERATURE_FILLS: dict[tuple[int, ...], dict[str, Any]] = {
     },
     (3,): {
         "loss": 0.55,
+        "source_status": LITERATURE_SOURCE_STATUS,
+        "meaning": LITERATURE_MEANING,
+        "library_id": "c5d15fa3c6",
+        "library_sha256": "c5d15fa3c61b701786f80850b9a8dc825aba78b0ef9594c2ec4781a237358c55",
+        "doi": "10.1111/0022-1082.00192",
         "source": (
             "Shumway and Warther (1999), The Delisting Bias in CRSP's Nasdaq Data and Its "
             "Implications for the Size Effect, Journal of Finance 54(6), 2361-2379"
@@ -99,21 +124,20 @@ TABLE_COLUMNS = (
 
 
 def clean_exchange(exchcd: Any) -> int | None:
-    """The exchange code as an int, or ``None`` for a missing or non-numeric value."""
-    if exchcd is None:
+    """The exchange code as an int, or ``None`` when it is not a finite whole number.
+
+    Text (``"3"``, ``"NYSE"``), ``None``, NaN, infinity, booleans and fractions are all unknown:
+    a code is only trusted when it arrives as a real number, so a stray string cannot pick a fill.
+    """
+    if isinstance(exchcd, bool) or not isinstance(exchcd, numbers.Real):
         return None
-    try:
-        value = float(exchcd)
-    except (TypeError, ValueError):
-        return None
-    if math.isnan(value) or value != int(value):
+    value = float(exchcd)
+    if not math.isfinite(value) or value != int(value):
         return None
     return int(value)
 
 
-def loss_decision(
-    evidence_class: str, exchcd: Any, *, name_only: bool = False
-) -> tuple[float | None, str, str]:
+def loss_decision(evidence_class: str, exchcd: Any) -> tuple[float | None, str, str]:
     """The suggested loss, its basis and a plain reason for the choice.
 
     Only two cases get a number: a stock bought out or merged (nothing lost on the filing's
@@ -123,8 +147,9 @@ def loss_decision(
     Args:
         evidence_class: one of ``EVIDENCE_CLASSES``.
         exchcd: the CRSP exchange code of the stock (``None`` or NaN when unknown).
-        name_only: True when the filing match rests on the company name alone (the notice
-            could not be read). The loss is still computed; only the basis label changes.
+
+    The basis says where the number came from (``filing_evidence``, ``literature_fill`` or
+    ``none``); how sure the filing match is lives in ``match_confidence``, not here.
 
     Returns:
         ``(loss, basis, note)`` with ``loss`` ``None`` and basis ``"none"`` when there is no number.
@@ -141,16 +166,12 @@ def loss_decision(
         note = f"bankruptcy filed: literature fill for exchange code {code}"
     else:
         return None, BASIS_NONE, f"{evidence_class}: no loss can be set from the filings"
-    if name_only:
-        basis = BASIS_FILING_NAME_ONLY
     return loss, basis, note
 
 
-def suggested_loss(
-    evidence_class: str, exchcd: Any, *, name_only: bool = False
-) -> tuple[float | None, str]:
+def suggested_loss(evidence_class: str, exchcd: Any) -> tuple[float | None, str]:
     """The suggested loss and its basis (see ``loss_decision`` for the rules and the reason)."""
-    loss, basis, _ = loss_decision(evidence_class, exchcd, name_only=name_only)
+    loss, basis, _ = loss_decision(evidence_class, exchcd)
     return loss, basis
 
 
@@ -243,9 +264,7 @@ def build_payout_table(
         stock_events = events_by.get(permno, [])
         evidence = classify(row, match, stock_events)
         confidence = match_confidence(match, evidence)
-        loss, basis, note = loss_decision(
-            evidence, row.get("exchcd"), name_only=confidence == CONFIDENCE_NAME_ONLY
-        )
+        loss, basis, note = loss_decision(evidence, row.get("exchcd"))
         notice = notice_by.get(permno) or (match or {}).get("notice") or {}
         details = notice.get("notice") or {}
         accession = notice.get("accession") or (
@@ -298,6 +317,9 @@ def coverage_summary(
     confidence = table["match_confidence"]
     has_loss = table["suggested_loss"].notna()
     by_class = {name: int((classes == name).sum()) for name in EVIDENCE_CLASSES}
+    statuses = table["events_status"].fillna("")
+    bad = statuses[(statuses != "") & ~statuses.isin(EVENTS_STATUS_COMPLETE)]
+    unavailable = {str(k): int(v) for k, v in bad.value_counts().items()}
     return {
         "roster_rows": len(table),
         "by_class": by_class,
@@ -314,13 +336,25 @@ def coverage_summary(
         "with_suggested_loss": int(has_loss.sum()),
         "with_suggested_loss_confirmed": int((has_loss & (confidence == "confirmed")).sum()),
         "with_suggested_loss_name_only": int((has_loss & (confidence == "name_only")).sum()),
-        "by_basis": {
-            basis: int((table["basis"] == basis).sum())
-            for basis in (BASIS_FILING, BASIS_FILING_NAME_ONLY, BASIS_LITERATURE, BASIS_NONE)
+        "by_basis": {basis: int((table["basis"] == basis).sum()) for basis in BASES},
+        "by_basis_and_confidence": {
+            basis: {
+                **{
+                    c: int(((table["basis"] == basis) & (confidence == c)).sum())
+                    for c in CONFIDENCES
+                },
+                "none": int(((table["basis"] == basis) & (confidence == CONFIDENCE_NONE)).sum()),
+            }
+            for basis in BASES
         },
         "conflicts": int((table["cross_check"] == CROSS_CONFLICT).sum()),
         "agrees": int((table["cross_check"] == CROSS_AGREES).sum()),
         "events_fetch_errors": int((table["events_status"] == "fetch_error").sum()),
+        "events_unavailable_or_incomplete": {
+            "total": sum(unavailable.values()),
+            "by_status": dict(sorted(unavailable.items())),
+            "note": EVENTS_UNAVAILABLE_NOTE,
+        },
         "items_missing": int(items_missing),
         "quarters_skipped": int(quarters_skipped),
     }
