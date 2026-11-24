@@ -60,7 +60,7 @@ Owner instruction of 2026-11-08; revisit when the owner says so.
   batch and checks every figure that reaches a report before it is relied on.
 - Give a reviewer a fresh context with only the evidence and the claims; a model checking
   its own earlier work is not independent, and the report should say so when it happens.
-- **Antigravity re-enabled for building and reading (2026-11-24).** Owner: "give agy some work too". Gemini 4 Neon may build self-contained tasks and Gemini 4 Argon may act as an extra reader. A Gemini build is reviewed by Sol or Opus. The superseded notes below stay as history. Revisit when the owner says so.
+- **Antigravity re-enabled for building and reading (2026-11-24).** Owner: "give agy some work too". Gemini 4 Neon (or 3.8 Flash for bulk work) may build self-contained tasks or act as an extra reader. Gemini 4 Argon and Astra are critical-only (small quotas) and need the owner's approval each time. A Gemini build is reviewed by Sol or Opus. The superseded notes below stay as history. Revisit when the owner says so.
 - The lead remains responsible for final decisions. Keep private account records out of
   delegate prompts.
 

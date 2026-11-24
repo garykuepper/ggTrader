@@ -38,7 +38,7 @@ Usage on 2026-11-24 (owner screenshot): Codex weekly 85% left, Claude session 90
 | 7 8-K evidence | Antigravity Gemini 4 Neon | Codex Sol |
 | 8 payout table, report | Claude Sonnet | Codex Sol |
 
-Whole-study reviews: Codex Sol and Claude Opus (once, at the end of each phase), plus Antigravity Gemini 4 Argon as a third independent reader of the final report. A reviewer never reviews its own model family. The orchestrator re-reads every diff and reruns the checks itself. Never put the owner's email in any delegate brief.
+Whole-study reviews: Codex Sol and Claude Opus (once, at the end of each phase), plus Antigravity Gemini 4 Neon as a third independent reader of the final report (Argon is critical-only and needs the owner's approval). A reviewer never reviews its own model family. The orchestrator re-reads every diff and reruns the checks itself. Never put the owner's email in any delegate brief.
 
 ## Review Focus
 
