@@ -6,7 +6,7 @@
 2026-11-24. The few figures that do not (figures from an earlier, wrong version of the scan, and
 checks made by hand in the database) are listed in the section "Earlier measurements and checks
 made by hand" at the end, each with how it was obtained. The commands and outputs for those are
-saved in [`_hand_checks.md`](_hand_checks.md).
+saved in [`_hand_checks.txt`](_hand_checks.txt).
 
 ## Short version
 
@@ -142,7 +142,7 @@ largest spike and stale examples are the same as in the earlier version; the gap
 ## Earlier measurements and checks made by hand
 
 These figures are **not** in the current `_integrity.json`. The commands and outputs are in
-[`_hand_checks.md`](_hand_checks.md); the section numbers below are that file's.
+[`_hand_checks.txt`](_hand_checks.txt); the section numbers below are that file's.
 
 - **The earlier, wrong scan (section 4 there).** The first version of the scan kept only the rows
   where a stock was an ordinary share on the NYSE or Nasdaq on that day, so a stock that spent
