@@ -1,0 +1,14 @@
+# Study card. Read by scripts/study.py check; edit by hand.
+id = "dead-stock-data-integrity"
+category = "stock-signals"
+placement_rule = 9
+question = "For the dead stocks the first test held, what do our CRSP rows and SEC filings say about why they stopped trading, and how clean are the price rows around them?"
+kind = "audit"
+status = "open"
+verdict = ""
+aliases = []
+brief = "2026-11-24-dead-stock-data-integrity-brief.md"
+reports = []
+results = []
+uses_lib = []
+allow_paper_imports = false
