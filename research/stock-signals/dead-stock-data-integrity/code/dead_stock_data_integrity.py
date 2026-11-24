@@ -448,15 +448,22 @@ def _git(root: Path, *args: str) -> str | None:
     return done.stdout.strip()
 
 
-def git_provenance(root: Path) -> dict[str, Any]:
+def git_provenance(root: Path, ignore: tuple[str, ...] = ()) -> dict[str, Any]:
     """The commit the run started from and whether files differed from it.
+
+    Args:
+        root: the repository root.
+        ignore: repository-relative paths left out of the "differs" test (a phase leaves out
+            its own result files, which are written after the code ran and so say nothing about
+            which code produced them). Empty by default: every difference counts.
 
     Returns:
         ``git_head`` (the commit hash, or ``"unknown"`` if git failed or gave nothing) and
         ``git_dirty`` (True or False, or ``"unknown"`` if git could not be asked).
     """
     head = _git(root, "rev-parse", "HEAD")
-    status = _git(root, "status", "--porcelain")
+    excluded = [f":(exclude){path}" for path in ignore]
+    status = _git(root, "status", "--porcelain", *(["--", ".", *excluded] if excluded else []))
     return {
         "git_head": head if head else "unknown",
         "git_dirty": "unknown" if status is None else bool(status),

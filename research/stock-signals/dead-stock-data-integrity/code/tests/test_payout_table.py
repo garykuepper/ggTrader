@@ -17,6 +17,7 @@ from payout_table import (
     build_payout_table,
     clean_exchange,
     coverage_summary,
+    loss_decision,
     suggested_loss,
 )
 from sec_client import SecNotFound
@@ -382,6 +383,18 @@ FORM25_PAYLOAD = {
 }
 
 
+def form25_with_provenance(roster: Path, **changes: Any) -> dict[str, Any]:
+    """The test Form 25 result with the provenance block the Form 25 phase writes."""
+    provenance = {
+        "git_head": "abc123",
+        "git_dirty": False,
+        "run_date": "2026-11-24",
+        "roster_sha256": sec_pilot.sha256_file(roster),
+        "code_sha256": {"sec_pilot.py": "0" * 64},
+    }
+    return {**FORM25_PAYLOAD, "provenance": {**provenance, **changes}}
+
+
 def write_inputs(tmp_path: Path) -> list[str]:
     """A two-stock roster and its Form 25 result; returns the command line for ``main``."""
     roster = tmp_path / "roster.csv"
@@ -394,7 +407,7 @@ def write_inputs(tmp_path: Path) -> list[str]:
     )
     out = tmp_path / "out"
     out.mkdir()
-    (out / "_form25_matches.json").write_text(json.dumps(FORM25_PAYLOAD))
+    (out / "_form25_matches.json").write_text(json.dumps(form25_with_provenance(roster)))
     return [
         "--phase",
         "payouts",
@@ -500,8 +513,68 @@ def test_main_payouts_refuses_when_the_form25_file_is_missing(tmp_path: Path):
 
 def test_main_payouts_refuses_a_form25_file_for_another_roster(tmp_path: Path):
     argv = write_inputs(tmp_path)
-    payload = {"stocks": FORM25_PAYLOAD["stocks"][:1]}
+    payload = {**form25_with_provenance(tmp_path / "roster.csv")}
+    payload["stocks"] = FORM25_PAYLOAD["stocks"][:1]
     (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(payload))
     with pytest.raises(SystemExit) as stop:
         main(argv, client_factory=lambda ua, cache: sec_client())
     assert stop.value.code == 2
+
+
+def test_main_payouts_refuses_a_form25_file_with_no_provenance(tmp_path: Path):
+    argv = write_inputs(tmp_path)
+    (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(FORM25_PAYLOAD))
+    made: list[str] = []
+
+    def factory(ua: str, cache: Path) -> FakeClient:
+        made.append(ua)
+        return sec_client()
+
+    with pytest.raises(SystemExit) as stop:
+        main(argv, client_factory=factory)
+    assert stop.value.code == 2 and made == []  # refused before any client was built
+
+
+@pytest.mark.parametrize("missing", ["git_head", "git_dirty", "roster_sha256", "code_sha256"])
+def test_main_payouts_refuses_an_incomplete_form25_provenance(tmp_path: Path, missing: str):
+    argv = write_inputs(tmp_path)
+    payload = form25_with_provenance(tmp_path / "roster.csv")
+    del payload["provenance"][missing]
+    (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(payload))
+    with pytest.raises(SystemExit) as stop:
+        main(argv, client_factory=lambda ua, cache: sec_client())
+    assert stop.value.code == 2
+
+
+def test_main_payouts_refuses_a_form25_file_made_from_another_roster_file(tmp_path: Path):
+    argv = write_inputs(tmp_path)
+    payload = form25_with_provenance(tmp_path / "roster.csv", roster_sha256="f" * 64)
+    (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(payload))
+    with pytest.raises(SystemExit) as stop:
+        main(argv, client_factory=lambda ua, cache: sec_client())
+    assert stop.value.code == 2
+
+
+def test_payouts_provenance_has_the_shared_fields_and_the_form25_hash(tmp_path: Path):
+    argv = write_inputs(tmp_path)
+    assert main(argv, client_factory=lambda ua, cache: sec_client()) == 0
+    out = tmp_path / "out"
+    prov = json.loads((out / "_payouts.json").read_text())["provenance"]
+    assert prov["phase"] == "payouts" and prov["roster_sha256"]
+    assert prov["form25_sha256"] == sec_pilot.sha256_file(out / "_form25_matches.json")
+    assert prov["form25_git_head"] == "abc123"
+    assert set(prov["code_sha256"]) == set(sec_pilot.CODE_FILES)
+    assert prov["matching_rules"]["abbreviations_sha256"]
+
+
+def test_loss_notes_do_not_claim_holders_were_paid():
+    notes = [loss_decision(name, 1)[2] for name in EVIDENCE_CLASSES]
+    assert all("were paid" not in note for note in notes)
+    acquired = loss_decision("acquired_or_merged", 1)
+    assert acquired[0] == 0.0
+    assert acquired[2] == (
+        "filings report an acquisition or merger event; payment amount and form not verified"
+    )
+    bankrupt = loss_decision("bankruptcy_filed", 3)[2]
+    assert "literature fill" in bankrupt and "not a measurement" in bankrupt
+    assert "no loss" in loss_decision("no_8k_found", 1)[2]

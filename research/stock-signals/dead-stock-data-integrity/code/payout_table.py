@@ -34,6 +34,18 @@ CONFIDENCES = (CONFIDENCE_CONFIRMED, CONFIDENCE_NAME_ONLY)
 BASIS_FILING = "filing_evidence"
 BASIS_LITERATURE = "literature_fill"
 BASIS_NONE = "none"
+# Plain reasons a class gets no number; none of them says what holders were or were not paid.
+ACQUIRED_NOTE = (
+    "filings report an acquisition or merger event; payment amount and form not verified"
+)
+NO_LOSS_DEFAULT = "no loss can be set from the filings"
+NO_LOSS_REASONS = {
+    "delisted_other": "filings report a delisting notice only; no loss can be set from them",
+    "no_8k_found": "no acquisition, bankruptcy or delisting item found near the exit; no loss set",
+    "no_filing_match": "no Form 25 notice matched the company name; no loss can be set",
+    "name_unknown": "no company name in our data to match; no loss can be set",
+    "ambiguous_match": "the name matched more than one company; no loss can be set",
+}
 BASES = (BASIS_FILING, BASIS_LITERATURE, BASIS_NONE)
 
 # Events statuses that mean the filing list was read in full; any other value is a gap.
@@ -157,15 +169,30 @@ def loss_decision(evidence_class: str, exchcd: Any) -> tuple[float | None, str, 
     code = clean_exchange(exchcd)
     loss: float | None
     if evidence_class == sec_filings.EVIDENCE_ACQUIRED:
-        loss, basis, note = 0.0, BASIS_FILING, "acquired or merged: holders were paid"
+        loss, basis, note = (
+            0.0,
+            BASIS_FILING,
+            "filings report an acquisition or merger event; payment amount and form not verified",
+        )
     elif evidence_class == sec_filings.EVIDENCE_BANKRUPTCY:
         fill = next((f for codes, f in LITERATURE_FILLS.items() if code in codes), None)
         if fill is None:
-            return None, BASIS_NONE, f"bankruptcy filed but exchange code {code} has no fill"
+            return (
+                None,
+                BASIS_NONE,
+                f"filings report a bankruptcy item but exchange code {code} has no literature fill",
+            )
         loss, basis = fill["loss"], BASIS_LITERATURE
-        note = f"bankruptcy filed: literature fill for exchange code {code}"
+        note = (
+            f"filings report a bankruptcy item; loss is a literature fill for exchange code "
+            f"{code}, not a measurement of this stock"
+        )
     else:
-        return None, BASIS_NONE, f"{evidence_class}: no loss can be set from the filings"
+        return (
+            None,
+            BASIS_NONE,
+            f"{evidence_class}: {NO_LOSS_REASONS.get(evidence_class, NO_LOSS_DEFAULT)}",
+        )
     return loss, basis, note
 
 

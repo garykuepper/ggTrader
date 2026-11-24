@@ -41,6 +41,17 @@ DEFAULT_MAX_SKIPPED = 10
 STATUS_NAME_UNKNOWN = "name_unknown"
 
 
+CODE_FILES = (
+    "sec_pilot.py",
+    "sec_filings.py",
+    "sec_client.py",
+    "payout_table.py",
+    "dead_stock_data_integrity.py",
+)
+# Keys a Form 25 result's provenance must carry before the payouts phase will read it.
+REQUIRED_FORM25_PROVENANCE = ("git_head", "git_dirty", "roster_sha256", "code_sha256", "run_date")
+
+
 class TooManySkippedQuarters(RuntimeError):
     """Raised when more quarterly indexes failed than the run allows."""
 
@@ -68,6 +79,72 @@ def needed_quarters(rows: list[Mapping[str, Any]]) -> list[tuple[int, int]]:
         end = exit_date + dt.timedelta(days=sec_filings.AFTER_DAYS)
         wanted.update(sec_filings.quarters_covering(start, end))
     return sorted(wanted)
+
+
+def matching_rules() -> dict[str, Any]:
+    """The constants that decide a name match and the filing windows, with a hash of the word list.
+
+    ``abbreviations_sha256`` fingerprints the fixed short-form table, so a changed table shows up
+    in the result file even if nobody remembers editing it.
+    """
+    table = json.dumps(sorted(sec_filings.ABBREVIATIONS.items()), ensure_ascii=True)
+    return {
+        "before_days": sec_filings.BEFORE_DAYS,
+        "after_days": sec_filings.AFTER_DAYS,
+        "truncated_name_length": sec_filings.TRUNCATED_NAME_LENGTH,
+        "event_window_days": sec_filings.EVENT_WINDOW_DAYS,
+        "suffix_words": sorted(sec_filings.SUFFIX_WORDS),
+        "abbreviations_sha256": hashlib.sha256(table.encode("ascii")).hexdigest(),
+    }
+
+
+def phase_provenance(
+    phase: str,
+    roster_path: Path,
+    rows: list[dict[str, str]],
+    *,
+    run_date: str,
+    limit_quarters: int | None = None,
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """The provenance block both SEC phases write: what code, rules and roster made the file.
+
+    The block holds the git commit and dirty flag (ignoring this study's own result files, which
+    are written after the code ran), the SHA-256 of each code file and of the roster file, the
+    run date, the quarterly-index window and the matching-rule constants. It holds nothing about
+    who asked the SEC: the contact line is never read here.
+
+    Args:
+        phase: ``"form25"`` or ``"payouts"``.
+        roster_path: the roster file the phase read.
+        rows: the roster rows (they set the quarter window).
+        run_date: ISO date of the run.
+        limit_quarters: trial-run limit on quarters, or ``None``.
+        root: repository root (default: this study's).
+    """
+    root = ROOT if root is None else root
+    quarters = needed_quarters(rows)
+    code_dir = Path(__file__).resolve().parent
+    own_outputs = [
+        (STUDY_DIR / name).resolve().relative_to(root.resolve()).as_posix()
+        for name in (OUTPUT_JSON, PAYOUTS_CSV, PAYOUTS_JSON)
+        if (STUDY_DIR / name).resolve().is_relative_to(root.resolve())
+    ]
+    return {
+        **git_provenance(root, ignore=tuple(own_outputs)),
+        "git_dirty_ignores": own_outputs,
+        "phase": phase,
+        "run_date": run_date,
+        "roster_sha256": sha256_file(roster_path),
+        "code_sha256": {name: sha256_file(code_dir / name) for name in CODE_FILES},
+        "quarter_window": {
+            "first": list(quarters[0]) if quarters else None,
+            "last": list(quarters[-1]) if quarters else None,
+            "needed": len(quarters),
+            "limit_quarters": limit_quarters,
+        },
+        "matching_rules": matching_rules(),
+    }
 
 
 # Per-stock confirmation levels (the only values allowed in the output).
@@ -416,19 +493,25 @@ def main(
         parser.error(str(exc))
     rows = read_roster(args.roster)
     client = client_factory(user_agent, args.cache_dir)
+    run_date = dt.date.today().isoformat()
+    # Taken before any download so the commit and the code hashes are those the run started from.
+    provenance = phase_provenance(
+        "form25", args.roster, rows, run_date=run_date, limit_quarters=args.limit_quarters
+    )
     try:
         payload = run_form25(
             client,
             rows,
             limit_quarters=args.limit_quarters,
             max_skipped=args.max_skipped,
-            run_date=dt.date.today().isoformat(),
+            run_date=run_date,
         )
     except TooManySkippedQuarters as exc:
         print(f"stopped: {exc}", file=sys.stderr)
         return 2
     finally:
         write_sha256sums(args.cache_dir)
+    payload["provenance"] = provenance
     write_json(target, payload, strict=True)
     summary = payload["summary"]
     print(
@@ -458,6 +541,16 @@ def main_payouts(
         parser.error(f"{form25_file} is missing; run --phase form25 first")
     form25 = json.loads(form25_file.read_text(encoding="utf-8"))
     rows = read_roster(args.roster)
+    form25_prov = form25.get("provenance")
+    held = form25_prov if isinstance(form25_prov, dict) else {}
+    missing = [key for key in REQUIRED_FORM25_PROVENANCE if key not in held]
+    if missing:
+        parser.error(
+            f"{form25_file} has no complete provenance block (missing: "
+            f"{', '.join(missing)}); rerun --phase form25 so the file records what made it"
+        )
+    if form25_prov["roster_sha256"] != sha256_file(args.roster):
+        parser.error(f"{form25_file} was made from a different roster file than {args.roster}")
     if {int(r["permno"]) for r in rows} != {int(s["permno"]) for s in form25["stocks"]}:
         parser.error(f"{form25_file} does not cover the same stocks as {args.roster}")
     try:
@@ -465,14 +558,16 @@ def main_payouts(
     except SecUserAgentMissing as exc:
         parser.error(str(exc))
     client = client_factory(user_agent, args.cache_dir)
+    run_date = dt.date.today().isoformat()
+    provenance = phase_provenance("payouts", args.roster, rows, run_date=run_date)
     try:
-        table, payload = run_payouts(client, rows, form25, run_date=dt.date.today().isoformat())
+        table, payload = run_payouts(client, rows, form25, run_date=run_date)
     finally:
         write_sha256sums(args.cache_dir)
     payload["provenance"] = {
-        **git_provenance(ROOT),
-        "roster_sha256": sha256_file(args.roster),
+        **provenance,
         "form25_sha256": sha256_file(form25_file),
+        "form25_git_head": form25_prov["git_head"],
     }
     atomic_write_text(csv_target, table.to_csv(index=False))
     write_json(json_target, payload, strict=True)

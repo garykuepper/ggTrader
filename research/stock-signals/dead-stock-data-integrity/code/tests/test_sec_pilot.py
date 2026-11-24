@@ -486,3 +486,71 @@ def test_the_result_file_is_written_through_the_atomic_json_writer(
     assert main(args_for(tmp_path), client_factory=lambda ua, cache: good_client()) == 0
     assert calls == [(tmp_path / "out" / OUTPUT_JSON, True)]
     assert not list((tmp_path / "out").glob("*.tmp"))
+
+
+def run_form25_main(tmp_path: Path) -> dict[str, Any]:
+    """Run the Form 25 phase on the tiny roster and return the written result."""
+    assert main(args_for(tmp_path), good_client_factory()) == 0
+    return json.loads((tmp_path / "out" / OUTPUT_JSON).read_text())
+
+
+def good_client_factory() -> Any:
+    return lambda ua, cache: good_client()
+
+
+def test_the_form25_result_carries_a_provenance_block(tmp_path: Path):
+    result = run_form25_main(tmp_path)
+    prov = result["provenance"]
+    assert prov["phase"] == "form25" and prov["run_date"] == result["run_date"]
+    assert prov["roster_sha256"] == sec_pilot.sha256_file(tmp_path / "roster.csv")
+    assert set(prov["code_sha256"]) == set(sec_pilot.CODE_FILES)
+    code_dir = Path(sec_pilot.__file__).resolve().parent
+    assert prov["code_sha256"]["sec_filings.py"] == sec_pilot.sha256_file(
+        code_dir / "sec_filings.py"
+    )
+    assert prov["git_head"] and prov["git_dirty"] in (True, False, "unknown")
+    assert prov["quarter_window"]["needed"] == result["quarters_needed"]
+    assert prov["quarter_window"]["first"] and prov["quarter_window"]["last"]
+    rules = prov["matching_rules"]
+    assert rules["before_days"] == 30 and rules["after_days"] == 180
+    assert rules["truncated_name_length"] == 16 and len(rules["abbreviations_sha256"]) == 64
+
+
+@pytest.mark.parametrize(("status", "dirty"), [("", False), (" M code/x.py", True)])
+def test_the_dirty_flag_follows_git_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str, dirty: bool
+):
+    import dead_stock_data_integrity as study
+
+    asked: list[tuple[str, ...]] = []
+
+    def fake_git(root: Path, *args: str) -> str:
+        asked.append(args)
+        return "deadbeef" if args[0] == "rev-parse" else status
+
+    monkeypatch.setattr(study, "_git", fake_git)
+    prov = run_form25_main(tmp_path)["provenance"]
+    assert prov["git_head"] == "deadbeef" and prov["git_dirty"] is dirty
+    status_call = next(a for a in asked if a[0] == "status")
+    # The study's own result files are left out of the test, never the code.
+    assert all(spec.startswith(":(exclude)") and "_" in spec for spec in status_call[4:])
+    assert status_call[4:] and prov["git_dirty_ignores"]
+
+
+def test_git_that_cannot_be_asked_is_recorded_as_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    import dead_stock_data_integrity as study
+
+    monkeypatch.setattr(study, "_git", lambda root, *args: None)
+    prov = run_form25_main(tmp_path)["provenance"]
+    assert prov["git_head"] == "unknown" and prov["git_dirty"] == "unknown"
+
+
+def test_the_provenance_never_holds_the_user_agent_or_an_address(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    agent = "ggTrader test client unique-9c2e41 contact@example.test"
+    monkeypatch.setenv("SEC_USER_AGENT", agent)
+    text = json.dumps(run_form25_main(tmp_path)["provenance"])
+    assert "unique-9c2e41" not in text and "@" not in text
