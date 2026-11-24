@@ -48,6 +48,8 @@ from ggTrader.lab.strategies.xs_momentum import momentum_scores
 
 REBALANCE_REASON = "rebalance"
 DEAD_EXIT_REASON = "dead_exit"
+TAX_SALE_REASON = "tax_sale"
+LIQUIDATION_REASON = "liquidation"
 
 
 @dataclass(frozen=True)
@@ -58,7 +60,7 @@ class Trade:
     symbol: str
     qty: float
     price: float
-    reason: Literal["rebalance", "dead_exit"]
+    reason: Literal["rebalance", "dead_exit", "tax_sale", "liquidation"]
 
 
 @dataclass(frozen=True)
