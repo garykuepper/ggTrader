@@ -1,0 +1,326 @@
+"""Payout table: why each held dead stock stopped trading, from filings, with suggested losses."""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Mapping
+from typing import Any
+
+import pandas as pd
+import sec_filings
+
+EVIDENCE_CLASSES = (
+    "bankruptcy_filed",
+    "acquired_or_merged",
+    "delisted_other",
+    "no_8k_found",
+    "no_filing_match",
+    "name_unknown",
+    "ambiguous_match",
+)
+# The classes that rest on 8-K items actually read from a filing near the exit.
+DOCUMENTED_CLASSES = ("bankruptcy_filed", "acquired_or_merged", "delisted_other")
+
+CLASS_NAME_UNKNOWN = "name_unknown"
+CLASS_NO_FILING_MATCH = "no_filing_match"
+CLASS_AMBIGUOUS = "ambiguous_match"
+
+CONFIDENCE_CONFIRMED = "confirmed"
+CONFIDENCE_NAME_ONLY = "name_only"
+CONFIDENCE_NONE = ""
+CONFIDENCES = (CONFIDENCE_CONFIRMED, CONFIDENCE_NAME_ONLY)
+
+BASIS_FILING = "filing_evidence"
+BASIS_FILING_NAME_ONLY = "filing_evidence_name_only"
+BASIS_LITERATURE = "literature_fill"
+BASIS_NONE = "none"
+
+CROSS_CONFLICT = "conflict"
+CROSS_AGREES = "agrees"
+CROSS_NOT_COMPARABLE = "not_comparable"
+LABEL_CALM = "calm_like_deal"
+LABEL_COLLAPSE = "collapse_like"
+
+# CRSP exchange codes: 1 NYSE, 2 AMEX, 3 Nasdaq.
+# Fills for the return a CRSP file leaves missing when a stock is dropped for bad performance.
+# The papers sit in gg-library as ``ec9f9e4b98`` (Shumway 1997) and ``c5d15fa3c6`` (Shumway and
+# Warther 1999); both are marked "unverified" there (status of the copy, not of the numbers).
+LITERATURE_FILLS: dict[tuple[int, ...], dict[str, Any]] = {
+    (1, 2): {
+        "loss": 0.30,
+        "source": (
+            "Shumway (1997), The Delisting Bias in CRSP Data, Journal of Finance 52(1), 327-340"
+        ),
+        "locators": [
+            "p. 340 (library PDF page 15): omitted delisting returns average about -30 percent; "
+            "researchers can test with -0.3 in place of the missing performance delisting return",
+            "p. 329 (library PDF page 4), Table I: NYSE/AMEX performance delisting average "
+            "-41.56 percent where a return exists (11.7 percent of cases)",
+        ],
+    },
+    (3,): {
+        "loss": 0.55,
+        "source": (
+            "Shumway and Warther (1999), The Delisting Bias in CRSP's Nasdaq Data and Its "
+            "Implications for the Size Effect, Journal of Finance 54(6), 2361-2379"
+        ),
+        "locators": [
+            "p. 2361 (library PDF page 2), abstract: a corrected return of -55 percent for "
+            "missing performance-related delisting returns",
+            "p. 2370 (library PDF page 11), equation 3: -55 percent after the wider bid-ask gap",
+            "p. 2378 (library PDF page 19), conclusion: use -55 percent wherever CRSP shows a "
+            "missing return for a Nasdaq performance delisting",
+        ],
+    },
+}
+
+TABLE_COLUMNS = (
+    "permno",
+    "symbol",
+    "window",
+    "universe",
+    "exit_date",
+    "last_close",
+    "stock_name",
+    "exchcd",
+    "price_label",
+    "evidence_class",
+    "match_confidence",
+    "form25_accession",
+    "form25_provision",
+    "form25_security",
+    "event_accessions",
+    "events_status",
+    "suggested_loss",
+    "basis",
+    "loss_note",
+    "cross_check",
+)
+
+
+def clean_exchange(exchcd: Any) -> int | None:
+    """The exchange code as an int, or ``None`` for a missing or non-numeric value."""
+    if exchcd is None:
+        return None
+    try:
+        value = float(exchcd)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(value) or value != int(value):
+        return None
+    return int(value)
+
+
+def loss_decision(
+    evidence_class: str, exchcd: Any, *, name_only: bool = False
+) -> tuple[float | None, str, str]:
+    """The suggested loss, its basis and a plain reason for the choice.
+
+    Only two cases get a number: a stock bought out or merged (nothing lost on the filing's
+    word) and a bankruptcy on an exchange the literature has a fill for. Everything else keeps
+    no number, so a later rerun can try the whole range (1.0, 0.5, 0.0) for it.
+
+    Args:
+        evidence_class: one of ``EVIDENCE_CLASSES``.
+        exchcd: the CRSP exchange code of the stock (``None`` or NaN when unknown).
+        name_only: True when the filing match rests on the company name alone (the notice
+            could not be read). The loss is still computed; only the basis label changes.
+
+    Returns:
+        ``(loss, basis, note)`` with ``loss`` ``None`` and basis ``"none"`` when there is no number.
+    """
+    code = clean_exchange(exchcd)
+    loss: float | None
+    if evidence_class == sec_filings.EVIDENCE_ACQUIRED:
+        loss, basis, note = 0.0, BASIS_FILING, "acquired or merged: holders were paid"
+    elif evidence_class == sec_filings.EVIDENCE_BANKRUPTCY:
+        fill = next((f for codes, f in LITERATURE_FILLS.items() if code in codes), None)
+        if fill is None:
+            return None, BASIS_NONE, f"bankruptcy filed but exchange code {code} has no fill"
+        loss, basis = fill["loss"], BASIS_LITERATURE
+        note = f"bankruptcy filed: literature fill for exchange code {code}"
+    else:
+        return None, BASIS_NONE, f"{evidence_class}: no loss can be set from the filings"
+    if name_only:
+        basis = BASIS_FILING_NAME_ONLY
+    return loss, basis, note
+
+
+def suggested_loss(
+    evidence_class: str, exchcd: Any, *, name_only: bool = False
+) -> tuple[float | None, str]:
+    """The suggested loss and its basis (see ``loss_decision`` for the rules and the reason)."""
+    loss, basis, _ = loss_decision(evidence_class, exchcd, name_only=name_only)
+    return loss, basis
+
+
+def _by_permno(mapping: Mapping[Any, Any] | None) -> dict[int, Any]:
+    """Re-key a mapping by integer permno (the files carry them as text)."""
+    return {int(k): v for k, v in (mapping or {}).items()}
+
+
+def _is_named(row: Mapping[str, Any]) -> bool:
+    name = row.get("stock_name")
+    return row.get("name_source") != "none" and isinstance(name, str) and bool(name.strip())
+
+
+def classify(row: Mapping[str, Any], match: Mapping[str, Any] | None, events: list[dict]) -> str:
+    """The evidence class of one roster stock (see the mapping in the study brief)."""
+    if not _is_named(row) or (match or {}).get("status") == CLASS_NAME_UNKNOWN:
+        return CLASS_NAME_UNKNOWN
+    if match is None:
+        return CLASS_NO_FILING_MATCH  # named, but the Form 25 phase has no record of a match
+    status = match.get("status")
+    if status == sec_filings.STATUS_AMBIGUOUS:
+        return CLASS_AMBIGUOUS
+    if status == sec_filings.STATUS_NONE:
+        return CLASS_NO_FILING_MATCH
+    if status == sec_filings.STATUS_MATCHED and len(match.get("ciks") or []) == 1:
+        return sec_filings.evidence_class(events)
+    return CLASS_AMBIGUOUS  # a "match" without exactly one issuer is not usable
+
+
+def match_confidence(match: Mapping[str, Any] | None, evidence_class: str) -> str:
+    """``confirmed`` (a readable notice named the issuer), ``name_only`` or blank."""
+    if match is None or evidence_class not in (*DOCUMENTED_CLASSES, sec_filings.EVIDENCE_NONE):
+        return CONFIDENCE_NONE
+    if match.get("confirmation") == "confirmed_common":
+        return CONFIDENCE_CONFIRMED
+    if match.get("confirmation") == "unconfirmed_unreadable":
+        return CONFIDENCE_NAME_ONLY
+    return CONFIDENCE_NONE
+
+
+def cross_check(evidence_class: str, price_label: Any) -> str:
+    """Compare the filing's story with the price path's label.
+
+    A bankruptcy whose price stayed calm, or a buyout whose price collapsed, is a ``conflict``;
+    the matching pairs ``agree``; everything else cannot be compared.
+    """
+    if evidence_class == sec_filings.EVIDENCE_BANKRUPTCY:
+        if price_label == LABEL_CALM:
+            return CROSS_CONFLICT
+        return CROSS_AGREES if price_label == LABEL_COLLAPSE else CROSS_NOT_COMPARABLE
+    if evidence_class == sec_filings.EVIDENCE_ACQUIRED:
+        if price_label == LABEL_COLLAPSE:
+            return CROSS_CONFLICT
+        return CROSS_AGREES if price_label == LABEL_CALM else CROSS_NOT_COMPARABLE
+    return CROSS_NOT_COMPARABLE
+
+
+def _text(value: Any) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def build_payout_table(
+    roster: pd.DataFrame,
+    matches: Mapping[Any, Mapping[str, Any]],
+    notices: Mapping[Any, Mapping[str, Any]],
+    events: Mapping[Any, list[dict]],
+    events_status: Mapping[Any, str] | None = None,
+) -> pd.DataFrame:
+    """One row per roster row: why it stopped trading, on what evidence, and a suggested loss.
+
+    Args:
+        roster: the roster (one row per held dead stock).
+        matches: per-stock Form 25 results from ``_form25_matches.json``, keyed by permno.
+        notices: optional per-stock deciding notices, keyed by permno; when absent the notice
+            inside the stock's match record is used.
+        events: per-stock 8-K events around the exit, keyed by permno.
+        events_status: optional per-stock status of the events download, keyed by permno.
+
+    Returns:
+        A frame with ``TABLE_COLUMNS``; no roster row is dropped.
+    """
+    match_by = _by_permno(matches)
+    notice_by = _by_permno(notices)
+    events_by = _by_permno(events)
+    status_by = _by_permno(events_status)
+    records: list[dict[str, Any]] = []
+    for row in roster.to_dict("records"):
+        permno = int(row["permno"])
+        match = match_by.get(permno)
+        stock_events = events_by.get(permno, [])
+        evidence = classify(row, match, stock_events)
+        confidence = match_confidence(match, evidence)
+        loss, basis, note = loss_decision(
+            evidence, row.get("exchcd"), name_only=confidence == CONFIDENCE_NAME_ONLY
+        )
+        notice = notice_by.get(permno) or (match or {}).get("notice") or {}
+        details = notice.get("notice") or {}
+        accession = notice.get("accession") or (
+            ((match or {}).get("accessions") or [""])[0] if confidence else ""
+        )
+        has_events = evidence in (*DOCUMENTED_CLASSES, sec_filings.EVIDENCE_NONE)
+        records.append(
+            {
+                "permno": permno,
+                "symbol": row["symbol"],
+                "window": row.get("window"),
+                "universe": row.get("universe"),
+                "exit_date": row.get("exit_date"),
+                "last_close": row.get("last_close"),
+                "stock_name": _text(row.get("stock_name")),
+                "exchcd": clean_exchange(row.get("exchcd")),
+                "price_label": row.get("price_label"),
+                "evidence_class": evidence,
+                "match_confidence": confidence,
+                "form25_accession": _text(accession),
+                "form25_provision": _text(details.get("rule_provision")),
+                "form25_security": _text(details.get("security_description")),
+                "event_accessions": ";".join(e["accession"] for e in stock_events),
+                "events_status": status_by.get(permno, "") if has_events else "",
+                "suggested_loss": loss,
+                "basis": basis,
+                "loss_note": note,
+                "cross_check": cross_check(evidence, row.get("price_label")),
+            }
+        )
+    table = pd.DataFrame.from_records(records, columns=list(TABLE_COLUMNS))
+    table["exchcd"] = table["exchcd"].astype("Int64")
+    table["suggested_loss"] = table["suggested_loss"].astype(float)
+    return table
+
+
+def coverage_summary(
+    table: pd.DataFrame, *, items_missing: int = 0, quarters_skipped: int = 0
+) -> dict[str, Any]:
+    """Counts of the table: per class, per confidence, how many have a loss, and the conflicts.
+
+    Confirmed and name-only matches are always counted apart.
+
+    Args:
+        table: the output of ``build_payout_table``.
+        items_missing: number of 8-K events whose item list was empty (from the events fetch).
+        quarters_skipped: quarterly SEC indexes skipped by the Form 25 phase.
+    """
+    classes = table["evidence_class"]
+    confidence = table["match_confidence"]
+    has_loss = table["suggested_loss"].notna()
+    by_class = {name: int((classes == name).sum()) for name in EVIDENCE_CLASSES}
+    return {
+        "roster_rows": len(table),
+        "by_class": by_class,
+        "documented_evidence": sum(by_class[name] for name in DOCUMENTED_CLASSES),
+        "by_match_confidence": {
+            CONFIDENCE_CONFIRMED: int((confidence == CONFIDENCE_CONFIRMED).sum()),
+            CONFIDENCE_NAME_ONLY: int((confidence == CONFIDENCE_NAME_ONLY).sum()),
+            "none": int((confidence == CONFIDENCE_NONE).sum()),
+        },
+        "by_class_and_confidence": {
+            name: {c: int(((classes == name) & (confidence == c)).sum()) for c in CONFIDENCES}
+            for name in EVIDENCE_CLASSES
+        },
+        "with_suggested_loss": int(has_loss.sum()),
+        "with_suggested_loss_confirmed": int((has_loss & (confidence == "confirmed")).sum()),
+        "with_suggested_loss_name_only": int((has_loss & (confidence == "name_only")).sum()),
+        "by_basis": {
+            basis: int((table["basis"] == basis).sum())
+            for basis in (BASIS_FILING, BASIS_FILING_NAME_ONLY, BASIS_LITERATURE, BASIS_NONE)
+        },
+        "conflicts": int((table["cross_check"] == CROSS_CONFLICT).sum()),
+        "agrees": int((table["cross_check"] == CROSS_AGREES).sum()),
+        "events_fetch_errors": int((table["events_status"] == "fetch_error").sum()),
+        "items_missing": int(items_missing),
+        "quarters_skipped": int(quarters_skipped),
+    }

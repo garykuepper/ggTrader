@@ -5,18 +5,24 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
+import hashlib
+import json
 import os
 import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ggTrader.utils.io import write_json
+import pandas as pd
+
+from ggTrader.utils.io import atomic_write_text, write_json
 from ggTrader.utils.study import bootstrap, study_dir
 
 ROOT = bootstrap(__file__)
 
-import sec_filings  # noqa: E402  (found on sys.path through bootstrap)
+import payout_table  # noqa: E402  (found on sys.path through bootstrap)
+import sec_filings  # noqa: E402
+from dead_stock_data_integrity import git_provenance  # noqa: E402
 from sec_client import (  # noqa: E402
     SecClient,
     SecFetchError,
@@ -28,6 +34,9 @@ from sec_client import (  # noqa: E402
 STUDY_DIR = study_dir(__file__)
 ROSTER_FILE = "_roster.csv"
 OUTPUT_JSON = "_form25_matches.json"
+PAYOUTS_CSV = "_payouts.csv"
+PAYOUTS_JSON = "_payouts.json"
+EVENTS_STATUS_FETCH_ERROR = "fetch_error"
 DEFAULT_MAX_SKIPPED = 10
 STATUS_NAME_UNKNOWN = "name_unknown"
 
@@ -289,16 +298,101 @@ def run_form25(
     }
 
 
+def sha256_file(path: Path) -> str:
+    """SHA-256 of a file's bytes (the input files are small)."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def run_payouts(
+    client: Any,
+    rows: list[dict[str, Any]],
+    form25: Mapping[str, Any],
+    *,
+    run_date: str = "",
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Fetch the 8-K events of every matched stock and build the payout table.
+
+    Only a stock with exactly one matched issuer (confirmed or name-only) gets its submissions
+    file fetched, around its exit date. A failed fetch is recorded as ``fetch_error`` and the run
+    goes on; the stock then reads as ``no_8k_found`` with that status beside it, never silently.
+
+    Args:
+        client: a ``SecClient`` (or a fake with ``get`` and ``manifest``).
+        rows: the roster rows (text values, as ``read_roster`` returns them).
+        form25: the parsed ``_form25_matches.json``.
+        run_date: ISO date recorded in the output.
+
+    Returns:
+        ``(table, payload)``: the payout table (one row per roster row) and the JSON-ready
+        summary (coverage, status counts, events by stock, request counts, the client manifest).
+    """
+    matches = {int(stock["permno"]): stock for stock in form25["stocks"]}
+    events: dict[int, list[dict]] = {}
+    statuses: dict[int, str] = {}
+    errors: list[dict[str, Any]] = []
+    for row in rows:
+        permno = int(row["permno"])
+        match = matches.get(permno)
+        if (
+            not is_named(row)
+            or match is None
+            or match["status"] != sec_filings.STATUS_MATCHED
+            or len(match["ciks"]) != 1
+        ):
+            continue
+        around = dt.date.fromisoformat(str(row["exit_date"]))
+        try:
+            events[permno], statuses[permno] = sec_filings.fetch_events_with_status(
+                client, match["ciks"][0], around, days=sec_filings.EVENT_WINDOW_DAYS
+            )
+        except (SecFetchError, ValueError) as exc:
+            events[permno], statuses[permno] = [], EVENTS_STATUS_FETCH_ERROR
+            errors.append({"permno": permno, "reason": f"{type(exc).__name__}: {exc}"})
+    roster = pd.DataFrame(rows)
+    roster["last_close"] = pd.to_numeric(roster["last_close"], errors="coerce")
+    table = payout_table.build_payout_table(roster, matches, {}, events, events_status=statuses)
+    items_missing = sum(sec_filings.count_items_missing(found) for found in events.values())
+    skipped = form25.get("quarters_skipped") or []
+    status_counts: dict[str, int] = {}
+    for status in statuses.values():
+        status_counts[status] = status_counts.get(status, 0) + 1
+    payload = {
+        "phase": "payouts",
+        "run_date": run_date,
+        "roster_rows": len(rows),
+        "coverage_summary": payout_table.coverage_summary(
+            table, items_missing=items_missing, quarters_skipped=len(skipped)
+        ),
+        "events_status_counts": dict(sorted(status_counts.items())),
+        "events_fetch_errors": errors,
+        "items_missing": items_missing,
+        "form25_quarters_skipped": skipped,
+        "events": {str(permno): found for permno, found in sorted(events.items())},
+        "literature_fills": {
+            "-".join(map(str, codes)): fill for codes, fill in payout_table.LITERATURE_FILLS.items()
+        },
+        "request_count": {
+            "network_fetches": getattr(client, "network_fetches", 0),
+            "cache_hits": getattr(client, "cache_hits", 0),
+            "corrupt_cache_refetches": getattr(client, "corrupt_cache_refetches", 0),
+        },
+        "manifest": client.manifest(),
+    }
+    return table, payload
+
+
 def build_parser() -> argparse.ArgumentParser:
     """The command line: where the cache and the output go; no date window to default."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=["form25"], required=True, help="which SEC phase")
+    parser.add_argument(
+        "--phase", choices=["form25", "payouts"], required=True, help="which SEC phase"
+    )
     parser.add_argument("--cache-dir", type=Path, required=True, help="folder for cached files")
     parser.add_argument("--out", type=Path, required=True, help="folder for the result file")
     parser.add_argument("--roster", type=Path, default=STUDY_DIR / ROSTER_FILE, help="roster csv")
     parser.add_argument("--limit-quarters", type=int, default=None, help="trial: first N quarters")
     parser.add_argument("--max-skipped", type=int, default=DEFAULT_MAX_SKIPPED, help="stop above")
-    parser.add_argument("--force", action="store_true", help="overwrite an existing result file")
+    parser.add_argument("--force", action="store_true", help="overwrite existing result files")
     return parser
 
 
@@ -306,9 +400,11 @@ def main(
     argv: list[str] | None = None,
     client_factory: Callable[[str, Path], Any] = SecClient,
 ) -> int:
-    """Check the arguments, run the Form 25 phase, write the result and the cache checksums."""
+    """Check the arguments, run the chosen SEC phase, write the result and the cache checksums."""
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.phase == "payouts":
+        return main_payouts(parser, args, client_factory)
     target = args.out / OUTPUT_JSON
     if target.exists() and not args.force:
         parser.error(f"{target} already exists; use --force to replace it")
@@ -341,6 +437,51 @@ def main(
         f"{summary['rejected_issuer_mismatch']}, ambiguous {summary['ambiguous']}, "
         f"none {summary['none']}, name unknown {summary['name_unknown']}; "
         f"{len(payload['quarters_skipped'])} quarters skipped"
+    )
+    return 0
+
+
+def main_payouts(
+    parser: argparse.ArgumentParser,
+    args: argparse.Namespace,
+    client_factory: Callable[[str, Path], Any],
+) -> int:
+    """The payouts phase: read the roster and the Form 25 result, fetch events, write the table."""
+    csv_target, json_target = args.out / PAYOUTS_CSV, args.out / PAYOUTS_JSON
+    for target in (csv_target, json_target):
+        if target.exists() and not args.force:
+            parser.error(f"{target} already exists; use --force to replace it")
+    form25_file = args.out / OUTPUT_JSON
+    if not form25_file.is_file():
+        parser.error(f"{form25_file} is missing; run --phase form25 first")
+    form25 = json.loads(form25_file.read_text(encoding="utf-8"))
+    rows = read_roster(args.roster)
+    if {int(r["permno"]) for r in rows} != {int(s["permno"]) for s in form25["stocks"]}:
+        parser.error(f"{form25_file} does not cover the same stocks as {args.roster}")
+    try:
+        user_agent = load_user_agent(os.environ)
+    except SecUserAgentMissing as exc:
+        parser.error(str(exc))
+    client = client_factory(user_agent, args.cache_dir)
+    try:
+        table, payload = run_payouts(client, rows, form25, run_date=dt.date.today().isoformat())
+    finally:
+        write_sha256sums(args.cache_dir)
+    payload["provenance"] = {
+        **git_provenance(ROOT),
+        "roster_sha256": sha256_file(args.roster),
+        "form25_sha256": sha256_file(form25_file),
+    }
+    atomic_write_text(csv_target, table.to_csv(index=False))
+    write_json(json_target, payload, strict=True)
+    cov = payload["coverage_summary"]
+    print(
+        f"{cov['roster_rows']} stocks; documented {cov['documented_evidence']}; "
+        + ", ".join(f"{name} {n}" for name, n in cov["by_class"].items())
+        + f"; confirmed {cov['by_match_confidence']['confirmed']}, "
+        f"name only {cov['by_match_confidence']['name_only']}; "
+        f"suggested loss for {cov['with_suggested_loss']}; conflicts {cov['conflicts']}; "
+        f"events status {payload['events_status_counts']}"
     )
     return 0
 
