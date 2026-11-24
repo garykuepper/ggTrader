@@ -248,6 +248,48 @@ def test_two_roster_stocks_matching_the_same_filing_are_both_processed():
     assert payload["summary"]["confirmed_common"] == 2
 
 
+def two_filer_bodies(a_files: dict[str, bytes], a_accessions: list[str]) -> dict[str, object]:
+    """Q1 lists the given filings for CIK 1 and one common-stock filing for CIK 2."""
+    b_acc = "0000000002-10-000001"
+    bodies = dict(good_client().bodies)
+    listed = [
+        ("1", "Alpha Corp", "25", f"2010-03-0{n + 2}", acc) for n, acc in enumerate(a_accessions)
+    ]
+    listed.append(("2", "Alpha Corp", "25", "2010-03-09", b_acc))
+    bodies[master_index_url(2010, 1)] = master_zip(listed)
+    bodies.update(a_files)
+    bodies.update(filing_files("0000000002", b_acc, "Common Stock"))
+    return bodies
+
+
+def test_a_cik_with_an_unreadable_filing_is_not_called_non_common_only():
+    # A: a readable warrants notice and an unreadable filing (possibly the common shares).
+    warrants, html = "0000000001-10-000001", "0000000001-10-000002"
+    a_files = filing_files("0000000001", warrants, "Warrants to purchase Common Stock")
+    base = "https://www.sec.gov/Archives/edgar/data/1/000000000110000002/"
+    a_files[base] = f"<html><a href='/x/doc.htm'>x</a>{html}</html>".encode()  # no primary_doc.xml
+    bodies = two_filer_bodies(a_files, [warrants, html])
+    stock = run_form25(FakeClient(bodies), ROWS[:1])["stocks"][0]
+    assert stock["status"] == "ambiguous" and stock["confirmation"] == "not_checked"
+    assert stock["ciks"] == ["0000000001", "0000000002"]  # A is not silently dropped
+    assert stock["rejected_ciks"] == []
+    states = {c["cik"]: c["state"] for c in stock["cik_checks"]}
+    assert states == {"0000000001": "unreadable", "0000000002": "confirmed_common"}
+
+
+def test_a_cik_whose_every_filing_was_read_and_none_is_common_is_dropped():
+    warrants = "0000000001-10-000001"
+    bodies = two_filer_bodies(
+        filing_files("0000000001", warrants, "Warrants to purchase Common Stock"), [warrants]
+    )
+    stock = run_form25(FakeClient(bodies), ROWS[:1])["stocks"][0]
+    assert stock["status"] == "matched" and stock["ciks"] == ["0000000002"]
+    assert stock["confirmation"] == "confirmed_common"
+    assert [(r["cik"], r["reason"]) for r in stock["rejected_ciks"]] == [
+        ("0000000001", "non_common_only")
+    ]
+
+
 def test_a_form_25_and_its_amendment_from_one_cik_are_one_match():
     first, amend = "0000000001-10-000001", "0000000001-10-000002"
     bodies = dict(good_client().bodies)

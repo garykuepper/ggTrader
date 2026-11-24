@@ -86,8 +86,10 @@ def check_cik(read: Callable[[str, str], dict], accessions: list[str], cik: str)
     Returns:
         ``{"cik", "state", "notice"}``: ``state`` is ``confirmed_common`` (the first readable
         notice whose security is common stock), ``non_common`` (readable notices, none common),
-        ``rejected`` (every readable notice names another issuer; none is about this CIK) or
-        ``unreadable``. ``notice`` is the deciding notice (or the first failure).
+        ``rejected`` (every filing was read and each names another issuer) or ``unreadable``
+        (at least one filing could not be read and none was confirmed common). ``non_common`` and
+        ``rejected`` need EVERY candidate filing read. ``notice`` is the deciding notice (or the
+        first failure).
     """
     first_readable: dict | None = None
     first_mismatch: dict | None = None
@@ -104,15 +106,18 @@ def check_cik(read: Callable[[str, str], dict], accessions: list[str], cik: str)
             first_mismatch = first_mismatch or notice
         else:
             first_failure = first_failure or notice
+    # One unreadable filing means we cannot say "non-common only" or "other issuer": the CIK
+    # stays a candidate (unconfirmed) even when other filings of it were read.
+    if first_failure is not None or (first_readable is None and first_mismatch is None):
+        return {
+            "cik": cik,
+            "state": "unreadable",
+            "notice": first_failure or {"status": "unreadable", "reason": "no filings"},
+            "other_filings_read": first_readable is not None or first_mismatch is not None,
+        }
     if first_readable is not None:
         return {"cik": cik, "state": "non_common", "notice": first_readable}
-    if first_mismatch is not None:
-        return {"cik": cik, "state": "rejected", "notice": first_mismatch}
-    return {
-        "cik": cik,
-        "state": "unreadable",
-        "notice": first_failure or {"status": "unreadable", "reason": "no filings"},
-    }
+    return {"cik": cik, "state": "rejected", "notice": first_mismatch}
 
 
 def resolve_stock(match: dict, read: Callable[[str, str], dict]) -> dict:
