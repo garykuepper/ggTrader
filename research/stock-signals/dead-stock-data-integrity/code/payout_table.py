@@ -362,8 +362,9 @@ def coverage_summary(
     """Counts of the table: per class, per confidence, how many have a loss, and the conflicts.
 
     Confirmed and name-only matches are always counted apart, and ``name_only`` is further split
-    into v1.1-only identity leads (``name_only_v1_1``) and v1 matches whose notice was unreadable
-    (``name_only_v1_unreadable``).
+    into v1.1-only identity leads (``name_only_v1_1``), v1 matches whose notice was unreadable
+    (``name_only_v1_unreadable``) and the rest (``name_only_other``: a missing or unknown rule
+    version); the three always add up to ``name_only``.
 
     Args:
         table: the output of ``build_payout_table``.
@@ -383,6 +384,15 @@ def coverage_summary(
     name_only_v1_unreadable = int(
         (name_only_mask & (rule_version == sec_filings.RULE_VERSION_V1)).sum()
     )
+    # Everything else that is name-only (no or unknown rule version, any other combination), so
+    # the three counts always add up to ``name_only``.
+    name_only_other = int(
+        (
+            name_only_mask
+            & (rule_version != sec_filings.RULE_VERSION_V11)
+            & (rule_version != sec_filings.RULE_VERSION_V1)
+        ).sum()
+    )
     return {
         "roster_rows": len(table),
         "by_class": by_class,
@@ -394,6 +404,7 @@ def coverage_summary(
         },
         "name_only_v1_1": name_only_v1_1,
         "name_only_v1_unreadable": name_only_v1_unreadable,
+        "name_only_other": name_only_other,
         "match_confidence_note": V11_LEAD_NOTE,
         "by_match_rule_version": {
             **{v: int((rule_version == v).sum()) for v in RULE_VERSIONS},

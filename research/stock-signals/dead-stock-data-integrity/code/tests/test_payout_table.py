@@ -809,6 +809,7 @@ def test_main_payouts_writes_match_rule_version_into_csv_and_summary(tmp_path: P
     assert cov["by_match_confidence"] == {"confirmed": 0, "name_only": 1, "none": 1}
     assert cov["name_only_v1_1"] == 1
     assert cov["name_only_v1_unreadable"] == 0
+    assert cov["name_only_other"] == 0
     assert cov["match_confidence_note"] == (
         "v1.1-only matches are leads: the company name matched only after the extra cleaning "
         "rules and was not otherwise verified"
@@ -865,8 +866,9 @@ def test_v11_matches_are_name_only_leads_and_counts_add_up():
     assert sum(cov["by_match_confidence"].values()) == cov["roster_rows"]
     assert cov["name_only_v1_1"] == 2
     assert cov["name_only_v1_unreadable"] == 1
+    assert cov["name_only_other"] == 0
     assert (
-        cov["name_only_v1_1"] + cov["name_only_v1_unreadable"]
+        cov["name_only_v1_1"] + cov["name_only_v1_unreadable"] + cov["name_only_other"]
         == cov["by_match_confidence"]["name_only"]
     )
     assert cov["by_match_rule_version"] == {"v1": 2, "v1.1": 2, "none": 2}
@@ -910,3 +912,47 @@ def test_match_without_rule_version_is_never_confirmed():
     table = build_payout_table(roster, {1: unversioned}, {}, {1: [event(["2.01"])]})
     assert table["match_confidence"].iloc[0] == "name_only"
     assert table["match_rule_version"].iloc[0] == ""
+    cov = coverage_summary(table)
+    # A legacy record with no rule version is name-only and must not fall between the subcounts.
+    assert cov["by_match_confidence"]["name_only"] == 1
+    assert cov["name_only_v1_1"] == 0 and cov["name_only_v1_unreadable"] == 0
+    assert cov["name_only_other"] == 1
+
+
+CONFIRMATIONS_ALL = (
+    "confirmed_common",
+    "unconfirmed_unreadable",
+    "non_common_only",
+    "rejected_issuer_mismatch",
+    "not_checked",
+)
+
+
+VERSIONS_ALL = ("v1", "v1.1", None, "v2")
+
+
+def test_name_only_subcounts_always_add_up_for_every_version_and_confirmation():
+    combos = [(v, c) for v in VERSIONS_ALL for c in CONFIRMATIONS_ALL]
+    roster = pd.DataFrame([roster_row(i + 1) for i in range(len(combos))])
+    matches = {}
+    for i, (rule_version, confirmation) in enumerate(combos, start=1):
+        record = match(confirmation=confirmation)
+        if rule_version is None:
+            del record["rule_version"]
+        else:
+            record["rule_version"] = rule_version
+        matches[i] = record
+    table = build_payout_table(roster, matches, {}, {i: [event(["2.01"])] for i in matches})
+    cov = coverage_summary(table)
+    by_conf = cov["by_match_confidence"]
+    assert sum(by_conf.values()) == cov["roster_rows"] == 20
+    assert (
+        cov["name_only_v1_1"] + cov["name_only_v1_unreadable"] + cov["name_only_other"]
+        == by_conf["name_only"]
+    )
+    # Worked out by hand: only (v1, confirmed_common) is confirmed; name-only is a confirmed
+    # notice under any other version, or an unreadable notice under any version.
+    assert by_conf == {"confirmed": 1, "name_only": 7, "none": 12}
+    assert cov["name_only_v1_1"] == 2  # v1.1 with a confirmed and with an unreadable notice
+    assert cov["name_only_v1_unreadable"] == 1  # v1 with an unreadable notice
+    assert cov["name_only_other"] == 4  # no version or version v2, confirmed or unreadable
