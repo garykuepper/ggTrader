@@ -504,13 +504,14 @@ def test_the_form25_result_carries_a_provenance_block(tmp_path: Path):
     assert prov["phase"] == "form25" and prov["run_date"] == result["run_date"]
     assert prov["roster_sha256"] == sec_pilot.sha256_file(tmp_path / "roster.csv")
     assert set(prov["code_sha256"]) == set(sec_pilot.CODE_FILES)
-    code_dir = Path(sec_pilot.__file__).resolve().parent
-    assert prov["code_sha256"]["sec_filings.py"] == sec_pilot.sha256_file(
-        code_dir / "sec_filings.py"
-    )
+    for name, digest in prov["code_sha256"].items():
+        assert digest == sec_pilot.sha256_file(sec_pilot.ROOT / name)
     assert prov["git_head"] and prov["git_dirty"] in (True, False, "unknown")
     assert prov["quarter_window"]["needed"] == result["quarters_needed"]
     assert prov["quarter_window"]["first"] and prov["quarter_window"]["last"]
+    assert prov["quarter_window"]["start"] <= prov["quarter_window"]["end"]
+    # What the writer produces is what the payouts phase's validator accepts.
+    assert sec_pilot.form25_provenance_problems(prov, prov["roster_sha256"]) == []
     rules = prov["matching_rules"]
     assert rules["before_days"] == 30 and rules["after_days"] == 180
     assert rules["truncated_name_length"] == 16 and len(rules["abbreviations_sha256"]) == 64
@@ -531,10 +532,7 @@ def test_the_dirty_flag_follows_git_status(
     monkeypatch.setattr(study, "_git", fake_git)
     prov = run_form25_main(tmp_path)["provenance"]
     assert prov["git_head"] == "deadbeef" and prov["git_dirty"] is dirty
-    status_call = next(a for a in asked if a[0] == "status")
-    # The study's own result files are left out of the test, never the code.
-    assert all(spec.startswith(":(exclude)") and "_" in spec for spec in status_call[4:])
-    assert status_call[4:] and prov["git_dirty_ignores"]
+    assert any(a[0] == "status" for a in asked)
 
 
 def test_git_that_cannot_be_asked_is_recorded_as_unknown(
@@ -554,3 +552,86 @@ def test_the_provenance_never_holds_the_user_agent_or_an_address(
     monkeypatch.setenv("SEC_USER_AGENT", agent)
     text = json.dumps(run_form25_main(tmp_path)["provenance"])
     assert "unique-9c2e41" not in text and "@" not in text
+
+
+def make_repo(tmp_path: Path) -> Path:
+    """A real throw-away git repository with one tracked code file and an ``out`` folder."""
+    import subprocess
+
+    repo = tmp_path / "repo"
+    (repo / "out").mkdir(parents=True)
+    (repo / "code.py").write_text("x = 1\n")
+    (repo / "roster.csv").write_text(
+        "symbol,permno,stock_name,name_source,exit_date\nA,1,ALPHA CORP,mcgill,2010-02-15\n"
+    )
+    for cmd in (
+        ["init", "-q"],
+        ["add", "."],
+        ["-c", "user.name=t", "-c", "user.email=t", "commit", "-q", "-m", "x"],
+    ):
+        subprocess.run(["git", *cmd], cwd=repo, check=True, capture_output=True)
+    return repo
+
+
+def repo_provenance(repo: Path) -> dict[str, Any]:
+    rows = sec_pilot.read_roster(repo / "roster.csv")
+    return sec_pilot.phase_provenance(
+        "form25", repo / "roster.csv", rows, out_dir=repo / "out", run_date="2026-11-24", root=repo
+    )
+
+
+def test_exclusions_are_exactly_the_three_output_names_and_hide_only_them(tmp_path: Path):
+    repo = make_repo(tmp_path)
+    for name in ("_form25_matches.json", "_payouts.csv", "_payouts.json"):
+        (repo / "out" / name).write_text("{}")
+    prov = repo_provenance(repo)
+    assert prov["git_dirty_ignores"] == [
+        "out/_form25_matches.json",
+        "out/_payouts.csv",
+        "out/_payouts.json",
+    ]
+    assert prov["git_dirty"] is False  # untracked results alone do not make the tree dirty
+    (repo / "code.py").write_text("x = 2\n")
+    assert repo_provenance(repo)["git_dirty"] is True  # a real code change still does
+
+
+def test_a_symlinked_output_cannot_hide_a_changed_code_file(tmp_path: Path):
+    repo = make_repo(tmp_path)
+    (repo / "code.py").write_text("x = 2\n")
+    (repo / "out" / "_payouts.csv").symlink_to(repo / "code.py")
+    prov = repo_provenance(repo)
+    # The excluded name is the link's own name; the file it points at is still counted.
+    assert "out/_payouts.csv" in prov["git_dirty_ignores"]
+    assert "code.py" not in prov["git_dirty_ignores"]
+    assert prov["git_dirty"] is True
+
+
+@pytest.mark.parametrize("name", ["_form25_matches.json", "_payouts.csv", "_payouts.json"])
+@pytest.mark.parametrize("phase", ["form25", "payouts"])
+def test_both_phases_refuse_an_output_that_is_a_symlink(tmp_path: Path, name: str, phase: str):
+    argv = args_for(tmp_path)
+    argv[1] = phase
+    out = tmp_path / "out"
+    out.mkdir()
+    victim = tmp_path / "victim.py"
+    victim.write_text("keep me")
+    (out / name).symlink_to(victim)
+    made: list[str] = []
+
+    def factory(ua: str, cache: Path) -> Any:
+        made.append(ua)
+        return good_client()
+
+    with pytest.raises(SystemExit) as stop:
+        main([*argv, "--force"], client_factory=factory)
+    assert stop.value.code == 2 and made == []
+    assert victim.read_text() == "keep me"
+
+
+def test_both_phases_refuse_an_output_folder_that_is_a_symlink(tmp_path: Path):
+    real = tmp_path / "real"
+    real.mkdir()
+    (tmp_path / "out").symlink_to(real)
+    with pytest.raises(SystemExit) as stop:
+        main(args_for(tmp_path), client_factory=lambda ua, cache: good_client())
+    assert stop.value.code == 2

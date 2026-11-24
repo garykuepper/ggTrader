@@ -383,16 +383,31 @@ FORM25_PAYLOAD = {
 }
 
 
-def form25_with_provenance(roster: Path, **changes: Any) -> dict[str, Any]:
-    """The test Form 25 result with the provenance block the Form 25 phase writes."""
-    provenance = {
-        "git_head": "abc123",
+def valid_provenance(roster: Path) -> dict[str, Any]:
+    """A full, valid provenance block as the Form 25 phase writes it."""
+    return {
+        "git_head": "a" * 40,
         "git_dirty": False,
+        "git_dirty_ignores": [],
+        "phase": "form25",
         "run_date": "2026-11-24",
         "roster_sha256": sec_pilot.sha256_file(roster),
-        "code_sha256": {"sec_pilot.py": "0" * 64},
+        "code_sha256": {name: "0" * 64 for name in sec_pilot.CODE_FILES},
+        "quarter_window": {
+            "first": [2010, 1],
+            "last": [2010, 3],
+            "start": "2010-01-01",
+            "end": "2010-09-30",
+            "needed": 3,
+            "limit_quarters": None,
+        },
+        "matching_rules": sec_pilot.matching_rules(),
     }
-    return {**FORM25_PAYLOAD, "provenance": {**provenance, **changes}}
+
+
+def form25_with_provenance(roster: Path, **changes: Any) -> dict[str, Any]:
+    """The test Form 25 result with the provenance block the Form 25 phase writes."""
+    return {**FORM25_PAYLOAD, "provenance": {**valid_provenance(roster), **changes}}
 
 
 def write_inputs(tmp_path: Path) -> list[str]:
@@ -535,15 +550,70 @@ def test_main_payouts_refuses_a_form25_file_with_no_provenance(tmp_path: Path):
     assert stop.value.code == 2 and made == []  # refused before any client was built
 
 
-@pytest.mark.parametrize("missing", ["git_head", "git_dirty", "roster_sha256", "code_sha256"])
-def test_main_payouts_refuses_an_incomplete_form25_provenance(tmp_path: Path, missing: str):
+def _refused(tmp_path: Path, change: Any) -> list[str]:
+    """Run the payouts phase on a Form 25 file whose provenance ``change`` edits in place.
+
+    The run must exit 2; the returned list holds any client that was built (it must be empty:
+    a bad file is refused before the SEC is asked anything).
+    """
     argv = write_inputs(tmp_path)
     payload = form25_with_provenance(tmp_path / "roster.csv")
-    del payload["provenance"][missing]
+    change(payload["provenance"])
     (tmp_path / "out" / "_form25_matches.json").write_text(json.dumps(payload))
+    made: list[str] = []
+
+    def factory(ua: str, cache: Path) -> FakeClient:
+        made.append(ua)
+        return sec_client()
+
     with pytest.raises(SystemExit) as stop:
-        main(argv, client_factory=lambda ua, cache: sec_client())
+        main(argv, client_factory=factory)
     assert stop.value.code == 2
+    return made
+
+
+@pytest.mark.parametrize(
+    "missing",
+    ["git_head", "git_dirty", "roster_sha256", "code_sha256", "quarter_window", "matching_rules"],
+)
+def test_main_payouts_refuses_an_incomplete_form25_provenance(tmp_path: Path, missing: str):
+    assert _refused(tmp_path, lambda prov: prov.pop(missing)) == []
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("git_head", None),
+        ("git_head", "abc123"),
+        ("git_head", "unknown"),
+        ("git_dirty", "unknown"),
+        ("code_sha256", {}),
+        ("code_sha256", {"sec_pilot.py": "0" * 64}),
+        ("run_date", "yesterday"),
+        ("phase", "payouts"),
+        ("roster_sha256", "short"),
+        ("quarter_window", {"first": [2010, 1]}),
+        ("quarter_window", {"start": "2010-12-01", "end": "2010-01-01"}),
+        ("quarter_window", {"start": "2010-01-01", "end": "2010-09-30", "limit_quarters": 2}),
+        ("matching_rules", {"abbreviations_sha256": "f" * 64}),
+    ],
+)
+def test_main_payouts_refuses_wrong_form25_provenance_values(tmp_path: Path, key: str, value: Any):
+    assert _refused(tmp_path, lambda prov: prov.update({key: value})) == []
+
+
+def test_main_payouts_refuses_when_the_abbreviation_table_has_changed(tmp_path: Path):
+    def change(prov: dict[str, Any]) -> None:
+        prov["matching_rules"] = {**sec_pilot.matching_rules(), "abbreviations_sha256": "f" * 64}
+
+    assert _refused(tmp_path, change) == []
+
+
+def test_main_payouts_refuses_a_code_hash_list_missing_a_shared_file(tmp_path: Path):
+    def change(prov: dict[str, Any]) -> None:
+        del prov["code_sha256"]["src/ggTrader/utils/io.py"]
+
+    assert _refused(tmp_path, change) == []
 
 
 def test_main_payouts_refuses_a_form25_file_made_from_another_roster_file(tmp_path: Path):
@@ -562,9 +632,42 @@ def test_payouts_provenance_has_the_shared_fields_and_the_form25_hash(tmp_path: 
     prov = json.loads((out / "_payouts.json").read_text())["provenance"]
     assert prov["phase"] == "payouts" and prov["roster_sha256"]
     assert prov["form25_sha256"] == sec_pilot.sha256_file(out / "_form25_matches.json")
-    assert prov["form25_git_head"] == "abc123"
+    assert prov["form25_git_head"] == "a" * 40
     assert set(prov["code_sha256"]) == set(sec_pilot.CODE_FILES)
     assert prov["matching_rules"]["abbreviations_sha256"]
+    assert prov["quarter_window"]["start"] and prov["quarter_window"]["end"]
+
+
+def test_the_code_hash_list_covers_the_shared_parsers_and_writers():
+    assert set(sec_pilot.CODE_FILES) >= {
+        "research/stock-signals/_lib/sec_master_index.py",
+        "research/stock-signals/_lib/sec_form25.py",
+        "src/ggTrader/utils/study.py",
+        "src/ggTrader/utils/io.py",
+    }
+    for name in sec_pilot.CODE_FILES:
+        assert (sec_pilot.ROOT / name).is_file()
+
+
+def test_main_payouts_hashes_the_bytes_it_parsed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    argv = write_inputs(tmp_path)
+    path = tmp_path / "out" / "_form25_matches.json"
+    original = path.read_bytes()
+    reads: list[str] = []
+    real = Path.read_bytes
+
+    def counting(self: Path) -> bytes:
+        if self == path:
+            reads.append("read")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", counting)
+    assert main(argv, client_factory=lambda ua, cache: sec_client()) == 0
+    assert reads == ["read"]  # one read, before any download
+    prov = json.loads((tmp_path / "out" / "_payouts.json").read_text())["provenance"]
+    import hashlib
+
+    assert prov["form25_sha256"] == hashlib.sha256(original).hexdigest()
 
 
 def test_loss_notes_do_not_claim_holders_were_paid():

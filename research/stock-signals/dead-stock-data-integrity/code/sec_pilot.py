@@ -8,6 +8,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
@@ -41,15 +42,22 @@ DEFAULT_MAX_SKIPPED = 10
 STATUS_NAME_UNKNOWN = "name_unknown"
 
 
+_STUDY_REL = "research/stock-signals/dead-stock-data-integrity/code/"
+# Every file that shapes a result, by repository-relative path: this study's SEC code, the two
+# shared parsers of the downloaded indexes and notices, and the shared writers and path helpers.
 CODE_FILES = (
-    "sec_pilot.py",
-    "sec_filings.py",
-    "sec_client.py",
-    "payout_table.py",
-    "dead_stock_data_integrity.py",
+    f"{_STUDY_REL}sec_pilot.py",
+    f"{_STUDY_REL}sec_filings.py",
+    f"{_STUDY_REL}sec_client.py",
+    f"{_STUDY_REL}payout_table.py",
+    f"{_STUDY_REL}dead_stock_data_integrity.py",
+    "research/stock-signals/_lib/sec_master_index.py",
+    "research/stock-signals/_lib/sec_form25.py",
+    "src/ggTrader/utils/study.py",
+    "src/ggTrader/utils/io.py",
 )
-# Keys a Form 25 result's provenance must carry before the payouts phase will read it.
-REQUIRED_FORM25_PROVENANCE = ("git_head", "git_dirty", "roster_sha256", "code_sha256", "run_date")
+HEX40 = re.compile(r"^[0-9a-f]{40}$")
+HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class TooManySkippedQuarters(RuntimeError):
@@ -98,37 +106,81 @@ def matching_rules() -> dict[str, Any]:
     }
 
 
+def output_paths(out_dir: Path) -> dict[str, Path]:
+    """The three result files of the SEC phases, by file name, inside ``out_dir``."""
+    return {name: out_dir / name for name in (OUTPUT_JSON, PAYOUTS_CSV, PAYOUTS_JSON)}
+
+
+def lexical_relative(path: Path, root: Path) -> str | None:
+    """``path`` relative to ``root`` as plain text, or ``None`` if it is not inside ``root``.
+
+    Both paths are only made absolute and tidied (``..`` folded away), never resolved: a symlink
+    must not make an output name stand for some other file.
+    """
+    try:
+        return Path(os.path.abspath(path)).relative_to(os.path.abspath(root)).as_posix()
+    except ValueError:
+        return None
+
+
+def symlinked_outputs(out_dir: Path) -> list[Path]:
+    """The output folder and result files that are symbolic links (all must be real files)."""
+    found = [out_dir] if out_dir.is_symlink() else []
+    return found + [p for p in output_paths(out_dir).values() if p.is_symlink()]
+
+
+def refuse_symlinked_outputs(parser: argparse.ArgumentParser, out_dir: Path) -> None:
+    """Stop (exit 2) when an output path is a symlink, so no exclusion can hide another file."""
+    links = symlinked_outputs(out_dir)
+    if links:
+        parser.error(
+            "output path is a symbolic link, refusing to run: " + ", ".join(map(str, links))
+        )
+
+
+def quarter_dates(quarters: list[tuple[int, int]]) -> tuple[str, str] | tuple[None, None]:
+    """First day of the first quarter and last day of the last quarter, as ISO dates."""
+    if not quarters:
+        return None, None
+    (y0, q0), (y1, q1) = quarters[0], quarters[-1]
+    start = dt.date(y0, 3 * q0 - 2, 1)
+    end = dt.date(y1 + (q1 == 4), 1 if q1 == 4 else 3 * q1 + 1, 1) - dt.timedelta(days=1)
+    return start.isoformat(), end.isoformat()
+
+
 def phase_provenance(
     phase: str,
     roster_path: Path,
     rows: list[dict[str, str]],
     *,
+    out_dir: Path,
     run_date: str,
     limit_quarters: int | None = None,
     root: Path | None = None,
 ) -> dict[str, Any]:
     """The provenance block both SEC phases write: what code, rules and roster made the file.
 
-    The block holds the git commit and dirty flag (ignoring this study's own result files, which
-    are written after the code ran), the SHA-256 of each code file and of the roster file, the
-    run date, the quarterly-index window and the matching-rule constants. It holds nothing about
-    who asked the SEC: the contact line is never read here.
+    The block holds the git commit and dirty flag (leaving out only the three result files of
+    this phase pair, by their exact repository-relative names), the SHA-256 of each code file and
+    of the roster file, the run date, the quarterly-index window and the matching-rule constants.
+    It holds nothing about who asked the SEC: the contact line is never read here.
 
     Args:
         phase: ``"form25"`` or ``"payouts"``.
         roster_path: the roster file the phase read.
         rows: the roster rows (they set the quarter window).
+        out_dir: the folder the result files are written to.
         run_date: ISO date of the run.
         limit_quarters: trial-run limit on quarters, or ``None``.
-        root: repository root (default: this study's).
+        root: repository root for git (default: this study's).
     """
     root = ROOT if root is None else root
     quarters = needed_quarters(rows)
-    code_dir = Path(__file__).resolve().parent
+    start, end = quarter_dates(quarters)
     own_outputs = [
-        (STUDY_DIR / name).resolve().relative_to(root.resolve()).as_posix()
-        for name in (OUTPUT_JSON, PAYOUTS_CSV, PAYOUTS_JSON)
-        if (STUDY_DIR / name).resolve().is_relative_to(root.resolve())
+        rel
+        for p in output_paths(out_dir).values()
+        if (rel := lexical_relative(p, root)) is not None
     ]
     return {
         **git_provenance(root, ignore=tuple(own_outputs)),
@@ -136,15 +188,81 @@ def phase_provenance(
         "phase": phase,
         "run_date": run_date,
         "roster_sha256": sha256_file(roster_path),
-        "code_sha256": {name: sha256_file(code_dir / name) for name in CODE_FILES},
+        "code_sha256": {name: sha256_file(ROOT / name) for name in CODE_FILES},
         "quarter_window": {
             "first": list(quarters[0]) if quarters else None,
             "last": list(quarters[-1]) if quarters else None,
+            "start": start,
+            "end": end,
             "needed": len(quarters),
             "limit_quarters": limit_quarters,
         },
         "matching_rules": matching_rules(),
     }
+
+
+def _is_iso_date(value: Any) -> bool:
+    """True for an ISO calendar-date string."""
+    try:
+        dt.date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return isinstance(value, str)
+
+
+def form25_provenance_problems(prov: Any, roster_sha256: str) -> list[str]:
+    """Plain-words problems with a Form 25 result's provenance block (empty means it is usable).
+
+    Checks the structure and the values: a real commit, a true or false dirty flag, a hash for
+    every file in ``CODE_FILES``, the same roster file and matching rules as now, a dated quarter
+    window and a full (not trial) run.
+
+    Args:
+        prov: the ``provenance`` value read from the Form 25 file.
+        roster_sha256: SHA-256 of the roster file the payouts phase is about to read.
+    """
+    if not isinstance(prov, dict) or not prov:
+        return ["there is no provenance block"]
+    problems: list[str] = []
+    if prov.get("phase") != "form25":
+        problems.append("phase is not 'form25'")
+    head = prov.get("git_head")
+    if not isinstance(head, str) or not HEX40.match(head):
+        problems.append("git_head is not a 40-character commit hash")
+    if not isinstance(prov.get("git_dirty"), bool):
+        problems.append("git_dirty is not true or false")
+    if not _is_iso_date(prov.get("run_date")):
+        problems.append("run_date is not a date")
+    roster = prov.get("roster_sha256")
+    if not isinstance(roster, str) or not HEX64.match(roster):
+        problems.append("roster_sha256 is not a 64-character hash")
+    elif roster != roster_sha256:
+        problems.append("it was made from a different roster file than the one given now")
+    hashes = prov.get("code_sha256")
+    if not isinstance(hashes, dict) or not hashes:
+        problems.append("code_sha256 is missing or empty")
+    else:
+        absent = [name for name in CODE_FILES if name not in hashes]
+        if absent:
+            problems.append("code_sha256 lacks: " + ", ".join(absent))
+        if not all(isinstance(v, str) and HEX64.match(v) for v in hashes.values()):
+            problems.append("code_sha256 holds a value that is not a 64-character hash")
+    window = prov.get("quarter_window")
+    if not isinstance(window, dict) or not (
+        _is_iso_date(window.get("start")) and _is_iso_date(window.get("end"))
+    ):
+        problems.append("quarter_window has no start and end dates")
+    elif window["start"] > window["end"]:
+        problems.append("quarter_window starts after it ends")
+    elif window.get("limit_quarters") is not None:
+        problems.append("it is a trial run (limit_quarters is set), not a full one")
+    rules = prov.get("matching_rules")
+    current = matching_rules()
+    if not isinstance(rules, dict) or not HEX64.match(str(rules.get("abbreviations_sha256"))):
+        problems.append("matching_rules has no abbreviations_sha256")
+    elif rules != current:
+        problems.append("matching_rules differ from the rules in the code now")
+    return problems
 
 
 # Per-stock confirmation levels (the only values allowed in the output).
@@ -484,6 +602,7 @@ def main(
     args = parser.parse_args(argv)
     if args.phase == "payouts":
         return main_payouts(parser, args, client_factory)
+    refuse_symlinked_outputs(parser, args.out)
     target = args.out / OUTPUT_JSON
     if target.exists() and not args.force:
         parser.error(f"{target} already exists; use --force to replace it")
@@ -496,7 +615,12 @@ def main(
     run_date = dt.date.today().isoformat()
     # Taken before any download so the commit and the code hashes are those the run started from.
     provenance = phase_provenance(
-        "form25", args.roster, rows, run_date=run_date, limit_quarters=args.limit_quarters
+        "form25",
+        args.roster,
+        rows,
+        out_dir=args.out,
+        run_date=run_date,
+        limit_quarters=args.limit_quarters,
     )
     try:
         payload = run_form25(
@@ -532,6 +656,7 @@ def main_payouts(
     client_factory: Callable[[str, Path], Any],
 ) -> int:
     """The payouts phase: read the roster and the Form 25 result, fetch events, write the table."""
+    refuse_symlinked_outputs(parser, args.out)
     csv_target, json_target = args.out / PAYOUTS_CSV, args.out / PAYOUTS_JSON
     for target in (csv_target, json_target):
         if target.exists() and not args.force:
@@ -539,18 +664,22 @@ def main_payouts(
     form25_file = args.out / OUTPUT_JSON
     if not form25_file.is_file():
         parser.error(f"{form25_file} is missing; run --phase form25 first")
-    form25 = json.loads(form25_file.read_text(encoding="utf-8"))
+    # One read: the bytes that are hashed are the bytes that are parsed and used.
+    form25_bytes = form25_file.read_bytes()
+    form25_sha256 = hashlib.sha256(form25_bytes).hexdigest()
+    try:
+        form25 = json.loads(form25_bytes.decode("utf-8"))
+    except ValueError as exc:
+        parser.error(f"{form25_file} is not readable JSON ({exc})")
     rows = read_roster(args.roster)
-    form25_prov = form25.get("provenance")
-    held = form25_prov if isinstance(form25_prov, dict) else {}
-    missing = [key for key in REQUIRED_FORM25_PROVENANCE if key not in held]
-    if missing:
+    form25_prov = form25.get("provenance") if isinstance(form25, dict) else None
+    problems = form25_provenance_problems(form25_prov, sha256_file(args.roster))
+    if problems:
         parser.error(
-            f"{form25_file} has no complete provenance block (missing: "
-            f"{', '.join(missing)}); rerun --phase form25 so the file records what made it"
+            f"{form25_file} cannot be used: "
+            + "; ".join(problems)
+            + ". Rerun --phase form25 so the file records what made it."
         )
-    if form25_prov["roster_sha256"] != sha256_file(args.roster):
-        parser.error(f"{form25_file} was made from a different roster file than {args.roster}")
     if {int(r["permno"]) for r in rows} != {int(s["permno"]) for s in form25["stocks"]}:
         parser.error(f"{form25_file} does not cover the same stocks as {args.roster}")
     try:
@@ -559,14 +688,14 @@ def main_payouts(
         parser.error(str(exc))
     client = client_factory(user_agent, args.cache_dir)
     run_date = dt.date.today().isoformat()
-    provenance = phase_provenance("payouts", args.roster, rows, run_date=run_date)
+    provenance = phase_provenance("payouts", args.roster, rows, out_dir=args.out, run_date=run_date)
     try:
         table, payload = run_payouts(client, rows, form25, run_date=run_date)
     finally:
         write_sha256sums(args.cache_dir)
     payload["provenance"] = {
         **provenance,
-        "form25_sha256": sha256_file(form25_file),
+        "form25_sha256": form25_sha256,
         "form25_git_head": form25_prov["git_head"],
     }
     atomic_write_text(csv_target, table.to_csv(index=False))
