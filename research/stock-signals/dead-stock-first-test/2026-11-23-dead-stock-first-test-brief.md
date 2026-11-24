@@ -207,4 +207,7 @@ connection) by later tasks.
 
 ## Amendments
 
-(none yet)
+**2026-11-23 (before any return was computed): how the code reads two sentences of section 3.**
+- The market-value rank for universe A is taken among stocks that already pass the common-stock, NYSE/Nasdaq and $5 price tests that month (so "top 1,000" means the 1,000 largest eligible stocks, not the 1,000 largest of everything).
+- A stock's eligibility on a day uses the last row of the previous calendar month; if that row has no price, the stock is not eligible (an older price is never substituted).
+Neither changes any number in the registered parameters.
