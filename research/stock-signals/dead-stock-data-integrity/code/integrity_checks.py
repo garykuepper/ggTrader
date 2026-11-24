@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+ROW_COLUMNS = ["permno", "date", "prc", "ret", "shrout"]
 FLAG_COLUMNS = ["check", "permno", "date", "detail"]
 INTERVAL_COLUMNS = ["permno", "start", "end"]
 # Reference cell from the first test: zero dead-stock loss, 18.3 bps per-side cost, low tax.
@@ -72,6 +73,35 @@ def _build_flags(
     out["permno"] = out["permno"].astype("int64")
     out["date"] = pd.to_datetime(out["date"])
     return out
+
+
+def _clean_temporal_rows(rows: pd.DataFrame, *, drop_conflicts: bool) -> pd.DataFrame:
+    """Return a clean copy of CRSP rows with duplicate ``(permno, date)`` rows resolved.
+
+    Exact duplicates across ``(permno, date, prc, ret, shrout)`` collapse to one row.
+    When copies of the same ``(permno, date)`` disagree on ``prc``, ``ret``, or
+    ``shrout``, ``drop_conflicts=True`` drops all copies of that date because its values
+    are unreliable, whereas ``drop_conflicts=False`` keeps one row so date presence still
+    counts for gap detection.
+    """
+    work = rows[ROW_COLUMNS].copy()
+    work["date"] = pd.to_datetime(work["date"])
+    work["prc"] = pd.to_numeric(work["prc"], errors="coerce")
+    work["ret"] = pd.to_numeric(work["ret"], errors="coerce")
+    work["shrout"] = pd.to_numeric(work["shrout"], errors="coerce")
+    work = work.dropna(subset=["date"])
+    if work.empty:
+        return work
+
+    # Collapse exact repeats first so identical copies are not misclassified as conflicts.
+    work = work.drop_duplicates(subset=ROW_COLUMNS, keep="first")
+    if drop_conflicts:
+        # Any remaining duplicate (permno, date) disagrees on prc, ret, or shrout.
+        conflict = work.duplicated(subset=["permno", "date"], keep=False)
+        work = work.loc[~conflict]
+    else:
+        work = work.drop_duplicates(subset=["permno", "date"], keep="first")
+    return work.reset_index(drop=True)
 
 
 def check_duplicates(rows: pd.DataFrame) -> pd.DataFrame:
@@ -145,9 +175,10 @@ def check_spikes(
     if rows.empty:
         return _empty_flags()
 
-    work = rows[["permno", "date", "ret"]].copy()
-    work["date"] = pd.to_datetime(work["date"])
-    work["ret"] = pd.to_numeric(work["ret"], errors="coerce")
+    work = _clean_temporal_rows(rows, drop_conflicts=True)
+    if work.empty:
+        return _empty_flags()
+
     work = work.sort_values(["permno", "date"], kind="mergesort")
 
     next_ret = work.groupby("permno", sort=False)["ret"].shift(-1)
@@ -190,9 +221,7 @@ def check_gaps(
     # Compare at nanosecond precision so datetime64 unit differences never break searchsorted.
     cal_ns = cal.to_numpy(dtype="datetime64[ns]")
 
-    work = rows[["permno", "date"]].copy()
-    work["date"] = pd.to_datetime(work["date"])
-    work = work.dropna(subset=["date"])
+    work = _clean_temporal_rows(rows, drop_conflicts=False)
     if work.empty:
         return _empty_flags()
 
@@ -264,9 +293,11 @@ def check_stale(rows: pd.DataFrame, run: int = STALE_RUN) -> pd.DataFrame:
     if rows.empty:
         return _empty_flags()
 
-    work = rows[["permno", "date", "prc"]].copy()
-    work["date"] = pd.to_datetime(work["date"])
-    work["abs_prc"] = pd.to_numeric(work["prc"], errors="coerce").abs()
+    work = _clean_temporal_rows(rows, drop_conflicts=True)
+    if work.empty:
+        return _empty_flags()
+
+    work["abs_prc"] = work["prc"].abs()
     work = work.sort_values(["permno", "date"], kind="mergesort").reset_index(drop=True)
 
     same_as_prev = (
@@ -457,29 +488,58 @@ def flags_inside_holdings(flags: pd.DataFrame, intervals: pd.DataFrame) -> pd.Da
         Copy of the matching rows from ``flags`` (empty frame with ``flags``'s columns if none).
     """
     if flags.empty or intervals.empty:
-        return flags.iloc[0:0].copy()
+        return flags.iloc[0:0].reset_index(drop=True).copy()
 
-    flag_keys = pd.DataFrame(
-        {
-            "permno": flags["permno"].astype("int64").to_numpy(),
-            "date": pd.to_datetime(flags["date"]).to_numpy(),
-            "_flag_idx": np.arange(len(flags)),
-        }
-    )
-    iv_keys = pd.DataFrame(
-        {
-            "permno": intervals["permno"].astype("int64").to_numpy(),
-            "start": pd.to_datetime(intervals["start"]).to_numpy(),
-            "end": pd.to_datetime(intervals["end"]).to_numpy(),
-        }
-    )
+    flag_permnos = flags["permno"].astype("int64").to_numpy()
+    flag_dates_ns = pd.to_datetime(flags["date"]).to_numpy(dtype="datetime64[ns]").astype("int64")
 
-    merged = flag_keys.merge(iv_keys, on="permno", how="inner")
-    if merged.empty:
-        return flags.iloc[0:0].copy()
-
-    in_interval = (merged["date"] >= merged["start"]) & (
-        merged["end"].isna() | (merged["date"] <= merged["end"])
+    iv_permnos = intervals["permno"].astype("int64").to_numpy()
+    iv_starts_ns = (
+        pd.to_datetime(intervals["start"]).to_numpy(dtype="datetime64[ns]").astype("int64")
     )
-    matched_idx = np.sort(merged.loc[in_interval, "_flag_idx"].unique())
-    return flags.iloc[matched_idx].reset_index(drop=True).copy()
+    iv_ends_ns = pd.to_datetime(intervals["end"]).to_numpy(dtype="datetime64[ns]").astype("int64")
+
+    nat_ns = np.iinfo(np.int64).min
+    max_ns = np.iinfo(np.int64).max
+
+    # Group positions per permno so overlap runs in O((F + I) log I) time and O(F + I) memory
+    # instead of materializing an F x I merge for each stock.
+    iv_groups = pd.Series(np.arange(len(iv_permnos))).groupby(iv_permnos).indices
+    flag_groups = pd.Series(np.arange(len(flag_permnos))).groupby(flag_permnos).indices
+
+    matched = np.zeros(len(flags), dtype=bool)
+    for permno, flag_pos in flag_groups.items():
+        iv_pos = iv_groups.get(permno)
+        if iv_pos is None:
+            continue
+
+        starts = iv_starts_ns[iv_pos]
+        ends = iv_ends_ns[iv_pos]
+
+        # Open-ended intervals (end is NaT) extend to +infinity; ignore malformed intervals.
+        eff_ends = np.where(ends == nat_ns, max_ns, ends)
+        valid_iv = (starts != nat_ns) & (eff_ends >= starts)
+        if not valid_iv.any():
+            continue
+
+        starts = starts[valid_iv]
+        eff_ends = eff_ends[valid_iv]
+        order = np.argsort(starts, kind="mergesort")
+        starts = starts[order]
+        # Prefix max covers nested or overlapping intervals with a single searchsorted lookup.
+        max_ends = np.maximum.accumulate(eff_ends[order])
+
+        dates = flag_dates_ns[flag_pos]
+        valid_dates = dates != nat_ns
+        if not valid_dates.any():
+            continue
+
+        idx = np.searchsorted(starts, dates, side="right") - 1
+        has_prior_start = valid_dates & (idx >= 0)
+        safe_idx = np.where(has_prior_start, idx, 0)
+        in_interval = has_prior_start & (dates <= max_ends[safe_idx])
+        matched[flag_pos[in_interval]] = True
+
+    if not matched.any():
+        return flags.iloc[0:0].reset_index(drop=True).copy()
+    return flags.iloc[np.flatnonzero(matched)].reset_index(drop=True).copy()

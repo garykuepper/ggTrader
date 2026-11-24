@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import time
 from pathlib import Path
 
 import integrity_checks
@@ -349,3 +350,197 @@ def test_checks_do_not_mutate_input_and_return_empty_frame_on_empty_input() -> N
 
     assert REFERENCE_CELL == "loss0_cost18.3bps_taxlow"
     assert integrity_checks.REFERENCE_CELL == REFERENCE_CELL
+
+
+# --- Review-finding regression tests ---
+
+
+def test_flags_inside_holdings_bounded_many_intervals_and_flags() -> None:
+    # 500 disjoint 2-day intervals every 4 days across 2,000 days for one permno,
+    # plus overlapping/nested intervals to verify prefix-max handling and deduplication.
+    days = pd.date_range("2000-01-01", periods=2000, freq="D")
+    starts = days[0::4]
+    ends = days[1::4]
+    assert len(starts) == 500
+
+    intervals = pd.DataFrame(
+        {
+            "permno": np.full(len(starts), 42, dtype="int64"),
+            "start": starts,
+            "end": ends,
+        },
+        columns=INTERVAL_COLUMNS,
+    )
+    # Shuffle interval order and add a nested duplicate inside the first interval.
+    nested = pd.DataFrame(
+        [{"permno": 42, "start": days[0], "end": days[0]}],
+        columns=INTERVAL_COLUMNS,
+    )
+    intervals = pd.concat([intervals.iloc[::-1], nested], ignore_index=True)
+
+    # 2,000 flags on permno 42 (one per day, reversed order) plus 5 on an unheld permno.
+    permno_42_flags = pd.DataFrame(
+        {
+            "check": ["spike"] * len(days),
+            "permno": np.full(len(days), 42, dtype="int64"),
+            "date": days[::-1],
+            "detail": [f"day-{i}" for i in range(len(days) - 1, -1, -1)],
+            "extra_col": np.arange(len(days)),
+        }
+    )
+    other_flags = pd.DataFrame(
+        {
+            "check": ["spike"] * 5,
+            "permno": np.full(5, 99, dtype="int64"),
+            "date": days[:5],
+            "detail": ["other"] * 5,
+            "extra_col": np.arange(5),
+        }
+    )
+    all_flags = pd.concat([permno_42_flags, other_flags], ignore_index=True)
+
+    t0 = time.perf_counter()
+    matched = flags_inside_holdings(all_flags, intervals)
+    elapsed = time.perf_counter() - t0
+
+    # Days with index % 4 in {0, 1} lie inside [4k, 4k+1]; reversed input order must hold.
+    expected_indices = [i for i in range(len(days) - 1, -1, -1) if i % 4 in (0, 1)]
+    assert len(matched) == 1000
+    assert elapsed < 1.0
+    assert list(matched.columns) == list(all_flags.columns)
+    assert matched["permno"].eq(42).all()
+    assert matched["date"].tolist() == [days[i] for i in expected_indices]
+    assert matched["detail"].tolist() == [f"day-{i}" for i in expected_indices]
+
+
+def test_identical_duplicates_do_not_create_false_stale_or_spike() -> None:
+    # Nine distinct unchanged dates plus one identical repeat (10 rows total) must not flag stale.
+    nine_days = constant_prices(1, 9, price=10.0)
+    stale_with_dup = pd.concat([nine_days, nine_days.iloc[[4]]], ignore_index=True)
+    assert check_stale(stale_with_dup).empty
+    assert len(check_duplicates(stale_with_dup)) == 1
+
+    # Two identical copies of ret=-2.0 would give (1 - 2) * (1 - 2) = 1.0 without dedupe.
+    spike_dup = frame(
+        [
+            (2, "2020-01-02", 10.0, 0.0, 50.0),
+            (2, "2020-01-03", 10.0, -2.0, 50.0),
+            (2, "2020-01-03", 10.0, -2.0, 50.0),
+            (2, "2020-01-06", 10.0, 0.0, 50.0),
+        ]
+    )
+    assert check_spikes(spike_dup).empty
+    assert len(check_duplicates(spike_dup)) == 1
+
+    # A genuine spike whose spike row is duplicated identically still flags exactly once.
+    genuine = frame_returns(3, [0.0, 0.8, -0.44])
+    genuine_with_dup = pd.concat([genuine, genuine.iloc[[1]]], ignore_index=True)
+    flagged = check_spikes(genuine_with_dup)
+    assert len(flagged) == 1
+    assert flagged.iloc[0]["permno"] == 3
+    assert flagged.iloc[0]["date"] == genuine.iloc[1]["date"]
+    assert len(check_duplicates(genuine_with_dup)) == 1
+
+
+def test_conflicting_duplicates_produce_no_false_spike_or_stale() -> None:
+    # Two copies of the same date with ret=0.8 and ret=-0.44 must not form a two-day reversal.
+    spike_conflict = frame(
+        [
+            (1, "2020-01-02", 10.0, 0.0, 100.0),
+            (1, "2020-01-03", 18.0, 0.8, 100.0),
+            (1, "2020-01-03", 10.08, -0.44, 100.0),
+            (1, "2020-01-06", 10.0, 0.0, 100.0),
+        ]
+    )
+    assert check_spikes(spike_conflict).empty
+    assert len(check_duplicates(spike_conflict)) == 1
+
+    # Nine unchanged dates plus a 10th date with conflicting shrout drops the 10th date.
+    ten_days = constant_prices(2, 10, price=10.0)
+    conflict_copy = ten_days.iloc[[9]].copy()
+    conflict_copy["shrout"] = 200.0
+    stale_conflict = pd.concat([ten_days, conflict_copy], ignore_index=True)
+    assert check_stale(stale_conflict).empty
+    assert len(check_duplicates(stale_conflict)) == 1
+
+
+def test_conflicting_duplicate_date_does_not_create_false_gap() -> None:
+    cal = pd.bdate_range("2020-01-01", periods=20)
+    # Missing 4 days (cal[5:9]) is below min_days=5; cal[9] has two conflicting copies.
+    base = rows_missing(cal, permno=1, missing=slice(5, 9))
+    boundary_row = base[base["date"] == cal[9]].copy()
+    boundary_row["prc"] = 25.0
+    boundary_row["ret"] = 0.5
+    rows = pd.concat([base, boundary_row], ignore_index=True)
+
+    # Dropping cal[9] would widen the missing stretch to 5 days; keeping it avoids a false gap.
+    assert check_gaps(rows, cal).empty
+    dups = check_duplicates(rows)
+    assert len(dups) == 1
+    assert dups.iloc[0]["date"] == cal[9]
+
+
+def test_stale_run_longer_than_ten_flags_once_at_first_date() -> None:
+    rows = constant_prices(1, 15, price=12.5)
+    out = check_stale(rows)
+    assert len(out) == 1
+    assert out.iloc[0]["permno"] == 1
+    assert out.iloc[0]["date"] == rows.iloc[0]["date"]
+    assert out.iloc[0]["detail"] == "15 rows at 12.5"
+
+
+def test_holding_intervals_open_ended_position_and_flags() -> None:
+    trades = trades_frame(
+        [
+            ("c", "2020-01-02", "PERMNO-7", 10.0),
+            ("c", "2020-01-20", "PERMNO-7", -10.0),  # closed first interval
+            ("c", "2020-02-03", "PERMNO-7", 5.0),  # re-entry left open
+            ("c", "2020-02-10", "PERMNO-7", -2.0),  # partial trim, still open (+3.0)
+        ]
+    )
+    iv = holding_intervals(trades, "c")
+    assert len(iv) == 2
+    assert iv.iloc[1]["start"] == pd.Timestamp("2020-02-03")
+    assert pd.isna(iv.iloc[1]["end"])
+
+    candidate_flags = pd.concat(
+        [
+            flag(7, "2020-01-01"),  # before first interval
+            flag(7, "2020-01-25"),  # gap between closed and open intervals
+            flag(7, "2020-02-03"),  # exact start of open interval
+            flag(7, "2025-12-31"),  # far future, still inside open-ended interval
+        ],
+        ignore_index=True,
+    )
+    matched = flags_inside_holdings(candidate_flags, iv)
+    assert matched["date"].tolist() == [
+        pd.Timestamp("2020-02-03"),
+        pd.Timestamp("2025-12-31"),
+    ]
+
+
+def test_spikes_nan_return_single_row_and_unsorted_dates() -> None:
+    # A NaN return between +0.8 and -0.44 breaks the adjacent pair; leading NaN does not.
+    nan_between = frame_returns(1, [0.0, 0.8, np.nan, -0.44])
+    nan_before = frame_returns(2, [np.nan, 0.8, -0.44])
+    # Single-row stock with a large return has no next day to reverse.
+    single_row = frame([(3, "2020-01-02", 18.0, 0.8, 100.0)])
+    # Unsorted chronological dates for permno 4 must still flag the true spike day (day 1).
+    unsorted_spike = frame(
+        [
+            (4, "2020-01-06", 10.08, -0.44, 100.0),
+            (4, "2020-01-02", 10.0, 0.0, 100.0),
+            (4, "2020-01-03", 18.0, 0.8, 100.0),
+        ]
+    )
+
+    combined = pd.concat([nan_between, nan_before, single_row, unsorted_spike], ignore_index=True)
+    snapshot = combined.copy(deep=True)
+    flagged = check_spikes(combined)
+
+    pd.testing.assert_frame_equal(combined, snapshot)
+    assert flagged["permno"].tolist() == [2, 4]
+    assert flagged["date"].tolist() == [
+        nan_before.iloc[1]["date"],
+        pd.Timestamp("2020-01-03"),
+    ]
