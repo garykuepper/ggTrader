@@ -6,6 +6,7 @@ import argparse
 import csv
 import datetime as dt
 import hashlib
+import io
 import json
 import os
 import re
@@ -56,18 +57,28 @@ CODE_FILES = (
     "src/ggTrader/utils/study.py",
     "src/ggTrader/utils/io.py",
 )
-HEX40 = re.compile(r"^[0-9a-f]{40}$")
-HEX64 = re.compile(r"^[0-9a-f]{64}$")
+HEX40 = re.compile(r"[0-9a-f]{40}")
+HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
 class TooManySkippedQuarters(RuntimeError):
     """Raised when more quarterly indexes failed than the run allows."""
 
 
+def load_roster(path: Path) -> tuple[list[dict[str, str]], str]:
+    """Read the roster file once; return its rows and the SHA-256 of the very bytes parsed.
+
+    One read means the hash recorded in a result is the hash of the roster actually used, however
+    the file changes on disk meanwhile.
+    """
+    raw = Path(path).read_bytes()
+    rows = list(csv.DictReader(io.StringIO(raw.decode("utf-8"), newline="")))
+    return rows, hashlib.sha256(raw).hexdigest()
+
+
 def read_roster(path: Path) -> list[dict[str, str]]:
     """Read the roster file as text rows (empty cells stay empty strings)."""
-    with Path(path).open(newline="", encoding="utf-8") as handle:
-        return list(csv.DictReader(handle))
+    return load_roster(path)[0]
 
 
 def is_named(row: Mapping[str, Any]) -> bool:
@@ -150,7 +161,7 @@ def quarter_dates(quarters: list[tuple[int, int]]) -> tuple[str, str] | tuple[No
 
 def phase_provenance(
     phase: str,
-    roster_path: Path,
+    roster_sha256: str,
     rows: list[dict[str, str]],
     *,
     out_dir: Path,
@@ -167,7 +178,7 @@ def phase_provenance(
 
     Args:
         phase: ``"form25"`` or ``"payouts"``.
-        roster_path: the roster file the phase read.
+        roster_sha256: SHA-256 of the roster bytes the phase parsed (from ``load_roster``).
         rows: the roster rows (they set the quarter window).
         out_dir: the folder the result files are written to.
         run_date: ISO date of the run.
@@ -187,7 +198,7 @@ def phase_provenance(
         "git_dirty_ignores": own_outputs,
         "phase": phase,
         "run_date": run_date,
-        "roster_sha256": sha256_file(roster_path),
+        "roster_sha256": roster_sha256,
         "code_sha256": {name: sha256_file(ROOT / name) for name in CODE_FILES},
         "quarter_window": {
             "first": list(quarters[0]) if quarters else None,
@@ -227,14 +238,14 @@ def form25_provenance_problems(prov: Any, roster_sha256: str) -> list[str]:
     if prov.get("phase") != "form25":
         problems.append("phase is not 'form25'")
     head = prov.get("git_head")
-    if not isinstance(head, str) or not HEX40.match(head):
+    if not isinstance(head, str) or not HEX40.fullmatch(head):
         problems.append("git_head is not a 40-character commit hash")
     if not isinstance(prov.get("git_dirty"), bool):
         problems.append("git_dirty is not true or false")
     if not _is_iso_date(prov.get("run_date")):
         problems.append("run_date is not a date")
     roster = prov.get("roster_sha256")
-    if not isinstance(roster, str) or not HEX64.match(roster):
+    if not isinstance(roster, str) or not HEX64.fullmatch(roster):
         problems.append("roster_sha256 is not a 64-character hash")
     elif roster != roster_sha256:
         problems.append("it was made from a different roster file than the one given now")
@@ -245,7 +256,7 @@ def form25_provenance_problems(prov: Any, roster_sha256: str) -> list[str]:
         absent = [name for name in CODE_FILES if name not in hashes]
         if absent:
             problems.append("code_sha256 lacks: " + ", ".join(absent))
-        if not all(isinstance(v, str) and HEX64.match(v) for v in hashes.values()):
+        if not all(isinstance(v, str) and HEX64.fullmatch(v) for v in hashes.values()):
             problems.append("code_sha256 holds a value that is not a 64-character hash")
     window = prov.get("quarter_window")
     if not isinstance(window, dict) or not (
@@ -254,11 +265,11 @@ def form25_provenance_problems(prov: Any, roster_sha256: str) -> list[str]:
         problems.append("quarter_window has no start and end dates")
     elif window["start"] > window["end"]:
         problems.append("quarter_window starts after it ends")
-    elif window.get("limit_quarters") is not None:
-        problems.append("it is a trial run (limit_quarters is set), not a full one")
+    elif "limit_quarters" not in window or window["limit_quarters"] is not None:
+        problems.append("limit_quarters is missing or set: only a full run (null) can be used")
     rules = prov.get("matching_rules")
     current = matching_rules()
-    if not isinstance(rules, dict) or not HEX64.match(str(rules.get("abbreviations_sha256"))):
+    if not isinstance(rules, dict) or not HEX64.fullmatch(str(rules.get("abbreviations_sha256"))):
         problems.append("matching_rules has no abbreviations_sha256")
     elif rules != current:
         problems.append("matching_rules differ from the rules in the code now")
@@ -610,13 +621,13 @@ def main(
         user_agent = load_user_agent(os.environ)
     except SecUserAgentMissing as exc:
         parser.error(str(exc))
-    rows = read_roster(args.roster)
+    rows, roster_sha256 = load_roster(args.roster)
     client = client_factory(user_agent, args.cache_dir)
     run_date = dt.date.today().isoformat()
     # Taken before any download so the commit and the code hashes are those the run started from.
     provenance = phase_provenance(
         "form25",
-        args.roster,
+        roster_sha256,
         rows,
         out_dir=args.out,
         run_date=run_date,
@@ -671,9 +682,9 @@ def main_payouts(
         form25 = json.loads(form25_bytes.decode("utf-8"))
     except ValueError as exc:
         parser.error(f"{form25_file} is not readable JSON ({exc})")
-    rows = read_roster(args.roster)
+    rows, roster_sha256 = load_roster(args.roster)
     form25_prov = form25.get("provenance") if isinstance(form25, dict) else None
-    problems = form25_provenance_problems(form25_prov, sha256_file(args.roster))
+    problems = form25_provenance_problems(form25_prov, roster_sha256)
     if problems:
         parser.error(
             f"{form25_file} cannot be used: "
@@ -688,7 +699,9 @@ def main_payouts(
         parser.error(str(exc))
     client = client_factory(user_agent, args.cache_dir)
     run_date = dt.date.today().isoformat()
-    provenance = phase_provenance("payouts", args.roster, rows, out_dir=args.out, run_date=run_date)
+    provenance = phase_provenance(
+        "payouts", roster_sha256, rows, out_dir=args.out, run_date=run_date
+    )
     try:
         table, payload = run_payouts(client, rows, form25, run_date=run_date)
     finally:

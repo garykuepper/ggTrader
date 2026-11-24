@@ -595,6 +595,7 @@ def test_main_payouts_refuses_an_incomplete_form25_provenance(tmp_path: Path, mi
         ("quarter_window", {"first": [2010, 1]}),
         ("quarter_window", {"start": "2010-12-01", "end": "2010-01-01"}),
         ("quarter_window", {"start": "2010-01-01", "end": "2010-09-30", "limit_quarters": 2}),
+        ("quarter_window", {"start": "2010-01-01", "end": "2010-09-30"}),  # no limit_quarters
         ("matching_rules", {"abbreviations_sha256": "f" * 64}),
     ],
 )
@@ -681,3 +682,51 @@ def test_loss_notes_do_not_claim_holders_were_paid():
     bankrupt = loss_decision("bankruptcy_filed", 3)[2]
     assert "literature fill" in bankrupt and "not a measurement" in bankrupt
     assert "no loss" in loss_decision("no_8k_found", 1)[2]
+
+
+@pytest.mark.parametrize("kind", ["git_head", "roster_sha256", "code_sha256", "abbreviations"])
+def test_a_hash_with_a_trailing_newline_is_refused(tmp_path: Path, kind: str):
+    def change(prov: dict[str, Any]) -> None:
+        if kind == "git_head":
+            prov["git_head"] = "a" * 40 + "\n"
+        elif kind == "roster_sha256":
+            prov["roster_sha256"] += "\n"
+        elif kind == "code_sha256":
+            name = sec_pilot.CODE_FILES[0]
+            prov["code_sha256"][name] += "\n"
+        else:
+            rules = dict(prov["matching_rules"])
+            rules["abbreviations_sha256"] += "\n"
+            prov["matching_rules"] = rules
+
+    assert _refused(tmp_path, change) == []
+
+
+def test_main_payouts_reads_the_roster_once_and_compares_that_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    import hashlib
+
+    from test_sec_pilot import OpenCounter
+
+    argv = write_inputs(tmp_path)
+    roster = tmp_path / "roster.csv"
+    used = hashlib.sha256(roster.read_bytes()).hexdigest()
+    counter = OpenCounter(monkeypatch, roster)
+    assert main(argv, client_factory=lambda ua, cache: sec_client()) == 0
+    assert counter.reads == ["read_bytes"]
+    prov = json.loads((tmp_path / "out" / "_payouts.json").read_text())["provenance"]
+    assert prov["roster_sha256"] == used
+
+
+def test_main_payouts_compares_the_form25_roster_hash_with_the_buffer_it_used(
+    tmp_path: Path,
+):
+    argv = write_inputs(tmp_path)
+    roster = tmp_path / "roster.csv"
+    other = roster.read_text().replace("ALPHA CORP", "ALPHA CORPX")
+    # The Form 25 file was made from the roster as written; now the roster differs.
+    roster.write_text(other)
+    with pytest.raises(SystemExit) as stop:
+        main(argv, client_factory=lambda ua, cache: sec_client())
+    assert stop.value.code == 2
