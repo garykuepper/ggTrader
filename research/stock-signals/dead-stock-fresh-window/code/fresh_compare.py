@@ -61,11 +61,28 @@ def _compare_cell_final(
     return None
 
 
+def _expected_keys(section: str) -> tuple[str, ...]:
+    """Return the registered cell keys for ``strategy`` (18) or ``spy`` (6) in grid order."""
+    if section == "strategy":
+        return tuple(
+            study.cell_key(loss, cost, tax)
+            for loss in study.LOSSES
+            for cost in study.COSTS
+            for tax in study.TAXES
+        )
+    if section == "spy":
+        return tuple(study.spy_key(cost, tax) for cost in study.COSTS for tax in study.TAXES)
+    raise ValueError(f"unknown cell section: {section!r}")
+
+
 def compare_to_saved(result: dict[str, Any], saved: dict[str, Any]) -> list[str]:
     """Compare a freshly computed result against the saved first-test file to within half a cent.
 
-    Checks every strategy cell (18) and SPY cell (6) under ``saved["result"]`` (or ``saved``
-    directly if already unwrapped). Reports any missing cell, extra cell, or ``after_tax_final``
+    Validates both ``result`` and ``saved["result"]`` (or ``saved`` directly if already unwrapped)
+    against the complete registered grid (18 strategy cells and 6 SPY cells from
+    ``fp_dead_stock_first_test``), then compares ``after_tax_final`` on every shared registered
+    cell to within half a cent. Reports missing registered cells in either input, unregistered
+    keys in either input, empty or invalid sections, missing or non-finite values, and any
     difference larger than half a cent.
 
     Args:
@@ -74,8 +91,8 @@ def compare_to_saved(result: dict[str, Any], saved: dict[str, Any]) -> list[str]
             result dictionary.
 
     Returns:
-        List of plain-word difference messages; empty when every cell reproduces within half a
-        cent.
+        List of plain-word difference messages; empty only when both inputs contain the complete
+        registered grid with no extra keys and every cell reproduces within half a cent.
     """
     saved_body = saved["result"] if "result" in saved else saved
     if not isinstance(saved_body, Mapping):
@@ -95,17 +112,27 @@ def compare_to_saved(result: dict[str, Any], saved: dict[str, Any]) -> list[str]
             continue
         if not saved_cells:
             messages.append(f"{section}: saved result has no cells")
-            continue
+        if not result_cells:
+            messages.append(f"{section}: result has no cells")
 
-        for key in saved_cells:
+        # Validate both inputs against the registered grid so matching omissions or matching
+        # unknown keys can never pass as a complete reproduction.
+        expected = _expected_keys(section)
+        expected_set = set(expected)
+        for key in expected:
+            if key not in saved_cells:
+                messages.append(f"saved {section}: missing registered cell {key}")
             if key not in result_cells:
                 messages.append(f"{section} cell {key}: missing from result")
-        for key in sorted(set(result_cells) - set(saved_cells)):
-            messages.append(f"{section} cell {key}: extra cell not in saved")
-        for key, saved_cell in saved_cells.items():
-            if key not in result_cells:
+        for key in sorted(set(saved_cells) - expected_set):
+            messages.append(f"saved {section}: unregistered cell {key}")
+        for key in sorted(set(result_cells) - expected_set):
+            messages.append(f"{section}: unregistered cell {key} in result")
+
+        for key in expected:
+            if key not in saved_cells or key not in result_cells:
                 continue
-            diff_msg = _compare_cell_final(section, key, result_cells[key], saved_cell)
+            diff_msg = _compare_cell_final(section, key, result_cells[key], saved_cells[key])
             if diff_msg is not None:
                 messages.append(diff_msg)
 
@@ -117,7 +144,8 @@ def gap_table(result: dict[str, Any]) -> list[dict[str, Any]]:
 
     Every gap uses the same sign convention: rule minus SPY. Growth-rate gaps are in percentage
     points a year (``cagr_after_tax`` difference times 100); drawdown gaps subtract
-    ``max_drawdown_pct`` directly because it is already stored in percentage points.
+    ``max_drawdown_pct`` directly because it is already stored in percentage points. A positive
+    drawdown gap means the rule fell less than SPY (drawdowns are stored as negative percentages).
 
     Args:
         result: Result dictionary containing the 18 ``strategy`` cells and 6 ``spy`` cells.

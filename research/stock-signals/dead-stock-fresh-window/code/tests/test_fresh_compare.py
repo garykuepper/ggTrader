@@ -250,3 +250,67 @@ def test_price_path_block_is_passed_through_unchanged() -> None:
     out = fresh_compare.price_path_block(result)
     assert out is sentinel_paths
     assert out == sentinel_paths
+
+
+def test_shared_omission_of_strategy_cell_is_reported() -> None:
+    omitted = study.cell_key(1.0, 0.00064, "low")
+    result = _make_full_result()
+    del result["strategy"][omitted]
+
+    diffs = fresh_compare.compare_to_saved(result, _wrap_saved(result))
+    assert any("missing registered cell" in msg and omitted in msg for msg in diffs)
+    assert any("missing from result" in msg and omitted in msg for msg in diffs)
+
+
+def test_shared_omission_of_spy_cell_is_reported() -> None:
+    omitted = study.spy_key(0.00064, "low")
+    result = _make_full_result()
+    del result["spy"][omitted]
+
+    diffs = fresh_compare.compare_to_saved(result, _wrap_saved(result))
+    assert any("missing registered cell" in msg and omitted in msg for msg in diffs)
+    assert any("missing from result" in msg and omitted in msg for msg in diffs)
+
+
+def test_matching_unregistered_keys_in_both_are_reported() -> None:
+    extra_strat = "loss0.25_cost18.3bps_taxlow"
+    extra_spy = "cost12bps_taxlow"
+    result = _make_full_result()
+    result["strategy"][extra_strat] = _make_cell(
+        after_tax_final=100_000.0,
+        cagr_after_tax=0.0,
+        max_drawdown_pct=0.0,
+        sharpe=0.0,
+    )
+    result["spy"][extra_spy] = _make_cell(
+        after_tax_final=100_000.0,
+        cagr_after_tax=0.0,
+        max_drawdown_pct=0.0,
+        sharpe=0.0,
+    )
+
+    diffs = fresh_compare.compare_to_saved(result, _wrap_saved(result))
+    assert any("unregistered cell" in msg and extra_strat in msg for msg in diffs)
+    assert any("unregistered cell" in msg and extra_spy in msg for msg in diffs)
+
+
+def test_empty_section_nonfinite_and_missing_final_are_reported() -> None:
+    # Empty section in both inputs cannot pass.
+    empty = _make_full_result()
+    empty["spy"] = {}
+    empty_diffs = fresh_compare.compare_to_saved(empty, _wrap_saved(empty))
+    assert any("has no cells" in msg for msg in empty_diffs)
+    assert any("missing registered cell" in msg for msg in empty_diffs)
+
+    # Non-finite and missing after_tax_final fields are each reported naming their cell.
+    saved_result = _make_full_result()
+    bad_result = copy.deepcopy(saved_result)
+    nan_key = study.cell_key(1.0, 0.00183, "low")
+    missing_field_key = study.spy_key(0.00183, "low")
+    bad_result["strategy"][nan_key]["after_tax_final"] = float("nan")
+    del bad_result["spy"][missing_field_key]["after_tax_final"]
+
+    bad_diffs = fresh_compare.compare_to_saved(bad_result, _wrap_saved(saved_result))
+    assert len(bad_diffs) == 2
+    assert any(nan_key in msg and "non-finite" in msg for msg in bad_diffs)
+    assert any(missing_field_key in msg and "after_tax_final" in msg for msg in bad_diffs)
