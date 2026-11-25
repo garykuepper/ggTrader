@@ -633,6 +633,410 @@ def test_refuses_output_inside_first_test_results_folder(
     assert real_target.read_text(encoding="utf-8") == "UNTOUCHED"
 
 
+def test_refuses_output_inside_first_test_study_folder_and_symlink_parents(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    _, first_test = synth_bundle
+    paths = _setup_fixture_files(tmp_path, first_test, window="dev")
+    ft_file_before = paths["ft_file"].read_bytes()
+
+    # 1. --out targeting <first_test_dir>/_dev-A.json with --force is refused; bytes unchanged.
+    code_out = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(paths["ft_file"]),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run when --out targets first-test folder"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_out == 2
+    assert "first-test" in capsys.readouterr().err
+    assert paths["ft_file"].read_bytes() == ft_file_before
+
+    # 2. --diagnostics targeting <first_test_dir>/_dev-A.json with --force is also refused.
+    code_diag = driver.main(
+        [
+            *_base_argv(paths),
+            "--diagnostics",
+            str(paths["ft_file"]),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run when --diagnostics targets first-test"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_diag == 2
+    assert "first-test" in capsys.readouterr().err
+    assert paths["ft_file"].read_bytes() == ft_file_before
+
+    # 3. Alias through a symlinked parent directory in tmp_path (existing and new target).
+    link_parent = tmp_path / "symlink_to_first_test"
+    link_parent.symlink_to(paths["ft_dir"])
+    for flag, target in (
+        ("--out", link_parent / "_dev-A.json"),
+        ("--diagnostics", link_parent / "_dev-A.json"),
+        ("--out", link_parent / "brand_new.json"),
+    ):
+        argv = (
+            [
+                "--window",
+                "dev",
+                "--release-id",
+                "1",
+                "--payouts",
+                str(paths["payouts_path"]),
+                "--out",
+                str(target),
+                "--force",
+            ]
+            if flag == "--out"
+            else [*_base_argv(paths), "--diagnostics", str(target), "--force"]
+        )
+        code = driver.main(
+            argv,
+            loader=lambda _a: pytest.fail("loader must not run through symlinked first-test dir"),
+            git_dirty=lambda: False,
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code == 2
+        assert "first-test" in capsys.readouterr().err
+    assert paths["ft_file"].read_bytes() == ft_file_before
+    assert not (paths["ft_dir"] / "brand_new.json").exists()
+
+    # 4. Path with .. segments reaching into first_test_dir is refused.
+    dotdot_target = tmp_path / "other" / ".." / "first_test" / "_dev-A.json"
+    code_dotdot = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(dotdot_target),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run for .. alias into first-test folder"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_dotdot == 2
+    assert "first-test" in capsys.readouterr().err
+    assert paths["ft_file"].read_bytes() == ft_file_before
+
+    # 5. Real first-test study folder (DEFAULT_FIRST_TEST_DIR/_dev-A.json) is protected even when
+    # first_test_dir points elsewhere, and its bytes remain unchanged.
+    real_ft_dev = driver.DEFAULT_FIRST_TEST_DIR / "_dev-A.json"
+    real_before = real_ft_dev.read_bytes() if real_ft_dev.exists() else None
+    for argv in (
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(real_ft_dev),
+            "--force",
+        ],
+        [*_base_argv(paths), "--diagnostics", str(real_ft_dev), "--force"],
+    ):
+        code_real = driver.main(
+            argv,
+            loader=lambda _a: pytest.fail("loader must not run when targeting real first-test dir"),
+            git_dirty=lambda: False,
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code_real == 2
+        assert "dead-stock-first-test" in capsys.readouterr().err
+    if real_before is not None:
+        assert real_ft_dev.read_bytes() == real_before
+    else:
+        assert not real_ft_dev.exists()
+
+    # 6. Test's results_dir counterpart (sibling dead_stock_first_test) is also protected.
+    sibling_ft_results = paths["results_dir"].parent / "dead_stock_first_test" / "leak.json"
+    code_sibling = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(sibling_ft_results),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run for results_dir counterpart"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_sibling == 2
+    assert "dead_stock_first_test" in capsys.readouterr().err
+    assert not sibling_ft_results.exists()
+
+
+def test_refuses_claim_paths_for_inputs_and_outputs_before_opening(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    _, first_test = synth_bundle
+    paths = _setup_fixture_files(tmp_path, first_test, window="dev")
+
+    fake_claim = tmp_path / "x.claim"
+    fake_claim.write_text("do not open\n", encoding="utf-8")
+    claim_alias = tmp_path / "alias_to_claim.csv"
+    claim_alias.symlink_to(fake_claim)
+
+    real_open = builtins.open
+    real_path_open = Path.open
+    real_read_bytes = Path.read_bytes
+    real_read_text = Path.read_text
+
+    def _is_guarded_claim(target: Any) -> bool:
+        target_path = Path(target)
+        return target_path.name.endswith(".claim") or target_path.resolve(
+            strict=False
+        ).name.endswith(".claim")
+
+    def fail_open(file: Any, *args: Any, **kwargs: Any) -> Any:
+        if _is_guarded_claim(file):
+            raise AssertionError(f"must never open claim path: {file}")
+        return real_open(file, *args, **kwargs)
+
+    def fail_path_open(self: Path, *args: Any, **kwargs: Any) -> Any:
+        if _is_guarded_claim(self):
+            raise AssertionError(f"must never open claim path: {self}")
+        return real_path_open(self, *args, **kwargs)
+
+    def fail_read_bytes(self: Path) -> bytes:
+        if _is_guarded_claim(self):
+            raise AssertionError(f"must never read claim path: {self}")
+        return real_read_bytes(self)
+
+    def fail_read_text(self: Path, *args: Any, **kwargs: Any) -> str:
+        if _is_guarded_claim(self):
+            raise AssertionError(f"must never read claim path: {self}")
+        return real_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", fail_open)
+    monkeypatch.setattr(Path, "open", fail_path_open)
+    monkeypatch.setattr(Path, "read_bytes", fail_read_bytes)
+    monkeypatch.setattr(Path, "read_text", fail_read_text)
+
+    # 1. --payouts pointing directly or via symlink to a .claim file is refused without opening.
+    for bad_payouts in (fake_claim, claim_alias):
+        code = driver.main(
+            [
+                "--window",
+                "dev",
+                "--release-id",
+                "1",
+                "--payouts",
+                str(bad_payouts),
+                "--out",
+                str(paths["out_path"]),
+            ],
+            loader=lambda _a: pytest.fail("loader must not run for .claim --payouts"),
+            git_dirty=lambda: False,
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code == 2
+        assert ".claim" in capsys.readouterr().err
+        assert not paths["out_path"].exists()
+
+    # 2. --out <tmp>/new.claim is refused and never created.
+    new_out_claim = tmp_path / "new.claim"
+    code_out = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(new_out_claim),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run for .claim --out"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_out == 2
+    assert ".claim" in capsys.readouterr().err
+    assert not new_out_claim.exists()
+
+    # 3. --diagnostics <tmp>/new.claim is refused and never created.
+    new_diag_claim = tmp_path / "diag_new.claim"
+    code_diag = driver.main(
+        [
+            *_base_argv(paths),
+            "--diagnostics",
+            str(new_diag_claim),
+            "--force",
+        ],
+        loader=lambda _a: pytest.fail("loader must not run for .claim --diagnostics"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_diag == 2
+    assert ".claim" in capsys.readouterr().err
+    assert not new_diag_claim.exists()
+
+    # 4. First-test derived input resolving to a .claim file is refused before opening.
+    claim_ft_dir = tmp_path / "ft_with_claim_link"
+    claim_ft_dir.mkdir()
+    (claim_ft_dir / "_dev-A.json").symlink_to(fake_claim)
+    code_ft = driver.main(
+        _base_argv(paths),
+        loader=lambda _a: pytest.fail("loader must not run for .claim first-test input"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=claim_ft_dir,
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_ft == 2
+    assert ".claim" in capsys.readouterr().err
+
+
+def test_refuses_output_and_input_path_collisions_before_loader(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    _, first_test = synth_bundle
+    paths = _setup_fixture_files(tmp_path, first_test, window="dev")
+    trades_path = paths["results_dir"] / "dev-A-trades.csv.gz"
+
+    # 1. --out equal to trades side file (fresh run, no --force): exit 2, no file created.
+    code_trades = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(trades_path),
+        ],
+        loader=lambda _a: pytest.fail("loader must not run when --out collides with trades file"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_trades == 2
+    assert "collides" in capsys.readouterr().err
+    assert not trades_path.exists()
+    assert not paths["results_dir"].exists()
+
+    # 2. --out resolving to trades side file through a symlinked parent directory.
+    paths["results_dir"].mkdir(parents=True, exist_ok=True)
+    link_results = tmp_path / "results_alias"
+    link_results.symlink_to(paths["results_dir"])
+    code_trades_link = driver.main(
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(link_results / "dev-A-trades.csv.gz"),
+        ],
+        loader=lambda _a: pytest.fail("loader must not run when --out aliases trades file"),
+        git_dirty=lambda: False,
+        results_dir=paths["results_dir"],
+        first_test_dir=paths["ft_dir"],
+        expected_payouts_sha256=paths["payouts_hash"],
+    )
+    assert code_trades_link == 2
+    assert "collides" in capsys.readouterr().err
+    assert not trades_path.exists()
+
+    # 3. --diagnostics colliding with --out or with the trades side file.
+    for diag_target in (paths["out_path"], trades_path):
+        code_diag = driver.main(
+            [*_base_argv(paths), "--diagnostics", str(diag_target)],
+            loader=lambda _a: pytest.fail("loader must not run on --diagnostics collision"),
+            git_dirty=lambda: False,
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code_diag == 2
+        assert "collides" in capsys.readouterr().err
+        assert not paths["out_path"].exists()
+        assert not trades_path.exists()
+
+    # 4. --out or --diagnostics colliding with --payouts (even with --force): payouts untouched.
+    payouts_before = paths["payouts_path"].read_bytes()
+    for argv in (
+        [
+            "--window",
+            "dev",
+            "--release-id",
+            "1",
+            "--payouts",
+            str(paths["payouts_path"]),
+            "--out",
+            str(paths["payouts_path"]),
+            "--force",
+        ],
+        [*_base_argv(paths), "--diagnostics", str(paths["payouts_path"]), "--force"],
+    ):
+        code_in = driver.main(
+            argv,
+            loader=lambda _a: pytest.fail("loader must not run when output collides with payouts"),
+            git_dirty=lambda: False,
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code_in == 2
+        assert "collides" in capsys.readouterr().err
+    assert paths["payouts_path"].read_bytes() == payouts_before
+
+
 def test_never_creates_reads_or_deletes_claim_files(
     tmp_path: Path,
     synth_bundle: tuple[dict[str, Any], dict[str, Any]],

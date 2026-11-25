@@ -240,24 +240,106 @@ def _refuse(message: str) -> int:
     return 2
 
 
+def _lexical_abs(path: Path) -> Path:
+    """Return the normalized lexical absolute path without following symlinks."""
+    return Path(os.path.abspath(path))
+
+
+def _resolved(path: Path) -> Path:
+    """Return the fully resolved path (following symlinks and ``..``), allowing missing targets."""
+    return path.resolve(strict=False)
+
+
 def _is_inside(path: Path, folder: Path) -> bool:
-    """Return True when ``path`` lies inside ``folder`` lexically or after symlink resolution."""
-    resolved_folder = folder.resolve()
-    raw_abs = Path(os.path.abspath(path))
-    return raw_abs.is_relative_to(resolved_folder) or path.resolve().is_relative_to(resolved_folder)
+    """Return True when ``path`` lies inside ``folder`` lexically or after resolution."""
+    raw_folder = _lexical_abs(folder)
+    resolved_folder = _resolved(folder)
+    raw_path = _lexical_abs(path)
+    resolved_path = _resolved(path)
+    return (
+        raw_path.is_relative_to(raw_folder)
+        or raw_path.is_relative_to(resolved_folder)
+        or resolved_path.is_relative_to(resolved_folder)
+        or resolved_path.is_relative_to(raw_folder)
+    )
 
 
-def _validate_output_path(path: Path, *, label: str, force: bool) -> str | None:
-    """Validate one output path: never a symlink, never inside first-test results, no clobber."""
-    if path.is_symlink():
-        return f"refused: {label} {path} is a symlink; refusing to write through a symlink"
-    if _is_inside(path, FIRST_TEST_RESULTS_DIR):
-        return (
-            f"refused: {label} {path} lies inside {FIRST_TEST_RESULTS_DIR}; "
-            "first-test results are read-only and never written by the rerun"
-        )
-    if path.exists() and not force:
-        return f"refused: {label} {path} already exists (pass --force to overwrite)"
+def _is_claim_path(path: Path) -> bool:
+    """Return True when the lexical or resolved final path component ends with ``.claim``."""
+    return (
+        path.name.endswith(".claim")
+        or _lexical_abs(path).name.endswith(".claim")
+        or _resolved(path).name.endswith(".claim")
+    )
+
+
+def _same_path(first: Path, second: Path) -> bool:
+    """Return True when two paths denote the same file lexically or after resolution."""
+    return _lexical_abs(first) == _lexical_abs(second) or _resolved(first) == _resolved(second)
+
+
+def _protected_first_test_dirs(
+    *,
+    results_dir: Path | None,
+    first_test_dir: Path | None,
+) -> tuple[Path, ...]:
+    """Return the read-only first-test study and results directories to protect."""
+    dirs: list[Path] = [DEFAULT_FIRST_TEST_DIR, FIRST_TEST_RESULTS_DIR]
+    if first_test_dir is not None and first_test_dir not in dirs:
+        dirs.append(first_test_dir)
+    if results_dir is not None:
+        counterpart = results_dir.parent / "dead_stock_first_test"
+        if counterpart not in dirs:
+            dirs.append(counterpart)
+    return tuple(dirs)
+
+
+def _validate_paths(
+    *,
+    outputs: Sequence[tuple[str, Path]],
+    inputs: Sequence[tuple[str, Path]],
+    protected_dirs: Sequence[Path],
+    force: bool,
+) -> str | None:
+    """Validate all input and output paths before any content is read or any loader runs."""
+    # 1. Never read or write any .claim path (checked lexically and after resolution).
+    for label, path in (*inputs, *outputs):
+        if _is_claim_path(path):
+            return (
+                f"refused: {label} {path} is a .claim path; "
+                ".claim files are never read or written by the rerun"
+            )
+
+    # 2. Never write through a symlink or into any protected first-test folder.
+    for label, path in outputs:
+        if path.is_symlink():
+            return f"refused: {label} {path} is a symlink; refusing to write through a symlink"
+        for protected in protected_dirs:
+            if _is_inside(path, protected):
+                return (
+                    f"refused: {label} {path} lies inside protected first-test directory "
+                    f"{protected}; first-test files are read-only and never written by the rerun"
+                )
+
+    # 3. Refuse colliding outputs and any output that targets a consumed input file.
+    for idx, (label_a, path_a) in enumerate(outputs):
+        for label_b, path_b in outputs[idx + 1 :]:
+            if _same_path(path_a, path_b):
+                return (
+                    f"refused: {label_a} {path_a} collides with {label_b} {path_b}; "
+                    "output paths must be distinct files"
+                )
+        for in_label, in_path in inputs:
+            if _same_path(path_a, in_path):
+                return (
+                    f"refused: {label_a} {path_a} collides with input {in_label} {in_path}; "
+                    "refusing to overwrite a file the run reads"
+                )
+
+    # 4. Refuse clobbering existing outputs unless --force was explicitly passed.
+    for label, path in outputs:
+        if path.exists() and not force:
+            return f"refused: {label} {path} already exists (pass --force to overwrite)"
     return None
 
 
@@ -409,19 +491,31 @@ def main(
         return _refuse(str(exc))
 
     folder = DEFAULT_RESULTS_DIR if results_dir is None else results_dir
+    ft_dir = DEFAULT_FIRST_TEST_DIR if first_test_dir is None else first_test_dir
     out_path = (
         args.out if args.out is not None else STUDY_DIR / f"_rerun-{args.window}-{UNIVERSE}.json"
     )
     trades_path = ft.trades_file(args.window, UNIVERSE, folder)
+    ft_path = ft_dir / f"_{args.window}-{UNIVERSE}.json"
 
-    for label, target in (
-        ("output file", out_path),
-        ("trades side file", trades_path),
-        *([] if args.diagnostics is None else [("diagnostics file", args.diagnostics)]),
-    ):
-        problem = _validate_output_path(target, label=label, force=args.force)
-        if problem is not None:
-            return _refuse(problem)
+    path_problem = _validate_paths(
+        outputs=[
+            ("output file", out_path),
+            ("trades side file", trades_path),
+            *([] if args.diagnostics is None else [("diagnostics file", args.diagnostics)]),
+        ],
+        inputs=[
+            ("payout table", args.payouts),
+            ("first-test result file", ft_path),
+        ],
+        protected_dirs=_protected_first_test_dirs(
+            results_dir=results_dir,
+            first_test_dir=first_test_dir,
+        ),
+        force=args.force,
+    )
+    if path_problem is not None:
+        return _refuse(path_problem)
 
     # 2. Read and hash the payout table bytes before parsing them.
     expected_hash = PAYOUTS_SHA256 if expected_payouts_sha256 is None else expected_payouts_sha256
@@ -430,8 +524,6 @@ def main(
         return _refuse(payouts_hash_or_err)
 
     # 3. Read the saved first-test window result block.
-    ft_dir = DEFAULT_FIRST_TEST_DIR if first_test_dir is None else first_test_dir
-    ft_path = ft_dir / f"_{args.window}-{UNIVERSE}.json"
     first_test_result, ft_hash_or_err = _read_first_test(ft_path)
     if first_test_result is None:
         return _refuse(ft_hash_or_err)
