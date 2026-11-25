@@ -478,13 +478,72 @@ def test_wrong_header_is_not_parsed_as_data() -> None:
         parse_all_forms(zipped_html)
 
 
+def test_empty_company_name_is_kept_not_rejected() -> None:
+    archive = make_raw_zip(
+        INDEX_PREAMBLE
+        + "1593547||485BPOS|2016-02-26|edgar/data/1593547/0001135428-16-001124.txt\n"
+        + "1593547|   |485BPOS|2016-02-27|edgar/data/1593547/0001135428-16-001125.txt\n"
+        + "1593547|Advisors' Inner Circle Fund III|485BPOS|2016-02-25|"
+        + "edgar/data/1593547/0001135428-16-001123.txt\n"
+    )
+
+    filings = parse_all_forms(archive)
+    assert filings == [
+        IndexedFiling(
+            cik=1593547,
+            name="",
+            form="485BPOS",
+            filed=date(2016, 2, 26),
+            accession="0001135428-16-001124",
+        ),
+        IndexedFiling(
+            cik=1593547,
+            name="",
+            form="485BPOS",
+            filed=date(2016, 2, 27),
+            accession="0001135428-16-001125",
+        ),
+        IndexedFiling(
+            cik=1593547,
+            name="Advisors' Inner Circle Fund III",
+            form="485BPOS",
+            filed=date(2016, 2, 25),
+            accession="0001135428-16-001123",
+        ),
+    ]
+
+    # Pass 2 still returns the empty-name filings under their CIK, sorted by date.
+    by_cik = filings_of([("2016Q1", archive)], {1593547})
+    assert [f.accession for f in by_cik[1593547]] == [
+        "0001135428-16-001123",
+        "0001135428-16-001124",
+        "0001135428-16-001125",
+    ]
+    assert [f.name for f in by_cik[1593547]] == ["Advisors' Inner Circle Fund III", "", ""]
+
+    # Pass 1 skips empty names so callers' matchers are never invoked with "".
+    seen_by_matcher: list[str] = []
+
+    def strict_matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        assert raw_name != ""
+        seen_by_matcher.append(raw_name)
+        if raw_name == "Advisors' Inner Circle Fund III":
+            return {"R1": frozenset({"v1"})}
+        return {}
+
+    matched = find_filers([("2016Q1", archive)], strict_matcher)
+    assert matched == {1593547: {"R1": frozenset({"v1"})}}
+    assert seen_by_matcher == ["Advisors' Inner Circle Fund III"]
+
+
 @pytest.mark.parametrize(
     ("bad_line", "expected_line_no"),
     [
         ("100001|ACME CORP|10-K|2020-02-15", 6),
+        ("|ACME CORP|10-K|2020-02-15|edgar/data/1/x.txt", 6),
         ("NOTACIK|ACME CORP|10-K|2020-02-15|edgar/data/1/x.txt", 6),
         ("0|ACME CORP|10-K|2020-02-15|edgar/data/0/x.txt", 6),
-        ("100001|   |10-K|2020-02-15|edgar/data/100001/x.txt", 6),
+        ("100001|ACME CORP||2020-02-15|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP| |2020-02-15|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP|10-K|2020-02-30|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP|10-K|2020-02-15|", 6),

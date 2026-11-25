@@ -75,9 +75,9 @@ def _parse_data_line(raw_line: str, line_no: int, date_cache: dict[str, date]) -
     cik = int(cik_raw)
     if cik == 0:
         raise ValueError(f"Malformed master-index line {line_no}: CIK must be positive")
+    # Real SEC master.idx files contain valid filings whose company name field is blank;
+    # keep empty or whitespace-only names as "" while keeping every other column strict.
     name = name_raw.strip()
-    if not name:
-        raise ValueError(f"Malformed master-index line {line_no}: empty company name")
     form = form_raw.strip()
     if not form:
         raise ValueError(f"Malformed master-index line {line_no}: empty form type")
@@ -208,7 +208,8 @@ def find_filers(
 
     Streams one archive at a time and never retains parsed archive rows across iterations.
     ``matcher`` owns all name cleaning, prefix matching, and rule labelling; results are memoized
-    per distinct raw company name within one archive only so memory stays bounded.
+    per distinct raw company name within one archive only so memory stays bounded. Rows with an
+    empty company name are skipped without calling ``matcher``.
 
     Args:
         archives: Iterable of ``(quarter_label, archive_bytes)`` pairs.
@@ -228,6 +229,9 @@ def find_filers(
         # Memoize matcher output within one archive only so memory stays bounded across quarters.
         seen_names: dict[str, tuple[tuple[str, frozenset[str]], ...]] = {}
         for filing in _iter_archive_forms(label, content):
+            # An empty SEC company name cannot match any roster entry; skip calling matcher.
+            if not filing.name:
+                continue
             matched_entries = seen_names.get(filing.name)
             if matched_entries is None:
                 raw_match = matcher(filing.name)
