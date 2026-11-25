@@ -81,29 +81,46 @@ CONFIDENCE_RANK: dict[str, int] = {
     CONFIDENCE_CHECKED: 3,
 }
 
-# Registered 8-K item mapping (pre-2004-08-23 labels and post-2004-08-23 numbered codes).
-BANKRUPTCY_ITEMS: frozenset[str] = frozenset(
+# Effective date of the SEC's renumbered Form 8-K item list (2026-11-25 brief amendment).
+NUMBERED_ITEMS_START = date(2004, 8, 23)
+
+# Registered 8-K item text labels (count in every era, matched by whole normalised text).
+BANKRUPTCY_TEXT_ITEMS: frozenset[str] = frozenset(
     {
         "bankruptcy or receivership",
-        "1.03",
     }
 )
-ACQUISITION_ITEMS: frozenset[str] = frozenset(
+ACQUISITION_TEXT_ITEMS: frozenset[str] = frozenset(
     {
         "changes in control of registrant",
         "acquisition or disposition of assets",
-        "2.01",
-        "5.01",
+        "completion of acquisition or disposition of assets",
     }
 )
-DELISTING_ITEMS: frozenset[str] = frozenset(
+DELISTING_TEXT_ITEMS: frozenset[str] = frozenset(
     {
-        "3.01",
+        "notice of delisting or failure to satisfy a continued listing rule or standard; "
+        "transfer of listing",
     }
 )
 
-_NUMBERED_ITEM_RE = re.compile(r"\b(\d+\.\d{2})\b")
-_ITEM_PREFIX_RE = re.compile(r"^item\s+\d+\s*[:.\-]\s+", re.IGNORECASE)
+# Registered 8-K numeric item codes (count only for filings dated on or after 2004-08-23).
+BANKRUPTCY_NUMBER_ITEMS: frozenset[str] = frozenset({"1.03"})
+ACQUISITION_NUMBER_ITEMS: frozenset[str] = frozenset({"2.01", "5.01"})
+DELISTING_NUMBER_ITEMS: frozenset[str] = frozenset({"3.01"})
+
+# Combined registered sets kept for reference/inspection.
+BANKRUPTCY_ITEMS: frozenset[str] = BANKRUPTCY_TEXT_ITEMS | BANKRUPTCY_NUMBER_ITEMS
+ACQUISITION_ITEMS: frozenset[str] = ACQUISITION_TEXT_ITEMS | ACQUISITION_NUMBER_ITEMS
+DELISTING_ITEMS: frozenset[str] = DELISTING_TEXT_ITEMS | DELISTING_NUMBER_ITEMS
+
+_UNSET: Any = object()
+_NUMBERED_ITEM_RE = re.compile(r"\d+\.\d{2}")
+# A numeric declaration is strictly one code or a list separated by commas / 'and' / whitespace.
+_ITEM_CODE_LIST_RE = re.compile(
+    r"^\d+\.\d{2}(?:(?:\s*,\s*(?:and\s+)?|\s+and\s+|\s+)\d+\.\d{2})*$",
+    re.IGNORECASE,
+)
 _ITEM_INFO_LINE_RE = re.compile(r"^\s*ITEM\s+INFORMATION\s*:\s*(.*)$", re.IGNORECASE)
 _ITEMS_TAG_LINE_RE = re.compile(r"^\s*<ITEMS>\s*(.*?)(?:</ITEMS>)?\s*$", re.IGNORECASE)
 _HEADER_FIELD_RE = re.compile(r"^\s*([A-Z][A-Z0-9 /_-]*?)\s*:\s*(.*?)\s*$")
@@ -603,41 +620,6 @@ def _extract_header_section(text: str) -> str:
     return text[start:]
 
 
-def _normalize_item_tokens(raw_value: str) -> list[str]:
-    """Normalise one raw ``ITEM INFORMATION`` value into numbered codes or normalised label text."""
-    collapsed = " ".join(raw_value.split())
-    if not collapsed:
-        return []
-    numbered = _NUMBERED_ITEM_RE.findall(collapsed)
-    if numbered:
-        return numbered
-    # Match pre-2004 labels by normalised text only (never by bare item position).
-    label = _ITEM_PREFIX_RE.sub("", collapsed).strip().rstrip(".,;").lower()
-    return [label] if label else []
-
-
-def parse_8k_items(header_text: str) -> frozenset[str]:
-    """Extract normalised 8-K item labels or numbered item codes from an EDGAR filing header.
-
-    Handles both pre-2004-08-23 text labels after ``ITEM INFORMATION:`` (for example
-    ``"Acquisition or disposition of assets"``) and post-2004-08-23 numbered items
-    (for example ``"2.01"``, ``"5.01"``, ``"1.03"``, ``"3.01"``), as well as SGML
-    ``<ITEMS>`` tags. Ignores body text after ``</SEC-HEADER>`` or ``<DOCUMENT>``.
-    """
-    if not isinstance(header_text, str) or not header_text.strip():
-        return frozenset()
-    header = _extract_header_section(header_text)
-    items: set[str] = set()
-    for line in header.splitlines():
-        match = _ITEM_INFO_LINE_RE.match(line)
-        if match is None:
-            match = _ITEMS_TAG_LINE_RE.match(line)
-        if match is None:
-            continue
-        items.update(_normalize_item_tokens(match.group(1)))
-    return frozenset(items)
-
-
 def _parse_header_date(raw: str) -> date | None:
     """Parse an EDGAR header date in ``YYYYMMDD`` or ``YYYY-MM-DD`` format."""
     cleaned = raw.strip()
@@ -650,6 +632,80 @@ def _parse_header_date(raw: str) -> date | None:
         return date.fromisoformat(cleaned)
     except ValueError:
         return None
+
+
+def _extract_filed_date(header: str) -> date | None:
+    """Read the first valid ``FILED AS OF DATE:`` value from an SGML header block."""
+    for line in header.splitlines():
+        match = _HEADER_FIELD_RE.match(line)
+        if match is None:
+            continue
+        key = " ".join(match.group(1).upper().split())
+        if key == "FILED AS OF DATE":
+            value = " ".join(match.group(2).split())
+            return _parse_header_date(value) if value else None
+    return None
+
+
+def _numbers_allowed(filed: date | datetime | pd.Timestamp | str | None) -> bool:
+    """Return True only when ``filed`` is a readable date on or after 2004-08-23."""
+    if filed is None:
+        return False
+    return _as_date(filed) >= NUMBERED_ITEMS_START
+
+
+def _parse_item_declaration(raw_value: str) -> tuple[bool, list[str]]:
+    """Classify one item value as a strict numeric code list or a whole normalised text label.
+
+    Numbers count only when the whole normalised value is a single item code or a list of
+    item codes separated by commas, ``and``, or whitespace. Any other value (including a
+    description containing a number such as ``"Other events (agreement section 2.01)"``) is
+    returned as whole normalised text only.
+    """
+    collapsed = " ".join(raw_value.split())
+    if not collapsed:
+        return False, []
+    if _ITEM_CODE_LIST_RE.fullmatch(collapsed):
+        return True, _NUMBERED_ITEM_RE.findall(collapsed)
+    normalised = collapsed.rstrip(".").lower()
+    return False, [normalised] if normalised else []
+
+
+def parse_8k_items(
+    header_text: str,
+    *,
+    filed: Any = _UNSET,
+) -> frozenset[str]:
+    """Extract era-eligible 8-K item labels or numbered codes from an EDGAR filing header.
+
+    Text labels are extracted in every era and matched by whole normalised text. Numeric
+    item declarations (a single code or list of codes separated by commas, ``and``, or
+    whitespace) are extracted only when the filing date is on or after 2004-08-23; when
+    ``filed`` is omitted, ``FILED AS OF DATE:`` is read from ``header_text``. Missing or
+    pre-2004-08-23 dates yield text labels only (numbers are excluded). Body text after
+    ``</SEC-HEADER>`` or ``<DOCUMENT>`` is ignored.
+    """
+    if not isinstance(header_text, str) or not header_text.strip():
+        return frozenset()
+    header = _extract_header_section(header_text)
+    if filed is _UNSET:
+        effective_filed: date | datetime | pd.Timestamp | str | None = _extract_filed_date(header)
+    else:
+        effective_filed = filed
+    allow_numbers = _numbers_allowed(effective_filed)
+
+    items: set[str] = set()
+    for line in header.splitlines():
+        match = _ITEM_INFO_LINE_RE.match(line)
+        if match is None:
+            match = _ITEMS_TAG_LINE_RE.match(line)
+        if match is None:
+            continue
+        is_numeric, tokens = _parse_item_declaration(match.group(1))
+        if is_numeric and not allow_numbers:
+            continue
+        items.update(tokens)
+    return frozenset(items)
 
 
 def parse_filing_header(text: str) -> FilingHeader:
@@ -695,26 +751,59 @@ def parse_filing_header(text: str) -> FilingHeader:
         company_name=company_name,
         cik=cik,
         former_names=tuple(former_names),
-        items=parse_8k_items(header),
+        items=parse_8k_items(header, filed=filed),
     )
 
 
-def label_items(items: frozenset[str]) -> str:
+def label_items(
+    items: frozenset[str],
+    *,
+    filed: date | datetime | pd.Timestamp | str | None = None,
+) -> str:
     """Map 8-K items to bankruptcy, acquisition_type, delisting_notice_only, or other.
 
-    Applies the registered mapping and priority order from section 1 of the frozen brief:
-    ``bankruptcy`` > ``acquisition_type`` > ``delisting_notice_only`` > ``other``.
+    Applies the registered mapping and 2026-11-25 amendment in priority order
+    (``bankruptcy`` > ``acquisition_type`` > ``delisting_notice_only`` > ``other``).
+    Text labels count in every era by whole normalised text. Numeric item declarations
+    count only when ``filed`` is on or after 2004-08-23; undated calls and pre-cutoff
+    dates treat numeric codes as ``other``. Numbers embedded inside descriptions are
+    never extracted.
     """
-    normalised: set[str] = set()
+    allow_numbers = _numbers_allowed(filed)
+    text_tokens: set[str] = set()
+    numeric_tokens: set[str] = set()
     for raw in items:
-        if isinstance(raw, str):
-            normalised.update(_normalize_item_tokens(raw))
+        if not isinstance(raw, str):
+            continue
+        is_numeric, tokens = _parse_item_declaration(raw)
+        if is_numeric:
+            if allow_numbers:
+                numeric_tokens.update(tokens)
+        else:
+            text_tokens.update(tokens)
 
-    if normalised & BANKRUPTCY_ITEMS:
+    if (text_tokens & BANKRUPTCY_TEXT_ITEMS) or (numeric_tokens & BANKRUPTCY_NUMBER_ITEMS):
         return LABEL_BANKRUPTCY
-    if normalised & ACQUISITION_ITEMS:
+    if (text_tokens & ACQUISITION_TEXT_ITEMS) or (numeric_tokens & ACQUISITION_NUMBER_ITEMS):
         return LABEL_ACQUISITION_TYPE
-    if normalised & DELISTING_ITEMS:
+    if (text_tokens & DELISTING_TEXT_ITEMS) or (numeric_tokens & DELISTING_NUMBER_ITEMS):
+        return LABEL_DELISTING_NOTICE_ONLY
+    return LABEL_OTHER
+
+
+def label_filing_header(header: FilingHeader) -> str:
+    """Classify one parsed filing header using its own ``filed`` date for the era cutoff."""
+    return label_items(header.items, filed=header.filed)
+
+
+def combine_item_labels(labels: Iterable[str]) -> str:
+    """Combine per-filing 8-K labels in registered priority order."""
+    seen = set(labels)
+    if LABEL_BANKRUPTCY in seen:
+        return LABEL_BANKRUPTCY
+    if LABEL_ACQUISITION_TYPE in seen:
+        return LABEL_ACQUISITION_TYPE
+    if LABEL_DELISTING_NOTICE_ONLY in seen:
         return LABEL_DELISTING_NOTICE_ONLY
     return LABEL_OTHER
 
@@ -758,20 +847,32 @@ def has_kept_filing(
 
 
 def classify_company_events(
-    items: Iterable[str],
+    filings: Sequence[
+        FilingHeader | tuple[date | datetime | pd.Timestamp | str | None, Iterable[str]]
+    ],
     *,
     has_form25: bool,
     filing_dates: Sequence[date | datetime | pd.Timestamp | str],
     last_bar: pd.Timestamp | date,
     after_days: int = AFTER_DAYS,
 ) -> str:
-    """Apply the registered per-stock label precedence for a matched company.
+    """Apply the registered per-stock label precedence using each filing's own date.
 
+    Each entry in ``filings`` is either a ``FilingHeader`` or a ``(filed, items)`` pair;
+    its items are classified against its own filing date before combining across filings.
     Order: ``bankruptcy`` > ``acquisition_type`` > ``delisting_notice_only`` (Form 25 or
-    8-K item 3.01) > ``kept_filing`` (any filing strictly > 180 days after ``last_bar``)
-    > ``no_event_found``.
+    delisting 8-K item) > ``kept_filing`` (any filing strictly > 180 days after
+    ``last_bar``) > ``no_event_found``.
     """
-    item_label = label_items(frozenset(items))
+    per_filing_labels: list[str] = []
+    for entry in filings:
+        if isinstance(entry, FilingHeader):
+            per_filing_labels.append(label_filing_header(entry))
+        else:
+            entry_filed, entry_items = entry
+            per_filing_labels.append(label_items(frozenset(entry_items), filed=entry_filed))
+
+    item_label = combine_item_labels(per_filing_labels)
     if item_label == LABEL_BANKRUPTCY:
         return LABEL_BANKRUPTCY
     if item_label == LABEL_ACQUISITION_TYPE:
@@ -785,8 +886,12 @@ def classify_company_events(
 
 __all__ = [
     "ACQUISITION_ITEMS",
+    "ACQUISITION_NUMBER_ITEMS",
+    "ACQUISITION_TEXT_ITEMS",
     "AFTER_DAYS",
     "BANKRUPTCY_ITEMS",
+    "BANKRUPTCY_NUMBER_ITEMS",
+    "BANKRUPTCY_TEXT_ITEMS",
     "BEFORE_DAYS",
     "CONFIDENCE_CHECKED",
     "CONFIDENCE_FORMER_NAME",
@@ -796,6 +901,8 @@ __all__ = [
     "DEFAULT_CONTACT_PATH",
     "DEFAULT_MIN_INTERVAL",
     "DELISTING_ITEMS",
+    "DELISTING_NUMBER_ITEMS",
+    "DELISTING_TEXT_ITEMS",
     "DROP_WORDS",
     "ENV_CONTACT_PATH",
     "FILING_ARCHIVE_URL",
@@ -811,6 +918,7 @@ __all__ = [
     "LABEL_NO_EVENT_FOUND",
     "LABEL_OTHER",
     "MASTER_INDEX_URL",
+    "NUMBERED_ITEMS_START",
     "RELEVANT_EVENT_FORMS",
     "TRAILING_DROP_WORDS",
     "EarlySecClient",
@@ -819,10 +927,12 @@ __all__ = [
     "IndexRow",
     "classify_company_events",
     "clean_company_name",
+    "combine_item_labels",
     "filing_url",
     "find_filings",
     "has_kept_filing",
     "iter_master_index",
+    "label_filing_header",
     "label_items",
     "load_contact_line",
     "master_index_url",

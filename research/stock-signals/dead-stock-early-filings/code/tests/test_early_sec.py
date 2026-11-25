@@ -23,6 +23,7 @@ from early_sec import (
     filing_url,
     find_filings,
     has_kept_filing,
+    label_filing_header,
     label_items,
     master_index_url,
     parse_8k_items,
@@ -113,7 +114,7 @@ FILER:
 
 NEW_HEADER_501 = """<SEC-HEADER>0001104659-04-031222.hdr.sgml : 20041022
 CONFORMED SUBMISSION TYPE:\t8-K
-ITEM INFORMATION:\t\tItem 5.01: Changes in Control of Registrant
+ITEM INFORMATION:\t\t5.01
 FILED AS OF DATE:\t\t20041021
 
 FILER:
@@ -198,26 +199,29 @@ def test_old_header_bankruptcy_item_is_bankruptcy() -> None:
 def test_new_numbered_items_2_01_and_5_01_are_acquisition_type() -> None:
     items_201 = parse_8k_items(NEW_HEADER_201)
     assert "2.01" in items_201
-    assert label_items(items_201) == "acquisition_type"
+    assert label_items(items_201, filed=date(2004, 9, 14)) == "acquisition_type"
+    assert label_filing_header(parse_filing_header(NEW_HEADER_201)) == "acquisition_type"
 
     items_501 = parse_8k_items(NEW_HEADER_501)
     assert "5.01" in items_501
-    assert label_items(items_501) == "acquisition_type"
+    assert label_items(items_501, filed=date(2004, 10, 21)) == "acquisition_type"
+    assert label_filing_header(parse_filing_header(NEW_HEADER_501)) == "acquisition_type"
 
 
 def test_1_03_is_bankruptcy() -> None:
     items = parse_8k_items(NEW_HEADER_103)
     assert items == frozenset({"1.03"})
-    assert label_items(items) == "bankruptcy"
+    assert label_items(items, filed=date(2004, 11, 5)) == "bankruptcy"
+    assert label_filing_header(parse_filing_header(NEW_HEADER_103)) == "bankruptcy"
 
 
 def test_unknown_items_are_other() -> None:
     items = parse_8k_items(UNKNOWN_ITEMS_HEADER)
-    assert label_items(items) == "other"
+    assert label_items(items, filed=date(2003, 4, 9)) == "other"
     # Empty set, unmapped codes (including 3.03 which is not registered in this brief),
     # and bare positional numbers without label text must all map to "other".
     assert label_items(frozenset()) == "other"
-    assert label_items(frozenset({"3.03", "8.01", "9.01"})) == "other"
+    assert label_items(frozenset({"3.03", "8.01", "9.01"}), filed=date(2004, 9, 1)) == "other"
     assert label_items(frozenset({"Item 2", "Item 3"})) == "other"
 
 
@@ -305,7 +309,7 @@ def test_a_company_that_kept_filing_after_180_days_is_marked_kept_filing() -> No
     assert not has_kept_filing([], last_bar)
 
     label = classify_company_events(
-        items=frozenset({"other events"}),
+        [(date(2001, 4, 1), frozenset({"other events"}))],
         has_form25=False,
         filing_dates=[date(2001, 4, 1), date(2001, 9, 12)],
         last_bar=last_bar,
@@ -313,7 +317,206 @@ def test_a_company_that_kept_filing_after_180_days_is_marked_kept_filing() -> No
     assert label == "kept_filing"
 
 
-# --- Additional coverage: header fields, precedence, index parsing, confidence ---
+# --- Additional coverage: era cutoff, strict numeric declarations, headers, precedence ---
+
+
+def _header_with(filed_raw: str | None, *item_lines: str) -> str:
+    date_line = f"FILED AS OF DATE:\t\t{filed_raw}\n" if filed_raw is not None else ""
+    items_block = "".join(f"ITEM INFORMATION:\t\t{item}\n" for item in item_lines)
+    return (
+        "<SEC-HEADER>0001104659-04-000001.hdr.sgml : 20040823\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        f"{items_block}"
+        f"{date_line}"
+        "FILER:\n"
+        "\tCOMPANY DATA:\n"
+        "\t\tCOMPANY CONFORMED NAME:\t\tCASCADE TEST CORP\n"
+        "\t\tCENTRAL INDEX KEY:\t\t0001099999\n"
+        "</SEC-HEADER>\n"
+    )
+
+
+def test_era_boundary_2004_08_22_vs_2004_08_23_for_2_01_and_1_03() -> None:
+    # Strictly before 2004-08-23: item numbers are 'other'.
+    pre_201 = _header_with("20040822", "2.01")
+    assert parse_8k_items(pre_201) == frozenset()
+    assert label_filing_header(parse_filing_header(pre_201)) == "other"
+    assert label_items(frozenset({"2.01"}), filed=date(2004, 8, 22)) == "other"
+
+    pre_103 = _header_with("20040822", "1.03")
+    assert parse_8k_items(pre_103) == frozenset()
+    assert label_filing_header(parse_filing_header(pre_103)) == "other"
+    assert label_items(frozenset({"1.03"}), filed=date(2004, 8, 22)) == "other"
+
+    assert label_items(frozenset({"3.01"}), filed=date(2004, 8, 22)) == "other"
+
+    # On 2004-08-23: numbered item mapping takes effect.
+    on_201 = _header_with("20040823", "2.01")
+    assert parse_8k_items(on_201) == frozenset({"2.01"})
+    assert label_filing_header(parse_filing_header(on_201)) == "acquisition_type"
+    assert label_items(frozenset({"2.01"}), filed=date(2004, 8, 23)) == "acquisition_type"
+
+    on_103 = _header_with("20040823", "1.03")
+    assert parse_8k_items(on_103) == frozenset({"1.03"})
+    assert label_filing_header(parse_filing_header(on_103)) == "bankruptcy"
+    assert label_items(frozenset({"1.03"}), filed=date(2004, 8, 23)) == "bankruptcy"
+
+    on_301 = _header_with("20040823", "3.01")
+    assert parse_8k_items(on_301) == frozenset({"3.01"})
+    assert label_filing_header(parse_filing_header(on_301)) == "delisting_notice_only"
+
+
+def test_text_labels_count_in_every_era_including_later_wordings() -> None:
+    # Old acquisition text label on 2004-08-23 still counts as acquisition_type.
+    old_label_post_cutoff = _header_with("20040823", "Acquisition or disposition of assets")
+    assert label_filing_header(parse_filing_header(old_label_post_cutoff)) == "acquisition_type"
+
+    # Later-era acquisition wording counts in both eras and when undated.
+    later_acq = "  Completion of   Acquisition or Disposition of Assets "
+    assert label_filing_header(parse_filing_header(_header_with("20040822", later_acq))) == (
+        "acquisition_type"
+    )
+    assert label_filing_header(parse_filing_header(_header_with("20040823", later_acq))) == (
+        "acquisition_type"
+    )
+    assert label_items(frozenset({later_acq})) == "acquisition_type"
+
+    # Later-era delisting notice wording counts in both eras and when undated.
+    later_delist = (
+        "Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard; "
+        "Transfer of Listing"
+    )
+    assert label_filing_header(parse_filing_header(_header_with("20040822", later_delist))) == (
+        "delisting_notice_only"
+    )
+    assert label_filing_header(parse_filing_header(_header_with("20040823", later_delist))) == (
+        "delisting_notice_only"
+    )
+    assert label_items(frozenset({later_delist})) == "delisting_notice_only"
+
+    # Bankruptcy text label on 2004-08-23 still counts as bankruptcy.
+    bankruptcy_post = _header_with("20040823", "Bankruptcy or receivership")
+    assert label_filing_header(parse_filing_header(bankruptcy_post)) == "bankruptcy"
+
+
+def test_numbers_inside_descriptions_are_other() -> None:
+    desc_201 = "Other events (agreement section 2.01)"
+    desc_103 = "Other events (agreement section 1.03)"
+    post_date = date(2004, 9, 1)
+
+    for desc in (desc_201, desc_103):
+        header = _header_with("20040901", desc)
+        items = parse_8k_items(header)
+        assert "2.01" not in items
+        assert "1.03" not in items
+        assert label_items(items, filed=post_date) == "other"
+        assert label_filing_header(parse_filing_header(header)) == "other"
+        # Direct call to label_items must not re-extract numbers from descriptions either.
+        assert label_items(frozenset({desc}), filed=post_date) == "other"
+
+    # Whole normalised text only: a registered label or code wrapped in extra prose is 'other'.
+    assert (
+        label_items(frozenset({"Item 5.01: Changes in Control of Registrant"}), filed=post_date)
+        == "other"
+    )
+    assert (
+        label_items(
+            frozenset({"Other events (Acquisition or disposition of assets)"}), filed=post_date
+        )
+        == "other"
+    )
+
+
+def test_declaration_list_after_cutoff_is_acquisition_type() -> None:
+    for declaration in ("2.01, 9.01", "2.01 and 9.01", "2.01, 5.01, and 9.01", "2.01 9.01"):
+        header = _header_with("20040901", declaration)
+        items = parse_8k_items(header)
+        assert "2.01" in items
+        assert "9.01" in items
+        assert label_filing_header(parse_filing_header(header)) == "acquisition_type"
+        assert label_items(frozenset({declaration}), filed=date(2004, 9, 1)) == "acquisition_type"
+
+    # The same declaration list before the cutoff or without a date is 'other'.
+    pre_header = _header_with("20040822", "2.01, 9.01")
+    assert parse_8k_items(pre_header) == frozenset()
+    assert label_filing_header(parse_filing_header(pre_header)) == "other"
+    assert label_items(frozenset({"2.01, 9.01"})) == "other"
+
+
+def test_number_with_no_date_is_other() -> None:
+    # Missing FILED AS OF DATE -> numeric codes excluded and labelled 'other'.
+    undated_201 = _header_with(None, "2.01")
+    assert parse_8k_items(undated_201) == frozenset()
+    parsed = parse_filing_header(undated_201)
+    assert parsed.filed is None
+    assert label_filing_header(parsed) == "other"
+
+    # Unreadable FILED AS OF DATE -> treated as missing date (text labels only).
+    bad_date_103 = _header_with("NOTADATE", "1.03")
+    parsed_bad = parse_filing_header(bad_date_103)
+    assert parsed_bad.filed is None
+    assert parsed_bad.items == frozenset()
+    assert label_filing_header(parsed_bad) == "other"
+
+    # Explicit filed=None ignores header date and rejects numeric codes.
+    assert parse_8k_items(NEW_HEADER_201, filed=None) == frozenset()
+
+    # Undated label_items calls treat bare numbers as 'other', but still match text labels.
+    assert label_items(frozenset({"2.01"})) == "other"
+    assert label_items(frozenset({"1.03"})) == "other"
+    assert label_items(frozenset({"3.01"})) == "other"
+    assert label_items(frozenset({"Acquisition or disposition of assets"})) == "acquisition_type"
+
+
+def test_combining_mixed_era_filings_uses_each_filings_own_date() -> None:
+    last_bar = pd.Timestamp("2004-08-20")
+
+    # Pre-cutoff 2.01 + post-cutoff 8.01: post-cutoff date must not validate pre-cutoff 2.01.
+    pre_201 = parse_filing_header(_header_with("20040822", "2.01"))
+    post_801 = parse_filing_header(_header_with("20040910", "8.01"))
+    assert (
+        classify_company_events(
+            [pre_201, post_801],
+            has_form25=False,
+            filing_dates=[date(2004, 8, 22), date(2004, 9, 10)],
+            last_bar=last_bar,
+        )
+        == "no_event_found"
+    )
+    # Even if raw '2.01' is supplied directly with its pre-cutoff date, it stays 'other'.
+    assert (
+        classify_company_events(
+            [(date(2004, 8, 22), {"2.01"}), (date(2004, 9, 10), {"8.01"})],
+            has_form25=False,
+            filing_dates=[date(2004, 8, 22), date(2004, 9, 10)],
+            last_bar=last_bar,
+        )
+        == "no_event_found"
+    )
+
+    # Pre-cutoff 1.03 (invalid -> other) must not outrank valid post-cutoff 2.01.
+    assert (
+        classify_company_events(
+            [(date(2004, 8, 22), {"1.03"}), (date(2004, 9, 10), {"2.01", "9.01"})],
+            has_form25=False,
+            filing_dates=[date(2004, 8, 22), date(2004, 9, 10)],
+            last_bar=last_bar,
+        )
+        == "acquisition_type"
+    )
+
+    # Valid pre-cutoff acquisition text + valid post-cutoff 1.03 -> bankruptcy outranks acquisition.
+    pre_acq = parse_filing_header(_header_with("20040822", "Acquisition or disposition of assets"))
+    post_103 = parse_filing_header(_header_with("20040910", "1.03"))
+    assert (
+        classify_company_events(
+            [pre_acq, post_103],
+            has_form25=False,
+            filing_dates=[date(2004, 8, 22), date(2004, 9, 10)],
+            last_bar=last_bar,
+        )
+        == "bankruptcy"
+    )
 
 
 def test_parse_filing_header_extracts_all_fields() -> None:
@@ -331,12 +534,14 @@ def test_parse_filing_header_extracts_all_fields() -> None:
 
 
 def test_delisting_item_3_01_and_label_priority_order() -> None:
+    post_date = date(2004, 12, 1)
     items_301 = parse_8k_items(NEW_HEADER_301)
     assert items_301 == frozenset({"3.01"})
-    assert label_items(items_301) == "delisting_notice_only"
+    assert label_items(items_301, filed=post_date) == "delisting_notice_only"
+    assert label_filing_header(parse_filing_header(NEW_HEADER_301)) == "delisting_notice_only"
 
     # Bankruptcy beats acquisition_type and delisting_notice_only.
-    assert label_items(frozenset({"2.01", "1.03", "3.01"})) == "bankruptcy"
+    assert label_items(frozenset({"2.01", "1.03", "3.01"}), filed=post_date) == "bankruptcy"
     assert (
         label_items(
             frozenset({"Acquisition or disposition of assets", "Bankruptcy or receivership"})
@@ -344,40 +549,56 @@ def test_delisting_item_3_01_and_label_priority_order() -> None:
         == "bankruptcy"
     )
     # acquisition_type beats delisting_notice_only.
-    assert label_items(frozenset({"5.01", "3.01"})) == "acquisition_type"
+    assert label_items(frozenset({"5.01", "3.01"}), filed=post_date) == "acquisition_type"
 
 
 def test_classify_company_events_follows_registered_label_order() -> None:
-    last_bar = pd.Timestamp("2001-03-15")
-    later_filing = [date(2001, 10, 1)]  # > 180 days after last_bar
+    last_bar = pd.Timestamp("2004-08-25")
+    later_filing = [date(2005, 4, 1)]  # > 180 days after last_bar
+    post_date = date(2004, 9, 1)
 
     assert (
         classify_company_events(
-            {"1.03", "2.01"}, has_form25=True, filing_dates=later_filing, last_bar=last_bar
+            [(post_date, {"1.03", "2.01"})],
+            has_form25=True,
+            filing_dates=later_filing,
+            last_bar=last_bar,
         )
         == "bankruptcy"
     )
     assert (
         classify_company_events(
-            {"2.01"}, has_form25=True, filing_dates=later_filing, last_bar=last_bar
+            [(post_date, {"2.01"})],
+            has_form25=True,
+            filing_dates=later_filing,
+            last_bar=last_bar,
         )
         == "acquisition_type"
     )
     assert (
         classify_company_events(
-            {"other events"}, has_form25=True, filing_dates=later_filing, last_bar=last_bar
+            [(post_date, {"other events"})],
+            has_form25=True,
+            filing_dates=later_filing,
+            last_bar=last_bar,
         )
         == "delisting_notice_only"
     )
     assert (
         classify_company_events(
-            {"other events"}, has_form25=False, filing_dates=later_filing, last_bar=last_bar
+            [(post_date, {"other events"})],
+            has_form25=False,
+            filing_dates=later_filing,
+            last_bar=last_bar,
         )
         == "kept_filing"
     )
     assert (
         classify_company_events(
-            {"other events"}, has_form25=False, filing_dates=[date(2001, 4, 1)], last_bar=last_bar
+            [(post_date, {"other events"})],
+            has_form25=False,
+            filing_dates=[date(2004, 9, 1)],
+            last_bar=last_bar,
         )
         == "no_event_found"
     )
