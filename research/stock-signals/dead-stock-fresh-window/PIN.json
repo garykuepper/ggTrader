@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-fresh-window",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-fresh-window"
+  },
+  "engine": {
+    "git_sha": null,
+    "git_dirty": null,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": null,
+    "python": null,
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": [
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_holdout-A.json",
+        "sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358"
+      }
+    ]
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fp_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fp_dead_stock_first_test.py",
+      "sha256": "b115b2c576b5cb43c7bbf7f00de18d35d29b7966061c02c337a3acc3b86f76cd"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fp_ledger_run.py",
+      "sha256": "bd797a420d8346be557b322329fc6a5acf56665d313fefd0d021767d372953ba"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fp_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fp_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fresh_compare.py",
+      "sha256": "19457ddeec8923b9573c4614175a62f9528dfe5c7abc9523825964260c466da1"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/fresh_inputs.py",
+      "sha256": "16ffea1597f34819059ff09033156b6ca405fb61110dd130de49859fdf733b55"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/run.py",
+      "sha256": "c728bf39d061ecd0b0f83a13c13e257724d57b07f44491215f0326f6413203a1"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/tests/test_fresh_compare.py",
+      "sha256": "920c6dc10ace6cf6423fffd1175d85d6727e10456cbe3ebd5179a981a053bab6"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/tests/test_fresh_inputs.py",
+      "sha256": "4e918d8200e6373fa6796b68c34bfee610ad916726247fdefc513de8d6232ab3"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/tests/test_frozen_copies.py",
+      "sha256": "3b72e9c213025d46abe8b1c688b1f293ed7a5b2a477bd986960b95f1d4c696ca"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/code/tests/test_run.py",
+      "sha256": "d60f053f3d4a41f187d97312b7d7e855b20a367ab75350127fcc5fe86fe0bd17"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-fresh-window/code/run.py",
+      "--window",
+      "fresh",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2000-01-03",
+    "eval_end": "2004-12-31"
+  },
+  "seed": null,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/_anchor-A.json",
+      "sha256": "6164fd45c195e4b5b922076db498bcad50cfceef8b389ebc153d973afd434c37"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-fresh-window/_fresh-A.json",
+      "sha256": "828752718fd34e8b5dcc89962638d5939052a2d478ecd99051e0516218c207ed"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "The check (--window anchor, about 10 minutes) and the fresh run (--window fresh, about 12 minutes) read the read-only database, release 1 and CRSP load 1, and need a clean tracked tree. The fresh run is run-once: it refuses when the claim file in results/dead_stock_fresh_window/ or the result file exists, so a repeat in a scratch clone reproduces the numbers but is not a new test. The anchor result file is checked against the first test's saved holdout file, which is pinned as an input."
+  },
+  "created_utc": "2026-11-25T07:36:02Z"
+}
