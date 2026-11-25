@@ -55,8 +55,25 @@ FORM8K_FORMS: frozenset[str] = frozenset({"8-K", "8-K/A"})
 FORM25_FORMS: frozenset[str] = frozenset({"25", "25/A", "25-NSE", "25-NSE/A"})
 IGNORED_LISTING_FORMS: frozenset[str] = frozenset({"8-A12B", "8-A12B/A", "8-A12G", "8-A12G/A"})
 RELEVANT_EVENT_FORMS: frozenset[str] = FORM8K_FORMS | FORM25_FORMS
-# Periodic report form prefixes that count toward kept_filing (brief amendment 5).
-PERIODIC_REPORT_PREFIXES: tuple[str, ...] = ("10-K", "10-Q", "NT 10-")
+# Whitelisted periodic report and NT 10-K/10-Q late-notice form codes (brief amendment 5).
+_PERIODIC_REPORT_BASE_FORMS: tuple[str, ...] = (
+    "10-K",
+    "10-K405",
+    "10-KSB",
+    "10-KSB40",
+    "10-KT",
+    "10-K405T",
+    "10-Q",
+    "10-QSB",
+    "10-QT",
+    "NT 10-K",
+    "NT 10-Q",
+    "NT 10-KT",
+    "NT 10-QT",
+)
+PERIODIC_REPORT_FORMS: frozenset[str] = frozenset(
+    {form for base in _PERIODIC_REPORT_BASE_FORMS for form in (base, f"{base}/A")}
+)
 
 # Registered stock labels and 8-K item label constants from section 1 + amendment 2 of the brief.
 LABEL_AMBIGUOUS_MATCH = "ambiguous_match"
@@ -858,19 +875,19 @@ def resolve_confidence(
 
 
 def is_periodic_report_form(form: str) -> bool:
-    """Return True if ``form`` is a company periodic report or NT 10-K/10-Q notice.
+    """Return True if ``form`` is a whitelisted periodic report or NT 10-K/10-Q notice.
 
-    Matches forms beginning with ``10-K``, ``10-Q``, or ``NT 10-`` (case-insensitive,
-    whitespace-collapsed), per brief amendment 5. Ownership filings (SC 13D/13G, 3/4/5/144),
-    SEC letters (UPLOAD/CORRESP), deregistration forms (15 variants), 8-K, Form 25, S-x,
-    424B, and listing forms return False.
+    Case-insensitive, whole-string match (after collapsing whitespace) against
+    ``PERIODIC_REPORT_FORMS``: ``10-K``, ``10-K405``, ``10-KSB``, ``10-KSB40``, ``10-KT``,
+    ``10-K405T``, ``10-Q``, ``10-QSB``, ``10-QT``, ``NT 10-K``, ``NT 10-Q``, ``NT 10-KT``,
+    ``NT 10-QT``, each optionally followed by ``/A``. Everything else—including ``NT 10-D``,
+    ``NT 11-K``, ``10-12B``/``10-12G``, ``10-C``, ``10-D``, ``11-K``, ownership forms,
+    SEC letters, Form 15 variants, 8-K, Form 25, S-x, 424B, and lookalikes—returns False.
     """
     if not isinstance(form, str):
         return False
     normalized = " ".join(form.strip().upper().split())
-    if not normalized:
-        return False
-    return normalized.startswith(PERIODIC_REPORT_PREFIXES)
+    return normalized in PERIODIC_REPORT_FORMS
 
 
 def has_kept_filing(
@@ -921,8 +938,10 @@ def classify_company_events(
     Each entry in ``filings`` is either a ``FilingHeader`` or a ``(filed, items)`` pair;
     its items are classified against its own filing date before combining across filings.
     Order: ``ambiguous_match`` > ``bankruptcy`` > ``evidence_unresolved`` > ``kept_filing``
-    (any filing strictly > 180 days after ``last_bar``) > ``acquisition_type`` >
-    ``delisting_notice_only`` (Form 25 or delisting 8-K item) > ``no_event_found``.
+    (any qualifying periodic report or NT 10-K/10-Q notice strictly > 180 days after
+    ``last_bar``; bare dates are accepted as a compatibility input assumed already filtered) >
+    ``acquisition_type`` > ``delisting_notice_only`` (Form 25 or delisting 8-K item) >
+    ``no_event_found``.
     """
     if ambiguous_match:
         return LABEL_AMBIGUOUS_MATCH
@@ -985,7 +1004,7 @@ __all__ = [
     "LABEL_OTHER",
     "MASTER_INDEX_URL",
     "NUMBERED_ITEMS_START",
-    "PERIODIC_REPORT_PREFIXES",
+    "PERIODIC_REPORT_FORMS",
     "RELEVANT_EVENT_FORMS",
     "EarlySecClient",
     "Filing",

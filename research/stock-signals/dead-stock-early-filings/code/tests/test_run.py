@@ -2208,6 +2208,23 @@ def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path
                 "edgar/data/600010/0001-01-000001.txt",
             ),
             ("600010", "ONDAY CORP", "8-K", "2001-03-15", "edgar/data/600010/0001-01-000002.txt"),
+            # Exact next-day negative existence boundary (death_day + 1 day): dropped even when
+            # paired as a second candidate alongside ONDAY's valid CIK!
+            (
+                "600011",
+                "ONDAY INC",
+                "10-K",
+                (death_day + timedelta(days=1)).isoformat(),
+                "edgar/data/600011/0001-01-000001.txt",
+            ),
+            # Standalone next-day-only candidate -> dropped -> no_company_match.
+            (
+                "600012",
+                "NEXTDAY CORP",
+                "10-K",
+                (death_day + timedelta(days=1)).isoformat(),
+                "edgar/data/600012/0001-01-000001.txt",
+            ),
         ],
         (2001, 3): [
             # NONPER: late non-periodic filings only -> must NOT be kept_filing.
@@ -2259,6 +2276,78 @@ def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path
                 "8-K",
                 day_181.isoformat(),
                 "edgar/data/600001/0001-01-000008.txt",
+            ),
+            # Lookalikes (NT 10-D, 10-12G, 10-12B, 10-C, 10-D, NT 11-K, 11-K, 10-KABC, 10-QX,
+            # NT 10-KSB) must NOT count toward kept_filing.
+            (
+                "600001",
+                "NONPER CORP",
+                "NT 10-D",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000009.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-12G",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000010.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-12B",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000011.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-C",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000012.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-D",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000013.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "NT 11-K",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000014.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "11-K",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000015.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-KABC",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000016.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "10-QX",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000017.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "NT 10-KSB",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000018.txt",
             ),
             # Q181: 10-Q on day 181 -> kept_filing.
             (
@@ -2381,6 +2470,7 @@ def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path
             ("LATE", 60007, "LATEONLY CORP", death_day),
             ("ONEV", 60008, "ONEVALID INC", death_day),
             ("ONDY", 60010, "ONDAY INC", death_day),
+            ("NXTD", 60012, "NEXTDAY INC", death_day),
         ]
     )
     client = early_sec.EarlySecClient(
@@ -2396,7 +2486,7 @@ def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path
             "--mode",
             "pilot",
             "--pilot-size",
-            "9",
+            "10",
             "--release-id",
             "1",
             "--crsp-load",
@@ -2442,3 +2532,4 @@ def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path
     assert df.loc["ONEV", "suggested_loss"] == 0.0
     assert df.loc["ONDY", "label"] == "acquisition_type"
     assert df.loc["ONDY", "suggested_loss"] == 0.0
+    assert df.loc["NXTD", "label"] == "no_company_match"

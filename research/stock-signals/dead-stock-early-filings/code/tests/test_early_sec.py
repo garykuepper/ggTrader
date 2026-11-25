@@ -775,30 +775,45 @@ def test_find_filings_uses_v11_rules_and_gates_checked_promotion() -> None:
 
 
 def test_is_periodic_report_form_and_has_kept_filing_periodic_only() -> None:
-    from early_sec import is_periodic_report_form
+    from early_sec import PERIODIC_REPORT_FORMS, is_periodic_report_form
 
-    for form in (
+    base_forms = (
         "10-K",
-        "10-K/A",
         "10-K405",
-        "10-K405/A",
         "10-KSB",
-        "10-KSB/A",
+        "10-KSB40",
         "10-KT",
-        "10-KT/A",
+        "10-K405T",
         "10-Q",
-        "10-Q/A",
         "10-QSB",
-        "10-QSB/A",
+        "10-QT",
         "NT 10-K",
-        "NT 10-K/A",
         "NT 10-Q",
-        "NT 10-Q/A",
-        "nt  10-k",
-    ):
-        assert is_periodic_report_form(form), f"expected periodic: {form!r}"
+        "NT 10-KT",
+        "NT 10-QT",
+    )
+    expected_whitelist = frozenset(f for base in base_forms for f in (base, f"{base}/A"))
+    assert PERIODIC_REPORT_FORMS == expected_whitelist
 
-    for form in (
+    for form in sorted(expected_whitelist):
+        assert is_periodic_report_form(form), f"expected periodic: {form!r}"
+        assert is_periodic_report_form(form.lower()), f"expected periodic (lower): {form.lower()!r}"
+    assert is_periodic_report_form("  nt  10-k/a  ")
+
+    lookalikes_and_other = (
+        "10-12G",
+        "10-12B",
+        "10-C",
+        "10-D",
+        "NT 10-D",
+        "NT 10-D/A",
+        "NT 11-K",
+        "11-K",
+        "10-KABC",
+        "10-QX",
+        "10-QXYZ",
+        "NT 10-KSB",
+        "NT 10-QSB",
         "SC 13D",
         "SC 13D/A",
         "SC 13G",
@@ -824,29 +839,23 @@ def test_is_periodic_report_form_and_has_kept_filing_periodic_only() -> None:
         "424B2",
         "8-A12B",
         "8-A12G",
-        "10-12B",
         "",
         "   ",
-    ):
+    )
+    for form in lookalikes_and_other:
         assert not is_periodic_report_form(form), f"expected non-periodic: {form!r}"
 
     last_bar = pd.Timestamp("2001-03-15")
     day_180 = date(2001, 9, 11)
     day_181 = date(2001, 9, 12)
-    non_periodic_late = [
-        (day_181, "SC 13G"),
-        (day_181, "SC 13G/A"),
-        (day_181, "4"),
-        (day_181, "4/A"),
-        (day_181, "UPLOAD"),
-        (day_181, "15-12B"),
-        (day_181, "8-K"),
-    ]
+    non_periodic_late = [(day_181, form) for form in lookalikes_and_other if form.strip()]
     assert not has_kept_filing(non_periodic_late, last_bar)
     assert not has_kept_filing([(day_180, "10-Q")], last_bar)
     assert has_kept_filing([(day_181, "10-Q")], last_bar)
     assert has_kept_filing([(day_181, "NT 10-K")], last_bar)
     assert has_kept_filing([(day_181, "10-K405/A")], last_bar)
+    assert has_kept_filing([(day_181, "10-k405t/a")], last_bar)
+    assert has_kept_filing([(day_181, "nt 10-qt")], last_bar)
 
 
 def test_parse_master_index_preserves_file_path_and_find_filings_filters() -> None:
