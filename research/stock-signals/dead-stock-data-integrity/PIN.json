@@ -27,6 +27,10 @@
       {
         "path": "research/stock-signals/dead-stock-data-integrity/_roster.csv",
         "sha256": "3f010c9268243dfae29ff9a943fb3a4b970732d0bf1355f63961d9bcf9f5a72b"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-data-integrity/_payouts_v2.csv",
+        "sha256": "7c4a40db56db09d5c661a458e2505f6d8f8256910d6dabdd2dc1d6de99beef63"
       }
     ]
   },
@@ -46,6 +50,14 @@
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/integrity_checks.py",
       "sha256": "d9dae59ba5652bab10c1527297de656f9aa3e6e59dbdc6f69f4c67ec6c483712"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/open_cases.py",
+      "sha256": "f2f741af614130e82447e3634c95fca58864ba7fa2e1f95fc899e44c0a448885"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/open_cases_run.py",
+      "sha256": "afd242e61d1d11e683a7808ef55551d6cb00bf25367af0339446400502f65c55"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/payout_table.py",
@@ -72,6 +84,10 @@
       "sha256": "ad25b668f94d25399c2d76bb8cafcf128bbc0dcae300266bd105b6289952804d"
     },
     {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/sec_name_index.py",
+      "sha256": "f07c70714ca5867029d71cfca2606b5b1e0b6a27379b64a5be7a8f9b87603855"
+    },
+    {
       "path": "research/stock-signals/dead-stock-data-integrity/code/sec_pilot.py",
       "sha256": "0eb38593ccfe811f8b4c1078ec761e8637f2312928e42e1d1c42e3b3f6ab612b"
     },
@@ -82,6 +98,14 @@
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_integrity_checks.py",
       "sha256": "ab60efced2892492a29339cd9ec512072d141435adea08809871f85ce354b791"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_open_cases.py",
+      "sha256": "b52513c0a78dd0d70f8edbc11e963dd8269e9e8c99eab9199bc4b205ee24e6b0"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_open_cases_run.py",
+      "sha256": "6bf25822d531e6780f41e268306e89b9ef9ae3386293adc8f5d046bc8c04734a"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_payout_table.py",
@@ -110,6 +134,10 @@
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_filings.py",
       "sha256": "866449291fa01dd5a8e4b1973af1fed9350c96238dab38d680a8158a46db7009"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_name_index.py",
+      "sha256": "19ab544f79ad12a80424e236590951087a627b91bff27443fb0fcf15ec79aac0"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/tests/test_sec_pilot.py",
@@ -153,11 +181,15 @@
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_payouts.json",
       "sha256": "e06db777561a580497e95a09fac0f83d7c13db882d5ab0fb50123b52b3062cce"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-data-integrity/_payouts_v2.json",
+      "sha256": "6ad5d54e261e38f41cee1a4e248394f3544e6aa51b75339de3cf9180e0fefaaf"
     }
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable. The Form 25 phase needs network access and SEC_USER_AGENT even with the saved folder, because six notices return HTTP 404 and 404 answers are never saved, so they are requested again on every run; the payouts phase uses the saved copies except for any filing list that was not saved. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
+    "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable. The Form 25 phase needs network access and SEC_USER_AGENT even with the saved folder, because six notices return HTTP 404 and 404 answers are never saved, so they are requested again on every run; the payouts phase uses the saved copies except for any filing list that was not saved. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape. Phase 3 (open cases) is reproduced with code/open_cases_run.py (command in the README): it needs a clean tracked tree, the saved SEC folder and the SEC contact variable, and writes _payouts_v2.csv and _payouts_v2.json."
   },
-  "created_utc": "2026-11-25T01:15:18Z"
+  "created_utc": "2026-11-25T03:59:04Z"
 }
