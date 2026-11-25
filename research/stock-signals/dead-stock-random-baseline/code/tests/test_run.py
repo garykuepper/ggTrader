@@ -191,9 +191,17 @@ def test_a_partial_from_other_data_or_code_is_refused(tmp_path: Path) -> None:
     partial = _only_partial(tmp_path)
     (tmp_path / "out.json").unlink()
     original = partial.read_text()
-    for key in ("window", "saved_file_sha256", "data_provenance_sha256", "code_sha256", "draws"):
+    for key in (
+        "window",
+        "saved_file_sha256",
+        "data_provenance_sha256",
+        "code_sha256",
+        "git_head",
+        "lock_sha256",
+        "draws",
+    ):
         data = json.loads(original)
-        data["identity"][key] = "tampered" if isinstance(data["identity"][key], str) else 999
+        data["identity"][key] = "tampered" if data["identity"][key] != 999 else 998
         partial.write_text(json.dumps(data))
         assert call(tmp_path, saved) == run.EXIT_REFUSED, key
         assert not (tmp_path / "out.json").exists()
@@ -242,3 +250,15 @@ def test_a_timing_probe_does_not_leak_into_the_real_run(tmp_path: Path) -> None:
     seeds = {rec["seed"] for rec in out["draws"]["R"]}
     assert seeds == {20261125 + 2_000_000, 20261125 + 2_000_001}
     assert len(list((tmp_path / "partial").glob("*.partial.json"))) == 2
+
+
+def test_a_sanity_key_spelled_two_ways_is_refused(tmp_path: Path) -> None:
+    saved = saved_file(tmp_path)
+    assert call(tmp_path, saved) == 0
+    partial = _only_partial(tmp_path)
+    (tmp_path / "out.json").unlink()
+    data = json.loads(partial.read_text())
+    key = next(iter(data["sanity"]))
+    data["sanity"]["0" + key] = data["sanity"][key]
+    partial.write_text(json.dumps(data))
+    assert call(tmp_path, saved) == run.EXIT_REFUSED

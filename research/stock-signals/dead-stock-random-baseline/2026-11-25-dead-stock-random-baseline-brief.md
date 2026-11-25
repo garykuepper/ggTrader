@@ -100,3 +100,9 @@ None, as in the first test: the owner's four plain rules apply (test only on dat
 3. **The sanity check is fixed.** Section 5 said "close to". It is now: re-run the first 20 arm R draws of the window with dead stocks paid in full (loss 0.0), no cost and no tax; compare their mean yearly growth with an equal-weight hold of every eligible stock under the same settings. Fine when the difference is within two standard errors of the dice mean or within 0.5 percentage points a year, whichever is larger. If not, the report says the test is suspect. Draw counts for the sanity check are 20 per window.
 4. **Timing.** A throwaway timing draw on the 2020 to 2024 window (seed index 9999, result discarded and kept apart from the real files) took 3 to 4 seconds a draw per arm, so 100 draws of both arms is about 15 minutes per window, plus loading. The 100 draws stand; the cut-down rule of section 1 is not used.
 
+**2026-11-25, second note (after the second independent review; still before any real draw).** Three details of arm M and of resuming, fixed and pinned by tests; nothing registered changed.
+
+5. **Arm M's fill rule when too few new names exist.** Each month it keeps `need - k` of the names it held that are still eligible, then buys `k` names not held last month. If fewer than that many such names exist, it buys all of them and takes the rest from names dropped this month.
+6. **What counts as "held" when counting the rule's purchases.** A name counts as held while its position is above one billionth of its own largest position (so a tiny position being topped up is not a new name); the first version used a fixed share count, which the ledger does not.
+7. **A resumed run must match the commit and the dependency lock too**, not only the study's own files, the window, the data and the saved file. A resume after any commit is refused; the window is simply rerun from the start.
+

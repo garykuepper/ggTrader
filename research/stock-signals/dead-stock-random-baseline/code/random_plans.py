@@ -10,10 +10,11 @@ Matching rule of arm M (fixed before any draw): with ``need`` = the number of na
 (50, or fewer when fewer are eligible) and ``k`` = names the rule actually bought for the
 first time that month (its fills), keep
 ``need - k`` of the names already held that are still eligible, chosen at random, then fill
-with random eligible names not held last month (if too few such names exist, a dropped
-name may come back). If fewer names remain eligible than ``need - k``
-the portfolio replaces more than ``k`` names (deaths and lost eligibility force it). The first
-month holds ``need`` fresh random names, as the rule buys ``need`` names then.
+with random eligible names not held last month; if too few such names exist, all of them
+are taken and the rest come from names dropped this month. If fewer names remain
+eligible than ``need - k`` the portfolio replaces more than ``k`` names (deaths and lost
+eligibility force it). The first month holds ``need`` fresh random names, as the rule buys
+``need`` names then.
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ from rb_replay import (
 from ggTrader.lab.strategies.xs_momentum import momentum_scores
 
 SEED_BASE = 20261125
-HELD_QTY = 1e-9  # shares below this are float dust, not a holding (as in the first test)
+DUST = 1e-9  # a position below this share of its own peak is float dust, not a holding
 WINDOW_INDEX = {"early": 0, "dev": 1, "holdout": 2}
 ARM_INDEX = {"R": 0, "M": 1}
 
@@ -138,12 +139,17 @@ def executed_new_names(trades: list, steps: list[TargetStep]) -> list[int]:
     the rule's reference cell (the one the check-first run reproduced from the saved file).
     """
     held: dict[str, float] = {}
+    peak: dict[str, float] = {}
     new_by_date: dict[pd.Timestamp, int] = {}
     for trade in sorted(trades, key=lambda t: t.date):
         before = held.get(trade.symbol, 0.0)
-        if trade.qty > 0 and trade.reason == "rebalance" and before <= HELD_QTY:
+        # "Not held" means the ledger sold the whole position (what is left is rounding of the
+        # same size order as the position itself), never an absolute share count.
+        is_held = before > DUST * peak.get(trade.symbol, 0.0) and before > 0.0
+        if trade.qty > 0 and trade.reason == "rebalance" and not is_held:
             new_by_date[trade.date] = new_by_date.get(trade.date, 0) + 1
         held[trade.symbol] = before + trade.qty
+        peak[trade.symbol] = max(peak.get(trade.symbol, 0.0), held[trade.symbol])
     return [new_by_date.get(step.date, 0) for step in steps]
 
 
@@ -180,9 +186,13 @@ def plan_matched(
         # New names come from stocks not held last month, so a replaced name is a real
         # replacement; only when too few such stocks exist may a dropped name come back.
         pool = np.setdiff1d(item.usable, held)
-        if len(pool) < add_n:
-            pool = np.setdiff1d(item.usable, keep)
-        add = rng.choice(pool, size=add_n, replace=False) if add_n else pool[:0]
+        if len(pool) >= add_n:
+            add = rng.choice(pool, size=add_n, replace=False) if add_n else pool[:0]
+        else:
+            # Every genuinely new name is taken; the rest come from names dropped this month.
+            dropped = np.setdiff1d(np.setdiff1d(item.usable, keep), pool)
+            extra = rng.choice(dropped, size=add_n - len(pool), replace=False)
+            add = np.concatenate([pool, extra])
         chosen = np.sort(np.concatenate([keep, add]).astype(int))
         steps.append(_step(item, symbols, chosen))
         held = chosen

@@ -230,14 +230,19 @@ def test_matched_replaces_a_held_stock_that_stopped_being_eligible() -> None:
         assert len(set(b.targets) - set(a.targets)) == 1  # one forced replacement, k was 0
 
 
-def test_matched_falls_back_to_a_dropped_name_only_when_the_pool_is_too_small() -> None:
-    # Four eligible names, hold three, the rule replaced two: only one name was not held, so
-    # one replacement is new and the other must be a name dropped this month.
+def test_matched_takes_every_new_name_first_then_names_dropped_this_month() -> None:
+    # Four eligible names, three held, the rule bought two: only one name was not held, so it
+    # is always bought, and the second replacement must come from the names dropped this month.
     sets = [tiny_set(DAY1, [0, 1, 2, 3]), tiny_set(DAY2, [0, 1, 2, 3])]
-    for seed in range(30):
+    seen_dropped_back = set()
+    for seed in range(60):
         a, b = plan_matched(sets, SYMS, [3, 2], top_n=3, seed=seed)
-        assert len(b.targets) == 3
-        assert len(set(b.targets) - set(a.targets)) <= 1
+        outside = {"X0", "X1", "X2", "X3"} - set(a.targets)
+        assert len(outside) == 1 and len(b.targets) == 3
+        assert next(iter(outside)) in b.targets  # the only genuinely new name is always taken
+        assert len(set(b.targets) & set(a.targets)) == 2
+        seen_dropped_back.add(tuple(sorted(set(b.targets) & set(a.targets))))
+    assert len(seen_dropped_back) > 1  # which held names stay is random
 
 
 def test_matched_and_dice_hold_everything_when_fewer_than_top_n_are_eligible() -> None:
@@ -297,3 +302,27 @@ def test_dead_exits_and_liquidation_are_not_purchases() -> None:
         Fill("2019-03-01", "A", 4, "tax_sale"),
     ]
     assert executed_new_names(trades, steps) == [1, 0]
+
+
+def test_small_positive_holdings_are_still_holdings() -> None:
+    steps = [step_on("2019-02-01"), step_on("2019-03-01")]
+    trades = [Fill("2019-02-01", "A", 5e-10), Fill("2019-03-01", "A", 5e-10)]
+    assert executed_new_names(trades, steps) == [1, 0]
+
+
+def test_a_held_stock_that_dies_is_replaced_in_arm_m_through_the_real_eligible_sets() -> None:
+    close = make_close(n=14)
+    spans = pd.DataFrame({"symbol": ["S05"], "last_date": pd.to_datetime(["2019-06-20"])})
+    close.loc["2019-06-21":, "S05"] = np.nan
+    sets = sets_for(close, pd.DataFrame(True, index=close.index, columns=close.columns), spans)
+    symbols = np.array(close.columns)
+    held_before_death = 0
+    for seed in range(200):
+        plan = plan_matched(sets, symbols, [3] + [0] * (len(sets) - 1), top_n=TOP_N, seed=seed)
+        for before, after in zip(plan, plan[1:], strict=False):
+            if after.decision_date > pd.Timestamp("2019-06-20"):
+                assert "S05" not in after.targets and len(after.targets) == TOP_N
+                if "S05" in before.targets:
+                    held_before_death += 1
+                    assert len(set(after.targets) - set(before.targets)) == 1  # forced swap
+    assert held_before_death > 0

@@ -11,7 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ggTrader.utils.binding import binding, git_sha
+from ggTrader.utils.binding import binding, git_sha, lock_sha256
 from ggTrader.utils.io import write_json
 from ggTrader.utils.study import bootstrap, study_dir
 
@@ -207,6 +207,8 @@ def _identity(args: argparse.Namespace, saved_sha: str, inputs: dict[str, Any]) 
         "saved_file_sha256": saved_sha,
         "data_provenance_sha256": hashlib.sha256(provenance.encode()).hexdigest(),
         "code_sha256": _code_sha256(),
+        "git_head": git_sha(ROOT),
+        "lock_sha256": lock_sha256(ROOT),
         "first_draw": args.first_draw,
         "draws": args.draws,
         "sanity_draws": min(args.sanity_draws, args.draws),
@@ -235,8 +237,8 @@ def _validated(partial: dict[str, Any], args: argparse.Namespace) -> bool:
     for arm in ARMS:
         if sorted(r["seed"] for r in partial[arm]) != sorted(_expected_seeds(args, arm)):
             return False
-    want = set(_expected_seeds(args, "R")[: min(args.sanity_draws, args.draws)])
-    return {int(s) for s in partial["sanity"]} == want
+    want = {str(s) for s in _expected_seeds(args, "R")[: min(args.sanity_draws, args.draws)]}
+    return set(partial["sanity"]) == want and len(partial["sanity"]) == len(want)
 
 
 def main(
