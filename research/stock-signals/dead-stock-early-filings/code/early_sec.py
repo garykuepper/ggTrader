@@ -649,9 +649,15 @@ def _extract_filed_date(header: str) -> date | None:
 
 def _numbers_allowed(filed: date | datetime | pd.Timestamp | str | None) -> bool:
     """Return True only when ``filed`` is a readable date on or after 2004-08-23."""
-    if filed is None:
+    if filed is None or filed is pd.NaT:
         return False
-    return _as_date(filed) >= NUMBERED_ITEMS_START
+    if isinstance(filed, str):
+        parsed = _parse_header_date(filed)
+        return parsed is not None and parsed >= NUMBERED_ITEMS_START
+    try:
+        return _as_date(filed) >= NUMBERED_ITEMS_START
+    except (TypeError, ValueError):
+        return False
 
 
 def _parse_item_declaration(raw_value: str) -> tuple[bool, list[str]]:

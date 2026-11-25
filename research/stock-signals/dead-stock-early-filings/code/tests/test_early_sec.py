@@ -468,6 +468,50 @@ def test_number_with_no_date_is_other() -> None:
     assert label_items(frozenset({"Acquisition or disposition of assets"})) == "acquisition_type"
 
 
+def test_unreadable_explicit_date_treats_numbers_as_other_and_keeps_text_labels() -> None:
+    # Unreadable explicit date strings and NaT never raise; numbers become 'other'.
+    assert label_items(frozenset({"2.01"}), filed="2004-02-30") == "other"
+    assert label_items(frozenset({"1.03"}), filed="NOTADATE") == "other"
+    assert label_items(frozenset({"2.01"}), filed=pd.NaT) == "other"
+
+    # A bad explicit date never prevents a registered text label from classifying.
+    assert (
+        label_items(frozenset({"Acquisition or disposition of assets"}), filed="2004-02-30")
+        == "acquisition_type"
+    )
+    assert (
+        label_items(frozenset({"2.01", "Acquisition or disposition of assets"}), filed="NOTADATE")
+        == "acquisition_type"
+    )
+
+    # parse_8k_items with an unreadable explicit date drops numbers and keeps text labels.
+    mixed_header = _header_with("20040901", "2.01", "Acquisition or disposition of assets")
+    items = parse_8k_items(mixed_header, filed="NOTADATE")
+    assert items == frozenset({"acquisition or disposition of assets"})
+    assert label_items(items, filed="NOTADATE") == "acquisition_type"
+
+    # Dated-pair company classification does not abort on an unreadable date string.
+    last_bar = pd.Timestamp("2004-02-15")
+    assert (
+        classify_company_events(
+            [("2004-02-30", {"2.01"})],
+            has_form25=False,
+            filing_dates=[date(2004, 3, 1)],
+            last_bar=last_bar,
+        )
+        == "no_event_found"
+    )
+    assert (
+        classify_company_events(
+            [("2004-02-30", {"2.01"}), ("NOTADATE", {"Acquisition or disposition of assets"})],
+            has_form25=False,
+            filing_dates=[date(2004, 3, 1)],
+            last_bar=last_bar,
+        )
+        == "acquisition_type"
+    )
+
+
 def test_combining_mixed_era_filings_uses_each_filings_own_date() -> None:
     last_bar = pd.Timestamp("2004-08-20")
 
