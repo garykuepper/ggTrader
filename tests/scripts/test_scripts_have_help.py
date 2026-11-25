@@ -100,6 +100,7 @@ MODULE_CALLS = frozenset(
         "re.compile", "Path", "Path(__file__).resolve", "sys.path.insert", "sys.path.append",
         "str", "frozenset", "set", "tuple", "dict", "any", "tempfile.gettempdir", "date",
         "date.today", "datetime.date", "logging.getLogger", "find_project_root", "repo_root",
+        "study_dir",
         "os.environ.get", "pd.Timestamp", "ZoneInfo",
         "matplotlib.use", "bootstrap", "FastMCP", "FigureSpec", "OptionBlock", "Point", "WfoPolicy",
         "i.startswith", "'\\n\\n'.join", "','.join",

@@ -42,7 +42,7 @@ def classify_path(close: pd.Series) -> dict:
         return {"ratio": None, "daily_std": None, "label": "unclear"}
 
     ratio = last_close / prior_close
-    daily_std = float(tail.pct_change().dropna().std())
+    daily_std = float(tail.pct_change(fill_method=None).dropna().std())
 
     if ratio < COLLAPSE_BELOW:
         label = "collapse_like"
