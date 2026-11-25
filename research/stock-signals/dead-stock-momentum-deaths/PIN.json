@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-momentum-deaths",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-momentum-deaths"
+  },
+  "engine": {
+    "git_sha": "873c79674572f1747fe9403cfec0790a87393b41",
+    "git_dirty": false,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "python": "3.12.13",
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": [
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_dev-A.json",
+        "sha256": "beab59f3ae57b72786ac1ad96dd95c2e9fd1230f09e1f4a3e29d3f42f17475ed"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_holdout-A.json",
+        "sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-fresh-window/_fresh-A.json",
+        "sha256": "828752718fd34e8b5dcc89962638d5939052a2d478ecd99051e0516218c207ed"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-random-baseline/_early.json",
+        "sha256": "35dcdcba3329de895b5899eef0d1a752f3d5d36513311d3591c791725d0f1875"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-random-baseline/_dev.json",
+        "sha256": "a32bbe197f8e14ae954b363db1833b552b3911c93fec47103152f013bf421270"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-random-baseline/_holdout.json",
+        "sha256": "a6ef9aaf80fc1ab55cc94213c461839c804f77a8abaf98af557c13fcac90eaa2"
+      }
+    ]
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dead_stock_momentum_deaths.py",
+      "sha256": "2a95994cafee93415da8806be910f5d89f962ca9d2089e7c3243bba61cba5334"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dm_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dm_dead_stock_first_test.py",
+      "sha256": "0738899aa9c94b36e86271d8e4b6306022b1b5463b31a5802379a2d75fc18bc8"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dm_ledger_run.py",
+      "sha256": "8288f102f0c923bad042a7364b7888ea0c8a394585ddbf61dd53f294037d33cd"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dm_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/dm_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/momentum_deaths.py",
+      "sha256": "fdefe398dfca6b6479be8667fb13546efe535e136004542462e95dd4575cf854"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/momentum_inputs.py",
+      "sha256": "894cb9645fd155b67b19f83a2029db3bba7a4ba8ff49d41497dd15d7f3f98d36"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/run.py",
+      "sha256": "0678d957a70cbd2b4485f709ee6fc2f378dc01aacc5f26e85a27ad4d2fe52453"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/tests/test_dead_stock_momentum_deaths.py",
+      "sha256": "3a4c732848cfba9659b8e5944c31b9593d678044da9c47a3056dd0fba702c209"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/tests/test_frozen_copies.py",
+      "sha256": "5dd0d03e60a9d5ba91465b66cb8ed79893f2b0535fa1e088bfd36b13b16b48d8"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/tests/test_momentum_deaths.py",
+      "sha256": "506fdcbcea56ed3b727f338bca8711427f5c86ac0a543cc3b478600485fc5383"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/code/tests/test_run.py",
+      "sha256": "d23850a0ff7f53a4c97428bfd096b249f1c6a4994bd125c672e30c960bc4dc55"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-momentum-deaths/code/run.py",
+      "--window",
+      "dev",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2000-01-03",
+    "eval_end": "2024-12-31"
+  },
+  "seed": 20261125,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/_dev.json",
+      "sha256": "f67299fa4576774bdea92302dcd45a429ff36c99345d7fb7814fd2cc30667d4d"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/_early.json",
+      "sha256": "a22312a6ad00b5743840be75db24e0014dd8c04f7369fca3ddbdfe062a63847f"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-momentum-deaths/_holdout.json",
+      "sha256": "7e6cda99d7a13d2290796b92825287385b657bd36d48706e50e01083605f7053"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "Replay in a scratch clone at git_sha 873c7967, the code commit all three results were run on (each result was committed on a clean tree after its run; the code did not change between them). The pinned command runs one window (2005 to 2019, about 4 minutes); the README lists the other two. Each run first checks that its top 50 equals the copied planner's. It reads the read-only database, release 1 and CRSP load 1, and six saved result files (pinned above). The only random step is a bootstrap with fixed seed 20261125."
+  },
+  "created_utc": "2026-11-25T18:51:10Z"
+}
