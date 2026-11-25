@@ -82,4 +82,4 @@ None. The owner's four plain rules apply. If the numbers do not support H1 to H3
 
 ## Amendments
 
-None yet.
+**2026-11-25 (after an independent code review, before any real run; no number computed).** Measure C counts trading days on each stock's own valid closes, not on the market calendar. The score reads the close 21 and 252 valid closes back from the stock's last valid close on or before the decision day (a stock with holes in its history therefore looks further back in calendar terms); C now flags a one-day jump of 20 percent or more between those two bars, both included. A jump never bridges a missing close. Section 1 C said "252 and 21 trading days before the decision day (the span the score uses)"; this makes the second half of that sentence true when a stock has missing closes. For stocks with complete histories nothing changes.

@@ -256,6 +256,26 @@ def one_day_jump_flags(close: pd.DataFrame, *, threshold: float = JUMP_THRESHOLD
     return flags
 
 
+def scoring_window_has_jump(
+    valid_bars: np.ndarray, jump_cum_col: np.ndarray, dec_pos: int, *, far: int, near: int
+) -> bool:
+    """True if a flagged one-day jump falls inside the span the momentum score reads.
+
+    The score looks ``near`` and ``far`` closes back on the stock's OWN valid closes (holes in
+    its history do not count), starting from its last valid close on or before the decision
+    day (``xs_momentum.momentum_scores``). The span runs from the bar ``far`` valid closes back
+    to the bar ``near`` valid closes back, both ends included. ``jump_cum_col`` is the running
+    count of flags for the column (``jump_cum_col[j + 1] - jump_cum_col[j]`` is bar ``j``).
+    A stock without ``far`` valid closes before its last one has no span: False.
+    """
+    last = int(np.searchsorted(valid_bars, dec_pos, side="right")) - 1
+    if last < far:
+        return False
+    lo = int(valid_bars[last - far])
+    hi = int(valid_bars[last - near])
+    return bool(jump_cum_col[hi + 1] - jump_cum_col[lo] > 0)
+
+
 def quartiles(values: list[float]) -> dict[str, Any]:
     """Count, lower quartile, median, and upper quartile of finite values."""
     finite = np.array([v for v in values if v is not None and math.isfinite(v)], dtype=float)
@@ -358,6 +378,10 @@ def compute_measures(
     death_map = death_dates.to_dict()
     close_vals = close.to_numpy(dtype=float)
     jump_matrix = one_day_jump_flags(close, threshold=jump_threshold)
+    # Running count of flags per column, so "any jump between two bars" is one subtraction.
+    jump_cum = np.zeros((jump_matrix.shape[0] + 1, jump_matrix.shape[1]), dtype=np.int32)
+    np.cumsum(jump_matrix, axis=0, out=jump_cum[1:])
+    valid_bars = [np.flatnonzero(np.isfinite(close_vals[:, c])) for c in range(close.shape[1])]
 
     band_sm = {name: 0 for name, _, _ in bands}
     band_deaths = {name: 0 for name, _, _ in bands}
@@ -416,19 +440,19 @@ def compute_measures(
             band_deaths[name] += sum(1 for c in slice_cols if int(c) in month_deaths)
 
         dec_pos = int(close.index.get_loc(month.decision_date))
-        hi_jump = dec_pos - jump_min_days_before
-        lo_jump = max(0, dec_pos - jump_max_days_before)
-        if hi_jump >= lo_jump and hi_jump >= 0:
-            jumped_row = jump_matrix[lo_jump : hi_jump + 1].any(axis=0)
-        else:
-            jumped_row = np.zeros(close.shape[1], dtype=bool)
 
         for rank_idx, col_raw in enumerate(month.ranked):
             col = int(col_raw)
             rank = rank_idx + 1
             in_top = rank <= top_n
             died = col in month_deaths
-            jumped = bool(jumped_row[col])
+            jumped = scoring_window_has_jump(
+                valid_bars[col],
+                jump_cum[:, col],
+                dec_pos,
+                far=jump_max_days_before,
+                near=jump_min_days_before,
+            )
 
             c_counts["all_usable"][0] += 1
             c_counts["all_usable"][1] += int(jumped)
@@ -506,7 +530,8 @@ def compute_measures(
     }
     c_block = {
         "threshold": float(jump_threshold),
-        "window_trading_days_before": [int(jump_max_days_before), int(jump_min_days_before)],
+        "window_valid_closes_before": [int(jump_max_days_before), int(jump_min_days_before)],
+        "window_note": "counted on each stock's own valid closes, as the momentum score is",
         "note": JUMP_NOTE,
         "top_50_died": _jump_group_summary(*c_counts["top_50_died"]),
         "top_50_did_not_die": _jump_group_summary(*c_counts["top_50_did_not_die"]),

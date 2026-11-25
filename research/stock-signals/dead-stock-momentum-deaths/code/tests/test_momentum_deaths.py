@@ -537,3 +537,73 @@ def test_d_check_against_held_at_death_flag_boundaries() -> None:
     zero_bad = md.check_against_held_at_death(1, 0)
     assert zero_bad["ratio"] is None
     assert zero_bad["exceeds_10pct_flag"] is True
+
+
+def _cum(flag_bars: list[int], n: int) -> np.ndarray:
+    flags = np.zeros(n, dtype=np.int32)
+    flags[flag_bars] = 1
+    out = np.zeros(n + 1, dtype=np.int32)
+    out[1:] = np.cumsum(flags)
+    return out
+
+
+def test_scoring_window_jump_endpoints_without_holes() -> None:
+    valid = np.arange(400)
+    dec = 399  # span runs from valid bar 399-252 = 147 to 399-21 = 378, both included
+    for bar, expected in [(146, False), (147, True), (378, True), (379, False)]:
+        assert (
+            md.scoring_window_has_jump(valid, _cum([bar], 400), dec, far=252, near=21) is expected
+        )
+
+
+def test_scoring_window_follows_the_stocks_own_valid_closes_when_it_has_holes() -> None:
+    # Ten missing closes just before the decision: the stock's last valid close is bar 389, so
+    # its span is valid bars 137 to 368 (not the market days 147 to 378).
+    valid = np.array([b for b in range(400) if not 390 <= b <= 399])
+    dec = 399
+    # 260 market days before the decision: inside the true span, outside the market-day span.
+    assert md.scoring_window_has_jump(valid, _cum([139], 400), dec, far=252, near=21) is True
+    # 22 market days before: outside the true span (only 12 valid closes back).
+    assert md.scoring_window_has_jump(valid, _cum([377], 400), dec, far=252, near=21) is False
+
+
+def test_scoring_window_without_enough_history_has_no_span() -> None:
+    valid = np.arange(200)
+    assert md.scoring_window_has_jump(valid, _cum([100], 300), 199, far=252, near=21) is False
+
+
+def test_usable_set_excludes_short_history_bad_scores_ineligible_and_ended_names() -> None:
+    days = pd.bdate_range("2018-01-01", "2020-03-31", tz=None)
+    cols = [f"S{i:03d}" for i in range(60)] + [
+        "NEW",  # eligible but only 100 days of closes
+        "ZERO",  # a zero price 252 closes back: no finite score
+        "OUT",  # not eligible on the decision day
+        "GONE",  # series ended before the decision day
+        "LAST",  # series ends exactly on the decision day: still usable
+    ]
+    rng = np.random.default_rng(3)
+    prices = 50.0 * np.exp(np.cumsum(rng.normal(0.0004, 0.01, (len(days), len(cols))), axis=0))
+    close = pd.DataFrame(prices, index=days, columns=cols)
+    decision = pd.Timestamp("2020-01-31")
+    close.loc[: days[-101], "NEW"] = np.nan
+    pos = int(close.index.get_loc(decision))
+    # Zero price at the bar the score reads as the older close (valid closes 252 back).
+    close.iloc[pos - 252, close.columns.get_loc("ZERO")] = 0.0
+    close.loc[decision + pd.Timedelta(days=1) :, "LAST"] = np.nan
+    close.loc[pd.Timestamp("2020-01-15") :, "GONE"] = np.nan
+    eligible = pd.DataFrame(True, index=days, columns=cols)
+    eligible.loc[decision, "OUT"] = False
+    span_rows = pd.DataFrame(
+        {
+            "symbol": ["GONE", "LAST"],
+            "last_date": pd.to_datetime(["2020-01-14", "2020-01-31"]),
+            "has_successor": [False, False],
+            "total_loss": [False, False],
+        }
+    )
+    spans, *_ = md.prepare_deaths(close, span_rows, "2020-03-31", crsp_end="2024-12-31")
+    sets = md.eligible_sets(close, eligible, spans, start="2020-01-02", end="2020-03-31")
+    first = next(s for s in sets if s.decision_date == decision)
+    names = {cols[j] for j in first.usable}
+    assert names == {f"S{i:03d}" for i in range(60)} | {"LAST"}
+    assert len(first.ranked) == len(first.usable) == 61
