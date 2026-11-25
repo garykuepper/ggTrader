@@ -816,6 +816,127 @@ def test_truncated_raw_header_is_rejected_and_complete_header_classified() -> No
     assert out.loc["COMP_ACQ", "suggested_loss"] == 0.0
 
 
+def test_quoted_closing_tag_lowercase_delimiter_and_acq_then_bankruptcy_pair() -> None:
+    """Fix round 3 (a)-(e): standalone delimiter matching, quoted tags, acq-then-bk pair."""
+    quoted_no_doc = (
+        "<SEC-HEADER>\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        "FILED AS OF DATE:\t\t20010315\n"
+        "COMPANY CONFORMED NAME:\t\tQUOTED CORP\n"
+        "CENTRAL INDEX KEY:\t\t0000100021\n"
+        "ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        'Response interrupted; expected "</SEC-HEADER>" before the remainder.\n'
+    )
+    quoted_with_doc = quoted_no_doc + "<DOCUMENT>\nbody text\n"
+    quoted_then_real_close = quoted_no_doc + "</SEC-HEADER>\n<DOCUMENT>\nbody text\n"
+
+    acq_then_bk_truncated = (
+        "<SEC-HEADER>\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        "FILED AS OF DATE:\t\t20010315\n"
+        "COMPANY CONFORMED NAME:\t\tPAIR CORP\n"
+        "CENTRAL INDEX KEY:\t\t0000100022\n"
+        "ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+    )
+    acq_then_bk_complete = (
+        acq_then_bk_truncated
+        + "ITEM INFORMATION:\t\tBankruptcy or receivership\n"
+        + "</SEC-HEADER>\n<DOCUMENT>\nbody text\n"
+    )
+    lowercase_close = (
+        "<SEC-HEADER>\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        "FILED AS OF DATE:\t\t20010315\n"
+        "COMPANY CONFORMED NAME:\t\tLOWER CORP\n"
+        "CENTRAL INDEX KEY:\t\t0000100023\n"
+        "ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        "  </sec-header>  \n<DOCUMENT>\nbody text\n"
+    )
+
+    h_q_nodoc = early_sec.parse_filing_header(quoted_no_doc)
+    h_q_doc = early_sec.parse_filing_header(quoted_with_doc)
+    h_q_closed = early_sec.parse_filing_header(quoted_then_real_close)
+    h_pair_trunc = early_sec.parse_filing_header(acq_then_bk_truncated)
+    h_pair_comp = early_sec.parse_filing_header(acq_then_bk_complete)
+    h_lower = early_sec.parse_filing_header(lowercase_close)
+
+    assert h_q_nodoc.complete is False
+    assert ec.check_header_complete(h_q_nodoc) == "header_truncated"
+    assert h_q_doc.complete is False
+    assert ec.check_header_complete(h_q_doc) == "header_truncated"
+    assert h_q_closed.complete is True
+    assert ec.check_header_complete(h_q_closed) is None
+    assert h_pair_trunc.complete is False
+    assert ec.check_header_complete(h_pair_trunc) == "header_truncated"
+    assert h_pair_comp.complete is True
+    assert ec.check_header_complete(h_pair_comp) is None
+    assert h_lower.complete is True
+    assert ec.check_header_complete(h_lower) is None
+
+    last = date(2001, 3, 10)
+    cases = [
+        ("Q_NODOC", 50001, "QUOTED NODOC CORP", 100021, h_q_nodoc),
+        ("Q_DOC", 50002, "QUOTED DOC CORP", 100021, h_q_doc),
+        ("Q_CLOSED", 50003, "QUOTED CLOSED CORP", 100021, h_q_closed),
+        ("PAIR_TR", 50004, "PAIR TRUNC CORP", 100022, h_pair_trunc),
+        ("PAIR_OK", 50005, "PAIR COMP CORP", 100022, h_pair_comp),
+        ("LOWER", 50006, "LOWER CORP", 100023, h_lower),
+    ]
+    roster = pd.DataFrame(
+        [
+            {
+                "column": col,
+                "permno": p,
+                "symbol": col,
+                "last_bar": pd.Timestamp(last),
+                "decision_date": pd.Timestamp("2001-02-28"),
+                "rank_band": "1-50",
+                "held_by_rule": True,
+            }
+            for col, p, _name, _cik, _hdr in cases
+        ]
+    )
+    roster["permno"] = roster["permno"].astype("Int64")
+    names = pd.DataFrame(
+        {
+            "column": [c[0] for c in cases],
+            "company_name": [c[2] for c in cases],
+            "name_source": ["mcgill"] * len(cases),
+            "exchcd": pd.Series([1] * len(cases), dtype="Int64"),
+        }
+    )
+    lookup_map = {
+        name: ec.CompanyEvidence(
+            cik=cik,
+            company_name=name,
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(
+                ec.FilingEvidence(
+                    _filing(form="8-K", company_name=name, cik=cik, filed=date(2001, 3, 15)),
+                    hdr,
+                ),
+            ),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(cik,),
+        )
+        for _col, _p, name, cik, hdr in cases
+    }
+
+    out = ec.classify_roster(roster, names, lambda name, _d: lookup_map[name]).set_index("column")
+
+    for col in ("Q_NODOC", "Q_DOC", "PAIR_TR"):
+        assert out.loc[col, "label"] == "evidence_unresolved"
+        assert "header_truncated" in out.loc[col, "evidence"]
+        assert pd.isna(out.loc[col, "suggested_loss"])
+
+    assert out.loc["Q_CLOSED", "label"] == "acquisition_type"
+    assert out.loc["Q_CLOSED", "suggested_loss"] == 0.0
+    assert out.loc["PAIR_OK", "label"] == "bankruptcy"
+    assert pd.isna(out.loc["PAIR_OK", "suggested_loss"])
+    assert out.loc["LOWER", "label"] == "acquisition_type"
+    assert out.loc["LOWER", "suggested_loss"] == 0.0
+
+
 def test_select_pilot_rows_is_deterministic_and_uses_seed_20261125() -> None:
     permnos = list(range(50000, 50030))
     roster = pd.DataFrame(

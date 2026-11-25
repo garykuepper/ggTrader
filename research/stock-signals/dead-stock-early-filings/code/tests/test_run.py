@@ -1403,3 +1403,200 @@ def test_driver_non_404_fetch_failure_and_parse_error_propagate_loudly(
         )
     assert not out_parse_err.exists()
     assert not (out_parse_err.parent / "_pilot_labels.csv").exists()
+
+
+def test_driver_quoted_closing_tag_acq_then_bankruptcy_pair_and_lowercase_close(
+    tmp_path: Path,
+) -> None:
+    """Fix round 3 (a)-(e): driver raw-response regressions through run.main + real SecLookup."""
+    death_day = date(2001, 3, 12)
+
+    # (a) Quoted mention of </SEC-HEADER> with NO later <DOCUMENT> line -> header_truncated.
+    quoted_no_doc = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tQUOTED NODOC CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000400001\n"
+        b"ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        b'Response interrupted; expected "</SEC-HEADER>" before the remainder.\n'
+    )
+    # (b) Same quoted mention WITH a later <DOCUMENT> line -> still header_truncated.
+    quoted_with_doc = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tQUOTED DOC CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000400002\n"
+        b"ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        b'Response interrupted; expected "</SEC-HEADER>" before the remainder.\n'
+        b"<DOCUMENT>\nbody text\n"
+    )
+    # (c) Truncated after acquisition item, before later Bankruptcy item & closing tag.
+    acq_before_bk_trunc = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tACQ BK PAIR CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000400003\n"
+        b"ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+    )
+    # (d) Genuine standalone </SEC-HEADER> counterparts:
+    # - quoted_no_doc with genuine standalone </SEC-HEADER> before <DOCUMENT> -> acquisition_type
+    # - acq_before_bk_trunc with later Bankruptcy item + standalone </SEC-HEADER> -> bankruptcy
+    quoted_complete = quoted_no_doc + b"</SEC-HEADER>\n<DOCUMENT>\nbody text\n"
+    acq_then_bk_complete = (
+        acq_before_bk_trunc
+        + b"ITEM INFORMATION:\t\tBankruptcy or receivership\n"
+        + b"</SEC-HEADER>\n<DOCUMENT>\nbody text\n"
+    )
+    # (e) Standalone lowercase </sec-header> line (with surrounding whitespace) -> complete.
+    lowercase_complete = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tLOWERCASE CLOSE CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000400004\n"
+        b"ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        b"  </sec-header>\t\n"
+        b"<DOCUMENT>\nbody text\n"
+    )
+
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            (
+                "400001",
+                "QUOTED NODOC CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/400001/0001-01-000001.txt",
+            ),
+            (
+                "400002",
+                "QUOTED DOC CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/400002/0001-01-000001.txt",
+            ),
+            (
+                "400003",
+                "ACQ BK PAIR CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/400003/0001-01-000001.txt",
+            ),
+            (
+                "400004",
+                "LOWERCASE CLOSE CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/400004/0001-01-000001.txt",
+            ),
+        ],
+    }
+    inputs = _single_window_inputs(
+        [
+            ("Q_ND", 40001, "QUOTED NODOC INC", death_day),
+            ("Q_WD", 40002, "QUOTED DOC INC", death_day),
+            ("PAIR", 40003, "ACQ BK PAIR INC", death_day),
+            ("LOWR", 40004, "LOWERCASE CLOSE INC", death_day),
+        ]
+    )
+
+    # Run 1: truncated / quoted-only headers -> evidence_unresolved (header_truncated);
+    # lowercase standalone </sec-header> -> acquisition_type (0.0).
+    resp1 = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    resp1.update(
+        {
+            early_sec.filing_url("edgar/data/400001/0001-01-000001.txt"): quoted_no_doc,
+            early_sec.filing_url("edgar/data/400002/0001-01-000001.txt"): quoted_with_doc,
+            early_sec.filing_url("edgar/data/400003/0001-01-000001.txt"): acq_before_bk_trunc,
+            early_sec.filing_url("edgar/data/400004/0001-01-000001.txt"): lowercase_complete,
+        }
+    )
+    client1 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_r3_trunc",
+        min_interval=0.0,
+        opener=_strict_opener(resp1),
+        sleep=lambda _s: None,
+    )
+    out1 = tmp_path / "r3_trunc" / "_pilot.json"
+    code1 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "4",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out1),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client1,
+        git_dirty=lambda: False,
+    )
+    assert code1 == 0
+    df1 = pd.read_csv(out1.parent / "_pilot_labels.csv").set_index("column")
+    for col in ("Q_ND", "Q_WD", "PAIR"):
+        assert df1.loc[col, "label"] == "evidence_unresolved"
+        assert "header_truncated" in df1.loc[col, "evidence"]
+        assert pd.isna(df1.loc[col, "suggested_loss"])
+    assert df1.loc["LOWR", "label"] == "acquisition_type"
+    assert df1.loc["LOWR", "confidence"] == "checked"
+    assert df1.loc["LOWR", "suggested_loss"] == 0.0
+
+    # Run 2: genuine standalone </SEC-HEADER> counterparts (with both acq + bk on PAIR).
+    resp2 = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    resp2.update(
+        {
+            early_sec.filing_url("edgar/data/400001/0001-01-000001.txt"): quoted_complete,
+            early_sec.filing_url("edgar/data/400002/0001-01-000001.txt"): (
+                quoted_no_doc.replace(b"QUOTED NODOC CORP", b"QUOTED DOC CORP").replace(
+                    b"0000400001", b"0000400002"
+                )
+                + b"</SEC-HEADER>\n<DOCUMENT>\nbody text\n"
+            ),
+            early_sec.filing_url("edgar/data/400003/0001-01-000001.txt"): acq_then_bk_complete,
+            early_sec.filing_url("edgar/data/400004/0001-01-000001.txt"): lowercase_complete,
+        }
+    )
+    client2 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_r3_comp",
+        min_interval=0.0,
+        opener=_strict_opener(resp2),
+        sleep=lambda _s: None,
+    )
+    out2 = tmp_path / "r3_comp" / "_pilot.json"
+    code2 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "4",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out2),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client2,
+        git_dirty=lambda: False,
+    )
+    assert code2 == 0
+    df2 = pd.read_csv(out2.parent / "_pilot_labels.csv").set_index("column")
+    assert df2.loc["Q_ND", "label"] == "acquisition_type"
+    assert df2.loc["Q_ND", "suggested_loss"] == 0.0
+    assert df2.loc["Q_WD", "label"] == "acquisition_type"
+    assert df2.loc["Q_WD", "suggested_loss"] == 0.0
+    assert df2.loc["PAIR", "label"] == "bankruptcy"
+    assert df2.loc["PAIR", "confidence"] == "checked"
+    assert pd.isna(df2.loc["PAIR", "suggested_loss"])
+    assert df2.loc["LOWR", "label"] == "acquisition_type"
+    assert df2.loc["LOWR", "suggested_loss"] == 0.0

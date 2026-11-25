@@ -127,8 +127,8 @@ _ITEM_INFO_LINE_RE = re.compile(r"^\s*ITEM\s+INFORMATION\s*:\s*(.*)$", re.IGNORE
 _ITEMS_TAG_LINE_RE = re.compile(r"^\s*<ITEMS>\s*(.*?)(?:</ITEMS>)?\s*$", re.IGNORECASE)
 _HEADER_FIELD_RE = re.compile(r"^\s*([A-Z][A-Z0-9 /_-]*?)\s*:\s*(.*?)\s*$")
 _SEC_HEADER_OPEN_RE = re.compile(r"<SEC-HEADER>", re.IGNORECASE)
-_SEC_HEADER_CLOSE_RE = re.compile(r"</SEC-HEADER>", re.IGNORECASE)
-_DOCUMENT_OPEN_RE = re.compile(r"<DOCUMENT>", re.IGNORECASE)
+_SEC_HEADER_CLOSE_RE = re.compile(r"^[ \t]*</SEC-HEADER>[ \t]*\r?$", re.IGNORECASE | re.MULTILINE)
+_DOCUMENT_OPEN_RE = re.compile(r"^[ \t]*<DOCUMENT>[ \t]*\r?$", re.IGNORECASE | re.MULTILINE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -611,8 +611,9 @@ def find_filings(
 def _extract_header_section_with_status(text: str) -> tuple[str, bool]:
     """Isolate the SGML header before ``</SEC-HEADER>`` or ``<DOCUMENT>`` and report completion.
 
-    A header is complete only when a closing ``</SEC-HEADER>`` tag (case-insensitive) appears
-    before any ``<DOCUMENT>`` body section.
+    A header is complete only when a standalone closing ``</SEC-HEADER>`` delimiter line
+    (case-insensitive, optional leading/trailing horizontal whitespace) appears before any
+    ``<DOCUMENT>`` line. Quoted mentions of ``</SEC-HEADER>`` inside other text do not count.
     """
     doc_first = _DOCUMENT_OPEN_RE.search(text)
     open_match = (
