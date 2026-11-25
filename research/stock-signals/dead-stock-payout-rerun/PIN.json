@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-payout-rerun",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-payout-rerun"
+  },
+  "engine": {
+    "git_sha": null,
+    "git_dirty": false,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": null,
+    "python": null,
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": [
+      {
+        "path": "research/stock-signals/dead-stock-data-integrity/_payouts_v2.csv",
+        "sha256": "7c4a40db56db09d5c661a458e2505f6d8f8256910d6dabdd2dc1d6de99beef63"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_dev-A.json",
+        "sha256": "beab59f3ae57b72786ac1ad96dd95c2e9fd1230f09e1f4a3e29d3f42f17475ed"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_holdout-A.json",
+        "sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358"
+      }
+    ]
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/ft_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/ft_dead_stock_first_test.py",
+      "sha256": "fb096d15a6756bbb53cd119913a3fefd62ae08b120b5848e2ea8cf801d23ec39"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/ft_ledger_run.py",
+      "sha256": "8241943dcd4a2be062e4fdcc66e3e40fbf56c14f76b2f854e012bcf8d7a97dfd"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/ft_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/ft_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/payout_prices.py",
+      "sha256": "39245c7626d362b2b078544d1837cb7b4d63b3202f3c4217853aa6db17bbbaf1"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/payout_rerun.py",
+      "sha256": "8a3de2386e5bd03bbecde176584a54d7cb123b2a5886c272afeae0cbd7c24b89"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/run.py",
+      "sha256": "60a30e8e6c4a75bff1f0c26ba794abbe5dcce821096fa30de2e5d3698db3ce73"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/tests/test_frozen_copies.py",
+      "sha256": "9cf2bc21426c417514bbf03e1ce38cd49ed0f23aec5f826ca6689f705c2671c6"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/tests/test_payout_prices.py",
+      "sha256": "cb477def12c019019a51d995d45f9d7e9a66ad9fdc3093042a359f111d2d67b8"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/tests/test_payout_rerun.py",
+      "sha256": "121f28ed91d1dede07d4d814d2756f53b11ebda891081a1207412096690a6c5b"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/code/tests/test_run.py",
+      "sha256": "14d846da7fc21e71f6b186ec9febb66e24752fa3b6b2d87e842e68ecab71e930"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-payout-rerun/code/run.py",
+      "--window",
+      "dev",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2005-01-03",
+    "eval_end": "2024-12-31"
+  },
+  "seed": null,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/_rerun-dev-A.json",
+      "sha256": "426bb8f134c7e6a148248f4f647fa4b040d7a138176f98147730f95c7e92fcd3"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-payout-rerun/_rerun-holdout-A.json",
+      "sha256": "15ef73a8ee480ff3057f63ea4a28192d724e74f9e4d55ee9c9a6303d752ad057"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "Each window is one command (the dev command shown, and the same with --window holdout); each takes about 25 minutes and reads the read-only database, release 1 and CRSP load 1, and needs a clean tracked tree. The inputs pinned are the payout table and the first test's saved result files. The first test's lock files and results folder are never touched. The holdout run's saved binding flag records an untracked file (the development run's own result file)."
+  },
+  "created_utc": "2026-11-25T03:58:51Z"
+}

@@ -275,6 +275,6 @@ def test_every_pin_and_code_map_in_the_real_research_tree_resolves() -> None:
     if vp.is_shallow(ROOT):
         pytest.skip("shallow clone: the history pins cannot be resolved")
     report = vp.verify(ROOT)
-    assert len(report.pins) == 26
+    assert len(report.pins) == 28
     assert len(report.maps) == 5
     assert [r.label for r in [*report.pins, *report.maps] if r.status == "FAIL"] == []

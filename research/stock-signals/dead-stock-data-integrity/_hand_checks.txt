@@ -494,3 +494,13 @@ Changes from the run in section 11 (rule v1 only) to this run (rule v1 plus the 
 - Agreements with price labels 70 to 78; conflicts 0; windowed 8-K reports 559 to 656; item 1.03 in none.
 - SEC downloads: Form 25 phase 2 to 24 (saved copies 265 to 267); payouts phase 0 to 11 (saved copies 96).
 - `loss_note` for the 102 now reads "filings report an acquisition or merger event; payment amount and form not verified" (the first run's csv said "holders were paid").
+
+## 14. Phase 3 (open cases), hand checks of 2026-11-24
+
+- Rule-7 probe (read-only): `kaggle_chars.mcgill_of(2)` and `ref.symbol_map` (release 1) return 0 rows for PERMNO 87283, 75900, 92552, 92182, 93247, 16544, 64899 and 16939. All 8 stay name_unknown.
+- First real run refused (exit 2, nothing written): 2016 Q1 index line 186299 `1593547||485BPOS|2016-02-26|edgar/data/1593547/0001135428-16-001124.txt` has an empty company name (the same CIK is named "Advisors' Inner Circle Fund III" on neighbouring lines). A scan of all 80 saved lists found no other such line (20,784,033 lines read after the change; 1 blank name). The reader now keeps a blank name; the run was repeated from the start on commit 8e072375 with a clean tree.
+- Deal-form rows read against the filer's own index lines: ABGENIX DEFM14A 2006-02-09 (accession 0001104659-06-007099; 15-12G 2006-04-03); VERITAS DGC DEFM14A 2006-12-01 (0000950123-06-014748; 15-12B 2007-01-12; 25-NSE 2007-01-30); SPINNAKER DEFM14A 2005-11-10 (0001193125-05-221904; 15-12B 2005-12-14; 25 2006-01-06); MAVERICK TUBE DEFM14A 2006-09-01 (0000950134-06-017175; 25-NSE 2006-10-06 and 15-12B 2006-10-17). ALPHARMA: SC TO-T/A forms 2008-11-24 to 2008-12-30, 25-NSE 2009-01-06, 15-12B 2009-01-16.
+- Rejections: JAZZ PHARMA (CIK 1232524) and SPRINT NEXTEL (CIK 101830) each have 10-K or 10-Q lines more than 180 days after the exit. Not further checked.
+- Counts: 141 rows; 102 phase-1 rows unchanged; after-class counts acquired 103, deal_forms_only 4, no_8k_found 4, no_filing_match 22, name_unknown 8; archive downloads 0; 4 SEC downloads and 4 saved-copy reads for the 8-K lists; no fetch errors.
+- Omitted form: `DEFM14A/A` is not in the code's deal-form list (the brief says 'and their /A amendments'). Checked all nine matched companies (1052837, 28866, 730469, 904163 and the five Phase 2 companies): no `DEFM14A/A` line within 365 days before to 30 days after the exit, so no row would change.
+- Probe query: select permno, count(*) from kaggle_chars.mcgill_of(2) where permno in (87283,75900,92552,92182,93247,16544,64899,16939) group by permno; and the same on ref.symbol_map where release_id=1: both returned no rows.
