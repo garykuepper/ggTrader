@@ -7,7 +7,8 @@ stocks a random portfolio may hold on a decision day are the ones the momentum r
 ``plan_matched`` (arm M) replaces, each month, about as many names as the rule replaced.
 
 Matching rule of arm M (fixed before any draw): with ``need`` = the number of names to hold
-(50, or fewer when fewer are eligible) and ``k`` = names the rule bought that month, keep
+(50, or fewer when fewer are eligible) and ``k`` = names the rule actually bought for the
+first time that month (its fills), keep
 ``need - k`` of the names already held that are still eligible, chosen at random, then fill
 with random eligible names not held last month (if too few such names exist, a dropped
 name may come back). If fewer names remain eligible than ``need - k``
@@ -32,6 +33,7 @@ from rb_replay import (
 from ggTrader.lab.strategies.xs_momentum import momentum_scores
 
 SEED_BASE = 20261125
+HELD_QTY = 1e-9  # shares below this are float dust, not a holding (as in the first test)
 WINDOW_INDEX = {"early": 0, "dev": 1, "holdout": 2}
 ARM_INDEX = {"R": 0, "M": 1}
 
@@ -127,22 +129,46 @@ def bought_counts(rule_steps: list[TargetStep]) -> list[int]:
     return counts
 
 
+def executed_new_names(trades: list, steps: list[TargetStep]) -> list[int]:
+    """Names the rule actually bought for the first time at each step, from its fills.
+
+    A buy counts as a new name when the stock was not held just before it; a buy that only
+    resizes a held position does not. A target the ledger could not fill is not a purchase,
+    and counts the month it is finally bought. Counted from the ledger's own trade list of
+    the rule's reference cell (the one the check-first run reproduced from the saved file).
+    """
+    held: dict[str, float] = {}
+    new_by_date: dict[pd.Timestamp, int] = {}
+    for trade in sorted(trades, key=lambda t: t.date):
+        before = held.get(trade.symbol, 0.0)
+        if trade.qty > 0 and trade.reason == "rebalance" and before <= HELD_QTY:
+            new_by_date[trade.date] = new_by_date.get(trade.date, 0) + 1
+        held[trade.symbol] = before + trade.qty
+    return [new_by_date.get(step.date, 0) for step in steps]
+
+
 def plan_matched(
     sets: list[DecisionSet],
     symbols: np.ndarray,
-    rule_steps: list[TargetStep],
+    bought: list[int],
     *,
     top_n: int,
     seed: int,
 ) -> list[TargetStep]:
-    """Arm M: replace about as many names each month as the rule did, the picks at random."""
-    if len(sets) != len(rule_steps) or any(
-        s.date != r.date or s.decision_date != r.decision_date
-        for s, r in zip(sets, rule_steps, strict=True)
-    ):
-        raise ValueError("the rule's plan and the eligible sets are not for the same days")
+    """Arm M: replace about as many names each month as the rule bought, the picks at random.
+
+    Args:
+        sets: the eligible sets (``eligible_sets``).
+        symbols: column names of the close frame.
+        bought: names the rule bought at each step (``executed_new_names``), same length as sets.
+        top_n: portfolio size.
+        seed: the draw's registered seed.
+    """
+    if len(sets) != len(bought):
+        raise ValueError(
+            "the rule's purchase counts and the eligible sets are not for the same days"
+        )
     rng = np.random.default_rng(seed)
-    bought = bought_counts(rule_steps)
     held = np.array([], dtype=int)
     steps = []
     for item, k in zip(sets, bought, strict=True):

@@ -93,4 +93,10 @@ None, as in the first test: the owner's four plain rules apply (test only on dat
 
 ## Amendments
 
-None yet.
+**2026-11-25 (after the code was written and independently reviewed; before any real draw; no draw result seen).** Four points the review found the brief loose or silent on, all fixed before anything real runs. No registered parameter, window, arm, seed rule, cost, tax set or draw count changed.
+
+1. **Arm M counts what the rule actually bought.** Section 3 said "taken from its saved trades". It is now: the number of names the rule bought for the first time that month, counted from the fills of the rule's reference cell (loss 1.0, 18.3 bps, low tax) that the same run has just reproduced from the first test's saved file to half a cent. A target the ledger could not fill is not a purchase and counts in the month it is finally bought; a buy that only resizes a held position does not count. The first test's trade CSV is not tracked by git, so it is not read; the reproduced fills are the same trades.
+2. **The check comes first, on the window being run.** Section 2 said the 2020 to 2024 window. Each run now rebuilds the rule's three headline cells and SPY on its own window and compares them with that window's saved file (the first test's `_dev-A.json` and `_holdout-A.json`, the fresh test's `_fresh-A.json`) before any draw; no draw runs if one cell differs by more than half a cent. This covers the holdout reproduction and the other two windows. The holdout window is run first.
+3. **The sanity check is fixed.** Section 5 said "close to". It is now: re-run the first 20 arm R draws of the window with dead stocks paid in full (loss 0.0), no cost and no tax; compare their mean yearly growth with an equal-weight hold of every eligible stock under the same settings. Fine when the difference is within two standard errors of the dice mean or within 0.5 percentage points a year, whichever is larger. If not, the report says the test is suspect. Draw counts for the sanity check are 20 per window.
+4. **Timing.** A throwaway timing draw on the 2020 to 2024 window (seed index 9999, result discarded and kept apart from the real files) took 3 to 4 seconds a draw per arm, so 100 draws of both arms is about 15 minutes per window, plus loading. The 100 draws stand; the cut-down rule of section 1 is not used.
+

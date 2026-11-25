@@ -148,15 +148,19 @@ class Prepared:
 
 def _check_first(
     prep: Prepared, saved_strategy: dict[str, Any], saved_spy: dict[str, Any]
-) -> dict[str, Any]:
-    """Rerun the rule's three headline cells and SPY; compare with the saved file."""
-    computed = {
-        fp.cell_key(loss, logic.COST, logic.TAX): cell
-        for loss, cell in prep.draw_cells(prep.rule_steps).items()
-    }
+) -> tuple[dict[str, Any], list[int]]:
+    """Rerun the rule's three headline cells and SPY; compare with the saved file.
+
+    Returns the check record and, for arm M, the names the rule actually bought for the first
+    time at each step, counted from the fills of the reference cell (loss 1.0) that this very
+    run just reproduced from the saved file.
+    """
+    params = _tax_params()
+    books = {loss: prep.book(prep.rule_steps, loss, logic.COST, params) for loss in logic.LOSSES}
+    computed = {fp.cell_key(loss, logic.COST, logic.TAX): fp._cell(b) for loss, b in books.items()}
     spy_book = run_spy(
         prep.spy_close,
-        params=_tax_params(),
+        params=params,
         one_way_cost=logic.COST,
         start=prep.start,
         end=prep.end,
@@ -164,21 +168,75 @@ def _check_first(
     )
     spy_cell = fp._cell(spy_book)
     computed_spy = {fp.spy_key(logic.COST, logic.TAX): spy_cell}
-    diffs = logic.check_against_saved(computed, saved_strategy)
+    expected = {fp.cell_key(loss, logic.COST, logic.TAX) for loss in logic.LOSSES}
+    diffs = [{"cell": k, "problem": "not computed"} for k in expected - set(computed)]
+    diffs += logic.check_against_saved(computed, saved_strategy)
     diffs += logic.check_against_saved(computed_spy, saved_spy)
+    bought = random_plans.executed_new_names(books[1.0].trades, prep.rule_steps)
+    return (
+        {
+            "ok": not diffs,
+            "differences": diffs,
+            "tolerance_dollars": logic.HALF_CENT,
+            "n_cells": len(computed) + len(computed_spy),
+            "spy_cagr_after_tax": spy_cell["cagr_after_tax"],
+            "rule_new_names_by_step": bought,
+            "reference_cell_for_new_names": fp.cell_key(1.0, logic.COST, logic.TAX),
+        },
+        bought,
+    )
+
+
+def _code_sha256() -> str:
+    """One hash over the study's own code files and its engine copies (tests left out)."""
+    digest = hashlib.sha256()
+    for path in sorted(Path(__file__).resolve().parent.glob("*.py")):
+        digest.update(path.name.encode())
+        digest.update(path.read_bytes())
+    digest.update((Path(__file__).resolve().parent / "frozen_copies.json").read_bytes())
+    return digest.hexdigest()
+
+
+def _identity(args: argparse.Namespace, saved_sha: str, inputs: dict[str, Any]) -> dict[str, Any]:
+    """What a partial file must match to be resumed: window, data, saved file, code, draws."""
+    provenance = json.dumps(inputs.get("data_provenance"), sort_keys=True, default=str)
     return {
-        "ok": not diffs,
-        "differences": diffs,
-        "tolerance_dollars": logic.HALF_CENT,
-        "n_cells": len(computed) + len(computed_spy),
-        "spy_cagr_after_tax": spy_cell["cagr_after_tax"],
+        "window": args.window,
+        "release_id": args.release_id,
+        "crsp_load": args.crsp_load,
+        "saved_file_sha256": saved_sha,
+        "data_provenance_sha256": hashlib.sha256(provenance.encode()).hexdigest(),
+        "code_sha256": _code_sha256(),
+        "first_draw": args.first_draw,
+        "draws": args.draws,
+        "sanity_draws": min(args.sanity_draws, args.draws),
     }
 
 
-def _load_partial(path: Path) -> dict[str, Any]:
-    if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {"R": [], "M": [], "sanity_dice_cagr": []}
+def _load_partial(path: Path, identity: dict[str, Any]) -> dict[str, Any] | None:
+    """The partial file if it belongs to this run; a fresh one if there is none; None if not."""
+    if not path.is_file():
+        return {"identity": identity, "R": [], "M": [], "sanity": {}}
+    partial = json.loads(path.read_text(encoding="utf-8"))
+    if partial.get("identity") != identity:
+        return None
+    return partial
+
+
+def _expected_seeds(args: argparse.Namespace, arm: str) -> list[int]:
+    return [
+        random_plans.draw_seed(args.window, arm, d)
+        for d in range(args.first_draw, args.first_draw + args.draws)
+    ]
+
+
+def _validated(partial: dict[str, Any], args: argparse.Namespace) -> bool:
+    """Exactly the expected seeds, each once, in every arm and in the sanity set."""
+    for arm in ARMS:
+        if sorted(r["seed"] for r in partial[arm]) != sorted(_expected_seeds(args, arm)):
+            return False
+    want = set(_expected_seeds(args, "R")[: min(args.sanity_draws, args.draws)])
+    return {int(s) for s in partial["sanity"]} == want
 
 
 def main(
@@ -224,20 +282,28 @@ def main(
     prep = Prepared(inputs, start, end)
     started = time.time()
 
-    check = _check_first(prep, saved_strategy, saved_spy)
+    check, rule_bought = _check_first(prep, saved_strategy, saved_spy)
     print(f"check first: ok={check['ok']} ({time.time() - started:.0f}s)", file=sys.stderr)
     if not check["ok"]:
         print(json.dumps(check["differences"], indent=2), file=sys.stderr)
         return EXIT_CHECK_FAILED
     spy_cagr = check["spy_cagr_after_tax"]
 
+    identity = _identity(args, _sha256(saved_path), inputs)
     results_dir = args.results_dir or DEFAULT_RESULTS_DIR
-    partial_path = results_dir / f"{args.window}.partial.json"
-    partial = _load_partial(partial_path)
+    partial_path = results_dir / (
+        f"{args.window}-from{args.first_draw}-n{args.draws}-s{identity['sanity_draws']}.partial.json"
+    )
+    partial = _load_partial(partial_path, identity)
+    if partial is None:
+        print(
+            f"refused: {partial_path} belongs to a different window, data, code or draw set",
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
     for arm in ARMS:
         have = {rec["seed"] for rec in partial[arm]}
-        for draw in range(args.first_draw, args.first_draw + args.draws):
-            seed = random_plans.draw_seed(args.window, arm, draw)
+        for seed in _expected_seeds(args, arm):
             if seed in have:
                 continue
             t0 = time.time()
@@ -247,30 +313,26 @@ def main(
                 )
             else:
                 steps = random_plans.plan_matched(
-                    prep.sets, prep.symbols, prep.rule_steps, top_n=fp.TOP_N, seed=seed
+                    prep.sets, prep.symbols, rule_bought, top_n=fp.TOP_N, seed=seed
                 )
             partial[arm].append(logic.draw_record(seed, prep.draw_cells(steps)))
             write_json(partial_path, partial)
-            print(f"arm {arm} draw {draw}: {time.time() - t0:.0f}s", file=sys.stderr)
+            print(f"arm {arm} seed {seed}: {time.time() - t0:.0f}s", file=sys.stderr)
 
     # Sanity: the dice against an equal hold of the whole eligible list, loss 0, no cost, no tax.
-    free = {
-        "all_eligible": prep.book(
-            random_plans.plan_all_eligible(prep.sets, prep.symbols), 0.0, 0.0, _no_tax()
-        ).cagr_after_tax
-    }
-    for draw in range(args.first_draw, args.first_draw + min(args.sanity_draws, args.draws)):
-        if draw - args.first_draw < len(partial["sanity_dice_cagr"]):
+    all_eligible_cagr = prep.book(
+        random_plans.plan_all_eligible(prep.sets, prep.symbols), 0.0, 0.0, _no_tax()
+    ).cagr_after_tax
+    for seed in _expected_seeds(args, "R")[: identity["sanity_draws"]]:
+        if str(seed) in partial["sanity"]:
             continue
-        steps = random_plans.plan_fresh_dice(
-            prep.sets,
-            prep.symbols,
-            top_n=fp.TOP_N,
-            seed=random_plans.draw_seed(args.window, "R", draw),
-        )
-        partial["sanity_dice_cagr"].append(prep.book(steps, 0.0, 0.0, _no_tax()).cagr_after_tax)
+        steps = random_plans.plan_fresh_dice(prep.sets, prep.symbols, top_n=fp.TOP_N, seed=seed)
+        partial["sanity"][str(seed)] = prep.book(steps, 0.0, 0.0, _no_tax()).cagr_after_tax
         write_json(partial_path, partial)
-    sanity = logic.sanity_block(free["all_eligible"], partial["sanity_dice_cagr"])
+    if not _validated(partial, args):
+        print("refused: the partial file does not hold exactly the expected draws", file=sys.stderr)
+        return EXIT_REFUSED
+    sanity = logic.sanity_block(all_eligible_cagr, list(partial["sanity"].values()))
 
     rule_cells = {
         loss: saved_strategy[fp.cell_key(loss, logic.COST, logic.TAX)] for loss in logic.LOSSES
@@ -294,7 +356,13 @@ def main(
         "spy": {"cagr_after_tax": spy_cagr, "cell": fp.spy_key(logic.COST, logic.TAX)},
         "summary": summary,
         "draws": {arm: partial[arm] for arm in ARMS},
-        "sanity_dice_cagr": partial["sanity_dice_cagr"],
+        "sanity_dice_cagr_by_seed": partial["sanity"],
+        "identity": identity,
+        "completed": {
+            "R": len(partial["R"]),
+            "M": len(partial["M"]),
+            "sanity": len(partial["sanity"]),
+        },
         "window_check": prep.window_check,
         "n_rebalance_steps": len(prep.sets),
         "data_provenance": inputs.get("data_provenance"),

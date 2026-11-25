@@ -99,6 +99,9 @@ def summarise_arm(
         rule = rule_cells[loss]
         out[key] = {
             "gap_pp": spread(gaps),
+            "gap_pp_by_seed": {str(d["seed"]): g for d, g in zip(draws, gaps, strict=True)},
+            "cagr_after_tax": spread([d[key]["cagr_after_tax"] for d in draws]),
+            "sharpe": spread([d[key]["sharpe"] for d in draws]),
             "after_tax_final": spread([d[key]["after_tax_final"] for d in draws]),
             "max_drawdown_pct": spread([d[key]["max_drawdown_pct"] for d in draws]),
             "mean_yearly_turnover": spread([d[key]["mean_yearly_turnover"] for d in draws]),
@@ -106,6 +109,8 @@ def summarise_arm(
             "n_dead_exits": spread([float(d[key]["n_dead_exits"]) for d in draws]),
             "rule": {
                 "gap_pp": rule["gap_cagr_after_tax_pp"],
+                "cagr_after_tax": rule["cagr_after_tax"],
+                "sharpe": rule["sharpe"],
                 "after_tax_final": rule["after_tax_final"],
                 "max_drawdown_pct": rule["max_drawdown_pct"],
                 "mean_yearly_turnover": rule["mean_yearly_turnover"],
@@ -144,7 +149,7 @@ def sanity_block(
     Chance picks should on average land close to the equal-weighted average of the same list.
     The block reports the difference in percentage points a year and calls it fine when it is
     within two standard errors of the dice mean or within ``floor_pp``, whichever is larger
-    (the rule is fixed in the brief's amendment of 2026-11-25, before any draw).
+    (the rule is registered in the brief's amendment of 2026-11-25, before any draw).
     """
     finite = [c for c in dice_cagrs if math.isfinite(c)]
     if len(finite) < 2 or not math.isfinite(all_eligible_cagr):

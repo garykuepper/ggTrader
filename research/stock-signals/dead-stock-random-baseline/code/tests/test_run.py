@@ -115,7 +115,10 @@ def test_a_full_run_writes_both_arms_the_check_and_the_sanity_block(tmp_path: Pa
     assert [len(out["draws"][arm]) for arm in run.ARMS] == [2, 2]
     assert out["summary"]["R"]["loss1"]["position"]["n"] == 2
     assert "all_eligible_cagr_pct" in out["sanity"]
-    assert len(out["sanity_dice_cagr"]) == 2
+    assert len(out["sanity_dice_cagr_by_seed"]) == 2
+    assert out["completed"] == {"R": 2, "M": 2, "sanity": 2}
+    assert len(out["check_first"]["rule_new_names_by_step"]) == out["n_rebalance_steps"]
+    assert out["check_first"]["rule_new_names_by_step"][0] > 0
     seeds = [rec["seed"] for rec in out["draws"]["R"]]
     assert seeds == [20261125 + 2_000_000, 20261125 + 2_000_001]
 
@@ -135,7 +138,7 @@ def test_the_run_resumes_from_its_partial_file_without_redoing_draws(tmp_path: P
     assert call(tmp_path, saved) == 0
     second = json.loads((tmp_path / "out.json").read_text())
     assert first["draws"] == second["draws"]
-    assert first["sanity_dice_cagr"] == second["sanity_dice_cagr"]
+    assert first["sanity_dice_cagr_by_seed"] == second["sanity_dice_cagr_by_seed"]
 
 
 def test_refusals(tmp_path: Path) -> None:
@@ -175,3 +178,67 @@ def test_drifted_inputs_are_refused(tmp_path: Path) -> None:
         git_dirty=lambda: False,
     )
     assert code == run.EXIT_REFUSED
+
+
+def _only_partial(tmp_path: Path) -> Path:
+    (path,) = list((tmp_path / "partial").glob("*.partial.json"))
+    return path
+
+
+def test_a_partial_from_other_data_or_code_is_refused(tmp_path: Path) -> None:
+    saved = saved_file(tmp_path)
+    assert call(tmp_path, saved) == 0
+    partial = _only_partial(tmp_path)
+    (tmp_path / "out.json").unlink()
+    original = partial.read_text()
+    for key in ("window", "saved_file_sha256", "data_provenance_sha256", "code_sha256", "draws"):
+        data = json.loads(original)
+        data["identity"][key] = "tampered" if isinstance(data["identity"][key], str) else 999
+        partial.write_text(json.dumps(data))
+        assert call(tmp_path, saved) == run.EXIT_REFUSED, key
+        assert not (tmp_path / "out.json").exists()
+    partial.write_text(original)
+    assert call(tmp_path, saved) == 0
+
+
+def test_a_partial_with_a_stray_or_duplicate_draw_is_refused(tmp_path: Path) -> None:
+    saved = saved_file(tmp_path)
+    assert call(tmp_path, saved) == 0
+    partial = _only_partial(tmp_path)
+    (tmp_path / "out.json").unlink()
+    data = json.loads(partial.read_text())
+    data["R"].append({**data["R"][0], "seed": 123})  # a draw nobody asked for
+    partial.write_text(json.dumps(data))
+    assert call(tmp_path, saved) == run.EXIT_REFUSED
+    data["R"][-1] = dict(data["R"][0])  # a duplicate seed
+    partial.write_text(json.dumps(data))
+    assert call(tmp_path, saved) == run.EXIT_REFUSED
+
+
+def test_a_timing_probe_does_not_leak_into_the_real_run(tmp_path: Path) -> None:
+    saved = saved_file(tmp_path)
+    probe = tmp_path / "probe.json"
+    code = run.main(
+        [
+            *args_for(tmp_path)[:-4],
+            "--first-draw",
+            "9999",
+            "--draws",
+            "1",
+            "--sanity-draws",
+            "1",
+            "--out",
+            str(probe),
+            "--results-dir",
+            str(tmp_path / "partial"),
+        ],
+        loader=inputs_for,
+        saved_paths={WINDOW: saved},
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    assert call(tmp_path, saved) == 0
+    out = json.loads((tmp_path / "out.json").read_text())
+    seeds = {rec["seed"] for rec in out["draws"]["R"]}
+    assert seeds == {20261125 + 2_000_000, 20261125 + 2_000_001}
+    assert len(list((tmp_path / "partial").glob("*.partial.json"))) == 2

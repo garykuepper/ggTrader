@@ -92,3 +92,16 @@ def test_sanity_block_accepts_close_and_flags_far() -> None:
     assert not far["ok"]
     assert not m.sanity_block(math.nan, [0.01, 0.02])["ok"]
     assert not m.sanity_block(0.05, [0.01])["ok"]
+
+
+def test_summary_carries_growth_and_sharpe_spreads_and_each_draws_gap() -> None:
+    draws = [record(i, 0.01 * i) for i in range(1, 4)]
+    out = m.summarise_arm(draws, 0.0, {1.0: rule_cell(-1), 0.5: rule_cell(-1), 0.0: rule_cell(-1)})
+    one = out["loss1"]
+    assert one["cagr_after_tax"]["n"] == 3 and one["sharpe"]["n"] == 3
+    assert one["gap_pp_by_seed"] == {
+        "1": pytest.approx(1.0),
+        "2": pytest.approx(2.0),
+        "3": pytest.approx(3.0),
+    }
+    assert one["rule"]["cagr_after_tax"] == 0.0 and one["rule"]["sharpe"] == 0.1
