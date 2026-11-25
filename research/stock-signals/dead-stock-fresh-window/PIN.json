@@ -6,12 +6,12 @@
     "path": "research/stock-signals/dead-stock-fresh-window"
   },
   "engine": {
-    "git_sha": null,
-    "git_dirty": null,
+    "git_sha": "3277570eed383c86c16b73cdca9cf55442901372",
+    "git_dirty": false,
     "diff_sha256": null,
     "tag": null,
-    "uv_lock_sha256": null,
-    "python": null,
+    "uv_lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "python": "3.12.13",
     "vectorbt": null,
     "vectorbt_rust": null,
     "contract_version": null,
@@ -111,7 +111,7 @@
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "The check (--window anchor, about 10 minutes) and the fresh run (--window fresh, about 12 minutes) read the read-only database, release 1 and CRSP load 1, and need a clean tracked tree. The fresh run is run-once: it refuses when the claim file in results/dead_stock_fresh_window/ or the result file exists, so a repeat in a scratch clone reproduces the numbers but is not a new test. The anchor result file is checked against the first test's saved holdout file, which is pinned as an input."
+    "note": "Replay in a scratch clone at git_sha 3277570e: that commit holds the passing anchor file and the frozen code but no fresh result, and the run-once claim file lives in the git-ignored results folder, so the single pinned command (the fresh window) runs there and reproduces the saved numbers (the file's own commit and time fields differ). It reads the read-only database, release 1 and CRSP load 1, takes about 12 minutes, and needs a clean tracked tree. Running it in the main checkout is refused by design (a result file and a claim exist). A replay is not a new test: the window is used. The anchor check (--window anchor, about 10 minutes) is already committed as _anchor-A.json and is pinned with the first test's saved holdout file as an input."
   },
   "created_utc": "2026-11-25T07:36:02Z"
 }

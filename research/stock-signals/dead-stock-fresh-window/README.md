@@ -20,4 +20,6 @@ Run from the repository root with a clean tracked tree, one after the other, thr
     scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-fresh-window/code/run.py --window anchor --release-id 1 --crsp-load 1
     scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-fresh-window/code/run.py --window fresh --release-id 1 --crsp-load 1
 
-The fresh command refuses unless the check passed on exactly the same code, and refuses when a run-once claim exists in `results/dead_stock_fresh_window/` or a result file exists. Re-running in a scratch clone reproduces the numbers; it is not a new test.
+The fresh command refuses unless the check passed on exactly the same code, and refuses when a run-once claim exists in `results/dead_stock_fresh_window/` or a result file exists, so it cannot be repeated in this checkout.
+
+To replay the fresh run in a scratch clone, use `scripts/study.py repro research/stock-signals/dead-stock-fresh-window` (it clones the pinned commit 3277570e, which holds the passing anchor file and the frozen code but no fresh result, and runs the pinned fresh command; add `--print-only` to see the plan). A replay is not a new test: the window is used.
