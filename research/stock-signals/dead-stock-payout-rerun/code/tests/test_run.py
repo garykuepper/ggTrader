@@ -1037,6 +1037,92 @@ def test_refuses_output_and_input_path_collisions_before_loader(
     assert paths["payouts_path"].read_bytes() == payouts_before
 
 
+def test_symlink_loop_in_a_supplied_path_is_a_plain_refusal(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    _, first_test = synth_bundle
+    paths = _setup_fixture_files(tmp_path, first_test, window="dev")
+
+    loop = tmp_path / "loop"
+    loop.symlink_to("loop")
+    bad_path = loop / "new.json"
+    entries_before = sorted(p.name for p in tmp_path.iterdir())
+
+    monkeypatch.setattr(
+        driver,
+        "_read_payouts",
+        lambda *_a, **_kw: pytest.fail("payout reader must not run on symlink loop"),
+    )
+    monkeypatch.setattr(
+        driver,
+        "_read_first_test",
+        lambda *_a, **_kw: pytest.fail("first-test reader must not run on symlink loop"),
+    )
+
+    cases = [
+        (
+            "--out",
+            [
+                "--window",
+                "dev",
+                "--release-id",
+                "1",
+                "--payouts",
+                str(paths["payouts_path"]),
+                "--out",
+                str(bad_path),
+            ],
+        ),
+        (
+            "--diagnostics",
+            [
+                *_base_argv(paths),
+                "--diagnostics",
+                str(bad_path),
+            ],
+        ),
+        (
+            "--payouts",
+            [
+                "--window",
+                "dev",
+                "--release-id",
+                "1",
+                "--payouts",
+                str(bad_path),
+                "--out",
+                str(paths["out_path"]),
+            ],
+        ),
+    ]
+
+    for flag, argv in cases:
+        code = driver.main(
+            argv,
+            loader=lambda _a: pytest.fail(f"loader must not run on symlink loop in {flag}"),
+            git_dirty=lambda: False,
+            drift_preflight=lambda _a: pytest.fail(
+                f"drift preflight must not run on symlink loop in {flag}"
+            ),
+            results_dir=paths["results_dir"],
+            first_test_dir=paths["ft_dir"],
+            expected_payouts_sha256=paths["payouts_hash"],
+        )
+        assert code == 2
+        err = capsys.readouterr().err
+        assert "refused:" in err
+        assert flag in err
+        assert "RuntimeError" in err
+        assert "Traceback" not in err
+        assert not paths["out_path"].exists()
+        assert not paths["results_dir"].exists()
+        assert sorted(p.name for p in tmp_path.iterdir()) == entries_before
+
+
 def test_never_creates_reads_or_deletes_claim_files(
     tmp_path: Path,
     synth_bundle: tuple[dict[str, Any], dict[str, Any]],

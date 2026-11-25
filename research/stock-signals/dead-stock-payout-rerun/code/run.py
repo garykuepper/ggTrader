@@ -302,44 +302,54 @@ def _validate_paths(
     force: bool,
 ) -> str | None:
     """Validate all input and output paths before any content is read or any loader runs."""
-    # 1. Never read or write any .claim path (checked lexically and after resolution).
-    for label, path in (*inputs, *outputs):
-        if _is_claim_path(path):
-            return (
-                f"refused: {label} {path} is a .claim path; "
-                ".claim files are never read or written by the rerun"
-            )
-
-    # 2. Never write through a symlink or into any protected first-test folder.
-    for label, path in outputs:
-        if path.is_symlink():
-            return f"refused: {label} {path} is a symlink; refusing to write through a symlink"
-        for protected in protected_dirs:
-            if _is_inside(path, protected):
+    current_label = "supplied path"
+    try:
+        # 1. Never read or write any .claim path (checked lexically and after resolution).
+        for label, path in (*inputs, *outputs):
+            current_label = label
+            if _is_claim_path(path):
                 return (
-                    f"refused: {label} {path} lies inside protected first-test directory "
-                    f"{protected}; first-test files are read-only and never written by the rerun"
+                    f"refused: {label} {path} is a .claim path; "
+                    ".claim files are never read or written by the rerun"
                 )
 
-    # 3. Refuse colliding outputs and any output that targets a consumed input file.
-    for idx, (label_a, path_a) in enumerate(outputs):
-        for label_b, path_b in outputs[idx + 1 :]:
-            if _same_path(path_a, path_b):
-                return (
-                    f"refused: {label_a} {path_a} collides with {label_b} {path_b}; "
-                    "output paths must be distinct files"
-                )
-        for in_label, in_path in inputs:
-            if _same_path(path_a, in_path):
-                return (
-                    f"refused: {label_a} {path_a} collides with input {in_label} {in_path}; "
-                    "refusing to overwrite a file the run reads"
-                )
+        # 2. Never write through a symlink or into any protected first-test folder.
+        for label, path in outputs:
+            current_label = label
+            if path.is_symlink():
+                return f"refused: {label} {path} is a symlink; refusing to write through a symlink"
+            for protected in protected_dirs:
+                if _is_inside(path, protected):
+                    return (
+                        f"refused: {label} {path} lies inside protected first-test directory "
+                        f"{protected}; first-test files are read-only and never written by the "
+                        "rerun"
+                    )
 
-    # 4. Refuse clobbering existing outputs unless --force was explicitly passed.
-    for label, path in outputs:
-        if path.exists() and not force:
-            return f"refused: {label} {path} already exists (pass --force to overwrite)"
+        # 3. Refuse colliding outputs and any output that targets a consumed input file.
+        for idx, (label_a, path_a) in enumerate(outputs):
+            current_label = label_a
+            for label_b, path_b in outputs[idx + 1 :]:
+                if _same_path(path_a, path_b):
+                    return (
+                        f"refused: {label_a} {path_a} collides with {label_b} {path_b}; "
+                        "output paths must be distinct files"
+                    )
+            for in_label, in_path in inputs:
+                if _same_path(path_a, in_path):
+                    return (
+                        f"refused: {label_a} {path_a} collides with input {in_label} {in_path}; "
+                        "refusing to overwrite a file the run reads"
+                    )
+
+        # 4. Refuse clobbering existing outputs unless --force was explicitly passed.
+        for label, path in outputs:
+            current_label = label
+            if path.exists() and not force:
+                return f"refused: {label} {path} already exists (pass --force to overwrite)"
+    except (OSError, RuntimeError, ValueError) as exc:
+        # Never leak raw OS/path tracebacks from symlink loops, long names, permissions or NULs.
+        return f"refused: cannot validate {current_label}: {type(exc).__name__}"
     return None
 
 
@@ -498,22 +508,29 @@ def main(
     trades_path = ft.trades_file(args.window, UNIVERSE, folder)
     ft_path = ft_dir / f"_{args.window}-{UNIVERSE}.json"
 
-    path_problem = _validate_paths(
-        outputs=[
-            ("output file", out_path),
-            ("trades side file", trades_path),
-            *([] if args.diagnostics is None else [("diagnostics file", args.diagnostics)]),
-        ],
-        inputs=[
-            ("payout table", args.payouts),
-            ("first-test result file", ft_path),
-        ],
-        protected_dirs=_protected_first_test_dirs(
-            results_dir=results_dir,
-            first_test_dir=first_test_dir,
-        ),
-        force=args.force,
-    )
+    try:
+        path_problem = _validate_paths(
+            outputs=[
+                ("output file (--out)", out_path),
+                ("trades side file", trades_path),
+                *(
+                    []
+                    if args.diagnostics is None
+                    else [("diagnostics file (--diagnostics)", args.diagnostics)]
+                ),
+            ],
+            inputs=[
+                ("payout table (--payouts)", args.payouts),
+                ("first-test result file", ft_path),
+            ],
+            protected_dirs=_protected_first_test_dirs(
+                results_dir=results_dir,
+                first_test_dir=first_test_dir,
+            ),
+            force=args.force,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        return _refuse(f"refused: cannot validate supplied path: {type(exc).__name__}")
     if path_problem is not None:
         return _refuse(path_problem)
 
