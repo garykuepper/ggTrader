@@ -9,6 +9,6 @@ verdict = "UNRESOLVED"
 aliases = []
 brief = "2026-11-25-dead-stock-early-filings-brief.md"
 reports = ["2026-11-25-dead-stock-early-filings.md"]
-results = ["_early.json", "_pilot.json"]
+results = ["_early.json"]
 uses_lib = []
 allow_paper_imports = false

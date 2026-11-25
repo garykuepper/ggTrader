@@ -8,7 +8,7 @@
 
 - Brief (frozen before any code, five dated notes): [2026-11-25-dead-stock-early-filings-brief.md](2026-11-25-dead-stock-early-filings-brief.md)
 - Report: [2026-11-25-dead-stock-early-filings.md](2026-11-25-dead-stock-early-filings.md)
-- Results: `_early.json` and `_early_labels.csv` (the full run); `_pilot*.json` and `_pilot*_labels.csv` (three pilot versions kept as evidence of the repairs)
+- Results: `_early.json` and `_early_labels.csv` (the full run); `pilots/` (three pilot versions kept as evidence of the repairs)
 - Study card: [study.toml](study.toml)
 - Code: [code/](code/) (driver [code/run.py](code/run.py); roster, names, SEC wrapper and header parser, name matching and classification modules; `code/ef_*.py` are copies of the first test's engine files and of the earlier SEC client, hash-recorded in `frozen_copies.json` and `frozen_sec_copies.json` and checked by tests).
 - Inputs it reads: release 1 and raw CRSP load 1 and the McGill table of our database (read only), and the SEC's public quarterly index and filing files (cached under `/media/thesix/ggTrader-data/sec-early-window/`, outside the repository).
