@@ -174,6 +174,7 @@ class FilingHeader:
     cik: int | None
     former_names: tuple[str, ...]
     items: frozenset[str]
+    complete: bool = False
 
 
 def load_contact_line(
@@ -607,19 +608,35 @@ def find_filings(
     return matched
 
 
+def _extract_header_section_with_status(text: str) -> tuple[str, bool]:
+    """Isolate the SGML header before ``</SEC-HEADER>`` or ``<DOCUMENT>`` and report completion.
+
+    A header is complete only when a closing ``</SEC-HEADER>`` tag (case-insensitive) appears
+    before any ``<DOCUMENT>`` body section.
+    """
+    doc_first = _DOCUMENT_OPEN_RE.search(text)
+    open_match = (
+        _SEC_HEADER_OPEN_RE.search(text, 0, doc_first.start())
+        if doc_first is not None
+        else _SEC_HEADER_OPEN_RE.search(text)
+    )
+    start = open_match.start() if open_match is not None else 0
+    doc_match = _DOCUMENT_OPEN_RE.search(text, start)
+    close_match = (
+        _SEC_HEADER_CLOSE_RE.search(text, start, doc_match.start())
+        if doc_match is not None
+        else _SEC_HEADER_CLOSE_RE.search(text, start)
+    )
+    if close_match is not None:
+        return text[start : close_match.end()], True
+    if doc_match is not None:
+        return text[start : doc_match.start()], False
+    return text[start:], False
+
+
 def _extract_header_section(text: str) -> str:
     """Isolate the SGML header portion before ``</SEC-HEADER>`` or ``<DOCUMENT>``."""
-    start = 0
-    open_match = _SEC_HEADER_OPEN_RE.search(text)
-    if open_match is not None:
-        start = open_match.start()
-    close_match = _SEC_HEADER_CLOSE_RE.search(text, start)
-    if close_match is not None:
-        return text[start : close_match.end()]
-    doc_match = _DOCUMENT_OPEN_RE.search(text, start)
-    if doc_match is not None:
-        return text[start : doc_match.start()]
-    return text[start:]
+    return _extract_header_section_with_status(text)[0]
 
 
 def _parse_header_date(raw: str) -> date | None:
@@ -717,8 +734,8 @@ def parse_8k_items(
 
 
 def parse_filing_header(text: str) -> FilingHeader:
-    """Parse form, filed date, company name, CIK, former names, and items from an SGML header."""
-    header = _extract_header_section(text)
+    """Parse form, filed date, company name, CIK, former names, items, and completion."""
+    header, complete = _extract_header_section_with_status(text)
     form: str | None = None
     fallback_form: str | None = None
     filed: date | None = None
@@ -760,6 +777,7 @@ def parse_filing_header(text: str) -> FilingHeader:
         cik=cik,
         former_names=tuple(former_names),
         items=parse_8k_items(header, filed=filed),
+        complete=complete,
     )
 
 

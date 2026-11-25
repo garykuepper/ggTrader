@@ -135,6 +135,7 @@ def _fake_lookup_factory(
                 cik=1000 + num,
                 former_names=(),
                 items=frozenset({"acquisition or disposition of assets"}),
+                complete=True,
             )
             return ec.CompanyEvidence(
                 cik=1000 + num,
@@ -159,6 +160,7 @@ def _fake_lookup_factory(
                 cik=1000 + num,
                 former_names=(),
                 items=frozenset({"bankruptcy or receivership"}),
+                complete=True,
             )
             return ec.CompanyEvidence(
                 cik=1000 + num,
@@ -183,6 +185,7 @@ def _fake_lookup_factory(
                 cik=1000 + num,
                 former_names=(),
                 items=frozenset(),
+                complete=True,
             )
             return ec.CompanyEvidence(
                 cik=1000 + num,
@@ -984,3 +987,419 @@ def test_sec_lookup_cik_binding_pass_b_ambiguity_unreadability_and_precedence(
     )
     with pytest.raises(run.MissingMasterIndexError, match="2004 QTR3"):
         run.SecLookup(client3, names)
+
+
+def _single_window_inputs(specs: list[tuple[str, int, str, date]]) -> dict[str, Any]:
+    """Build synthetic early-window inputs for specific dying stocks (all held in top 50)."""
+    days = pd.bdate_range("1998-06-01", "2001-12-31", tz="UTC")
+    n_stocks = max(len(specs), 5)
+    t = np.arange(len(days), dtype=float)[:, None]
+    drifts = (n_stocks - np.arange(n_stocks, dtype=float))[None, :] * 1e-4
+    prices = 50.0 * np.exp(t * drifts)
+    cols = [s[0] for s in specs] + [f"ALIVE-{i}" for i in range(n_stocks - len(specs))]
+    close = pd.DataFrame(prices, index=days, columns=cols)
+    spy = pd.Series(100.0 * np.exp(t[:, 0] * 2e-4), index=days)
+    eligible = pd.DataFrame(True, index=days, columns=cols)
+
+    span_records: list[dict[str, Any]] = []
+    name_records: list[dict[str, Any]] = []
+    for col, permno, comp_name, death_day in specs:
+        bar_ts = close.index[close.index.searchsorted(pd.Timestamp(death_day, tz="UTC"))]
+        close.loc[bar_ts + pd.Timedelta(days=1) :, col] = np.nan
+        span_records.append(
+            {
+                "symbol": col,
+                "permno": permno,
+                "last_date": bar_ts.tz_localize(None),
+                "has_successor": False,
+                "total_loss": False,
+            }
+        )
+        name_records.append(
+            {
+                "column": col,
+                "company_name": comp_name,
+                "name_source": "mcgill",
+                "exchcd": 1,
+            }
+        )
+
+    span_rows = pd.DataFrame(span_records)
+    names = pd.DataFrame(name_records)
+    names["exchcd"] = names["exchcd"].astype("Int64")
+    return {
+        "close": close,
+        "spy_close": spy,
+        "eligible": eligible,
+        "span_rows": span_rows,
+        "release_spans": span_rows,
+        "names": names,
+        "data_provenance": {
+            "candidates": {
+                "data_release": {"release_id": 1, "release_sha256": "relhash001"},
+                "bars_sha256": ["barhash001"],
+                "n_batches": 1,
+                "drift": False,
+                "drift_symbols": [],
+            },
+            "spy": {
+                "data_release": {"release_id": 1, "release_sha256": "relhash001"},
+                "bars_sha256": ["spyhash001"],
+                "n_batches": 1,
+                "drift": False,
+                "drift_symbols": [],
+            },
+            "n_candidate_columns": len(cols),
+        },
+    }
+
+
+def test_driver_truncated_headers_and_complete_counterparts(tmp_path: Path) -> None:
+    """Fix round 2 (a)-(c): truncated raw 200 headers through run.main + real SecLookup."""
+    death_day = date(2001, 3, 12)  # Monday in 2001 Q1
+    day_181 = death_day + timedelta(days=181)  # 2001-09-09 (Q3)
+
+    truncated_id_body = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tEXAMPLE CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000200001\n"
+    )
+    truncated_id_kept_body = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"COMPANY CONFORMED NAME:\t\tEXAMPLE KEPT CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000200002\n"
+    )
+    truncated_acq_body = (
+        b"<SEC-HEADER>\n"
+        b"CONFORMED SUBMISSION TYPE:\t8-K\n"
+        b"FILED AS OF DATE:\t\t20010315\n"
+        b"ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        b"COMPANY CONFORMED NAME:\t\tCUTOFF ACQ CORP\n"
+        b"CENTRAL INDEX KEY:\t\t0000200003\n"
+    )
+    corrupt_binary_body = b"\xff\xfe\x00\x01corrupt non-sgml payload"
+
+    complete_id_body = truncated_id_body + b"</SEC-HEADER>\n<DOCUMENT>\nbody\n"
+    complete_id_kept_body = truncated_id_kept_body + b"</SEC-HEADER>\n<DOCUMENT>\nbody\n"
+    complete_acq_body = truncated_acq_body + b"</SEC-HEADER>\n<DOCUMENT>\nbody\n"
+
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            ("200001", "EXAMPLE CORP", "8-K", "2001-03-15", "edgar/data/200001/0001-01-000001.txt"),
+            (
+                "200002",
+                "EXAMPLE KEPT CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/200002/0001-01-000001.txt",
+            ),
+            (
+                "200003",
+                "CUTOFF ACQ CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/200003/0001-01-000001.txt",
+            ),
+            (
+                "200004",
+                "CORRUPT BODY CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/200004/0001-01-000001.txt",
+            ),
+        ],
+        (2001, 3): [
+            (
+                "200002",
+                "EXAMPLE KEPT CORP",
+                "10-Q",
+                day_181.isoformat(),
+                "edgar/data/200002/0001-01-000002.txt",
+            ),
+        ],
+    }
+
+    inputs = _single_window_inputs(
+        [
+            ("EX_ID", 20001, "EXAMPLE INC", death_day),
+            ("EX_KP", 20002, "EXAMPLE KEPT INC", death_day),
+            ("EX_AQ", 20003, "CUTOFF ACQ INC", death_day),
+            ("EX_CB", 20004, "CORRUPT BODY INC", death_day),
+        ]
+    )
+
+    # Run 1: truncated & corrupt headers -> all evidence_unresolved, never normal labels.
+    trunc_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    trunc_responses.update(
+        {
+            early_sec.filing_url("edgar/data/200001/0001-01-000001.txt"): truncated_id_body,
+            early_sec.filing_url("edgar/data/200002/0001-01-000001.txt"): truncated_id_kept_body,
+            early_sec.filing_url("edgar/data/200003/0001-01-000001.txt"): truncated_acq_body,
+            early_sec.filing_url("edgar/data/200004/0001-01-000001.txt"): corrupt_binary_body,
+        }
+    )
+    client_trunc = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_trunc",
+        min_interval=0.0,
+        opener=_strict_opener(trunc_responses),
+        sleep=lambda _s: None,
+    )
+    out_trunc = tmp_path / "trunc" / "_pilot.json"
+    code1 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "4",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_trunc),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client_trunc,
+        git_dirty=lambda: False,
+    )
+    assert code1 == 0
+    df_trunc = pd.read_csv(out_trunc.parent / "_pilot_labels.csv").set_index("column")
+    for col in ("EX_ID", "EX_KP", "EX_AQ"):
+        assert df_trunc.loc[col, "label"] == "evidence_unresolved"
+        assert "header_truncated" in df_trunc.loc[col, "evidence"]
+        assert pd.isna(df_trunc.loc[col, "suggested_loss"])
+    assert df_trunc.loc["EX_CB", "label"] == "evidence_unresolved"
+    assert "header_unreadable" in df_trunc.loc["EX_CB", "evidence"]
+    assert pd.isna(df_trunc.loc["EX_CB", "suggested_loss"])
+
+    # Run 2: same headers WITH closing </SEC-HEADER> -> classified normally.
+    comp_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    comp_responses.update(
+        {
+            early_sec.filing_url("edgar/data/200001/0001-01-000001.txt"): complete_id_body,
+            early_sec.filing_url("edgar/data/200002/0001-01-000001.txt"): complete_id_kept_body,
+            early_sec.filing_url("edgar/data/200003/0001-01-000001.txt"): complete_acq_body,
+            early_sec.filing_url("edgar/data/200004/0001-01-000001.txt"): corrupt_binary_body,
+        }
+    )
+    client_comp = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_comp",
+        min_interval=0.0,
+        opener=_strict_opener(comp_responses),
+        sleep=lambda _s: None,
+    )
+    out_comp = tmp_path / "comp" / "_pilot.json"
+    code2 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "4",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_comp),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client_comp,
+        git_dirty=lambda: False,
+    )
+    assert code2 == 0
+    df_comp = pd.read_csv(out_comp.parent / "_pilot_labels.csv").set_index("column")
+    assert df_comp.loc["EX_ID", "label"] == "no_event_found"
+    assert df_comp.loc["EX_KP", "label"] == "kept_filing"
+    assert df_comp.loc["EX_AQ", "label"] == "acquisition_type"
+    assert df_comp.loc["EX_AQ", "suggested_loss"] == 0.0
+    assert df_comp.loc["EX_CB", "label"] == "evidence_unresolved"
+
+
+def test_driver_non_404_fetch_failure_and_parse_error_propagate_loudly(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fix round 2 (d)-(e): non-404 SecFetchError, corrupt index, and parser failure propagate."""
+    from ef_sec_client import SecFetchError
+
+    death_day = date(2001, 3, 12)
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            (
+                "300001",
+                "FAILFETCH CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/300001/0001-01-000001.txt",
+            ),
+        ],
+    }
+    inputs = _single_window_inputs([("FF01", 30001, "FAILFETCH INC", death_day)])
+    base_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    header_url = early_sec.filing_url("edgar/data/300001/0001-01-000001.txt")
+
+    # (d1) HTTP 500 on one filing header raises SecFetchError loudly, contact-free, no output files.
+    def opener_500(req: Any, timeout: float = 30.0) -> _FakeResponse:
+        url = req.full_url
+        if url == header_url:
+            raise urllib.error.HTTPError(url, 500, "Server Error", hdrs=None, fp=None)  # type: ignore[arg-type]
+        if url in base_responses:
+            return _FakeResponse(base_responses[url])
+        raise urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)  # type: ignore[arg-type]
+
+    client_500 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_500",
+        min_interval=0.0,
+        opener=opener_500,
+        sleep=lambda _s: None,
+    )
+    out_500 = tmp_path / "out_500" / "_pilot.json"
+    with pytest.raises(SecFetchError) as exc_500:
+        run.main(
+            [
+                "--mode",
+                "pilot",
+                "--pilot-size",
+                "1",
+                "--release-id",
+                "1",
+                "--crsp-load",
+                "1",
+                "--out",
+                str(out_500),
+            ],
+            loader=lambda _a: inputs,
+            sec_client=client_500,
+            git_dirty=lambda: False,
+        )
+    captured = capsys.readouterr()
+    for surface in (str(exc_500.value), captured.out, captured.err):
+        assert DUMMY_CONTACT not in surface
+        assert DUMMY_EMAIL not in surface
+    assert not out_500.exists()
+    assert not (out_500.parent / "_pilot_labels.csv").exists()
+
+    # (d2) Corrupt cached header body whose refetch fails (HTTP 500) also propagates loudly.
+    cache_corrupt = tmp_path / "cache_corrupt"
+    good_responses = dict(base_responses)
+    good_responses[header_url] = _header_bytes(
+        form="8-K",
+        filed_yyyymmdd="20010315",
+        company="FAILFETCH CORP",
+        cik="0000300001",
+        items=("Other events",),
+    )
+    seed_client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=cache_corrupt,
+        min_interval=0.0,
+        opener=_strict_opener(good_responses),
+        sleep=lambda _s: None,
+    )
+    seed_client.get(header_url)
+    # Tamper with cached .body so checksum fails and client attempts refetch against opener_500.
+    for body_file in cache_corrupt.glob("*.body"):
+        body_file.write_bytes(b"corrupted bytes")
+    client_corrupt_refetch = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=cache_corrupt,
+        min_interval=0.0,
+        opener=opener_500,
+        sleep=lambda _s: None,
+    )
+    out_corrupt = tmp_path / "out_corrupt" / "_pilot.json"
+    with pytest.raises(SecFetchError) as exc_corrupt:
+        run.main(
+            [
+                "--mode",
+                "pilot",
+                "--pilot-size",
+                "1",
+                "--release-id",
+                "1",
+                "--crsp-load",
+                "1",
+                "--out",
+                str(out_corrupt),
+            ],
+            loader=lambda _a: inputs,
+            sec_client=client_corrupt_refetch,
+            git_dirty=lambda: False,
+        )
+    assert DUMMY_CONTACT not in str(exc_corrupt.value)
+    assert DUMMY_EMAIL not in str(exc_corrupt.value)
+    assert not out_corrupt.exists()
+    assert not (out_corrupt.parent / "_pilot_labels.csv").exists()
+
+    # (e1) Corrupt master-index zip raises ValueError loudly out of main, writing no files.
+    corrupt_index_responses = dict(base_responses)
+    corrupt_index_responses[early_sec.master_index_url(2001, 1)] = b"not a valid zip archive"
+    client_bad_zip = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_bad_zip",
+        min_interval=0.0,
+        opener=_strict_opener(corrupt_index_responses),
+        sleep=lambda _s: None,
+    )
+    out_bad_zip = tmp_path / "out_bad_zip" / "_pilot.json"
+    with pytest.raises(ValueError, match="Invalid master-index archive"):
+        run.main(
+            [
+                "--mode",
+                "pilot",
+                "--pilot-size",
+                "1",
+                "--release-id",
+                "1",
+                "--crsp-load",
+                "1",
+                "--out",
+                str(out_bad_zip),
+            ],
+            loader=lambda _a: inputs,
+            sec_client=client_bad_zip,
+            git_dirty=lambda: False,
+        )
+    assert not out_bad_zip.exists()
+    assert not (out_bad_zip.parent / "_pilot_labels.csv").exists()
+
+    # (e2) An unexpected parser exception on a header propagates loudly, never a normal label.
+    client_parse_err = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_parse_err",
+        min_interval=0.0,
+        opener=_strict_opener(good_responses),
+        sleep=lambda _s: None,
+    )
+    out_parse_err = tmp_path / "out_parse_err" / "_pilot.json"
+
+    def _boom(_text: str) -> early_sec.FilingHeader:
+        raise ValueError("unexpected header parse failure")
+
+    monkeypatch.setattr(run.early_sec, "parse_filing_header", _boom)
+    with pytest.raises(ValueError, match="unexpected header parse failure"):
+        run.main(
+            [
+                "--mode",
+                "pilot",
+                "--pilot-size",
+                "1",
+                "--release-id",
+                "1",
+                "--crsp-load",
+                "1",
+                "--out",
+                str(out_parse_err),
+            ],
+            loader=lambda _a: inputs,
+            sec_client=client_parse_err,
+            git_dirty=lambda: False,
+        )
+    assert not out_parse_err.exists()
+    assert not (out_parse_err.parent / "_pilot_labels.csv").exists()

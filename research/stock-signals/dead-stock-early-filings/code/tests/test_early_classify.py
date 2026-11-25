@@ -41,6 +41,7 @@ def _header(
     cik: int | None = 1001,
     former_names: tuple[str, ...] = (),
     items: frozenset[str] = frozenset(),
+    complete: bool = True,
 ) -> early_sec.FilingHeader:
     return early_sec.FilingHeader(
         form=form,
@@ -49,6 +50,7 @@ def _header(
         cik=cik,
         former_names=former_names,
         items=items,
+        complete=complete,
     )
 
 
@@ -663,6 +665,155 @@ def test_header_binding_unreadability_and_amendment2_precedence() -> None:
     # Pre-2004-08-23 bare 2.01 is not acquisition; 8-A12B listing form is ignored.
     assert out.loc["PRE_NUM", "label"] == "no_event_found"
     assert out.loc["LISTING_ONLY", "label"] == "no_event_found"
+
+
+def test_truncated_raw_header_is_rejected_and_complete_header_classified() -> None:
+    """Fix round 2 (a)-(c): truncated headers without </SEC-HEADER> become evidence_unresolved."""
+    truncated_identity_only = (
+        "<SEC-HEADER>\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        "FILED AS OF DATE:\t\t20010315\n"
+        "COMPANY CONFORMED NAME:\t\tEXAMPLE CORP\n"
+        "CENTRAL INDEX KEY:\t\t0000100001\n"
+    )
+    complete_identity_only = truncated_identity_only + "</SEC-HEADER>\n<DOCUMENT>\nbody\n"
+
+    truncated_after_acq = (
+        "<SEC-HEADER>\n"
+        "CONFORMED SUBMISSION TYPE:\t8-K\n"
+        "FILED AS OF DATE:\t\t20010315\n"
+        "ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
+        "COMPANY CONFORMED NAME:\t\tACQ TRUNC CORP\n"
+        "CENTRAL INDEX KEY:\t\t0000100002\n"
+    )
+    complete_after_acq = truncated_after_acq + "</SEC-HEADER>\n<DOCUMENT>\nbody\n"
+    # Closing tag inside <DOCUMENT> body text must NOT count as header completion.
+    close_inside_body = truncated_identity_only + "<DOCUMENT>\n</SEC-HEADER>\n"
+
+    h_trunc_id = early_sec.parse_filing_header(truncated_identity_only)
+    h_comp_id = early_sec.parse_filing_header(complete_identity_only)
+    h_trunc_acq = early_sec.parse_filing_header(truncated_after_acq)
+    h_comp_acq = early_sec.parse_filing_header(complete_after_acq)
+    h_body_close = early_sec.parse_filing_header(close_inside_body)
+
+    assert h_trunc_id.complete is False
+    assert ec.check_header_complete(h_trunc_id) == "header_truncated"
+    assert h_comp_id.complete is True
+    assert ec.check_header_complete(h_comp_id) is None
+    assert h_trunc_acq.complete is False
+    assert ec.check_header_complete(h_trunc_acq) == "header_truncated"
+    assert h_comp_acq.complete is True
+    assert ec.check_header_complete(h_comp_acq) is None
+    assert h_body_close.complete is False
+    assert ec.check_header_complete(h_body_close) == "header_truncated"
+
+    last = date(2001, 3, 10)
+    day_181 = last + timedelta(days=181)
+    cases = [
+        ("TRUNC_NONE", 40001, "TRUNC NONE CORP"),
+        ("TRUNC_KEPT", 40002, "TRUNC KEPT CORP"),
+        ("TRUNC_ACQ", 40003, "TRUNC ACQ CORP"),
+        ("BODY_CLOSE", 40004, "BODY CLOSE CORP"),
+        ("COMP_NONE", 40005, "COMP NONE CORP"),
+        ("COMP_KEPT", 40006, "COMP KEPT CORP"),
+        ("COMP_ACQ", 40007, "COMP ACQ CORP"),
+    ]
+    roster = pd.DataFrame(
+        [
+            {
+                "column": col,
+                "permno": p,
+                "symbol": col,
+                "last_bar": pd.Timestamp(last),
+                "decision_date": pd.Timestamp("2001-02-28"),
+                "rank_band": "1-50",
+                "held_by_rule": True,
+            }
+            for col, p, _name in cases
+        ]
+    )
+    roster["permno"] = roster["permno"].astype("Int64")
+    names = pd.DataFrame(
+        {
+            "column": [c[0] for c in cases],
+            "company_name": [c[2] for c in cases],
+            "name_source": ["mcgill"] * len(cases),
+            "exchcd": pd.Series([1] * len(cases), dtype="Int64"),
+        }
+    )
+
+    f_id = _filing(form="8-K", company_name="EXAMPLE CORP", cik=100001, filed=date(2001, 3, 15))
+    f_acq = _filing(form="8-K", company_name="ACQ TRUNC CORP", cik=100002, filed=date(2001, 3, 15))
+    lookup_map = {
+        "TRUNC NONE CORP": ec.CompanyEvidence(
+            cik=100001,
+            company_name="EXAMPLE CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_id, h_trunc_id),),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(100001,),
+        ),
+        "TRUNC KEPT CORP": ec.CompanyEvidence(
+            cik=100001,
+            company_name="EXAMPLE CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_id, h_trunc_id),),
+            all_filing_dates=(date(2001, 3, 15), day_181),
+            candidate_ciks=(100001,),
+        ),
+        "TRUNC ACQ CORP": ec.CompanyEvidence(
+            cik=100002,
+            company_name="ACQ TRUNC CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_acq, h_trunc_acq),),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(100002,),
+        ),
+        "BODY CLOSE CORP": ec.CompanyEvidence(
+            cik=100001,
+            company_name="EXAMPLE CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_id, h_body_close),),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(100001,),
+        ),
+        "COMP NONE CORP": ec.CompanyEvidence(
+            cik=100001,
+            company_name="EXAMPLE CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_id, h_comp_id),),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(100001,),
+        ),
+        "COMP KEPT CORP": ec.CompanyEvidence(
+            cik=100001,
+            company_name="EXAMPLE CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_id, h_comp_id),),
+            all_filing_dates=(date(2001, 3, 15), day_181),
+            candidate_ciks=(100001,),
+        ),
+        "COMP ACQ CORP": ec.CompanyEvidence(
+            cik=100002,
+            company_name="ACQ TRUNC CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(f_acq, h_comp_acq),),
+            all_filing_dates=(date(2001, 3, 15),),
+            candidate_ciks=(100002,),
+        ),
+    }
+
+    out = ec.classify_roster(roster, names, lambda name, _d: lookup_map[name]).set_index("column")
+
+    for col in ("TRUNC_NONE", "TRUNC_KEPT", "TRUNC_ACQ", "BODY_CLOSE"):
+        assert out.loc[col, "label"] == "evidence_unresolved"
+        assert "header_truncated" in out.loc[col, "evidence"]
+        assert pd.isna(out.loc[col, "suggested_loss"])
+
+    assert out.loc["COMP_NONE", "label"] == "no_event_found"
+    assert out.loc["COMP_KEPT", "label"] == "kept_filing"
+    assert out.loc["COMP_ACQ", "label"] == "acquisition_type"
+    assert out.loc["COMP_ACQ", "suggested_loss"] == 0.0
 
 
 def test_select_pilot_rows_is_deterministic_and_uses_seed_20261125() -> None:

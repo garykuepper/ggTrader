@@ -127,11 +127,13 @@ def exchange_label(exchcd: Any, exchange_text: Any = None) -> str:
 
 
 def check_header_complete(header: early_sec.FilingHeader | None) -> str | None:
-    """Validate that a parsed SGML header carries form type, filed date, and CIK.
+    """Validate that a parsed SGML header has form type, filed date, CIK, and closing tag.
 
-    Returns ``None`` when complete, or a short contact-free issue string describing which
-    required header fields are missing. Kept separate from ``early_sec``'s amendment-1 rule
-    (undated numeric items do not count) so both checks remain visible.
+    Returns ``None`` when complete, or a short contact-free issue string describing why the
+    header cannot be trusted (``header_unavailable``, ``header_unreadable: missing ...``, or
+    ``header_truncated`` when the closing ``</SEC-HEADER>`` tag was not seen outside body text).
+    Kept separate from ``early_sec``'s amendment-1 rule (undated numeric items do not count) so
+    both checks remain visible.
     """
     if header is None:
         return "header_unavailable"
@@ -144,6 +146,8 @@ def check_header_complete(header: early_sec.FilingHeader | None) -> str | None:
         missing.append("cik")
     if missing:
         return f"header_unreadable: missing {', '.join(missing)}"
+    if not header.complete:
+        return "header_truncated"
     return None
 
 

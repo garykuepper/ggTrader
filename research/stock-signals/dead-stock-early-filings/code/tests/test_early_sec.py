@@ -574,6 +574,7 @@ def test_parse_filing_header_extracts_all_fields() -> None:
         items=frozenset(
             {"acquisition or disposition of assets", "financial statements and exhibits"}
         ),
+        complete=True,
     )
 
 
@@ -703,6 +704,7 @@ def test_resolve_confidence_promotes_name_only_when_header_matches() -> None:
         cik=999999,
         former_names=(),
         items=frozenset(),
+        complete=True,
     )
     assert resolve_confidence(CONFIDENCE_NAME_ONLY, filing, wrong_cik) == CONFIDENCE_NAME_ONLY
 
@@ -713,6 +715,7 @@ def test_resolve_confidence_promotes_name_only_when_header_matches() -> None:
         cik=812345,
         former_names=(),
         items=frozenset(),
+        complete=True,
     )
     assert resolve_confidence(CONFIDENCE_NAME_ONLY, filing, wrong_form) == CONFIDENCE_NAME_ONLY
 
