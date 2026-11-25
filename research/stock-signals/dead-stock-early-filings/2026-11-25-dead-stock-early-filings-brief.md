@@ -99,3 +99,5 @@ None yet.
 5. **The guards stay:** two or more different companies (CIKs) matching one roster stock make it `ambiguous_match`; the evidence stays bound to the CIK; a name that matches nothing is `no_company_match`. A match by rules 2 to 4 is tier `name_only`, never `checked`.
 If the rerun pilot still finds a company for fewer than half of the named stocks, the work stops and the owner is asked.
 
+**2026-11-25, fourth note (after the review of the matching repair, before the rerun pilot).** The short form LAB to LABORATORIES, added in the third note, is withdrawn: combined with the earlier table's plural folding it gives LAB and LABS different spellings and could miss a match the earlier rule found. The earlier study's rule is kept for those words as it was. One roster stock (OPTICAL COAT LAB) is expected to go unmatched because of this; the report counts it as `no_company_match`. All other rules of the third note stand.
+
