@@ -6,6 +6,9 @@ import copy
 import gzip
 import hashlib
 import json
+import subprocess
+import sys
+import types
 from pathlib import Path
 from typing import Any
 
@@ -159,6 +162,7 @@ def _run_anchor_ok(
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
         saved_holdout=paths["saved_holdout"],
+        code_problems=lambda: [],
     )
 
 
@@ -257,6 +261,8 @@ def test_fresh_refused_without_anchor_file(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -289,7 +295,9 @@ def test_fresh_refused_when_anchor_not_ok(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -324,7 +332,9 @@ def test_fresh_refused_when_code_changed_since_anchor(
             study_dir_=paths["study_dir"],
             git_dirty=lambda: False,
             drift_preflight=lambda _r: [],
+            saved_holdout=paths["saved_holdout"],
             changed_paths=lambda _c, c=changed: c,
+            code_problems=lambda: [],
         )
         assert code == 2
         err = capsys.readouterr().err
@@ -345,7 +355,9 @@ def test_fresh_refused_when_code_changed_since_anchor(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code_hash == 2
     err = capsys.readouterr().err
@@ -366,6 +378,8 @@ def test_fresh_refused_when_code_changed_since_anchor(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
+        code_problems=lambda: [],
     )
     assert code_ref == 2
     err = capsys.readouterr().err
@@ -393,10 +407,12 @@ def test_fresh_allows_non_code_changes_since_anchor(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [
             "research/stock-signals/dead-stock-fresh-window/README.md",
             "docs/notes.md",
         ],
+        code_problems=lambda: [],
     )
     assert code == 0
     assert paths["fresh_file"].is_file()
@@ -436,7 +452,9 @@ def test_fresh_refused_on_wrong_release_or_load(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -470,6 +488,7 @@ def test_fresh_refused_on_dirty_tree(
         drift_preflight=lambda _r: [],
         saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -514,6 +533,8 @@ def test_fresh_writes_result_and_claim_once(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
+        code_problems=lambda: [],
     )
     assert code == 0
     assert claim_existed_before_read == [True]
@@ -573,7 +594,9 @@ def test_second_fresh_refused_naming_file(
             study_dir_=paths["study_dir"],
             git_dirty=lambda: False,
             drift_preflight=lambda _r: [],
+            saved_holdout=paths["saved_holdout"],
             changed_paths=lambda _c: [],
+            code_problems=lambda: [],
         )
         == 0
     )
@@ -587,7 +610,9 @@ def test_second_fresh_refused_naming_file(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -604,7 +629,9 @@ def test_second_fresh_refused_naming_file(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code_only_result == 2
     err = capsys.readouterr().err
@@ -636,7 +663,9 @@ def test_claim_left_after_crash_blocks_fresh(
             study_dir_=paths["study_dir"],
             git_dirty=lambda: False,
             drift_preflight=lambda _r: [],
+            saved_holdout=paths["saved_holdout"],
             changed_paths=lambda _c: [],
+            code_problems=lambda: [],
         )
     assert paths["claim_file"].is_file()
     assert not paths["fresh_file"].exists()
@@ -648,7 +677,9 @@ def test_claim_left_after_crash_blocks_fresh(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -676,7 +707,9 @@ def test_fresh_drift_before_read_refuses_without_claiming(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: ["LNK1", "LNK2"],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -713,7 +746,9 @@ def test_fresh_drift_after_read_keeps_claim_and_writes_no_result(
         study_dir_=paths["study_dir"],
         git_dirty=lambda: False,
         drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
         changed_paths=lambda _c: [],
+        code_problems=lambda: [],
     )
     assert code == 2
     err = capsys.readouterr().err
@@ -781,3 +816,301 @@ def test_output_inside_first_test_folder_refused(
     )
     assert code_res == 2
     assert "dead_stock_first_test" in capsys.readouterr().err
+
+
+# --- FIX A: fresh mode re-verifies full anchor content against the saved first-test file ---
+
+
+def _run_fresh_expect_refused(
+    driver: Any,
+    paths: dict[str, Path],
+    capsys: pytest.CaptureFixture[str],
+    expected_word: str,
+) -> None:
+    code = driver.main(
+        ["--window", "fresh", "--release-id", "1"],
+        loader=lambda *_a: pytest.fail("loader must not run on invalid anchor content"),
+        results_dir=paths["results_dir"],
+        study_dir_=paths["study_dir"],
+        git_dirty=lambda: False,
+        drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
+        changed_paths=lambda _c: [],
+        code_problems=lambda: [],
+    )
+    assert code == 2
+    err = capsys.readouterr().err
+    assert expected_word in err
+    _assert_no_delete_claim_advice(err)
+    assert not paths["claim_file"].exists()
+    assert not paths["fresh_file"].exists()
+
+
+def test_fresh_refuses_anchor_with_missing_result(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    assert _run_anchor_ok(driver, paths, data) == 0
+
+    anchor = json.loads(paths["anchor_file"].read_text(encoding="utf-8"))
+    del anchor["result"]
+    paths["anchor_file"].write_text(json.dumps(anchor, indent=2), encoding="utf-8")
+
+    _run_fresh_expect_refused(driver, paths, capsys, "result")
+
+
+def test_fresh_refuses_anchor_with_nonempty_differences(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    assert _run_anchor_ok(driver, paths, data) == 0
+
+    anchor = json.loads(paths["anchor_file"].read_text(encoding="utf-8"))
+    anchor["comparison"]["differences"] = ["strategy cell x differed by +0.02"]
+    paths["anchor_file"].write_text(json.dumps(anchor, indent=2), encoding="utf-8")
+
+    _run_fresh_expect_refused(driver, paths, capsys, "differences")
+
+
+@pytest.mark.parametrize(
+    ("mutator", "expected_field"),
+    [
+        (lambda a: a.__setitem__("study", "other-study"), "study"),
+        (lambda a: a.__setitem__("window", "fresh"), "window"),
+        (
+            lambda a: a.__setitem__("window_dates", {"start": "2000-01-03", "end": "2004-12-31"}),
+            "window_dates",
+        ),
+        (lambda a: a.__setitem__("universe", "B"), "universe"),
+        (lambda a: a["comparison"].__setitem__("n_strategy_cells", 17), "n_strategy_cells"),
+        (lambda a: a["comparison"].__setitem__("n_spy_cells", 5), "n_spy_cells"),
+    ],
+)
+def test_fresh_refuses_anchor_with_wrong_identity_or_counts(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    mutator: Any,
+    expected_field: str,
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    assert _run_anchor_ok(driver, paths, data) == 0
+
+    anchor = json.loads(paths["anchor_file"].read_text(encoding="utf-8"))
+    mutator(anchor)
+    paths["anchor_file"].write_text(json.dumps(anchor, indent=2), encoding="utf-8")
+
+    _run_fresh_expect_refused(driver, paths, capsys, expected_field)
+
+
+def test_fresh_refuses_anchor_when_saved_file_sha256_mismatches_disk(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    assert _run_anchor_ok(driver, paths, data) == 0
+
+    # 1. Stored saved_file_sha256 altered inside _anchor-A.json.
+    anchor = json.loads(paths["anchor_file"].read_text(encoding="utf-8"))
+    anchor["comparison"]["saved_file_sha256"] = "f" * 64
+    paths["anchor_file"].write_text(json.dumps(anchor, indent=2), encoding="utf-8")
+    _run_fresh_expect_refused(driver, paths, capsys, "saved_file_sha256")
+
+    # 2. Saved first-test file bytes changed on disk after the anchor ran.
+    assert _run_anchor_ok(driver, paths, data) == 0
+    paths["saved_holdout"].write_text(
+        paths["saved_holdout"].read_text(encoding="utf-8") + "\n",
+        encoding="utf-8",
+    )
+    _run_fresh_expect_refused(driver, paths, capsys, "saved_file_sha256")
+
+
+def test_fresh_refuses_anchor_when_stored_cell_edited_by_one_cent(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    assert _run_anchor_ok(driver, paths, data) == 0
+
+    anchor = json.loads(paths["anchor_file"].read_text(encoding="utf-8"))
+    cell = "loss1_cost18.3bps_taxlow"
+    anchor["result"]["strategy"][cell]["after_tax_final"] += 0.01
+    paths["anchor_file"].write_text(json.dumps(anchor, indent=2), encoding="utf-8")
+
+    _run_fresh_expect_refused(driver, paths, capsys, cell)
+
+
+# --- FIX B: untracked Python code and non-tracked loaded modules refused in both modes ---
+
+
+def _init_temp_git_repo(repo: Path) -> Path:
+    """Create a temporary git repo with one committed tracked file ``src/pkg/mod.py``."""
+    repo.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    tracked_mod = repo / "src" / "pkg" / "mod.py"
+    tracked_mod.parent.mkdir(parents=True, exist_ok=True)
+    tracked_mod.write_text("VALUE = 1\n", encoding="utf-8")
+    subprocess.run(["git", "add", "src/pkg/mod.py"], cwd=repo, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=none",
+            "commit",
+            "-q",
+            "-m",
+            "initial tracked module",
+        ],
+        cwd=repo,
+        check=True,
+    )
+    return tracked_mod
+
+
+def test_untracked_code_problems_real_git_repo(tmp_path: Path) -> None:
+    driver = load_driver()
+    repo = tmp_path / "repo"
+    _init_temp_git_repo(repo)
+
+    # (d) Clean repo returns no problems.
+    assert driver.untracked_code_problems(repo) == []
+
+    # (a) Untracked src/pkg/extra.py is reported naming the file.
+    extra = repo / "src" / "pkg" / "extra.py"
+    extra.write_text("EXTRA = 2\n", encoding="utf-8")
+    probs_extra = driver.untracked_code_problems(repo)
+    assert any("src/pkg/extra.py" in msg for msg in probs_extra)
+    extra.unlink()
+
+    # (b) Untracked package src/pkg/mod/__init__.py shadowing src/pkg/mod.py is reported.
+    shadow = repo / "src" / "pkg" / "mod" / "__init__.py"
+    shadow.parent.mkdir(parents=True, exist_ok=True)
+    shadow.write_text("VALUE = 999\n", encoding="utf-8")
+    probs_shadow = driver.untracked_code_problems(repo)
+    assert any("src/pkg/mod/__init__.py" in msg for msg in probs_shadow)
+    shadow.unlink()
+    shadow.parent.rmdir()
+
+    # Gitignored .py file under src/ is also reported.
+    (repo / ".gitignore").write_text("src/pkg/ignored_*.py\n", encoding="utf-8")
+    ignored_py = repo / "src" / "pkg" / "ignored_hack.py"
+    ignored_py.write_text("HACK = 1\n", encoding="utf-8")
+    probs_ignored = driver.untracked_code_problems(repo)
+    assert any("src/pkg/ignored_hack.py" in msg for msg in probs_ignored)
+    ignored_py.unlink()
+    (repo / ".gitignore").unlink()
+
+    # (c) __pycache__/x.py and study code/tests/*.py are not reported.
+    pycache_py = repo / "src" / "pkg" / "__pycache__" / "x.py"
+    pycache_py.parent.mkdir(parents=True, exist_ok=True)
+    pycache_py.write_text("# cache\n", encoding="utf-8")
+    study_test_py = (
+        repo
+        / "research"
+        / "stock-signals"
+        / "dead-stock-fresh-window"
+        / "code"
+        / "tests"
+        / "scratch_test.py"
+    )
+    study_test_py.parent.mkdir(parents=True, exist_ok=True)
+    study_test_py.write_text("# test\n", encoding="utf-8")
+    assert driver.untracked_code_problems(repo) == []
+
+
+def test_untracked_code_problems_detects_non_tracked_loaded_module(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    driver = load_driver()
+    repo = tmp_path / "repo"
+    tracked_mod = _init_temp_git_repo(repo)
+
+    # Tracked module in sys.modules is accepted.
+    fake_tracked = types.ModuleType("_test_tracked_mod")
+    fake_tracked.__file__ = str(tracked_mod)
+    monkeypatch.setitem(sys.modules, "_test_tracked_mod", fake_tracked)
+
+    # Module inside root/.venv is ignored.
+    venv_mod_path = repo / ".venv" / "lib" / "site_pkg.py"
+    venv_mod_path.parent.mkdir(parents=True, exist_ok=True)
+    venv_mod_path.write_text("X = 1\n", encoding="utf-8")
+    fake_venv = types.ModuleType("_test_venv_mod")
+    fake_venv.__file__ = str(venv_mod_path)
+    monkeypatch.setitem(sys.modules, "_test_venv_mod", fake_venv)
+
+    assert driver.untracked_code_problems(repo) == []
+
+    # Loaded module whose __file__ is an untracked file inside repo is reported.
+    untracked_mod_path = repo / "shadow_pkg.py"
+    untracked_mod_path.write_text("X = 2\n", encoding="utf-8")
+    fake_untracked = types.ModuleType("_test_untracked_mod")
+    fake_untracked.__file__ = str(untracked_mod_path)
+    monkeypatch.setitem(sys.modules, "_test_untracked_mod", fake_untracked)
+
+    probs = driver.untracked_code_problems(repo)
+    assert any("_test_untracked_mod" in msg and "shadow_pkg.py" in msg for msg in probs)
+
+
+@pytest.mark.parametrize("window", ["anchor", "fresh"])
+def test_driver_refuses_untracked_code_problems_in_both_modes(
+    tmp_path: Path,
+    synth_bundle: tuple[dict[str, Any], dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    window: str,
+) -> None:
+    driver = load_driver()
+    data, saved = synth_bundle
+    _patch_windows(monkeypatch)
+    paths = _setup_workspace(tmp_path, saved)
+    if window == "fresh":
+        assert _run_anchor_ok(driver, paths, data) == 0
+
+    code = driver.main(
+        ["--window", window, "--release-id", "1"],
+        loader=lambda *_a: pytest.fail("loader must not run when untracked code is present"),
+        results_dir=paths["results_dir"],
+        study_dir_=paths["study_dir"],
+        git_dirty=lambda: False,
+        drift_preflight=lambda _r: [],
+        saved_holdout=paths["saved_holdout"],
+        changed_paths=lambda _c: [],
+        code_problems=lambda: ["untracked Python file in code tree: src/pkg/extra.py"],
+    )
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "src/pkg/extra.py" in err
+    _assert_no_delete_claim_advice(err)
+    assert not paths["claim_file"].exists()
+    assert not paths["fresh_file"].exists()
+    if window == "anchor":
+        assert not paths["anchor_file"].exists()

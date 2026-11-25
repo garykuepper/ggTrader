@@ -33,7 +33,10 @@ DEFAULT_SAVED_HOLDOUT = STUDY_DIR.parent / "dead-stock-first-test" / "_holdout-A
 ANCHOR_FILENAME = f"_anchor-{UNIVERSE}.json"
 FRESH_FILENAME = f"_fresh-{UNIVERSE}.json"
 STUDY_CODE_REL = "research/stock-signals/dead-stock-fresh-window/code/"
+STUDY_CODE_TESTS_REL = "research/stock-signals/dead-stock-fresh-window/code/tests/"
 GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+EXPECTED_STRATEGY_CELLS = 18
+EXPECTED_SPY_CELLS = 6
 CODE_CHANGE_PREFIXES: tuple[str, ...] = (
     "src/",
     "research/stock-signals/_lib/",
@@ -143,6 +146,82 @@ def _is_code_path(path: str) -> bool:
     return any(normalized.startswith(prefix) for prefix in CODE_CHANGE_PREFIXES)
 
 
+def _git_ls_files(root: Path, *extra_args: str) -> list[str]:
+    """Run ``git ls-files -z`` in ``root`` and return non-empty repo-relative POSIX paths."""
+    done = subprocess.run(
+        ["git", "ls-files", *extra_args, "-z"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    return [item.replace("\\", "/") for item in done.stdout.split("\x00") if item]
+
+
+def untracked_code_problems(root: Path = ROOT) -> list[str]:
+    """Return plain-word problems for untracked Python files or non-tracked loaded modules.
+
+    Performs two checks against ``root``:
+    1. Every untracked or gitignored ``.py`` file under ``src/``, ``research/stock-signals/_lib/``,
+       or this study's ``code/`` folder (skipping ``__pycache__`` and the study's ``code/tests/``).
+    2. Every module in ``sys.modules`` whose ``__file__`` resolves inside ``root`` (excluding
+       ``root/.venv``) must belong to git's tracked file set, catching untracked packages or
+       modules that shadow a tracked sibling.
+
+    Args:
+        root: Repository checkout root to inspect.
+
+    Returns:
+        Sorted plain-word problem descriptions (empty when clean).
+    """
+    try:
+        others = _git_ls_files(root, "--others", "--exclude-standard")
+        ignored = _git_ls_files(root, "--others", "--ignored", "--exclude-standard")
+        tracked_rel = _git_ls_files(root)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return [f"cannot inspect git tracked/untracked files under {root}: {exc}"]
+
+    problems: list[str] = []
+
+    untracked_py: set[str] = set()
+    for rel in (*others, *ignored):
+        if not rel.endswith(".py"):
+            continue
+        if not _is_code_path(rel):
+            continue
+        if rel.startswith(STUDY_CODE_TESTS_REL):
+            continue
+        if "__pycache__" in Path(rel).parts:
+            continue
+        untracked_py.add(rel)
+    for rel in sorted(untracked_py):
+        problems.append(f"untracked Python file in code tree: {rel}")
+
+    resolved_root = root.resolve(strict=False)
+    venv_dir = resolved_root / ".venv"
+    tracked_paths = {(resolved_root / rel).resolve(strict=False) for rel in tracked_rel}
+    bad_modules: list[tuple[str, str]] = []
+    for name, mod in list(sys.modules.items()):
+        if mod is None:
+            continue
+        mod_file = getattr(mod, "__file__", None)
+        if not isinstance(mod_file, str) or not mod_file:
+            continue
+        resolved_file = Path(mod_file).resolve(strict=False)
+        if not resolved_file.is_relative_to(resolved_root):
+            continue
+        if resolved_file.is_relative_to(venv_dir):
+            continue
+        if resolved_file not in tracked_paths:
+            rel_display = resolved_file.relative_to(resolved_root).as_posix()
+            bad_modules.append((name, rel_display))
+    for name, rel_display in sorted(bad_modules):
+        problems.append(f"loaded module {name!r} resolves to non-tracked file: {rel_display}")
+
+    return problems
+
+
 def _lexical_abs(path: Path) -> Path:
     """Return the normalized lexical absolute path without following symlinks."""
     return Path(os.path.abspath(path))
@@ -194,31 +273,49 @@ def _validate_output_paths(outputs: Sequence[tuple[str, Path]]) -> str | None:
     return None
 
 
-def _read_saved_holdout(path: Path) -> tuple[dict[str, Any], str] | tuple[None, str]:
+def _read_saved_holdout(
+    path: Path, *, prefix: str = "anchor refused"
+) -> tuple[dict[str, Any], str] | tuple[None, str]:
     """Read and validate the saved first-test holdout JSON file for the anchor comparison."""
     try:
         raw = path.read_bytes()
     except OSError as exc:
-        return None, f"anchor refused: cannot read saved first-test file {path}: {exc}"
+        return None, f"{prefix}: cannot read saved first-test file {path}: {exc}"
     digest = _sha256_bytes(raw)
     try:
         payload = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        return None, f"anchor refused: saved first-test file {path} is not valid JSON: {exc}"
+        return None, f"{prefix}: saved first-test file {path} is not valid JSON: {exc}"
     if not isinstance(payload, dict):
-        return None, f"anchor refused: saved first-test file {path} must contain a JSON object"
+        return None, f"{prefix}: saved first-test file {path} must contain a JSON object"
     result_block = payload.get("result")
     if not isinstance(result_block, dict):
-        return None, f"anchor refused: saved first-test file {path} has no result mapping"
+        return None, f"{prefix}: saved first-test file {path} has no result mapping"
     return payload, digest
+
+
+def _is_exact_int(value: Any, expected: int) -> bool:
+    """Return True when ``value`` is a non-boolean int equal to ``expected``."""
+    return isinstance(value, int) and not isinstance(value, bool) and value == expected
 
 
 def _verify_anchor_for_fresh(
     anchor_path: Path,
+    saved_holdout_path: Path,
     current_hashes: Mapping[str, str],
     changed_paths_fn: Callable[[str], list[str]],
 ) -> tuple[dict[str, Any], str] | tuple[None, str]:
-    """Verify ``_anchor-A.json`` exists, passed, and binds the exact code running now."""
+    """Verify ``_anchor-A.json`` exists, matches the saved first-test file, and binds this code.
+
+    Re-checks anchor metadata (study, window, dates, universe, pins), comparison summary, current
+    SHA-256 of the saved first-test holdout file, and every cell of ``anchor["result"]`` against
+    the saved holdout via ``fresh_compare.compare_to_saved``, in addition to code hashes and git
+    diff since ``anchor_commit``.
+
+    Scope: this defends against stale, damaged, wrong-window, or lazily hand-written anchor files.
+    A deliberately forged complete anchor (a copy of the saved result block) cannot be told apart
+    without a trusted receipt and is out of scope because the only user is the owner's own session.
+    """
     if not anchor_path.exists():
         return (
             None,
@@ -254,12 +351,105 @@ def _verify_anchor_for_fresh(
             f"fresh run refused: anchor file {anchor_path} does not have anchor_ok=true; "
             "re-run --window anchor --release-id 1 until the check matches",
         )
-    if anchor.get("release_id") != fp.PIN_RELEASE_ID or anchor.get("crsp_load") != fp.PIN_CRSP_LOAD:
+    if anchor.get("study") != STUDY_ID:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has study={anchor.get('study')!r}, "
+            f"expected {STUDY_ID!r}; re-run --window anchor --release-id 1",
+        )
+    if anchor.get("window") != "anchor":
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has window={anchor.get('window')!r}, "
+            "expected 'anchor'; re-run --window anchor --release-id 1",
+        )
+    anchor_start, anchor_end = fresh_inputs.WINDOWS["anchor"]
+    expected_dates = {"start": anchor_start, "end": anchor_end}
+    if anchor.get("window_dates") != expected_dates:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has "
+            f"window_dates={anchor.get('window_dates')!r}, expected {expected_dates!r}; "
+            "re-run --window anchor --release-id 1",
+        )
+    if anchor.get("universe") != UNIVERSE:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has "
+            f"universe={anchor.get('universe')!r}, expected {UNIVERSE!r}; "
+            "re-run --window anchor --release-id 1",
+        )
+    if not _is_exact_int(anchor.get("release_id"), fp.PIN_RELEASE_ID) or not _is_exact_int(
+        anchor.get("crsp_load"), fp.PIN_CRSP_LOAD
+    ):
         return (
             None,
             f"fresh run refused: anchor file {anchor_path} was run on release "
             f"{anchor.get('release_id')} / load {anchor.get('crsp_load')}, expected "
             f"{fp.PIN_RELEASE_ID} / {fp.PIN_CRSP_LOAD}; re-run --window anchor --release-id 1",
+        )
+    comparison = anchor.get("comparison")
+    if not isinstance(comparison, Mapping):
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has no comparison mapping; "
+            "re-run --window anchor --release-id 1",
+        )
+    if not isinstance(comparison.get("differences"), list) or comparison.get("differences") != []:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has non-empty "
+            f"comparison.differences ({comparison.get('differences')!r}); "
+            "re-run --window anchor --release-id 1",
+        )
+    if not _is_exact_int(comparison.get("n_strategy_cells"), EXPECTED_STRATEGY_CELLS):
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has "
+            f"comparison.n_strategy_cells={comparison.get('n_strategy_cells')!r}, "
+            f"expected {EXPECTED_STRATEGY_CELLS}; re-run --window anchor --release-id 1",
+        )
+    if not _is_exact_int(comparison.get("n_spy_cells"), EXPECTED_SPY_CELLS):
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has "
+            f"comparison.n_spy_cells={comparison.get('n_spy_cells')!r}, "
+            f"expected {EXPECTED_SPY_CELLS}; re-run --window anchor --release-id 1",
+        )
+    anchor_result = anchor.get("result")
+    if not isinstance(anchor_result, Mapping):
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has no result mapping; "
+            "re-run --window anchor --release-id 1",
+        )
+    saved_payload, saved_sha_or_err = _read_saved_holdout(
+        saved_holdout_path, prefix="fresh run refused"
+    )
+    if saved_payload is None:
+        return None, saved_sha_or_err
+    if comparison.get("saved_file_sha256") != saved_sha_or_err:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has "
+            f"comparison.saved_file_sha256={comparison.get('saved_file_sha256')!r}, "
+            f"which does not match current saved first-test file {saved_holdout_path} "
+            f"({saved_sha_or_err}); re-run --window anchor --release-id 1",
+        )
+    try:
+        recheck_diffs = fresh_compare.compare_to_saved(dict(anchor_result), saved_payload)
+    except (TypeError, ValueError) as exc:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} has unreadable result values "
+            f"({exc}); re-run --window anchor --release-id 1",
+        )
+    if recheck_diffs:
+        return (
+            None,
+            f"fresh run refused: anchor file {anchor_path} result no longer matches saved "
+            f"first-test file {saved_holdout_path} ({len(recheck_diffs)} difference(s), e.g. "
+            f"{recheck_diffs[0]}); re-run --window anchor --release-id 1",
         )
     anchor_commit = anchor.get("anchor_commit")
     if not isinstance(anchor_commit, str) or not GIT_SHA_RE.match(anchor_commit):
@@ -380,6 +570,7 @@ def main(
     drift_preflight: Callable[[int], list[str]] | None = None,
     saved_holdout: Path | None = None,
     changed_paths: Callable[[str], list[str]] | None = None,
+    code_problems: Callable[[], list[str]] | None = None,
 ) -> int:
     """Run the anchor reproduction check or the one-shot fresh window.
 
@@ -395,6 +586,7 @@ def main(
         drift_preflight: Optional test replacement for ``fresh_inputs.read_drift``.
         saved_holdout: Optional test path replacing the saved first-test ``_holdout-A.json``.
         changed_paths: Optional test replacement for ``git diff --name-only <anchor_commit> HEAD``.
+        code_problems: Optional test replacement for ``untracked_code_problems``.
 
     Returns:
         Exit code: 0 on success, 2 on a refused precondition, 3 on an anchor mismatch.
@@ -408,6 +600,7 @@ def main(
     fresh_path = s_dir / FRESH_FILENAME
     trades_path = fp.trades_file(args.window, UNIVERSE, r_dir)
     holdout_target, holdout_claim = fp.holdout_files(UNIVERSE, r_dir)
+    saved_path = DEFAULT_SAVED_HOLDOUT if saved_holdout is None else saved_holdout
 
     # 1. Fixed output path protection before any read or claim.
     if args.window == "anchor":
@@ -435,6 +628,16 @@ def main(
     except SystemExit as exc:
         return _refuse(str(exc).replace("holdout refused:", f"{args.window} refused:", 1))
 
+    # 3. Refuse untracked code or non-tracked loaded project modules on both windows.
+    found_code_problems = (
+        code_problems() if code_problems is not None else untracked_code_problems(ROOT)
+    )
+    if found_code_problems:
+        return _refuse(
+            f"{args.window} refused: untracked or non-tracked Python code found "
+            f"({'; '.join(found_code_problems[:5])}); commit or clean up untracked code first"
+        )
+
     current_head = git_sha(ROOT)
     if not current_head:
         return _refuse(
@@ -449,7 +652,6 @@ def main(
     )
 
     if args.window == "anchor":
-        saved_path = DEFAULT_SAVED_HOLDOUT if saved_holdout is None else saved_holdout
         saved_payload, saved_hash_or_err = _read_saved_holdout(saved_path)
         if saved_payload is None:
             return _refuse(saved_hash_or_err)
@@ -536,6 +738,7 @@ def main(
 
     anchor_payload, anchor_sha_or_err = _verify_anchor_for_fresh(
         anchor_path,
+        saved_path,
         current_hashes,
         changed_paths or _git_changed_paths,
     )
