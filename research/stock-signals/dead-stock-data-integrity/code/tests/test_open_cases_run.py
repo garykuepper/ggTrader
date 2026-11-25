@@ -1318,3 +1318,144 @@ def test_unreadable_or_malformed_inputs_refuse_with_exit_2_and_checksums(
         str(paths_u["payouts"]),
         "UnicodeDecodeError",
     )
+
+
+def test_malformed_main_submissions_beats_older_page_errors_and_preserves_404(
+    tmp_path: Path,
+) -> None:
+    specs = [
+        ("71001", "PERMNO-71001", "MISSING RECENT 404 CORP", "7101"),
+        ("71002", "PERMNO-71002", "MISSING RECENT ERR CORP", "7102"),
+        ("71003", "PERMNO-71003", "MAIN 404 CORP", "7103"),
+        ("71004", "PERMNO-71004", "VALID OLDER 404 CORP", "7104"),
+        ("71005", "PERMNO-71005", "VALID OLDER ERR CORP", "7105"),
+    ]
+    rows = [
+        payout_row(
+            permno=permno,
+            symbol=symbol,
+            exit_date="2015-05-15",
+            stock_name=name,
+            evidence_class="no_filing_match",
+        )
+        for permno, symbol, name, _cik in specs
+    ]
+    paths = _setup_study_dir(tmp_path, rows, [])
+    quarters = sec_pilot.needed_quarters(sec_pilot.read_roster(paths["roster"]))
+    q2_rows = [
+        (cik, name, "DEFM14A", "2015-05-01", f"000000{cik}-15-000001")
+        for _permno, _sym, name, cik in specs
+    ]
+    archives = _seed_quarters(paths["cache"], quarters, {(2015, 2): q2_rows})
+
+    def _page_descriptor(name: str) -> dict[str, str]:
+        return {"name": name, "filingFrom": "2010-01-01", "filingTo": "2016-12-31"}
+
+    def _valid_main_needing_older(page_name: str, cik: str) -> bytes:
+        # Earliest recent filing sits inside the 90-day window so fetch_events_with_status must
+        # consult the listed older page.
+        doc = {
+            "filings": {
+                "recent": {
+                    "form": ["10-Q"],
+                    "filingDate": ["2015-05-01"],
+                    "items": [""],
+                    "accessionNumber": [f"000000{cik}-15-000002"],
+                    "primaryDocument": ["q.htm"],
+                },
+                "files": [_page_descriptor(page_name)],
+            }
+        }
+        return json.dumps(doc).encode("utf-8")
+
+    page_7101 = "CIK0000007101-submissions-001.json"
+    page_7102 = "CIK0000007102-submissions-001.json"
+    page_7104 = "CIK0000007104-submissions-001.json"
+    page_7105 = "CIK0000007105-submissions-001.json"
+    page_url_7101 = sec_filings.SUBMISSIONS_PAGE_URL.format(name=page_7101)
+    page_url_7102 = sec_filings.SUBMISSIONS_PAGE_URL.format(name=page_7102)
+    page_url_7104 = sec_filings.SUBMISSIONS_PAGE_URL.format(name=page_7104)
+    page_url_7105 = sec_filings.SUBMISSIONS_PAGE_URL.format(name=page_7105)
+
+    bodies: dict[str, Any] = {
+        # Missing `recent` key, valid older page descriptor returning 404.
+        sec_filings.submissions_url("7101"): json.dumps(
+            {"filings": {"files": [_page_descriptor(page_7101)]}}
+        ).encode("utf-8"),
+        page_url_7101: SecNotFound(page_url_7101),
+        # Missing `recent` key, valid older page descriptor raising SecFetchError.
+        sec_filings.submissions_url("7102"): json.dumps(
+            {"filings": {"files": [_page_descriptor(page_7102)]}}
+        ).encode("utf-8"),
+        page_url_7102: SecFetchError("HTTP 500 older page failure"),
+        # Main response 404 must remain ordinary not_found with no error entry.
+        sec_filings.submissions_url("7103"): SecNotFound(sec_filings.submissions_url("7103")),
+        # Valid main response with missing older page keeps older_page_not_found.
+        sec_filings.submissions_url("7104"): _valid_main_needing_older(page_7104, "7104"),
+        page_url_7104: SecNotFound(page_url_7104),
+        # Valid main response with failing older page keeps fetch_error.
+        sec_filings.submissions_url("7105"): _valid_main_needing_older(page_7105, "7105"),
+        page_url_7105: SecFetchError("HTTP 503 older page unavailable"),
+    }
+    client = FakeClient(bodies, archive_bodies=archives)
+
+    rc = open_cases_run.main(_cli_args(paths), client_factory=lambda ua, cache: client)
+
+    assert rc == 0
+    payload = json.loads((paths["out"] / "_payouts_v2.json").read_text(encoding="utf-8"))
+    by_sym = {r["symbol"]: r for r in payload["rows"]}
+    errors_by_sym = {entry["symbol"]: entry for entry in payload["events_fetch_errors"]}
+
+    for permno, symbol, cik in (
+        (71001, "PERMNO-71001", 7101),
+        (71002, "PERMNO-71002", 7102),
+    ):
+        row_out = by_sym[symbol]
+        assert row_out["evidence_class"] == "no_8k_found"
+        assert row_out["events_status"] == "malformed_submissions"
+        assert row_out["reason"] == "events_incomplete"
+        assert row_out["deal_form_accessions"] == f"000000{cik}-15-000001"
+        assert errors_by_sym[symbol] == {
+            "symbol": symbol,
+            "permno": permno,
+            "cik": cik,
+            "category": "malformed_submissions",
+            "error_type": "ValueError",
+        }
+
+    # Malformed main responses stop before fetching listed older pages.
+    assert page_url_7101 not in client.requested
+    assert page_url_7102 not in client.requested
+
+    # Main 404 stays not_found without adding an error record.
+    assert by_sym["PERMNO-71003"]["evidence_class"] == "no_8k_found"
+    assert by_sym["PERMNO-71003"]["events_status"] == "not_found"
+    assert by_sym["PERMNO-71003"]["reason"] == "events_incomplete"
+    assert "PERMNO-71003" not in errors_by_sym
+
+    # Valid main responses still report older-page outcomes accurately.
+    assert page_url_7104 in client.requested
+    assert by_sym["PERMNO-71004"]["evidence_class"] == "no_8k_found"
+    assert by_sym["PERMNO-71004"]["events_status"] == "older_page_not_found"
+    assert by_sym["PERMNO-71004"]["reason"] == "events_incomplete"
+    assert "PERMNO-71004" not in errors_by_sym
+
+    assert page_url_7105 in client.requested
+    assert by_sym["PERMNO-71005"]["evidence_class"] == "no_8k_found"
+    assert by_sym["PERMNO-71005"]["events_status"] == "fetch_error"
+    assert by_sym["PERMNO-71005"]["reason"] == "events_incomplete"
+    assert errors_by_sym["PERMNO-71005"] == {
+        "symbol": "PERMNO-71005",
+        "permno": 71005,
+        "cik": 7105,
+        "category": "fetch_error",
+        "error_type": "SecFetchError",
+    }
+
+    assert len(payload["events_fetch_errors"]) == 3
+    assert payload["events_status_counts"] == {
+        "fetch_error": 1,
+        "malformed_submissions": 2,
+        "not_found": 1,
+        "older_page_not_found": 1,
+    }

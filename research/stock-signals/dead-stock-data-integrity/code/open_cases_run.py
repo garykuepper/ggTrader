@@ -28,6 +28,7 @@ from dead_stock_data_integrity import git_provenance  # noqa: E402
 from sec_client import (  # noqa: E402
     SecClient,
     SecFetchError,
+    SecNotFound,
     SecUserAgentMissing,
     load_user_agent,
     write_sha256sums,
@@ -204,6 +205,101 @@ def _fetch_error_entry(
         "category": category,
         "error_type": error_type,
     }
+
+
+def _fetch_events_for_cik(
+    client: Any,
+    *,
+    symbol: str,
+    permno: int,
+    cik: int,
+    exit_date: dt.date,
+) -> tuple[list[dict[str, Any]], str, dict[str, Any] | None]:
+    """Fetch and validate 8-K events for one matched CIK without leaking error text.
+
+    Validates the main submissions response before reading older archive pages so any main
+    response lacking ``filings.recent`` always reports ``malformed_submissions`` rather than
+    falling through to an older-page 404 or fetch error, while preserving main-response 404
+    (``not_found``) and main-response fetch-error (``fetch_error``) handling.
+    """
+    try:
+        sub_url = sec_filings.submissions_url(str(cik))
+    except ValueError as exc:
+        return (
+            [],
+            EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+            _fetch_error_entry(
+                symbol=symbol,
+                permno=permno,
+                cik=cik,
+                category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+                error_type=type(exc).__name__,
+            ),
+        )
+
+    try:
+        raw = client.get(sub_url)
+    except SecNotFound:
+        return [], sec_filings.EVENTS_STATUS_NOT_FOUND, None
+    except (SecFetchError, ValueError) as exc:
+        return (
+            [],
+            EVENTS_STATUS_FETCH_ERROR,
+            _fetch_error_entry(
+                symbol=symbol,
+                permno=permno,
+                cik=cik,
+                category=EVENTS_STATUS_FETCH_ERROR,
+                error_type=type(exc).__name__,
+            ),
+        )
+
+    valid, error_type = _validate_submissions_bytes(raw)
+    if not valid:
+        return (
+            [],
+            EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+            _fetch_error_entry(
+                symbol=symbol,
+                permno=permno,
+                cik=cik,
+                category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+                error_type=error_type,
+            ),
+        )
+
+    try:
+        events, status = sec_filings.fetch_events_with_status(
+            client,
+            str(cik),
+            exit_date,
+            days=sec_filings.EVENT_WINDOW_DAYS,
+        )
+    except SecFetchError as exc:
+        return (
+            [],
+            EVENTS_STATUS_FETCH_ERROR,
+            _fetch_error_entry(
+                symbol=symbol,
+                permno=permno,
+                cik=cik,
+                category=EVENTS_STATUS_FETCH_ERROR,
+                error_type=type(exc).__name__,
+            ),
+        )
+    except ValueError as exc:
+        return (
+            [],
+            EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+            _fetch_error_entry(
+                symbol=symbol,
+                permno=permno,
+                cik=cik,
+                category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+                error_type=type(exc).__name__,
+            ),
+        )
+    return events, status, None
 
 
 def _parse_positive_int(value: Any, label: str) -> int:
@@ -442,69 +538,15 @@ def run_open_cases(
         if match.status == open_cases.STATUS_MATCHED and match.cik is not None:
             exit_date = dt.date.fromisoformat(str(row["exit_date"]).strip())
             permno = _parse_positive_int(row["permno"], f"permno for {symbol}")
-            try:
-                events, status = sec_filings.fetch_events_with_status(
-                    client,
-                    str(match.cik),
-                    exit_date,
-                    days=sec_filings.EVENT_WINDOW_DAYS,
-                )
-            except SecFetchError as exc:
-                events = []
-                status = EVENTS_STATUS_FETCH_ERROR
-                events_fetch_errors.append(
-                    _fetch_error_entry(
-                        symbol=symbol,
-                        permno=permno,
-                        cik=match.cik,
-                        category=EVENTS_STATUS_FETCH_ERROR,
-                        error_type=type(exc).__name__,
-                    )
-                )
-            except ValueError as exc:
-                events = []
-                status = EVENTS_STATUS_MALFORMED_SUBMISSIONS
-                events_fetch_errors.append(
-                    _fetch_error_entry(
-                        symbol=symbol,
-                        permno=permno,
-                        cik=match.cik,
-                        category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
-                        error_type=type(exc).__name__,
-                    )
-                )
-            else:
-                # Re-check the cached submissions object so empty or error JSON responses can
-                # never count as a complete 8-K search and trigger deal_forms_only promotion.
-                if status in payout_table.EVENTS_STATUS_COMPLETE:
-                    try:
-                        raw = client.get(sec_filings.submissions_url(str(match.cik)))
-                    except (SecFetchError, ValueError) as exc:
-                        events = []
-                        status = EVENTS_STATUS_FETCH_ERROR
-                        events_fetch_errors.append(
-                            _fetch_error_entry(
-                                symbol=symbol,
-                                permno=permno,
-                                cik=match.cik,
-                                category=EVENTS_STATUS_FETCH_ERROR,
-                                error_type=type(exc).__name__,
-                            )
-                        )
-                    else:
-                        valid, error_type = _validate_submissions_bytes(raw)
-                        if not valid:
-                            events = []
-                            status = EVENTS_STATUS_MALFORMED_SUBMISSIONS
-                            events_fetch_errors.append(
-                                _fetch_error_entry(
-                                    symbol=symbol,
-                                    permno=permno,
-                                    cik=match.cik,
-                                    category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
-                                    error_type=error_type,
-                                )
-                            )
+            events, status, fetch_error = _fetch_events_for_cik(
+                client,
+                symbol=symbol,
+                permno=permno,
+                cik=match.cik,
+                exit_date=exit_date,
+            )
+            if fetch_error is not None:
+                events_fetch_errors.append(fetch_error)
             events_status_counts[status] = events_status_counts.get(status, 0) + 1
             phase3_rows[symbol] = open_cases.classify_open_case(
                 row,
