@@ -38,6 +38,7 @@ PHASE_NAME = "open_cases"
 OUTPUT_CSV = "_payouts_v2.csv"
 OUTPUT_JSON = "_payouts_v2.json"
 EVENTS_STATUS_FETCH_ERROR = sec_pilot.EVENTS_STATUS_FETCH_ERROR
+EVENTS_STATUS_MALFORMED_SUBMISSIONS = "malformed_submissions"
 REASON_NO_NAME_AFTER_PROBE = "no_name_after_probe"
 
 _STUDY_REL = "research/stock-signals/dead-stock-data-integrity/code/"
@@ -75,34 +76,52 @@ def _refuse(message: str) -> int:
 
 def _read_payouts_csv(path: Path) -> tuple[list[dict[str, str]], str]:
     """Read ``_payouts.csv`` once and return ``(rows, sha256)`` of the exact bytes parsed."""
-    if not path.is_file():
-        raise PreconditionError(f"payouts file not found: {path}")
-    raw = path.read_bytes()
+    try:
+        if not path.is_file():
+            raise PreconditionError(f"payouts file not found: {path}")
+        raw = path.read_bytes()
+    except PreconditionError:
+        raise
+    except OSError as exc:
+        raise PreconditionError(
+            f"payouts file {path} could not be read ({type(exc).__name__})"
+        ) from exc
     digest = hashlib.sha256(raw).hexdigest()
     try:
         reader = csv.DictReader(io.StringIO(raw.decode("utf-8"), newline=""))
-    except UnicodeDecodeError as exc:
-        raise PreconditionError(f"payouts file {path} is not valid UTF-8: {exc}") from exc
-    fieldnames = reader.fieldnames or []
+        fieldnames = reader.fieldnames or []
+        rows = [dict(row) for row in reader]
+    except (UnicodeDecodeError, csv.Error, ValueError) as exc:
+        raise PreconditionError(
+            f"payouts file {path} could not be parsed ({type(exc).__name__})"
+        ) from exc
     missing_cols = [col for col in payout_table.TABLE_COLUMNS if col not in fieldnames]
     if missing_cols:
         raise PreconditionError(
             f"payouts file {path} is missing required columns: {', '.join(missing_cols)}"
         )
-    rows = [dict(row) for row in reader]
     return rows, digest
 
 
 def _read_form25_json(path: Path) -> tuple[dict[str, Any], str]:
     """Read ``_form25_matches.json`` once and return ``(payload, sha256)`` of the parsed bytes."""
-    if not path.is_file():
-        raise PreconditionError(f"Form 25 file not found: {path}")
-    raw = path.read_bytes()
+    try:
+        if not path.is_file():
+            raise PreconditionError(f"Form 25 file not found: {path}")
+        raw = path.read_bytes()
+    except PreconditionError:
+        raise
+    except OSError as exc:
+        raise PreconditionError(
+            f"Form 25 file {path} could not be read ({type(exc).__name__})"
+        ) from exc
     digest = hashlib.sha256(raw).hexdigest()
     try:
         payload = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError) as exc:
-        raise PreconditionError(f"Form 25 file {path} is not readable JSON: {exc}") from exc
+        raise PreconditionError(
+            f"Form 25 file {path} could not be parsed ({type(exc).__name__})"
+        ) from exc
     if not isinstance(payload, dict) or not isinstance(payload.get("stocks"), list):
         raise PreconditionError(f"Form 25 file {path} must be a JSON object with a 'stocks' list")
     return payload, digest
@@ -110,12 +129,81 @@ def _read_form25_json(path: Path) -> tuple[dict[str, Any], str]:
 
 def _read_roster_csv(path: Path) -> tuple[list[dict[str, str]], str]:
     """Read ``_roster.csv`` once via ``sec_pilot.load_roster`` with a clean refusal on failure."""
-    if not path.is_file():
-        raise PreconditionError(f"roster file not found: {path}")
     try:
+        if not path.is_file():
+            raise PreconditionError(f"roster file not found: {path}")
         return sec_pilot.load_roster(path)
-    except (OSError, UnicodeDecodeError, csv.Error) as exc:
-        raise PreconditionError(f"roster file {path} could not be read: {exc}") from exc
+    except PreconditionError:
+        raise
+    except (OSError, UnicodeDecodeError, csv.Error, ValueError, KeyError) as exc:
+        raise PreconditionError(
+            f"roster file {path} could not be read ({type(exc).__name__})"
+        ) from exc
+
+
+def _read_brief_sha256(path: Path) -> str:
+    """Hash the frozen Phase 3 brief file, converting missing or unreadable files to refusals."""
+    try:
+        if not path.is_file():
+            raise PreconditionError(f"Phase 3 brief file not found: {path}")
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except PreconditionError:
+        raise
+    except OSError as exc:
+        raise PreconditionError(
+            f"Phase 3 brief file {path} could not be read ({type(exc).__name__})"
+        ) from exc
+
+
+def _needed_quarters(roster_rows: list[dict[str, str]], roster_path: Path) -> list[tuple[int, int]]:
+    """Compute required quarterly archives from ``roster_rows``, refusing malformed dates."""
+    try:
+        # Validate every roster row's exit_date up front so bad dates refuse cleanly instead of
+        # crashing mid-run or silently passing through on unnamed rows.
+        for row in roster_rows:
+            dt.date.fromisoformat(str(row["exit_date"]).strip())
+        return sec_pilot.needed_quarters(roster_rows)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PreconditionError(
+            f"roster file {roster_path} has an invalid exit_date ({type(exc).__name__})"
+        ) from exc
+
+
+def _validate_submissions_bytes(raw: bytes) -> tuple[bool, str]:
+    """Verify cached submissions bytes decode to ``{"filings": {"recent": {...}}}``."""
+    try:
+        doc = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        return False, type(exc).__name__
+    if not isinstance(doc, dict):
+        return False, "ValueError"
+    filings = doc.get("filings")
+    if not isinstance(filings, dict):
+        return False, "ValueError"
+    recent = filings.get("recent")
+    if not isinstance(recent, dict):
+        return False, "ValueError"
+    if "files" in filings and not isinstance(filings["files"], list):
+        return False, "ValueError"
+    return True, ""
+
+
+def _fetch_error_entry(
+    *,
+    symbol: str,
+    permno: int,
+    cik: int,
+    category: str,
+    error_type: str,
+) -> dict[str, Any]:
+    """Build an ``events_fetch_errors`` record without raw exception text or contact details."""
+    return {
+        "symbol": symbol,
+        "permno": permno,
+        "cik": cik,
+        "category": category,
+        "error_type": error_type,
+    }
 
 
 def _parse_positive_int(value: Any, label: str) -> int:
@@ -155,6 +243,12 @@ def _validate_inputs(
             raise PreconditionError(
                 f"payouts row {symbol!r} has unknown evidence_class {evidence_class!r}"
             )
+        try:
+            dt.date.fromisoformat(str(row.get("exit_date", "")).strip())
+        except (TypeError, ValueError) as exc:
+            raise PreconditionError(
+                f"payouts row {symbol!r} has invalid exit_date ({type(exc).__name__})"
+            ) from exc
         if evidence_class == sec_filings.EVIDENCE_NONE:
             phase2_no_8k_rows.append(row)
 
@@ -232,13 +326,22 @@ def phase3_provenance(
 ) -> dict[str, Any]:
     """Build the Phase 3 provenance block; never reads or records the SEC contact line."""
     start, end = sec_pilot.quarter_dates(quarters)
+    code_hashes: dict[str, str] = {}
+    for name in CODE_FILES:
+        code_path = ROOT / name
+        try:
+            code_hashes[name] = sec_pilot.sha256_file(code_path)
+        except OSError as exc:
+            raise PreconditionError(
+                f"code file {code_path} could not be read ({type(exc).__name__})"
+            ) from exc
     return {
         "git_head": git_info["git_head"],
         "git_dirty": git_info["git_dirty"],
         "git_dirty_ignores": git_dirty_ignores,
         "phase": PHASE_NAME,
         "run_date": run_date,
-        "code_sha256": {name: sec_pilot.sha256_file(ROOT / name) for name in CODE_FILES},
+        "code_sha256": code_hashes,
         "payouts_sha256": payouts_sha256,
         "roster_sha256": roster_sha256,
         "form25_sha256": form25_sha256,
@@ -338,6 +441,7 @@ def run_open_cases(
 
         if match.status == open_cases.STATUS_MATCHED and match.cik is not None:
             exit_date = dt.date.fromisoformat(str(row["exit_date"]).strip())
+            permno = _parse_positive_int(row["permno"], f"permno for {symbol}")
             try:
                 events, status = sec_filings.fetch_events_with_status(
                     client,
@@ -345,17 +449,62 @@ def run_open_cases(
                     exit_date,
                     days=sec_filings.EVENT_WINDOW_DAYS,
                 )
-            except (SecFetchError, ValueError) as exc:
+            except SecFetchError as exc:
                 events = []
                 status = EVENTS_STATUS_FETCH_ERROR
                 events_fetch_errors.append(
-                    {
-                        "symbol": symbol,
-                        "permno": _parse_positive_int(row["permno"], f"permno for {symbol}"),
-                        "cik": match.cik,
-                        "reason": f"{type(exc).__name__}: {exc}",
-                    }
+                    _fetch_error_entry(
+                        symbol=symbol,
+                        permno=permno,
+                        cik=match.cik,
+                        category=EVENTS_STATUS_FETCH_ERROR,
+                        error_type=type(exc).__name__,
+                    )
                 )
+            except ValueError as exc:
+                events = []
+                status = EVENTS_STATUS_MALFORMED_SUBMISSIONS
+                events_fetch_errors.append(
+                    _fetch_error_entry(
+                        symbol=symbol,
+                        permno=permno,
+                        cik=match.cik,
+                        category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+                        error_type=type(exc).__name__,
+                    )
+                )
+            else:
+                # Re-check the cached submissions object so empty or error JSON responses can
+                # never count as a complete 8-K search and trigger deal_forms_only promotion.
+                if status in payout_table.EVENTS_STATUS_COMPLETE:
+                    try:
+                        raw = client.get(sec_filings.submissions_url(str(match.cik)))
+                    except (SecFetchError, ValueError) as exc:
+                        events = []
+                        status = EVENTS_STATUS_FETCH_ERROR
+                        events_fetch_errors.append(
+                            _fetch_error_entry(
+                                symbol=symbol,
+                                permno=permno,
+                                cik=match.cik,
+                                category=EVENTS_STATUS_FETCH_ERROR,
+                                error_type=type(exc).__name__,
+                            )
+                        )
+                    else:
+                        valid, error_type = _validate_submissions_bytes(raw)
+                        if not valid:
+                            events = []
+                            status = EVENTS_STATUS_MALFORMED_SUBMISSIONS
+                            events_fetch_errors.append(
+                                _fetch_error_entry(
+                                    symbol=symbol,
+                                    permno=permno,
+                                    cik=match.cik,
+                                    category=EVENTS_STATUS_MALFORMED_SUBMISSIONS,
+                                    error_type=error_type,
+                                )
+                            )
             events_status_counts[status] = events_status_counts.get(status, 0) + 1
             phase3_rows[symbol] = open_cases.classify_open_case(
                 row,
@@ -497,8 +646,10 @@ def main(
 
     try:
         user_agent = load_user_agent(os.environ)
-    except SecUserAgentMissing as exc:
-        return _refuse(str(exc))
+    except SecUserAgentMissing:
+        return _refuse(
+            "SEC_USER_AGENT must be set to a non-empty SEC fair-access User-Agent string."
+        )
 
     own_outputs = [
         rel
@@ -513,34 +664,28 @@ def main(
         )
 
     brief_path = ROOT / BRIEF_REL
-    if not brief_path.is_file():
-        return _refuse(f"Phase 3 brief file not found: {brief_path}")
-
+    client_started = False
     try:
         payouts_rows, payouts_sha256 = _read_payouts_csv(args.payouts)
         form25, form25_sha256 = _read_form25_json(args.form25)
         roster_rows, roster_sha256 = _read_roster_csv(args.roster)
         _validate_inputs(payouts_rows, form25)
-    except PreconditionError as exc:
-        return _refuse(str(exc))
-
-    brief_sha256 = sec_pilot.sha256_file(brief_path)
-    quarters = sec_pilot.needed_quarters(roster_rows)
-    run_date = dt.date.today().isoformat()
-    provenance = phase3_provenance(
-        git_info=git_info,
-        git_dirty_ignores=own_outputs,
-        payouts_sha256=payouts_sha256,
-        roster_sha256=roster_sha256,
-        form25_sha256=form25_sha256,
-        brief_sha256=brief_sha256,
-        quarters=quarters,
-        run_date=run_date,
-        allow_dirty=bool(args.allow_dirty),
-    )
-
-    client = client_factory(user_agent, args.cache_dir)
-    try:
+        brief_sha256 = _read_brief_sha256(brief_path)
+        quarters = _needed_quarters(roster_rows, args.roster)
+        run_date = dt.date.today().isoformat()
+        provenance = phase3_provenance(
+            git_info=git_info,
+            git_dirty_ignores=own_outputs,
+            payouts_sha256=payouts_sha256,
+            roster_sha256=roster_sha256,
+            form25_sha256=form25_sha256,
+            brief_sha256=brief_sha256,
+            quarters=quarters,
+            run_date=run_date,
+            allow_dirty=bool(args.allow_dirty),
+        )
+        client = client_factory(user_agent, args.cache_dir)
+        client_started = True
         merged_rows, payload = run_open_cases(
             client,
             archives_factory,
@@ -552,7 +697,9 @@ def main(
     except (sec_name_index.MissingArchive, PreconditionError) as exc:
         return _refuse(str(exc))
     finally:
-        write_sha256sums(args.cache_dir)
+        # Refresh cache checksums whenever a client ran or an existing cache folder is present.
+        if client_started or (args.cache_dir.is_dir() and not args.cache_dir.is_symlink()):
+            write_sha256sums(args.cache_dir)
 
     payload["provenance"] = provenance
     atomic_write_text(csv_target, _format_csv(merged_rows))

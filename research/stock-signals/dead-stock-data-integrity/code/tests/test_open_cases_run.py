@@ -184,16 +184,22 @@ class FakeClient:
     ) -> None:
         self.bodies = dict(bodies)
         self.archive_bodies = dict(archive_bodies or {})
+        self._cached_bodies: dict[str, bytes] = {}
         self.requested: list[str] = []
         self.network_fetches = 0
         self.cache_hits = 0
         self.corrupt_cache_refetches = 0
 
     def _read_verified_cache(self, url: str) -> bytes | None:
+        if url in self._cached_bodies:
+            return self._cached_bodies[url]
         return self.archive_bodies.get(url)
 
     def get(self, url: str) -> bytes:
         self.requested.append(url)
+        if url in self._cached_bodies:
+            self.cache_hits += 1
+            return self._cached_bodies[url]
         self.network_fetches += 1
         body = self.bodies.get(url)
         if body is None:
@@ -201,6 +207,7 @@ class FakeClient:
         if isinstance(body, Exception):
             raise body
         assert isinstance(body, bytes)
+        self._cached_bodies[url] = body
         return body
 
     def manifest(self) -> dict[str, str]:
@@ -904,10 +911,13 @@ def test_events_fetch_error_is_recorded_and_run_continues(tmp_path: Path) -> Non
     assert payload["events_status_counts"] == {"fetch_error": 1, "ok": 1}
     assert len(payload["events_fetch_errors"]) == 1
     err_entry = payload["events_fetch_errors"][0]
-    assert err_entry["symbol"] == "PERMNO-10001"
-    assert err_entry["permno"] == 10001
-    assert err_entry["cik"] == 4001
-    assert "SecFetchError" in err_entry["reason"]
+    assert err_entry == {
+        "symbol": "PERMNO-10001",
+        "permno": 10001,
+        "cik": 4001,
+        "category": "fetch_error",
+        "error_type": "SecFetchError",
+    }
 
 
 def test_unnamed_rows_pass_through(tmp_path: Path) -> None:
@@ -1051,3 +1061,260 @@ def test_driver_refuses_symlinks_bad_class_duplicate_and_missing_form25(
     paths_f25 = _setup_study_dir(tmp_path / "f25", no_8k_rows, [])
     assert open_cases_run.main(_cli_args(paths_f25)) == 2
     assert "Form 25 file lacks a stock entry" in capsys.readouterr().err
+
+
+def test_malformed_submissions_never_count_as_complete_search(tmp_path: Path) -> None:
+    malformed_cases = [
+        ("70001", "PERMNO-70001", "EMPTY OBJ CORP", "7001", b"{}"),
+        ("70002", "PERMNO-70002", "LIST FILINGS CORP", "7002", b'{"filings": []}'),
+        ("70003", "PERMNO-70003", "EMPTY FILINGS CORP", "7003", b'{"filings": {}}'),
+        (
+            "70004",
+            "PERMNO-70004",
+            "ERROR OBJ CORP",
+            "7004",
+            b'{"error": "rate limit exceeded", "status": 429}',
+        ),
+        ("70005", "PERMNO-70005", "NON JSON CORP", "7005", b"not json at all"),
+    ]
+    rows = [
+        payout_row(
+            permno=permno,
+            symbol=symbol,
+            exit_date="2015-05-15",
+            stock_name=name,
+            evidence_class="no_filing_match",
+        )
+        for permno, symbol, name, _cik, _raw in malformed_cases
+    ]
+    # Add two well-formed controls: one deal_forms_only and one 8-K acquired_or_merged.
+    rows.extend(
+        [
+            payout_row(
+                permno="70006",
+                symbol="PERMNO-70006",
+                exit_date="2015-05-15",
+                stock_name="GOOD DEAL FORM CORP",
+                evidence_class="no_filing_match",
+            ),
+            payout_row(
+                permno="70007",
+                symbol="PERMNO-70007",
+                exit_date="2015-05-15",
+                stock_name="GOOD EIGHT K CORP",
+                evidence_class="no_filing_match",
+            ),
+        ]
+    )
+
+    paths = _setup_study_dir(tmp_path, rows, [])
+    quarters = sec_pilot.needed_quarters(sec_pilot.read_roster(paths["roster"]))
+    # Give EVERY stock a cached DEFM14A deal form in window so only complete 8-K searches promote.
+    q2_rows = [
+        (cik, name, "DEFM14A", "2015-05-01", f"000000{cik}-15-000001")
+        for _permno, _sym, name, cik, _raw in malformed_cases
+    ]
+    q2_rows.extend(
+        [
+            ("7006", "GOOD DEAL FORM CORP", "DEFM14A", "2015-05-01", "0000007006-15-000001"),
+            ("7007", "GOOD EIGHT K CORP", "DEFM14A", "2015-05-01", "0000007007-15-000001"),
+        ]
+    )
+    archives = _seed_quarters(paths["cache"], quarters, {(2015, 2): q2_rows})
+    bodies: dict[str, Any] = {
+        sec_filings.submissions_url(cik): raw for _p, _s, _n, cik, raw in malformed_cases
+    }
+    bodies[sec_filings.submissions_url("7006")] = submissions_json(
+        [("8-K", "2015-05-10", "8.01", "0000007006-15-000002", "d.htm")]
+    )
+    bodies[sec_filings.submissions_url("7007")] = submissions_json(
+        [("8-K", "2015-05-10", "2.01", "0000007007-15-000002", "d.htm")]
+    )
+    client = FakeClient(bodies, archive_bodies=archives)
+
+    rc = open_cases_run.main(_cli_args(paths), client_factory=lambda ua, cache: client)
+
+    assert rc == 0
+    payload = json.loads((paths["out"] / "_payouts_v2.json").read_text(encoding="utf-8"))
+    by_sym = {r["symbol"]: r for r in payload["rows"]}
+    errors_by_sym = {entry["symbol"]: entry for entry in payload["events_fetch_errors"]}
+
+    for permno, symbol, _name, cik, _raw in malformed_cases:
+        row_out = by_sym[symbol]
+        assert row_out["evidence_class"] == "no_8k_found"
+        assert row_out["reason"] == "events_incomplete"
+        assert row_out["events_status"] == "malformed_submissions"
+        assert row_out["deal_form_accessions"] == f"000000{cik}-15-000001"
+        err = errors_by_sym[symbol]
+        assert err["permno"] == int(permno)
+        assert err["cik"] == int(cik)
+        assert err["category"] == "malformed_submissions"
+        assert err["error_type"] in {"ValueError", "JSONDecodeError"}
+        assert set(err) == {"symbol", "permno", "cik", "category", "error_type"}
+
+    # Well-formed responses still classify normally.
+    assert by_sym["PERMNO-70006"]["evidence_class"] == "deal_forms_only"
+    assert by_sym["PERMNO-70006"]["events_status"] == "ok"
+    assert by_sym["PERMNO-70006"]["reason"] == ""
+    assert by_sym["PERMNO-70007"]["evidence_class"] == "acquired_or_merged"
+    assert by_sym["PERMNO-70007"]["events_status"] == "ok"
+    assert by_sym["PERMNO-70007"]["suggested_loss"] == "0.0"
+    assert payload["events_status_counts"] == {"malformed_submissions": 5, "ok": 2}
+    assert payload["coverage"]["deal_forms_only"] == 1
+
+
+def test_contact_line_never_leaks_on_fetch_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    secret_ua = "ggTrader Phase3 SecretErrToken-7b31 contact@example.test"
+    monkeypatch.setenv("SEC_USER_AGENT", secret_ua)
+
+    rows = [
+        payout_row(
+            permno="80001",
+            symbol="PERMNO-80001",
+            exit_date="2015-05-15",
+            stock_name="LEAKY ERROR CORP",
+            evidence_class="no_filing_match",
+        )
+    ]
+    paths = _setup_study_dir(tmp_path, rows, [])
+    quarters = sec_pilot.needed_quarters(sec_pilot.read_roster(paths["roster"]))
+    archives = _seed_quarters(
+        paths["cache"],
+        quarters,
+        {
+            (2015, 2): [
+                ("8001", "LEAKY ERROR CORP", "DEFM14A", "2015-05-01", "0000008001-15-000001")
+            ]
+        },
+    )
+    bodies = {
+        sec_filings.submissions_url("8001"): SecFetchError(
+            f"HTTP 403 forbidden for User-Agent={secret_ua}"
+        )
+    }
+    client = FakeClient(bodies, archive_bodies=archives)
+
+    rc = open_cases_run.main(_cli_args(paths), client_factory=lambda ua, cache: client)
+
+    captured = capsys.readouterr()
+    assert rc == 0
+    for token in (secret_ua, "SecretErrToken-7b31", "contact@example.test"):
+        assert token not in captured.out
+        assert token not in captured.err
+
+    for output_file in (
+        paths["out"] / "_payouts_v2.csv",
+        paths["out"] / "_payouts_v2.json",
+        paths["cache"] / "SHA256SUMS.txt",
+    ):
+        text = output_file.read_text(encoding="utf-8")
+        for token in (secret_ua, "SecretErrToken-7b31", "contact@example.test"):
+            assert token not in text
+
+    payload = json.loads((paths["out"] / "_payouts_v2.json").read_text(encoding="utf-8"))
+    assert payload["events_fetch_errors"] == [
+        {
+            "symbol": "PERMNO-80001",
+            "permno": 80001,
+            "cik": 8001,
+            "category": "fetch_error",
+            "error_type": "SecFetchError",
+        }
+    ]
+
+
+def test_unreadable_or_malformed_inputs_refuse_with_exit_2_and_checksums(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    base_rows = [payout_row(permno="10001", symbol="PERMNO-10001", exit_date="2015-05-15")]
+    real_read_bytes = Path.read_bytes
+
+    def _assert_refused(paths: dict[str, Path], rc: int, *expected_tokens: str) -> str:
+        err = capsys.readouterr().err
+        assert rc == 2
+        for token in expected_tokens:
+            assert token in err
+        assert not (paths["out"] / "_payouts_v2.csv").exists()
+        assert not (paths["out"] / "_payouts_v2.json").exists()
+        assert (paths["cache"] / "SHA256SUMS.txt").is_file()
+        return err
+
+    # 1. Unreadable _payouts.csv (PermissionError on Path.read_bytes).
+    paths_p = _setup_study_dir(tmp_path / "unreadable_payouts", base_rows, [])
+
+    def deny_payouts(self: Path) -> bytes:
+        if self == paths_p["payouts"]:
+            raise PermissionError("raw-secret-payouts-msg")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", deny_payouts)
+    err_p = _assert_refused(
+        paths_p,
+        open_cases_run.main(_cli_args(paths_p)),
+        str(paths_p["payouts"]),
+        "PermissionError",
+    )
+    assert "raw-secret-payouts-msg" not in err_p
+
+    # 2. Unreadable _form25_matches.json.
+    paths_f = _setup_study_dir(tmp_path / "unreadable_form25", base_rows, [])
+
+    def deny_form25(self: Path) -> bytes:
+        if self == paths_f["form25"]:
+            raise PermissionError("raw-secret-form25-msg")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", deny_form25)
+    err_f = _assert_refused(
+        paths_f,
+        open_cases_run.main(_cli_args(paths_f)),
+        str(paths_f["form25"]),
+        "PermissionError",
+    )
+    assert "raw-secret-form25-msg" not in err_f
+
+    # 3. Unreadable frozen Phase 3 brief.
+    paths_b = _setup_study_dir(tmp_path / "unreadable_brief", base_rows, [])
+    brief_path = open_cases_run.ROOT / open_cases_run.BRIEF_REL
+
+    def deny_brief(self: Path) -> bytes:
+        if self == brief_path:
+            raise PermissionError("raw-secret-brief-msg")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", deny_brief)
+    err_b = _assert_refused(
+        paths_b,
+        open_cases_run.main(_cli_args(paths_b)),
+        str(brief_path),
+        "PermissionError",
+    )
+    assert "raw-secret-brief-msg" not in err_b
+    monkeypatch.setattr(Path, "read_bytes", real_read_bytes)
+
+    # 4. Roster row with an invalid exit date.
+    paths_r = _setup_study_dir(tmp_path / "bad_roster_date", base_rows, [])
+    bad_roster_rows = [payout_row(permno="10001", symbol="PERMNO-10001", exit_date="2015-99-99")]
+    write_roster(paths_r["roster"], bad_roster_rows)
+    _assert_refused(
+        paths_r,
+        open_cases_run.main(_cli_args(paths_r)),
+        str(paths_r["roster"]),
+        "ValueError",
+    )
+
+    # 5. _payouts.csv containing non-UTF-8 bytes.
+    paths_u = _setup_study_dir(tmp_path / "non_utf8_payouts", base_rows, [])
+    paths_u["payouts"].write_bytes(b"\xff\xfe\x00bad-utf8")
+    _assert_refused(
+        paths_u,
+        open_cases_run.main(_cli_args(paths_u)),
+        str(paths_u["payouts"]),
+        "UnicodeDecodeError",
+    )
