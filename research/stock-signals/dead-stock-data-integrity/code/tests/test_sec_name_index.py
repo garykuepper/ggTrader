@@ -540,12 +540,18 @@ def test_empty_company_name_is_kept_not_rejected() -> None:
     ("bad_line", "expected_line_no"),
     [
         ("100001|ACME CORP|10-K|2020-02-15", 6),
+        ("100001|ACME CORP|10-K|2020-02-15|edgar/data/100001/x.txt|extra", 6),
         ("|ACME CORP|10-K|2020-02-15|edgar/data/1/x.txt", 6),
         ("NOTACIK|ACME CORP|10-K|2020-02-15|edgar/data/1/x.txt", 6),
+        ("١٢٣|ACME CORP|10-K|2020-02-15|edgar/data/123/x.txt", 6),
+        ("12345678901|ACME CORP|10-K|2020-02-15|edgar/data/12345678901/x.txt", 6),
         ("0|ACME CORP|10-K|2020-02-15|edgar/data/0/x.txt", 6),
         ("100001|ACME CORP||2020-02-15|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP| |2020-02-15|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP|10-K|2020-02-30|edgar/data/100001/x.txt", 6),
+        ("100001|ACME CORP|10-K|20200215|edgar/data/100001/x.txt", 6),
+        ("100001|ACME CORP|10-K|2020-W07-6|edgar/data/100001/x.txt", 6),
+        ("100001|ACME CORP|10-K|2020-2-15|edgar/data/100001/x.txt", 6),
         ("100001|ACME CORP|10-K|2020-02-15|", 6),
     ],
 )
