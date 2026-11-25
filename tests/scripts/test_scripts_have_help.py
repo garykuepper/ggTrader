@@ -135,7 +135,7 @@ PRE_PARSE_CALLS = frozenset(
         "parser.parse_known_args", "p.parse_args", "ap.parse_args", "parse_args", "build_parser",
         "_build_parser", "make_parser", "Path", "str", "int", "float", "bool", "len",
         "logging.basicConfig", "(__doc__ or '').strip", "__doc__.splitlines", "argparse.FileType",
-        "sorted", "date.today", "Path(__file__).resolve",
+        "sorted", "list", "date.today", "Path(__file__).resolve",
         "__doc__.split", "__doc__.strip", "type",
         "add_membership_argument",
     }
