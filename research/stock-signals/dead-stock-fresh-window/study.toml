@@ -1,0 +1,14 @@
+# Study card. Read by scripts/study.py check; edit by hand.
+id = "dead-stock-fresh-window"
+category = "stock-signals"
+placement_rule = 9
+question = "Does the first test's fixed 12-1 momentum rule, with dead stocks included, end ahead of SPY after costs and taxes on 2000 to 2004, a window it has never been run on?"
+kind = "screen"
+status = "open"
+verdict = ""
+aliases = []
+brief = "2026-11-24-dead-stock-fresh-window-brief.md"
+reports = []
+results = []
+uses_lib = []
+allow_paper_imports = false
