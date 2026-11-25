@@ -7,7 +7,7 @@ import io
 import json
 import urllib.request
 import zipfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -100,10 +100,76 @@ def test_parse_all_forms_keeps_10k_8k_and_defm14a() -> None:
     filings = parse_all_forms(archive)
 
     assert filings == [
-        IndexedFiling(cik=100001, name="ACME CORP", form="10-K", filed=date(2020, 2, 15)),
-        IndexedFiling(cik=100001, name="ACME CORP", form="8-K", filed=date(2020, 3, 1)),
-        IndexedFiling(cik=100001, name="ACME CORP", form="DEFM14A", filed=date(2020, 3, 20)),
+        IndexedFiling(
+            cik=100001,
+            name="ACME CORP",
+            form="10-K",
+            filed=date(2020, 2, 15),
+            accession="0000100001-20-000000",
+        ),
+        IndexedFiling(
+            cik=100001,
+            name="ACME CORP",
+            form="8-K",
+            filed=date(2020, 3, 1),
+            accession="0000100001-20-000001",
+        ),
+        IndexedFiling(
+            cik=100001,
+            name="ACME CORP",
+            form="DEFM14A",
+            filed=date(2020, 3, 20),
+            accession="0000100001-20-000002",
+        ),
     ]
+
+
+def test_accession_is_read_from_filename() -> None:
+    archive = make_raw_zip(
+        INDEX_PREAMBLE
+        + "1234|EXAMPLE CORP|8-K|2005-06-15|edgar/data/1234/0001104659-05-024772.txt\n"
+        + "1234|EXAMPLE CORP|8-K|2005-06-15|edgar/data/1234/0001104659-05-024770.txt\n"
+    )
+
+    filings = parse_all_forms(archive)
+    assert [f.accession for f in filings] == [
+        "0001104659-05-024772",
+        "0001104659-05-024770",
+    ]
+    assert filings[0] == IndexedFiling(
+        cik=1234,
+        name="EXAMPLE CORP",
+        form="8-K",
+        filed=date(2005, 6, 15),
+        accession="0001104659-05-024772",
+    )
+
+    # filings_of breaks ties by accession as the fourth sort key: (filed, form, name, accession).
+    sorted_filings = filings_of([("2005Q2", archive)], {1234})
+    assert [f.accession for f in sorted_filings[1234]] == [
+        "0001104659-05-024770",
+        "0001104659-05-024772",
+    ]
+
+
+@pytest.mark.parametrize(
+    "bad_filename",
+    [
+        "edgar/data/1234/0001104659-05-024772.htm",
+        "edgar/data/1234/0001104659-05-024772",
+        "edgar/data/1234/.txt",
+        ".txt",
+        "edgar/data/1234/   .txt",
+        "",
+    ],
+)
+def test_bad_filename_raises_with_line_number(bad_filename: str) -> None:
+    valid_line = "1234|EXAMPLE CORP|8-K|2005-06-15|edgar/data/1234/0001104659-05-024772.txt\n"
+    bad_line = f"1234|EXAMPLE CORP|8-K|2005-06-16|{bad_filename}\n"
+    archive = make_raw_zip(INDEX_PREAMBLE + valid_line + bad_line)
+
+    with pytest.raises(ValueError, match=r"line 6\b"):
+        parse_all_forms(archive)
 
 
 def test_find_filers_keeps_only_wanted_names() -> None:
@@ -112,31 +178,98 @@ def test_find_filers_keeps_only_wanted_names() -> None:
     ]
     wanted_row = ("0000999888", "Alpha Technologies, Inc.", "8-K", "2020-02-12")
     archive = make_master_zip([*unrelated[:5], wanted_row, *unrelated[5:]])
-    wanted = {sec_filings.normalize_name("ALPHA TECHS CORP"): "PERMNO-12345"}
 
-    matched = find_filers([("2020Q1", archive)], wanted)
+    def matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        if raw_name == "Alpha Technologies, Inc.":
+            return {"PERMNO-12345": frozenset({"v1"})}
+        return {}
 
-    assert matched == {999888: {"PERMNO-12345"}}
+    matched = find_filers([("2020Q1", archive)], matcher)
+
+    assert matched == {999888: {"PERMNO-12345": frozenset({"v1"})}}
 
 
-def test_find_filers_matches_any_supplied_normalizer() -> None:
+def test_matcher_prefix_and_labels() -> None:
     archive = make_master_zip(
         [
-            ("111111", "BETA SYSTEMS INC /DE/", "10-K", "2020-02-10"),
-            ("222222", "OTHER COMPANY INC", "10-K", "2020-02-11"),
+            ("111111", "ATHLON ENERGY INC", "10-K", "2020-02-10"),
+            ("222222", "EXACT TARGET CORP", "8-K", "2020-02-11"),
+            ("333333", "UNRELATED COMPANY", "10-Q", "2020-02-12"),
         ]
     )
-    wanted = {sec_filings.normalize_name_v11("BETA SYSTEM CORP"): "PERMNO-22222"}
 
-    # v1 alone leaves the trailing /DE/ tag and plural SYSTEMS intact, so it does not match.
-    assert find_filers([("2020Q1", archive)], wanted) == {}
+    def matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        hits: dict[str, frozenset[str]] = {}
+        if raw_name.startswith("ATHLON ENERGY IN"):
+            hits["R1"] = frozenset({"v1.1"})
+        if raw_name == "EXACT TARGET CORP":
+            hits["R2"] = frozenset({"v1"})
+        return hits
 
-    matched = find_filers(
-        [("2020Q1", archive)],
-        wanted,
-        normalizers=(sec_filings.normalize_name, sec_filings.normalize_name_v11),
+    matched = find_filers([("2020Q1", archive)], matcher)
+
+    assert matched == {
+        111111: {"R1": frozenset({"v1.1"})},
+        222222: {"R2": frozenset({"v1"})},
+    }
+
+
+def test_labels_are_unioned_across_archives() -> None:
+    archive_q1 = make_master_zip([("444444", "MERGED CO INC", "10-K", "2020-02-15")])
+    archive_q2 = make_master_zip([("444444", "MERGED CO INC /DE/", "8-K", "2020-05-15")])
+
+    def matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        if raw_name == "MERGED CO INC":
+            return {"R1": frozenset({"v1"})}
+        if raw_name == "MERGED CO INC /DE/":
+            return {"R1": frozenset({"v1.1"})}
+        return {}
+
+    matched = find_filers([("2020Q1", archive_q1), ("2020Q2", archive_q2)], matcher)
+
+    assert matched == {444444: {"R1": frozenset({"v1", "v1.1"})}}
+
+
+def test_matcher_called_once_per_distinct_name_per_archive() -> None:
+    archive_q1 = make_master_zip(
+        [
+            ("100001", "REPEATED CORP", "10-K", "2020-02-10"),
+            ("100001", "REPEATED CORP", "8-K", "2020-02-11"),
+            ("100002", "OTHER CORP", "10-Q", "2020-02-12"),
+        ]
     )
-    assert matched == {111111: {"PERMNO-22222"}}
+    archive_q2 = make_master_zip(
+        [
+            ("100001", "REPEATED CORP", "10-Q", "2020-05-10"),
+            ("100001", "REPEATED CORP", "8-K", "2020-05-11"),
+        ]
+    )
+    calls: list[str] = []
+
+    def counting_matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        calls.append(raw_name)
+        if raw_name == "REPEATED CORP":
+            return {"R1": frozenset({"v1"})}
+        return {}
+
+    matched = find_filers([("2020Q1", archive_q1), ("2020Q2", archive_q2)], counting_matcher)
+
+    assert matched == {100001: {"R1": frozenset({"v1"})}}
+    # Cache is cleared between archives, so REPEATED CORP is evaluated once per archive (2 total).
+    assert calls == ["REPEATED CORP", "OTHER CORP", "REPEATED CORP"]
+
+
+def test_no_match_returns_empty() -> None:
+    archive = make_master_zip(
+        [
+            ("100001", "ACME CORP", "10-K", "2020-02-15"),
+            ("100002", "BETA CORP", "8-K", "2020-03-01"),
+        ]
+    )
+
+    matched = find_filers([("2020Q1", archive)], lambda _name: {})
+
+    assert matched == {}
 
 
 def test_filings_of_returns_all_form_types_sorted() -> None:
@@ -158,9 +291,27 @@ def test_filings_of_returns_all_form_types_sorted() -> None:
 
     assert result == {
         555555: [
-            IndexedFiling(cik=555555, name="GAMMA CORP", form="10-K", filed=date(2020, 2, 28)),
-            IndexedFiling(cik=555555, name="GAMMA CORP", form="8-K", filed=date(2020, 4, 20)),
-            IndexedFiling(cik=555555, name="GAMMA CORP", form="DEFM14A", filed=date(2020, 5, 10)),
+            IndexedFiling(
+                cik=555555,
+                name="GAMMA CORP",
+                form="10-K",
+                filed=date(2020, 2, 28),
+                accession="0000555555-20-000000",
+            ),
+            IndexedFiling(
+                cik=555555,
+                name="GAMMA CORP",
+                form="8-K",
+                filed=date(2020, 4, 20),
+                accession="0000555555-20-000002",
+            ),
+            IndexedFiling(
+                cik=555555,
+                name="GAMMA CORP",
+                form="DEFM14A",
+                filed=date(2020, 5, 10),
+                accession="0000555555-20-000000",
+            ),
         ]
     }
 
@@ -207,6 +358,77 @@ def test_truncated_cached_body_raises_missing_archive_without_network(tmp_path: 
 
     assert opener.calls == 0
     assert client.network_fetches == 0
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["oversized", "truncated_zip", "non_zip", "bad_header", "wrong_member"],
+)
+def test_invalid_archive_names_quarter_across_cache_and_passes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    valid = make_master_zip([("100001", "ACME CORP", "10-K", "2020-05-01")])
+    if case == "oversized":
+        # Shrink the ceiling below a valid zip so this proves the size cap rejects it directly.
+        monkeypatch.setattr(sec_name_index, "MAX_ARCHIVE_BYTES", len(valid) - 1)
+        body = valid
+    elif case == "truncated_zip":
+        body = valid[: len(valid) // 2]
+    elif case == "non_zip":
+        body = b"<!DOCTYPE html><html><body>Request Rate Threshold Exceeded</body></html>"
+    elif case == "wrong_member":
+        body = make_master_zip(
+            [("100001", "ACME CORP", "10-K", "2020-05-01")], member_name="other.idx"
+        )
+    else:
+        body = make_raw_zip("100001|ACME CORP|10-K|2020-05-01|edgar/data/100001/x.txt\n")
+
+    cache_dir = tmp_path / "cache"
+    seed_cache(cache_dir, sec_filings.master_index_url(2020, 2), body)
+    opener = CountingRefusingOpener()
+    client = SecClient(DEFAULT_UA, cache_dir, opener=opener)
+
+    with pytest.raises(MissingArchive, match="2020Q2") as cache_exc:
+        list(cached_archives(client, [(2020, 2)]))
+    assert isinstance(cache_exc.value.__cause__, ValueError)
+    if case == "oversized":
+        assert "exceeds" in str(cache_exc.value)
+    assert opener.calls == 0
+    assert client.network_fetches == 0
+
+    with pytest.raises(MissingArchive, match="2020Q2") as pass1_exc:
+        find_filers([("2020Q2", body)], lambda _name: {})
+    assert isinstance(pass1_exc.value.__cause__, ValueError)
+
+    with pytest.raises(MissingArchive, match="2020Q2") as pass2_exc:
+        filings_of([("2020Q2", body)], {100001})
+    assert isinstance(pass2_exc.value.__cause__, ValueError)
+
+
+def test_malformed_row_in_passes_raises_quarter_labelled_missing_archive() -> None:
+    bad_row_archive = make_raw_zip(
+        INDEX_PREAMBLE + "100001|ACME CORP|10-K|2020-05-01|edgar/data/100001/bad.htm\n"
+    )
+
+    with pytest.raises(MissingArchive, match="2020Q4") as pass1_exc:
+        find_filers([("2020Q4", bad_row_archive)], lambda _name: {})
+    assert isinstance(pass1_exc.value.__cause__, ValueError)
+
+    with pytest.raises(MissingArchive, match="2020Q4") as pass2_exc:
+        filings_of([("2020Q4", bad_row_archive)], {100001})
+    assert isinstance(pass2_exc.value.__cause__, ValueError)
+
+
+def test_matcher_value_error_is_not_masked_as_missing_archive() -> None:
+    valid = make_master_zip([("100001", "ACME CORP", "10-K", "2020-05-01")])
+
+    def broken_matcher(_raw_name: str) -> Mapping[str, frozenset[str]]:
+        raise ValueError("caller bug")
+
+    with pytest.raises(ValueError, match="caller bug"):
+        find_filers([("2020Q2", valid)], broken_matcher)
 
 
 def test_cached_archives_reads_verified_entries_in_order_without_network(tmp_path: Path) -> None:
@@ -287,9 +509,13 @@ def test_two_pass_streaming_reads_one_archive_at_a_time() -> None:
             log.append(label)
             yield label, body
 
-    wanted = {sec_filings.normalize_name("DELTA CORP"): "PERMNO-99999"}
-    found = find_filers(gen(yielded_pass1), wanted)
-    assert found == {100001: {"PERMNO-99999"}}
+    def matcher(raw_name: str) -> Mapping[str, frozenset[str]]:
+        if raw_name == "DELTA CORP":
+            return {"PERMNO-99999": frozenset({"v1"})}
+        return {}
+
+    found = find_filers(gen(yielded_pass1), matcher)
+    assert found == {100001: {"PERMNO-99999": frozenset({"v1"})}}
     assert yielded_pass1 == ["2020Q1", "2020Q2"]
 
     yielded_pass2: list[str] = []

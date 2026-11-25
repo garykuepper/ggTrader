@@ -6,15 +6,17 @@ import io
 import zipfile
 import zlib
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, BinaryIO
 
 from sec_client import SecClient
-from sec_filings import master_index_url, normalize_name
+from sec_filings import master_index_url
 
 MASTER_INDEX_HEADER = "CIK|Company Name|Form Type|Date Filed|Filename"
 MASTER_INDEX_FILENAME = "master.idx"
+FILENAME_SUFFIX = ".txt"
 MAX_ARCHIVE_BYTES = 30_000_000
 MAX_INDEX_BYTES = 64_000_000
 MAX_HEADER_LINES = 50
@@ -29,10 +31,11 @@ class IndexedFiling:
     name: str
     form: str
     filed: date
+    accession: str
 
 
 class MissingArchive(RuntimeError):
-    """Raised when a requested quarterly SEC index archive is absent or unreadable in cache."""
+    """Raised when a requested quarterly SEC index archive is absent, invalid, or unreadable."""
 
 
 class _BoundedStream(io.RawIOBase):
@@ -78,8 +81,21 @@ def _parse_data_line(raw_line: str, line_no: int, date_cache: dict[str, date]) -
     form = form_raw.strip()
     if not form:
         raise ValueError(f"Malformed master-index line {line_no}: empty form type")
-    if not filename_raw.strip():
+
+    filename = filename_raw.strip()
+    if not filename:
         raise ValueError(f"Malformed master-index line {line_no}: empty filename")
+    basename = filename.rsplit("/", 1)[-1]
+    if not basename.endswith(FILENAME_SUFFIX):
+        raise ValueError(
+            f"Malformed master-index line {line_no}: filename must end with "
+            f"{FILENAME_SUFFIX!r}: {filename_raw!r}"
+        )
+    accession = basename.removesuffix(FILENAME_SUFFIX)
+    if not accession.strip():
+        raise ValueError(
+            f"Malformed master-index line {line_no}: empty accession in filename {filename_raw!r}"
+        )
 
     # Quarters hold ~65 distinct filing dates across hundreds of thousands of rows; caching valid
     # ISO strings keeps full validation while avoiding redundant parsing on every row.
@@ -98,13 +114,16 @@ def _parse_data_line(raw_line: str, line_no: int, date_cache: dict[str, date]) -
         date_cache[filed_raw] = parsed
         filed = parsed
 
-    return IndexedFiling(cik=cik, name=name, form=form, filed=filed)
+    return IndexedFiling(cik=cik, name=name, form=form, filed=filed, accession=accession)
 
 
-def _iter_all_forms(content: bytes) -> Iterator[IndexedFiling]:
-    """Stream every validated filing row from one ``master.zip`` archive."""
-    if not isinstance(content, bytes) or len(content) > MAX_ARCHIVE_BYTES:
+@contextmanager
+def _open_verified_index(content: bytes) -> Iterator[tuple[io.TextIOWrapper, int]]:
+    """Validate archive size, zip structure, header, and separator, then yield the row stream."""
+    if not isinstance(content, bytes):
         raise ValueError("Invalid master-index archive")
+    if len(content) > MAX_ARCHIVE_BYTES:
+        raise ValueError(f"Master-index archive exceeds {MAX_ARCHIVE_BYTES} bytes")
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             info = archive.infolist()
@@ -114,9 +133,14 @@ def _iter_all_forms(content: bytes) -> Iterator[IndexedFiling]:
                 or info[0].file_size > MAX_INDEX_BYTES
             ):
                 raise ValueError("Invalid master-index archive contents")
-            with archive.open(info[0]) as raw:
-                bounded = io.BufferedReader(_BoundedStream(raw, MAX_INDEX_BYTES))
-                stream = io.TextIOWrapper(bounded, encoding="utf-8-sig", newline="")
+            with (
+                archive.open(info[0]) as raw,
+                io.TextIOWrapper(
+                    io.BufferedReader(_BoundedStream(raw, MAX_INDEX_BYTES)),
+                    encoding="utf-8-sig",
+                    newline="",
+                ) as stream,
+            ):
                 line_no = 0
                 for _ in range(MAX_HEADER_LINES):
                     header_line = stream.readline()
@@ -134,12 +158,26 @@ def _iter_all_forms(content: bytes) -> Iterator[IndexedFiling]:
                 if not sep or any(ch != "-" for ch in sep):
                     raise ValueError("Invalid master-index separator")
 
-                date_cache: dict[str, date] = {}
-                for raw_line in stream:
-                    line_no += 1
-                    yield _parse_data_line(raw_line, line_no, date_cache)
+                yield stream, line_no
     except (zipfile.BadZipFile, zlib.error, EOFError, OSError, RuntimeError, UnicodeError) as exc:
         raise ValueError("Invalid master-index archive") from exc
+
+
+def _iter_all_forms(content: bytes) -> Iterator[IndexedFiling]:
+    """Stream every validated filing row from one ``master.zip`` archive."""
+    with _open_verified_index(content) as (stream, line_no):
+        date_cache: dict[str, date] = {}
+        for raw_line in stream:
+            line_no += 1
+            yield _parse_data_line(raw_line, line_no, date_cache)
+
+
+def _iter_archive_forms(label: str, content: bytes) -> Iterator[IndexedFiling]:
+    """Stream rows from one quarter-labelled archive, wrapping archive errors with the quarter."""
+    try:
+        yield from _iter_all_forms(content)
+    except (ValueError, zipfile.BadZipFile, zlib.error, EOFError, OSError, UnicodeError) as exc:
+        raise MissingArchive(f"Invalid SEC archive for {label}: {exc}") from exc
 
 
 def parse_all_forms(content: bytes) -> list[IndexedFiling]:
@@ -164,47 +202,46 @@ def parse_all_forms(content: bytes) -> list[IndexedFiling]:
 
 def find_filers(
     archives: Iterable[tuple[str, bytes]],
-    wanted: Mapping[str, str],
-    normalizers: Sequence[Callable[[str], str]] = (normalize_name,),
-) -> dict[int, set[str]]:
-    """Pass 1: stream archives and map each matching filer CIK to the roster keys it matched.
+    matcher: Callable[[str], Mapping[str, frozenset[str]]],
+) -> dict[int, dict[str, frozenset[str]]]:
+    """Pass 1: stream archives and map each matching CIK to matched roster keys and rule labels.
 
-    Streams one archive at a time and never retains parsed archive rows across iterations. A
-    filer row matches when any function in ``normalizers`` maps its company name to a key in
-    ``wanted``.
+    Streams one archive at a time and never retains parsed archive rows across iterations.
+    ``matcher`` owns all name cleaning, prefix matching, and rule labelling; results are memoized
+    per distinct raw company name within one archive only so memory stays bounded.
 
     Args:
         archives: Iterable of ``(quarter_label, archive_bytes)`` pairs.
-        wanted: Mapping from normalized company name to the roster key that requested it.
-        normalizers: Name-cleaning callables applied to each filer's company name.
+        matcher: Callable taking a raw SEC filer name and returning a mapping from roster key
+            to the set of rule labels under which that name matched (empty mapping if none).
 
     Returns:
-        Mapping from integer CIK to the set of matched roster keys.
+        Mapping from integer CIK to a mapping from roster key to the union of rule labels across
+        all matched index lines for that CIK.
 
     Raises:
-        ValueError: If ``normalizers`` is empty or any archive fails validation.
+        MissingArchive: If any archive fails size, zip, header, or row validation (with the
+            quarter label in the message and the original error chained).
     """
-    if not normalizers:
-        raise ValueError("normalizers must contain at least one callable")
-    if not wanted:
-        return {}
-
-    matches: dict[int, set[str]] = {}
-    for _label, content in archives:
-        # Memoize name normalization within one archive only so memory stays bounded.
-        seen_names: dict[str, tuple[str, ...]] = {}
-        for filing in _iter_all_forms(content):
-            matched_keys = seen_names.get(filing.name)
-            if matched_keys is None:
-                found: list[str] = []
-                for normalize in normalizers:
-                    norm = normalize(filing.name)
-                    if norm and norm in wanted:
-                        found.append(wanted[norm])
-                matched_keys = tuple(found)
-                seen_names[filing.name] = matched_keys
-            if matched_keys:
-                matches.setdefault(filing.cik, set()).update(matched_keys)
+    matches: dict[int, dict[str, frozenset[str]]] = {}
+    for label, content in archives:
+        # Memoize matcher output within one archive only so memory stays bounded across quarters.
+        seen_names: dict[str, tuple[tuple[str, frozenset[str]], ...]] = {}
+        for filing in _iter_archive_forms(label, content):
+            matched_entries = seen_names.get(filing.name)
+            if matched_entries is None:
+                raw_match = matcher(filing.name)
+                matched_entries = tuple(
+                    (roster_key, frozenset(labels))
+                    for roster_key, labels in raw_match.items()
+                    if labels
+                )
+                seen_names[filing.name] = matched_entries
+            if matched_entries:
+                by_key = matches.setdefault(filing.cik, {})
+                for roster_key, labels in matched_entries:
+                    existing = by_key.get(roster_key)
+                    by_key[roster_key] = labels if existing is None else existing | labels
     return matches
 
 
@@ -223,22 +260,25 @@ def filings_of(
 
     Returns:
         Mapping from each requested CIK to all of its ``IndexedFiling`` records sorted by
-        ``(filed, form, name)``.
+        ``(filed, form, name, accession)``.
 
     Raises:
-        ValueError: If any archive fails validation.
+        MissingArchive: If any archive fails size, zip, header, or row validation (with the
+            quarter label in the message and the original error chained).
     """
     if not ciks:
         return {}
 
     by_cik: dict[int, list[IndexedFiling]] = {cik: [] for cik in ciks}
-    for _label, content in archives:
-        for filing in _iter_all_forms(content):
+    for label, content in archives:
+        for filing in _iter_archive_forms(label, content):
             if filing.cik in ciks:
                 by_cik[filing.cik].append(filing)
 
     for filings in by_cik.values():
-        filings.sort(key=lambda filing: (filing.filed, filing.form, filing.name))
+        filings.sort(
+            key=lambda filing: (filing.filed, filing.form, filing.name, filing.accession),
+        )
     return by_cik
 
 
@@ -249,7 +289,9 @@ def cached_archives(
     """Yield ``(f"{year}Q{quarter}", bytes)`` from ``client``'s verified cache, never downloading.
 
     Reads exclusively through ``SecClient._read_verified_cache`` so SHA-256 and URL metadata
-    are checked on every entry and no network opener can ever be invoked.
+    are checked on every entry and no network opener can ever be invoked, then validates the
+    archive size ceiling, zip structure, single ``master.idx`` member, header, and separator
+    before yielding.
 
     Args:
         client: ``SecClient`` pointing at the cache directory holding quarterly ``master.zip``
@@ -262,8 +304,8 @@ def cached_archives(
 
     Raises:
         ValueError: If any ``(year, quarter)`` pair is invalid.
-        MissingArchive: If any quarter is absent from cache, empty, or fails checksum/metadata
-            verification (for example a cut-short body).
+        MissingArchive: If any quarter is absent from cache, empty, fails checksum/metadata
+            verification, exceeds the archive size ceiling, or fails zip/header validation.
     """
     for year, quarter in quarters:
         if year <= 0 or quarter not in VALID_QUARTERS:
@@ -276,4 +318,10 @@ def cached_archives(
         body = client._read_verified_cache(url)
         if body is None or not body:
             raise MissingArchive(f"Cached SEC archive missing or unreadable for {label} ({url})")
+        # Refuse oversized or structurally invalid cached bodies before yielding to callers.
+        try:
+            with _open_verified_index(body):
+                pass
+        except ValueError as exc:
+            raise MissingArchive(f"Cached SEC archive invalid for {label} ({url}): {exc}") from exc
         yield label, body
