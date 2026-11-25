@@ -54,7 +54,7 @@ Exactly the first test's section 4 and its dated amendments: costs per side on e
 
 Written to the results file, with the data release and price hash:
 
-- All 18 strategy cells and 6 SPY cells: after-tax final value, per-year growth rate (CAGR), Sharpe ratio, largest peak-to-trough fall, yearly turnover.
+- All 18 strategy cells and 6 SPY cells: after-tax final value, per-year growth rate (CAGR), Sharpe ratio (return per unit of daily ups and downs; higher is better), largest peak-to-trough fall, yearly turnover.
 - The gap to SPY for every cell: growth-rate gap in points a year, fall gap, Sharpe gap.
 - The headline: gap at 18.3 bps and low tax for loss 1.0 / 0.5 / 0.0 (worst / middle / best reading).
 - The first test's coverage and sanity blocks, the gap decomposition and the dead-stock price-path block (each dead stock's price one month before its last day), passed through unchanged.
@@ -68,8 +68,8 @@ None, as in the first test: the owner's four plain rules apply (test only on dat
 
 - **One five-year window, one market.** 2000 to 2004 is the dot-com bust and the recovery after it. It cannot tell you how the rule does in other conditions.
 - **The momentum idea is not unseen.** Earlier studies tested published momentum portfolios on other data covering these years. What is new is this exact stock-level rule, universe and cost grid, run on stocks that later died.
-- **Costs before 2001 were higher.** Prices moved in fractions of a dollar and spreads were wider. The 40 bps column is the relevant reading for these years; none of the three is chosen afterwards.
-- **What dying stocks paid is unknown, and in these years more of them were bankruptcies.** The first test's description of its held dead stocks as mostly buy-outs, which made losing everything a worst case, was measured on 2005 to 2019 and is not carried over. The report shows this window's own price-path block and says what it does and does not show.
+- **Costs before 2001 were probably higher, and none of the three has been measured for these years.** Prices moved in fractions of a dollar and spreads were wider. The two library figures (6.4 and 18.3 bps) come from 2009 to 2016, and 40 bps is an assumption. Treat 40 bps as the higher-cost stress case; actual costs could be higher still. The headline stays at 18.3 bps as registered and no cell is chosen afterwards.
+- **What dying stocks paid is unknown, and the causes of these deaths may differ from the earlier windows.** The first test described its held dead stocks (2005 to 2019) as having flat or rising prices in their last month, which is the pattern of buy-outs; that was a description of prices, not a count of buy-outs, and it is not assumed to carry over. Prices alone cannot tell a buy-out from a failure, and no filing evidence is used here. The report shows this window's own price-path block and says what it does and does not show.
 - **No filing evidence for these deaths.** The loss readings bracket the unknown rather than measure it.
 - **Size limits are not tested.** The CRSP copy has no volume. Dividend tax is not modelled. Margin and shorting are not modelled. A stock in trouble can trade at a far worse price than the cost grid.
 - **The window is used up by one run.** A second run would not be fresh.
@@ -78,4 +78,4 @@ None, as in the first test: the owner's four plain rules apply (test only on dat
 
 ## Amendments
 
-None.
+**2026-11-24 (before any code of this study ran; no return computed).** After an independent read the wording of section 7 was changed in two places: 40 bps is described as the higher-cost stress case, not the relevant reading, and the cause of deaths in these years is stated as unknown rather than as more bankruptcies. Sharpe ratio was given a plain explanation in section 5. No registered parameter, rule or cell changed.

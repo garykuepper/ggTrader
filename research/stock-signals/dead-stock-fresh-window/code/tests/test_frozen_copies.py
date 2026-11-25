@@ -42,7 +42,9 @@ def test_copies_match_recorded_hashes(name: str) -> None:
 def test_copy_is_the_original_with_only_the_named_substitutions(name: str) -> None:
     original = FIRST_TEST_CODE / name
     if not original.is_file():
-        pytest.skip("the first test's folder is not here")
+        pytest.fail(
+            "the first test's folder is missing: the copies cannot be checked against the originals"
+        )
     entry = RECORD[name]
     assert _sha256(original) == entry["original_sha256"]
     text = original.read_text(encoding="utf-8")
