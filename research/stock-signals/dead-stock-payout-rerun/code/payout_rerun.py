@@ -237,6 +237,26 @@ def _build_identity_check(
     }
 
 
+def _first_test_range_if_available(first_test: Mapping[str, Any]) -> dict[str, float] | None:
+    """Return the first test's headline gap range if both endpoint cells expose it."""
+    strategy = first_test.get("strategy")
+    if not isinstance(strategy, Mapping):
+        return None
+    worst_cell = strategy.get(ft.cell_key(1.0, DECOMPOSITION_COST, DECOMPOSITION_TAX))
+    best_cell = strategy.get(ft.cell_key(0.0, DECOMPOSITION_COST, DECOMPOSITION_TAX))
+    if not isinstance(worst_cell, Mapping) or not isinstance(best_cell, Mapping):
+        return None
+    if "gap_cagr_after_tax_pp" not in worst_cell or "gap_cagr_after_tax_pp" not in best_cell:
+        return None
+    ft_worst = float(worst_cell["gap_cagr_after_tax_pp"])
+    ft_best = float(best_cell["gap_cagr_after_tax_pp"])
+    return {
+        "worst": ft_worst,
+        "best": ft_best,
+        "width_pp": abs(ft_best - ft_worst),
+    }
+
+
 def _build_lead_numbers(
     strategy: Mapping[str, Mapping[str, Any]], first_test: Mapping[str, Any]
 ) -> tuple[dict[str, Any], dict[str, float]]:
@@ -256,16 +276,11 @@ def _build_lead_numbers(
             "gap_cagr_after_tax_pp"
         ]
     )
-    ft_worst = float(
-        first_test["strategy"][ft.cell_key(1.0, DECOMPOSITION_COST, DECOMPOSITION_TAX)][
-            "gap_cagr_after_tax_pp"
-        ]
-    )
-    ft_best = float(
-        first_test["strategy"][ft.cell_key(0.0, DECOMPOSITION_COST, DECOMPOSITION_TAX)][
-            "gap_cagr_after_tax_pp"
-        ]
-    )
+    first_test_range = _first_test_range_if_available(first_test)
+    if first_test_range is None:
+        raise KeyError("first_test strategy cells missing gap_cagr_after_tax_pp")
+    ft_worst = first_test_range["worst"]
+    ft_best = first_test_range["best"]
     lo, hi = min(worst, best), max(worst, best)
     wider = abs(best - worst) > abs(ft_best - ft_worst) + RANGE_TOL_PP
     lead_numbers = {
@@ -274,11 +289,6 @@ def _build_lead_numbers(
         "best": best,
         "range_wider_than_first_test": bool(wider),
         "middle_between_worst_and_best": bool(lo - RANGE_TOL_PP <= middle <= hi + RANGE_TOL_PP),
-    }
-    first_test_range = {
-        "worst": ft_worst,
-        "best": ft_best,
-        "width_pp": abs(ft_best - ft_worst),
     }
     return lead_numbers, first_test_range
 
@@ -316,9 +326,13 @@ def run_rerun(
             ``spy_``).
 
     Returns:
-        Result dictionary with ``anchor`` first, followed by ``anchor_ok``, the 36 ``strategy``
-        cells, the 6 ``spy`` cells, ``identity_check``, ``coverage_by_cell``, ``lead_numbers``,
-        ``first_test_range``, ``pinned_share_cell``, ``gap_decomposition`` and audit blocks.
+        When ``anchor_ok`` is ``True``, the full result dictionary with ``anchor`` first, followed
+        by ``anchor_ok``, the 36 ``strategy`` cells, the 6 ``spy`` cells, ``identity_check``,
+        ``coverage_by_cell``, ``lead_numbers``, ``first_test_range``, ``pinned_share_cell``,
+        ``gap_decomposition`` and audit blocks. When ``anchor_ok`` is ``False``, stops before any
+        evidence-set book runs (leaving ``trade_sink`` untouched) and returns only ``anchor``,
+        ``anchor_ok``, ``stopped`` (``"anchor_mismatch"``) and, when available from
+        ``first_test``, ``first_test_range``.
     """
     window_check = validate_window_inputs(close, spy_close, start, end)
     spans, n_censored = drop_file_end_rows(_normalise_spans(span_rows), end)
@@ -362,6 +376,17 @@ def run_rerun(
         end=end,
         start_cash=start_cash,
     )
+    if not anchor_ok:
+        # Frozen plan section 5: stop before any evidence-set result or extra book is computed.
+        stopped_result: dict[str, Any] = {
+            "anchor": anchor,
+            "anchor_ok": False,
+            "stopped": "anchor_mismatch",
+        }
+        ft_range = _first_test_range_if_available(first_test)
+        if ft_range is not None:
+            stopped_result["first_test_range"] = ft_range
+        return stopped_result
 
     # 2. The 6 SPY cells (reusing the anchor's SPY book for the anchor cost/tax pair).
     spy: dict[str, dict[str, Any]] = {}

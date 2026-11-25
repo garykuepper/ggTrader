@@ -206,7 +206,7 @@ def test_run_rerun_returns_36_plus_6_cells_and_anchor_first() -> None:
     assert "gap_cagr_after_tax_pp" in sample
 
 
-def test_anchor_with_no_pins_equals_first_test_cells() -> None:
+def test_anchor_with_no_pins_equals_first_test_cells(monkeypatch: pytest.MonkeyPatch) -> None:
     close, spy_close, eligible, span_rows, release_spans = _synthetic_window()
     first_test = _first_test_result(close, spy_close, eligible, span_rows, release_spans)
     rows = _synthetic_payout_rows()
@@ -223,13 +223,47 @@ def test_anchor_with_no_pins_equals_first_test_cells() -> None:
         release_spans=release_spans,
     )
     assert matched["anchor_ok"] is True
+    assert "stopped" not in matched
     assert matched["anchor"]["strategy"]["loss1_cost18.3bps_taxlow"]["matches"] is True
     assert matched["anchor"]["strategy"]["loss0_cost18.3bps_taxlow"]["matches"] is True
     assert matched["anchor"]["spy"]["cost18.3bps_taxlow"]["matches"] is True
 
-    # Perturb one saved value by one cent: anchor_ok must turn False and run_rerun still returns.
+    # Perturb one saved value by one cent: anchor_ok must turn False and run_rerun must stop
+    # immediately before running any evidence-set book or touching trade_sink.
     perturbed = copy.deepcopy(first_test)
     perturbed["strategy"]["loss1_cost18.3bps_taxlow"]["after_tax_final"] += 0.01
+
+    real_run_book = payout_rerun.run_book
+    real_run_spy = payout_rerun.run_spy
+    real_exit_prices = payout_rerun.exit_prices
+    book_calls = 0
+    spy_calls = 0
+    pinned_args: list[dict[str, float]] = []
+
+    def counting_run_book(*args: Any, **kwargs: Any) -> Any:
+        nonlocal book_calls
+        book_calls += 1
+        return real_run_book(*args, **kwargs)
+
+    def counting_run_spy(*args: Any, **kwargs: Any) -> Any:
+        nonlocal spy_calls
+        spy_calls += 1
+        return real_run_spy(*args, **kwargs)
+
+    def counting_exit_prices(
+        px_close: pd.DataFrame,
+        px_spans: pd.DataFrame,
+        reading: float,
+        pinned: Any,
+    ) -> pd.DataFrame:
+        pinned_args.append(dict(pinned))
+        return real_exit_prices(px_close, px_spans, reading, pinned)
+
+    monkeypatch.setattr(payout_rerun, "run_book", counting_run_book)
+    monkeypatch.setattr(payout_rerun, "run_spy", counting_run_spy)
+    monkeypatch.setattr(payout_rerun, "exit_prices", counting_exit_prices)
+
+    sink: dict[str, list] = {}
     mismatched = payout_rerun.run_rerun(
         close,
         spy_close,
@@ -240,11 +274,29 @@ def test_anchor_with_no_pins_equals_first_test_cells() -> None:
         start=SYNTH_START,
         end=SYNTH_END,
         release_spans=release_spans,
+        trade_sink=sink,
     )
+    assert list(mismatched.keys())[0] == "anchor"
     assert mismatched["anchor_ok"] is False
+    assert mismatched["stopped"] == "anchor_mismatch"
     assert mismatched["anchor"]["strategy"]["loss1_cost18.3bps_taxlow"]["matches"] is False
     assert mismatched["anchor"]["strategy"]["loss0_cost18.3bps_taxlow"]["matches"] is True
-    assert len(mismatched["strategy"]) == 36
+    for forbidden_key in (
+        "strategy",
+        "spy",
+        "identity_check",
+        "coverage_by_cell",
+        "lead_numbers",
+        "gap_decomposition",
+    ):
+        assert forbidden_key not in mismatched
+    assert set(mismatched.keys()) == {"anchor", "anchor_ok", "stopped", "first_test_range"}
+    assert sink == {}
+    # Only the anchor's own books ran: two strategy books (readings 1.0 and 0.0) and one SPY book,
+    # with no pinned prices ever requested.
+    assert book_calls == 2
+    assert spy_calls == 1
+    assert pinned_args == [{}, {}]
 
 
 def test_identity_check_flags_a_nonzero_pinned_loss() -> None:
