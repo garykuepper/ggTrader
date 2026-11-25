@@ -8,7 +8,7 @@
   ],
   "release_id": 1,
   "crsp_load": 1,
-  "git_head": "8f0b4d380a275654e85ece4d4545282ee096c0b8",
+  "git_head": "2c16288b3dad84317bb2921923011e52740009f6",
   "command": [
     "research/stock-signals/dead-stock-early-filings/code/run.py",
     "--mode",
@@ -16,11 +16,13 @@
     "--release-id",
     "1",
     "--crsp-load",
-    "1"
+    "1",
+    "--out",
+    "/tmp/claude-1000/-home-flynn-ggTrader/79fe0979-9c64-4a7d-8304-625abc97b77d/scratchpad/early_clean/_early.json"
   ],
   "provenance": {
-    "git_sha": "8f0b4d380a275654e85ece4d4545282ee096c0b8",
-    "git_dirty": true,
+    "git_sha": "2c16288b3dad84317bb2921923011e52740009f6",
+    "git_dirty": false,
     "diff_sha256": null,
     "lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
     "python": "3.12.13",
@@ -41,10 +43,12 @@
       "--release-id",
       "1",
       "--crsp-load",
-      "1"
+      "1",
+      "--out",
+      "/tmp/claude-1000/-home-flynn-ggTrader/79fe0979-9c64-4a7d-8304-625abc97b77d/scratchpad/early_clean/_early.json"
     ],
     "code_sha256": "72db80132d4b8eabc456eaef7064f91c48870c50c2e0372baf87da9aff543a52",
-    "labels_csv": "/home/flynn/ggTrader/research/stock-signals/dead-stock-early-filings/_early_labels.csv",
+    "labels_csv": "/tmp/claude-1000/-home-flynn-ggTrader/79fe0979-9c64-4a7d-8304-625abc97b77d/scratchpad/early_clean/_early_labels.csv",
     "labels_csv_sha256": "79ef97855fe0fe4bd7c7e6b8bfb755dec740651ceb0147259e457f8ba81975b3",
     "data_release": {
       "release_id": 1,
@@ -579,11 +583,11 @@
     }
   },
   "sec_fetches": {
-    "fulfilled_fetches": 243,
+    "fulfilled_fetches": 0,
     "recorded_not_found": 0,
-    "cache_hits_200": 89,
+    "cache_hits_200": 332,
     "not_found_cache_hits": 0,
     "corrupt_cache_refetches": 0
   },
-  "wall_seconds": 288.3382704257965
+  "wall_seconds": 154.0204119682312
 }
