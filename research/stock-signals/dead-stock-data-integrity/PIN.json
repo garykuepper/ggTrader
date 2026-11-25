@@ -53,7 +53,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/price_path.py",
-      "sha256": "15a21f30ea2c359bc372ab01c9353c8e8047e1b458c725ee556dba348ca9343b"
+      "sha256": "7f90ac753223f6cc7980c5f1980a12e74fac5f2aaaad0c79faa55574eaaf00a7"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/code/roster.py",
@@ -128,6 +128,10 @@
       "1",
       "--mcgill-load",
       "2",
+      "--eval-end",
+      "2024-12-31",
+      "--out",
+      "research/stock-signals/dead-stock-data-integrity",
       "--force"
     ],
     "cwd": "."
@@ -144,7 +148,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_integrity.json",
-      "sha256": "e52826198d37a1599e63f41a3860bc60aeb8a0c711ef61eecf969c12e0b6dadc"
+      "sha256": "d810579fb6afcdba9575a434598d5efed62faf835b8dff04bdc90f282098eb69"
     },
     {
       "path": "research/stock-signals/dead-stock-data-integrity/_payouts.json",
@@ -155,5 +159,5 @@
     "status": "PARTLY",
     "note": "Command shown is the price-row scan (reads our own database). The two SEC phases are reproduced with code/sec_pilot.py --phase form25 and --phase payouts (commands in the README), each with --cache-dir /media/thesix/ggTrader-data/sec-delistings, --out the study folder, --force and a contact line in the SEC_USER_AGENT environment variable. The Form 25 phase needs network access and SEC_USER_AGENT even with the saved folder, because six notices return HTTP 404 and 404 answers are never saved, so they are requested again on every run; the payouts phase uses the saved copies except for any filing list that was not saved. The three result files were produced on a clean tree (integrity at 0bb88e00, the SEC phases at ba313c7c). The database and the SEC files are not in the repo; the engine and tape fields are null because the study does not use the lab engine or a frozen tape."
   },
-  "created_utc": "2026-11-24T23:23:05Z"
+  "created_utc": "2026-11-25T01:15:18Z"
 }
