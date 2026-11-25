@@ -81,6 +81,7 @@ MAX_TAX_SALE_ROUNDS = 3  # a pro-rata sale can change the assessment, so repeat 
 MIN_TRADE_DOLLARS = 1e-6  # smaller trades are float dust, not decisions
 TAX_SALE_MARGIN = 1e-9  # sell this much extra (relative) so rounding cannot leave a sliver unpaid
 MAX_BUY_CLAMP = 1e-9  # a buy may be clamped to cash by this relative amount; more is a bug
+CASH_NOISE_DOLLARS = 1e-8  # random-baseline copy only: float noise on a dust-sized buy
 UNPAID_DUST = 1e-9  # unpaid tax below this share of the start cash is rounding, not a bill
 UNPAID_FLAG = 1e-6  # unpaid tax above this share of the start cash is flagged in the result
 DAYS_PER_YEAR = 365.25
@@ -233,7 +234,7 @@ class _Execution:
         fill = price * (1.0 + self.cost)
         cash = self.book.cash
         if qty * fill > cash:
-            if qty * fill - cash > MAX_BUY_CLAMP * qty * fill:
+            if qty * fill - cash > max(MAX_BUY_CLAMP * qty * fill, CASH_NOISE_DOLLARS):
                 raise ValueError(
                     f"buy of {symbol} on {date.date()} wants {qty!r} shares at {fill!r} "
                     f"but the book has only {cash!r} cash"

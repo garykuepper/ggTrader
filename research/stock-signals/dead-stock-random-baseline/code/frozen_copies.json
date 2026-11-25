@@ -2,13 +2,23 @@
   "ledger_run.py": {
     "copy": "rb_ledger_run.py",
     "original_sha256": "e3f155be0ca254b9e0e359e0175994cf8b4e2d8f52580a6ec57ff58d96b9c984",
-    "copy_sha256": "fd38720555ba77ca3a5835afa78cc38615075ca8462fb1a136fce594d4c6a179",
+    "copy_sha256": "c2dd120d74bd8e0b77b7b795fdf93c25474f60913e2d93723f683fb9f17eb4a0",
     "substitutions": [
       [
         "from replay import (",
         "from rb_replay import ("
+      ],
+      [
+        "            if qty * fill - cash > MAX_BUY_CLAMP * qty * fill:",
+        "            if qty * fill - cash > max(MAX_BUY_CLAMP * qty * fill, CASH_NOISE_DOLLARS):"
+      ],
+      [
+        "MAX_BUY_CLAMP = 1e-9  # a buy may be clamped to cash by this relative amount; more is a bug\n",
+        "MAX_BUY_CLAMP = 1e-9  # a buy may be clamped to cash by this relative amount; more is a bug\nCASH_NOISE_DOLLARS = 1e-8  # random-baseline copy only: float noise on a dust-sized buy\n"
       ]
-    ]
+    ],
+    "logic_substitutions": 2,
+    "logic_reason": "A buy of half a cent hit float noise of 3e-11 dollars in cash, over the relative limit of the original; the limit is now the larger of the relative one and one hundred-millionth of a dollar. Behaviour is unchanged wherever the original did not raise."
   },
   "dead_stock_first_test.py": {
     "copy": "rb_dead_stock_first_test.py",
