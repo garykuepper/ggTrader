@@ -238,20 +238,21 @@ def test_quarters_for_a_december_last_bar_spans_the_next_quarters() -> None:
 
 
 def test_name_cleaning_matches_inc_corp_and_punctuation_variants() -> None:
+    # Updated for brief amendment 3 (v1.1 cleaning delegated to early_match.normalize_name):
+    # trailing corporate forms dropped, abbreviations expanded, plurals folded, slash tags
+    # and share classes stripped, punctuation replaced by spaces, THE/HOLDING/GROUP kept.
     assert clean_company_name("Northstar Widget, Inc.") == "NORTHSTAR WIDGET"
     assert clean_company_name("NORTHSTAR WIDGET CORP.") == "NORTHSTAR WIDGET"
-    assert clean_company_name("The Northstar Widget Corporation") == "NORTHSTAR WIDGET"
+    assert clean_company_name("Northstar Widget Corporation") == "NORTHSTAR WIDGET"
     assert clean_company_name("Northstar-Widget Co., Ltd.") == "NORTHSTAR WIDGET"
-    assert clean_company_name("Northstar Widget Holdings, LLC") == "NORTHSTAR WIDGET"
-    assert clean_company_name("Northstar Widget Group PLC") == "NORTHSTAR WIDGET"
+    assert clean_company_name("Northstar Widget Holdings, LLC") == "NORTHSTAR WIDGET HOLDING"
+    assert clean_company_name("Northstar Widget Group PLC") == "NORTHSTAR WIDGET GROUP"
     assert clean_company_name("Northstar Widget LP") == "NORTHSTAR WIDGET"
-    assert clean_company_name("Smith & Jones, Inc.") == clean_company_name(
-        "SMITH AND JONES COMPANY"
-    )
-    assert clean_company_name("Smith&Jones Corp") == "SMITH AND JONES"
-    # Trailing HOLDINGS/GROUP dropped only when another word remains; non-trailing stays.
-    assert clean_company_name("Holdings Inc.") == "HOLDINGS"
-    assert clean_company_name("The Group Corp.") == "GROUP"
+    assert clean_company_name("Smith & Jones, Inc.") == clean_company_name("SMITH JONES COMPANY")
+    assert clean_company_name("CONOCO INC /DE/") == "CONOCO"
+    assert clean_company_name("NATL PROCESSING INC") == "NATIONAL PROCESSING"
+    assert clean_company_name("DALLAS SEMICOND") == "DALLAS SEMICONDUCTOR"
+    assert clean_company_name("Holdings Inc.") == "HOLDING"
     assert clean_company_name("Group Health Corp.") == "GROUP HEALTH"
     assert clean_company_name("Inc.") == "INC"
     assert clean_company_name("   ") == ""
@@ -718,6 +719,59 @@ def test_resolve_confidence_promotes_name_only_when_header_matches() -> None:
         complete=True,
     )
     assert resolve_confidence(CONFIDENCE_NAME_ONLY, filing, wrong_form) == CONFIDENCE_NAME_ONLY
+
+    # Rules 2 to 4 matches carry allow_checked=False and are never promoted to checked.
+    rule24_filing = Filing(
+        form="8-K",
+        company_name="NORTHSTAR WIDGET CORP",
+        cik=812345,
+        filed=date(2001, 3, 15),
+        file_path="edgar/data/812345/0000950134-01-002345.txt",
+        confidence=CONFIDENCE_NAME_ONLY,
+        allow_checked=False,
+    )
+    assert resolve_confidence(CONFIDENCE_NAME_ONLY, rule24_filing, header) == CONFIDENCE_NAME_ONLY
+
+
+def test_find_filings_uses_v11_rules_and_gates_checked_promotion() -> None:
+    rows = [
+        IndexRow(
+            cik=1001,
+            company_name="WACHOVIA CORP /NC/",
+            form="8-K",
+            filed=date(2001, 3, 15),
+            file_path="edgar/data/1001/0001-01-000001.txt",
+        ),
+        IndexRow(
+            cik=1002,
+            company_name="MIDAMERICAN ENERGY HOLDINGS CO",
+            form="8-K",
+            filed=date(2001, 3, 16),
+            file_path="edgar/data/1002/0002-01-000001.txt",
+        ),
+        IndexRow(
+            cik=1003,
+            company_name="NATIONAL PROCESSING INC",
+            form="8-K",
+            filed=date(2001, 3, 17),
+            file_path="edgar/data/1003/0003-01-000001.txt",
+        ),
+    ]
+
+    wachovia = find_filings(rows, "WACHOVIA CP NC")
+    assert [f.cik for f in wachovia] == [1001]
+    assert wachovia[0].confidence == CONFIDENCE_NAME_ONLY
+    assert wachovia[0].allow_checked is False
+
+    midam = find_filings(rows, "MIDAMERICAN ENRG")
+    assert [f.cik for f in midam] == [1002]
+    assert midam[0].confidence == CONFIDENCE_NAME_ONLY
+    assert midam[0].allow_checked is False
+
+    natl = find_filings(rows, "NATL PROCESSING INC")
+    assert [f.cik for f in natl] == [1003]
+    assert natl[0].confidence == CONFIDENCE_NAME_ONLY
+    assert natl[0].allow_checked is True
 
 
 def test_parse_master_index_preserves_file_path_and_find_filings_filters() -> None:

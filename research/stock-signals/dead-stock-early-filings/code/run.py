@@ -20,6 +20,7 @@ ROOT = bootstrap(__file__)
 
 import early_classify as ec  # noqa: E402  (found on sys.path through bootstrap)
 import early_inputs  # noqa: E402
+import early_match  # noqa: E402
 import early_names  # noqa: E402
 import early_roster  # noqa: E402
 import early_sec  # noqa: E402
@@ -123,15 +124,17 @@ class SecLookup:
     """Cached, streaming, CIK-bound SEC master-index search and header lookup for one roster.
 
     Pass A streams every required quarterly ``master.zip`` archive one at a time via
-    ``EarlySecClient`` and discovers all CIKs whose cleaned company name equals a roster name.
-    A missing (HTTP 404, live or cached) required master-index quarter raises
-    ``MissingMasterIndexError`` immediately. Pass B re-streams the cached archives (no new
-    network fetches) and retains all filing dates and relevant event/notice rows for every
-    uniquely bound CIK across every quarter, whatever name the CIK was indexed under.
-    Headers for in-window event/notice filings are fetched and validated for completeness at
-    the boundary; missing or unreadable headers are recorded explicitly so the classifier marks
-    them ``evidence_unresolved``. Multiple CIKs sharing one cleaned name return an ambiguous
-    match without tie-breaking.
+    ``EarlySecClient`` and discovers all CIKs matching any roster name under ``early_match``
+    (indexed via ``RosterNameIndex`` with a cross-quarter filer-name match cache). A missing
+    (HTTP 404, live or cached) required master-index quarter raises ``MissingMasterIndexError``
+    immediately. Pass B re-streams the cached archives (no new network fetches) and retains
+    all filing dates and relevant event/notice rows for every uniquely bound CIK across every
+    quarter, whatever name the CIK was indexed under. Headers for in-window event/notice
+    filings are fetched and validated for completeness at the boundary; missing or unreadable
+    headers are recorded explicitly so the classifier marks them ``evidence_unresolved``.
+    Multiple CIKs matching one roster stock return an ambiguous match without tie-breaking.
+    Matches that relied only on amendment 3 rules 2 to 4 stay tier ``name_only`` and are never
+    promoted to ``checked``.
     """
 
     def __init__(
@@ -142,7 +145,8 @@ class SecLookup:
         end_quarter: tuple[int, int] = SEC_KEPT_FILING_END_QUARTER,
     ) -> None:
         self._client = client
-        self._clean_to_ciks: dict[str, set[int]] = defaultdict(set)
+        self._target_to_ciks: dict[str, set[int]] = defaultdict(set)
+        self._target_rule1_ciks: dict[str, set[int]] = defaultdict(set)
         self._cik_company_names: dict[int, str] = {}
         self._cik_all_dates: dict[int, set[date]] = defaultdict(set)
         self._cik_event_rows: dict[int, list[early_sec.IndexRow]] = defaultdict(list)
@@ -150,22 +154,27 @@ class SecLookup:
         self._headers: dict[str, tuple[early_sec.FilingHeader | None, str | None]] = {}
 
         targets: list[tuple[str, date]] = []
-        target_clean_names: set[str] = set()
+        target_names: list[str] = []
+        seen_targets: set[str] = set()
         if not named_roster.empty and "company_name" in named_roster.columns:
             for _, row in named_roster.iterrows():
                 raw_name = row.get("company_name")
                 if raw_name is None or pd.isna(raw_name):
                     continue
-                cleaned = early_sec.clean_company_name(str(raw_name))
-                if not cleaned:
+                target_name = str(raw_name).strip()
+                if not target_name or not early_match.roster_name_key(target_name):
                     continue
                 last_day = pd.Timestamp(row["last_bar"]).date()
-                targets.append((cleaned, last_day))
-                target_clean_names.add(cleaned)
+                targets.append((target_name, last_day))
+                if target_name not in seen_targets:
+                    seen_targets.add(target_name)
+                    target_names.append(target_name)
 
         if not targets:
             self._quarters: list[tuple[int, int]] = []
             return
+
+        name_index = early_match.RosterNameIndex(target_names)
 
         all_row_quarters = [q for _, d in targets for q in early_sec.quarters_for(pd.Timestamp(d))]
         min_q = min(all_row_quarters)
@@ -173,24 +182,36 @@ class SecLookup:
         self._quarters = early_sec.quarters_covering(_quarter_start(*min_q), _quarter_start(*max_q))
 
         # Pass A: stream every required quarter and discover CIKs matching any roster name.
+        filer_match_cache: dict[str, tuple[tuple[str, bool], ...]] = {}
+        empty_hits: tuple[tuple[str, bool], ...] = ()
         for year, quarter in self._quarters:
             archive_bytes = self._get_quarter_archive(year, quarter)
-            name_cache: dict[str, str] = {}
             for row in early_sec.iter_master_index(archive_bytes):
                 raw_name = row.company_name
                 if not raw_name:
                     continue
-                cleaned = name_cache.get(raw_name)
-                if cleaned is None:
-                    cleaned = early_sec.clean_company_name(raw_name)
-                    name_cache[raw_name] = cleaned
-                if cleaned and cleaned in target_clean_names:
-                    self._clean_to_ciks[cleaned].add(row.cik)
+                hits = filer_match_cache.get(raw_name)
+                if hits is None:
+                    matched = name_index.match_rules(raw_name)
+                    hits = (
+                        tuple(
+                            (target_name, rule == early_match.MATCH_RULE1)
+                            for target_name, rule in matched.items()
+                        )
+                        if matched
+                        else empty_hits
+                    )
+                    filer_match_cache[raw_name] = hits
+                if hits:
+                    for target_name, is_rule1 in hits:
+                        self._target_to_ciks[target_name].add(row.cik)
+                        if is_rule1:
+                            self._target_rule1_ciks[target_name].add(row.cik)
                     self._cik_company_names.setdefault(row.cik, raw_name)
 
         # Collect uniquely bound CIKs (ambiguous names with 2+ CIKs have no bound CIK).
         bound_ciks: set[int] = {
-            next(iter(ciks)) for ciks in self._clean_to_ciks.values() if len(ciks) == 1
+            next(iter(ciks)) for ciks in self._target_to_ciks.values() if len(ciks) == 1
         }
         if not bound_ciks:
             return
@@ -210,8 +231,8 @@ class SecLookup:
                         self._cik_event_rows[row.cik].append(row)
 
         # Pre-fetch and validate headers for all in-window event/notice filings of bound CIKs.
-        for cleaned, last_day in targets:
-            ciks = self._clean_to_ciks.get(cleaned)
+        for target_name, last_day in targets:
+            ciks = self._target_to_ciks.get(target_name)
             if not ciks or len(ciks) != 1:
                 continue
             cik = next(iter(ciks))
@@ -246,10 +267,10 @@ class SecLookup:
         self, company_name: str, last_trading_day: date | pd.Timestamp
     ) -> ec.CompanyEvidence | None:
         """Return ``CompanyEvidence`` for ``company_name`` around ``last_trading_day``, or None."""
-        cleaned = early_sec.clean_company_name(company_name)
-        if not cleaned:
+        target_name = company_name.strip() if isinstance(company_name, str) else ""
+        if not target_name or not early_match.roster_name_key(target_name):
             return None
-        ciks = self._clean_to_ciks.get(cleaned)
+        ciks = self._target_to_ciks.get(target_name)
         if not ciks:
             return None
         if len(ciks) > 1:
@@ -263,6 +284,7 @@ class SecLookup:
             )
 
         cik = next(iter(ciks))
+        allow_checked = cik in self._target_rule1_ciks.get(target_name, ())
         last_day = (
             last_trading_day.date()
             if isinstance(last_trading_day, pd.Timestamp)
@@ -281,6 +303,7 @@ class SecLookup:
                 filed=row.filed,
                 file_path=row.file_path,
                 confidence=early_sec.CONFIDENCE_NAME_ONLY,
+                allow_checked=allow_checked,
             )
             header, issue = self._fetch_header(row.file_path)
             filings.append(ec.FilingEvidence(filing=filing, header=header, issue=issue))

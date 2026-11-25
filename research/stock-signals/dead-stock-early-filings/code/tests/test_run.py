@@ -1600,3 +1600,224 @@ def test_driver_quoted_closing_tag_acq_then_bankruptcy_pair_and_lowercase_close(
     assert pd.isna(df2.loc["PAIR", "suggested_loss"])
     assert df2.loc["LOWR", "label"] == "acquisition_type"
     assert df2.loc["LOWR", "suggested_loss"] == 0.0
+
+
+def test_driver_v11_short_form_match_finds_acquisition_8k(tmp_path: Path) -> None:
+    """End-to-end driver test: short-form roster name matches full EDGAR name & acquisition 8-K."""
+    death_day = date(2001, 3, 12)
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            (
+                "500001",
+                "NATIONAL PROCESSING INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/500001/0000500001-01-000001.txt",
+            ),
+        ],
+    }
+    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses[early_sec.filing_url("edgar/data/500001/0000500001-01-000001.txt")] = _header_bytes(
+        form="8-K",
+        filed_yyyymmdd="20010315",
+        company="NATIONAL PROCESSING INC",
+        cik="0000500001",
+        items=("Acquisition or disposition of assets",),
+    )
+
+    inputs = _single_window_inputs([("NATL", 50001, "NATL PROCESSING INC", death_day)])
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_natl",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "natl" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "1",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    df = pd.read_csv(out_json.parent / "_pilot_labels.csv").set_index("column")
+    assert df.loc["NATL", "label"] == "acquisition_type"
+    assert df.loc["NATL", "suggested_loss"] == 0.0
+    assert "acquisition or disposition of assets" in df.loc["NATL", "evidence"]
+
+
+def test_driver_prefix_rule_two_ciks_is_ambiguous_match(tmp_path: Path) -> None:
+    """End-to-end driver test: two CIKs matching via the 16-char prefix rule -> ambiguous_match."""
+    death_day = date(2001, 3, 12)
+    roster_name = "MIDAMERICAN ENRG"
+    assert len(roster_name) == 16
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            (
+                "510001",
+                "MIDAMERICAN ENERGY HOLDINGS CO",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/510001/0000510001-01-000001.txt",
+            ),
+            (
+                "510002",
+                "MIDAMERICAN ENERGY CO",
+                "10-Q",
+                "2001-03-18",
+                "edgar/data/510002/0000510002-01-000001.txt",
+            ),
+        ],
+    }
+    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses[early_sec.filing_url("edgar/data/510001/0000510001-01-000001.txt")] = _header_bytes(
+        form="8-K",
+        filed_yyyymmdd="20010315",
+        company="MIDAMERICAN ENERGY HOLDINGS CO",
+        cik="0000510001",
+        items=("Acquisition or disposition of assets",),
+    )
+
+    inputs = _single_window_inputs([("MIDAM", 51001, roster_name, death_day)])
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_midam",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "midam" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "1",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    df = pd.read_csv(out_json.parent / "_pilot_labels.csv").set_index("column")
+    assert df.loc["MIDAM", "label"] == "ambiguous_match"
+    assert "2 CIKs" in df.loc["MIDAM", "evidence"]
+    assert pd.isna(df.loc["MIDAM", "suggested_loss"])
+
+
+def test_driver_rules_2_to_4_short_form_matches_yield_name_only_never_checked(
+    tmp_path: Path,
+) -> None:
+    """End-to-end driver test: matches via rules 2, 3, or 4 stay tier name_only, never checked."""
+    death_day = date(2001, 3, 12)
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            # Rule 3 (added short form SEMICOND -> SEMICONDUCTOR)
+            (
+                "520001",
+                "DALLAS SEMICONDUCTOR CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/520001/0000520001-01-000001.txt",
+            ),
+            # Rule 2 (16-char prefix NORTHSTAR WIDGET -> NORTHSTAR WIDGET HOLDINGS INC)
+            (
+                "520002",
+                "NORTHSTAR WIDGET HOLDINGS INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/520002/0000520002-01-000001.txt",
+            ),
+            # Rule 4 (roster-side state code WACHOVIA CP NC -> WACHOVIA CORP /NC/)
+            (
+                "520003",
+                "WACHOVIA CORP /NC/",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/520003/0000520003-01-000001.txt",
+            ),
+        ],
+    }
+    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses.update(
+        {
+            early_sec.filing_url("edgar/data/520001/0000520001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="DALLAS SEMICONDUCTOR CORP",
+                cik="0000520001",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/520002/0000520002-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="NORTHSTAR WIDGET HOLDINGS INC",
+                cik="0000520002",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/520003/0000520003-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="WACHOVIA CORP /NC/",
+                cik="0000520003",
+                items=("Acquisition or disposition of assets",),
+            ),
+        }
+    )
+
+    inputs = _single_window_inputs(
+        [
+            ("DALL", 52001, "DALLAS SEMICOND", death_day),
+            ("NSTR", 52002, "NORTHSTAR WIDGET", death_day),
+            ("WACH", 52003, "WACHOVIA CP NC", death_day),
+        ]
+    )
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_r24",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "r24" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "3",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    df = pd.read_csv(out_json.parent / "_pilot_labels.csv").set_index("column")
+    for col in ("DALL", "NSTR", "WACH"):
+        assert df.loc[col, "label"] == "acquisition_type"
+        assert df.loc[col, "confidence"] == "name_only"
+        assert df.loc[col, "suggested_loss"] == 0.0

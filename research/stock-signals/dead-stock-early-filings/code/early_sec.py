@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, BinaryIO
 
+import early_match
 import pandas as pd
 from ef_sec_client import (
     DEFAULT_MAX_BYTES,
@@ -54,12 +55,6 @@ FORM8K_FORMS: frozenset[str] = frozenset({"8-K", "8-K/A"})
 FORM25_FORMS: frozenset[str] = frozenset({"25", "25/A", "25-NSE", "25-NSE/A"})
 IGNORED_LISTING_FORMS: frozenset[str] = frozenset({"8-A12B", "8-A12B/A", "8-A12G", "8-A12G/A"})
 RELEVANT_EVENT_FORMS: frozenset[str] = FORM8K_FORMS | FORM25_FORMS
-
-# Registered name-cleaning word sets from section 1 of the frozen brief.
-DROP_WORDS: frozenset[str] = frozenset(
-    {"INC", "CORP", "CORPORATION", "CO", "COMPANY", "LTD", "LP", "LLC", "PLC", "THE"}
-)
-TRAILING_DROP_WORDS: frozenset[str] = frozenset({"HOLDINGS", "GROUP"})
 
 # Registered stock labels and 8-K item label constants from section 1 + amendment 2 of the brief.
 LABEL_AMBIGUOUS_MATCH = "ambiguous_match"
@@ -157,6 +152,7 @@ class Filing:
     filed: date
     file_path: str
     confidence: str = CONFIDENCE_NAME_ONLY
+    allow_checked: bool = True
 
     @property
     def accession(self) -> str:
@@ -507,25 +503,8 @@ def parse_master_index(content: bytes) -> list[IndexRow]:
 
 
 def clean_company_name(name: str) -> str:
-    """Clean a company name using the registered rule from section 1 of the frozen brief.
-
-    Steps: uppercase, ``&`` to ``AND``, punctuation replaced by spaces, then drop
-    ``INC, CORP, CORPORATION, CO, COMPANY, LTD, LP, LLC, PLC, THE`` (keeping the original
-    tokens if dropping them would leave nothing), then drop trailing ``HOLDINGS`` and
-    ``GROUP`` only while another word remains.
-    """
-    if not isinstance(name, str):
-        return ""
-    text = name.upper().replace("&", " AND ")
-    words = re.sub(r"[^A-Z0-9]+", " ", text).split()
-    if not words:
-        return ""
-    remaining = [word for word in words if word not in DROP_WORDS]
-    if remaining:
-        words = remaining
-    while len(words) > 1 and words[-1] in TRAILING_DROP_WORDS:
-        words.pop()
-    return " ".join(words)
+    """Clean a company name using the registered v1.1 rule (brief amendment 3)."""
+    return early_match.normalize_name(name)
 
 
 def _unpack_index_row(
@@ -556,21 +535,27 @@ def find_filings(
 ) -> list[Filing]:
     """Search quarterly master-index rows for ``company_name`` and ``former_names``.
 
-    Matches by ``clean_company_name``. Primary-name matches receive ``confidence="name_only"``;
-    former-name matches receive ``confidence="former_name"`` (lower confidence and never
-    promoted to ``"checked"``). Results are sorted by ``(filed, form, cik, file_path)``.
+    Matches via ``early_match`` (amendment 3 v1.1 rule, 16-character cut-off prefix, added
+    short forms, and roster-side trailing state-code drop). Primary-name matches receive
+    ``confidence="name_only"`` (with ``allow_checked=False`` when matched only through
+    rules 2 to 4); former-name matches receive ``confidence="former_name"`` (lower
+    confidence and never promoted to ``"checked"``). Results are sorted by
+    ``(filed, form, cik, file_path)``.
     """
-    primary = clean_company_name(company_name)
-    cleaned_formers = {
-        cleaned
-        for raw in former_names
-        if (cleaned := clean_company_name(raw)) and cleaned != primary
-    }
-    if not primary and not cleaned_formers:
+    primary_raw = company_name.strip() if isinstance(company_name, str) else ""
+    primary_has_key = bool(early_match.roster_name_key(primary_raw))
+    cleaned_formers = [
+        raw_f.strip()
+        for raw_f in former_names
+        if isinstance(raw_f, str) and early_match.roster_name_key(raw_f.strip())
+    ]
+    if not primary_has_key and not cleaned_formers:
         return []
 
     allowed_forms = frozenset(forms) if forms is not None else None
-    name_cache: dict[str, str] = {}
+    primary_len = len(primary_raw)
+    former_entries = [(f_name, len(f_name)) for f_name in cleaned_formers]
+    match_cache: dict[str, tuple[str, bool] | None] = {}
     matched: list[Filing] = []
 
     for row in index_rows:
@@ -579,20 +564,27 @@ def find_filings(
             continue
         if not raw_name:
             continue
-        cleaned = name_cache.get(raw_name)
-        if cleaned is None:
-            cleaned = clean_company_name(raw_name)
-            name_cache[raw_name] = cleaned
-        if not cleaned:
+        cached = match_cache.get(raw_name, _UNSET)
+        if cached is _UNSET:
+            primary_match = (
+                early_match.classify_match(primary_raw, primary_len, raw_name)
+                if primary_has_key
+                else None
+            )
+            if primary_match is not None:
+                cached = (CONFIDENCE_NAME_ONLY, primary_match == early_match.MATCH_RULE1)
+            elif any(
+                early_match.name_matches(f_name, f_len, raw_name)
+                for f_name, f_len in former_entries
+            ):
+                cached = (CONFIDENCE_FORMER_NAME, False)
+            else:
+                cached = None
+            match_cache[raw_name] = cached
+        if cached is None:
             continue
 
-        if primary and cleaned == primary:
-            confidence = CONFIDENCE_NAME_ONLY
-        elif cleaned in cleaned_formers:
-            confidence = CONFIDENCE_FORMER_NAME
-        else:
-            continue
-
+        confidence, allow_checked = cached
         matched.append(
             Filing(
                 form=form,
@@ -601,6 +593,7 @@ def find_filings(
                 filed=filed,
                 file_path=file_path,
                 confidence=confidence,
+                allow_checked=allow_checked,
             )
         )
 
@@ -842,14 +835,16 @@ def resolve_confidence(
 ) -> str:
     """Resolve the confidence tier after inspecting a filing header.
 
-    A ``former_name`` match is never promoted to ``checked``. A ``name_only`` match is
-    promoted to ``checked`` only when ``header`` confirms both the same CIK and the same
-    form type as the master-index row.
+    A ``former_name`` match or a match via amendment 3 rules 2 to 4 (``filing.allow_checked``
+    is False) is never promoted to ``checked``. A rule-1 ``name_only`` match is promoted to
+    ``checked`` only when ``header`` confirms both the same CIK and the same form type as the
+    master-index row.
     """
     if match_confidence == CONFIDENCE_FORMER_NAME:
         return CONFIDENCE_FORMER_NAME
     if (
         match_confidence == CONFIDENCE_NAME_ONLY
+        and filing.allow_checked
         and header is not None
         and header.cik is not None
         and header.cik == filing.cik
@@ -937,7 +932,6 @@ __all__ = [
     "DELISTING_ITEMS",
     "DELISTING_NUMBER_ITEMS",
     "DELISTING_TEXT_ITEMS",
-    "DROP_WORDS",
     "ENV_CONTACT_PATH",
     "FILING_ARCHIVE_URL",
     "FORM8K_FORMS",
@@ -956,7 +950,6 @@ __all__ = [
     "MASTER_INDEX_URL",
     "NUMBERED_ITEMS_START",
     "RELEVANT_EVENT_FORMS",
-    "TRAILING_DROP_WORDS",
     "EarlySecClient",
     "Filing",
     "FilingHeader",
