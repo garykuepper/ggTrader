@@ -1,0 +1,8 @@
+Anchor run, 2026-11-24, code commit 8ef8ca07 (clean tracked tree).
+Command: scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-fresh-window/code/run.py --window anchor --release-id 1 --crsp-load 1
+Source: GNU time -v output of the command.
+Elapsed (wall clock): 9:38.97. Maximum resident set size: 556,756 kB. Exit status: 0.
+Result: _anchor-A.json, anchor_ok true. All 18 strategy cells and 6 SPY cells reproduce the first test's _holdout-A.json:
+the controller compared four fields (after_tax_final, cagr_after_tax, max_drawdown_pct, sharpe) on all 24 cells
+independently of the driver: the largest absolute difference is 0.
+Saved first-test file SHA-256 prefix 2739ce693e1b; headline gaps of the saved window (points a year, worst/middle/best): -7.30 / -2.83 / +1.63.
