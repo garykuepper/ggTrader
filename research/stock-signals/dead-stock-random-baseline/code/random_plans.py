@@ -120,6 +120,12 @@ def plan_fresh_dice(
     return steps
 
 
+def _naive(stamp: pd.Timestamp) -> pd.Timestamp:
+    """The same wall-clock day without a time zone (the ledger's own convention)."""
+    stamp = pd.Timestamp(stamp)
+    return stamp.tz_convert(None) if stamp.tzinfo is not None else stamp
+
+
 def bought_counts(rule_steps: list[TargetStep]) -> list[int]:
     """Names the rule bought at each step: its targets not held after the previous step."""
     counts, previous = [], set()
@@ -141,16 +147,27 @@ def executed_new_names(trades: list, steps: list[TargetStep]) -> list[int]:
     held: dict[str, float] = {}
     peak: dict[str, float] = {}
     new_by_date: dict[pd.Timestamp, int] = {}
-    for trade in sorted(trades, key=lambda t: t.date):
+    total_new = 0
+    for trade in sorted(trades, key=lambda t: _naive(t.date)):
         before = held.get(trade.symbol, 0.0)
         # "Not held" means the ledger sold the whole position (what is left is rounding of the
         # same size order as the position itself), never an absolute share count.
         is_held = before > DUST * peak.get(trade.symbol, 0.0) and before > 0.0
         if trade.qty > 0 and trade.reason == "rebalance" and not is_held:
-            new_by_date[trade.date] = new_by_date.get(trade.date, 0) + 1
+            day = _naive(trade.date)
+            new_by_date[day] = new_by_date.get(day, 0) + 1
+            total_new += 1
         held[trade.symbol] = before + trade.qty
         peak[trade.symbol] = max(peak.get(trade.symbol, 0.0), held[trade.symbol])
-    return [new_by_date.get(step.date, 0) for step in steps]
+    counts = [new_by_date.get(_naive(step.date), 0) for step in steps]
+    if sum(counts) != total_new:
+        # The ledger stamps trades without a time zone and the plan's days may carry one; a
+        # purchase on a day that is not a plan day would silently vanish from the counts.
+        raise ValueError(
+            f"{total_new - sum(counts)} of {total_new} first purchases fall on days that are "
+            "not execution days of the plan"
+        )
+    return counts
 
 
 def plan_matched(

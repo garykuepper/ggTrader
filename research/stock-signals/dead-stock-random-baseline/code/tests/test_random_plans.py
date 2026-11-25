@@ -326,3 +326,17 @@ def test_a_held_stock_that_dies_is_replaced_in_arm_m_through_the_real_eligible_s
                     held_before_death += 1
                     assert len(set(after.targets) - set(before.targets)) == 1  # forced swap
     assert held_before_death > 0
+
+
+def test_new_names_match_when_the_plan_days_carry_a_time_zone_and_the_fills_do_not() -> None:
+    stamp = pd.Timestamp("2019-02-01", tz="UTC")
+    steps = [TargetStep(stamp - pd.Timedelta(days=1), stamp, {})]
+    assert executed_new_names([Fill("2019-02-01", "A", 5), Fill("2019-02-01", "B", 5)], steps) == [
+        2
+    ]
+
+
+def test_a_purchase_on_a_day_that_is_not_a_plan_day_is_refused_not_dropped() -> None:
+    steps = [step_on("2019-02-01")]
+    with pytest.raises(ValueError, match="not execution days"):
+        executed_new_names([Fill("2019-02-01", "A", 5), Fill("2019-02-04", "B", 5)], steps)

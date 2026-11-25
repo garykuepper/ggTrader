@@ -16,7 +16,7 @@ from rb_ledger_run import run_spy
 pytestmark = pytest.mark.study
 
 WINDOW = "holdout"
-DAYS = pd.bdate_range("2018-06-01", "2024-12-31")
+DAYS = pd.bdate_range("2018-06-01", "2024-12-31", tz="UTC")
 SYMBOLS = [f"S{i:02d}" for i in range(16)]
 
 
@@ -119,6 +119,7 @@ def test_a_full_run_writes_both_arms_the_check_and_the_sanity_block(tmp_path: Pa
     assert out["completed"] == {"R": 2, "M": 2, "sanity": 2}
     assert len(out["check_first"]["rule_new_names_by_step"]) == out["n_rebalance_steps"]
     assert out["check_first"]["rule_new_names_by_step"][0] > 0
+    assert sum(out["check_first"]["rule_new_names_by_step"]) == len(SYMBOLS)  # all bought once
     seeds = [rec["seed"] for rec in out["draws"]["R"]]
     assert seeds == [20261125 + 2_000_000, 20261125 + 2_000_001]
 
