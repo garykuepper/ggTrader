@@ -6,3 +6,9 @@ Result: _anchor-A.json, anchor_ok true. All 18 strategy cells and 6 SPY cells re
 the controller compared four fields (after_tax_final, cagr_after_tax, max_drawdown_pct, sharpe) on all 24 cells
 independently of the driver: the largest absolute difference is 0.
 Saved first-test file SHA-256 prefix 2739ce693e1b; headline gaps of the saved window (points a year, worst/middle/best): -7.30 / -2.83 / +1.63.
+
+Data-availability check for the fresh window, 2026-11-24 (read-only; counts and dates only, no returns or scores computed; code commit 8ef8ca07).
+Script: read fresh_inputs.read_inputs("fresh", 1, 1), then the first test's validate_window_inputs; elapsed 10:17, max resident 573,316 kB, exit 0.
+Result: first and last trading day of candidates and SPY both 2000-01-03 and 2004-12-31; SPY missing closes 0; 1,922 candidate columns read from 1998-08-21;
+universe A holds 978 to 1,000 stocks on every day (988 at the first month-end, 996 at the last); no Yahoo drift; false-death audit suspects 0.
+Read-only SQL (release 1): no linked Yahoo series ends on 2004-12-31 (0 rows), so the audit's last-day boundary (window end minus one day) cannot hide a false death.
