@@ -15,7 +15,7 @@
 
 ## How to reproduce
 
-Run from the repository root with a clean tracked tree, one after the other, through the capped-run wrapper (about 25 minutes each; read-only database access):
+Run from the repository root with a clean tracked tree, one after the other, through the capped-run wrapper (the development run took about 25 minutes; the holdout run was not timed; read-only database access):
 
     scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window dev --release-id 1 --crsp-load 1
     scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window holdout --release-id 1 --crsp-load 1
