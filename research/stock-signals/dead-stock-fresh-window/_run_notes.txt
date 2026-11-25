@@ -12,3 +12,10 @@ Script: read fresh_inputs.read_inputs("fresh", 1, 1), then the first test's vali
 Result: first and last trading day of candidates and SPY both 2000-01-03 and 2004-12-31; SPY missing closes 0; 1,922 candidate columns read from 1998-08-21;
 universe A holds 978 to 1,000 stocks on every day (988 at the first month-end, 996 at the last); no Yahoo drift; false-death audit suspects 0.
 Read-only SQL (release 1): no linked Yahoo series ends on 2004-12-31 (0 rows), so the audit's last-day boundary (window end minus one day) cannot hide a false death.
+
+Fresh run (run once), 2026-11-24, after the owner said "execute". Code commit 3277570e; the anchor was produced at 8ef8ca07 (the only changes between them are the anchor result and these notes).
+Command: scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-fresh-window/code/run.py --window fresh --release-id 1 --crsp-load 1
+Source: GNU time -v output of the command. Elapsed (wall clock): 11:51.88. Maximum resident set size: 530,348 kB. Exit status: 0.
+Result: _fresh-A.json (18 strategy cells, 6 SPY cells). Side file results/dead_stock_fresh_window/fresh-A-trades.csv.gz (git-ignored). Claim file results/dead_stock_fresh_window/holdout-A.claim left in place by design.
+Checks read by the controller: window days 2000-01-03 to 2004-12-31, SPY missing closes 0; SPY zero-cost check relative difference 0.0; loss-monotone violations none; one-permno-one-column violations none; false-death audit suspects 0; every cell chain_verified true, no non-positive account value, unpaid tax 0; 59 rebalance steps; 1,922 columns; 448 series ended in the window; file-end censored 0.
+Headline gap, points a year (rule minus SPY, 18.3 bps, low tax), loss 1.0 / 0.5 / 0.0: -18.01 / -12.77 / -7.29. Recomputed by hand from the cells' growth rates (rule -20.28 / -15.04 / -9.56, SPY -2.27): same.
