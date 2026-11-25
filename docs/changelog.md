@@ -3,7 +3,7 @@
 ## 2026-11-24 (dead-stock fresh window)
 
 - Ran the first test's rule (12-1 momentum, top 50, monthly, main list, costs 6.4, 18.3 and 40 bps, both tax sets, loss readings 1.0, 0.5 and 0.0) once on 2000-01-03 to 2004-12-31, a window never run. The same code first reproduced the first test's 2020 to 2024 cells exactly (18 rule cells and 6 SPY cells, four measures each, difference 0), and the fresh run is refused unless that check passed on the same code. At 18.3 bps and the low tax set the rule lost 20.3 percent a year (SPY -2.3) and trailed SPY by 18.0 / 12.8 / 7.3 points a year at loss 1.0 / 0.5 / 0.0; it trailed SPY at all 18 settings, deepest fall 82 percent against 47.5. No label. Report: `research/stock-signals/dead-stock-fresh-window/2026-11-24-dead-stock-fresh-window.md`.
-- New study `research/stock-signals/dead-stock-fresh-window/` (the first test's engine files copied with an `fp_` prefix and pinned by a test; `fresh_inputs.py`, `fresh_compare.py`, driver `run.py` with the check, the run-once claim, a code-binding rule and an untracked-code refusal). Nothing in `src/` changed; the pin count in `tests/scripts/test_verify_pins.py` is now 29; the paper trader stays stopped.
+- New study `research/stock-signals/dead-stock-fresh-window/` (the first test's engine files copied with an `fp_` prefix and pinned by a test; `fresh_inputs.py`, `fresh_compare.py`, driver `run.py` with the check, the run-once claim, a code-binding rule and an untracked-code refusal). Nothing in `src/` changed; the paper trader stays stopped.
 
 ## 2026-11-24 (dead-stock payout rerun)
 
