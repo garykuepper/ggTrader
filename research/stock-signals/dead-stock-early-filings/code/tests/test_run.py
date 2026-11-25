@@ -1821,3 +1821,91 @@ def test_driver_rules_2_to_4_short_form_matches_yield_name_only_never_checked(
         assert df.loc[col, "label"] == "acquisition_type"
         assert df.loc[col, "confidence"] == "name_only"
         assert df.loc[col, "suggested_loss"] == 0.0
+
+
+def test_driver_lab_withdrawal_matches_direct_matcher_on_both_counterexamples(
+    tmp_path: Path,
+) -> None:
+    """Amendment 4 regression: indexed driver lookup agrees with direct matcher on LAB/LABS."""
+    death_day = date(2001, 3, 12)
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            # 16-char 'GREAT PLAINS LAB' prefix-matches 'GREAT PLAINS LABS SERVICES INC'.
+            (
+                "530001",
+                "GREAT PLAINS LABS SERVICES INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/530001/0000530001-01-000001.txt",
+            ),
+            # Per brief amendment 4 (LAB withdrawn), 'NORTH LABS' does NOT match
+            # 'NORTH LABORATORIES INC'.
+            (
+                "530002",
+                "NORTH LABORATORIES INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/530002/0000530002-01-000001.txt",
+            ),
+        ],
+    }
+    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses.update(
+        {
+            early_sec.filing_url("edgar/data/530001/0000530001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="GREAT PLAINS LABS SERVICES INC",
+                cik="0000530001",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/530002/0000530002-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="NORTH LABORATORIES INC",
+                cik="0000530002",
+                items=("Acquisition or disposition of assets",),
+            ),
+        }
+    )
+
+    inputs = _single_window_inputs(
+        [
+            ("GPLB", 53001, "GREAT PLAINS LAB", death_day),
+            ("NLAB", 53002, "NORTH LABS", death_day),
+        ]
+    )
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_lab",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "lab" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "2",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    df = pd.read_csv(out_json.parent / "_pilot_labels.csv").set_index("column")
+    # 16-char prefix match succeeds as name_only (rule 2).
+    assert df.loc["GPLB", "label"] == "acquisition_type"
+    assert df.loc["GPLB", "confidence"] == "name_only"
+    assert df.loc["GPLB", "suggested_loss"] == 0.0
+    # Amendment 4: NORTH LABS does not match NORTH LABORATORIES INC.
+    assert df.loc["NLAB", "label"] == "no_company_match"
+    assert pd.isna(df.loc["NLAB", "suggested_loss"])

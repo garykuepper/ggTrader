@@ -70,7 +70,8 @@ V11_ABBREVIATIONS: dict[str, str] = {
     "INS": "INSURANCE",
 }
 
-# Added short forms from brief amendment 3 rule 3 (expanded on both sides).
+# Added short forms from brief amendment 3 rule 3 (expanded on both sides; LAB withdrawn by
+# amendment 4 so LAB/LABS keep the earlier study's v1.1 behaviour).
 ADDED_ABBREVIATIONS: dict[str, str] = {
     "ENRG": "ENERGY",
     "CPTL": "CAPITAL",
@@ -93,7 +94,6 @@ ADDED_ABBREVIATIONS: dict[str, str] = {
     "SOFTWAR": "SOFTWARE",
     "DEVELOPME": "DEVELOPMENT",
     "PHARMACEUTI": "PHARMACEUTICALS",
-    "LAB": "LABORATORIES",
 }
 
 # Full whole-word abbreviation table (v1.1 base + amendment 3 rule 3 additions).

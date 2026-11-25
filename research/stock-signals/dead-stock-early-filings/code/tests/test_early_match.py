@@ -70,8 +70,8 @@ def test_added_short_forms() -> None:
         "SOFTWAR": ("SOFTWARE", "NORTH SOFTWARE INC"),
         "DEVELOPME": ("DEVELOPMENT", "NORTH DEVELOPMENT CORP"),
         "PHARMACEUTI": ("PHARMACEUTICALS", "NORTH PHARMACEUTICALS INC"),
-        "LAB": ("LABORATORIES", "NORTH LABORATORIES INC"),
     }
+    assert "LAB" not in ABBREVIATIONS
     assert set(ADDED_ABBREVIATIONS) == set(expected)
     assert set(V11_ABBREVIATIONS).isdisjoint(set(ADDED_ABBREVIATIONS))
     assert ABBREVIATIONS == {**V11_ABBREVIATIONS, **ADDED_ABBREVIATIONS}
@@ -283,3 +283,30 @@ def test_tables_are_well_formed() -> None:
     assert all(k == k.upper() and " " not in k for k in PLURAL_TO_SINGULAR)
     assert all(w == w.upper() and " " not in w for w in SUFFIX_WORDS)
     assert all(len(c) == 2 and c.isalpha() and c == c.upper() for c in US_STATE_CODES)
+
+
+def test_lab_withdrawal_matches_earlier_v11_behavior_direct_and_indexed() -> None:
+    """Amendment 4 regression: LAB withdrawn so LAB/LABS match earlier v1.1 behaviour."""
+    roster_16 = "GREAT PLAINS LAB"
+    filer_prefix = "GREAT PLAINS LABS SERVICES INC"
+    assert len(roster_16) == TRUNCATED_NAME_LENGTH
+    assert normalize_name_untrimmed(roster_16) == "GREAT PLAINS LAB"
+    assert normalize_name_untrimmed(filer_prefix) == "GREAT PLAINS LAB SERVICE INC"
+    assert name_matches(roster_16, len(roster_16), filer_prefix)
+    assert classify_match(roster_16, len(roster_16), filer_prefix) == MATCH_RULES_2_TO_4
+
+    # Brief amendment 4 withdraws LAB -> LABORATORIES, keeping the earlier v1.1 rule as-is:
+    # LABS folds to LAB while LABORATORIES folds to LABORATORY, so this pair does not match.
+    roster_labs = "NORTH LABS"
+    filer_laboratories = "NORTH LABORATORIES INC"
+    assert normalize_name(roster_labs) == "NORTH LAB"
+    assert normalize_name(filer_laboratories) == "NORTH LABORATORY"
+    assert not name_matches(roster_labs, len(roster_labs), filer_laboratories)
+    assert classify_match(roster_labs, len(roster_labs), filer_laboratories) is None
+
+    # Direct matcher and indexed lookup agree on both counterexamples.
+    index = RosterNameIndex([roster_16, roster_labs])
+    assert index.match(filer_prefix) == {roster_16}
+    assert index.match_rules(filer_prefix) == {roster_16: MATCH_RULES_2_TO_4}
+    assert index.match(filer_laboratories) == set()
+    assert index.match_rules(filer_laboratories) == {}
