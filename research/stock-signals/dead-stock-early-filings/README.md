@@ -15,6 +15,6 @@
 
 ## How to reproduce
 
-From the repository root with a clean tracked tree and the contact line in `~/.config/ggtrader/sec_contact` (answers are cached, so a rerun makes few or no new requests):
+From the repository root with a clean tracked tree and the contact line in `~/.config/ggtrader/sec_contact` (answers are cached, so a rerun makes few or no new requests). The driver refuses to overwrite a result, so give `--out` in a new empty folder (it writes `_early_labels.csv` beside it) to leave the published files alone:
 
-    scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-early-filings/code/run.py --mode full --release-id 1 --crsp-load 1
+    scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-early-filings/code/run.py --mode full --release-id 1 --crsp-load 1 --out /some/empty/folder/_early.json
