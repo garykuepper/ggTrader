@@ -10,10 +10,14 @@ import numpy as np
 import pandas as pd
 import pytest
 import rb_dead_stock_first_test as fp
-import run
 from rb_ledger_run import run_spy
 
+from ggTrader.utils.study import load_driver, study_dir
+
 pytestmark = pytest.mark.study
+
+# Loaded by path: another study's driver is also called run.py.
+run = load_driver(study_dir(__file__) / "code" / "run.py")
 
 WINDOW = "holdout"
 DAYS = pd.bdate_range("2018-06-01", "2024-12-31", tz="UTC")

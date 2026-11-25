@@ -89,7 +89,7 @@
     },
     {
       "path": "research/stock-signals/dead-stock-random-baseline/code/tests/test_run.py",
-      "sha256": "f15a610fe82937b5b45d16e0449c5cf284bc155c9ba3cd3224a54ae19550c648"
+      "sha256": "03c12f83fbc7142a47159a1b50af4a96b5b6773eca76c0f9bdfb2a95a3ab88e5"
     }
   ],
   "command": {
@@ -127,7 +127,7 @@
   ],
   "reproducible": {
     "status": "PARTLY",
-    "note": "Replay in a scratch clone at git_sha 2f351fd0 (the commit all three results were run on; tracked tree clean, the binding blocks in the result files say dirty only because an earlier window's untracked result file was present). The pinned command runs one window (2020 to 2024, about 20 minutes); the other two are in the README. Each window first reproduces the rule's saved headline results to half a cent. Seeds follow a rule in the brief, so draws repeat exactly. It reads the read-only database, release 1 and CRSP load 1. The result files carry a provenance block copied in after the runs. The three saved input files are pinned above."
+    "note": "Replay in a scratch clone at git_sha 2f351fd0 (the commit all three results were run on; tracked tree clean, the binding blocks in the result files say dirty only because an earlier window's untracked result file was present). The pinned command runs one window (2020 to 2024, about 20 minutes); the other two are in the README. Each window first reproduces the rule's saved headline results to half a cent. Seeds follow a rule in the brief, so draws repeat exactly. It reads the read-only database, release 1 and CRSP load 1. The result files carry a provenance block copied in after the runs. The three saved input files are pinned above. test_run.py was changed after the runs (it now loads the driver by path so the whole study tier runs); no other code differs from the run commit, and its hash in this file is the current one."
   },
   "created_utc": "2026-11-25T17:18:14Z"
 }
