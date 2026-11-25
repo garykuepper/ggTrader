@@ -6,7 +6,7 @@ import io
 import json
 import urllib.error
 import zipfile
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +35,6 @@ def _make_synthetic_inputs(
     """Synthetic early-window panel (warmup + 2000-2001) with deterministic deaths and names."""
     days = pd.bdate_range("1998-06-01", "2001-12-31", tz="UTC")
     t = np.arange(len(days), dtype=float)[:, None]
-    # Higher index -> lower drift so S000..S049 are always top 50 (held_by_rule=True).
     drifts = (n_stocks - np.arange(n_stocks, dtype=float))[None, :] * 1e-4
     prices = 50.0 * np.exp(t * drifts)
     cols = [f"PERMNO-{10000 + i}" for i in range(n_stocks)]
@@ -43,15 +42,12 @@ def _make_synthetic_inputs(
     spy = pd.Series(100.0 * np.exp(t[:, 0] * 2e-4), index=days)
     eligible = pd.DataFrame(True, index=days, columns=cols)
 
-    # Choose which stocks die inside 2000-02..2001-11.
     month_dates = pd.bdate_range("2000-02-15", "2001-11-15", freq="BMS") + pd.Timedelta(days=10)
     span_records: list[dict[str, Any]] = []
     name_records: list[dict[str, Any]] = []
     if n_held_deaths is None:
         dying_plan = [(i, month_dates[i % len(month_dates)]) for i in range(n_deaths)]
     else:
-        # Held deaths die in month 0 while ranked 1..n_held_deaths; indices
-        # [n_held_deaths .. n_held_deaths + 50) stay alive so every later death ranks > 50.
         held_plan = [(i, month_dates[0]) for i in range(n_held_deaths)]
         unheld_start = n_held_deaths + 50
         unheld_count = n_deaths - n_held_deaths
@@ -146,6 +142,7 @@ def _fake_lookup_factory(
                 match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
                 window_filings=(ec.FilingEvidence(filing, header),),
                 all_filing_dates=(last_day,),
+                candidate_ciks=(1000 + num,),
             )
         if kind == 1:
             filing = early_sec.Filing(
@@ -169,6 +166,7 @@ def _fake_lookup_factory(
                 match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
                 window_filings=(ec.FilingEvidence(filing, header),),
                 all_filing_dates=(last_day,),
+                candidate_ciks=(1000 + num,),
             )
         if kind == 2:
             filing = early_sec.Filing(
@@ -178,12 +176,21 @@ def _fake_lookup_factory(
                 filed=last_day,
                 file_path=f"edgar/data/{1000 + num}/0001-00-000003.txt",
             )
+            header = early_sec.FilingHeader(
+                form="25-NSE",
+                filed=last_day,
+                company_name=company_name,
+                cik=1000 + num,
+                former_names=(),
+                items=frozenset(),
+            )
             return ec.CompanyEvidence(
                 cik=1000 + num,
                 company_name=company_name,
                 match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
-                window_filings=(ec.FilingEvidence(filing, None),),
+                window_filings=(ec.FilingEvidence(filing, header),),
                 all_filing_dates=(last_day,),
+                candidate_ciks=(1000 + num,),
             )
         if kind == 3:
             return ec.CompanyEvidence(
@@ -192,6 +199,7 @@ def _fake_lookup_factory(
                 match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
                 window_filings=(),
                 all_filing_dates=(date(last_day.year + 1, last_day.month, 15),),
+                candidate_ciks=(1000 + num,),
             )
         return None
 
@@ -273,7 +281,6 @@ def test_pilot_mode_picks_seeded_rows_and_writes_provenance_and_csv(tmp_path: Pa
     assert len(csv_a) == 10
     assert list(csv_a["permno"]) == list(csv_b["permno"])
 
-    # Verify exact seeded shuffle order over permnos.
     all_permnos = sorted(inputs["span_rows"]["permno"].tolist())
     expected_idx = np.random.default_rng(20261125).permutation(len(all_permnos))[:10]
     assert list(csv_a["permno"]) == [all_permnos[i] for i in expected_idx]
@@ -288,7 +295,12 @@ def test_pilot_mode_picks_seeded_rows_and_writes_provenance_and_csv(tmp_path: Pa
     assert payload["roster_counts"]["selected_rows"] == 10
     assert payload["summary"]["total"] == 10
     assert sum(payload["summary"]["by_label"].values()) == 10
-    assert "sec_requests" in payload
+    assert set(payload["summary"]["by_label"]) == set(ec.REGISTERED_LABELS)
+    # Minor finding: report fulfilled fetches and recorded 404s separately, not "requests made".
+    assert "sec_fetches" in payload
+    assert "fulfilled_fetches" in payload["sec_fetches"]
+    assert "recorded_not_found" in payload["sec_fetches"]
+    assert "network_requests" not in payload["sec_fetches"]
     assert "provenance" in payload
     prov = payload["provenance"]
     assert prov["release_id"] == 1
@@ -316,7 +328,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
         str(tmp_path / "_pilot.json"),
     ]
 
-    # Wrong release_id.
     assert (
         run.main(
             [
@@ -336,7 +347,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
         == run.EXIT_REFUSED
     )
 
-    # Wrong crsp_load.
     assert (
         run.main(
             [
@@ -356,7 +366,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
         == run.EXIT_REFUSED
     )
 
-    # Non-positive pilot size.
     assert (
         run.main(
             [
@@ -378,7 +387,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
         == run.EXIT_REFUSED
     )
 
-    # Dirty tracked tree.
     assert (
         run.main(
             base_args,
@@ -389,7 +397,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
         == run.EXIT_REFUSED
     )
 
-    # Yahoo drift in inputs.
     def drifted(_args: Any) -> dict[str, Any]:
         copy = dict(inputs)
         copy["data_provenance"] = {
@@ -409,7 +416,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
     assert not (tmp_path / "_pilot.json").exists()
     assert not (tmp_path / "_pilot_labels.csv").exists()
 
-    # Existing JSON file refuses overwrite.
     (tmp_path / "_pilot.json").write_text("{}", encoding="utf-8")
     assert (
         run.main(
@@ -422,7 +428,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
     )
     (tmp_path / "_pilot.json").unlink()
 
-    # Existing CSV file also refuses overwrite.
     (tmp_path / "_pilot_labels.csv").write_text("column\n", encoding="utf-8")
     assert (
         run.main(
@@ -436,7 +441,6 @@ def test_refusals_wrong_pins_dirty_tree_existing_output_and_drift(tmp_path: Path
 
 
 def test_full_mode_roster_check_exits_3_on_mismatch_and_passes_on_251_33(tmp_path: Path) -> None:
-    # Mismatch: only 10 deaths -> exit 3, no files written, no SEC lookup called.
     small_inputs = _make_synthetic_inputs(n_stocks=20, n_deaths=10)
     called = False
 
@@ -465,7 +469,6 @@ def test_full_mode_roster_check_exits_3_on_mismatch_and_passes_on_251_33(tmp_pat
     assert not (tmp_path / "bad_full.json").exists()
     assert not (tmp_path / "_early_labels.csv").exists()
 
-    # Exact 251 deaths and 33 held_by_rule -> exit 0 and writes _early.json + _early_labels.csv.
     exact_inputs = _make_synthetic_inputs(n_stocks=310, n_deaths=251, n_held_deaths=33)
     out_full = tmp_path / "full" / "_early.json"
     code_ok = run.main(
@@ -509,6 +512,46 @@ def _make_master_zip(rows: list[tuple[str, str, str, str, str]]) -> bytes:
     return buf.getvalue()
 
 
+def _explicit_quarter_responses(
+    start_q: tuple[int, int],
+    end_q: tuple[int, int],
+    per_quarter_rows: dict[tuple[int, int], list[tuple[str, str, str, str, str]]],
+) -> dict[str, bytes]:
+    """Build an explicit master.zip map for EVERY required quarter (no wildcard fallback)."""
+    quarters = early_sec.quarters_covering(
+        date(start_q[0], (start_q[1] - 1) * 3 + 1, 1),
+        date(end_q[0], (end_q[1] - 1) * 3 + 1, 1),
+    )
+    return {
+        early_sec.master_index_url(y, q): _make_master_zip(per_quarter_rows.get((y, q), []))
+        for y, q in quarters
+    }
+
+
+def _header_bytes(
+    *,
+    form: str,
+    filed_yyyymmdd: str,
+    company: str,
+    cik: str,
+    items: tuple[str, ...] = (),
+    former_names: tuple[str, ...] = (),
+) -> bytes:
+    lines = [
+        "<SEC-HEADER>",
+        f"CONFORMED SUBMISSION TYPE:\t{form}",
+        f"FILED AS OF DATE:\t\t{filed_yyyymmdd}",
+        *[f"ITEM INFORMATION:\t\t{item}" for item in items],
+        f"COMPANY CONFORMED NAME:\t\t{company}",
+        f"CENTRAL INDEX KEY:\t\t{cik}",
+        *[f"FORMER CONFORMED NAME:\t\t{fn}" for fn in former_names],
+        "</SEC-HEADER>",
+        "<DOCUMENT>",
+        "body",
+    ]
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
 class _FakeResponse:
     def __init__(self, body: bytes) -> None:
         self._buf = io.BytesIO(body)
@@ -525,183 +568,400 @@ class _FakeResponse:
         return None
 
 
-def test_sec_lookup_streams_indexes_fetches_headers_handles_former_names_and_caches(
-    tmp_path: Path,
-) -> None:
-    """Exercise SecLookup end-to-end against an in-memory fake opener (zero real network)."""
-    header_alpha = (
-        "<SEC-HEADER>\n"
-        "CONFORMED SUBMISSION TYPE:\t8-K\n"
-        "FILED AS OF DATE:\t\t20010315\n"
-        "ITEM INFORMATION:\t\tAcquisition or disposition of assets\n"
-        "COMPANY CONFORMED NAME:\t\tALPHA WIDGET CORP\n"
-        "CENTRAL INDEX KEY:\t\t0000100001\n"
-        "FORMER CONFORMED NAME:\t\tOLD BETA SYSTEMS INC\n"
-        "</SEC-HEADER>\n<DOCUMENT>\nbody\n"
-    ).encode("utf-8")
-    header_eps_other = (
-        "<SEC-HEADER>\n"
-        "CONFORMED SUBMISSION TYPE:\t8-K\n"
-        "FILED AS OF DATE:\t\t20010316\n"
-        "ITEM INFORMATION:\t\tOther events\n"
-        "COMPANY CONFORMED NAME:\t\tEPSILON NEWCO CORP\n"
-        "CENTRAL INDEX KEY:\t\t0000100004\n"
-        "FORMER CONFORMED NAME:\t\tPREDECESSOR EPSILON INC\n"
-        "</SEC-HEADER>\n<DOCUMENT>\nbody\n"
-    ).encode("utf-8")
-    header_eps_pred = (
-        "<SEC-HEADER>\n"
-        "CONFORMED SUBMISSION TYPE:\t8-K\n"
-        "FILED AS OF DATE:\t\t20010318\n"
-        "ITEM INFORMATION:\t\tBankruptcy or receivership\n"
-        "COMPANY CONFORMED NAME:\t\tPREDECESSOR EPSILON INC\n"
-        "CENTRAL INDEX KEY:\t\t0000100005\n"
-        "</SEC-HEADER>\n<DOCUMENT>\nbody\n"
-    ).encode("utf-8")
+def _strict_opener(responses: dict[str, bytes]) -> Any:
+    """Strict fake opener: returns 404 for ANY URL not explicitly listed in ``responses``."""
 
-    # Quarterly archives: Q1 2001 has ALPHA 8-K, GAMMA 8-K (404 header), DELTA 10-Q,
-    # EPSILON NEWCO 8-K (other events + former name), PREDECESSOR EPSILON 8-K (bankruptcy);
-    # Q1 2006 has DELTA 10-K (>180d kept filing); other quarters are empty valid archives.
-    empty_zip = _make_master_zip([])
-    q1_2001_zip = _make_master_zip(
-        [
-            (
-                "100001",
-                "ALPHA WIDGET CORP",
-                "8-K",
-                "2001-03-15",
-                "edgar/data/100001/0000100001-01-000001.txt",
-            ),
-            (
-                "100002",
-                "GAMMA MISSING HDR INC",
-                "8-K",
-                "2001-03-20",
-                "edgar/data/100002/0000100002-01-000001.txt",
-            ),
-            (
-                "100003",
-                "DELTA KEPT CORP",
-                "10-Q",
-                "2001-03-10",
-                "edgar/data/100003/0000100003-01-000001.txt",
-            ),
-            (
-                "100004",
-                "EPSILON NEWCO CORP",
-                "8-K",
-                "2001-03-16",
-                "edgar/data/100004/0000100004-01-000001.txt",
-            ),
-            (
-                "100005",
-                "PREDECESSOR EPSILON INC",
-                "8-K",
-                "2001-03-18",
-                "edgar/data/100005/0000100005-01-000001.txt",
-            ),
-        ]
-    )
-    q1_2006_zip = _make_master_zip(
-        [
-            (
-                "100003",
-                "DELTA KEPT CORP",
-                "10-K",
-                "2006-03-15",
-                "edgar/data/100003/0000100003-06-000001.txt",
-            ),
-        ]
-    )
-
-    responses: dict[str, bytes] = {
-        early_sec.master_index_url(2001, 1): q1_2001_zip,
-        early_sec.master_index_url(2006, 1): q1_2006_zip,
-        early_sec.filing_url("edgar/data/100001/0000100001-01-000001.txt"): header_alpha,
-        early_sec.filing_url("edgar/data/100004/0000100004-01-000001.txt"): header_eps_other,
-        early_sec.filing_url("edgar/data/100005/0000100005-01-000001.txt"): header_eps_pred,
-    }
-    missing_url = early_sec.filing_url("edgar/data/100002/0000100002-01-000001.txt")
-
-    def fake_opener(req: Any, timeout: float = 30.0) -> _FakeResponse:
+    def opener(req: Any, timeout: float = 30.0) -> _FakeResponse:
         url = req.full_url
-        if url == missing_url:
-            raise urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)  # type: ignore[arg-type]
         if url in responses:
             return _FakeResponse(responses[url])
-        if url.endswith("/master.zip"):
-            return _FakeResponse(empty_zip)
         raise urllib.error.HTTPError(url, 404, "Not Found", hdrs=None, fp=None)  # type: ignore[arg-type]
 
-    roster = pd.DataFrame(
-        {
-            "column": ["A", "B", "G", "D", "E"],
-            "permno": pd.Series([1, 2, 3, 4, 5], dtype="Int64"),
-            "symbol": ["A", "B", "G", "D", "E"],
-            "last_bar": pd.to_datetime(
-                ["2001-03-10", "2001-03-12", "2001-03-15", "2001-03-10", "2001-03-14"]
-            ),
-            "decision_date": pd.to_datetime(
-                ["2001-02-28", "2001-02-28", "2001-02-28", "2001-02-28", "2001-02-28"]
-            ),
-            "rank_band": ["1-50", "1-50", "51-150", "51-150", "151-500"],
-            "held_by_rule": [True, True, False, False, False],
-        }
-    )
-    names = roster.copy()
-    names["company_name"] = [
-        "ALPHA WIDGET INC",
-        "OLD BETA SYSTEMS CORP",  # Matches ALPHA's FORMER CONFORMED NAME in Pass 1/2!
-        "GAMMA MISSING HDR CORP",  # 404 header -> name_only, no_event_found
-        "DELTA KEPT INC",  # 10-K in 2006 -> kept_filing
-        "EPSILON NEWCO INC",  # Own header former name -> Pass 2 finds CIK 100005 bankruptcy!
-    ]
-    names["name_source"] = "mcgill"
-    names["exchcd"] = pd.Series([1, 3, 1, 3, 1], dtype="Int64")
+    return opener
+
+
+def test_missing_required_master_index_quarter_stops_run_with_exit_4_live_and_cached(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Missing required quarter (both live 404 and cached 404) stops run.main with exit 4."""
+    inputs = _make_synthetic_inputs(n_stocks=10, n_deaths=2)
+    # Supply every quarter from 2000 Q1..2006 Q4 EXCEPT 2003 Q2 (which is missing -> 404).
+    responses = _explicit_quarter_responses((2000, 1), (2006, 4), {})
+    missing_url = early_sec.master_index_url(2003, 2)
+    del responses[missing_url]
 
     cache_dir = tmp_path / "sec_cache"
     client1 = early_sec.EarlySecClient(
         user_agent=DUMMY_CONTACT,
         cache_dir=cache_dir,
         min_interval=0.0,
-        opener=fake_opener,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out1 = tmp_path / "run1" / "_pilot.json"
+    code1 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "2",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out1),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client1,
+        git_dirty=lambda: False,
+    )
+    err1 = capsys.readouterr().err
+    assert code1 == run.EXIT_MISSING_INDEX
+    assert "2003" in err1 and "QTR2" in err1
+    assert DUMMY_CONTACT not in err1 and DUMMY_EMAIL not in err1
+    assert not out1.exists()
+    assert not (out1.parent / "_pilot_labels.csv").exists()
+    assert client1.is_not_found(missing_url)
+
+    # Second run sees the cached 404 marker: still exits 4 with zero new fulfilled fetches.
+    client2 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=cache_dir,
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out2 = tmp_path / "run2" / "_pilot.json"
+    code2 = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "2",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out2),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client2,
+        git_dirty=lambda: False,
+    )
+    err2 = capsys.readouterr().err
+    assert code2 == run.EXIT_MISSING_INDEX
+    assert "2003" in err2 and "QTR2" in err2
+    assert DUMMY_CONTACT not in err2 and DUMMY_EMAIL not in err2
+    assert client2.network_fetches == 0
+    assert client2.not_found_hits == 1
+    assert not out2.exists()
+
+
+def test_sec_lookup_cik_binding_pass_b_ambiguity_unreadability_and_precedence(
+    tmp_path: Path,
+) -> None:
+    """Exercise SecLookup end-to-end with strict per-quarter archives (no wildcard fallback)."""
+    last_day = date(2001, 3, 10)
+    day_180 = last_day + timedelta(days=180)  # 2001-09-06 (Q3)
+    day_181 = last_day + timedelta(days=181)  # 2001-09-07 (Q3)
+
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2001, 1): [
+            # 1. Late-discovered CIK 100001: March 8-K indexed under OLD NAME in Q1;
+            # roster name LATE RENAMED CORP first appears in Q2! Pass B must recover this 8-K.
+            (
+                "100001",
+                "VERY OLD PREDECESSOR INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100001/0000100001-01-000001.txt",
+            ),
+            # 2. Header 404 -> evidence_unresolved
+            (
+                "100002",
+                "HDR404 CORP",
+                "8-K",
+                "2001-03-20",
+                "edgar/data/100002/0000100002-01-000001.txt",
+            ),
+            # 3. Unreadable 200 header body (garbage text) -> evidence_unresolved
+            (
+                "100003",
+                "UNREADABLE CORP",
+                "8-K",
+                "2001-03-20",
+                "edgar/data/100003/0000100003-01-000001.txt",
+            ),
+            # 4. Header CIK mismatch -> evidence_unresolved
+            (
+                "100004",
+                "BADCIK CORP",
+                "8-K",
+                "2001-03-20",
+                "edgar/data/100004/0000100004-01-000001.txt",
+            ),
+            # 5. Header form mismatch -> evidence_unresolved
+            (
+                "100005",
+                "BADFORM CORP",
+                "8-K",
+                "2001-03-20",
+                "edgar/data/100005/0000100005-01-000001.txt",
+            ),
+            # 6. Ambiguous match: two CIKs share cleaned name "DUPLICATE"; only wrong CIK has 8-K.
+            (
+                "100006",
+                "DUPLICATE INC",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100006/0000100006-01-000001.txt",
+            ),
+            (
+                "100007",
+                "DUPLICATE CORP",
+                "10-Q",
+                "2001-03-15",
+                "edgar/data/100007/0000100007-01-000001.txt",
+            ),
+            # 7. Acquisition + day 181 filing -> kept_filing (evidence still notes acquisition)
+            (
+                "100008",
+                "ACQ KEPT CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100008/0000100008-01-000001.txt",
+            ),
+            # 8. Acquisition + day 180 filing -> acquisition_type (suggested_loss == 0.0)
+            (
+                "100009",
+                "ACQ DAY180 CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100009/0000100009-01-000001.txt",
+            ),
+            # 9. Bankruptcy + day 181 filing + unresolved 404 8-K -> bankruptcy wins
+            (
+                "100010",
+                "BK KEPT CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100010/0000100010-01-000001.txt",
+            ),
+            (
+                "100010",
+                "BK KEPT CORP",
+                "8-K",
+                "2001-03-18",
+                "edgar/data/100010/0000100010-01-000002.txt",
+            ),
+            # 10. Former name in header must NOT substitute another CIK or match a different stock.
+            (
+                "100011",
+                "OTHER FILER CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/100011/0000100011-01-000001.txt",
+            ),
+        ],
+        (2001, 2): [
+            # CIK 100001 first appears under the roster name in Q2!
+            (
+                "100001",
+                "LATE RENAMED CORP",
+                "10-Q",
+                "2001-05-10",
+                "edgar/data/100001/0000100001-01-000002.txt",
+            ),
+        ],
+        (2001, 3): [
+            (
+                "100008",
+                "ACQ KEPT CORP",
+                "10-Q",
+                day_181.isoformat(),
+                "edgar/data/100008/0000100008-01-000002.txt",
+            ),
+            (
+                "100009",
+                "ACQ DAY180 CORP",
+                "10-Q",
+                day_180.isoformat(),
+                "edgar/data/100009/0000100009-01-000002.txt",
+            ),
+            (
+                "100010",
+                "BK KEPT CORP",
+                "10-Q",
+                day_181.isoformat(),
+                "edgar/data/100010/0000100010-01-000003.txt",
+            ),
+        ],
+    }
+
+    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses.update(
+        {
+            early_sec.filing_url("edgar/data/100001/0000100001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="VERY OLD PREDECESSOR INC",
+                cik="0000100001",
+                items=("Acquisition or disposition of assets",),
+            ),
+            # 100002 intentionally omitted -> 404
+            early_sec.filing_url("edgar/data/100003/0000100003-01-000001.txt"): (
+                b"plain text garbage without any SGML header fields\n"
+            ),
+            early_sec.filing_url("edgar/data/100004/0000100004-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010320",
+                company="WRONG COMPANY",
+                cik="0000999999",
+                items=("Bankruptcy or receivership",),
+            ),
+            early_sec.filing_url("edgar/data/100005/0000100005-01-000001.txt"): _header_bytes(
+                form="10-K",
+                filed_yyyymmdd="20010320",
+                company="BADFORM CORP",
+                cik="0000100005",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/100006/0000100006-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="DUPLICATE INC",
+                cik="0000100006",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/100008/0000100008-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="ACQ KEPT CORP",
+                cik="0000100008",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/100009/0000100009-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="ACQ DAY180 CORP",
+                cik="0000100009",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/100010/0000100010-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="BK KEPT CORP",
+                cik="0000100010",
+                items=("Bankruptcy or receivership",),
+            ),
+            # 100010-01-000002 intentionally omitted -> 404 (still beaten by resolved bankruptcy!)
+            early_sec.filing_url("edgar/data/100011/0000100011-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="OTHER FILER CORP",
+                cik="0000100011",
+                items=("Acquisition or disposition of assets",),
+                former_names=("FORMER ONLY STOCK INC",),
+            ),
+        }
+    )
+
+    spec = [
+        ("LATE", 1, "LATE RENAMED INC"),
+        ("H404", 2, "HDR404 INC"),
+        ("UNRD", 3, "UNREADABLE INC"),
+        ("BCIK", 4, "BADCIK INC"),
+        ("BFRM", 5, "BADFORM INC"),
+        ("AMBG", 6, "DUPLICATE LLC"),
+        ("K181", 7, "ACQ KEPT INC"),
+        ("A180", 8, "ACQ DAY180 INC"),
+        ("BKKP", 9, "BK KEPT INC"),
+        ("OTHR", 10, "OTHER FILER INC"),
+        ("FRMR", 11, "FORMER ONLY STOCK CORP"),
+    ]
+    roster = pd.DataFrame(
+        [
+            {
+                "column": col,
+                "permno": p,
+                "symbol": col,
+                "last_bar": pd.Timestamp(last_day),
+                "decision_date": pd.Timestamp("2001-02-28"),
+                "rank_band": "1-50",
+                "held_by_rule": True,
+            }
+            for col, p, _name in spec
+        ]
+    )
+    roster["permno"] = roster["permno"].astype("Int64")
+    names = roster.copy()
+    names["company_name"] = [name for _col, _p, name in spec]
+    names["name_source"] = "mcgill"
+    names["exchcd"] = pd.Series([1] * len(spec), dtype="Int64")
+
+    cache_dir = tmp_path / "sec_cache"
+    client1 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=cache_dir,
+        min_interval=0.0,
+        opener=_strict_opener(responses),
         sleep=lambda _s: None,
     )
     lookup1 = run.SecLookup(client1, names)
     classified = ec.classify_roster(roster, names, lookup1).set_index("column")
 
-    assert classified.loc["A", "label"] == "acquisition_type"
-    assert classified.loc["A", "confidence"] == "checked"
-    assert classified.loc["A", "suggested_loss"] == 0.0
+    # 1. Late-discovered CIK 100001 recovers Q1 March notice via Pass B!
+    assert classified.loc["LATE", "label"] == "acquisition_type"
+    assert classified.loc["LATE", "confidence"] == "checked"
+    assert classified.loc["LATE", "suggested_loss"] == 0.0
 
-    # B matched via ALPHA's FORMER CONFORMED NAME -> former_name tier, never checked.
-    assert classified.loc["B", "label"] == "acquisition_type"
-    assert classified.loc["B", "confidence"] == "former_name"
-    assert classified.loc["B", "suggested_loss"] == 0.0
+    # 2-5. Every header failure yields evidence_unresolved with explicit reason, no suggested loss.
+    assert classified.loc["H404", "label"] == "evidence_unresolved"
+    assert "header_not_found" in classified.loc["H404", "evidence"]
+    assert classified.loc["UNRD", "label"] == "evidence_unresolved"
+    assert "header_unreadable" in classified.loc["UNRD", "evidence"]
+    assert classified.loc["BCIK", "label"] == "evidence_unresolved"
+    assert "header_cik_mismatch" in classified.loc["BCIK", "evidence"]
+    assert classified.loc["BFRM", "label"] == "evidence_unresolved"
+    assert "header_form_mismatch" in classified.loc["BFRM", "evidence"]
 
-    # G had a 404 filing header -> stays name_only, no_event_found.
-    assert classified.loc["G", "label"] == "no_event_found"
-    assert classified.loc["G", "confidence"] == "name_only"
+    # 6. Multiple CIKs -> ambiguous_match (never resolves by event availability).
+    assert classified.loc["AMBG", "label"] == "ambiguous_match"
+    assert "2 CIKs" in classified.loc["AMBG", "evidence"]
+    assert pd.isna(classified.loc["AMBG", "suggested_loss"])
 
-    # D filed a 10-K in 2006 -> kept_filing.
-    assert classified.loc["D", "label"] == "kept_filing"
-    assert classified.loc["D", "confidence"] == "name_only"
+    # 7. Acquisition + day 181 -> kept_filing (no suggested loss, evidence records notice).
+    assert classified.loc["K181", "label"] == "kept_filing"
+    assert pd.isna(classified.loc["K181", "suggested_loss"])
+    assert "acquisition_type notice" in classified.loc["K181", "evidence"]
+    assert "acquisition or disposition of assets" in classified.loc["K181", "evidence"]
 
-    # E matched predecessor CIK 100005 in Pass 2 via its own header's former name -> former_name.
-    assert classified.loc["E", "label"] == "bankruptcy"
-    assert classified.loc["E", "confidence"] == "former_name"
-    assert pd.isna(classified.loc["E", "suggested_loss"])
+    # 8. Acquisition + day 180 -> acquisition_type with 0.0 suggested loss.
+    assert classified.loc["A180", "label"] == "acquisition_type"
+    assert classified.loc["A180", "suggested_loss"] == 0.0
+
+    # 9. Resolved bankruptcy outranks both kept_filing and unresolved 404 header.
+    assert classified.loc["BKKP", "label"] == "bankruptcy"
+    assert classified.loc["BKKP", "confidence"] == "checked"
+    assert pd.isna(classified.loc["BKKP", "suggested_loss"])
+
+    # 10-11. Former-name second pass is dropped: FRMR is no_company_match (not OTHER FILER's CIK).
+    assert classified.loc["OTHR", "label"] == "acquisition_type"
+    assert classified.loc["FRMR", "label"] == "no_company_match"
+    assert pd.isna(classified.loc["FRMR", "suggested_loss"])
 
     stats1 = lookup1.stats()
-    assert stats1["network_requests"] > 0
-    assert stats1["not_found_recorded"] == 1
+    assert stats1["fulfilled_fetches"] > 0
+    assert stats1["recorded_not_found"] == 2  # H404 + BKKP's second 8-K
 
-    # Second run against the same cache_dir makes zero network requests (even for the 404).
+    # Second run against the same cache_dir makes zero new network fetches.
     client2 = early_sec.EarlySecClient(
         user_agent=DUMMY_CONTACT,
         cache_dir=cache_dir,
         min_interval=0.0,
-        opener=fake_opener,
+        opener=_strict_opener(responses),
         sleep=lambda _s: None,
     )
     lookup2 = run.SecLookup(client2, names)
@@ -709,5 +969,18 @@ def test_sec_lookup_streams_indexes_fetches_headers_handles_former_names_and_cac
     assert list(classified2["label"]) == list(classified["label"])
     assert list(classified2["confidence"]) == list(classified["confidence"])
     stats2 = lookup2.stats()
-    assert stats2["network_requests"] == 0
-    assert stats2["not_found_cache_hits"] == 1
+    assert stats2["fulfilled_fetches"] == 0
+    assert stats2["not_found_cache_hits"] == 2
+
+    # Verify strictness: removing ONE unreferenced quarter (2004 Q3) MUST fail loudly.
+    incomplete_responses = dict(responses)
+    del incomplete_responses[early_sec.master_index_url(2004, 3)]
+    client3 = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "incomplete_cache",
+        min_interval=0.0,
+        opener=_strict_opener(incomplete_responses),
+        sleep=lambda _s: None,
+    )
+    with pytest.raises(run.MissingMasterIndexError, match="2004 QTR3"):
+        run.SecLookup(client3, names)

@@ -598,15 +598,30 @@ def test_delisting_item_3_01_and_label_priority_order() -> None:
 
 def test_classify_company_events_follows_registered_label_order() -> None:
     last_bar = pd.Timestamp("2004-08-25")
-    later_filing = [date(2005, 4, 1)]  # > 180 days after last_bar
+    day_180 = [date(2005, 2, 21)]  # exactly 180 days after last_bar -> does not qualify
+    day_181 = [date(2005, 2, 22)]  # 181 days after last_bar -> qualifies for kept_filing
     post_date = date(2004, 9, 1)
 
+    # Order (amendment 2): ambiguous_match > bankruptcy > evidence_unresolved > kept_filing
+    # > acquisition_type > delisting_notice_only > no_event_found.
+    assert (
+        classify_company_events(
+            [(post_date, {"1.03"})],
+            has_form25=True,
+            filing_dates=day_181,
+            last_bar=last_bar,
+            ambiguous_match=True,
+            evidence_unresolved=True,
+        )
+        == "ambiguous_match"
+    )
     assert (
         classify_company_events(
             [(post_date, {"1.03", "2.01"})],
             has_form25=True,
-            filing_dates=later_filing,
+            filing_dates=day_181,
             last_bar=last_bar,
+            evidence_unresolved=True,
         )
         == "bankruptcy"
     )
@@ -614,7 +629,37 @@ def test_classify_company_events_follows_registered_label_order() -> None:
         classify_company_events(
             [(post_date, {"2.01"})],
             has_form25=True,
-            filing_dates=later_filing,
+            filing_dates=day_181,
+            last_bar=last_bar,
+            evidence_unresolved=True,
+        )
+        == "evidence_unresolved"
+    )
+    # kept_filing (day 181) outranks acquisition_type and delisting_notice_only.
+    assert (
+        classify_company_events(
+            [(post_date, {"2.01"})],
+            has_form25=True,
+            filing_dates=day_181,
+            last_bar=last_bar,
+        )
+        == "kept_filing"
+    )
+    assert (
+        classify_company_events(
+            [(post_date, {"other events"})],
+            has_form25=True,
+            filing_dates=day_181,
+            last_bar=last_bar,
+        )
+        == "kept_filing"
+    )
+    # Day 180 does not qualify as kept_filing, so acquisition_type and delisting_notice_only win.
+    assert (
+        classify_company_events(
+            [(post_date, {"2.01"})],
+            has_form25=True,
+            filing_dates=day_180,
             last_bar=last_bar,
         )
         == "acquisition_type"
@@ -623,19 +668,10 @@ def test_classify_company_events_follows_registered_label_order() -> None:
         classify_company_events(
             [(post_date, {"other events"})],
             has_form25=True,
-            filing_dates=later_filing,
+            filing_dates=day_180,
             last_bar=last_bar,
         )
         == "delisting_notice_only"
-    )
-    assert (
-        classify_company_events(
-            [(post_date, {"other events"})],
-            has_form25=False,
-            filing_dates=later_filing,
-            last_bar=last_bar,
-        )
-        == "kept_filing"
     )
     assert (
         classify_company_events(

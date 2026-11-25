@@ -21,10 +21,12 @@ import pandas as pd
 PILOT_SEED = 20261125
 
 REGISTERED_LABELS: tuple[str, ...] = (
+    early_sec.LABEL_AMBIGUOUS_MATCH,
     early_sec.LABEL_BANKRUPTCY,
+    early_sec.LABEL_EVIDENCE_UNRESOLVED,
+    early_sec.LABEL_KEPT_FILING,
     early_sec.LABEL_ACQUISITION_TYPE,
     early_sec.LABEL_DELISTING_NOTICE_ONLY,
-    early_sec.LABEL_KEPT_FILING,
     early_sec.LABEL_NO_EVENT_FOUND,
     early_sec.LABEL_NO_COMPANY_MATCH,
     early_sec.LABEL_NAME_UNKNOWN,
@@ -72,21 +74,23 @@ _CANONICAL_RANK_BANDS: tuple[str, ...] = tuple(band for band, _, _ in early_rost
 
 @dataclass(frozen=True, slots=True)
 class FilingEvidence:
-    """One in-window event filing (8-K / 8-K/A / Form 25) and its optional parsed header."""
+    """One in-window event/notice filing and its parsed header or fetch/parse issue."""
 
     filing: early_sec.Filing
     header: early_sec.FilingHeader | None = None
+    issue: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class CompanyEvidence:
     """SEC lookup evidence returned for one named roster row."""
 
-    cik: int
+    cik: int | None
     company_name: str
     match_confidence: str
     window_filings: tuple[FilingEvidence, ...] = ()
     all_filing_dates: tuple[date, ...] = ()
+    candidate_ciks: tuple[int, ...] = ()
 
 
 SecLookupFn = Callable[[str, date], CompanyEvidence | None]
@@ -120,6 +124,59 @@ def exchange_label(exchcd: Any, exchange_text: Any = None) -> str:
         return "unknown"
     code = int(exchcd)
     return EXCHANGE_NAMES.get(code, f"exchcd_{code}")
+
+
+def check_header_complete(header: early_sec.FilingHeader | None) -> str | None:
+    """Validate that a parsed SGML header carries form type, filed date, and CIK.
+
+    Returns ``None`` when complete, or a short contact-free issue string describing which
+    required header fields are missing. Kept separate from ``early_sec``'s amendment-1 rule
+    (undated numeric items do not count) so both checks remain visible.
+    """
+    if header is None:
+        return "header_unavailable"
+    missing: list[str] = []
+    if header.form is None or not header.form.strip():
+        missing.append("form")
+    if header.filed is None:
+        missing.append("filed_date")
+    if header.cik is None:
+        missing.append("cik")
+    if missing:
+        return f"header_unreadable: missing {', '.join(missing)}"
+    return None
+
+
+def validate_filing_evidence(ev: FilingEvidence, company_cik: int) -> str | None:
+    """Bind one in-window filing and its header to ``company_cik``, index form, and index date.
+
+    Returns ``None`` when the evidence is complete and consistently bound, or a short
+    contact-free reason string when the evidence is unresolved.
+    """
+    if ev.filing.cik != company_cik:
+        return f"filing_cik_mismatch: index {ev.filing.cik} != company {company_cik}"
+    if ev.issue:
+        return ev.issue
+    completeness_issue = check_header_complete(ev.header)
+    if completeness_issue is not None:
+        return completeness_issue
+    assert ev.header is not None
+    assert ev.header.cik is not None
+    assert ev.header.form is not None
+    assert ev.header.filed is not None
+
+    if ev.header.cik != ev.filing.cik:
+        return f"header_cik_mismatch: header {ev.header.cik} != index {ev.filing.cik}"
+    if ev.header.form.strip().upper() != ev.filing.form.strip().upper():
+        return f"header_form_mismatch: header {ev.header.form} != index {ev.filing.form}"
+    index_date = _as_date(ev.filing.filed)
+    header_date = _as_date(ev.header.filed)
+    if header_date != index_date:
+        return (
+            f"header_date_mismatch: header {header_date.isoformat()} != index "
+            f"{index_date.isoformat()}"
+        )
+    return None
 
 
 def merge_names(roster: pd.DataFrame, names: pd.DataFrame | None) -> pd.DataFrame:
@@ -262,69 +319,131 @@ def _classify_one(
     if evidence is None:
         return early_sec.LABEL_NO_COMPANY_MATCH, "", "", float("nan")
 
+    distinct_ciks = sorted(set(evidence.candidate_ciks))
+    if len(distinct_ciks) > 1 or evidence.cik is None:
+        label = early_sec.classify_company_events(
+            [],
+            has_form25=False,
+            filing_dates=(),
+            last_bar=last_day,
+            ambiguous_match=True,
+        )
+        n_ciks = len(distinct_ciks)
+        ciks_text = ", ".join(str(c) for c in distinct_ciks)
+        evidence_str = f"ambiguous_match: {n_ciks} CIKs ({ciks_text})"
+        return label, "", evidence_str, float("nan")
+
+    company_cik = evidence.cik
     in_window = [
         ev for ev in evidence.window_filings if _in_window(_as_date(ev.filing.filed), last_day)
     ]
-    eight_k_evs = [ev for ev in in_window if ev.filing.form.upper() in early_sec.FORM8K_FORMS]
-    form25_evs = [ev for ev in in_window if ev.filing.form.upper() in early_sec.FORM25_FORMS]
+    relevant_evs = [
+        ev for ev in in_window if ev.filing.form.upper() in early_sec.RELEVANT_EVENT_FORMS
+    ]
 
-    header_entries = [ev.header for ev in eight_k_evs if ev.header is not None]
+    valid_eight_k_evs: list[FilingEvidence] = []
+    valid_form25_evs: list[FilingEvidence] = []
+    unresolved_entries: list[tuple[FilingEvidence, str]] = []
+
+    for ev in relevant_evs:
+        reason = validate_filing_evidence(ev, company_cik)
+        if reason is not None:
+            unresolved_entries.append((ev, reason))
+            continue
+        form_upper = ev.filing.form.upper()
+        if form_upper in early_sec.FORM8K_FORMS:
+            valid_eight_k_evs.append(ev)
+        elif form_upper in early_sec.FORM25_FORMS:
+            valid_form25_evs.append(ev)
+
+    header_entries = [ev.header for ev in valid_eight_k_evs if ev.header is not None]
     label = early_sec.classify_company_events(
         header_entries,
-        has_form25=bool(form25_evs),
+        has_form25=bool(valid_form25_evs),
         filing_dates=evidence.all_filing_dates,
         last_bar=last_day,
+        ambiguous_match=False,
+        evidence_unresolved=bool(unresolved_entries),
     )
 
     if label in (early_sec.LABEL_BANKRUPTCY, early_sec.LABEL_ACQUISITION_TYPE):
         qualifying = sorted(
             [
                 ev
-                for ev in eight_k_evs
+                for ev in valid_eight_k_evs
                 if ev.header is not None and early_sec.label_filing_header(ev.header) == label
             ],
             key=lambda ev: (_as_date(ev.filing.filed), ev.filing.form, ev.filing.file_path),
         )
         confidence = _best_confidence(evidence.match_confidence, qualifying)
         evidence_str = "; ".join(_format_filing_evidence(ev) for ev in qualifying)
-    elif label == early_sec.LABEL_DELISTING_NOTICE_ONLY:
-        qualifying_8k = [
-            ev
-            for ev in eight_k_evs
-            if ev.header is not None
-            and early_sec.label_filing_header(ev.header) == early_sec.LABEL_DELISTING_NOTICE_ONLY
-        ]
-        qualifying = sorted(
-            [*form25_evs, *qualifying_8k],
-            key=lambda ev: (_as_date(ev.filing.filed), ev.filing.form, ev.filing.file_path),
+    elif label == early_sec.LABEL_EVIDENCE_UNRESOLVED:
+        confidence = evidence.match_confidence
+        ordered_bad = sorted(
+            unresolved_entries,
+            key=lambda item: (
+                _as_date(item[0].filing.filed),
+                item[0].filing.form,
+                item[0].filing.file_path,
+            ),
         )
-        confidence = _best_confidence(evidence.match_confidence, qualifying)
-        evidence_str = "; ".join(_format_filing_evidence(ev) for ev in qualifying)
+        details = "; ".join(
+            f"{ev.filing.form} {_as_date(ev.filing.filed).isoformat()} ({reason})"
+            for ev, reason in ordered_bad
+        )
+        evidence_str = f"CIK {company_cik}: {details}"
     elif label == early_sec.LABEL_KEPT_FILING:
         confidence = evidence.match_confidence
         cutoff = last_day + timedelta(days=early_sec.AFTER_DAYS)
         later = sorted(d for d in (_as_date(x) for x in evidence.all_filing_dates) if d > cutoff)
         if not later:
-            evidence_str = f"CIK {evidence.cik}: filing after >180d"
+            kept_part = f"CIK {company_cik}: filing after >180d"
         elif later[0] == later[-1]:
-            evidence_str = f"CIK {evidence.cik}: filed {later[0].isoformat()} (>180d)"
+            kept_part = f"CIK {company_cik}: filed {later[0].isoformat()} (>180d)"
         else:
-            evidence_str = (
-                f"CIK {evidence.cik}: {len(later)} filings >180d "
+            kept_part = (
+                f"CIK {company_cik}: {len(later)} filings >180d "
                 f"({later[0].isoformat()}..{later[-1].isoformat()})"
             )
+        acq_evs = sorted(
+            [
+                ev
+                for ev in valid_eight_k_evs
+                if ev.header is not None
+                and early_sec.label_filing_header(ev.header) == early_sec.LABEL_ACQUISITION_TYPE
+            ],
+            key=lambda ev: (_as_date(ev.filing.filed), ev.filing.form, ev.filing.file_path),
+        )
+        if acq_evs:
+            acq_part = "; ".join(_format_filing_evidence(ev) for ev in acq_evs)
+            evidence_str = f"{kept_part}; acquisition_type notice: {acq_part}"
+        else:
+            evidence_str = kept_part
+    elif label == early_sec.LABEL_DELISTING_NOTICE_ONLY:
+        qualifying_8k = [
+            ev
+            for ev in valid_eight_k_evs
+            if ev.header is not None
+            and early_sec.label_filing_header(ev.header) == early_sec.LABEL_DELISTING_NOTICE_ONLY
+        ]
+        qualifying = sorted(
+            [*valid_form25_evs, *qualifying_8k],
+            key=lambda ev: (_as_date(ev.filing.filed), ev.filing.form, ev.filing.file_path),
+        )
+        confidence = _best_confidence(evidence.match_confidence, qualifying)
+        evidence_str = "; ".join(_format_filing_evidence(ev) for ev in qualifying)
     else:
         confidence = evidence.match_confidence
-        if eight_k_evs:
+        if valid_eight_k_evs:
             ordered = sorted(
-                eight_k_evs,
+                valid_eight_k_evs,
                 key=lambda ev: (_as_date(ev.filing.filed), ev.filing.form, ev.filing.file_path),
             )
-            evidence_str = f"CIK {evidence.cik}: " + "; ".join(
+            evidence_str = f"CIK {company_cik}: " + "; ".join(
                 _format_filing_evidence(ev) for ev in ordered[:3]
             )
         else:
-            evidence_str = f"CIK {evidence.cik}: no qualifying filing"
+            evidence_str = f"CIK {company_cik}: no qualifying filing"
 
     suggested_loss = 0.0 if label == early_sec.LABEL_ACQUISITION_TYPE else float("nan")
     return label, confidence, evidence_str, suggested_loss
@@ -487,9 +606,11 @@ __all__ = [
     "CompanyEvidence",
     "FilingEvidence",
     "SecLookupFn",
+    "check_header_complete",
     "classify_roster",
     "exchange_label",
     "merge_names",
     "select_pilot_rows",
     "summarize_classifications",
+    "validate_filing_evidence",
 ]

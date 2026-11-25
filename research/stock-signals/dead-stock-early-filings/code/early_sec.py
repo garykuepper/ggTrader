@@ -61,8 +61,10 @@ DROP_WORDS: frozenset[str] = frozenset(
 )
 TRAILING_DROP_WORDS: frozenset[str] = frozenset({"HOLDINGS", "GROUP"})
 
-# Registered stock labels and 8-K item label constants from section 1 of the frozen brief.
+# Registered stock labels and 8-K item label constants from section 1 + amendment 2 of the brief.
+LABEL_AMBIGUOUS_MATCH = "ambiguous_match"
 LABEL_BANKRUPTCY = "bankruptcy"
+LABEL_EVIDENCE_UNRESOLVED = "evidence_unresolved"
 LABEL_ACQUISITION_TYPE = "acquisition_type"
 LABEL_DELISTING_NOTICE_ONLY = "delisting_notice_only"
 LABEL_KEPT_FILING = "kept_filing"
@@ -861,15 +863,20 @@ def classify_company_events(
     filing_dates: Sequence[date | datetime | pd.Timestamp | str],
     last_bar: pd.Timestamp | date,
     after_days: int = AFTER_DAYS,
+    ambiguous_match: bool = False,
+    evidence_unresolved: bool = False,
 ) -> str:
-    """Apply the registered per-stock label precedence using each filing's own date.
+    """Apply the registered per-stock label precedence (amendment 2) using each filing's own date.
 
     Each entry in ``filings`` is either a ``FilingHeader`` or a ``(filed, items)`` pair;
     its items are classified against its own filing date before combining across filings.
-    Order: ``bankruptcy`` > ``acquisition_type`` > ``delisting_notice_only`` (Form 25 or
-    delisting 8-K item) > ``kept_filing`` (any filing strictly > 180 days after
-    ``last_bar``) > ``no_event_found``.
+    Order: ``ambiguous_match`` > ``bankruptcy`` > ``evidence_unresolved`` > ``kept_filing``
+    (any filing strictly > 180 days after ``last_bar``) > ``acquisition_type`` >
+    ``delisting_notice_only`` (Form 25 or delisting 8-K item) > ``no_event_found``.
     """
+    if ambiguous_match:
+        return LABEL_AMBIGUOUS_MATCH
+
     per_filing_labels: list[str] = []
     for entry in filings:
         if isinstance(entry, FilingHeader):
@@ -881,12 +888,14 @@ def classify_company_events(
     item_label = combine_item_labels(per_filing_labels)
     if item_label == LABEL_BANKRUPTCY:
         return LABEL_BANKRUPTCY
+    if evidence_unresolved:
+        return LABEL_EVIDENCE_UNRESOLVED
+    if has_kept_filing(filing_dates, last_bar, after_days=after_days):
+        return LABEL_KEPT_FILING
     if item_label == LABEL_ACQUISITION_TYPE:
         return LABEL_ACQUISITION_TYPE
     if item_label == LABEL_DELISTING_NOTICE_ONLY or has_form25:
         return LABEL_DELISTING_NOTICE_ONLY
-    if has_kept_filing(filing_dates, last_bar, after_days=after_days):
-        return LABEL_KEPT_FILING
     return LABEL_NO_EVENT_FOUND
 
 
@@ -916,8 +925,10 @@ __all__ = [
     "FORM25_FORMS",
     "IGNORED_LISTING_FORMS",
     "LABEL_ACQUISITION_TYPE",
+    "LABEL_AMBIGUOUS_MATCH",
     "LABEL_BANKRUPTCY",
     "LABEL_DELISTING_NOTICE_ONLY",
+    "LABEL_EVIDENCE_UNRESOLVED",
     "LABEL_KEPT_FILING",
     "LABEL_NAME_UNKNOWN",
     "LABEL_NO_COMPANY_MATCH",

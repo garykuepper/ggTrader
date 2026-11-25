@@ -39,7 +39,17 @@ EXPECTED_HELD_BY_RULE = 33
 SEC_KEPT_FILING_END_QUARTER: tuple[int, int] = (2006, 4)
 EXIT_REFUSED = 2
 EXIT_CHECK_FAILED = 3
+EXIT_MISSING_INDEX = 4
 _HEADER_SCAN_BYTES = 262_144
+
+
+class MissingMasterIndexError(RuntimeError):
+    """Raised when a required SEC quarterly master-index archive is missing (HTTP 404)."""
+
+    def __init__(self, year: int, quarter: int) -> None:
+        self.year = year
+        self.quarter = quarter
+        super().__init__(f"missing required SEC master index archive for {year} QTR{quarter}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -109,28 +119,19 @@ def _in_window(filed: date, last_day: date) -> bool:
     )
 
 
-def _rank_candidate_cik(
-    cik: int,
-    last_day: date,
-    cik_event_rows: dict[int, list[tuple[early_sec.IndexRow, str]]],
-    cik_all_dates: dict[int, set[date]],
-) -> tuple[int, int, int, int]:
-    """Deterministic preference: in-window event filing, any window filing, closest date, CIK."""
-    events = cik_event_rows.get(cik, ())
-    has_event = any(_in_window(row.filed, last_day) for row, _conf in events)
-    dates = cik_all_dates.get(cik, set())
-    has_window_any = any(_in_window(d, last_day) for d in dates)
-    min_dist = min((abs((d - last_day).days) for d in dates), default=10**9)
-    return (-int(has_event), -int(has_window_any), min_dist, cik)
-
-
 class SecLookup:
-    """Cached, streaming SEC master-index search and header lookup for one named roster.
+    """Cached, streaming, CIK-bound SEC master-index search and header lookup for one roster.
 
-    Streams one quarterly ``master.zip`` archive at a time through ``EarlySecClient`` and keeps
-    only rows of matched CIKs in memory. Fetches and parses filing headers for in-window
-    8-K / 8-K/A / Form 25-type filings, then runs a single second pass for former names
-    learned from those headers (tier ``former_name``, never promoted to ``checked``).
+    Pass A streams every required quarterly ``master.zip`` archive one at a time via
+    ``EarlySecClient`` and discovers all CIKs whose cleaned company name equals a roster name.
+    A missing (HTTP 404, live or cached) required master-index quarter raises
+    ``MissingMasterIndexError`` immediately. Pass B re-streams the cached archives (no new
+    network fetches) and retains all filing dates and relevant event/notice rows for every
+    uniquely bound CIK across every quarter, whatever name the CIK was indexed under.
+    Headers for in-window event/notice filings are fetched and validated for completeness at
+    the boundary; missing or unreadable headers are recorded explicitly so the classifier marks
+    them ``evidence_unresolved``. Multiple CIKs sharing one cleaned name return an ambiguous
+    match without tie-breaking.
     """
 
     def __init__(
@@ -141,15 +142,12 @@ class SecLookup:
         end_quarter: tuple[int, int] = SEC_KEPT_FILING_END_QUARTER,
     ) -> None:
         self._client = client
-        self._primary_clean_to_ciks: dict[str, set[int]] = defaultdict(set)
-        self._former_clean_to_header_ciks: dict[str, set[int]] = defaultdict(set)
-        self._former_index_clean_to_ciks: dict[str, set[int]] = defaultdict(set)
-        self._cik_learned_formers: dict[int, set[str]] = defaultdict(set)
+        self._clean_to_ciks: dict[str, set[int]] = defaultdict(set)
         self._cik_company_names: dict[int, str] = {}
         self._cik_all_dates: dict[int, set[date]] = defaultdict(set)
-        self._cik_event_rows: dict[int, list[tuple[early_sec.IndexRow, str]]] = defaultdict(list)
+        self._cik_event_rows: dict[int, list[early_sec.IndexRow]] = defaultdict(list)
         self._seen_event_keys: set[tuple[int, str]] = set()
-        self._headers: dict[str, early_sec.FilingHeader | None] = {}
+        self._headers: dict[str, tuple[early_sec.FilingHeader | None, str | None]] = {}
 
         targets: list[tuple[str, date]] = []
         target_clean_names: set[str] = set()
@@ -174,166 +172,75 @@ class SecLookup:
         max_q = max(end_quarter, max(all_row_quarters))
         self._quarters = early_sec.quarters_covering(_quarter_start(*min_q), _quarter_start(*max_q))
 
-        # Pass 1: stream one quarterly archive at a time; keep only matched CIKs.
-        matched_ciks: set[int] = set()
+        # Pass A: stream every required quarter and discover CIKs matching any roster name.
         for year, quarter in self._quarters:
-            self._scan_quarter(
-                year,
-                quarter,
-                target_names=target_clean_names,
-                name_to_ciks=self._primary_clean_to_ciks,
-                tracked_ciks=matched_ciks,
-                row_confidence=early_sec.CONFIDENCE_NAME_ONLY,
-            )
-
-        # Fetch headers for in-window event filings of Pass-1 matched companies and collect
-        # former names declared in those headers.
-        search_formers: set[str] = set()
-        for cleaned, last_day in targets:
-            for cik in sorted(self._primary_clean_to_ciks.get(cleaned, ())):
-                for ev_row, _row_conf in self._cik_event_rows.get(cik, ()):
-                    if not _in_window(ev_row.filed, last_day):
-                        continue
-                    header = self._fetch_header(ev_row.file_path)
-                    if header is None:
-                        continue
-                    for former in header.former_names:
-                        clean_former = early_sec.clean_company_name(former)
-                        if not clean_former:
-                            continue
-                        self._former_clean_to_header_ciks[clean_former].add(cik)
-                        if clean_former not in self._primary_clean_to_ciks:
-                            self._cik_learned_formers[cik].add(clean_former)
-                            if clean_former not in target_clean_names:
-                                search_formers.add(clean_former)
-
-        # Pass 2: run once over the cached archives if headers revealed new former names to search.
-        if search_formers:
-            pass2_ciks: set[int] = set()
-            for year, quarter in self._quarters:
-                self._scan_quarter(
-                    year,
-                    quarter,
-                    target_names=search_formers,
-                    name_to_ciks=self._former_index_clean_to_ciks,
-                    tracked_ciks=pass2_ciks,
-                    row_confidence=early_sec.CONFIDENCE_FORMER_NAME,
-                )
-            for cleaned, last_day in targets:
-                candidate_ciks: set[int] = set()
-                for primary_cik in self._primary_clean_to_ciks.get(cleaned, ()):
-                    for cfn in self._cik_learned_formers.get(primary_cik, ()):
-                        candidate_ciks.update(self._former_index_clean_to_ciks.get(cfn, ()))
-                for cik in sorted(candidate_ciks):
-                    for ev_row, _row_conf in self._cik_event_rows.get(cik, ()):
-                        if _in_window(ev_row.filed, last_day):
-                            self._fetch_header(ev_row.file_path)
-
-    def _scan_quarter(
-        self,
-        year: int,
-        quarter: int,
-        *,
-        target_names: set[str],
-        name_to_ciks: dict[str, set[int]],
-        tracked_ciks: set[int],
-        row_confidence: str,
-    ) -> None:
-        url = early_sec.master_index_url(year, quarter)
-        try:
-            archive_bytes = self._client.get(url)
-        except SecNotFound:
-            return
-        name_cache: dict[str, str] = {}
-        for row in early_sec.iter_master_index(archive_bytes):
-            raw_name = row.company_name
-            if raw_name:
+            archive_bytes = self._get_quarter_archive(year, quarter)
+            name_cache: dict[str, str] = {}
+            for row in early_sec.iter_master_index(archive_bytes):
+                raw_name = row.company_name
+                if not raw_name:
+                    continue
                 cleaned = name_cache.get(raw_name)
                 if cleaned is None:
                     cleaned = early_sec.clean_company_name(raw_name)
                     name_cache[raw_name] = cleaned
-                if cleaned and cleaned in target_names:
-                    name_to_ciks[cleaned].add(row.cik)
-                    tracked_ciks.add(row.cik)
+                if cleaned and cleaned in target_clean_names:
+                    self._clean_to_ciks[cleaned].add(row.cik)
                     self._cik_company_names.setdefault(row.cik, raw_name)
-            if row.cik in tracked_ciks:
+
+        # Collect uniquely bound CIKs (ambiguous names with 2+ CIKs have no bound CIK).
+        bound_ciks: set[int] = {
+            next(iter(ciks)) for ciks in self._clean_to_ciks.values() if len(ciks) == 1
+        }
+        if not bound_ciks:
+            return
+
+        # Pass B: re-stream the cached archives and retain ALL rows of every bound CIK
+        # across all quarters, regardless of what name the CIK filed under in each quarter.
+        for year, quarter in self._quarters:
+            archive_bytes = self._get_quarter_archive(year, quarter)
+            for row in early_sec.iter_master_index(archive_bytes):
+                if row.cik not in bound_ciks:
+                    continue
                 self._cik_all_dates[row.cik].add(row.filed)
                 if row.form.upper() in early_sec.RELEVANT_EVENT_FORMS:
                     key = (row.cik, row.file_path)
                     if key not in self._seen_event_keys:
                         self._seen_event_keys.add(key)
-                        self._cik_event_rows[row.cik].append((row, row_confidence))
+                        self._cik_event_rows[row.cik].append(row)
 
-    def _fetch_header(self, file_path: str) -> early_sec.FilingHeader | None:
+        # Pre-fetch and validate headers for all in-window event/notice filings of bound CIKs.
+        for cleaned, last_day in targets:
+            ciks = self._clean_to_ciks.get(cleaned)
+            if not ciks or len(ciks) != 1:
+                continue
+            cik = next(iter(ciks))
+            for ev_row in self._cik_event_rows.get(cik, ()):
+                if _in_window(ev_row.filed, last_day):
+                    self._fetch_header(ev_row.file_path)
+
+    def _get_quarter_archive(self, year: int, quarter: int) -> bytes:
+        url = early_sec.master_index_url(year, quarter)
+        try:
+            return self._client.get(url)
+        except SecNotFound as exc:
+            raise MissingMasterIndexError(year, quarter) from exc
+
+    def _fetch_header(self, file_path: str) -> tuple[early_sec.FilingHeader | None, str | None]:
         if file_path in self._headers:
             return self._headers[file_path]
         url = early_sec.filing_url(file_path)
         try:
             raw = self._client.get(url)
         except SecNotFound:
-            self._headers[file_path] = None
-            return None
+            result: tuple[early_sec.FilingHeader | None, str | None] = (None, "header_not_found")
+            self._headers[file_path] = result
+            return result
         header = early_sec.parse_filing_header(_decode_header_text(raw))
-        self._headers[file_path] = header
-        return header
-
-    def _build_evidence(
-        self, cik: int, last_day: date, match_confidence: str
-    ) -> ec.CompanyEvidence:
-        rows = sorted(
-            [
-                (r, conf)
-                for r, conf in self._cik_event_rows.get(cik, ())
-                if _in_window(r.filed, last_day)
-            ],
-            key=lambda item: (item[0].filed, item[0].form, item[0].file_path),
-        )
-        filings: list[ec.FilingEvidence] = []
-        for row, row_conf in rows:
-            effective_conf = (
-                early_sec.CONFIDENCE_FORMER_NAME
-                if early_sec.CONFIDENCE_FORMER_NAME in (match_confidence, row_conf)
-                else match_confidence
-            )
-            filing = early_sec.Filing(
-                form=row.form,
-                company_name=row.company_name,
-                cik=row.cik,
-                filed=row.filed,
-                file_path=row.file_path,
-                confidence=effective_conf,
-            )
-            filings.append(
-                ec.FilingEvidence(filing=filing, header=self._fetch_header(row.file_path))
-            )
-        return ec.CompanyEvidence(
-            cik=cik,
-            company_name=self._cik_company_names.get(cik, ""),
-            match_confidence=match_confidence,
-            window_filings=tuple(filings),
-            all_filing_dates=tuple(sorted(self._cik_all_dates.get(cik, ()))),
-        )
-
-    def _has_qualifying_event(self, evidence: ec.CompanyEvidence, last_day: date) -> bool:
-        eight_k_headers = [
-            ev.header
-            for ev in evidence.window_filings
-            if ev.filing.form.upper() in early_sec.FORM8K_FORMS and ev.header is not None
-        ]
-        has_form25 = any(
-            ev.filing.form.upper() in early_sec.FORM25_FORMS for ev in evidence.window_filings
-        )
-        label = early_sec.classify_company_events(
-            eight_k_headers,
-            has_form25=has_form25,
-            filing_dates=evidence.all_filing_dates,
-            last_bar=last_day,
-        )
-        return label in (
-            early_sec.LABEL_BANKRUPTCY,
-            early_sec.LABEL_ACQUISITION_TYPE,
-            early_sec.LABEL_DELISTING_NOTICE_ONLY,
-        )
+        issue = ec.check_header_complete(header)
+        result = (header, issue)
+        self._headers[file_path] = result
+        return result
 
     def lookup(
         self, company_name: str, last_trading_day: date | pd.Timestamp
@@ -342,56 +249,49 @@ class SecLookup:
         cleaned = early_sec.clean_company_name(company_name)
         if not cleaned:
             return None
+        ciks = self._clean_to_ciks.get(cleaned)
+        if not ciks:
+            return None
+        if len(ciks) > 1:
+            return ec.CompanyEvidence(
+                cik=None,
+                company_name="",
+                match_confidence="",
+                window_filings=(),
+                all_filing_dates=(),
+                candidate_ciks=tuple(sorted(ciks)),
+            )
+
+        cik = next(iter(ciks))
         last_day = (
             last_trading_day.date()
             if isinstance(last_trading_day, pd.Timestamp)
             else last_trading_day
         )
-
-        primary_ciks = self._primary_clean_to_ciks.get(cleaned)
-        if primary_ciks:
-            best_cik = min(
-                primary_ciks,
-                key=lambda c: _rank_candidate_cik(
-                    c, last_day, self._cik_event_rows, self._cik_all_dates
-                ),
+        rows = sorted(
+            [r for r in self._cik_event_rows.get(cik, ()) if _in_window(r.filed, last_day)],
+            key=lambda r: (r.filed, r.form, r.file_path),
+        )
+        filings: list[ec.FilingEvidence] = []
+        for row in rows:
+            filing = early_sec.Filing(
+                form=row.form,
+                company_name=row.company_name,
+                cik=row.cik,
+                filed=row.filed,
+                file_path=row.file_path,
+                confidence=early_sec.CONFIDENCE_NAME_ONLY,
             )
-            primary_ev = self._build_evidence(best_cik, last_day, early_sec.CONFIDENCE_NAME_ONLY)
-            if self._has_qualifying_event(primary_ev, last_day):
-                return primary_ev
-            # Try former names learned from this company's own headers (Pass 2).
-            former_ciks: set[int] = set()
-            for cfn in self._cik_learned_formers.get(best_cik, ()):
-                former_ciks.update(self._former_index_clean_to_ciks.get(cfn, ()))
-            former_ciks.discard(best_cik)
-            if former_ciks:
-                best_former = min(
-                    former_ciks,
-                    key=lambda c: _rank_candidate_cik(
-                        c, last_day, self._cik_event_rows, self._cik_all_dates
-                    ),
-                )
-                former_ev = self._build_evidence(
-                    best_former, last_day, early_sec.CONFIDENCE_FORMER_NAME
-                )
-                if self._has_qualifying_event(former_ev, last_day):
-                    return former_ev
-            return primary_ev
-
-        # No primary match: check if this stock's cleaned name was declared as a former name.
-        matched_former_ciks = self._former_clean_to_header_ciks.get(
-            cleaned, set()
-        ) | self._former_index_clean_to_ciks.get(cleaned, set())
-        if matched_former_ciks:
-            best_cik = min(
-                matched_former_ciks,
-                key=lambda c: _rank_candidate_cik(
-                    c, last_day, self._cik_event_rows, self._cik_all_dates
-                ),
-            )
-            return self._build_evidence(best_cik, last_day, early_sec.CONFIDENCE_FORMER_NAME)
-
-        return None
+            header, issue = self._fetch_header(row.file_path)
+            filings.append(ec.FilingEvidence(filing=filing, header=header, issue=issue))
+        return ec.CompanyEvidence(
+            cik=cik,
+            company_name=self._cik_company_names.get(cik, ""),
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=tuple(filings),
+            all_filing_dates=tuple(sorted(self._cik_all_dates.get(cik, ()))),
+            candidate_ciks=(cik,),
+        )
 
     def __call__(
         self, company_name: str, last_trading_day: date | pd.Timestamp
@@ -399,27 +299,23 @@ class SecLookup:
         return self.lookup(company_name, last_trading_day)
 
     def stats(self) -> dict[str, int]:
-        """Return SEC network vs cache counters from the underlying ``EarlySecClient``."""
+        """Return fulfilled SEC fetches and cache counters from ``EarlySecClient``."""
         return _client_stats(self._client)
 
 
 def _client_stats(client: early_sec.EarlySecClient | None) -> dict[str, int]:
     if client is None:
         return {
-            "network_requests": 0,
-            "cache_hits": 0,
-            "network_fetches_200": 0,
+            "fulfilled_fetches": 0,
+            "recorded_not_found": 0,
             "cache_hits_200": 0,
-            "not_found_recorded": 0,
             "not_found_cache_hits": 0,
             "corrupt_cache_refetches": 0,
         }
     return {
-        "network_requests": int(client.network_fetches + client.not_found_recorded),
-        "cache_hits": int(client.cache_hits + client.not_found_hits),
-        "network_fetches_200": int(client.network_fetches),
+        "fulfilled_fetches": int(client.network_fetches),
+        "recorded_not_found": int(client.not_found_recorded),
         "cache_hits_200": int(client.cache_hits),
-        "not_found_recorded": int(client.not_found_recorded),
         "not_found_cache_hits": int(client.not_found_hits),
         "corrupt_cache_refetches": int(client.corrupt_cache_refetches),
     }
@@ -485,7 +381,8 @@ def main(
     """Run pilot or full early-window SEC classification and write JSON + CSV with provenance.
 
     Everything except ``argv`` is injectable for tests. Exit codes: 0 done, 2 refused before
-    work (wrong pins, dirty tree, existing output, drift), 3 full-mode roster check failed.
+    work (wrong pins, dirty tree, existing output, drift), 3 full-mode roster check failed,
+    4 required SEC quarterly master index archive missing (HTTP 404).
     """
     command = list(sys.argv if argv is None else ["run.py", *argv])
     args = build_parser().parse_args(argv)
@@ -562,18 +459,22 @@ def main(
         sec_lookup_factory=sec_lookup_factory,
         contact_loader=contact_loader,
     )
-    if sec_lookup_factory is not None:
-        sec_lookup = sec_lookup_factory(named_roster, client)
-    else:
-        assert client is not None
-        sec_lookup = SecLookup(client, named_roster)
+    try:
+        if sec_lookup_factory is not None:
+            sec_lookup = sec_lookup_factory(named_roster, client)
+        else:
+            assert client is not None
+            sec_lookup = SecLookup(client, named_roster)
+    except MissingMasterIndexError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_MISSING_INDEX
 
     classified = ec.classify_roster(working_roster, named_roster, sec_lookup)
     summary = ec.summarize_classifications(classified)
     if hasattr(sec_lookup, "stats") and callable(sec_lookup.stats):
-        sec_requests = sec_lookup.stats()
+        sec_fetches = sec_lookup.stats()
     else:
-        sec_requests = _client_stats(client)
+        sec_fetches = _client_stats(client)
 
     csv_text = classified.to_csv(index=False)
     atomic_write_text(csv_path, csv_text)
@@ -627,7 +528,7 @@ def main(
         "data_provenance": data_prov,
         "roster_counts": roster_counts,
         "summary": summary,
-        "sec_requests": sec_requests,
+        "sec_fetches": sec_fetches,
         "wall_seconds": time.time() - started,
     }
     write_json(out_path, payload)
