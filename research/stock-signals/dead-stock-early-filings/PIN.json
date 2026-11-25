@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-early-filings",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-early-filings"
+  },
+  "engine": {
+    "git_sha": "ced28b084d2f76c10d0ce4f38da8f63afa8c0662",
+    "git_dirty": false,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "python": "3.12.13",
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": [
+      {
+        "path": "research/stock-signals/dead-stock-momentum-deaths/_early.json",
+        "sha256": "a22312a6ad00b5743840be75db24e0014dd8c04f7369fca3ddbdfe062a63847f"
+      }
+    ]
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/dead_stock_early_filings.py",
+      "sha256": "6214277da040b64bfb193a7918f85d0cfbdbf5f8077a315b4c58a41467233eba"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_classify.py",
+      "sha256": "a2f82b615020f4fe33cc4c3f51fc5991ce54ea369354ed207be99c2c082744b2"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_inputs.py",
+      "sha256": "3454f3656800b85f1c5aa7b505048a89f7ba2b1d61b320dddf3a45b9fbb27dc6"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_match.py",
+      "sha256": "c49c467c7980fb664071e98211d3bcaf97cce4e7bfafc06cd743d4e04f689ff7"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_names.py",
+      "sha256": "36296d7c8622c8e6bb993714ca0955265d531dbca32ecc9cc57af28ddbfe3e36"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_roster.py",
+      "sha256": "60548f7aa3ad3641efba90f350bb8a050508d540812e1f97b75fc960a9d44f66"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/early_sec.py",
+      "sha256": "28234609c9f38a987a0d778cbb69e38bc12fdf4332f73f22894a5f72b1fe7242"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_dead_stock_first_test.py",
+      "sha256": "39701c6701ddadd50db72d4ac8e1449fba0bd6fa03be6205b4f9330bdc6b0637"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_ledger_run.py",
+      "sha256": "7b92a79a99df86e1c0cb100c707fee65ce4c4dca0c5f6c634aad149791aa5e40"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_sec_client.py",
+      "sha256": "b1914a7a32937b191e4e48768b03c8f2af203288ca571e694e568c037006f479"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/ef_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/run.py",
+      "sha256": "2ed581361a3b4a91e56f387d3caf98b757880418cab1dec03ddcac8e38eccfa8"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_dead_stock_early_filings.py",
+      "sha256": "69d28f148a7e0f03a07e3fa00e9635ff9b7e302f5f63359b48b4c7e622f32bd9"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_early_classify.py",
+      "sha256": "083de06ac73b2e4f566a43200dd0579978646b84642c3daabfac77d12ddbc52c"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_early_match.py",
+      "sha256": "3936a3144dcf944aee2bcfa5782eaa7b89f4f91a15ca26404351320db0336e8d"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_early_names.py",
+      "sha256": "c9e591d2245d51376074ed2281607dc1e1500f0774b57c4806173934fbe1c9ba"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_early_roster.py",
+      "sha256": "5bddb91a2f4af9202068ec33852a0cb6a4f4f214be1cd2018c6759d328ea261c"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_early_sec.py",
+      "sha256": "8d5b8f6ea8602d38bf697c022b109e57c1f7d390e06bd741d1940c372fce1416"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_ef_sec_client.py",
+      "sha256": "ab6571633902074b560b05f0627c26239d91580034162144e90940a513f6adb0"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_frozen_copies.py",
+      "sha256": "8e6cfb617524da0dffeac08b4c338498c717a9a54f03811b469500f2ed41ff92"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_frozen_sec_copies.py",
+      "sha256": "26df9b0c3cd077aad7c73fdadcfbfcc20c94cefa150e4e321ed25267b0667380"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/code/tests/test_run.py",
+      "sha256": "63c3cfa899f74d2e07dd10333b10e2e091d83009deffbe24dec6ffe9230cbeb0"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-early-filings/code/run.py",
+      "--mode",
+      "full",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2000-01-03",
+    "eval_end": "2004-12-31"
+  },
+  "seed": 20261125,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-early-filings/_early.json",
+      "sha256": "cca584ddbc13e800878d5784d3c18969536bd792357e77c35d56e6c31bf07303"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "Replay at git_sha ced28b08 (the code commit of the full run; the code did not change afterwards). It reads the read-only database (release 1, CRSP load 1, McGill) and the SEC's public index and filing files: a replay needs the owner's contact line in ~/.config/ggtrader/sec_contact and, without the cached answers in /media/thesix/ggTrader-data/sec-early-window/, about 340 requests at five a second (a few minutes). The pilot seed is 20261125. The pinned result file is the clean repeat of the full run (all answers from the cache); the first run, with the download counts, is on the thesix drive. The roster check pins the momentum-deaths study's result as an input (251 deaths, 33 held)."
+  },
+  "created_utc": "2026-11-25T21:38:02Z"
+}
