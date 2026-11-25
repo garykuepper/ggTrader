@@ -1,6 +1,6 @@
 # Brief: Dead Stock Random Baseline
 
-**Status:** DRAFT 2026-11-25. Not registered: nothing below is fixed until the owner approves this brief. After approval it is frozen before any code of this study exists; later changes are dated amendments at the bottom, never silent edits.
+**Status:** FROZEN 2026-11-25, approved by the owner ("Ok execute") with the three calls below at their defaults: both arms, all three windows, 100 draws. Frozen before any code of this study exists; later changes are dated amendments at the bottom, never silent edits.
 **Study:** stock-signals/dead-stock-random-baseline (kind: screen), written 2026-11-25.
 **Decision fed:** which kind of rule to test next. The owner makes that decision. There is no pass bar and no GO/NO-GO label. The study says how the first test's momentum picks compare with picking the same number of stocks by chance, under the same costs and taxes.
 
@@ -85,12 +85,12 @@ None, as in the first test: the owner's four plain rules apply (test only on dat
 
 **Execution boundary.** New study code goes in this study's `code/` folder; nothing in `src/` is touched, vectorbt is not imported, the paper trader stays stopped and the database is read only. The run is one heavy job at a time through the capped-run wrapper.
 
-## Calls for the owner to check
+## Calls for the owner to check (answered 2026-11-25: both arms, all three windows, 100 draws)
 
-1. Are both arms wanted, or only arm R (simpler, fresh dice each month)?
-2. All three windows, or only the two earlier ones?
+1. Both arms (R and M).
+2. All three windows.
 3. 100 draws, with the cut-down rule if timing needs it.
 
 ## Amendments
 
-None.
+None yet.
