@@ -710,11 +710,8 @@ def test_phase3_coverage_counts_moves() -> None:
     before = [p1_evidenced, open_acq, open_deal, open_rejected, p2_no8k, unnamed]
     after = open_cases.merge_open_cases(before, p3_rows)
 
-    cov = open_cases.phase3_coverage(
-        before,
-        after,
-        open_matches={"S2": m_acq, "S3": m_deal, "S4": m_rej, "S6": m_unnamed},
-    )
+    open_matches = {"S2": m_acq, "S3": m_deal, "S4": m_rej, "S6": m_unnamed}
+    cov = open_cases.phase3_coverage(before, after, open_matches=open_matches)
 
     assert cov["before_by_class"]["acquired_or_merged"] == 1
     assert cov["before_by_class"]["no_filing_match"] == 3
@@ -779,15 +776,104 @@ def test_phase3_coverage_counts_moves() -> None:
         ),
         *after[2:],
     ]
-    assert open_cases.phase3_coverage(before, with_lit_bankruptcy)["best_case_unchanged"] is True
+    assert (
+        open_cases.phase3_coverage(before, with_lit_bankruptcy, open_matches=open_matches)[
+            "best_case_unchanged"
+        ]
+        is True
+    )
 
     # Changing a Phase 1 loss flips best_case_unchanged to False.
     tampered_p1 = [dict(after[0], suggested_loss="0.5"), *after[1:]]
-    assert open_cases.phase3_coverage(before, tampered_p1)["best_case_unchanged"] is False
+    assert (
+        open_cases.phase3_coverage(before, tampered_p1, open_matches=open_matches)[
+            "best_case_unchanged"
+        ]
+        is False
+    )
 
     # Adding an unapproved non-zero loss to a Phase 3 row flips best_case_unchanged to False.
     tampered_p3 = [after[0], dict(after[1], suggested_loss="0.5"), *after[2:]]
-    assert open_cases.phase3_coverage(before, tampered_p3)["best_case_unchanged"] is False
+    assert (
+        open_cases.phase3_coverage(before, tampered_p3, open_matches=open_matches)[
+            "best_case_unchanged"
+        ]
+        is False
+    )
+
+
+def test_phase3_coverage_requires_open_matches() -> None:
+    open_row = _base_row(permno="2", symbol="S2", exit_date="2012-03-01", stock_name="BETA INC")
+    m_acq = open_cases.OpenMatch("matched", 2001, "v1", "BETA INC", "", "done")
+    p3_row = open_cases.classify_open_case(
+        open_row,
+        m_acq,
+        [_event("e2", "2012-02-20", ["2.01"])],
+        sec_filings.EVENTS_STATUS_OK,
+        [],
+    )
+    before = [open_row]
+    after = open_cases.merge_open_cases(before, {"S2": p3_row})
+
+    with pytest.raises(TypeError, match="open_matches"):
+        open_cases.phase3_coverage(before, after)  # type: ignore[call-arg]
+
+
+def test_phase3_coverage_raises_when_a_match_identity_is_missing() -> None:
+    open_acq = _base_row(permno="2", symbol="S2", exit_date="2012-03-01", stock_name="BETA INC")
+    open_rej = _base_row(permno="4", symbol="S4", exit_date="2014-04-01", stock_name="DELTA CORP")
+    m_acq = open_cases.OpenMatch("matched", 2001, "v1", "BETA INC", "", "done")
+    m_rej = open_cases.OpenMatch("no_filing_match", None, "", "", "company_still_filing: 4001", "")
+
+    p3_rows = {
+        "S2": open_cases.classify_open_case(
+            open_acq,
+            m_acq,
+            [_event("e2", "2012-02-20", ["2.01"])],
+            sec_filings.EVENTS_STATUS_OK,
+            [],
+        ),
+        "S4": open_cases.classify_open_case(open_rej, m_rej, [], "", []),
+    }
+    before = [open_acq, open_rej]
+    after = open_cases.merge_open_cases(before, p3_rows)
+
+    # Missing entry for a v2 name_only row raises ValueError naming the symbol.
+    with pytest.raises(ValueError, match="S2"):
+        open_cases.phase3_coverage(before, after, open_matches={"S4": m_rej})
+
+    # Non-matched status, blank filer_name, or None cik on a v2 name_only row also raises.
+    bad_matches = [
+        open_cases.OpenMatch("no_filing_match", 2001, "v1", "BETA INC", "", "done"),
+        open_cases.OpenMatch("matched", 2001, "v1", "", "", "done"),
+        open_cases.OpenMatch("matched", 2001, "v1", "   ", "", "done"),
+        open_cases.OpenMatch("matched", None, "v1", "BETA INC", "", "done"),
+    ]
+    for bad in bad_matches:
+        with pytest.raises(ValueError, match="S2"):
+            open_cases.phase3_coverage(before, after, open_matches={"S2": bad, "S4": m_rej})
+
+    # Missing entry for a rejected_still_filing row raises ValueError naming the symbol.
+    with pytest.raises(ValueError, match="S4"):
+        open_cases.phase3_coverage(before, after, open_matches={"S2": m_acq})
+
+
+def test_phase3_coverage_raises_on_unknown_symbol_entry() -> None:
+    open_row = _base_row(permno="2", symbol="S2", exit_date="2012-03-01", stock_name="BETA INC")
+    m_acq = open_cases.OpenMatch("matched", 2001, "v1", "BETA INC", "", "done")
+    extra = open_cases.OpenMatch("no_filing_match", None, "", "", "", "")
+    p3_row = open_cases.classify_open_case(
+        open_row,
+        m_acq,
+        [_event("e2", "2012-02-20", ["2.01"])],
+        sec_filings.EVENTS_STATUS_OK,
+        [],
+    )
+    before = [open_row]
+    after = open_cases.merge_open_cases(before, {"S2": p3_row})
+
+    with pytest.raises(ValueError, match="GHOST-999"):
+        open_cases.phase3_coverage(before, after, open_matches={"S2": m_acq, "GHOST-999": extra})
 
 
 def test_unnamed_row_never_matches() -> None:

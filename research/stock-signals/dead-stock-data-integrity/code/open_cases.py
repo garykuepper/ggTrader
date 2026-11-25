@@ -142,18 +142,6 @@ def _parse_loss(value: Any) -> tuple[bool, float | None]:
     return True, parsed
 
 
-def _parse_optional_cik(value: Any) -> int | None:
-    """Parse an optional CIK value into an integer, or ``None`` when absent."""
-    if value is None or isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    text = str(value).strip()
-    if text.isascii() and text.isdigit():
-        return int(text)
-    return None
-
-
 def name_rules(row: Mapping[str, Any], raw_name: str) -> frozenset[str]:
     """Return the subset of ``{"v1", "v1.1"}`` under which ``raw_name`` matches ``row``.
 
@@ -595,18 +583,18 @@ def phase3_coverage(
     before: Sequence[Mapping[str, str]],
     after: Sequence[Mapping[str, str]],
     *,
-    open_matches: Mapping[str, OpenMatch] | None = None,
+    open_matches: Mapping[str, OpenMatch],
 ) -> dict[str, Any]:
     """Summarize class counts, moves, Phase 3 matches, rejections, and best-case invariance.
 
-    Because ``OUTPUT_COLUMNS`` (the CSV schema) omits ``filer_name`` and ``cik``, callers that
-    want those populated on ``matches`` entries may pass ``open_matches`` (keyed by ``symbol``)
-    or include ``filer_name``/``cik`` keys on the ``after`` row mappings.
+    Because ``OUTPUT_COLUMNS`` (the CSV schema) omits ``filer_name`` and ``cik``, ``open_matches``
+    is required so every rule 1 match carries its verified SEC filer name and CIK and every
+    still-filing rejection is backed by an explicit ``OpenMatch`` record.
 
     Args:
         before: Original rows from ``_payouts.csv``.
         after: Merged Phase 3 rows (same symbol set as ``before``).
-        open_matches: Optional mapping from ``symbol`` to ``OpenMatch`` for Phase 3 rows.
+        open_matches: Required mapping from roster ``symbol`` to ``OpenMatch`` for Phase 3 rows.
 
     Returns:
         Summary dictionary with before/after class counts, ``moves``, ``deal_forms_only`` count
@@ -614,7 +602,11 @@ def phase3_coverage(
         ``still_filing_incomplete``, and ``best_case_unchanged``.
 
     Raises:
-        ValueError: If ``before`` and ``after`` do not contain the exact same unique symbols.
+        ValueError: If ``before`` and ``after`` do not contain the exact same unique symbols, if
+            ``open_matches`` contains a symbol absent from ``after``, if a Phase 3 rule 1 match
+            (``match_confidence == "name_only"`` and ``match_rule_version == "v2"``) lacks a
+            matched ``OpenMatch`` with non-empty ``filer_name`` and non-None ``cik``, or if a
+            ``rejected_still_filing`` row lacks an ``open_matches`` entry.
     """
     before_by_symbol: dict[str, Mapping[str, str]] = {}
     for row in before:
@@ -632,6 +624,12 @@ def phase3_coverage(
 
     if set(before_by_symbol) != set(after_by_symbol):
         raise ValueError("before and after must cover the exact same symbol set")
+
+    unknown_match_symbols = sorted(set(open_matches) - set(after_by_symbol))
+    if unknown_match_symbols:
+        raise ValueError(
+            f"open_matches contains unknown symbols not in after: {unknown_match_symbols}"
+        )
 
     before_by_class: dict[str, int] = {cls: 0 for cls in PHASE3_CLASSES}
     after_by_class: dict[str, int] = {cls: 0 for cls in PHASE3_CLASSES}
@@ -656,6 +654,7 @@ def phase3_coverage(
             moves[move_key] = moves.get(move_key, 0) + 1
 
         phase = _as_text(after_row.get("phase"))
+        confidence = _as_text(after_row.get("match_confidence"))
         rule_version = _as_text(after_row.get("match_rule_version"))
         reason = _as_text(after_row.get("reason"))
         check_status = _as_text(after_row.get("still_filing_check"))
@@ -663,20 +662,29 @@ def phase3_coverage(
         if check_status == STILL_FILING_INCOMPLETE:
             still_filing_incomplete += 1
 
-        if phase == PHASE_3 and rule_version == RULE_VERSION_V2:
-            match_obj = open_matches.get(symbol) if open_matches is not None else None
-            if match_obj is not None and match_obj.status == STATUS_MATCHED:
-                filer_name = match_obj.filer_name
-                cik: int | None = match_obj.cik
-                rule_label = _as_text(after_row.get("name_rule")) or match_obj.name_rule
-            else:
-                filer_name = _as_text(after_row.get("filer_name"))
-                cik = _parse_optional_cik(after_row.get("cik"))
-                rule_label = _as_text(after_row.get("name_rule"))
+        if (
+            phase == PHASE_3
+            and confidence == payout_table.CONFIDENCE_NAME_ONLY
+            and rule_version == RULE_VERSION_V2
+        ):
+            # Refuse to emit a report with empty identities; the owner audits every name pair.
+            match_obj = open_matches.get(symbol)
+            if (
+                match_obj is None
+                or match_obj.status != STATUS_MATCHED
+                or not isinstance(match_obj.filer_name, str)
+                or not match_obj.filer_name.strip()
+                or match_obj.cik is None
+                or isinstance(match_obj.cik, bool)
+            ):
+                raise ValueError(
+                    f"Missing or incomplete OpenMatch identity for Phase 3 match {symbol!r}"
+                )
+            rule_label = _as_text(after_row.get("name_rule")) or match_obj.name_rule
             entry = {
                 "roster_name": _as_text(after_row.get("stock_name")),
-                "filer_name": filer_name,
-                "cik": cik,
+                "filer_name": match_obj.filer_name,
+                "cik": match_obj.cik,
                 "name_rule": rule_label,
                 "exit_date": _as_text(after_row.get("exit_date")),
             }
@@ -685,6 +693,10 @@ def phase3_coverage(
                 v1_1_only_matches.append(entry)
 
         if phase == PHASE_3 and reason.startswith(REASON_STILL_FILING_PREFIX):
+            if open_matches.get(symbol) is None:
+                raise ValueError(
+                    f"Missing OpenMatch entry for rejected_still_filing symbol {symbol!r}"
+                )
             rejected_still_filing.append(
                 {
                     "roster_name": _as_text(after_row.get("stock_name")),
