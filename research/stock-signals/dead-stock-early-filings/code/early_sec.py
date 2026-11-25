@@ -55,6 +55,8 @@ FORM8K_FORMS: frozenset[str] = frozenset({"8-K", "8-K/A"})
 FORM25_FORMS: frozenset[str] = frozenset({"25", "25/A", "25-NSE", "25-NSE/A"})
 IGNORED_LISTING_FORMS: frozenset[str] = frozenset({"8-A12B", "8-A12B/A", "8-A12G", "8-A12G/A"})
 RELEVANT_EVENT_FORMS: frozenset[str] = FORM8K_FORMS | FORM25_FORMS
+# Periodic report form prefixes that count toward kept_filing (brief amendment 5).
+PERIODIC_REPORT_PREFIXES: tuple[str, ...] = ("10-K", "10-Q", "NT 10-")
 
 # Registered stock labels and 8-K item label constants from section 1 + amendment 2 of the brief.
 LABEL_AMBIGUOUS_MATCH = "ambiguous_match"
@@ -855,17 +857,49 @@ def resolve_confidence(
     return match_confidence
 
 
+def is_periodic_report_form(form: str) -> bool:
+    """Return True if ``form`` is a company periodic report or NT 10-K/10-Q notice.
+
+    Matches forms beginning with ``10-K``, ``10-Q``, or ``NT 10-`` (case-insensitive,
+    whitespace-collapsed), per brief amendment 5. Ownership filings (SC 13D/13G, 3/4/5/144),
+    SEC letters (UPLOAD/CORRESP), deregistration forms (15 variants), 8-K, Form 25, S-x,
+    424B, and listing forms return False.
+    """
+    if not isinstance(form, str):
+        return False
+    normalized = " ".join(form.strip().upper().split())
+    if not normalized:
+        return False
+    return normalized.startswith(PERIODIC_REPORT_PREFIXES)
+
+
 def has_kept_filing(
-    filing_dates: Sequence[date | datetime | pd.Timestamp | str],
+    filing_dates: Sequence[
+        date | datetime | pd.Timestamp | str | tuple[date | datetime | pd.Timestamp | str, str]
+    ],
     last_bar: pd.Timestamp | date,
     *,
     after_days: int = AFTER_DAYS,
 ) -> bool:
-    """Return True if any company filing is dated more than ``after_days`` after ``last_bar``."""
+    """Return True if any qualifying filing is dated more than ``after_days`` after ``last_bar``.
+
+    Entries may be ``(filed, form)`` pairs—in which case only periodic reports matching
+    ``is_periodic_report_form(form)`` count (brief amendment 5)—or bare filing dates already
+    filtered by the caller.
+    """
     if after_days < 0:
         raise ValueError(f"after_days must be non-negative, got {after_days}")
     cutoff = _as_date(last_bar) + timedelta(days=after_days)
-    return any(_as_date(filed) > cutoff for filed in filing_dates)
+    for entry in filing_dates:
+        if isinstance(entry, tuple):
+            filed, form = entry
+            if not is_periodic_report_form(form):
+                continue
+            if _as_date(filed) > cutoff:
+                return True
+        elif _as_date(entry) > cutoff:
+            return True
+    return False
 
 
 def classify_company_events(
@@ -874,7 +908,9 @@ def classify_company_events(
     ],
     *,
     has_form25: bool,
-    filing_dates: Sequence[date | datetime | pd.Timestamp | str],
+    filing_dates: Sequence[
+        date | datetime | pd.Timestamp | str | tuple[date | datetime | pd.Timestamp | str, str]
+    ],
     last_bar: pd.Timestamp | date,
     after_days: int = AFTER_DAYS,
     ambiguous_match: bool = False,
@@ -949,6 +985,7 @@ __all__ = [
     "LABEL_OTHER",
     "MASTER_INDEX_URL",
     "NUMBERED_ITEMS_START",
+    "PERIODIC_REPORT_PREFIXES",
     "RELEVANT_EVENT_FORMS",
     "EarlySecClient",
     "Filing",
@@ -960,6 +997,7 @@ __all__ = [
     "filing_url",
     "find_filings",
     "has_kept_filing",
+    "is_periodic_report_form",
     "iter_master_index",
     "label_filing_header",
     "label_items",

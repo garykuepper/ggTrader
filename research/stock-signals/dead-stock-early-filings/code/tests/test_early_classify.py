@@ -273,6 +273,7 @@ def _fake_lookup_table() -> dict[str, ec.CompanyEvidence | None]:
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=(ec.FilingEvidence(f6, h6),),
             all_filing_dates=(date(2002, 8, 5), date(2003, 5, 1)),  # > 180d after 2002-08-01
+            all_filings=((date(2002, 8, 5), "8-K"), (date(2003, 5, 1), "10-Q")),
             candidate_ciks=(106,),
         ),
         "ETA GROUP": ec.CompanyEvidence(
@@ -558,6 +559,7 @@ def test_header_binding_unreadability_and_amendment2_precedence() -> None:
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=(ec.FilingEvidence(acq_filing, acq_header),),
             all_filing_dates=(f_date, day_181),
+            all_filings=((f_date, "8-K"), (day_181, "10-Q")),
             candidate_ciks=(306,),
         ),
         "ACQ DAY 180 CORP": ec.CompanyEvidence(
@@ -566,6 +568,7 @@ def test_header_binding_unreadability_and_amendment2_precedence() -> None:
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=(ec.FilingEvidence(acq_f180, acq_h180),),
             all_filing_dates=(f_date, day_180),
+            all_filings=((f_date, "8-K"), (day_180, "10-Q")),
             candidate_ciks=(307,),
         ),
         "BK OVER ALL CORP": ec.CompanyEvidence(
@@ -577,6 +580,7 @@ def test_header_binding_unreadability_and_amendment2_precedence() -> None:
                 ec.FilingEvidence(bk_bad_f, header=None, issue="header_not_found"),
             ),
             all_filing_dates=(f_date, day_181),
+            all_filings=((f_date, "8-K"), (day_181, "10-Q")),
             candidate_ciks=(308,),
         ),
         "UNRES OVER KEPT CORP": ec.CompanyEvidence(
@@ -591,6 +595,7 @@ def test_header_binding_unreadability_and_amendment2_precedence() -> None:
                 ),
             ),
             all_filing_dates=(f_date, day_181),
+            all_filings=((f_date, "8-K"), (day_181, "10-Q")),
             candidate_ciks=(309,),
         ),
         "PRE NUM INC": ec.CompanyEvidence(
@@ -759,6 +764,7 @@ def test_truncated_raw_header_is_rejected_and_complete_header_classified() -> No
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=(ec.FilingEvidence(f_id, h_trunc_id),),
             all_filing_dates=(date(2001, 3, 15), day_181),
+            all_filings=((date(2001, 3, 15), "8-K"), (day_181, "10-Q")),
             candidate_ciks=(100001,),
         ),
         "TRUNC ACQ CORP": ec.CompanyEvidence(
@@ -791,6 +797,7 @@ def test_truncated_raw_header_is_rejected_and_complete_header_classified() -> No
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=(ec.FilingEvidence(f_id, h_comp_id),),
             all_filing_dates=(date(2001, 3, 15), day_181),
+            all_filings=((date(2001, 3, 15), "8-K"), (day_181, "10-Q")),
             candidate_ciks=(100001,),
         ),
         "COMP ACQ CORP": ec.CompanyEvidence(
@@ -960,3 +967,151 @@ def test_select_pilot_rows_is_deterministic_and_uses_seed_20261125() -> None:
 
     assert list(pilot_a["permno"]) == expected_permnos
     assert list(pilot_b["permno"]) == expected_permnos
+
+
+def test_kept_filing_counts_periodic_reports_only_and_names_forms_in_evidence() -> None:
+    """Amendment 5 through the classifier boundary: periodic-only counting & evidence format."""
+    last = date(2001, 3, 12)
+    day_180 = last + timedelta(days=180)
+    day_181 = last + timedelta(days=181)
+
+    cases = [
+        ("NONPER", 61001, "NONPER INC"),
+        ("Q181", 61002, "Q181 INC"),
+        ("Q180", 61003, "Q180 INC"),
+        ("NT10K", 61004, "NT10K INC"),
+        ("K405A", 61005, "K405A INC"),
+        ("ACQ10Q", 61006, "ACQ10Q INC"),
+    ]
+    roster = pd.DataFrame(
+        [
+            {
+                "column": col,
+                "permno": p,
+                "symbol": col,
+                "last_bar": pd.Timestamp(last),
+                "decision_date": pd.Timestamp("2001-02-28"),
+                "rank_band": "1-50",
+                "held_by_rule": True,
+            }
+            for col, p, _name in cases
+        ]
+    )
+    roster["permno"] = roster["permno"].astype("Int64")
+    names = pd.DataFrame(
+        {
+            "column": [c[0] for c in cases],
+            "company_name": [c[2] for c in cases],
+            "name_source": ["mcgill"] * len(cases),
+            "exchcd": pd.Series([1] * len(cases), dtype="Int64"),
+        }
+    )
+
+    acq_f1 = _filing(form="8-K", company_name="NONPER CORP", cik=701, filed=date(2001, 3, 15))
+    acq_h1 = _header(
+        form="8-K",
+        filed=date(2001, 3, 15),
+        company_name="NONPER CORP",
+        cik=701,
+        items=frozenset({"acquisition or disposition of assets"}),
+    )
+    acq_f6 = _filing(form="8-K", company_name="ACQ10Q CORP", cik=706, filed=date(2001, 3, 15))
+    acq_h6 = _header(
+        form="8-K",
+        filed=date(2001, 3, 15),
+        company_name="ACQ10Q CORP",
+        cik=706,
+        items=frozenset({"acquisition or disposition of assets"}),
+    )
+
+    ten_qs = tuple((day_181 + timedelta(days=90 * i), "10-Q") for i in range(10))
+    three_ks = tuple((day_181 + timedelta(days=30 + 365 * i), "10-K") for i in range(3))
+    noise = ((day_181, "SC 13G"), (day_181 + timedelta(days=10), "4"))
+
+    lookup_map = {
+        "NONPER INC": ec.CompanyEvidence(
+            cik=701,
+            company_name="NONPER CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(acq_f1, acq_h1),),
+            all_filing_dates=(date(2001, 3, 15), day_181),
+            all_filings=(
+                (date(2001, 3, 15), "8-K"),
+                (day_181, "SC 13G"),
+                (day_181, "SC 13G/A"),
+                (day_181, "4"),
+                (day_181, "4/A"),
+                (day_181, "UPLOAD"),
+                (day_181, "15-12B"),
+                (day_181, "8-K"),
+            ),
+            candidate_ciks=(701,),
+        ),
+        "Q181 INC": ec.CompanyEvidence(
+            cik=702,
+            company_name="Q181 CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            all_filing_dates=(day_181,),
+            all_filings=((day_181, "10-Q"),),
+            candidate_ciks=(702,),
+        ),
+        "Q180 INC": ec.CompanyEvidence(
+            cik=703,
+            company_name="Q180 CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            all_filing_dates=(day_180,),
+            all_filings=((day_180, "10-Q"),),
+            candidate_ciks=(703,),
+        ),
+        "NT10K INC": ec.CompanyEvidence(
+            cik=704,
+            company_name="NT10K CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            all_filing_dates=(day_181,),
+            all_filings=((day_181, "NT 10-K"),),
+            candidate_ciks=(704,),
+        ),
+        "K405A INC": ec.CompanyEvidence(
+            cik=705,
+            company_name="K405A CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            all_filing_dates=(day_181,),
+            all_filings=((day_181, "10-K405/A"),),
+            candidate_ciks=(705,),
+        ),
+        "ACQ10Q INC": ec.CompanyEvidence(
+            cik=706,
+            company_name="ACQ10Q CORP",
+            match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
+            window_filings=(ec.FilingEvidence(acq_f6, acq_h6),),
+            all_filing_dates=tuple(d for d, _ in (*ten_qs, *three_ks, *noise)),
+            all_filings=(*ten_qs, *three_ks, *noise),
+            candidate_ciks=(706,),
+        ),
+    }
+
+    out = ec.classify_roster(roster, names, lambda name, _d: lookup_map[name]).set_index("column")
+
+    assert out.loc["NONPER", "label"] == "acquisition_type"
+    assert out.loc["NONPER", "suggested_loss"] == 0.0
+
+    assert out.loc["Q181", "label"] == "kept_filing"
+    assert "10-Q x1" in out.loc["Q181", "evidence"]
+    assert day_181.isoformat() in out.loc["Q181", "evidence"]
+
+    assert out.loc["Q180", "label"] == "no_event_found"
+
+    assert out.loc["NT10K", "label"] == "kept_filing"
+    assert "NT 10-K x1" in out.loc["NT10K", "evidence"]
+
+    assert out.loc["K405A", "label"] == "kept_filing"
+    assert "10-K405/A x1" in out.loc["K405A", "evidence"]
+
+    assert out.loc["ACQ10Q", "label"] == "kept_filing"
+    assert pd.isna(out.loc["ACQ10Q", "suggested_loss"])
+    ev = out.loc["ACQ10Q", "evidence"]
+    assert "10-Q x10, 10-K x3" in ev
+    assert day_181.isoformat() in ev
+    assert ten_qs[-1][0].isoformat() in ev
+    assert "SC 13G" not in ev
+    assert "acquisition_type notice" in ev

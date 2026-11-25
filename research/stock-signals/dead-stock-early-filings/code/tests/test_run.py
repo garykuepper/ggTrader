@@ -196,12 +196,14 @@ def _fake_lookup_factory(
                 candidate_ciks=(1000 + num,),
             )
         if kind == 3:
+            late_date = date(last_day.year + 1, last_day.month, 15)
             return ec.CompanyEvidence(
                 cik=1000 + num,
                 company_name=company_name,
                 match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
                 window_filings=(),
-                all_filing_dates=(date(last_day.year + 1, last_day.month, 15),),
+                all_filing_dates=(late_date,),
+                all_filings=((late_date, "10-Q"),),
                 candidate_ciks=(1000 + num,),
             )
         return None
@@ -588,8 +590,8 @@ def test_missing_required_master_index_quarter_stops_run_with_exit_4_live_and_ca
 ) -> None:
     """Missing required quarter (both live 404 and cached 404) stops run.main with exit 4."""
     inputs = _make_synthetic_inputs(n_stocks=10, n_deaths=2)
-    # Supply every quarter from 2000 Q1..2006 Q4 EXCEPT 2003 Q2 (which is missing -> 404).
-    responses = _explicit_quarter_responses((2000, 1), (2006, 4), {})
+    # Supply every quarter from 1999 Q1..2006 Q4 EXCEPT 2003 Q2 (which is missing -> 404).
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), {})
     missing_url = early_sec.master_index_url(2003, 2)
     del responses[missing_url]
 
@@ -671,8 +673,87 @@ def test_sec_lookup_cik_binding_pass_b_ambiguity_unreadability_and_precedence(
     day_181 = last_day + timedelta(days=181)  # 2001-09-07 (Q3)
 
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            # Prior filings on or before last_day (amendment 5 existence rule).
+            (
+                "100001",
+                "VERY OLD PREDECESSOR INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100001/0000100001-00-000001.txt",
+            ),
+            (
+                "100002",
+                "HDR404 CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100002/0000100002-00-000001.txt",
+            ),
+            (
+                "100003",
+                "UNREADABLE CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100003/0000100003-00-000001.txt",
+            ),
+            (
+                "100004",
+                "BADCIK CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100004/0000100004-00-000001.txt",
+            ),
+            (
+                "100005",
+                "BADFORM CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100005/0000100005-00-000001.txt",
+            ),
+            (
+                "100006",
+                "DUPLICATE INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100006/0000100006-00-000001.txt",
+            ),
+            (
+                "100007",
+                "DUPLICATE CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100007/0000100007-00-000001.txt",
+            ),
+            (
+                "100008",
+                "ACQ KEPT CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100008/0000100008-00-000001.txt",
+            ),
+            (
+                "100009",
+                "ACQ DAY180 CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100009/0000100009-00-000001.txt",
+            ),
+            (
+                "100010",
+                "BK KEPT CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100010/0000100010-00-000001.txt",
+            ),
+            (
+                "100011",
+                "OTHER FILER CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/100011/0000100011-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
-            # 1. Late-discovered CIK 100001: March 8-K indexed under OLD NAME in Q1;
             # roster name LATE RENAMED CORP first appears in Q2! Pass B must recover this 8-K.
             (
                 "100001",
@@ -803,7 +884,7 @@ def test_sec_lookup_cik_binding_pass_b_ambiguity_unreadability_and_precedence(
         ],
     }
 
-    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     responses.update(
         {
             early_sec.filing_url("edgar/data/100001/0000100001-01-000001.txt"): _header_bytes(
@@ -1088,6 +1169,36 @@ def test_driver_truncated_headers_and_complete_counterparts(tmp_path: Path) -> N
     complete_acq_body = truncated_acq_body + b"</SEC-HEADER>\n<DOCUMENT>\nbody\n"
 
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "200001",
+                "EXAMPLE CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/200001/0001-00-000001.txt",
+            ),
+            (
+                "200002",
+                "EXAMPLE KEPT CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/200002/0001-00-000001.txt",
+            ),
+            (
+                "200003",
+                "CUTOFF ACQ CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/200003/0001-00-000001.txt",
+            ),
+            (
+                "200004",
+                "CORRUPT BODY CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/200004/0001-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             ("200001", "EXAMPLE CORP", "8-K", "2001-03-15", "edgar/data/200001/0001-01-000001.txt"),
             (
@@ -1133,7 +1244,7 @@ def test_driver_truncated_headers_and_complete_counterparts(tmp_path: Path) -> N
     )
 
     # Run 1: truncated & corrupt headers -> all evidence_unresolved, never normal labels.
-    trunc_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    trunc_responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     trunc_responses.update(
         {
             early_sec.filing_url("edgar/data/200001/0001-01-000001.txt"): truncated_id_body,
@@ -1178,7 +1289,7 @@ def test_driver_truncated_headers_and_complete_counterparts(tmp_path: Path) -> N
     assert pd.isna(df_trunc.loc["EX_CB", "suggested_loss"])
 
     # Run 2: same headers WITH closing </SEC-HEADER> -> classified normally.
-    comp_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    comp_responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     comp_responses.update(
         {
             early_sec.filing_url("edgar/data/200001/0001-01-000001.txt"): complete_id_body,
@@ -1229,6 +1340,15 @@ def test_driver_non_404_fetch_failure_and_parse_error_propagate_loudly(
 
     death_day = date(2001, 3, 12)
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "300001",
+                "FAILFETCH CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/300001/0001-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             (
                 "300001",
@@ -1240,7 +1360,7 @@ def test_driver_non_404_fetch_failure_and_parse_error_propagate_loudly(
         ],
     }
     inputs = _single_window_inputs([("FF01", 30001, "FAILFETCH INC", death_day)])
-    base_responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    base_responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     header_url = early_sec.filing_url("edgar/data/300001/0001-01-000001.txt")
 
     # (d1) HTTP 500 on one filing header raises SecFetchError loudly, contact-free, no output files.
@@ -1463,6 +1583,36 @@ def test_driver_quoted_closing_tag_acq_then_bankruptcy_pair_and_lowercase_close(
     )
 
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "400001",
+                "QUOTED NODOC CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/400001/0001-00-000001.txt",
+            ),
+            (
+                "400002",
+                "QUOTED DOC CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/400002/0001-00-000001.txt",
+            ),
+            (
+                "400003",
+                "ACQ BK PAIR CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/400003/0001-00-000001.txt",
+            ),
+            (
+                "400004",
+                "LOWERCASE CLOSE CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/400004/0001-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             (
                 "400001",
@@ -1505,7 +1655,7 @@ def test_driver_quoted_closing_tag_acq_then_bankruptcy_pair_and_lowercase_close(
 
     # Run 1: truncated / quoted-only headers -> evidence_unresolved (header_truncated);
     # lowercase standalone </sec-header> -> acquisition_type (0.0).
-    resp1 = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    resp1 = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     resp1.update(
         {
             early_sec.filing_url("edgar/data/400001/0001-01-000001.txt"): quoted_no_doc,
@@ -1550,7 +1700,7 @@ def test_driver_quoted_closing_tag_acq_then_bankruptcy_pair_and_lowercase_close(
     assert df1.loc["LOWR", "suggested_loss"] == 0.0
 
     # Run 2: genuine standalone </SEC-HEADER> counterparts (with both acq + bk on PAIR).
-    resp2 = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    resp2 = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     resp2.update(
         {
             early_sec.filing_url("edgar/data/400001/0001-01-000001.txt"): quoted_complete,
@@ -1606,6 +1756,15 @@ def test_driver_v11_short_form_match_finds_acquisition_8k(tmp_path: Path) -> Non
     """End-to-end driver test: short-form roster name matches full EDGAR name & acquisition 8-K."""
     death_day = date(2001, 3, 12)
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "500001",
+                "NATIONAL PROCESSING INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/500001/0000500001-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             (
                 "500001",
@@ -1616,7 +1775,7 @@ def test_driver_v11_short_form_match_finds_acquisition_8k(tmp_path: Path) -> Non
             ),
         ],
     }
-    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     responses[early_sec.filing_url("edgar/data/500001/0000500001-01-000001.txt")] = _header_bytes(
         form="8-K",
         filed_yyyymmdd="20010315",
@@ -1664,6 +1823,22 @@ def test_driver_prefix_rule_two_ciks_is_ambiguous_match(tmp_path: Path) -> None:
     roster_name = "MIDAMERICAN ENRG"
     assert len(roster_name) == 16
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "510001",
+                "MIDAMERICAN ENERGY HOLDINGS CO",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/510001/0000510001-00-000001.txt",
+            ),
+            (
+                "510002",
+                "MIDAMERICAN ENERGY CO",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/510002/0000510002-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             (
                 "510001",
@@ -1681,7 +1856,7 @@ def test_driver_prefix_rule_two_ciks_is_ambiguous_match(tmp_path: Path) -> None:
             ),
         ],
     }
-    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     responses[early_sec.filing_url("edgar/data/510001/0000510001-01-000001.txt")] = _header_bytes(
         form="8-K",
         filed_yyyymmdd="20010315",
@@ -1729,6 +1904,29 @@ def test_driver_rules_2_to_4_short_form_matches_yield_name_only_never_checked(
     """End-to-end driver test: matches via rules 2, 3, or 4 stay tier name_only, never checked."""
     death_day = date(2001, 3, 12)
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "520001",
+                "DALLAS SEMICONDUCTOR CORP",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/520001/0000520001-00-000001.txt",
+            ),
+            (
+                "520002",
+                "NORTHSTAR WIDGET HOLDINGS INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/520002/0000520002-00-000001.txt",
+            ),
+            (
+                "520003",
+                "WACHOVIA CORP /NC/",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/520003/0000520003-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             # Rule 3 (added short form SEMICOND -> SEMICONDUCTOR)
             (
@@ -1756,7 +1954,7 @@ def test_driver_rules_2_to_4_short_form_matches_yield_name_only_never_checked(
             ),
         ],
     }
-    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     responses.update(
         {
             early_sec.filing_url("edgar/data/520001/0000520001-01-000001.txt"): _header_bytes(
@@ -1829,6 +2027,22 @@ def test_driver_lab_withdrawal_matches_direct_matcher_on_both_counterexamples(
     """Amendment 4 regression: indexed driver lookup agrees with direct matcher on LAB/LABS."""
     death_day = date(2001, 3, 12)
     per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (2000, 4): [
+            (
+                "530001",
+                "GREAT PLAINS LABS SERVICES INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/530001/0000530001-00-000001.txt",
+            ),
+            (
+                "530002",
+                "NORTH LABORATORIES INC",
+                "10-Q",
+                "2000-11-15",
+                "edgar/data/530002/0000530002-00-000001.txt",
+            ),
+        ],
         (2001, 1): [
             # 16-char 'GREAT PLAINS LAB' prefix-matches 'GREAT PLAINS LABS SERVICES INC'.
             (
@@ -1849,7 +2063,7 @@ def test_driver_lab_withdrawal_matches_direct_matcher_on_both_counterexamples(
             ),
         ],
     }
-    responses = _explicit_quarter_responses((2001, 1), (2006, 4), per_quarter)
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
     responses.update(
         {
             early_sec.filing_url("edgar/data/530001/0000530001-01-000001.txt"): _header_bytes(
@@ -1909,3 +2123,322 @@ def test_driver_lab_withdrawal_matches_direct_matcher_on_both_counterexamples(
     # Amendment 4: NORTH LABS does not match NORTH LABORATORIES INC.
     assert df.loc["NLAB", "label"] == "no_company_match"
     assert pd.isna(df.loc["NLAB", "suggested_loss"])
+
+
+def test_missing_1999_q1_master_index_stops_run_with_exit_4(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Amendment 5: 1999 Q1 is required for the existence rule; missing it exits 4."""
+    inputs = _make_synthetic_inputs(n_stocks=10, n_deaths=2)
+    responses = _explicit_quarter_responses((1999, 2), (2006, 4), {})
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_no_1999q1",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "no_1999q1" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "2",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    err = capsys.readouterr().err
+    assert code == run.EXIT_MISSING_INDEX
+    assert "1999" in err and "QTR1" in err
+    assert DUMMY_CONTACT not in err and DUMMY_EMAIL not in err
+    assert not out_json.exists()
+    assert not (out_json.parent / "_pilot_labels.csv").exists()
+
+
+def test_driver_amendment5_periodic_only_kept_filing_and_existence_rule(tmp_path: Path) -> None:
+    """End-to-end driver tests for amendment 5 periodic-only kept_filing and existence rule."""
+    death_day = date(2001, 3, 12)  # Monday in 2001 Q1
+    day_180 = death_day + timedelta(days=180)  # 2001-09-08 (Q3)
+    day_181 = death_day + timedelta(days=181)  # 2001-09-09 (Q3)
+
+    per_quarter: dict[tuple[int, int], list[tuple[str, str, str, str, str]]] = {
+        (1999, 1): [
+            # Valid candidate for ONEVALID existed in 1999 Q1 under an older name!
+            (
+                "600008",
+                "LEGACY PREDECESSOR CORP",
+                "10-K",
+                "1999-03-15",
+                "edgar/data/600008/0000600008-99-000001.txt",
+            ),
+        ],
+        (2000, 4): [
+            ("600001", "NONPER CORP", "10-Q", "2000-11-15", "edgar/data/600001/0001-00-000001.txt"),
+            ("600002", "Q181 CORP", "10-Q", "2000-11-15", "edgar/data/600002/0001-00-000001.txt"),
+            ("600003", "Q180 CORP", "10-Q", "2000-11-15", "edgar/data/600003/0001-00-000001.txt"),
+            ("600004", "NT10K CORP", "10-Q", "2000-11-15", "edgar/data/600004/0001-00-000001.txt"),
+            ("600005", "K405A CORP", "10-Q", "2000-11-15", "edgar/data/600005/0001-00-000001.txt"),
+            ("600006", "ACQ10Q CORP", "10-Q", "2000-11-15", "edgar/data/600006/0001-00-000001.txt"),
+        ],
+        (2001, 1): [
+            ("600001", "NONPER CORP", "8-K", "2001-03-15", "edgar/data/600001/0001-01-000001.txt"),
+            ("600006", "ACQ10Q CORP", "8-K", "2001-03-15", "edgar/data/600006/0001-01-000001.txt"),
+            (
+                "600008",
+                "ONEVALID CORP",
+                "8-K",
+                "2001-03-15",
+                "edgar/data/600008/0001-01-000001.txt",
+            ),
+            # ONDAY: earliest filing is ON death_day itself (counts as existing!).
+            (
+                "600010",
+                "ONDAY CORP",
+                "4",
+                death_day.isoformat(),
+                "edgar/data/600010/0001-01-000001.txt",
+            ),
+            ("600010", "ONDAY CORP", "8-K", "2001-03-15", "edgar/data/600010/0001-01-000002.txt"),
+        ],
+        (2001, 3): [
+            # NONPER: late non-periodic filings only -> must NOT be kept_filing.
+            (
+                "600001",
+                "NONPER CORP",
+                "SC 13G",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000002.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "SC 13G/A",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000003.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "4",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000004.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "4/A",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000005.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "UPLOAD",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000006.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "15-12B",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000007.txt",
+            ),
+            (
+                "600001",
+                "NONPER CORP",
+                "8-K",
+                day_181.isoformat(),
+                "edgar/data/600001/0001-01-000008.txt",
+            ),
+            # Q181: 10-Q on day 181 -> kept_filing.
+            (
+                "600002",
+                "Q181 CORP",
+                "10-Q",
+                day_181.isoformat(),
+                "edgar/data/600002/0001-01-000002.txt",
+            ),
+            # Q180: 10-Q on day 180 -> NOT kept_filing.
+            (
+                "600003",
+                "Q180 CORP",
+                "10-Q",
+                day_180.isoformat(),
+                "edgar/data/600003/0001-01-000002.txt",
+            ),
+            # NT10K: NT 10-K on day 181 -> kept_filing.
+            (
+                "600004",
+                "NT10K CORP",
+                "NT 10-K",
+                day_181.isoformat(),
+                "edgar/data/600004/0001-01-000002.txt",
+            ),
+            # K405A: 10-K405/A on day 181 -> kept_filing.
+            (
+                "600005",
+                "K405A CORP",
+                "10-K405/A",
+                day_181.isoformat(),
+                "edgar/data/600005/0001-01-000002.txt",
+            ),
+            # ACQ10Q: two 10-Qs + one 10-K late + acquisition 8-K in window -> kept_filing.
+            (
+                "600006",
+                "ACQ10Q CORP",
+                "10-Q",
+                day_181.isoformat(),
+                "edgar/data/600006/0001-01-000002.txt",
+            ),
+        ],
+        (2002, 1): [
+            (
+                "600006",
+                "ACQ10Q CORP",
+                "10-Q",
+                "2002-02-10",
+                "edgar/data/600006/0001-02-000001.txt",
+            ),
+            (
+                "600006",
+                "ACQ10Q CORP",
+                "10-K",
+                "2002-03-20",
+                "edgar/data/600006/0001-02-000002.txt",
+            ),
+        ],
+        (2004, 2): [
+            # LATEONLY: name-reuser whose earliest filing is in 2004 -> dropped (no_company_match).
+            (
+                "600007",
+                "LATEONLY LLC",
+                "10-K",
+                "2004-06-01",
+                "edgar/data/600007/0001-04-000001.txt",
+            ),
+            # Second candidate CIK for ONEVALID created years later -> dropped, not ambiguous!
+            (
+                "600009",
+                "ONEVALID LLC",
+                "10-K",
+                "2004-06-01",
+                "edgar/data/600009/0001-04-000001.txt",
+            ),
+        ],
+    }
+    responses = _explicit_quarter_responses((1999, 1), (2006, 4), per_quarter)
+    responses.update(
+        {
+            early_sec.filing_url("edgar/data/600001/0001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="NONPER CORP",
+                cik="0000600001",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/600006/0001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="ACQ10Q CORP",
+                cik="0000600006",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/600008/0001-01-000001.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="ONEVALID CORP",
+                cik="0000600008",
+                items=("Acquisition or disposition of assets",),
+            ),
+            early_sec.filing_url("edgar/data/600010/0001-01-000002.txt"): _header_bytes(
+                form="8-K",
+                filed_yyyymmdd="20010315",
+                company="ONDAY CORP",
+                cik="0000600010",
+                items=("Acquisition or disposition of assets",),
+            ),
+        }
+    )
+
+    inputs = _single_window_inputs(
+        [
+            ("NONP", 60001, "NONPER INC", death_day),
+            ("Q181", 60002, "Q181 INC", death_day),
+            ("Q180", 60003, "Q180 INC", death_day),
+            ("NT10", 60004, "NT10K INC", death_day),
+            ("K405", 60005, "K405A INC", death_day),
+            ("AQ10", 60006, "ACQ10Q INC", death_day),
+            ("LATE", 60007, "LATEONLY CORP", death_day),
+            ("ONEV", 60008, "ONEVALID INC", death_day),
+            ("ONDY", 60010, "ONDAY INC", death_day),
+        ]
+    )
+    client = early_sec.EarlySecClient(
+        user_agent=DUMMY_CONTACT,
+        cache_dir=tmp_path / "cache_amd5",
+        min_interval=0.0,
+        opener=_strict_opener(responses),
+        sleep=lambda _s: None,
+    )
+    out_json = tmp_path / "amd5" / "_pilot.json"
+    code = run.main(
+        [
+            "--mode",
+            "pilot",
+            "--pilot-size",
+            "9",
+            "--release-id",
+            "1",
+            "--crsp-load",
+            "1",
+            "--out",
+            str(out_json),
+        ],
+        loader=lambda _a: inputs,
+        sec_client=client,
+        git_dirty=lambda: False,
+    )
+    assert code == 0
+    df = pd.read_csv(out_json.parent / "_pilot_labels.csv").set_index("column")
+
+    # Late non-periodic forms do not trigger kept_filing -> acquisition_type wins.
+    assert df.loc["NONP", "label"] == "acquisition_type"
+    assert df.loc["NONP", "suggested_loss"] == 0.0
+
+    # 10-Q on day 181 counts; 10-Q on day 180 does not.
+    assert df.loc["Q181", "label"] == "kept_filing"
+    assert "10-Q x1" in df.loc["Q181", "evidence"]
+    assert day_181.isoformat() in df.loc["Q181", "evidence"]
+    assert df.loc["Q180", "label"] == "no_event_found"
+
+    # NT 10-K and 10-K405/A on day 181 both count.
+    assert df.loc["NT10", "label"] == "kept_filing"
+    assert "NT 10-K x1" in df.loc["NT10", "evidence"]
+    assert df.loc["K405", "label"] == "kept_filing"
+    assert "10-K405/A x1" in df.loc["K405", "evidence"]
+
+    # Late 10-Qs + 10-K + in-window acquisition 8-K -> kept_filing with forms, dates, and notice.
+    assert df.loc["AQ10", "label"] == "kept_filing"
+    assert pd.isna(df.loc["AQ10", "suggested_loss"])
+    assert "10-Q x2, 10-K x1" in df.loc["AQ10", "evidence"]
+    assert day_181.isoformat() in df.loc["AQ10", "evidence"]
+    assert "2002-03-20" in df.loc["AQ10", "evidence"]
+    assert "acquisition_type notice" in df.loc["AQ10", "evidence"]
+
+    # Existence rule: late-only CIK dropped -> no_company_match; invalid second candidate dropped
+    # -> bound to valid 1999 Q1 candidate; filing on last_day itself counts.
+    assert df.loc["LATE", "label"] == "no_company_match"
+    assert df.loc["ONEV", "label"] == "acquisition_type"
+    assert df.loc["ONEV", "suggested_loss"] == 0.0
+    assert df.loc["ONDY", "label"] == "acquisition_type"
+    assert df.loc["ONDY", "suggested_loss"] == 0.0

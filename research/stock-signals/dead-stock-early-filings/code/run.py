@@ -37,6 +37,7 @@ PILOT_SEED = ec.PILOT_SEED
 DEFAULT_PILOT_SIZE = 20
 EXPECTED_ROSTER_ROWS = 251
 EXPECTED_HELD_BY_RULE = 33
+SEC_EXISTENCE_START_QUARTER: tuple[int, int] = (1999, 1)
 SEC_KEPT_FILING_END_QUARTER: tuple[int, int] = (2006, 4)
 EXIT_REFUSED = 2
 EXIT_CHECK_FAILED = 3
@@ -123,18 +124,22 @@ def _in_window(filed: date, last_day: date) -> bool:
 class SecLookup:
     """Cached, streaming, CIK-bound SEC master-index search and header lookup for one roster.
 
-    Pass A streams every required quarterly ``master.zip`` archive one at a time via
-    ``EarlySecClient`` and discovers all CIKs matching any roster name under ``early_match``
-    (indexed via ``RosterNameIndex`` with a cross-quarter filer-name match cache). A missing
-    (HTTP 404, live or cached) required master-index quarter raises ``MissingMasterIndexError``
-    immediately. Pass B re-streams the cached archives (no new network fetches) and retains
-    all filing dates and relevant event/notice rows for every uniquely bound CIK across every
-    quarter, whatever name the CIK was indexed under. Headers for in-window event/notice
-    filings are fetched and validated for completeness at the boundary; missing or unreadable
-    headers are recorded explicitly so the classifier marks them ``evidence_unresolved``.
-    Multiple CIKs matching one roster stock return an ambiguous match without tie-breaking.
-    Matches that relied only on amendment 3 rules 2 to 4 stay tier ``name_only`` and are never
-    promoted to ``checked``.
+    Streams quarters from at least ``1999 Q1`` (existence check) through at least ``2006 Q4``
+    (kept-filing check). Pass A streams every required quarterly ``master.zip`` archive one at
+    a time via ``EarlySecClient`` and discovers all candidate CIKs matching any roster name
+    under ``early_match`` (indexed via ``RosterNameIndex`` with a cross-quarter filer-name
+    match cache). A missing (HTTP 404, live or cached) required master-index quarter raises
+    ``MissingMasterIndexError`` immediately. Pass B re-streams the cached archives (no new
+    network fetches) for every discovered candidate CIK and retains its earliest filing date
+    (any form, under any name), all ``(filed, form)`` filings (so ``early_classify`` counts
+    only periodic reports for ``kept_filing``), and relevant event/notice rows. Candidate CIKs
+    without a filing dated on or before the stock's last trading day are dropped by the
+    amendment 5 existence rule before ambiguity and unique binding are decided. Headers for
+    in-window event/notice filings of uniquely bound CIKs are fetched and validated for
+    completeness at the boundary; missing or unreadable headers are recorded explicitly so the
+    classifier marks them ``evidence_unresolved``. Multiple surviving CIKs return an ambiguous
+    match without tie-breaking. Matches that relied only on amendment 3 rules 2 to 4 stay tier
+    ``name_only`` and are never promoted to ``checked``.
     """
 
     def __init__(
@@ -142,13 +147,17 @@ class SecLookup:
         client: early_sec.EarlySecClient,
         named_roster: pd.DataFrame,
         *,
+        start_quarter: tuple[int, int] = SEC_EXISTENCE_START_QUARTER,
         end_quarter: tuple[int, int] = SEC_KEPT_FILING_END_QUARTER,
     ) -> None:
         self._client = client
         self._target_to_ciks: dict[str, set[int]] = defaultdict(set)
         self._target_rule1_ciks: dict[str, set[int]] = defaultdict(set)
         self._cik_company_names: dict[int, str] = {}
+        self._cik_earliest_date: dict[int, date] = {}
         self._cik_all_dates: dict[int, set[date]] = defaultdict(set)
+        self._cik_all_filings: dict[int, list[tuple[date, str]]] = defaultdict(list)
+        self._seen_filing_keys: set[tuple[int, str]] = set()
         self._cik_event_rows: dict[int, list[early_sec.IndexRow]] = defaultdict(list)
         self._seen_event_keys: set[tuple[int, str]] = set()
         self._headers: dict[str, tuple[early_sec.FilingHeader | None, str | None]] = {}
@@ -177,7 +186,7 @@ class SecLookup:
         name_index = early_match.RosterNameIndex(target_names)
 
         all_row_quarters = [q for _, d in targets for q in early_sec.quarters_for(pd.Timestamp(d))]
-        min_q = min(all_row_quarters)
+        min_q = min(start_quarter, min(all_row_quarters))
         max_q = max(end_quarter, max(all_row_quarters))
         self._quarters = early_sec.quarters_covering(_quarter_start(*min_q), _quarter_start(*max_q))
 
@@ -209,36 +218,52 @@ class SecLookup:
                             self._target_rule1_ciks[target_name].add(row.cik)
                     self._cik_company_names.setdefault(row.cik, raw_name)
 
-        # Collect uniquely bound CIKs (ambiguous names with 2+ CIKs have no bound CIK).
-        bound_ciks: set[int] = {
-            next(iter(ciks)) for ciks in self._target_to_ciks.values() if len(ciks) == 1
-        }
-        if not bound_ciks:
+        # Collect every discovered candidate CIK so Pass B records each candidate's true earliest
+        # filing date (under any name) before the existence rule filters candidates.
+        candidate_ciks: set[int] = {cik for ciks in self._target_to_ciks.values() for cik in ciks}
+        if not candidate_ciks:
             return
 
-        # Pass B: re-stream the cached archives and retain ALL rows of every bound CIK
-        # across all quarters, regardless of what name the CIK filed under in each quarter.
+        # Pass B: re-stream the cached archives and retain earliest date, all (date, form)
+        # filings, and relevant event rows of every candidate CIK across all quarters.
         for year, quarter in self._quarters:
             archive_bytes = self._get_quarter_archive(year, quarter)
             for row in early_sec.iter_master_index(archive_bytes):
-                if row.cik not in bound_ciks:
+                if row.cik not in candidate_ciks:
                     continue
+                prev_earliest = self._cik_earliest_date.get(row.cik)
+                if prev_earliest is None or row.filed < prev_earliest:
+                    self._cik_earliest_date[row.cik] = row.filed
                 self._cik_all_dates[row.cik].add(row.filed)
+                fkey = (row.cik, row.file_path)
+                if fkey not in self._seen_filing_keys:
+                    self._seen_filing_keys.add(fkey)
+                    self._cik_all_filings[row.cik].append((row.filed, row.form))
                 if row.form.upper() in early_sec.RELEVANT_EVENT_FORMS:
-                    key = (row.cik, row.file_path)
-                    if key not in self._seen_event_keys:
-                        self._seen_event_keys.add(key)
+                    if fkey not in self._seen_event_keys:
+                        self._seen_event_keys.add(fkey)
                         self._cik_event_rows[row.cik].append(row)
 
-        # Pre-fetch and validate headers for all in-window event/notice filings of bound CIKs.
+        # Pre-fetch and validate headers only for stocks uniquely bound after the existence rule.
         for target_name, last_day in targets:
-            ciks = self._target_to_ciks.get(target_name)
-            if not ciks or len(ciks) != 1:
+            valid_ciks = self._valid_ciks_for(target_name, last_day)
+            if len(valid_ciks) != 1:
                 continue
-            cik = next(iter(ciks))
+            cik = valid_ciks[0]
             for ev_row in self._cik_event_rows.get(cik, ()):
                 if _in_window(ev_row.filed, last_day):
                     self._fetch_header(ev_row.file_path)
+
+    def _valid_ciks_for(self, target_name: str, last_day: date) -> list[int]:
+        """Return candidate CIKs that filed at least once on or before ``last_day``."""
+        ciks = self._target_to_ciks.get(target_name)
+        if not ciks:
+            return []
+        return sorted(
+            cik
+            for cik in ciks
+            if (earliest := self._cik_earliest_date.get(cik)) is not None and earliest <= last_day
+        )
 
     def _get_quarter_archive(self, year: int, quarter: int) -> bytes:
         url = early_sec.master_index_url(year, quarter)
@@ -270,26 +295,26 @@ class SecLookup:
         target_name = company_name.strip() if isinstance(company_name, str) else ""
         if not target_name or not early_match.roster_name_key(target_name):
             return None
-        ciks = self._target_to_ciks.get(target_name)
-        if not ciks:
+        last_day = (
+            last_trading_day.date()
+            if isinstance(last_trading_day, pd.Timestamp)
+            else last_trading_day
+        )
+        valid_ciks = self._valid_ciks_for(target_name, last_day)
+        if not valid_ciks:
             return None
-        if len(ciks) > 1:
+        if len(valid_ciks) > 1:
             return ec.CompanyEvidence(
                 cik=None,
                 company_name="",
                 match_confidence="",
                 window_filings=(),
                 all_filing_dates=(),
-                candidate_ciks=tuple(sorted(ciks)),
+                candidate_ciks=tuple(valid_ciks),
             )
 
-        cik = next(iter(ciks))
+        cik = valid_ciks[0]
         allow_checked = cik in self._target_rule1_ciks.get(target_name, ())
-        last_day = (
-            last_trading_day.date()
-            if isinstance(last_trading_day, pd.Timestamp)
-            else last_trading_day
-        )
         rows = sorted(
             [r for r in self._cik_event_rows.get(cik, ()) if _in_window(r.filed, last_day)],
             key=lambda r: (r.filed, r.form, r.file_path),
@@ -313,6 +338,7 @@ class SecLookup:
             match_confidence=early_sec.CONFIDENCE_NAME_ONLY,
             window_filings=tuple(filings),
             all_filing_dates=tuple(sorted(self._cik_all_dates.get(cik, ()))),
+            all_filings=tuple(sorted(self._cik_all_filings.get(cik, ()))),
             candidate_ciks=(cik,),
         )
 

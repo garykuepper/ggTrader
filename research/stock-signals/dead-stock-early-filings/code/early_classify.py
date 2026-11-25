@@ -91,6 +91,7 @@ class CompanyEvidence:
     window_filings: tuple[FilingEvidence, ...] = ()
     all_filing_dates: tuple[date, ...] = ()
     candidate_ciks: tuple[int, ...] = ()
+    all_filings: tuple[tuple[date, str], ...] = ()
 
 
 SecLookupFn = Callable[[str, date], CompanyEvidence | None]
@@ -364,7 +365,7 @@ def _classify_one(
     label = early_sec.classify_company_events(
         header_entries,
         has_form25=bool(valid_form25_evs),
-        filing_dates=evidence.all_filing_dates,
+        filing_dates=evidence.all_filings,
         last_bar=last_day,
         ambiguous_match=False,
         evidence_unresolved=bool(unresolved_entries),
@@ -399,16 +400,28 @@ def _classify_one(
     elif label == early_sec.LABEL_KEPT_FILING:
         confidence = evidence.match_confidence
         cutoff = last_day + timedelta(days=early_sec.AFTER_DAYS)
-        later = sorted(d for d in (_as_date(x) for x in evidence.all_filing_dates) if d > cutoff)
-        if not later:
-            kept_part = f"CIK {company_cik}: filing after >180d"
-        elif later[0] == later[-1]:
-            kept_part = f"CIK {company_cik}: filed {later[0].isoformat()} (>180d)"
+        late_periodic = sorted(
+            (
+                (_as_date(filed), " ".join(form.strip().upper().split()))
+                for filed, form in evidence.all_filings
+                if early_sec.is_periodic_report_form(form) and _as_date(filed) > cutoff
+            ),
+            key=lambda pair: (pair[0], pair[1]),
+        )
+        if not late_periodic:
+            kept_part = f"CIK {company_cik}: periodic filing after >180d"
         else:
-            kept_part = (
-                f"CIK {company_cik}: {len(later)} filings >180d "
-                f"({later[0].isoformat()}..{later[-1].isoformat()})"
+            form_counts: dict[str, int] = {}
+            for _, form in late_periodic:
+                form_counts[form] = form_counts.get(form, 0) + 1
+            forms_text = ", ".join(
+                f"{form} x{count}"
+                for form, count in sorted(form_counts.items(), key=lambda item: (-item[1], item[0]))
             )
+            first_d = late_periodic[0][0].isoformat()
+            last_d = late_periodic[-1][0].isoformat()
+            date_part = first_d if first_d == last_d else f"{first_d}..{last_d}"
+            kept_part = f"CIK {company_cik}: {forms_text} ({date_part}, >180d)"
         acq_evs = sorted(
             [
                 ev

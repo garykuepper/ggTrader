@@ -774,6 +774,81 @@ def test_find_filings_uses_v11_rules_and_gates_checked_promotion() -> None:
     assert natl[0].allow_checked is True
 
 
+def test_is_periodic_report_form_and_has_kept_filing_periodic_only() -> None:
+    from early_sec import is_periodic_report_form
+
+    for form in (
+        "10-K",
+        "10-K/A",
+        "10-K405",
+        "10-K405/A",
+        "10-KSB",
+        "10-KSB/A",
+        "10-KT",
+        "10-KT/A",
+        "10-Q",
+        "10-Q/A",
+        "10-QSB",
+        "10-QSB/A",
+        "NT 10-K",
+        "NT 10-K/A",
+        "NT 10-Q",
+        "NT 10-Q/A",
+        "nt  10-k",
+    ):
+        assert is_periodic_report_form(form), f"expected periodic: {form!r}"
+
+    for form in (
+        "SC 13D",
+        "SC 13D/A",
+        "SC 13G",
+        "SC 13G/A",
+        "3",
+        "4",
+        "4/A",
+        "5",
+        "144",
+        "UPLOAD",
+        "CORRESP",
+        "15",
+        "15-12B",
+        "15-12G",
+        "15-15D",
+        "8-K",
+        "8-K/A",
+        "25",
+        "25-NSE",
+        "S-1",
+        "S-3",
+        "S-4",
+        "424B2",
+        "8-A12B",
+        "8-A12G",
+        "10-12B",
+        "",
+        "   ",
+    ):
+        assert not is_periodic_report_form(form), f"expected non-periodic: {form!r}"
+
+    last_bar = pd.Timestamp("2001-03-15")
+    day_180 = date(2001, 9, 11)
+    day_181 = date(2001, 9, 12)
+    non_periodic_late = [
+        (day_181, "SC 13G"),
+        (day_181, "SC 13G/A"),
+        (day_181, "4"),
+        (day_181, "4/A"),
+        (day_181, "UPLOAD"),
+        (day_181, "15-12B"),
+        (day_181, "8-K"),
+    ]
+    assert not has_kept_filing(non_periodic_late, last_bar)
+    assert not has_kept_filing([(day_180, "10-Q")], last_bar)
+    assert has_kept_filing([(day_181, "10-Q")], last_bar)
+    assert has_kept_filing([(day_181, "NT 10-K")], last_bar)
+    assert has_kept_filing([(day_181, "10-K405/A")], last_bar)
+
+
 def test_parse_master_index_preserves_file_path_and_find_filings_filters() -> None:
     archive = _make_master_zip(
         [
