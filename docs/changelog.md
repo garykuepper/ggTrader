@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-25 (CI pin counts)
+
+- The CI step "Evidence pins" failed on every push since the data-integrity study: it still expected `MATCH=0`, but that study pins two `src/ggTrader/utils` files in three evidence files, which resolve as 6 MATCH. The expected counts in `.github/workflows/ci.yml` are now `MATCH=6,MOVED-MATCH=4,HISTORY-MATCH=18,FAIL=0` (`scripts/verify_pins.py` prints exactly that on `main`). The other CI failure on those pushes, the script style test on the first dead-stock test's `run.py`, was fixed by the `list` allowance in `tests/scripts/test_scripts_have_help.py`.
+
 ## 2026-11-25 (dead-stock random baseline)
 
 - Placebo check for the first test's rule: for each of the three windows already run (2000 to 2004, 2005 to 2019, 2020 to 2024), 100 portfolios of 50 stocks drawn at random each month from the stocks the rule could hold that day ("fresh" draws), and 100 "matched" draws that replace as many names a month as the rule actually bought; same ledger, 18.3 bps cost, low tax set and the three dead-stock loss readings. No label. Chance does not give one answer: the rule did worse than every draw in 2000 to 2004 (gap to SPY -18.0 / -12.8 / -7.3 points a year at the three readings against a middle draw of -1.0 to +5.6), worse than every draw at the two lower readings and about level at the best in 2005 to 2019, and better than most draws in 2020 to 2024. In 2005 to 2024 almost every chance portfolio also trailed SPY, so the rule's shortfall was not unique to its picks (the study did not split it into parts). The rule held 2 to 4 times as many stocks on the day they stopped trading as the draws did (117 against about 33 in 2005 to 2019).
