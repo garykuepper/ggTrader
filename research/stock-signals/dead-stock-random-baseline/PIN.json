@@ -1,0 +1,133 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "dead-stock-random-baseline",
+    "category": "stock-signals",
+    "path": "research/stock-signals/dead-stock-random-baseline"
+  },
+  "engine": {
+    "git_sha": "2f351fd0f60b610bdeb99941efd010360cdb6208",
+    "git_dirty": false,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "python": "3.12.13",
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": [
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_dev-A.json",
+        "sha256": "beab59f3ae57b72786ac1ad96dd95c2e9fd1230f09e1f4a3e29d3f42f17475ed"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-first-test/_holdout-A.json",
+        "sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358"
+      },
+      {
+        "path": "research/stock-signals/dead-stock-fresh-window/_fresh-A.json",
+        "sha256": "828752718fd34e8b5dcc89962638d5939052a2d478ecd99051e0516218c207ed"
+      }
+    ]
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/baseline_inputs.py",
+      "sha256": "0205bdb19871635b6f2c556707afa47615d334c40068d656b81462829fc026b3"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/dead_stock_random_baseline.py",
+      "sha256": "ba5a4789318e85e81556a8d4e71930182603cf96c0a1d6791fe5cb708d0e7b15"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/random_plans.py",
+      "sha256": "fa8ad2427309e58db8130d415e04902f2c07781241fc43b5a22ce3a6df0eaa3a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/rb_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/rb_dead_stock_first_test.py",
+      "sha256": "12da5318f9ad989418b31985823729ed8b88646f57645eaae2d022efe588397c"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/rb_ledger_run.py",
+      "sha256": "c2dd120d74bd8e0b77b7b795fdf93c25474f60913e2d93723f683fb9f17eb4a0"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/rb_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/rb_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/run.py",
+      "sha256": "1452d3fdeed1bcfc5dd352d98643488021925e09a5d8a52b156e7b257052ac85"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/tests/test_dead_stock_random_baseline.py",
+      "sha256": "d41afac33acd54cb3545d1dca3d37bc837a2e29787a7d64d9f11ba8ca778c7fb"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/tests/test_frozen_copies.py",
+      "sha256": "85aab3b8f6dc1efa95837b206d6fbe56c49da45c6bcbc63c7e7ca62d14061ba1"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/tests/test_random_plans.py",
+      "sha256": "38c33eb1cd4c04aa655ba4d85c6eae05ca368e81b7958d93d03b6a5ef37095df"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/code/tests/test_run.py",
+      "sha256": "f15a610fe82937b5b45d16e0449c5cf284bc155c9ba3cd3224a54ae19550c648"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/dead-stock-random-baseline/code/run.py",
+      "--window",
+      "holdout",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "2000-01-03",
+    "eval_end": "2024-12-31"
+  },
+  "seed": 20261125,
+  "results": [
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/_dev.json",
+      "sha256": "a32bbe197f8e14ae954b363db1833b552b3911c93fec47103152f013bf421270"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/_early.json",
+      "sha256": "35dcdcba3329de895b5899eef0d1a752f3d5d36513311d3591c791725d0f1875"
+    },
+    {
+      "path": "research/stock-signals/dead-stock-random-baseline/_holdout.json",
+      "sha256": "a6ef9aaf80fc1ab55cc94213c461839c804f77a8abaf98af557c13fcac90eaa2"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "Replay in a scratch clone at git_sha 2f351fd0 (the commit all three results were run on; tracked tree clean, the binding blocks in the result files say dirty only because an earlier window's untracked result file was present). The pinned command runs one window (2020 to 2024, about 20 minutes); the other two are in the README. Each window first reproduces the rule's saved headline results to half a cent. Seeds follow a rule in the brief, so draws repeat exactly. It reads the read-only database, release 1 and CRSP load 1. The result files carry a provenance block copied in after the runs. The three saved input files are pinned above."
+  },
+  "created_utc": "2026-11-25T17:18:14Z"
+}
