@@ -1,0 +1,14 @@
+# Study card. Read by scripts/study.py check; edit by hand.
+id = "dead-stock-payout-rerun"
+category = "stock-signals"
+placement_rule = 9
+question = "If the dead stocks the first test held that have filing evidence of an acquisition are sold at their last price, how far behind or ahead of SPY is the same 12-1 momentum rule after costs and taxes, with the other dead stocks kept at the three loss readings?"
+kind = "screen"
+status = "open"
+verdict = ""
+aliases = []
+brief = "2026-11-24-dead-stock-payout-rerun-brief.md"
+reports = []
+results = []
+uses_lib = []
+allow_paper_imports = false
