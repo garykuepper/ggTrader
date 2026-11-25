@@ -82,3 +82,6 @@ None. The owner's four plain rules apply.
 ## Amendments
 
 None yet.
+
+**2026-11-25, first note (after the review of the parser, before any SEC request; no data seen).** The item mapping of section 1 is clarified in three ways. (1) Item *numbers* (2.01, 5.01, 1.03, 3.01) count only in a filing dated on or after 2004-08-23, the day the SEC's renumbered item list took effect; a bare number in an earlier filing, or in a filing with no readable date, is `other`. (2) Item *text labels* count in every era, because the SEC's header labels are text in both eras (the pilot confirms the exact wording on real filings): "Changes in control of registrant" and "Acquisition or disposition of assets" (also "Completion of acquisition or disposition of assets") are acquisition-type; "Bankruptcy or receivership" is bankruptcy; "Notice of delisting or failure to satisfy a continued listing rule or standard; transfer of listing" is a delisting notice. Labels are matched by their whole normalised text, never by a number or word found inside a longer description. (3) A number counts only when it stands as an item declaration (the whole value is an item code or a list of item codes), never when it appears inside a description such as "Other events (agreement section 2.01)".
+
