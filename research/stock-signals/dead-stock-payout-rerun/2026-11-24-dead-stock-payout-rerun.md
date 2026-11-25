@@ -6,7 +6,7 @@
 
 ## 1. In short
 
-- **This is a re-score of windows both already seen, not a fresh test.** The rule and both windows (2005 to 2019, and 2020 to 2024) were run in the first test; the data file ends 2024-12-31, so no unseen period exists. Nothing was tuned. The first test's one-run lock files were not touched.
+- **This is a re-score of windows both already seen, not a fresh test.** (A stock is "pinned" when its sale price comes from the payout table instead of from one of the three guesses.) The rule and both windows (2005 to 2019, and 2020 to 2024) were run in the first test; the data file ends 2024-12-31, so no unseen period exists. Nothing was tuned. The first test's one-run lock files were not touched.
 - **The best case cannot change, and it did not.** The stocks with filing evidence are sold at their last price (loss 0.0), which is the first test's best reading. The rerun's best-case numbers equal the first test's 0.0 reading to the cent (checked by the program before anything was published).
 - **The worst case got much less bad.** At 18.3 bps and the low tax set, with the stocks we hold a checked filing for sold at their last price and every other dead stock written off completely (1.0):
 
@@ -16,16 +16,16 @@
 | 2020 to 2024 (holdout) | **-0.9** | +0.4 | +1.6 | -7.3 to +1.6 |
 
   Numbers are the rule's yearly growth after cost and tax minus SPY's, in percentage points a year (a minus sign means behind SPY). The range is narrower in both windows, and the middle is between the two ends in both.
-- **How much of the question the filings settle.** Of the dead stocks the rule held, 71 of 117 (development) and 17 of 24 (holdout) were pinned in the headline set. The other 46 and 7 keep the three guesses; section 3 names them.
-- **What the numbers say, and do not say.** Even with the filing-evidence stocks fully paid, the rule trailed SPY after cost and tax in 2005 to 2019 at every reading. In 2020 to 2024 it ended close to SPY at the harshest reading (0.9 points behind) and ahead at the best (1.6 points), and at the best reading the lead disappears at the highest cost (40 bps: 0.0 points) and shrinks to 0.5 points under the higher tax set. That is a narrower range, not a verdict: the 0.0 for an acquisition is an assumption the filings do not measure, and both windows were already seen.
+- **How many stocks get the last-price assumption.** In the headline cell (`confirmed` set, reading 1.0, 18.3 bps, low tax), 71 of the 117 dead stocks the rule held in 2005 to 2019 (60.7 percent) and 17 of the 24 held in 2020 to 2024 (70.8 percent) were pinned, meaning sold at their last price because a checked filing shows an acquisition-type event. The other 46 and 7 keep the three guesses; section 3 names them.
+- **What the numbers say, and do not say.** Even when the filing-evidence stocks are assumed to recover their full last price, the rule trailed SPY after cost and tax in 2005 to 2019 at every reading. In 2020 to 2024 it ended close to SPY at the harshest reading (0.9 points behind) and ahead at the best (1.6 points), and at the best reading the lead disappears at the highest cost (40 bps: 0.0 points) and shrinks to 0.5 points under the higher tax set. That is a narrower range, not a verdict: the 0.0 for an acquisition is an assumption the filings do not measure, and both windows were already seen.
 
 ## 2. What was done
 
-- **The rule, universe, windows, costs and taxes are the first test's** (12-1 momentum, top 50, monthly, next-day close; the main list: common stock on the NYSE or Nasdaq, price at least $5, 1,000 largest by value; costs 6.4, 18.3 and 40 bps per side, a basis point being 0.01 percent; tax sets 24 and 15 percent, and 35 and 20 percent; start cash 100,000). The first test's engine files are copied into this study with `ft_` in front of each name; a test checks that each copy equals the original apart from three import lines. Universe B (the $1 stress list) was not rerun.
+- **The rule, universe, windows, costs and taxes are the first test's** (each month, buy the 50 stocks that rose the most over the past year, skipping the last month, and trade at the next day's close; known as 12-1 momentum; the main list: common stock on the NYSE or Nasdaq, price at least $5, 1,000 largest by value; costs 6.4, 18.3 and 40 bps per side, a basis point (bps) being 0.01 percent of each trade's value; tax sets 24 and 15 percent, and 35 and 20 percent, the first rate applying to gains on holdings sold within a year and the second to older holdings; start cash 100,000). The first test's engine files are copied into this study with `ft_` in front of each name; a test checks that each copy equals the original apart from three import lines. Universe B (the $1 stress list) was not rerun.
 - **The one change.** A dead stock whose row in the payout table has a loss figure is sold at its last price times (1 minus that figure). Today every such figure is 0.0 (an acquisition-type filing; the amount holders received was not measured). Every other dead stock is sold at the reading, as before.
 - **Two evidence sets.** `confirmed` (the headline): the 88 stocks whose Form 25 notice (the exchange's removal notice) was read and checked. `all` (a sensitivity): those 88 plus 15 identified by company name only. In 2020 to 2024 the two sets are the same 17 stocks, so their results are identical there.
-- **Checks that had to pass before anything was published.** (1) Reproduction: with nobody pinned, the rule's final value at readings 1.0 and 0.0 and SPY's final value equal the first test's saved cells to the cent in both windows. (2) Best-case identity: for every evidence set, cost and tax set, the reading-0.0 cell equals the first test's loss-0.0 cell. Both passed in both windows. The program is built to stop before any evidence-set result is computed if the first one fails; a defect in my own plan (it first let the run continue) was caught by an independent reviewer before the real runs.
-- **The runs.** One development run (about 25 minutes, about 1 GB of memory) and one holdout run, each over the pinned release 1 and CRSP load 1 of our own database, on a clean working tree (code commit `fa944179`), with the payout table's fingerprint checked against the registered one.
+- **Checks that had to pass before anything was published.** (1) Reproduction: with nobody pinned, the rule's final value at readings 1.0 and 0.0 and SPY's final value equal the first test's saved cells to the cent in both windows. (2) Best-case identity: for every evidence set, cost and tax set, the reading-0.0 cell equals the first test's loss-0.0 cell. Both passed in both windows. The program is built to stop before any evidence-set result is computed if the first one fails; the code first let a failed reproduction check carry on into the evidence-set cells (my task instruction for the code was wrong; the registered plan already said to stop); an independent reviewer caught it and it was fixed before the real runs.
+- **The runs.** One development run (about 25 minutes, about 1 GB of memory) and one holdout run, each reading the published combined price release of our own database that the first test used (release 1, built from the university stock-price file CRSP plus Yahoo prices), with the payout table's fingerprint checked against the registered one. Both ran from code commit `fa944179` with the tracked files unchanged; the holdout run's broader git check also counted an untracked file, which was the development run's own result file, so its saved record says the tree was not clean in that wider sense. Timing: the development run took 24 minutes 39 seconds and peaked at 1.0 GB of memory (system timer, saved in `_run_notes.txt`); the holdout run was not timed.
 
 ## 3. Results
 
@@ -173,10 +173,14 @@ Not pinned in the headline cell (46): FOREST LABS (FRX), BARR INC (PERMNO-11415)
 
 Not pinned in the headline cell (7): AMERN NATL INS (PERMNO-13507), SANTANDER CONS (PERMNO-14414), GBT (PERMNO-15638), no name (PERMNO-16939), PRINCIPIA (PERMNO-18126), PROMETHEUS BIO (PERMNO-20870), no name (PERMNO-64899)
 
+### Coverage in every cell
+
+The counts and the names of pinned and not-pinned dead stocks are the same in all 18 cells of each evidence set within a window (checked in the saved results for all 72 cells): development `confirmed` 117 held, 71 pinned, 46 not pinned; development `all` 117 held, 86 pinned, 31 not pinned; holdout `confirmed` and `all` both 24 held, 17 pinned, 7 not pinned. No held dead stock was missing from the payout table in any cell. The not-pinned names of the headline set are listed under each window above. The 31 not pinned in the development `all` set are: FOREST LABS (FRX), BARR INC (PERMNO-11415), FOUNDATION (PERMNO-14160), JUNO (PERMNO-15134), SPARK (PERMNO-15183), no name (PERMNO-16544), SPRINT NEXTEL (PERMNO-39087), PHARMACEU RESOUR (PERMNO-61138), VALEANT PHARMA (PERMNO-68340), OREGON STEEL (PERMNO-75308), LYONDELL (PERMNO-75444), no name (PERMNO-75900), VINTAGE PETE INC (PERMNO-76272), MAVERICK TUBE CO (PERMNO-76598), VERITAS DGC INC (PERMNO-76769), PHILA CONSOL HLD (PERMNO-79617), NATIONWIDE FINL (PERMNO-84644), ABGENIX INC (PERMNO-86235), VARIAN SEMI (PERMNO-86791), STANCORP FINL (PERMNO-86809), SPINNAKER EXPLOR (PERMNO-87254), no name (PERMNO-87283), CEPHEI (PERMNO-88331), UNITED DEFENSE (PERMNO-89260), PREMCOR INC (PERMNO-89374), DADE (PERMNO-89680), PHARMION CORP (PERMNO-89918), JAZZ PHARMA (PERMNO-92096), no name (PERMNO-92182), no name (PERMNO-92552), no name (PERMNO-93247).
+
 ### What the tables show
 
 - **Development window.** Selling the 71 pinned stocks at their last price lifts the harshest reading from 16.4 points behind SPY to 7.2 behind (9.3 points). What is left of the dead-stock effect at that reading, -6.6 points, comes from the 46 stocks still under the guess (the first test: -16.2). Even at the best reading the rule trails SPY by 2.0 points.
-- **Holdout window.** At the harshest reading the rule is 0.9 points behind SPY at 18.3 bps (1.7 behind with the higher tax); at the middle reading it is 0.4 ahead; at the best reading 1.6 ahead. At 40 bps and low tax the best reading ties SPY and the other two trail it.
+- **Holdout window.** At the harshest reading the rule is 0.9 points behind SPY at 18.3 bps (1.7 behind with the higher tax); at the middle reading it is 0.4 ahead; at the best reading 1.6 ahead. At 40 bps and low tax the best reading nearly matches SPY (0.02 points behind, 178,899 against 179,079) and the other two trail it.
 - **Risk.** In both windows the rule has a larger fall from a peak and a lower Sharpe ratio than SPY at every reading (holdout 0.49 to 0.55 against 0.66).
 
 ## 4. What this cannot tell you
@@ -190,9 +194,111 @@ Not pinned in the headline cell (7): AMERN NATL INS (PERMNO-13507), SANTANDER CO
 
 ## 5. Files and how to reproduce
 
-Results `_rerun-dev-A.json` and `_rerun-holdout-A.json` (every cell, the checks, the coverage per cell, the decomposition, provenance). Every trade of every cell is in `results/dead_stock_payout_rerun/dev-A-trades.csv.gz` and `holdout-A-trades.csv.gz`, which git does not track. Code in `code/`. Run from the repository root with a clean working tree, one after the other:
+Results `_rerun-dev-A.json` and `_rerun-holdout-A.json` (every cell, the checks, the coverage per cell, the decomposition, provenance); `_run_notes.txt` (timing of the development run). Every trade of every cell is in `results/dead_stock_payout_rerun/dev-A-trades.csv.gz` and `holdout-A-trades.csv.gz`, which git does not track. Code in `code/`. Run from the repository root with a clean working tree, one after the other, only through the capped-run wrapper:
 
-    .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window dev --release-id 1 --crsp-load 1
-    .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window holdout --release-id 1 --crsp-load 1
+    scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window dev --release-id 1 --crsp-load 1
+    scripts/run_capped.sh .venv/bin/python research/stock-signals/dead-stock-payout-rerun/code/run.py --window holdout --release-id 1 --crsp-load 1
 
 The first test's files it reads: `research/stock-signals/dead-stock-first-test/_dev-A.json` and `_holdout-A.json`; the payout table: `research/stock-signals/dead-stock-data-integrity/_payouts_v2.csv`.
+
+## Appendix A. Risk and trading for every cell
+
+Sharpe ratio is the yearly return per unit of ups and downs (higher is better). Largest fall is the worst drop from a peak to a later low. Yearly turnover is how many times the account's value is bought and sold in a year.
+
+### Development, 2005 to 2019
+
+| Evidence set | Reading | Cost per side | Tax set | Sharpe ratio | Largest fall from a peak | Yearly turnover |
+|---|---|---|---|---:|---:|---:|
+| confirmed | 1.0 | 6.4 bps | low | 0.20 | -70.0% | 8.4 |
+| confirmed | 1.0 | 6.4 bps | high | 0.20 | -70.0% | 8.4 |
+| confirmed | 1.0 | 18.3 bps | low | 0.17 | -70.3% | 8.4 |
+| confirmed | 1.0 | 18.3 bps | high | 0.17 | -70.3% | 8.4 |
+| confirmed | 1.0 | 40 bps | low | 0.11 | -70.8% | 8.4 |
+| confirmed | 1.0 | 40 bps | high | 0.11 | -70.8% | 8.4 |
+| confirmed | 0.5 | 6.4 bps | low | 0.29 | -68.3% | 8.1 |
+| confirmed | 0.5 | 6.4 bps | high | 0.28 | -68.3% | 7.9 |
+| confirmed | 0.5 | 18.3 bps | low | 0.26 | -68.6% | 8.2 |
+| confirmed | 0.5 | 18.3 bps | high | 0.25 | -68.6% | 8.0 |
+| confirmed | 0.5 | 40 bps | low | 0.21 | -69.2% | 8.3 |
+| confirmed | 0.5 | 40 bps | high | 0.20 | -69.2% | 8.2 |
+| confirmed | 0.0 | 6.4 bps | low | 0.38 | -66.6% | 7.8 |
+| confirmed | 0.0 | 6.4 bps | high | 0.36 | -66.6% | 7.6 |
+| confirmed | 0.0 | 18.3 bps | low | 0.35 | -66.9% | 7.9 |
+| confirmed | 0.0 | 18.3 bps | high | 0.33 | -66.9% | 7.6 |
+| confirmed | 0.0 | 40 bps | low | 0.30 | -67.5% | 8.0 |
+| confirmed | 0.0 | 40 bps | high | 0.28 | -67.5% | 7.8 |
+| all | 1.0 | 6.4 bps | low | 0.26 | -68.6% | 8.2 |
+| all | 1.0 | 6.4 bps | high | 0.25 | -68.6% | 8.1 |
+| all | 1.0 | 18.3 bps | low | 0.23 | -68.9% | 8.3 |
+| all | 1.0 | 18.3 bps | high | 0.22 | -68.9% | 8.2 |
+| all | 1.0 | 40 bps | low | 0.18 | -69.5% | 8.4 |
+| all | 1.0 | 40 bps | high | 0.18 | -69.5% | 8.4 |
+| all | 0.5 | 6.4 bps | low | 0.32 | -67.6% | 8.0 |
+| all | 0.5 | 6.4 bps | high | 0.30 | -67.6% | 7.8 |
+| all | 0.5 | 18.3 bps | low | 0.29 | -67.9% | 8.1 |
+| all | 0.5 | 18.3 bps | high | 0.28 | -67.9% | 7.9 |
+| all | 0.5 | 40 bps | low | 0.24 | -68.5% | 8.2 |
+| all | 0.5 | 40 bps | high | 0.23 | -68.5% | 8.1 |
+| all | 0.0 | 6.4 bps | low | 0.38 | -66.6% | 7.8 |
+| all | 0.0 | 6.4 bps | high | 0.36 | -66.6% | 7.6 |
+| all | 0.0 | 18.3 bps | low | 0.35 | -66.9% | 7.9 |
+| all | 0.0 | 18.3 bps | high | 0.33 | -66.9% | 7.6 |
+| all | 0.0 | 40 bps | low | 0.30 | -67.5% | 8.0 |
+| all | 0.0 | 40 bps | high | 0.28 | -67.5% | 7.8 |
+| SPY | n/a | 6.4 bps | low | 0.51 | -55.2% | n/a |
+| SPY | n/a | 6.4 bps | high | 0.50 | -55.2% | n/a |
+| SPY | n/a | 18.3 bps | low | 0.51 | -55.2% | n/a |
+| SPY | n/a | 18.3 bps | high | 0.50 | -55.2% | n/a |
+| SPY | n/a | 40 bps | low | 0.51 | -55.2% | n/a |
+| SPY | n/a | 40 bps | high | 0.49 | -55.2% | n/a |
+
+
+
+### Holdout, 2020 to 2024
+
+| Evidence set | Reading | Cost per side | Tax set | Sharpe ratio | Largest fall from a peak | Yearly turnover |
+|---|---|---|---|---:|---:|---:|
+| confirmed | 1.0 | 6.4 bps | low | 0.51 | -44.2% | 8.0 |
+| confirmed | 1.0 | 6.4 bps | high | 0.47 | -46.2% | 7.7 |
+| confirmed | 1.0 | 18.3 bps | low | 0.49 | -45.6% | 8.0 |
+| confirmed | 1.0 | 18.3 bps | high | 0.45 | -47.5% | 7.8 |
+| confirmed | 1.0 | 40 bps | low | 0.45 | -48.1% | 8.0 |
+| confirmed | 1.0 | 40 bps | high | 0.42 | -49.8% | 7.8 |
+| confirmed | 0.5 | 6.4 bps | low | 0.55 | -41.1% | 8.0 |
+| confirmed | 0.5 | 6.4 bps | high | 0.50 | -43.2% | 7.8 |
+| confirmed | 0.5 | 18.3 bps | low | 0.52 | -42.3% | 8.0 |
+| confirmed | 0.5 | 18.3 bps | high | 0.48 | -44.3% | 7.8 |
+| confirmed | 0.5 | 40 bps | low | 0.48 | -44.9% | 8.0 |
+| confirmed | 0.5 | 40 bps | high | 0.44 | -46.8% | 7.8 |
+| confirmed | 0.0 | 6.4 bps | low | 0.58 | -39.9% | 8.0 |
+| confirmed | 0.0 | 6.4 bps | high | 0.53 | -42.1% | 7.8 |
+| confirmed | 0.0 | 18.3 bps | low | 0.55 | -40.7% | 8.0 |
+| confirmed | 0.0 | 18.3 bps | high | 0.51 | -42.8% | 7.8 |
+| confirmed | 0.0 | 40 bps | low | 0.51 | -42.1% | 8.0 |
+| confirmed | 0.0 | 40 bps | high | 0.47 | -44.0% | 7.8 |
+| all | 1.0 | 6.4 bps | low | 0.51 | -44.2% | 8.0 |
+| all | 1.0 | 6.4 bps | high | 0.47 | -46.2% | 7.7 |
+| all | 1.0 | 18.3 bps | low | 0.49 | -45.6% | 8.0 |
+| all | 1.0 | 18.3 bps | high | 0.45 | -47.5% | 7.8 |
+| all | 1.0 | 40 bps | low | 0.45 | -48.1% | 8.0 |
+| all | 1.0 | 40 bps | high | 0.42 | -49.8% | 7.8 |
+| all | 0.5 | 6.4 bps | low | 0.55 | -41.1% | 8.0 |
+| all | 0.5 | 6.4 bps | high | 0.50 | -43.2% | 7.8 |
+| all | 0.5 | 18.3 bps | low | 0.52 | -42.3% | 8.0 |
+| all | 0.5 | 18.3 bps | high | 0.48 | -44.3% | 7.8 |
+| all | 0.5 | 40 bps | low | 0.48 | -44.9% | 8.0 |
+| all | 0.5 | 40 bps | high | 0.44 | -46.8% | 7.8 |
+| all | 0.0 | 6.4 bps | low | 0.58 | -39.9% | 8.0 |
+| all | 0.0 | 6.4 bps | high | 0.53 | -42.1% | 7.8 |
+| all | 0.0 | 18.3 bps | low | 0.55 | -40.7% | 8.0 |
+| all | 0.0 | 18.3 bps | high | 0.51 | -42.8% | 7.8 |
+| all | 0.0 | 40 bps | low | 0.51 | -42.1% | 8.0 |
+| all | 0.0 | 40 bps | high | 0.47 | -44.0% | 7.8 |
+| SPY | n/a | 6.4 bps | low | 0.66 | -33.7% | n/a |
+| SPY | n/a | 6.4 bps | high | 0.63 | -33.7% | n/a |
+| SPY | n/a | 18.3 bps | low | 0.66 | -33.7% | n/a |
+| SPY | n/a | 18.3 bps | high | 0.63 | -33.7% | n/a |
+| SPY | n/a | 40 bps | low | 0.66 | -33.7% | n/a |
+| SPY | n/a | 40 bps | high | 0.63 | -33.7% | n/a |
+
+
