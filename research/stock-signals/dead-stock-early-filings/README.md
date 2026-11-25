@@ -2,7 +2,7 @@
 
 **Question:** For every stock in the first test's list that stopped trading from 2000 to 2004, what do the SEC's free filings say about how it ended?
 
-**Kind:** audit. **Status:** closed (2026-11-25, UNRESOLVED; no GO or NO-GO label; see the report). **Category:** stock-signals (placement row 9). In short: of 251 stocks, 8 carry an acquisition-type or bankruptcy filing and 18 a removal notice only; for the 33 the rule held, 1 has an acquisition-type filing. The search read the company's own 8-K and Form 25 filings, which for these years say little; no payment amount was read.
+**Kind:** audit. **Status:** closed (2026-11-25, UNRESOLVED; no GO or NO-GO label; see the report). **Category:** stock-signals (placement row 9). In short: of 251 stocks, 8 receive an acquisition-type or bankruptcy label (two more have an acquisition notice but stay labelled kept filing) and 18 a removal notice only; for the 33 the rule held, 1 has an acquisition-type filing. The search read the company's own 8-K and Form 25 filings, which for these years say little; no payment amount was read.
 
 ## Where things are
 
