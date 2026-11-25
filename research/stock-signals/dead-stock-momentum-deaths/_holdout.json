@@ -1,0 +1,398 @@
+{
+  "study": "dead-stock-momentum-deaths",
+  "window": "holdout",
+  "window_dates": [
+    "2020-01-02",
+    "2024-12-31"
+  ],
+  "release_id": 1,
+  "crsp_load": 1,
+  "git_head": "f9641751668c2a0e71e31b96b83724ebf2f58d4e",
+  "command": [
+    "research/stock-signals/dead-stock-momentum-deaths/code/run.py",
+    "--window",
+    "holdout",
+    "--release-id",
+    "1",
+    "--crsp-load",
+    "1"
+  ],
+  "provenance": {
+    "git_sha": "f9641751668c2a0e71e31b96b83724ebf2f58d4e",
+    "git_dirty": false,
+    "diff_sha256": null,
+    "lock_sha256": "e6ba264516ee103bc20f6c26f63da30562cd56213195e5098f2cd0771364af4e",
+    "python": "3.12.13",
+    "release_id": 1,
+    "crsp_load": 1,
+    "window": "holdout",
+    "window_dates": [
+      "2020-01-02",
+      "2024-12-31"
+    ],
+    "command": [
+      "research/stock-signals/dead-stock-momentum-deaths/code/run.py",
+      "--window",
+      "holdout",
+      "--release-id",
+      "1",
+      "--crsp-load",
+      "1"
+    ],
+    "code_sha256": "a5f1702364c3e00be8d6d1acebb3b21d31d7db3f83bfd49b49cae2cc87213cbf",
+    "saved_file": "/home/flynn/ggTrader/research/stock-signals/dead-stock-first-test/_holdout-A.json",
+    "saved_file_sha256": "2739ce693e1bd4bd9424a10f1c3aed5a680df76520337bc8ead58e84219d0358",
+    "random_baseline_file": "/home/flynn/ggTrader/research/stock-signals/dead-stock-random-baseline/_holdout.json",
+    "random_baseline_file_sha256": "a6ef9aaf80fc1ab55cc94213c461839c804f77a8abaf98af557c13fcac90eaa2",
+    "data_release": {
+      "release_id": 1,
+      "created_at": "2026-11-23T15:45:21.991220-08:00",
+      "yahoo_fingerprint": {
+        "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+        "n_links": 916,
+        "n_yahoo_rows": 5772115,
+        "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+      }
+    },
+    "bars_sha256": [
+      "a5ffad6bfae789dd0ea963aefb5a60346f6a19a5db263a415da97585240abb1a",
+      "a96dc26cdb6afc80de249a9676aec71b0c5c3e11c222f7c2804646471723fe42",
+      "94670b9b16a2e77f8d03ae345862687124fa02d83353054e047ffa3cb508a5cd",
+      "dc6b9c04cff817a1eb0400a48df8c76a411ae64c9fb858dc746e905befc6a753"
+    ],
+    "spy_bars_sha256": [
+      "029051dcfa640c13f782c9204f4f1fac2c6e3b0f25622980d4e015644208259a"
+    ],
+    "data_provenance": {
+      "candidates": {
+        "data_release": {
+          "release_id": 1,
+          "created_at": "2026-11-23T15:45:21.991220-08:00",
+          "yahoo_fingerprint": {
+            "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+            "n_links": 916,
+            "n_yahoo_rows": 5772115,
+            "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+          }
+        },
+        "bars_sha256": [
+          "a5ffad6bfae789dd0ea963aefb5a60346f6a19a5db263a415da97585240abb1a",
+          "a96dc26cdb6afc80de249a9676aec71b0c5c3e11c222f7c2804646471723fe42",
+          "94670b9b16a2e77f8d03ae345862687124fa02d83353054e047ffa3cb508a5cd",
+          "dc6b9c04cff817a1eb0400a48df8c76a411ae64c9fb858dc746e905befc6a753"
+        ],
+        "n_batches": 4,
+        "drift": false,
+        "drift_symbols": []
+      },
+      "spy": {
+        "data_release": {
+          "release_id": 1,
+          "created_at": "2026-11-23T15:45:21.991220-08:00",
+          "yahoo_fingerprint": {
+            "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+            "n_links": 916,
+            "n_yahoo_rows": 5772115,
+            "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+          }
+        },
+        "bars_sha256": [
+          "029051dcfa640c13f782c9204f4f1fac2c6e3b0f25622980d4e015644208259a"
+        ],
+        "n_batches": 1,
+        "drift": false,
+        "drift_symbols": []
+      },
+      "n_candidate_columns": 1598
+    }
+  },
+  "data_release": {
+    "release_id": 1,
+    "created_at": "2026-11-23T15:45:21.991220-08:00",
+    "yahoo_fingerprint": {
+      "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+      "n_links": 916,
+      "n_yahoo_rows": 5772115,
+      "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+    }
+  },
+  "bars_sha256": [
+    "a5ffad6bfae789dd0ea963aefb5a60346f6a19a5db263a415da97585240abb1a",
+    "a96dc26cdb6afc80de249a9676aec71b0c5c3e11c222f7c2804646471723fe42",
+    "94670b9b16a2e77f8d03ae345862687124fa02d83353054e047ffa3cb508a5cd",
+    "dc6b9c04cff817a1eb0400a48df8c76a411ae64c9fb858dc746e905befc6a753"
+  ],
+  "data_provenance": {
+    "candidates": {
+      "data_release": {
+        "release_id": 1,
+        "created_at": "2026-11-23T15:45:21.991220-08:00",
+        "yahoo_fingerprint": {
+          "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+          "n_links": 916,
+          "n_yahoo_rows": 5772115,
+          "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+        }
+      },
+      "bars_sha256": [
+        "a5ffad6bfae789dd0ea963aefb5a60346f6a19a5db263a415da97585240abb1a",
+        "a96dc26cdb6afc80de249a9676aec71b0c5c3e11c222f7c2804646471723fe42",
+        "94670b9b16a2e77f8d03ae345862687124fa02d83353054e047ffa3cb508a5cd",
+        "dc6b9c04cff817a1eb0400a48df8c76a411ae64c9fb858dc746e905befc6a753"
+      ],
+      "n_batches": 4,
+      "drift": false,
+      "drift_symbols": []
+    },
+    "spy": {
+      "data_release": {
+        "release_id": 1,
+        "created_at": "2026-11-23T15:45:21.991220-08:00",
+        "yahoo_fingerprint": {
+          "sha256": "247370be2477f3f76433d97a0a05831b7ee636d0f3add676b21e3277b15a3890",
+          "n_links": 916,
+          "n_yahoo_rows": 5772115,
+          "newest_yahoo_timestamp": "2026-11-05T00:00:00"
+        }
+      },
+      "bars_sha256": [
+        "029051dcfa640c13f782c9204f4f1fac2c6e3b0f25622980d4e015644208259a"
+      ],
+      "n_batches": 1,
+      "drift": false,
+      "drift_symbols": []
+    },
+    "n_candidate_columns": 1598
+  },
+  "window_check": {
+    "first_day": "2020-01-02",
+    "last_day": "2024-12-31",
+    "spy_missing_closes": 0
+  },
+  "check_first": {
+    "ok": true,
+    "n_decision_days": 59
+  },
+  "n_file_end_censored": 0,
+  "n_decision_days": 59,
+  "measures": {
+    "A1_totals": {
+      "stock_months": 57312,
+      "deaths": 142,
+      "death_rate": 0.0024776661083193746,
+      "n_months": 59
+    },
+    "A2_by_band": {
+      "1_to_50": {
+        "stock_months": 2950,
+        "deaths": 25,
+        "death_rate": 0.00847457627118644
+      },
+      "51_to_150": {
+        "stock_months": 5900,
+        "deaths": 30,
+        "death_rate": 0.005084745762711864
+      },
+      "151_to_500": {
+        "stock_months": 20650,
+        "deaths": 53,
+        "death_rate": 0.002566585956416465
+      },
+      "501_plus": {
+        "stock_months": 27812,
+        "deaths": 34,
+        "death_rate": 0.0012224938875305623
+      }
+    },
+    "A3_rate_ratio": {
+      "rate_ratio": 3.420386727142516,
+      "top_50_rate": 0.00847457627118644,
+      "all_usable_rate": 0.0024776661083193746,
+      "ci_low": 2.1028581768208885,
+      "ci_high": 4.72680776092774,
+      "n_resamples": 2000,
+      "n_valid_resamples": 2000,
+      "seed": 20261125
+    },
+    "A4_expected_vs_actual": {
+      "expected_random_50_deaths": 7.311979731620464,
+      "actual_top_50_deaths": 25,
+      "excess_deaths": 17.688020268379535,
+      "actual_to_expected_ratio": 3.4190466764955816,
+      "random_baseline_fresh_draw_median": 8.0
+    },
+    "A5_by_year": {
+      "2020": {
+        "n_months": 11,
+        "usable_stock_months": 10657,
+        "all_usable_deaths": 27,
+        "top_50_deaths": 7,
+        "expected_random_50_deaths": 1.392798231400626
+      },
+      "2021": {
+        "n_months": 12,
+        "usable_stock_months": 11319,
+        "all_usable_deaths": 29,
+        "top_50_deaths": 1,
+        "expected_random_50_deaths": 1.535795403193147
+      },
+      "2022": {
+        "n_months": 12,
+        "usable_stock_months": 11642,
+        "all_usable_deaths": 36,
+        "top_50_deaths": 6,
+        "expected_random_50_deaths": 1.852240028097827
+      },
+      "2023": {
+        "n_months": 12,
+        "usable_stock_months": 11854,
+        "all_usable_deaths": 30,
+        "top_50_deaths": 9,
+        "expected_random_50_deaths": 1.5179144002347056
+      },
+      "2024": {
+        "n_months": 12,
+        "usable_stock_months": 11840,
+        "all_usable_deaths": 20,
+        "top_50_deaths": 2,
+        "expected_random_50_deaths": 1.0132316686941598
+      }
+    },
+    "B_dying_profile": {
+      "in_top_50": {
+        "n": 25,
+        "momentum_score": {
+          "n": 25,
+          "p25": 0.6989374331854918,
+          "p50": 1.1161542446101729,
+          "p75": 2.899810181992921
+        },
+        "rank_share": {
+          "n": 25,
+          "p25": 0.0030959752321981426,
+          "p50": 0.02028397565922921,
+          "p75": 0.04242424242424243
+        },
+        "final_month_move_buckets": {
+          "lt_0.5": {
+            "count": 0,
+            "share": 0.0
+          },
+          "0.5_to_0.9": {
+            "count": 0,
+            "share": 0.0
+          },
+          "0.9_to_1.1": {
+            "count": 23,
+            "share": 0.92
+          },
+          "ge_1.1": {
+            "count": 2,
+            "share": 0.08
+          },
+          "no_history": {
+            "count": 0,
+            "share": 0.0
+          }
+        },
+        "final_month_ratio": {
+          "n": 25,
+          "p25": 1.0040558789849687,
+          "p50": 1.007476940999357,
+          "p75": 1.0332811126976664
+        },
+        "return_63d": {
+          "n": 25,
+          "p25": 0.015391018805514411,
+          "p50": 0.3649740425967565,
+          "p75": 0.882131120505508
+        }
+      },
+      "usable_not_top_50": {
+        "n": 117,
+        "momentum_score": {
+          "n": 117,
+          "p25": 0.07141365887070439,
+          "p50": 0.2715645176877486,
+          "p75": 0.47026331615646155
+        },
+        "rank_share": {
+          "n": 117,
+          "p25": 0.1524390243902439,
+          "p50": 0.3108974358974359,
+          "p75": 0.5598771750255885
+        },
+        "final_month_move_buckets": {
+          "lt_0.5": {
+            "count": 2,
+            "share": 0.017094017094017096
+          },
+          "0.5_to_0.9": {
+            "count": 1,
+            "share": 0.008547008547008548
+          },
+          "0.9_to_1.1": {
+            "count": 103,
+            "share": 0.8803418803418803
+          },
+          "ge_1.1": {
+            "count": 8,
+            "share": 0.06837606837606838
+          },
+          "no_history": {
+            "count": 3,
+            "share": 0.02564102564102564
+          }
+        },
+        "final_month_ratio": {
+          "n": 114,
+          "p25": 0.9998626109781072,
+          "p50": 1.0055500588431743,
+          "p75": 1.019929711021971
+        },
+        "return_63d": {
+          "n": 114,
+          "p25": 0.006779919922002331,
+          "p50": 0.03867917633919837,
+          "p75": 0.17902724912144324
+        }
+      }
+    },
+    "C_one_day_jumps": {
+      "threshold": 0.2,
+      "window_valid_closes_before": [
+        252,
+        21
+      ],
+      "window_note": "counted on each stock's own valid closes, as the momentum score is",
+      "note": "Descriptive count only: a one-day close-to-close gain of 20 percent or more is not a buy-out (earnings, news and dead-cat bounces also cause jumps).",
+      "top_50_died": {
+        "n": 25,
+        "n_flagged": 16,
+        "share_flagged": 0.64
+      },
+      "top_50_did_not_die": {
+        "n": 2925,
+        "n_flagged": 1211,
+        "share_flagged": 0.414017094017094
+      },
+      "all_usable": {
+        "n": 57312,
+        "n_flagged": 6188,
+        "share_flagged": 0.10797040759352317
+      }
+    },
+    "D_first_test_check": {
+      "top_50_deaths": 25,
+      "first_test_held_at_death": 24,
+      "difference": 1,
+      "abs_difference": 1,
+      "ratio": 1.0416666666666667,
+      "relative_difference": 0.041666666666666664,
+      "exceeds_10pct_flag": false,
+      "threshold_pct": 10.0
+    },
+    "n_file_end_censored": 0
+  },
+  "wall_seconds": 159.12758207321167
+}
