@@ -28,6 +28,18 @@ def _env_name(value: str) -> str:
     return value
 
 
+def _add_db_target(command: argparse.ArgumentParser) -> None:
+    """Require an explicit database target."""
+    target = command.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--db-url-env",
+        type=_env_name,
+        metavar="NAME",
+        help="Environment variable containing the database connection",
+    )
+    target.add_argument("--use-configured-db", action="store_true")
+
+
 def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa: PLR0915
     """Registers the 'db' subcommand."""
     parser = subparsers.add_parser("db", help="Database administration and maintenance")
@@ -92,7 +104,9 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
     release_withdraw.add_argument("--release-id", type=int, required=True)
     release_list = release_subs.add_parser("list", help="List releases")
     from ggTrader.cli.sec_import_cmds import register_sec_parsers
+    from ggTrader.cli.verify_data_cmd import register_verify_data
 
+    _add_db_target(register_verify_data(db_subs))
     sec_commands = register_sec_parsers(import_subs)
     for command in (
         ddl,
@@ -104,14 +118,7 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
         release_list,
         *sec_commands,
     ):
-        target = command.add_mutually_exclusive_group(required=True)
-        target.add_argument(
-            "--db-url-env",
-            type=_env_name,
-            metavar="NAME",
-            help="Environment variable containing the database connection",
-        )
-        target.add_argument("--use-configured-db", action="store_true")
+        _add_db_target(command)
         command.add_argument("--yes", action="store_true", help="Confirm write")
 
 
@@ -155,6 +162,14 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
         _db_export(args)
     elif args.db_command == "load-sp500":
         _exit_unless_zero(run_load_sp500(args))
+    elif args.db_command == "verify-data":
+        from ggTrader.cli.verify_data_cmd import run_verify_data
+
+        try:
+            url = resolve_import_url(args)
+        except ValueError as exc:
+            sys.exit(str(exc))
+        _exit_unless_zero(run_verify_data(args, url))
     elif args.db_command == "import":
         from ggTrader.data.universe_db import connect, to_psycopg_url
 

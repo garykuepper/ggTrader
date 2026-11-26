@@ -3834,3 +3834,5 @@ labels describing data scope, load-file records identifying source files, and an
 table for recorded verification results. Added four SEC loaders and commands for saved responses,
 quarterly filing indexes, filing headers and frozen study labels, so those research inputs can be
 tracked with their sources. The new SEC data has not been loaded into the live database.
+
+`ggt db verify-data` checks imported data and source files and can save the report in the database.

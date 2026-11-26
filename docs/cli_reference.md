@@ -850,3 +850,29 @@ and kind counts, other files, selected quarters, or label counts. `--backup-dir`
 recent dump for a confirmed load. `--db-free-path` points to the database drive for the free-space
 check and defaults to `/`. `--db-url-env NAME` names an environment variable containing a
 connection; `--use-configured-db` selects the configured connection. `--yes` confirms the load.
+
+### Verify imported data
+
+```text
+ggt db verify-data (--db-url-env NAME | --use-configured-db) [--deep] [--record] [--out PATH]
+scripts/run_capped.sh .venv/bin/ggt db verify-data --use-configured-db --deep
+```
+
+The command checks counts in the import log, checks that recorded source files exist and have
+the expected size, and checks that derived data points to a completed source load. For older
+sources without per-file records, it checks that the file exists. It flags unfinished loads and
+completed loads missing a record of what they cover. It matches study labels to stocks and last
+trading dates in their named release, a saved version of the data. It looks up cited filings
+in the saved headers and, for remaining citations, makes one pass over the index filenames.
+
+`--deep` also counts actual rows, checks row counts for each SEC index quarter, and compares
+stored SHA-256 fingerprints, which summarize file contents, with fresh ones for sources with
+recorded file fingerprints. It rebuilds the fingerprint of the saved-response list from the
+database. For the other imports, the fingerprint describes the source file or file list, so
+the check reports which stored values it could not verify. Run deep checks with
+`scripts/run_capped.sh`, which runs one heavy job at a time and limits memory use.
+
+The command prints each result and exits with 0 if all checks pass or 1 if any fail.
+`--out PATH` writes the full report in JSON, a format other tools can read.
+`--record` saves one report in the database, even if checks fail. That is the command's only
+database write.
