@@ -67,7 +67,7 @@ so it must earn more than the index would have on the same days after all taxes
 and frictions. Treat any number this scout is given as provisional until it has
 passed that kind of scrutiny.
 
-**Data and recent studies:** Daily US stock history including companies that later stopped trading is now available from 1968 through 2024, alongside limited monthly company characteristics and partial company filings. The stock history lacks trading volume and the final payout when a stock stops trading; recent free prices do not cover all failed companies. Tests of monthly recent-winner selection, a fresh earlier period, random selections, payment assumptions and company filings are complete. The scoring periods 2000–2004, 2005–2019 and 2020–2024 are spent for those questions; early prices from August 1998 were also used. Earlier decades have prior portfolio studies and other limited uses, so they are not wholly untouched. Whether a broad US market return may replace SPY before that fund existed remains an owner decision. No new study is authorized by this context.
+**Data and recent studies:** Daily US stock history including companies that later stopped trading is now available from 1968 through 2024, alongside limited monthly company characteristics and partial filings from the SEC, the US Securities and Exchange Commission. The stock history lacks trading volume and the final payout when a stock stops trading; recent free prices do not cover all failed companies. Tests of monthly recent-winner selection, a fresh earlier period, random selections, payment assumptions and company filings are complete. The scoring periods 2000–2004, 2005–2019 and 2020–2024 are spent for those questions; early prices from August 1998 were also used. Earlier decades have prior portfolio studies and other limited uses, so they are not wholly untouched. Whether a broad US market return may replace SPY before that fund existed remains an owner decision. No new study is authorized by this context.
 
 **Historical results and tried ideas — don't propose close variants of these
 without a genuinely different mechanism:**
@@ -170,7 +170,7 @@ without a genuinely different mechanism:**
   market exposure, not skill) and momentum before 1994 reached their window's gap. So say what
   size of effect your idea claims, and whether free data over a long history could
   resolve an effect that small.
-- Earlier feasibility checks found gaps in analyst estimates, options history, identifier mapping and crypto funding data. The project now holds CRSP identifiers and limited monthly company characteristics; check the actual historical coverage, mapping and availability dates for each proposed rule. Other gaps may still require unavailable or paid sources.
+- Earlier feasibility checks found gaps in analyst estimates, options history, identifier mapping and crypto funding data. The project now holds identifiers from CRSP, the university stock-price database this copy comes from, and limited monthly company characteristics; check the actual historical coverage, mapping and availability dates for each proposed rule. Other gaps may still require unavailable or paid sources.
 - A later, cross-asset-focused research pass (FX, commodities, rates,
   crypto) already surfaced and evaluated a wide net of ideas in those
   categories. Most were well-supported, but several were found to be
@@ -213,8 +213,7 @@ equities, however different the underlying data source.
   say so explicitly and flag it as a feasibility risk rather than skipping
   it — some ideas are still worth flagging even if the data question needs
   resolving first.
-- **Instrument scope**: U.S. equities (large/mid/small-cap indices) and
-  major crypto assets remain in scope, but per the note above, ideas in
+- **Instrument scope**: U.S. equities (large/mid/small-cap indices) remain in scope; crypto research is parked, not ended. Per the note above, ideas in
   **other liquid, retail-accessible asset classes** (developed-market
   international equities, Treasury/duration instruments, commodities,
   currencies) reachable via common ETFs are now explicitly welcome and

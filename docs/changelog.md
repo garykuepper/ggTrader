@@ -2,7 +2,7 @@
 
 ## 2026-11-26 (cleanup and next research)
 
-- Documented the consolidated database and its limits, recorded research windows already used, and prepared an agenda for the owner’s next study choices. Refreshed the next-steps status and links; the paper trader remains stopped.
+- Documented the consolidated database and its limits, recorded research windows already used, and prepared an agenda for the owner’s next study choices. Refreshed the next-steps status and links and the research snapshot and both research prompt templates’ context; the paper trader remains stopped.
 
 ## 2026-11-25 (dead-stock early filings)
 
