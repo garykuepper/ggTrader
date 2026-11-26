@@ -167,3 +167,39 @@ def test_refuses_when_newest_earlier_dump_requires_more_space(setup_dump, monkey
     monkeypatch.setattr(type(newer), "stat", fake_stat)
     monkeypatch.setattr(db_dump.shutil, "disk_usage", lambda _: SimpleNamespace(free=35 * 10**9))
     assert run(setup_dump) == 2
+
+
+def test_build_dump_command_uses_ggtrader_superuser():
+    assert db_dump.build_dump_command() == [
+        "docker",
+        "exec",
+        "ggtrader_db",
+        "pg_dump",
+        "-U",
+        "ggtrader",
+        "-Fc",
+        "-Z",
+        "1",
+        "--no-owner",
+        "ggtrader",
+    ]
+
+
+def test_failed_dump_removes_its_own_part_file(setup_dump):
+    def fail(command, stdout, check):
+        stdout.write(b"partial")
+        raise RuntimeError("failed")
+
+    assert (
+        db_dump.main(["--out-dir", str(setup_dump)], connect=lambda _: Connection(), runner=fail)
+        == 1
+    )
+    assert not list(setup_dump.glob("*.part"))
+    assert run(setup_dump) == 0
+
+
+def test_existing_part_is_not_removed_on_refusal(setup_dump):
+    existing = setup_dump / (db_dump.dump_filename(date.today()) + ".part")
+    existing.write_bytes(b"other run")
+    assert run(setup_dump) == 1
+    assert existing.read_bytes() == b"other run"

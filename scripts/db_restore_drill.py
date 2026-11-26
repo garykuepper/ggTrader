@@ -15,11 +15,13 @@ from pathlib import Path
 from typing import Any
 
 import psycopg2
+from psycopg2 import sql
 
 from ggTrader.data.kaggle_import.guards import verify_sha256
 from ggTrader.utils.db_snapshot import snapshot
 
 SCRATCH_ROOT = Path("/media/thesix/ggTrader-data/db-restore-scratch")
+EXTRA_ROLES = ("universe_reader", "universe_loader")
 
 
 def container_name(token: str) -> str:
@@ -115,6 +117,8 @@ def main(
                 f"{folder}:/var/lib/postgresql/data",
                 "-e",
                 "POSTGRES_PASSWORD",
+                "-e",
+                "POSTGRES_USER=ggtrader",
                 args.image,
             ],
             check=True,
@@ -136,7 +140,7 @@ def main(
                     host="127.0.0.1",
                     port=int(port),
                     dbname="postgres",
-                    user="postgres",
+                    user="ggtrader",
                     password=password,
                     connect_timeout=2,
                 )
@@ -153,7 +157,7 @@ def main(
             host="127.0.0.1",
             port=int(port),
             dbname="ggtrader",
-            user="postgres",
+            user="ggtrader",
             password=password,
             connect_timeout=2,
         )
@@ -164,6 +168,8 @@ def main(
             row = cur.fetchone()
             if row is None or row[0] != version:
                 raise ValueError("TimescaleDB extension version mismatch")
+            for role in EXTRA_ROLES:
+                cur.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(role)))
             cur.execute("SELECT timescaledb_pre_restore()")
         conn.close()
         conn = None
@@ -182,7 +188,7 @@ def main(
                         "1",
                         "--no-owner",
                         "-U",
-                        "postgres",
+                        "ggtrader",
                         "-d",
                         "ggtrader",
                     ],
@@ -206,7 +212,7 @@ def main(
             host="127.0.0.1",
             port=int(port),
             dbname="ggtrader",
-            user="postgres",
+            user="ggtrader",
             password=password,
             connect_timeout=2,
         )

@@ -30,10 +30,10 @@ def build_dump_command(container: str = "ggtrader_db") -> list[str]:
     return [
         "docker",
         "exec",
-        "-u",
-        "postgres",
         container,
         "pg_dump",
+        "-U",
+        "ggtrader",
         "-Fc",
         "-Z",
         "1",
@@ -75,6 +75,7 @@ def main(
     ):
         print("Output directory must exist under thesix", file=sys.stderr)
         return 2
+    owned_part: Path | None = None
     try:
         today = date.today()
         name = dump_filename(today)
@@ -111,6 +112,7 @@ def main(
         finally:
             conn.close()
         with part.open("xb") as output:
+            owned_part = part
             runner(build_dump_command(), stdout=output, check=True)
         if part.stat().st_size < 1024 * 1024:
             raise ValueError("Dump is smaller than 1 MiB")
@@ -143,6 +145,11 @@ def main(
         prune(folder, args.keep)
         return 0
     except Exception as exc:
+        if owned_part is not None:
+            try:
+                owned_part.unlink(missing_ok=True)
+            except OSError:
+                print("Failed to remove partial dump", file=sys.stderr)
         print(f"Dump failed: {exc}", file=sys.stderr)
         return 1
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from psycopg2 import sql
 
 from scripts import db_restore_drill as drill
 
@@ -16,7 +17,7 @@ class Connection:
 
     autocommit = False
 
-    def __init__(self, version: str, events: list[str] | None = None) -> None:
+    def __init__(self, version: str, events: list | None = None) -> None:
         self.version = version
         self.events = events if events is not None else []
 
@@ -29,7 +30,7 @@ class Connection:
     def __exit__(self, *args: object) -> None:
         pass
 
-    def execute(self, query: str) -> None:
+    def execute(self, query: object) -> None:
         self.events.append(query)
 
     def fetchone(self) -> tuple[str]:
@@ -355,6 +356,8 @@ def test_happy_path_runs_sql_and_restore_in_order(
         "CREATE DATABASE ggtrader",
         "CREATE EXTENSION timescaledb",
         "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'",
+        sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier("universe_reader")),
+        sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier("universe_loader")),
         "SELECT timescaledb_pre_restore()",
         "pg_restore",
         "SELECT timescaledb_post_restore()",
@@ -371,3 +374,50 @@ def test_keep_flag_skips_all_cleanup_commands(
     )
     assert not any(c[1] in {"rm", "stop"} or c[1:3] == ["run", "--rm"] for c in calls)
     assert len(list(root.iterdir())) == 1
+
+
+def test_restore_connects_as_ggtrader_not_postgres(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    connections = []
+
+    def record_connect(**kwargs: object) -> Connection:
+        connections.append(kwargs)
+        return connect(**kwargs)
+
+    assert drill.main(args, runner=runner, connect=record_connect, disk_usage=ample_space) == 0
+    assert all(item["user"] == "ggtrader" for item in connections)
+    assert connections[0]["dbname"] == "postgres"
+    run = next(c for c in calls if c[1:3] == ["run", "-d"])
+    assert "POSTGRES_USER=ggtrader" in run
+    restore = next(c for c in calls if "pg_restore" in c)
+    assert restore[restore.index("-U") + 1] == "ggtrader"
+
+
+def test_roles_created_before_restore_command(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    events = []
+
+    def record(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if "pg_restore" in command:
+            events.append("restore")
+        return runner(command, **kwargs)
+
+    def connect_record(**kwargs: object) -> Connection:
+        return Connection("2.1", events)
+
+    assert drill.main(args, runner=record, connect=connect_record, disk_usage=ample_space) == 0
+    roles = [
+        sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(name))
+        for name in ("universe_reader", "universe_loader")
+    ]
+    for role in roles:
+        assert (
+            events.index("CREATE EXTENSION timescaledb")
+            < events.index(role)
+            < events.index("SELECT timescaledb_pre_restore()")
+            < events.index("restore")
+        )
