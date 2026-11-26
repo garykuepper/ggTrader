@@ -55,6 +55,10 @@ CREATE INDEX IF NOT EXISTS index_entries_load_cik_date_idx
     ON sec.index_entries (load_id, cik, date_filed);
 CREATE INDEX IF NOT EXISTS index_entries_load_form_date_idx
     ON sec.index_entries (load_id, form_type, date_filed);
+-- Finds a filing by its accession number (the part of the file name before ".txt"): about 0.02
+-- seconds instead of a scan of every row; `verify-data` and any study use this exact expression.
+CREATE INDEX IF NOT EXISTS index_entries_accession_idx
+    ON sec.index_entries ((substring(filename from '/([0-9]{10}-[0-9]{2}-[0-9]{6})\.txt$')));
 
 CREATE TABLE IF NOT EXISTS sec.filing_headers (
     load_id bigint,

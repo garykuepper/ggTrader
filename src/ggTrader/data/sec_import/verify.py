@@ -272,12 +272,15 @@ def cited_accessions_exist(conn: connection) -> Check:
     if pending:
         index = _rows(
             conn,
+            # Written so that the expression index index_entries_accession_idx answers it.
             r"""SELECT DISTINCT accession FROM (
                     SELECT substring(e.filename from '/([0-9]{10}-[0-9]{2}-[0-9]{6})\.txt$')
                            AS accession
                     FROM sec.index_entries e
                     JOIN ref.loads l ON l.load_id = e.load_id AND l.status = 'complete'
-                ) filings WHERE accession = ANY(%s)""",
+                    WHERE substring(e.filename from '/([0-9]{10}-[0-9]{2}-[0-9]{6})\.txt$')
+                          = ANY(%s)
+                ) filings""",
             (sorted(pending),),
         )
         pending.difference_update(accession for (accession,) in index)

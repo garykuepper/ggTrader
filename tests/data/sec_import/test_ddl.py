@@ -239,7 +239,11 @@ def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None
     assert ("sec.index_entries", "frozen") not in found
     assert ("sec.index_entries", "no_truncate") in found
     assert ("ref.loads", "require_coverage") in found
-    assert {"index_entries_load_cik_date_idx", "index_entries_load_form_date_idx"} <= indexes
+    assert {
+        "index_entries_load_cik_date_idx",
+        "index_entries_load_form_date_idx",
+        "index_entries_accession_idx",
+    } <= indexes
 
 
 def test_backfill_skips_loads_that_are_not_complete(kaggle_conn: connection) -> None:
