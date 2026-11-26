@@ -158,13 +158,13 @@ def test_sec_commands_require_backup_dir(command, tmp_path):
 
 @pytest.mark.parametrize("command", SEC_COMMANDS)
 def test_sec_commands_without_yes_write_nothing(command, tmp_path, monkeypatch, capsys):
-    from ggTrader.data import universe_db
+    from ggTrader.cli import sec_import_cmds as sec
 
     parser = argparse.ArgumentParser()
     register_db_parser(parser.add_subparsers(dest="command"))
     monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
     (tmp_path / "labels.csv").write_text("permno,last_trading_day,label\n", encoding="utf-8")
-    monkeypatch.setattr(universe_db, "connect", lambda *_: pytest.fail("opened database"))
+    monkeypatch.setattr(sec, "connect", lambda *_: pytest.fail("opened database"))
     try:
         args = parser.parse_args(
             [
@@ -214,9 +214,26 @@ def test_sec_confirmed_dispatch(command, tmp_path, monkeypatch, capsys):
         calls.append((args, kwargs))
         return 42
 
-    monkeypatch.setattr(
-        sec, command.replace("sec-", "load_").replace("load_labels", "load_labels"), load
-    )
+    monkeypatch.setattr(sec, command.replace("sec-", "load_"), load)
+    import hashlib
+    import json
+
+    for url in (
+        "https://www.sec.gov/Archives/edgar/full-index/2005/QTR2/master.zip",
+        "https://www.sec.gov/Archives/edgar/data/1/0000000001-05-000001.txt",
+    ):
+        stem = hashlib.sha256(url.encode()).hexdigest()
+        (tmp_path / f"{stem}.body").write_bytes(b"x")
+        (tmp_path / f"{stem}.meta.json").write_text(
+            json.dumps(
+                {
+                    "url": url,
+                    "sha256": hashlib.sha256(b"x").hexdigest(),
+                    "status": 200,
+                    "fetched_at": "2026-01-01T00:00:00+00:00",
+                }
+            )
+        )
     flags = ["--only-quarter", "2005Q2"] if command == "sec-index" else []
     args = parser.parse_args(
         [
@@ -234,6 +251,13 @@ def test_sec_confirmed_dispatch(command, tmp_path, monkeypatch, capsys):
     )
     run_db(args)
     assert calls[0] == "scratch"
+    source = calls[1][0][1]
+    if command == "sec-cache":
+        assert source == [tmp_path.resolve()]
+    elif command in ("sec-index", "sec-headers"):
+        assert sorted(entry.kind for entry in source) == ["filing_text", "quarterly_index"]
+    else:
+        assert source == []
     assert calls[1][1]["backup_dir"] == tmp_path
     assert calls[1][1]["db_free_path"].as_posix() == "/"
     if command == "sec-index":

@@ -3826,7 +3826,7 @@ advisory locks coordinate compliant runners but cannot perfectly fence an alread
 call. The paper trader remains stopped pending owner authorization to resume cron.
 
 
-## 2026-11-26 (database consolidation, stage 0a and A)
+### 2026-11-26 (database consolidation, stage 0a and A)
 
 Added a database dump script and a disposable restore drill to make backups testable. The owner
 installed a user-level weekly dump timer on 2026-11-26 for Sundays at 04:30. Added coverage

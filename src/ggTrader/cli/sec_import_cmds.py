@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
-from ggTrader.data.kaggle_import.guards import BackupStale, assert_connected_database
+from psycopg2 import Error as PgError
+
+from ggTrader.data.kaggle_import.guards import BackupStale, assert_connected_database, safe_error
 from ggTrader.data.kaggle_import.loadlog import LoadFailed
 from ggTrader.data.sec_import.cache import (
     CacheConflict,
@@ -55,6 +57,8 @@ def _inspect(args: argparse.Namespace) -> Any:
         print(f"{len(rows)} label rows: {dict(Counter(row.label for row in rows))}")
         return rows
     groups = []
+    # Resolved here so the paths recorded by the loaders do not depend on the working folder.
+    args.folder = [Path(folder).resolve() for folder in args.folder]
     for folder in args.folder:
         group = scan_cache(folder)
         groups.append(group)
@@ -65,6 +69,9 @@ def _inspect(args: argparse.Namespace) -> Any:
     if args.import_command == "sec-index":
         quarters = sorted(quarter_of(e.url) for e in entries if e.kind == "quarterly_index")
         if args.only_quarter is not None:
+            missing = sorted(set(args.only_quarter) - set(quarters))
+            if missing:
+                raise ValueError(f"Requested quarters not in the cache: {', '.join(missing)}")
             quarters = [q for q in quarters if q in args.only_quarter]
         print(f"Quarters: {quarters}")
     return entries
@@ -111,5 +118,6 @@ def run_sec_import(args: argparse.Namespace, url: str) -> None:
         BackupStale,
         OSError,
         ValueError,
+        PgError,
     ) as exc:
-        sys.exit(f"SEC import failed: {exc}")
+        sys.exit(f"SEC import failed: {safe_error(exc)}")

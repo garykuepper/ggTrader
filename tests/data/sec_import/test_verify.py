@@ -78,6 +78,7 @@ def ordinary_responses() -> list[tuple[str, list[tuple] | Exception]]:
         ("FROM ref.loads", []),
         ("ref.load_coverage", []),
         ("market.stock_spans", []),
+        ("count(*) FROM sec.death_labels", [(0,)]),
         ("unnest", []),
     ]
 
@@ -242,7 +243,11 @@ def test_coverage_check_reports_missing_rows(missing: list[tuple]) -> None:
 def test_label_check_reports_wrong_stock_spell(mismatch: list[tuple]) -> None:
     from ggTrader.data.sec_import.verify import labels_match_stock_spells_in_release
 
-    report = labels_match_stock_spells_in_release(FakeConnection(("market.stock_spans", mismatch)))
+    report = labels_match_stock_spells_in_release(
+        FakeConnection(
+            ("market.stock_spans", mismatch), ("count(*) FROM sec.death_labels", [(60,)])
+        )
+    )
     assert report["ok"] is (not mismatch)
     if mismatch:
         assert all(text in report["detail"] for text in ("12345", "2005-06-01", "55"))
@@ -383,7 +388,7 @@ def test_run_checks_reports_error_and_continues() -> None:
     assert "ValueError" in report["checks"]["load_row_counts_match_log"]["detail"]
     assert "fake@" not in report["checks"]["load_row_counts_match_log"]["detail"]
     assert report["checks"]["cited_accessions_exist"]["detail"] == "no labels loaded"
-    assert conn.rollbacks == 1
+    assert conn.rollbacks == 2  # one after the failed check, one when the run ends
     assert conn.commits == 0
     assert not conn.responses
 

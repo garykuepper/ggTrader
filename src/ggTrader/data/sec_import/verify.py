@@ -84,7 +84,8 @@ def _recorded_files(conn: connection) -> list[tuple]:
         conn,
         """SELECT f.load_id, f.path, f.sha256, f.bytes
            FROM ref.load_files f LEFT JOIN ref.loads l USING (load_id)
-           WHERE (l.file_path IS NULL OR NOT starts_with(l.file_path, 'load:'))
+           WHERE (l.load_id IS NULL OR l.status = 'complete')
+             AND (l.file_path IS NULL OR NOT starts_with(l.file_path, 'load:'))
              AND (l.dataset IS NULL OR NOT (l.dataset = ANY(%s)))
            ORDER BY f.load_id, f.path""",
         (list(LEGACY_DATASETS),),
@@ -188,11 +189,12 @@ def every_complete_load_has_one_coverage_row(conn: connection) -> Check:
         """SELECT l.load_id, count(c.load_id)
            FROM ref.loads l LEFT JOIN ref.load_coverage c USING (load_id)
            WHERE l.status = 'complete'
-           GROUP BY l.load_id HAVING count(c.load_id) <> 1 ORDER BY l.load_id""",
+           GROUP BY l.load_id ORDER BY l.load_id""",
     )
     return _result(
-        "Checked that each completed load has one record describing which data it covers.",
-        [f"load {load_id} has {count} coverage records" for load_id, count in rows],
+        f"Checked that each of {len(rows)} completed loads has one record describing which data "
+        "it covers. Whether that description is right is not checked.",
+        [f"load {load_id} has {count} coverage records" for load_id, count in rows if count != 1],
     )
 
 
@@ -211,7 +213,11 @@ def labels_match_stock_spells_in_release(conn: connection) -> Check:
            LIMIT %s""",
         (DETAIL_LIMIT,),
     )
-    detail = "Matched study labels to stock identifiers and last trading dates in their releases."
+    [(total,)] = _rows(conn, "SELECT count(*) FROM sec.death_labels")
+    detail = (
+        f"Matched {total} study labels to stock identifiers and last trading dates in their "
+        "releases (nothing was checked if there are none). It does not check the labels' meaning."
+    )
     if rows:
         missing = [
             f"load {load_id}, release {release}, stock {permno}, last date {last_date}"
@@ -233,6 +239,7 @@ def cited_accessions_exist(conn: connection) -> Check:
     if not rows:
         return _result("no labels loaded")
     pending = {accession for accession, _ in rows if accession is not None}
+    cited = len(pending)
     if pending:
         headers = _rows(
             conn,
@@ -251,7 +258,12 @@ def cited_accessions_exist(conn: connection) -> Check:
             (sorted(pending),),
         )
         pending.difference_update(accession for (accession,) in index)
-    detail = "Looked for cited filing identifiers in headers, then in quarterly index filenames."
+    detail = (
+        f"Looked for {cited} cited filing identifiers in headers, then in quarterly index "
+        "filenames; it does not check that a filing supports its label."
+    )
+    if not cited:
+        detail = "No loaded label cites a filing identifier, so nothing was looked up."
     if pending:
         detail += f" Could not find {_detail(sorted(pending))}."
     return {
@@ -343,6 +355,8 @@ def content_sha256_matches_stored_rows(conn: connection) -> Check:
             reason = (
                 "hash is of the source file list"
                 if dataset in ("sec-index", "sec-headers")
+                else "hash is copied from its source load"
+                if dataset == "crsp-derived-bars"
                 else "hash is of the source file"
             )
             skips.append(f"{name}, {reason}")
@@ -378,6 +392,8 @@ def run_checks(conn: connection, *, deep: bool = False) -> Report:
                 conn.rollback()
             detail = " ".join(safe_error(exc).splitlines())
             checks[check.__name__] = {"ok": False, "detail": detail}
+    with suppress(Error):
+        conn.rollback()  # end the read-only transaction so no snapshot is held
     return {"ok": all(result["ok"] for result in checks.values()), "checks": checks}
 
 

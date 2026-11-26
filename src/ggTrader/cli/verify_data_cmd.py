@@ -38,9 +38,9 @@ def run_verify_data(args: argparse.Namespace, url: str) -> int:
     try:
         assert_connected_database(conn, unquote(urlparse(url).path.lstrip("/")))
         report = run_checks(conn, deep=args.deep)
-        for check in report["checks"].values():
+        for name, check in report["checks"].items():
             outcome = "PASS" if check["ok"] else "FAIL"
-            print(f"{outcome}  {check['detail']}")
+            print(f"{outcome}  {name}: {check['detail']}")
         passed = sum(check["ok"] for check in report["checks"].values())
         print(f"{passed} of {len(report['checks'])} checks passed.")
         if args.out is not None:
