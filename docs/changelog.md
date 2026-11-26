@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-26 (cleanup and next research)
+
+- Documented the consolidated database and its limits, recorded research windows already used, and prepared an agenda for the owner’s next study choices. Refreshed the next-steps status and links and the research snapshot and both research prompt templates’ context; the paper trader remains stopped.
+
 ## 2026-11-25 (dead-stock early filings)
 
 - Search of the SEC's free filings for what happened to the 251 stocks of the first test's list that stopped trading in 2000 to 2004 (33 held by the rule), no label, no strategy rerun, no payment amount read. Only 8 stocks receive an acquisition-type or bankruptcy label (7 acquisition-type 8-K items, 1 bankruptcy; two more have an acquisition notice but stay "kept filing"), 18 have only a removal notice (all from 2002 on), 96 have a company but no relevant filing, 29 match several companies, 69 found no company, 13 have no name. Of the 33 held: 1 acquisition-type, 1 kept filing, 17 no relevant filing, 11 no company, 3 ambiguous. The search read each company's own 8-K and Form 25 filings; merger proxy statements, tender-offer documents and the buyer's filings were not read.

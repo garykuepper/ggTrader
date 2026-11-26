@@ -1,0 +1,142 @@
+SQL: SELECT load_id,dataset,rows_accepted,status,coverage,note FROM ref.loads LEFT JOIN ref.load_coverage USING(load_id) ORDER BY load_id
+1|crsp-daily|68879302|complete|includes_dead_stocks|CRSP; no delisting returns
+2|mcgill-fiam|273373|complete|large_stocks_only|McGill-FIAM, 2000 to 2023, large stocks
+3|crsp-derived-bars|68879302|complete|includes_dead_stocks|derived from the CRSP load
+4|sec-cache|403|complete|not_a_stock_source|SEC download cache, not a stock source
+5|sec-cache|303|complete|not_a_stock_source|SEC download cache, not a stock source
+6|sec-index|24380319|complete|not_a_stock_source|SEC quarterly filing index
+7|sec-headers|277|complete|not_a_stock_source|SEC filing headers
+8|sec-labels:dead-stock-early-filings|251|complete|not_a_stock_source|labels from dead-stock-early-filings, copied as stored
+9|sec-labels:dead-stock-data-integrity|141|complete|not_a_stock_source|labels from dead-stock-data-integrity, copied as stored
+
+SQL: SELECT hypertable_schema,hypertable_name,hypertable_size(format('%I.%I',hypertable_schema,hypertable_name)::regclass),approximate_row_count(format('%I.%I',hypertable_schema,hypertable_name)::regclass) FROM timescaledb_information.hypertables WHERE (hypertable_schema,hypertable_name) IN (('public','ohlcv'),('kaggle_crsp','daily'),('market','daily_bars'))
+public|ohlcv|13345120256|295236451
+kaggle_crsp|daily|2019598336|68879197
+market|daily_bars|914341888|68879197
+
+SQL: SELECT n.nspname,c.relname,pg_total_relation_size(c.oid) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('kaggle_crsp','kaggle_chars','market','sec','ref','universe') AND c.relkind IN ('r','m') ORDER BY 1,2
+kaggle_chars|mcgill|372580352
+kaggle_crsp|daily|16384
+market|daily_bars|16384
+market|stock_spans|4587520
+market|yahoo_daily_frozen_20261126|780673024
+ref|integrity_checks|32768
+ref|load_chunks|65536
+ref|load_coverage|32768
+ref|load_files|483328
+ref|loads|196608
+ref|quarantine|8192
+ref|release_loads|32768
+ref|releases|32768
+ref|splice_links|778240
+ref|symbol_map|671744
+sec|death_labels|499712
+sec|fetched_files|417792
+sec|filing_headers|114688
+sec|index_entries|5755314176
+universe|check_blobs|753664
+universe|checks|122880
+universe|load_blobs|204800
+universe|load_evidence|147456
+universe|loads|32768
+universe|membership|294912
+universe|snapshot_dates|679936
+universe|source_snapshots|2318336
+universe|symbol_changes|32768
+
+SQL: SELECT load_id,coverage_start,coverage_end,n_intervals,n_symbols FROM universe.loads ORDER BY load_id
+1|1996-01-02|2026-06-02|1255|1202
+2|1996-01-02|2026-08-18|1262|1209
+3|1996-01-02|2026-11-04|1269|1215
+
+SQL: SELECT min(date),max(date) FROM kaggle_chars.mcgill
+2000-01-31|2023-12-29
+
+SQL: SELECT min(date_filed),max(date_filed),count(*) FROM sec.index_entries
+1999-01-04|2025-03-31|24380319
+
+SQL: SELECT min(filed_date),max(filed_date),count(*) FROM sec.filing_headers
+2000-02-08|2004-11-19|277
+
+SQL: SELECT min(last_date),max(last_date),count(*) FROM sec.death_labels
+2000-02-01|2024-07-05|392
+
+SQL: SELECT min(timestamp),max(timestamp),count(*) FROM market.yahoo_daily_frozen_20261126
+2000-01-03 00:00:00|2026-11-05 00:00:00|5777834
+
+SQL: SELECT min(timestamp),max(timestamp),count(*) FROM public.ohlcv WHERE venue='yfinance' AND interval='1d'
+2000-01-03 00:00:00|2026-11-05 00:00:00|5777834
+
+SQL: SELECT sum(rows_accepted) FROM ref.loads WHERE load_id BETWEEN 4 AND 9 AND status='complete'
+24381694
+
+SQL: SELECT min(date),max(date) FROM kaggle_crsp.daily
+1968-01-02|2024-12-31
+
+
+SQL: SELECT min(date),max(date) FROM market.daily_bars
+1968-01-02|2024-12-31
+
+
+SQL: SELECT count(*),min(fetched_at),max(fetched_at) FROM sec.fetched_files
+706|2026-11-24 14:14:12.75695-08|2026-11-25 13:29:06.445935-08
+
+
+SQL: SELECT 'integrity_checks',count(*) FROM ref.integrity_checks UNION ALL SELECT 'load_chunks',count(*) FROM ref.load_chunks UNION ALL SELECT 'load_coverage',count(*) FROM ref.load_coverage UNION ALL SELECT 'load_files',count(*) FROM ref.load_files UNION ALL SELECT 'loads',count(*) FROM ref.loads UNION ALL SELECT 'quarantine',count(*) FROM ref.quarantine UNION ALL SELECT 'release_loads',count(*) FROM ref.release_loads UNION ALL SELECT 'releases',count(*) FROM ref.releases UNION ALL SELECT 'splice_links',count(*) FROM ref.splice_links UNION ALL SELECT 'symbol_map',count(*) FROM ref.symbol_map
+integrity_checks|5
+load_chunks|256
+load_coverage|9
+load_files|1084
+loads|9
+quarantine|0
+release_loads|2
+releases|1
+splice_links|916
+symbol_map|4673
+
+
+SQL: SELECT min(started_at),max(completed_at) FROM ref.loads
+2026-11-23 15:27:13.255772-08|2026-11-26 06:42:29.245981-08
+
+
+SQL: SELECT count(*),min(first_date),max(last_date) FROM market.stock_spans
+29283|1968-01-02|2026-11-05
+
+
+SQL: SELECT count(*) FROM public.form4_transactions
+783982
+
+
+SQL: SELECT tgname,tgenabled FROM pg_trigger WHERE tgrelid='public.ohlcv'::regclass AND NOT tgisinternal
+
+
+SQL: SELECT table_schema,table_name,column_name FROM information_schema.columns WHERE table_schema IN ('kaggle_crsp','market') AND table_name IN ('daily','daily_bars') AND column_name='volume'
+
+
+COMMAND: du -sb /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/gkx-han2022 /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/us-sec-insider-trading-dataset-3m-transactions /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/company-facts-2 /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/s-and-p-500-holdings-and-weights-spy-2000-2024 /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/fama-french-factor-zoo-benchmarks /media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/s-and-p-500-quantitative-daily-features-and-pit-dataset /media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/arandkei-delisted /media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/finzdata-2008-2009 /media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/quandl-wiki /media/thesix/ggTrader-data/market-data/stooq data/external/french data/external/shiller /media/thesix/ggTrader-data/intraday_momentum_r9 /media/thesix/ggTrader-data/worktree-leftovers-2026-11-20/intraday_momentum_r8
+3836203389	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/gkx-han2022
+41796717	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/us-sec-insider-trading-dataset-3m-transactions
+332316785	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/company-facts-2
+411011	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/s-and-p-500-holdings-and-weights-spy-2000-2024
+1656404	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/fama-french-factor-zoo-benchmarks
+41718301	/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/s-and-p-500-quantitative-daily-features-and-pit-dataset
+22036069	/media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/arandkei-delisted
+2648290	/media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/finzdata-2008-2009
+1797003576	/media/thesix/ggTrader-data/market-data/kaggle/2026-11-22/quandl-wiki
+4011824790	/media/thesix/ggTrader-data/market-data/stooq
+1501616	data/external/french
+1675613	data/external/shiller
+222381438	/media/thesix/ggTrader-data/intraday_momentum_r9
+222380322	/media/thesix/ggTrader-data/worktree-leftovers-2026-11-20/intraday_momentum_r8
+
+SQL: SELECT hypertable_schema,hypertable_name,compression_enabled FROM timescaledb_information.hypertables WHERE (hypertable_schema,hypertable_name) IN (('kaggle_crsp','daily'),('market','daily_bars'),('kaggle_chars','mcgill'))
+kaggle_crsp|daily|t
+market|daily_bars|t
+
+SQL: SELECT n.nspname,c.relname,c.relkind,t.tgname,t.tgenabled FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_trigger t ON t.tgrelid=c.oid AND NOT t.tgisinternal WHERE (n.nspname,c.relname) IN (('kaggle_crsp','daily'),('market','daily_bars'),('kaggle_chars','mcgill')) ORDER BY 1,2,4
+kaggle_chars|mcgill|r|frozen|O
+kaggle_chars|mcgill|r|no_truncate|O
+kaggle_crsp|daily|r|frozen|O
+kaggle_crsp|daily|r|no_truncate|O
+market|daily_bars|r|frozen|O
+market|daily_bars|r|no_truncate|O

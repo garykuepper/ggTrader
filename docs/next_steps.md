@@ -2,7 +2,7 @@
 
 ## Status at a glance
 
-Development and research are paused as of 2026-11-12 with a clean slate; the 2026-11-20 refactor and project clean-up are complete. Nothing below is urgent except the intraday checkpoint on 2026-11-30.
+Status as of 2026-11-26: database consolidation and dead-stock studies are complete. The paper trader remains stopped; the next research runs await the owner’s choices.
 
 | Status | What |
 |---|---|
@@ -10,10 +10,19 @@ Development and research are paused as of 2026-11-12 with a clean slate; the 202
 | Done | Eight stock screens, the verdict register and the [category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md) are merged on main (2026-11-12). |
 | Done | The exits-only halt policy was approved on 2026-11-12 ([design note](../research/paper-system/observation-readiness/2026-11-11-unresolved-order-exit-design.md)). The branch `feature/verdict-register` was merged and pushed to `main` the same day. The code is not deployed and the trader stays stopped. |
 | Done, deploy open | The refactor and its follow-ups are merged into `main` and pushed (2026-11-20, `8c0c4540`): phases 0 to 2 (`abe8cefa`), phases 3 to 5, the lint rules, the docs audit, the snapshot and completion II (the eight seam forwards retired, a live run refuses a non-durable ledger, `run_wfo` raises `WfoNotRun`, the membership CLI and weekly job tidy-ups, the persist writers on `engine.begin()`, docstring rules for `src/ggTrader`) (all on `origin/main`). The trader stays stopped and nothing is deployed. Left for the owner: the deploy (image rebuild), and an optional re-run of the real-database persist characterization, whose fixture is kept outside the repository (evidence folder `p6/t7/`). See the [refactor design](superpowers/specs/2026-11-17-refactor-design.md), the [completion II plan](superpowers/plans/2026-11-20-refactor-completion-ii.md) and the [changelog](changelog.md). |
+| Done | Database consolidation, including a dump and restore test, data and labels from the SEC (the US Securities and Exchange Commission), price-table edit protection, a side-by-side price view and a frozen Yahoo copy, is merged and pushed to `origin/main` through `ec42f9ca`. See the [inventory](database-inventory-2026-11-26.md). |
+| Done | Dead-stock studies are closed and merged: [first test](../research/stock-signals/dead-stock-first-test/2026-11-24-dead-stock-first-test.md), [fresh window](../research/stock-signals/dead-stock-fresh-window/2026-11-24-dead-stock-fresh-window.md), [random baseline](../research/stock-signals/dead-stock-random-baseline/2026-11-25-dead-stock-random-baseline.md), [momentum deaths](../research/stock-signals/dead-stock-momentum-deaths/2026-11-25-dead-stock-momentum-deaths.md), [payout rerun](../research/stock-signals/dead-stock-payout-rerun/2026-11-24-dead-stock-payout-rerun.md), [early filings](../research/stock-signals/dead-stock-early-filings/2026-11-25-dead-stock-early-filings.md), and [data integrity](../research/stock-signals/dead-stock-data-integrity/2026-11-24-dead-stock-data-integrity.md). |
+| Waiting on you | Keep or remove the 11 GB `/media/thesix/ggTrader-data/db-dumps/attempts` folder, which contains backup copies. |
+| Waiting on you | Take a fresh database dump now or wait for the Sunday 2026-11-29 04:30 timer. The main `ggtrader_20261125.dump` predates the 24,381,694 rows in SEC loads 4–9 and the frozen Yahoo copy created on 2026-11-26; its count record lists neither. Earlier dump attempts also remain on disk. |
+| Waiting on you | Choose one to three candidates from the [research agenda](../research/programme/next-research-agenda-2026-11-26.md); the [window-use ledger](../research/programme/window-use-ledger.md) records dates already used. |
+| Waiting on you | Decide whether the whole-market return (`vwretd`) from CRSP, the university stock-price database this copy comes from, may stand in for SPY through July 1998. SPY began in 1993 but its held history starts in 2000; another option is to add free Yahoo SPY history for 1993–1999. |
+| Waiting on you | Decide whether to push `cleanup-and-next-research` to origin; this plan's work is not merged. |
+| Checkpoint | Intraday observer slot 20 is 2026-11-30; supervision remains paused and manual checks continue. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |
 | Done | The paper-trader order-recovery and halt changes (including `783c7267`) were reviewed by Sol and Opus on 2026-11-12 with no open findings and are on `main`, not deployed ([details](archive/where-we-left-it-2026-11-12.md)). |
 | Running alone | Weekly membership check, Saturdays 06:00 Pacific, with a heartbeat message. |
+| Running alone | The user timer `ggtrader-db-dump.timer` schedules a database dump Sundays at 04:30 Pacific; its next run is 2026-11-29. |
 | Running alone | Four intraday observer recording timers. |
 | Stopped | Paper trader, since 2026-11-06. Cron lines are commented out. |
 | Paused | Intraday supervision job, since 2026-11-06 09:18 Pacific. The reason is unknown and no alert exists. |
@@ -25,17 +34,17 @@ Terms:
 - **AVB**: the paper account's frozen holding, which the broker marks untradable.
 - **Parity**: the paper trader doing what the backtest says it would.
 - **WFO**: walk-forward optimization, rolling tests that tune on past data and score on later data.
-- **Part A**: the first stage of the evidence standard. It needs long free history, a strict significance test and at least +1.0 percentage point a year.
-- **B0 and B1**: a replay that can only rule an idea out, and a forward paper-only copy ("shadow") kept for at least 18 months.
-- **Holm-corrected t and Newey-West t**: significance tests that allow for trying many ideas and for returns that repeat patterns over time.
+- **Part A** (retired for new work): the former first stage of the evidence standard. It needed long free history, a strict significance test and at least +1.0 percentage point a year.
+- **B0 and B1** (retired for new work): a replay that could only rule an idea out, and a forward paper-only copy ("shadow") that was kept for at least 18 months.
+- **Holm-corrected t and Newey-West t** (retired as required bars for new work): significance tests that allowed for trying many ideas and for returns that repeat patterns over time.
 - **A23**: the owner's 70% SPY / 30% SSO allocation. **PEAD**: drift in a stock's price after earnings news.
 
 ### To resume
 
-1. Everything is merged and pushed to `main` (the 2026-11-12 work and the 2026-11-20 refactor; CI green at `35156a0f`). Deploying the paper changes and restarting the trader are separate owner decisions.
+1. The consolidation is on `origin/main` at `ec42f9ca`; local `main` has one additional commit, the plan at `f0b1537a`. This plan’s inventory, ledger and agenda are on `cleanup-and-next-research`, which is not merged and awaits the owner’s push decision. Deploying the paper changes and restarting the trader are separate owner decisions.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
-Two gates are separate. Stock-level research waits on verified inputs and data rights. A clean paper-trading start waits on the AVB holding.
+New studies need verified inputs and any necessary data rights. A clean paper-trading start waits on the AVB holding.
 
 Full state: [where we left it](archive/where-we-left-it-2026-11-12.md). Detail is in the sections below and in the [working task list](working_task_list.md).
 
@@ -52,7 +61,7 @@ Full state: [where we left it](archive/where-we-left-it-2026-11-12.md). Detail i
 
 ## Current research work
 
-Both items are paused with the project. Neither authorizes a return test or a production change.
+Paper readiness remains paused. The research agenda awaits the owner’s choice of studies; neither item authorizes a production change.
 
 1. **Paper parity and forward evidence.** The untradable AVB holding blocks a clean observation start until resolved.
    - Owner choices of 2026-11-11: the original 80/20 cross-asset shadow for future parity, plus a three-month mechanics review and a 12-month performance review.
@@ -61,7 +70,7 @@ Both items are paused with the project. Neither authorizes a return test or a pr
    - Open: the governing rule, what starts or resets a clean window, daily evidence, and how to preserve future decision inputs and outcomes.
    - The review date is unknown. A date alone does not lift the freeze. See the [proposed reconciliation](../research/paper-system/observation-readiness/2026-11-02-paper-freeze-readiness.md#proposed-session-by-session-reconciliation).
 2. **Can expected-growth inputs support individual-stock research?** No validated stock picker exists. See the [research guide](../research/programme/RESEARCH_GUIDE.md#stock-selection-research) and the [input pilot](../research/stock-signals/feasibility/2026-11-11-expected-growth-stock-input-pilot.md).
-   - Gaps: identity, timing, accounting and market-value inputs across a dated universe with enough history.
+   - Remaining input limits and available data are described in the [inventory](database-inventory-2026-11-26.md) and [research agenda](../research/programme/next-research-agenda-2026-11-26.md).
    - A new return study needs its own registered question and owner approval.
    - Report evidence and uncertainty without new GO/NO-GO labels.
 
@@ -79,7 +88,7 @@ Later: plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/202
 
 ## Standing research rules
 
-- **Reset 2026-11-20:** the owner wiped the old evidence rules (Part A, the t-stat bars, B0/B1, the six-month wait) for new work. New work follows four plain rules: test on data the strategy never saw; use only what was known each day and include stocks that later died; subtract costs and taxes and compare to SPY; paper trade first, and the owner decides when real money is earned. See [AGENTS.md](../AGENTS.md#research-rules-reset-2026-11-20). The older [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md) stays as history.
+- **Reset 2026-11-20:** the owner wiped the old evidence rules (Part A, the t-stat bars, B0/B1, the six-month wait) for new work. New work follows four plain rules: test on data the strategy never saw; use only what was known each day and include stocks that later died; subtract costs and taxes and compare to SPY; paper trade first, and the owner decides when real money is earned. See [research instructions](../CLAUDE.md#research). The older [forward-paper standard](../research/programme/evidence-standard/2026-10-23-forward-paper-standard.md) stays as history.
 - The paper trader has been stopped since 2026-11-06, and the owner will say when it returns.
 - The observation window's qualifying start and any reset are unresolved. Document unknowns.
 - Closed NO-GO under their registered tests: momentum, the classic factor screen, net issuance. Each applies only to its registered test. See the [research snapshot](../research/RESEARCH_SNAPSHOT.md).
@@ -88,7 +97,7 @@ Later: plan the [two-symbol paper sweep](../research/paper-system/cash-sweep/202
 - Live parity is unverified, and the older holdout is inconclusive.
 - The eight screens of 2026-11-10 and 2026-11-11 did not clear both hurdles. No category shows proven alpha ([category report](../research/programme/research-summary/2026-11-12-strategy-categories-alpha-range.md)).
 - PEAD and insider studies are parked; the insider timestamp amendment is a draft. No paid data. See the [decision memo](../research/audits/event-timing/2026-10-23-event-timing-audit-decision.md).
-- The account is taxable only. Follow the [owner instructions](../AGENTS.md#owner-instructions-2026-10-20).
+- The account is taxable only. Follow the [owner instructions](../CLAUDE.md#production-freeze-and-owner-instructions).
 
 ## A23 allocation and calendar
 
