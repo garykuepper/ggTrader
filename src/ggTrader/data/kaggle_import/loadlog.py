@@ -176,8 +176,41 @@ def commit_chunk(
         raise
 
 
+def record_files(conn: connection, load_id: int, files: Sequence[tuple[str, str, int]]) -> None:
+    """Register source files; replaying the same record is fine, a different one is an error."""
+    try:
+        with conn.cursor() as cur:
+            _running(cur, load_id)
+            wanted: dict[str, tuple[str, int]] = {}
+            for path, sha256, size in files:
+                if wanted.setdefault(path, (sha256, size)) != (sha256, size):
+                    raise LoadFailed(f"Conflicting entries for file {path}")
+            cur.executemany(
+                "INSERT INTO ref.load_files (load_id, path, sha256, bytes) VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (load_id, path) DO NOTHING",
+                [(load_id, path, sha, size) for path, (sha, size) in wanted.items()],
+            )
+            cur.execute(
+                "SELECT path, sha256, bytes FROM ref.load_files "
+                "WHERE load_id=%s AND path = ANY(%s)",
+                (load_id, list(wanted)),
+            )
+            for path, sha256, size in cur.fetchall():
+                if wanted[path] != (sha256, size):
+                    raise LoadFailed(f"File {path} was already recorded with different contents")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
 def complete_load(
-    conn: connection, load_id: int, checks: dict, *, expected_chunks: Sequence[str] | None = None
+    conn: connection,
+    load_id: int,
+    checks: dict,
+    *,
+    expected_chunks: Sequence[str] | None = None,
+    coverage: tuple[str, str] | None = None,
 ) -> None:
     """Complete only a reconciled load with all expected chunks."""
     try:
@@ -195,6 +228,11 @@ def complete_load(
             if parsed != accepted + quarantined:
                 raise LoadFailed("Parsed rows do not reconcile")
             combined = {**(stored or {}), **checks}
+            if coverage is not None:
+                cur.execute(
+                    "INSERT INTO ref.load_coverage (load_id, coverage, note) VALUES (%s, %s, %s)",
+                    (load_id, *coverage),
+                )
             cur.execute(
                 "UPDATE ref.loads SET status='complete', completed_at=now(), checks=%s"
                 " WHERE load_id=%s",

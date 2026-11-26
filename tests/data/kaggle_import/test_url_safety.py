@@ -100,6 +100,8 @@ def test_import_mismatch_prevents_write(monkeypatch):
     args = argparse.Namespace(
         db_command="import",
         import_command="apply-ddl",
+        no_backup_check=True,
+        backup_dir=None,
         yes=True,
         use_configured_db=False,
         db_url_env="FAKE_TEST_URL",
@@ -171,6 +173,8 @@ def test_import_refuses_url_override_before_connect(monkeypatch):
     args = argparse.Namespace(
         db_command="import",
         import_command="apply-ddl",
+        no_backup_check=True,
+        backup_dir=None,
         yes=True,
         use_configured_db=False,
         db_url_env="FAKE_TEST_URL",

@@ -129,7 +129,15 @@ def test_cli_apply_ddl_parses_and_runs(monkeypatch):
     parser = argparse.ArgumentParser(prog="ggt")
     register_db_parser(parser.add_subparsers(dest="command"))
     args = parser.parse_args(
-        ["db", "import", "apply-ddl", "--db-url-env", "TEST_IMPORT_URL", "--yes"]
+        [
+            "db",
+            "import",
+            "apply-ddl",
+            "--no-backup-check",
+            "--db-url-env",
+            "TEST_IMPORT_URL",
+            "--yes",
+        ]
     )
     assert (args.db_command, args.import_command, args.db_url_env) == (
         "import",
@@ -140,8 +148,8 @@ def test_cli_apply_ddl_parses_and_runs(monkeypatch):
         monkeypatch.setenv("TEST_IMPORT_URL", url)
         run_db(args)
         with psycopg2.connect(url) as conn, conn.cursor() as cur:
-            cur.execute("SELECT to_regclass('market.daily_bars')")
-            assert cur.fetchone()[0] == "market.daily_bars"
+            cur.execute("SELECT to_regclass('market.daily_bars'), to_regclass('sec.death_labels')")
+            assert cur.fetchone() == ("market.daily_bars", "sec.death_labels")
 
 
 def test_release_withdrawal_and_links_are_immutable(conn):

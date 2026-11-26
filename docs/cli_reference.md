@@ -17,7 +17,7 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ## Market data imports
 
-`ggt db import apply-ddl` creates the import schemas. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
+`ggt db import apply-ddl` creates or refreshes the import schemas (it needs `--backup-dir` with a recent dump, or `--no-backup-check` on a scratch database). `ggt db import fail-load --load-id N --reason TEXT` marks an unfinished load as failed. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
 
 `ggt db import release build --crsp-bars-load N --links LINKS.csv [--mcgill-load M]` builds and publishes a release using the approved link settings. It prints its ID, counts by kind, demoted links, and Yahoo fingerprint. `ggt db import release list` prints releases and counts; `ggt db import release withdraw --release-id N` withdraws one. Each requires `--db-url-env NAME` or `--use-configured-db`; build and withdraw require `--yes` to execute.
 
@@ -783,6 +783,56 @@ for the loader only. Tests that need a real server are marked `integration` and 
 request (`GGT_TEST_DB_URL`), and use a throwaway database.
 
 ---
+
+### SEC research imports
+
+These commands read existing SEC files; they make no network requests. A cache is a folder of
+saved responses and their metadata, and a label is a study's recorded classification of a stock.
+Each command requires an explicit database target and a backup directory, even for a scratch
+database. Without `--yes`, it inspects the files and prints what it would do without connecting to
+the database or writing anything; the backup directory need not exist for this preview.
+
+```text
+ggt db import sec-cache --folder PATH [--folder PATH ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-index --folder PATH [--folder PATH ...] [--only-quarter 2005Q2 ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-headers --folder PATH [--folder PATH ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-labels --study {early,payouts} --file PATH --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+```
+
+Repeat `--folder` to combine folders. `sec-cache` records verified responses; `sec-index` loads
+quarterly filing indexes, and repeatable `--only-quarter` limits the selected quarters.
+`sec-headers` loads filing headers. `sec-labels` reads the early study CSV or payouts study JSON
+and checks its stock identifiers and last dates against release 1. The preview reports cache pair
+and kind counts, other files, selected quarters, or label counts. `--backup-dir` must contain a
+recent dump for a confirmed load. `--db-free-path` points to the database drive for the free-space
+check and defaults to `/`. `--db-url-env NAME` names an environment variable containing a
+connection; `--use-configured-db` selects the configured connection. `--yes` confirms the load.
+
+### Verify imported data
+
+```text
+ggt db verify-data (--db-url-env NAME | --use-configured-db) [--deep] [--record] [--out PATH]
+scripts/run_capped.sh .venv/bin/ggt db verify-data --use-configured-db --deep
+```
+
+The command checks counts in the import log, checks that recorded source files exist and have
+the expected size, and checks that derived data points to a completed source load. For older
+sources without per-file records, it checks that the file exists. It flags unfinished loads and
+completed loads missing a record of what they cover. It matches study labels to stocks and last
+trading dates in their named release, a saved version of the data. It looks up cited filings
+in the saved headers and, for remaining citations, makes one pass over the index filenames.
+
+`--deep` also counts actual rows, checks row counts for each SEC index quarter, and compares
+stored SHA-256 fingerprints, which summarize file contents, with fresh ones for sources with
+recorded file fingerprints. It rebuilds the fingerprint of the saved-response list from the
+database. For the other imports, the fingerprint describes the source file or file list, so
+the check reports which stored values it could not verify. Run deep checks with
+`scripts/run_capped.sh`, which runs one heavy job at a time and limits memory use.
+
+The command prints each result and exits with 0 if all checks pass or 1 if any fail.
+`--out PATH` writes the full report in JSON, a format other tools can read.
+`--record` saves one report in the database, even if checks fail. That is the command's only
+database write.
 
 ## 5. Machine Learning Signal Pre-Screen Script (archived)
 

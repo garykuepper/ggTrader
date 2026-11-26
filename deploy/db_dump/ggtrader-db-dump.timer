@@ -1,0 +1,11 @@
+# Template for the user-level unit the owner installed on 2026-11-26. See README.md.
+[Unit]
+Description=ggTrader weekly database dump timer
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00
+Persistent=true
+Unit=ggtrader-db-dump.service
+
+[Install]
+WantedBy=timers.target

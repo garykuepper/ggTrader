@@ -57,7 +57,7 @@ def test_target_resolution_and_dry_run(monkeypatch, capsys):
 
     parser = argparse.ArgumentParser()
     register_db_parser(parser.add_subparsers(dest="command"))
-    base = ["db", "import", "apply-ddl"]
+    base = ["db", "import", "apply-ddl", "--no-backup-check"]
     for flags in ([], ["--db-url-env", "TEST_IMPORT_URL", "--use-configured-db"]):
         with pytest.raises(SystemExit) as exc:
             parser.parse_args(base + flags)
@@ -125,3 +125,251 @@ def test_release_commands_have_help(capsys):
             parser.parse_args(["db", "import", "release", command, "--help"])
         assert exc.value.code == 0
         assert "--db-url-env" in capsys.readouterr().out
+
+
+SEC_COMMANDS = ("sec-cache", "sec-index", "sec-headers", "sec-labels")
+
+
+def sec_source(command, path):
+    if command == "sec-labels":
+        return ["--study", "early", "--file", str(path / "labels.csv")]
+    return ["--folder", str(path)]
+
+
+@pytest.mark.parametrize("command", SEC_COMMANDS)
+def test_sec_commands_require_explicit_target(command, tmp_path):
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    with pytest.raises(SystemExit):
+        parser.parse_args(
+            ["db", "import", command, *sec_source(command, tmp_path), "--backup-dir", "unused"]
+        )
+
+
+@pytest.mark.parametrize("command", SEC_COMMANDS)
+def test_sec_commands_require_backup_dir(command, tmp_path):
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    base = ["db", "import", command, *sec_source(command, tmp_path), "--use-configured-db"]
+    for flags in ([], ["--no-backup-check"], ["--backup-dir", "unused", "--no-backup-check"]):
+        with pytest.raises(SystemExit):
+            parser.parse_args(base + flags)
+
+
+@pytest.mark.parametrize("command", SEC_COMMANDS)
+def test_sec_commands_without_yes_write_nothing(command, tmp_path, monkeypatch, capsys):
+    from ggTrader.cli import sec_import_cmds as sec
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    (tmp_path / "labels.csv").write_text("permno,last_trading_day,label\n", encoding="utf-8")
+    monkeypatch.setattr(sec, "connect", lambda *_: pytest.fail("opened database"))
+    try:
+        args = parser.parse_args(
+            [
+                "db",
+                "import",
+                command,
+                *sec_source(command, tmp_path),
+                "--backup-dir",
+                str(tmp_path / "missing"),
+                "--db-url-env",
+                "TEST_IMPORT_URL",
+            ]
+        )
+    except SystemExit:
+        pytest.fail(f"{command} must be available")
+    run_db(args)
+    assert "pass --yes" in capsys.readouterr().out
+
+
+def test_sec_labels_requires_study_and_file():
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    base = ["db", "import", "sec-labels", "--backup-dir", "x", "--use-configured-db"]
+    for flags in ([], ["--study", "early"], ["--file", "x"]):
+        with pytest.raises(SystemExit):
+            parser.parse_args(base + flags)
+
+
+@pytest.mark.parametrize("command", SEC_COMMANDS)
+def test_sec_confirmed_dispatch(command, tmp_path, monkeypatch, capsys):
+    from ggTrader.cli import sec_import_cmds as sec
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    (tmp_path / "labels.csv").write_text("permno,last_trading_day,label\n", encoding="utf-8")
+    calls = []
+
+    class FakeConnection:
+        def close(self):
+            calls.append("closed")
+
+    monkeypatch.setattr(sec, "connect", lambda _: FakeConnection())
+    monkeypatch.setattr(sec, "assert_connected_database", lambda conn, name: calls.append(name))
+
+    def load(*args, **kwargs):
+        calls.append((args, kwargs))
+        return 42
+
+    monkeypatch.setattr(sec, command.replace("sec-", "load_"), load)
+    import hashlib
+    import json
+
+    for url in (
+        "https://www.sec.gov/Archives/edgar/full-index/2005/QTR2/master.zip",
+        "https://www.sec.gov/Archives/edgar/data/1/0000000001-05-000001.txt",
+    ):
+        stem = hashlib.sha256(url.encode()).hexdigest()
+        (tmp_path / f"{stem}.body").write_bytes(b"x")
+        (tmp_path / f"{stem}.meta.json").write_text(
+            json.dumps(
+                {
+                    "url": url,
+                    "sha256": hashlib.sha256(b"x").hexdigest(),
+                    "status": 200,
+                    "fetched_at": "2026-01-01T00:00:00+00:00",
+                }
+            )
+        )
+    flags = ["--only-quarter", "2005Q2"] if command == "sec-index" else []
+    args = parser.parse_args(
+        [
+            "db",
+            "import",
+            command,
+            *sec_source(command, tmp_path),
+            "--backup-dir",
+            str(tmp_path),
+            "--db-url-env",
+            "TEST_IMPORT_URL",
+            "--yes",
+            *flags,
+        ]
+    )
+    run_db(args)
+    assert calls[0] == "scratch"
+    source = calls[1][0][1]
+    if command == "sec-cache":
+        assert source == [tmp_path.resolve()]
+    elif command in ("sec-index", "sec-headers"):
+        assert sorted(entry.kind for entry in source) == ["filing_text", "quarterly_index"]
+    else:
+        assert source == []
+    assert calls[1][1]["backup_dir"] == tmp_path
+    assert calls[1][1]["db_free_path"].as_posix() == "/"
+    if command == "sec-index":
+        assert calls[1][1]["only_quarters"] == ["2005Q2"]
+    if command == "sec-labels":
+        assert calls[1][1]["release_id"] == 1
+    assert calls[-1] == "closed"
+    assert "Load 42" in capsys.readouterr().out
+
+
+def test_sec_cache_corruption_refuses_dry_run(tmp_path, monkeypatch):
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    (tmp_path / ("a" * 64 + ".body")).write_text("incomplete", encoding="utf-8")
+    args = parser.parse_args(
+        [
+            "db",
+            "import",
+            "sec-cache",
+            "--folder",
+            str(tmp_path),
+            "--backup-dir",
+            "unused",
+            "--db-url-env",
+            "TEST_IMPORT_URL",
+        ]
+    )
+    with pytest.raises(SystemExit, match="SEC import failed"):
+        run_db(args)
+
+
+def test_sec_labels_reports_unmatched_rows(tmp_path, monkeypatch, capsys):
+    from datetime import date
+    from types import SimpleNamespace
+
+    from ggTrader.cli import sec_import_cmds as sec
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    (tmp_path / "labels.csv").write_text("permno,last_trading_day,label\n", encoding="utf-8")
+    conn = SimpleNamespace(close=lambda: None)
+    monkeypatch.setattr(sec, "connect", lambda _: conn)
+    monkeypatch.setattr(sec, "assert_connected_database", lambda *_: None)
+
+    def reject(*args, **kwargs):
+        raise sec.LabelMismatch(
+            [SimpleNamespace(permno=123, last_date=date(2020, 1, 1), label="x")]
+        )
+
+    monkeypatch.setattr(sec, "load_labels", reject)
+    args = parser.parse_args(
+        [
+            "db",
+            "import",
+            "sec-labels",
+            *sec_source("sec-labels", tmp_path),
+            "--backup-dir",
+            "x",
+            "--db-url-env",
+            "TEST_IMPORT_URL",
+            "--yes",
+        ]
+    )
+    with pytest.raises(SystemExit, match="do not match"):
+        run_db(args)
+    assert "123" in capsys.readouterr().out
+
+
+def _apply_ddl_args(extra, monkeypatch):
+    from ggTrader.cli import cmd_db
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    return cmd_db, parser.parse_args(
+        ["db", "import", "apply-ddl", "--db-url-env", "TEST_IMPORT_URL", "--yes", *extra]
+    )
+
+
+def test_apply_ddl_requires_a_backup_choice():
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    with pytest.raises(SystemExit):
+        parser.parse_args(["db", "import", "apply-ddl", "--use-configured-db"])
+
+
+def test_apply_ddl_refuses_a_stale_backup_and_writes_nothing(tmp_path, monkeypatch):
+    from ggTrader.data.kaggle_import import ddl as kaggle_ddl
+    from ggTrader.data.sec_import import ddl as sec_ddl
+
+    cmd_db, args = _apply_ddl_args(["--backup-dir", str(tmp_path)], monkeypatch)  # no dump inside
+    writes = []
+
+    class Connection:
+        def close(self):
+            pass
+
+    monkeypatch.setattr("ggTrader.data.universe_db.connect", lambda *a, **k: Connection())
+    monkeypatch.setattr(
+        "ggTrader.data.kaggle_import.guards.assert_connected_database", lambda conn, name: name
+    )
+    monkeypatch.setattr(kaggle_ddl, "apply_ddl", lambda conn: writes.append("kaggle"))
+    monkeypatch.setattr(sec_ddl, "apply_ddl", lambda conn: writes.append("sec"))
+    with pytest.raises(SystemExit, match="Backup check failed"):
+        cmd_db.run_db(args)
+    assert not writes
+
+
+def test_apply_ddl_cannot_skip_the_backup_check_on_ggtrader(monkeypatch):
+    cmd_db, args = _apply_ddl_args(["--no-backup-check"], monkeypatch)
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/ggtrader")
+    with pytest.raises(SystemExit, match="cannot be disabled"):
+        cmd_db.run_db(args)
