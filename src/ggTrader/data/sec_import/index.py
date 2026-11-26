@@ -38,7 +38,11 @@ def read_master_zip(path: Path) -> str:
 
 def parse_master_idx(text: str, quarter: str) -> tuple[list[tuple], list[tuple[str, dict, str]]]:
     """Parse rows after the separator and retain invalid lines for quarantine."""
-    lines = text.splitlines()
+    # Split on newlines only: str.splitlines() also breaks on characters that latin-1 text can
+    # contain inside a company name (such as U+0085), which would split one row into two.
+    lines = [line.removesuffix("\r") for line in text.split("\n")]
+    if lines and lines[-1] == "":
+        lines.pop()
     separator = next(
         (i for i, line in enumerate(lines) if re.fullmatch(r"-{3,}", line.strip())), None
     )
@@ -49,6 +53,8 @@ def parse_master_idx(text: str, quarter: str) -> tuple[list[tuple], list[tuple[s
     for number, line in enumerate(lines[separator + 1 :], start=separator + 2):
         fields = line.split("|")
         try:
+            if "\x00" in line:
+                raise ValueError("NUL character in line")
             if len(fields) != 5:
                 raise ValueError("expected five fields")
             cik, company, form, filed, filename = fields
@@ -64,7 +70,8 @@ def parse_master_idx(text: str, quarter: str) -> tuple[list[tuple], list[tuple[s
                 raise ValueError("invalid date")
             rows.append((quarter, cik_value, company, form, date.fromisoformat(filed), filename))
         except ValueError as exc:
-            bad.append((str(number), {"line": line}, str(exc)))
+            # PostgreSQL text and jsonb cannot hold NUL, so keep it visible but escaped.
+            bad.append((str(number), {"line": line.replace("\x00", "\\x00")}, str(exc)))
     return rows, bad
 
 
@@ -96,6 +103,9 @@ def load_index(
         if quarter in selected:
             raise LoadFailed(f"Duplicate quarter: {quarter}")
         selected[quarter] = entry
+    missing = sorted(set(only_quarters or ()) - set(selected))
+    if missing:
+        raise LoadFailed(f"Requested quarters not in the cache: {', '.join(missing)}")
     selected = dict(sorted(selected.items()))
     for entry in selected.values():
         if hashlib.sha256(entry.body_path.read_bytes()).hexdigest() != entry.content_sha256:

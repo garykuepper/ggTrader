@@ -52,7 +52,10 @@ def parse_header(text: str) -> list[HeaderRow]:
     """Extract required filing fields and unique company keys."""
     fields: dict[str, list[str]] = {}
     closed = False
-    for line in text.splitlines():
+    # Newline-only split: latin-1 text can hold characters that str.splitlines() treats as breaks.
+    if "\x00" in text:
+        raise HeaderIncomplete("NUL character in header")
+    for line in text.split("\n"):
         if line.strip() == "</SEC-HEADER>":
             closed = True
             break
@@ -94,6 +97,8 @@ def load_headers(
     """Load verified filing headers in resumable chunks."""
     backup_fresh(backup_dir)
     selected = sorted((e for e in entries if e.kind == "filing_text"), key=lambda e: e.url_hash)
+    if len({e.url_hash for e in selected}) != len(selected):
+        raise LoadFailed("Duplicate cache entries; merge the folders first")
     for entry in selected:
         with entry.body_path.open("rb") as source:
             digest = hashlib.file_digest(source, "sha256").hexdigest()
@@ -114,17 +119,34 @@ def load_headers(
         parser_version="sec-headers-1",
         content_sha256=digest,
         expected_chunks=keys,
+        derivation_identity={"chunk_size": CHUNK_SIZE},
     )
     record_files(conn, load_id, [(str(e.body_path), e.content_sha256, e.bytes) for e in selected])
+    # The same filing can be cached under two companies' folders. Identical copies are kept once;
+    # copies that disagree stop the load, because one of them would be silently wrong.
+    seen: dict[tuple[str, int], HeaderRow] = {}
+    skipped = quarantined = 0
     for key, chunk in zip(keys, chunks, strict=True):
         rows: list[HeaderRow] = []
         bad: list[tuple[str, dict, str]] = []
         for entry in chunk:
             try:
-                rows.extend(parse_header(read_header_text(entry.body_path)))
+                parsed = parse_header(read_header_text(entry.body_path))
             except (HeaderIncomplete, UnicodeError) as exc:
                 path = str(entry.body_path)
                 bad.append((path, {"path": path, "reason": str(exc)}, str(exc)))
+                continue
+            for row in parsed:
+                earlier = seen.setdefault((row.accession, row.cik), row)
+                if earlier != row:
+                    raise LoadFailed(
+                        f"Filing {row.accession} for CIK {row.cik} differs between cache files"
+                    )
+                if earlier is row:
+                    rows.append(row)
+                else:
+                    skipped += 1
+        quarantined += len(bad)
 
         def write(cur: cursor, batch: list[HeaderRow] = rows) -> int:
             cur.executemany(
@@ -142,7 +164,11 @@ def load_headers(
     complete_load(
         conn,
         load_id,
-        {},
+        {
+            "bodies_total": len(selected),
+            "bodies_quarantined": quarantined,
+            "duplicate_rows_skipped": skipped,
+        },
         expected_chunks=keys,
         coverage=("not_a_stock_source", "SEC filing headers"),
     )

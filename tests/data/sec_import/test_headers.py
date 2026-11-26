@@ -136,3 +136,68 @@ def test_load_headers_writes_rows_and_quarantines(tmp_path, monkeypatch):
             assert cur.fetchone() == (2, 1, 1)
             cur.execute("SELECT row_ref FROM ref.quarantine WHERE load_id=%s", (load_id,))
             assert cur.fetchone() == (str(entries[1].body_path),)
+
+
+def _entry(tmp_path, name: str, body: str, url_hash: str):
+    path = tmp_path / name
+    data = body.encode("latin-1")
+    path.write_bytes(data)
+    return CacheEntry(
+        url_hash,
+        f"https://www.sec.gov/Archives/edgar/data/1/{name}.txt",
+        hashlib.sha256(data).hexdigest(),
+        datetime.now(timezone.utc),
+        200,
+        len(data),
+        path,
+        "filing_text",
+    )
+
+
+def _run_loader(tmp_path, monkeypatch, entries):
+    from ggTrader.data.sec_import import headers
+
+    monkeypatch.setattr(headers, "backup_fresh", lambda *_: None)
+    monkeypatch.setattr(headers, "free_space_ok", lambda *a, **k: True)
+    monkeypatch.setattr(headers, "begin_load", lambda *a, **k: 1)
+    monkeypatch.setattr(headers, "record_files", lambda *a, **k: None)
+    done = []
+    monkeypatch.setattr(headers, "complete_load", lambda *a, **k: done.append(a[2]))
+    chunks = []
+    monkeypatch.setattr(headers, "commit_chunk", lambda *a, **k: chunks.append((a[3], k)))
+    headers.load_headers(None, entries, backup_dir=tmp_path, db_free_path=tmp_path)
+    return chunks, done[0]
+
+
+def test_nul_character_makes_the_header_incomplete() -> None:
+    with pytest.raises(HeaderIncomplete, match="NUL"):
+        parse_header(HEADER.replace("Item 1", "Item\x001"))
+
+
+def test_item_text_with_latin1_next_line_character_stays_whole() -> None:
+    row = parse_header(HEADER.replace("Item 1", "Item\x85one"))[0]
+    assert row.items == ("Item\x85one",)
+
+
+def test_identical_copies_in_two_files_load_once(tmp_path, monkeypatch) -> None:
+    entries = [_entry(tmp_path, "a", HEADER, "a"), _entry(tmp_path, "b", HEADER, "b")]
+    chunks, checks = _run_loader(tmp_path, monkeypatch, entries)
+    assert chunks[0][0] == 1
+    assert checks == {"bodies_total": 2, "bodies_quarantined": 0, "duplicate_rows_skipped": 1}
+
+
+def test_copies_that_disagree_stop_the_load(tmp_path, monkeypatch) -> None:
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+
+    other = HEADER.replace("8-K", "8-K/A")
+    entries = [_entry(tmp_path, "a", HEADER, "a"), _entry(tmp_path, "b", other, "b")]
+    with pytest.raises(LoadFailed, match="differs"):
+        _run_loader(tmp_path, monkeypatch, entries)
+
+
+def test_duplicate_cache_entries_are_refused(tmp_path, monkeypatch) -> None:
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+
+    entry = _entry(tmp_path, "a", HEADER, "a")
+    with pytest.raises(LoadFailed, match="Duplicate"):
+        _run_loader(tmp_path, monkeypatch, [entry, entry])

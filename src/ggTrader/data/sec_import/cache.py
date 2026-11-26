@@ -146,6 +146,7 @@ def load_cache(
 ) -> int:
     """Register verified responses in resumable chunks, then publish coverage."""
     backup_fresh(backup_dir)
+    folders = [Path(folder).resolve() for folder in folders]
     groups = [scan_cache(folder) for folder in folders]
     strays = {str(folder): stray_files(folder) for folder in folders}
     entries = merge_caches(*groups)

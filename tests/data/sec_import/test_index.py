@@ -116,7 +116,13 @@ def test_load_index_writes_rows_quarantine_and_resumes(
     with ZipFile(path, "w") as archive:
         archive.writestr(
             "master.idx",
-            (HEADER + "1|Café|10-K|2005-01-01|file\n2|Bad|10-K|bad|file").encode("latin-1"),
+            (
+                HEADER
+                + "1|Café|10-K|2005-01-01|file\n"
+                + "3|A\tB\\C\\N D|10-K|2005-01-02|file\n"
+                + "4||10-K|2005-01-03|file\n"
+                + "2|Bad|10-K|bad|file"
+            ).encode("latin-1"),
         )
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     entry = CacheEntry(
@@ -146,16 +152,21 @@ def test_load_index_writes_rows_quarantine_and_resumes(
         load_id = index.load_index(conn, [entry], backup_dir=tmp_path, db_free_path=tmp_path)
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT cik, company_name, date_filed FROM sec.index_entries WHERE load_id=%s",
+                "SELECT cik, company_name, date_filed FROM sec.index_entries "
+                "WHERE load_id=%s ORDER BY cik",
                 (load_id,),
             )
-            assert cur.fetchall() == [(1, "Café", date(2005, 1, 1))]
+            assert cur.fetchall() == [
+                (1, "Café", date(2005, 1, 1)),
+                (3, "A\tB\\C\\N D", date(2005, 1, 2)),
+                (4, "", date(2005, 1, 3)),
+            ]
             cur.execute(
                 "SELECT rows_parsed, rows_accepted, rows_quarantined "
                 "FROM ref.loads WHERE load_id=%s",
                 (load_id,),
             )
-            assert cur.fetchone() == (2, 1, 1)
+            assert cur.fetchone() == (4, 3, 1)
             cur.execute("SELECT count(*) FROM ref.quarantine WHERE load_id=%s", (load_id,))
             assert cur.fetchone() == (1,)
 
@@ -167,3 +178,34 @@ def test_parse_keeps_blank_company_name_and_quarantines_blank_form() -> None:
     rows, bad = index.parse_master_idx(text, "2016Q1")
     assert rows == [("2016Q1", 1, "", "10-K", date(2016, 2, 26), "edgar/data/1/a.txt")]
     assert [(ref, reason) for ref, _, reason in bad] == [("4", "empty CIK, form, date or filename")]
+
+
+def test_copy_escape_handles_carriage_return_and_null_marker() -> None:
+    assert index._copy_escape("a\rb") == "a\\rb"
+    assert index._copy_escape("\\N") == "\\\\N"
+
+
+def test_next_line_character_inside_a_company_name_does_not_split_the_row() -> None:
+    text = "x\n-----\n1|A\x85B CO|10-K|2016-02-26|edgar/data/1/a.txt\r\n"
+    rows, bad = index.parse_master_idx(text, "2016Q1")
+    assert [row[2] for row in rows] == ["A\x85B CO"] and not bad
+
+
+def test_nul_character_is_quarantined_and_kept_visible() -> None:
+    text = "x\n-----\n1|A\x00B|10-K|2016-02-26|edgar/data/1/a.txt\n"
+    rows, bad = index.parse_master_idx(text, "2016Q1")
+    assert not rows
+    assert bad[0][1]["line"] == "1|A\\x00B|10-K|2016-02-26|edgar/data/1/a.txt"
+    assert "NUL" in bad[0][2]
+
+
+def test_requesting_a_quarter_that_is_not_there_is_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+
+    monkeypatch.setattr(index, "backup_fresh", lambda _: None)
+    with pytest.raises(LoadFailed, match="2005Q2"):
+        index.load_index(
+            None, [], backup_dir=tmp_path, db_free_path=tmp_path, only_quarters=["2005Q2"]
+        )
