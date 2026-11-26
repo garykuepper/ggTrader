@@ -24,7 +24,7 @@ def test_parse_valid_lines() -> None:
         "1|Co",
         "1|Extra|pipe|10-K|2005-01-01|file",
         "x|Co|10-K|2005-01-01|file",
-        "1||10-K|2005-01-01|file",
+        "1|Co||2005-01-01|file",
     ],
 )
 def test_bad_lines_are_quarantined(line: str) -> None:
@@ -114,7 +114,10 @@ def test_load_index_writes_rows_quarantine_and_resumes(
 
     path = tmp_path / "body"
     with ZipFile(path, "w") as archive:
-        archive.writestr("master.idx", HEADER + "1|Café|10-K|2005-01-01|file\n2|Bad|10-K|bad|file")
+        archive.writestr(
+            "master.idx",
+            (HEADER + "1|Café|10-K|2005-01-01|file\n2|Bad|10-K|bad|file").encode("latin-1"),
+        )
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     entry = CacheEntry(
         "x",
