@@ -97,6 +97,8 @@ def load_headers(
     """Load verified filing headers in resumable chunks."""
     backup_fresh(backup_dir)
     selected = sorted((e for e in entries if e.kind == "filing_text"), key=lambda e: e.url_hash)
+    if not selected:
+        raise LoadFailed("No filing text entries found; check the --folder paths")
     if len({e.url_hash for e in selected}) != len(selected):
         raise LoadFailed("Duplicate cache entries; merge the folders first")
     for entry in selected:

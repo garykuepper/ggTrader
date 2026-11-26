@@ -167,6 +167,14 @@ def _read_labels(study: str, path: Path) -> list[LabelRow]:
     return rows
 
 
+def inspect_labels(study: str, path: Path) -> tuple[list[LabelRow], list[QuarantinedRow]]:
+    """Read a label file for a preview: usable rows and the rows that would be quarantined."""
+    try:
+        return _parse_file(EARLY_STUDY if study == "early" else PAYOUT_STUDY, path.read_bytes())
+    except (OSError, ValueError, csv.Error) as exc:
+        raise LoadFailed(f"Cannot read labels from {path}: {exc}") from exc
+
+
 def read_early_labels(csv_path: Path) -> list[LabelRow]:
     """Read the early filings labels from the study's CSV."""
     return _read_labels(EARLY_STUDY, csv_path)
@@ -363,8 +371,10 @@ def load_labels(
         raise LoadFailed(f"Cannot read labels from {source_path}: {exc}") from exc
     if list(rows) != verified:
         raise LoadFailed(f"Supplied labels do not match {source_path}")
-    if not (verified or bad):
-        raise LoadFailed(f"No label rows in {source_path}")
+    if not verified:
+        raise LoadFailed(
+            f"No readable label rows in {source_path} ({len(bad)} unreadable); wrong study or file?"
+        )
     keys_seen = set()
     for row in verified:
         if row.key in keys_seen:

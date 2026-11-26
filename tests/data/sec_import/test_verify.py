@@ -138,7 +138,7 @@ def test_cli_records_failed_deep_report(
     parser = argparse.ArgumentParser()
     register_db_parser(parser.add_subparsers(dest="command"))
     responses = ordinary_responses()
-    responses[0] = ("sum(c.rows)", [(1, 100, 99)])
+    responses[0] = ("sum(c.rows)", [(1, 100, 99, 0)])
     conn = FakeConnection(
         ("current_database()", [("scratch",)]),
         *responses,
@@ -171,7 +171,7 @@ def test_cli_records_failed_deep_report(
 def test_row_count_check_uses_chunk_log(logged: int, expected_ok: bool) -> None:
     from ggTrader.data.sec_import.verify import load_row_counts_match_log
 
-    result = load_row_counts_match_log(FakeConnection(("sum(c.rows)", [(3, 10, logged)])))
+    result = load_row_counts_match_log(FakeConnection(("sum(c.rows)", [(3, 10, logged, 2)])))
     assert result["ok"] is expected_ok
     if not expected_ok:
         assert "load 3" in result["detail"]
@@ -564,3 +564,28 @@ def test_record_inserts_one_row_and_nothing_else_changes(
         cur.execute("SELECT * FROM ref.loads")
         assert cur.fetchall() == original_loads
     assert run_checks(verify_db) == report
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_cli_against_a_real_database_reads_without_record_and_writes_one_row_with_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The read-only session must work on a real connection, which a fake cannot show."""
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    with scratch_database() as url, psycopg2.connect(url) as conn:
+        apply_kaggle_ddl(conn)
+        apply_sec_ddl(conn)
+        monkeypatch.setenv("VERIFY_REAL_URL", url)
+        base = ["db", "verify-data", "--db-url-env", "VERIFY_REAL_URL"]
+        run_db(parser.parse_args(base))  # exits non-zero only on a failed check
+        assert "checks passed" in capsys.readouterr().out
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM ref.integrity_checks")
+            assert cur.fetchone() == (0,)
+        conn.rollback()
+        run_db(parser.parse_args([*base, "--record"]))
+        with conn.cursor() as cur:
+            cur.execute("SELECT mode, ok FROM ref.integrity_checks")
+            assert cur.fetchall() == [("ordinary", True)]

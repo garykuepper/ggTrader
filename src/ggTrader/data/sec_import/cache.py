@@ -150,6 +150,8 @@ def load_cache(
     groups = [scan_cache(folder) for folder in folders]
     strays = {str(folder): stray_files(folder) for folder in folders}
     entries = merge_caches(*groups)
+    if not entries:
+        raise LoadFailed("No cache entries found in the folders; check the --folder paths")
     needed = sum(entry.bytes for entry in entries)
     options = {} if margin_bytes is None else {"margin_bytes": margin_bytes}
     if not free_space_ok(db_free_path, needed, **options):

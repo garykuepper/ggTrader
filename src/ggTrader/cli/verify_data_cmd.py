@@ -36,9 +36,10 @@ def run_verify_data(args: argparse.Namespace, url: str) -> int:
         print("Database connection failed.")
         return 1
     try:
-        assert_connected_database(conn, unquote(urlparse(url).path.lstrip("/")))
         if not args.record:
+            # Must come before the first query: psycopg2 refuses it inside a transaction.
             conn.set_session(readonly=True)  # nothing may be written without --record
+        assert_connected_database(conn, unquote(urlparse(url).path.lstrip("/")))
         report = run_checks(conn, deep=args.deep)
         for name, check in report["checks"].items():
             outcome = "PASS" if check["ok"] else "FAIL"

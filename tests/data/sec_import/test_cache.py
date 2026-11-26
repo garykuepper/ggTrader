@@ -292,3 +292,19 @@ def test_load_cache_registers_files_and_coverage_and_is_resumable(
             coverage, checks = cur.fetchone()
             assert coverage == "not_a_stock_source"
             assert checks["stray_files"] == {str(folder): ["README.md"]}
+
+
+def test_loaders_refuse_an_empty_selection(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+    from ggTrader.data.sec_import import headers, index
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    for module in (cache, headers, index):
+        monkeypatch.setattr(module, "backup_fresh", lambda _: None)
+    with pytest.raises(LoadFailed, match="No cache entries"):
+        cache.load_cache(None, [empty], backup_dir=tmp_path, db_free_path=tmp_path)
+    with pytest.raises(LoadFailed, match="No quarterly index"):
+        index.load_index(None, [], backup_dir=tmp_path, db_free_path=tmp_path)
+    with pytest.raises(LoadFailed, match="No filing text"):
+        headers.load_headers(None, [], backup_dir=tmp_path, db_free_path=tmp_path)

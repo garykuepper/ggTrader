@@ -17,7 +17,7 @@ The `ggt` command-line tool is your command center. You will use it to run strat
 
 ## Market data imports
 
-`ggt db import apply-ddl` creates the import schemas. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
+`ggt db import apply-ddl` creates or refreshes the import schemas (it needs `--backup-dir` with a recent dump, or `--no-backup-check` on a scratch database). `ggt db import fail-load --load-id N --reason TEXT` marks an unfinished load as failed. `ggt db import crsp` loads CRSP Parquet; `ggt db import mcgill` loads McGill CSV. All require an explicit target: `--db-url-env NAME` selects an environment variable holding the connection, or `--use-configured-db` selects the configured database. `--yes` executes the write; without it the command reports what it would do.
 
 `ggt db import release build --crsp-bars-load N --links LINKS.csv [--mcgill-load M]` builds and publishes a release using the approved link settings. It prints its ID, counts by kind, demoted links, and Yahoo fingerprint. `ggt db import release list` prints releases and counts; `ggt db import release withdraw --release-id N` withdraws one. Each requires `--db-url-env NAME` or `--use-configured-db`; build and withdraw require `--yes` to execute.
 

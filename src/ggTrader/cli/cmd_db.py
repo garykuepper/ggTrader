@@ -40,6 +40,10 @@ def _add_db_target(command: argparse.ArgumentParser) -> None:
     target.add_argument("--use-configured-db", action="store_true")
 
 
+#: Import subcommands that need a recent backup (or an explicit opt-out on a scratch database).
+BACKUP_CHECKED = ("apply-ddl", "crsp", "mcgill", "derive-bars")
+
+
 def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa: PLR0915
     """Registers the 'db' subcommand."""
     parser = subparsers.add_parser("db", help="Database administration and maintenance")
@@ -71,6 +75,9 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
     importer = db_subs.add_parser("import", help="Import market datasets")
     import_subs = importer.add_subparsers(dest="import_command", required=True)
     ddl = import_subs.add_parser("apply-ddl", help="Apply import schemas")
+    ddl_backup = ddl.add_mutually_exclusive_group(required=True)
+    ddl_backup.add_argument("--backup-dir", type=Path)
+    ddl_backup.add_argument("--no-backup-check", action="store_true")
     mcgill = import_subs.add_parser("mcgill", help="Load McGill CSV")
     mcgill.add_argument("--file", type=Path, required=True)
     mcgill.add_argument("--sums", type=Path, required=True)
@@ -103,6 +110,11 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
     release_withdraw = release_subs.add_parser("withdraw", help="Withdraw a release")
     release_withdraw.add_argument("--release-id", type=int, required=True)
     release_list = release_subs.add_parser("list", help="List releases")
+    fail_load = import_subs.add_parser(
+        "fail-load", help="Mark an unfinished (running) load as failed so it stops blocking"
+    )
+    fail_load.add_argument("--load-id", type=int, required=True)
+    fail_load.add_argument("--reason", required=True, help="Why the load is being abandoned")
     from ggTrader.cli.sec_import_cmds import register_sec_parsers
     from ggTrader.cli.verify_data_cmd import register_verify_data
 
@@ -116,6 +128,7 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
         release_build,
         release_withdraw,
         release_list,
+        fail_load,
         *sec_commands,
     ):
         _add_db_target(command)
@@ -174,7 +187,7 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
         url = resolve_import_url(args)
-        if args.import_command in ("crsp", "mcgill", "derive-bars") and args.no_backup_check:
+        if args.import_command in BACKUP_CHECKED and args.no_backup_check:
             from psycopg2.extensions import parse_dsn
 
             try:
@@ -195,6 +208,8 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
             action = (
                 "apply import schemas"
                 if args.import_command == "apply-ddl"
+                else f"mark load {args.load_id} as failed ({args.reason})"
+                if args.import_command == "fail-load"
                 else (
                     f"derive bars from load {args.crsp_load}"
                     if args.import_command == "derive-bars"
@@ -214,7 +229,7 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
             expected_db = unquote(urlparse(url).path.lstrip("/"))
             connected_db = assert_connected_database(conn, expected_db)
             if (
-                args.import_command in ("crsp", "mcgill", "derive-bars")
+                args.import_command in BACKUP_CHECKED
                 and args.no_backup_check
                 and connected_db == "ggtrader"
             ):
@@ -223,8 +238,14 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
                 _run_release_import(conn, args)
             elif args.import_command == "apply-ddl":
                 from ggTrader.data.kaggle_import.ddl import apply_ddl as apply_kaggle_ddl
+                from ggTrader.data.kaggle_import.guards import BackupStale, backup_fresh
                 from ggTrader.data.sec_import.ddl import apply_ddl as apply_consolidation_ddl
 
+                if not args.no_backup_check:
+                    try:
+                        backup_fresh(args.backup_dir)
+                    except (BackupStale, OSError) as exc:
+                        sys.exit(f"Backup check failed: {exc}")
                 apply_kaggle_ddl(conn)
                 apply_consolidation_ddl(conn)
             elif args.import_command == "mcgill":
@@ -238,6 +259,14 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
                     db_free_path=args.db_free_path,
                 )
                 print(f"Load {load_id}")
+            elif args.import_command == "fail-load":
+                from ggTrader.data.kaggle_import.loadlog import LoadFailed, fail_load
+
+                try:
+                    fail_load(conn, args.load_id, args.reason)
+                except LoadFailed as exc:
+                    sys.exit(f"Cannot mark load {args.load_id} as failed: {exc}")
+                print(f"Load {args.load_id} marked as failed.")
             elif args.import_command == "derive-bars":
                 from ggTrader.data.kaggle_import.crsp import compress_kaggle_chunks
                 from ggTrader.data.kaggle_import.derive import derive_bars

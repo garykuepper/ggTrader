@@ -207,7 +207,11 @@ def test_requesting_a_quarter_that_is_not_there_is_an_error(
     monkeypatch.setattr(index, "backup_fresh", lambda _: None)
     with pytest.raises(LoadFailed, match="2005Q2"):
         index.load_index(
-            None, [], backup_dir=tmp_path, db_free_path=tmp_path, only_quarters=["2005Q2"]
+            None,
+            [_entry_for(tmp_path, "2005Q3")],
+            backup_dir=tmp_path,
+            db_free_path=tmp_path,
+            only_quarters=["2005Q2"],
         )
 
 

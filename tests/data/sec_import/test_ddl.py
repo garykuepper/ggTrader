@@ -281,3 +281,49 @@ def test_backfill_adds_rows_for_existing_loads_and_leaves_loads_unchanged(
         assert cur.fetchall() == expected
         cur.execute("SELECT to_jsonb(l) FROM ref.loads l ORDER BY load_id")
         assert cur.fetchall() == before
+
+
+def test_fail_load_command_abandons_only_a_running_load(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A stuck load can be closed from the command line, and a finished one cannot."""
+    import argparse
+
+    from ggTrader.cli.cmd_db import register_db_parser, run_db
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    with scratch_database() as url, psycopg2.connect(url) as target:
+        apply_kaggle_ddl(target)
+        apply_ddl(target)
+        running = _begin(target)
+        finished = _begin(target, "sec-cache")
+        complete_load(target, finished, {}, coverage=("not_a_stock_source", "test"))
+        monkeypatch.setenv("FAIL_LOAD_URL", url)
+        base = ["db", "import", "fail-load", "--db-url-env", "FAIL_LOAD_URL", "--reason", "test"]
+        run_db(parser.parse_args([*base, "--load-id", str(running)]))  # preview only
+        with target.cursor() as cur:
+            cur.execute("SELECT status FROM ref.loads WHERE load_id=%s", (running,))
+            assert cur.fetchone() == ("running",)
+        target.rollback()
+        run_db(parser.parse_args([*base, "--load-id", str(running), "--yes"]))
+        with target.cursor() as cur:
+            cur.execute("SELECT status FROM ref.loads WHERE load_id=%s", (running,))
+            assert cur.fetchone() == ("failed",)
+        with pytest.raises(SystemExit, match="not running"):
+            run_db(parser.parse_args([*base, "--load-id", str(finished), "--yes"]))
+
+
+@pytest.mark.parametrize(
+    "reader",
+    ["fetched_files_of", "index_entries_of", "filing_headers_of", "death_labels_of"],
+)
+def test_sec_readers_refuse_loads_that_are_not_complete(conn: connection, reader: str) -> None:
+    running = _begin(conn)
+    done = _begin(conn, "sec-cache")
+    complete_load(conn, done, {}, coverage=("not_a_stock_source", "test"))
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT count(*) FROM sec.{reader}(%s)", (done,))
+        assert cur.fetchone() == (0,)
+    conn.rollback()
+    with pytest.raises(psycopg2.errors.RaiseException, match="not complete"), conn.cursor() as cur:
+        cur.execute(f"SELECT count(*) FROM sec.{reader}(%s)", (running,))
+    conn.rollback()

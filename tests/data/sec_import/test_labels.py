@@ -474,3 +474,18 @@ def test_a_third_file_version_hits_the_retention_limit(
     write_early(path, EARLY, second_key, third_key)
     with pytest.raises(RetentionLimit):
         load(label_db, path, labels.read_early_labels(path))
+
+
+def test_a_file_with_no_readable_rows_is_refused_not_loaded_empty(tmp_path: Path) -> None:
+    path = tmp_path / "early.csv"
+    path.write_text("wrong,columns\n1,2\n", encoding="utf-8")
+    conn = MagicMock(spec=connection)
+    with pytest.raises(LoadFailed, match="No readable label rows.*wrong study or file"):
+        load(conn, path, labels.read_early_labels(path))
+    conn.cursor.assert_not_called()
+
+
+def test_inspect_labels_counts_unreadable_rows(tmp_path: Path) -> None:
+    path = write_early(tmp_path / "early.csv", EARLY, {**EARLY, "permno": "x"})
+    rows, bad = labels.inspect_labels("early", path)
+    assert len(rows) == 1 and len(bad) == 1

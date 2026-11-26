@@ -63,18 +63,21 @@ def load_row_counts_match_log(conn: connection) -> Check:
     """Reconcile the row counts recorded for finished batches and loads."""
     rows = _rows(
         conn,
-        """SELECT l.load_id, l.rows_accepted, COALESCE(sum(c.rows), 0)
+        """SELECT l.load_id, l.rows_accepted, COALESCE(sum(c.rows), 0), l.rows_quarantined
            FROM ref.loads l LEFT JOIN ref.load_chunks c USING (load_id)
            WHERE l.status = 'complete'
            GROUP BY l.load_id ORDER BY l.load_id""",
     )
     failures = [
         f"load {load_id} logged {accepted}, batches add up to {total}"
-        for load_id, accepted, total in rows
+        for load_id, accepted, total, _ in rows
         if total != accepted
     ]
+    set_aside = {load_id: count for load_id, _, _, count in rows if count}
     return _result(
         f"Compared recorded batch totals for {len(rows)} completed loads. "
+        f"Rows set aside as unreadable: {sum(set_aside.values())} "
+        f"({_detail([f'load {k}: {v}' for k, v in set_aside.items()])}). "
         "Actual table rows require a deep run.",
         failures,
     )

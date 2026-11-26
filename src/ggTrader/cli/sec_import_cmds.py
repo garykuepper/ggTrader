@@ -25,6 +25,7 @@ from ggTrader.data.sec_import.index import load_index, quarter_of
 from ggTrader.data.sec_import.labels import (
     LabelConflict,
     LabelMismatch,
+    inspect_labels,
     load_labels,
     read_early_labels,
     read_payout_labels,
@@ -55,7 +56,9 @@ def _inspect(args: argparse.Namespace) -> Any:
     if args.import_command == "sec-labels":
         reader = read_early_labels if args.study == "early" else read_payout_labels
         rows = reader(args.file)
+        _, unreadable = inspect_labels(args.study, args.file)
         print(f"{len(rows)} label rows: {dict(Counter(row.label for row in rows))}")
+        print(f"{len(unreadable)} rows could not be read and would be set aside with the reason.")
         return rows
     groups = []
     # Resolved here so the paths recorded by the loaders do not depend on the working folder.

@@ -177,5 +177,7 @@ def apply_ddl(conn: PgConnection) -> None:
     """Apply the schema in one transaction."""
     sql = (REPO_ROOT / "sql" / "kaggle_schema.sql").read_text(encoding="utf-8")
     with conn.cursor() as cur:
+        # Give up instead of queueing behind (and blocking) an open reader of these tables.
+        cur.execute("SET LOCAL lock_timeout = '15s'")
         cur.execute(sql)
     conn.commit()

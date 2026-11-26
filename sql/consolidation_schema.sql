@@ -85,6 +85,43 @@ CREATE TABLE IF NOT EXISTS sec.death_labels (
     PRIMARY KEY (load_id, study, method_version, permno, last_date)
 );
 
+-- Readers: rows of a load that is still running or failed are never returned.
+CREATE OR REPLACE FUNCTION sec.fetched_files_of(p_load_id bigint)
+RETURNS SETOF sec.fetched_files LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+        RAISE EXCEPTION 'load % is not complete', p_load_id;
+    END IF;
+    RETURN QUERY SELECT * FROM sec.fetched_files WHERE load_id = p_load_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION sec.index_entries_of(p_load_id bigint)
+RETURNS SETOF sec.index_entries LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+        RAISE EXCEPTION 'load % is not complete', p_load_id;
+    END IF;
+    RETURN QUERY SELECT * FROM sec.index_entries WHERE load_id = p_load_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION sec.filing_headers_of(p_load_id bigint)
+RETURNS SETOF sec.filing_headers LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+        RAISE EXCEPTION 'load % is not complete', p_load_id;
+    END IF;
+    RETURN QUERY SELECT * FROM sec.filing_headers WHERE load_id = p_load_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION sec.death_labels_of(p_load_id bigint)
+RETURNS SETOF sec.death_labels LANGUAGE plpgsql STABLE AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM ref.loads WHERE load_id = p_load_id AND status = 'complete') THEN
+        RAISE EXCEPTION 'load % is not complete', p_load_id;
+    END IF;
+    RETURN QUERY SELECT * FROM sec.death_labels WHERE load_id = p_load_id;
+END $$;
+
 CREATE OR REPLACE FUNCTION ref.require_coverage() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF OLD.status = 'running' AND NEW.status = 'complete'

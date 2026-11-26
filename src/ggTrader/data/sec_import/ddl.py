@@ -19,6 +19,7 @@ def apply_ddl(conn: PgConnection) -> None:
     sql = (REPO_ROOT / "sql" / "consolidation_schema.sql").read_text(encoding="utf-8")
     try:
         with conn.cursor() as cur:
+            cur.execute("SET LOCAL lock_timeout = '15s'")  # do not queue behind open readers
             cur.execute(sql)
         conn.commit()
     except Exception:

@@ -110,6 +110,8 @@ def load_index(
     missing = sorted(set(only_quarters or ()) - set(selected))
     if missing:
         raise LoadFailed(f"Requested quarters not in the cache: {', '.join(missing)}")
+    if not selected:
+        raise LoadFailed("No quarterly index entries found; check the --folder paths")
     selected = dict(sorted(selected.items()))
     for entry in selected.values():
         if hashlib.sha256(entry.body_path.read_bytes()).hexdigest() != entry.content_sha256:

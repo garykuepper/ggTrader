@@ -1,4 +1,4 @@
-# TEMPLATE, NOT INSTALLED, NOT ENABLED. See README.md.
+# Template for the user-level unit the owner installed on 2026-11-26. See README.md.
 [Unit]
 Description=ggTrader weekly database dump
 After=docker.service

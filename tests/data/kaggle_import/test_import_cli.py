@@ -57,7 +57,7 @@ def test_target_resolution_and_dry_run(monkeypatch, capsys):
 
     parser = argparse.ArgumentParser()
     register_db_parser(parser.add_subparsers(dest="command"))
-    base = ["db", "import", "apply-ddl"]
+    base = ["db", "import", "apply-ddl", "--no-backup-check"]
     for flags in ([], ["--db-url-env", "TEST_IMPORT_URL", "--use-configured-db"]):
         with pytest.raises(SystemExit) as exc:
             parser.parse_args(base + flags)
@@ -326,3 +326,50 @@ def test_sec_labels_reports_unmatched_rows(tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit, match="do not match"):
         run_db(args)
     assert "123" in capsys.readouterr().out
+
+
+def _apply_ddl_args(extra, monkeypatch):
+    from ggTrader.cli import cmd_db
+
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/scratch")
+    return cmd_db, parser.parse_args(
+        ["db", "import", "apply-ddl", "--db-url-env", "TEST_IMPORT_URL", "--yes", *extra]
+    )
+
+
+def test_apply_ddl_requires_a_backup_choice():
+    parser = argparse.ArgumentParser()
+    register_db_parser(parser.add_subparsers(dest="command"))
+    with pytest.raises(SystemExit):
+        parser.parse_args(["db", "import", "apply-ddl", "--use-configured-db"])
+
+
+def test_apply_ddl_refuses_a_stale_backup_and_writes_nothing(tmp_path, monkeypatch):
+    from ggTrader.data.kaggle_import import ddl as kaggle_ddl
+    from ggTrader.data.sec_import import ddl as sec_ddl
+
+    cmd_db, args = _apply_ddl_args(["--backup-dir", str(tmp_path)], monkeypatch)  # no dump inside
+    writes = []
+
+    class Connection:
+        def close(self):
+            pass
+
+    monkeypatch.setattr("ggTrader.data.universe_db.connect", lambda *a, **k: Connection())
+    monkeypatch.setattr(
+        "ggTrader.data.kaggle_import.guards.assert_connected_database", lambda conn, name: name
+    )
+    monkeypatch.setattr(kaggle_ddl, "apply_ddl", lambda conn: writes.append("kaggle"))
+    monkeypatch.setattr(sec_ddl, "apply_ddl", lambda conn: writes.append("sec"))
+    with pytest.raises(SystemExit, match="Backup check failed"):
+        cmd_db.run_db(args)
+    assert not writes
+
+
+def test_apply_ddl_cannot_skip_the_backup_check_on_ggtrader(monkeypatch):
+    cmd_db, args = _apply_ddl_args(["--no-backup-check"], monkeypatch)
+    monkeypatch.setenv("TEST_IMPORT_URL", "postgresql://localhost/ggtrader")
+    with pytest.raises(SystemExit, match="cannot be disabled"):
+        cmd_db.run_db(args)
