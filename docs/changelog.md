@@ -3825,3 +3825,12 @@ orders remain supported and conflicting representations fail closed. Session and
 advisory locks coordinate compliant runners but cannot perfectly fence an already issued broker
 call. The paper trader remains stopped pending owner authorization to resume cron.
 
+
+## 2026-11-26 (database consolidation, stage 0a and A)
+
+Added a database dump script and a disposable restore drill to make backups testable. The owner
+installed a user-level weekly dump timer on 2026-11-26 for Sundays at 04:30. Added coverage
+labels describing data scope, load-file records identifying source files, and an integrity-check
+table for recorded verification results. Added four SEC loaders and commands for saved responses,
+quarterly filing indexes, filing headers and frozen study labels, so those research inputs can be
+tracked with their sources. The new SEC data has not been loaded into the live database.

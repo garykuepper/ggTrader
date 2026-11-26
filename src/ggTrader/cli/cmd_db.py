@@ -91,7 +91,19 @@ def register_db_parser(subparsers: argparse._SubParsersAction) -> None:  # noqa:
     release_withdraw = release_subs.add_parser("withdraw", help="Withdraw a release")
     release_withdraw.add_argument("--release-id", type=int, required=True)
     release_list = release_subs.add_parser("list", help="List releases")
-    for command in (ddl, crsp, mcgill, derive, release_build, release_withdraw, release_list):
+    from ggTrader.cli.sec_import_cmds import register_sec_parsers
+
+    sec_commands = register_sec_parsers(import_subs)
+    for command in (
+        ddl,
+        crsp,
+        mcgill,
+        derive,
+        release_build,
+        release_withdraw,
+        release_list,
+        *sec_commands,
+    ):
         target = command.add_mutually_exclusive_group(required=True)
         target.add_argument(
             "--db-url-env",
@@ -158,6 +170,11 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
                 sys.exit("Backup check cannot be disabled for ggtrader")
         if args.import_command == "release" and args.release_command != "list" and not args.yes:
             print("Would change a release; pass --yes to proceed.")
+            return
+        if args.import_command.startswith("sec-"):
+            from ggTrader.cli.sec_import_cmds import run_sec_import
+
+            run_sec_import(args, url)
             return
         if not args.yes and args.import_command != "release":
             action = (

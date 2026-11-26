@@ -826,3 +826,27 @@ Paper live runs persist order intents before submission and reconcile unresolved
 before new orders. Ambiguous submissions, working orders, or conflicting legacy pending rows
 block submissions and require investigation; no reset command is provided. The trader remains
 stopped, and cron resumes only on the owner's explicit authorization. Dry runs do not submit.
+
+### SEC research imports
+
+These commands read existing SEC files; they make no network requests. A cache is a folder of
+saved responses and their metadata, and a label is a study's recorded classification of a stock.
+Each command requires an explicit database target and a backup directory, even for a scratch
+database. Without `--yes`, it inspects the files and prints what it would do without connecting to
+the database or writing anything; the backup directory need not exist for this preview.
+
+```text
+ggt db import sec-cache --folder PATH [--folder PATH ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-index --folder PATH [--folder PATH ...] [--only-quarter 2005Q2 ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-headers --folder PATH [--folder PATH ...] --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+ggt db import sec-labels --study {early,payouts} --file PATH --backup-dir PATH [--db-free-path PATH] (--db-url-env NAME | --use-configured-db) [--yes]
+```
+
+Repeat `--folder` to combine folders. `sec-cache` records verified responses; `sec-index` loads
+quarterly filing indexes, and repeatable `--only-quarter` limits the selected quarters.
+`sec-headers` loads filing headers. `sec-labels` reads the early study CSV or payouts study JSON
+and checks its stock identifiers and last dates against release 1. The preview reports cache pair
+and kind counts, other files, selected quarters, or label counts. `--backup-dir` must contain a
+recent dump for a confirmed load. `--db-free-path` points to the database drive for the free-space
+check and defaults to `/`. `--db-url-env NAME` names an environment variable containing a
+connection; `--use-configured-db` selects the configured connection. `--yes` confirms the load.

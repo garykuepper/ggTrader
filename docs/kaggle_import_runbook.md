@@ -53,3 +53,57 @@ trigger the release's drift check.
   rehearsal database.
 - A manually committed `building` release cannot be read, but can still be published by a later
   direct database update. Do not publish or add records to such a release by hand.
+
+## Dumps and restore drill (stage 0a)
+
+A dump is a database backup file. The live volume is treated as unbacked-up until the owner
+confirms otherwise; a recent dump alone does not prove it can be restored. The owner must approve
+live database writes and accept the backup or a successful restore drill before those writes.
+The SEC loaders require a dump at least 1 MiB and at most seven days old in `--backup-dir`,
+including on scratch databases. Confirm sufficient free space on the database drive and pass its
+path as `--db-free-path` before loading.
+
+Create a dump with `scripts/run_capped.sh .venv/bin/python scripts/db_dump.py --out-dir /media/thesix/ggTrader-data/db-dumps/`.
+The output directory must already exist. The script writes `ggtrader_YYYYMMDD.dump.part` while
+working and renames it to `ggtrader_YYYYMMDD.dump` on success. If the before and after snapshots
+(the recorded counts and content digests) differ, it keeps `ggtrader_YYYYMMDD.dump.mismatch`.
+The exit codes are 0 for success, 1 for a failure, 2 for an invalid output directory or
+insufficient space, and 3 for a snapshot mismatch. Digests are computed with the database
+session time zone pinned to UTC. The directory also holds `SHA256SUMS` and dated counts files;
+The dump directory also has an `attempts/` subfolder. The installed user timer at
+`~/.config/systemd/user/ggtrader-db-dump.timer` runs Sunday at 04:30 and keeps four dumps.
+
+Run a restore drill (a test restore into a disposable container) with:
+
+```text
+scripts/run_capped.sh .venv/bin/python scripts/db_restore_drill.py --dump DUMP --counts COUNTS_JSON --out REPORT_JSON
+```
+
+`--sums PATH` selects a checksum file; otherwise the drill uses `SHA256SUMS` beside the dump.
+`--image IMAGE` selects the container image, and `--keep` retains the scratch container and files.
+The report's `ok` says whether all recorded counts and digests matched; `stage` identifies where a
+failure occurred and `error` names its error type. `server_message`, when present, is the database
+server's primary error message. `catalog_version_aligned` says whether the drill updated the
+stored TimescaleDB version note. The live database records TimescaleDB 2.25.0 in its catalog
+(the database's internal records), although 2.25.1 is installed. A real restore must align that
+note to the installed version before `SELECT timescaledb_post_restore()`:
+
+```sql
+UPDATE _timescaledb_catalog.metadata SET value = '<installed version>' WHERE key = 'timescaledb_version';
+```
+
+The drill performs this alignment automatically and reports whether it changed a row.
+
+## SEC imports and records
+
+The four SEC loaders record saved responses, quarterly filing index entries, filing headers, and
+frozen study labels respectively. `ref.load_files` records source paths, hashes (content
+fingerprints) and sizes; `ref.load_coverage` records what each load covers; and
+`ref.integrity_checks` stores integrity-check results. The SEC tables hold fetched-file records,
+index entries, headers and death labels. A coverage label describes the scope of stock data:
+`includes_dead_stocks` includes stocks that later ended; `survivors_only` includes only survivors;
+`partial_dead_stocks` includes some ended stocks; `large_stocks_only` covers large stocks;
+`unaudited_sample` is a sample whose coverage has not been checked; and `not_a_stock_source`
+means the data is not a stock source. SEC loads use `not_a_stock_source`. See the
+[CLI reference](cli_reference.md) for the commands and their dry runs. These new SEC loads have
+not yet been run against the live database.
