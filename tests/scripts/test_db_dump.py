@@ -27,7 +27,7 @@ class Connection:
         return Cursor()
 
     def close(self):
-        pass
+        self.closed = True
 
 
 @pytest.fixture
@@ -83,6 +83,7 @@ def test_dump_under_one_megabyte_exits_1(setup_dump):
 def test_counts_json_records_timescaledb_version(setup_dump):
     assert run(setup_dump) == 0
     record = json.loads(next(setup_dump.glob("counts_*.json")).read_text())
+    assert set(record) == {"day", "dump_bytes", "seconds", "timescaledb", "before", "after"}
     assert record["timescaledb"] == "2.25.1"
 
 
@@ -103,3 +104,66 @@ def test_help_exits_zero():
     with pytest.raises(SystemExit) as exc:
         db_dump.main(["--help"])
     assert exc.value.code == 0
+
+
+def test_before_and_after_snapshots_use_separate_connections(setup_dump, monkeypatch):
+    connections = []
+    snapshots = []
+
+    def connect(_):
+        conn = Connection()
+        conn.closed = False
+        connections.append(conn)
+        return conn
+
+    def snapshot(conn):
+        snapshots.append(conn)
+        return {"counts": {}, "digests": {}}
+
+    def runner(command, stdout, check):
+        assert len(connections) == 1 and connections[0].closed
+        stdout.write(b"a" * (1024 * 1024))
+
+    monkeypatch.setattr(db_dump, "snapshot", snapshot)
+    assert db_dump.main(["--out-dir", str(setup_dump)], connect=connect, runner=runner) == 0
+    assert len(connections) == 2 and snapshots == connections
+    assert all(conn.closed for conn in connections)
+
+
+def test_connections_are_autocommit(setup_dump, monkeypatch):
+    connections = []
+
+    def connect(_):
+        conn = Connection()
+        conn.autocommit = False
+        connections.append(conn)
+        return conn
+
+    def snapshot(conn):
+        assert conn.autocommit is True
+        return {"counts": {}, "digests": {}}
+
+    def runner(command, stdout, check):
+        stdout.write(b"a" * (1024 * 1024))
+
+    monkeypatch.setattr(db_dump, "snapshot", snapshot)
+    assert db_dump.main(["--out-dir", str(setup_dump)], connect=connect, runner=runner) == 0
+    assert len(connections) == 2 and all(conn.autocommit for conn in connections)
+
+
+def test_refuses_when_newest_earlier_dump_requires_more_space(setup_dump, monkeypatch):
+    older = setup_dump / "ggtrader_20000101.dump"
+    newer = setup_dump / "ggtrader_20000102.dump"
+    older.touch()
+    newer.touch()
+    original_stat = type(newer).stat
+
+    def fake_stat(path, *args, **kwargs):
+        result = original_stat(path, *args, **kwargs)
+        if path == newer:
+            return SimpleNamespace(st_mode=result.st_mode, st_size=20 * 10**9)
+        return result
+
+    monkeypatch.setattr(type(newer), "stat", fake_stat)
+    monkeypatch.setattr(db_dump.shutil, "disk_usage", lambda _: SimpleNamespace(free=35 * 10**9))
+    assert run(setup_dump) == 2

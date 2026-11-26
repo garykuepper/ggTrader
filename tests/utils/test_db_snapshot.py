@@ -12,7 +12,12 @@ class Cursor:
         self.query = str(query)
 
     def fetchall(self):
-        return [("public", "items"), ("pg_catalog", "internal"), ("_timescaledb_internal", "x")]
+        return [
+            ("public", "items"),
+            ("pg_catalog", "internal"),
+            ("information_schema", "tables"),
+            ("_timescaledb_internal", "x"),
+        ]
 
     def fetchone(self):
         return (7,) if "count(*)" in self.query else ("digest",)

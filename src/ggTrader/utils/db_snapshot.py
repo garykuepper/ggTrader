@@ -19,7 +19,7 @@ def table_counts(conn: Any) -> dict[str, int]:
     with conn.cursor() as cur:
         cur.execute(
             "SELECT table_schema, table_name FROM information_schema.tables "
-            "WHERE table_type = 'BASE TABLE'"
+            "WHERE table_type = 'BASE TABLE' ORDER BY table_schema, table_name"
         )
         tables = cur.fetchall()
         counts = {}

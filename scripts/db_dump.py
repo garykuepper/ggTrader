@@ -92,7 +92,7 @@ def main(
         if final.exists() or part.exists() or part.with_suffix(".mismatch").exists():
             raise FileExistsError("A dump or unfinished dump already exists for today")
         url = os.environ.get(args.db_url_env)
-        if url is None:
+        if not url:
             from ggTrader.utils.config import get_db_connection_string
 
             if args.db_url_env != "GGTRADER_DB_URL":
@@ -101,21 +101,29 @@ def main(
         conn = connect(url.replace("postgresql+psycopg2://", "postgresql://", 1))
         start = time.monotonic()
         try:
+            conn.autocommit = True
             before = snapshot(conn)
             with conn.cursor() as cur:
                 cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")
                 version = cur.fetchone()
                 if version is None:
                     raise ValueError("TimescaleDB extension not found")
-            with part.open("xb") as output:
-                runner(build_dump_command(), stdout=output, check=True)
-            if part.stat().st_size < 1024 * 1024:
-                raise ValueError("Dump is smaller than 1 MiB")
+        finally:
+            conn.close()
+        with part.open("xb") as output:
+            runner(build_dump_command(), stdout=output, check=True)
+        if part.stat().st_size < 1024 * 1024:
+            raise ValueError("Dump is smaller than 1 MiB")
+        conn = connect(url.replace("postgresql+psycopg2://", "postgresql://", 1))
+        try:
+            conn.autocommit = True
             after = snapshot(conn)
         finally:
             conn.close()
         if before != after:
-            part.rename(part.with_suffix(".mismatch"))
+            mismatch = part.with_suffix(".mismatch")
+            part.rename(mismatch)
+            print(f"Snapshot mismatch: {mismatch}", file=sys.stderr)
             return 3
         with part.open("rb") as dump_file:
             digest = hashlib.file_digest(dump_file, "sha256").hexdigest()
