@@ -37,7 +37,7 @@
 | 9 `verify-data` | Codex Sol | Gemini Neon |
 | C2 controller run: pilot, loads, checks, report | Sonnet | owner gates |
 
-Order: 1, 2, C1, then 3; then 4; then 5 and 6 may run in parallel (disjoint files, both need Task 4's `CacheEntry`); then 7, 8, 9, C2. Only one Antigravity task at a time. A reviewer is never the builder's vendor; Sonnet (the controller) re-reads every diff and reruns every check before moving on. Fix rounds: at most three per task, then stop and ask the owner. Usage report to the owner after C1 and after C2.
+Order: 1, 2, C1, then 3; then 4; then 5, then 6 (one implementer at a time; both need Task 4's `CacheEntry`); then 7, 8, 9, C2. Only one Antigravity task at a time. A reviewer is never the builder's vendor; Sonnet (the controller) re-reads every diff and reruns every check before moving on. Fix rounds: at most three per task, then stop and ask the owner. Usage report to the owner after C1 and after C2.
 
 ## Review Focus
 
@@ -67,9 +67,9 @@ Most likely first. Each line has a test in the owning task.
 - [ ] **Step 2: Run them; expect FAIL (module missing).** `scripts/run_tests.sh tests/utils/test_db_snapshot.py`
 - [ ] **Step 3: Implement `ggTrader.utils.db_snapshot`** as specified.
 - [ ] **Step 4: Run; expect PASS.**
-- [ ] **Step 5: Write failing tests for `scripts/db_dump.py`** with an injected runner and connection: `test_refuses_out_dir_outside_thesix` (exit 2), `test_refuses_when_free_space_low` (exit 2), `test_writes_part_then_renames_and_records_sha256`, `test_counts_before_after_mismatch_exits_3_and_keeps_part_file_out_of_final_name`, `test_dump_under_one_megabyte_exits_1`, `test_prune_keeps_newest_and_ignores_other_files`, `test_help_exits_zero`.
+- [ ] **Step 5: Write failing tests for `scripts/db_dump.py`** with an injected runner and connection: `test_refuses_out_dir_outside_thesix` (exit 2), `test_refuses_when_free_space_low` (exit 2), `test_writes_part_then_renames_and_records_sha256`, `test_counts_before_after_mismatch_exits_3_and_keeps_part_file_out_of_final_name`, `test_dump_under_one_megabyte_exits_1`, `test_counts_json_records_timescaledb_version`, `test_prune_keeps_newest_and_ignores_other_files`, `test_help_exits_zero`.
 - [ ] **Step 6: Run; expect FAIL.** `scripts/run_tests.sh tests/scripts/test_db_dump.py`
-- [ ] **Step 7: Implement `scripts/db_dump.py`.** Flow: validate folder and space; `snapshot()` before; stream `build_dump_command` stdout into `<name>.part`; `snapshot()` after; compare counts and digests (mismatch exit 3, leave the `.part` renamed to `.mismatch` for inspection); rename to the final name; append `<sha256>  <name>` to `SHA256SUMS`; write `counts_YYYYMMDD.json` = `{"day","dump_bytes","seconds","before","after"}`; `prune`. It does not take the heavy-job lock itself; it is meant to be started through `scripts/run_capped.sh`.
+- [ ] **Step 7: Implement `scripts/db_dump.py`.** Flow: validate folder and space; `snapshot()` before; stream `build_dump_command` stdout into `<name>.part`; `snapshot()` after; compare counts and digests (mismatch exit 3, leave the `.part` renamed to `.mismatch` for inspection); rename to the final name; append `<sha256>  <name>` to `SHA256SUMS`; write `counts_YYYYMMDD.json` = `{"day","dump_bytes","seconds","timescaledb","before","after"}` where `timescaledb` is the live `extversion` read from `pg_extension`; `prune`. It does not take the heavy-job lock itself; it is meant to be started through `scripts/run_capped.sh`.
 - [ ] **Step 8: Run; expect PASS.** Also `ruff check` on the new files.
 - [ ] **Step 9: Write the timer templates** (pattern of `deploy/membership_weekly/`: header comment `TEMPLATE, NOT INSTALLED, NOT ENABLED`; service runs `scripts/run_capped.sh .venv/bin/python scripts/db_dump.py --out-dir /media/thesix/ggTrader-data/db-dumps`; timer weekly Sunday 04:30 local time, not near 02:00); README says to install only after the owner says go.
 - [ ] **Step 10: Commit.** `git add` the new files; message `feat: database dump script, snapshot helpers and timer templates`.
@@ -83,14 +83,13 @@ Most likely first. Each line has a test in the owning task.
 **Interfaces:**
 - Consumes: `ggTrader.utils.db_snapshot.snapshot`, `DIGEST_TABLES` (Task 1); `ggTrader.data.kaggle_import.guards.verify_sha256`.
 - Produces: `main(argv) -> int`; `compare(expected: dict, actual: dict) -> dict` returning `{"ok": bool, "tables": {name: {"expected","actual","ok"}}, "digests": {...}}` where a table missing on either side is a failure; `container_name(token: str) -> str` = `ggt_restore_drill_<token>`; `refuse_unsafe(name: str, scratch_dir: Path, live_container: str = "ggtrader_db") -> None` raising `ValueError` unless the name starts with `ggt_restore_drill_`, differs from the live container, and the scratch dir lies under `/media/thesix/ggTrader-data/db-restore-scratch/`.
-- Arguments: `--dump PATH`, `--sums PATH` (default `SHA256SUMS` beside the dump), `--counts PATH` (the `counts_YYYYMMDD.json` of Task 1, compared against its `after` block), `--out PATH` (report JSON, required), `--keep` (leave container and folder for inspection).
+- Arguments: `--dump PATH`, `--image NAME`, `--sums PATH` (default `SHA256SUMS` beside the dump), `--counts PATH` (the `counts_YYYYMMDD.json` of Task 1, compared against its `after` block), `--out PATH` (report JSON, required), `--keep` (leave container and folder for inspection).
 
 - [ ] **Step 1: Write failing tests** with injected command runner: `test_refuses_name_not_ours`, `test_refuses_scratch_dir_outside_scratch_root`, `test_compare_flags_missing_table_and_changed_count`, `test_compare_checks_digests`, `test_extension_version_mismatch_aborts_before_restore`, `test_cleanup_removes_only_its_own_container_and_folder_even_after_failure`, `test_report_has_no_password_or_url`, `test_help_exits_zero`.
 - [ ] **Step 2: Run; expect FAIL.** `scripts/run_tests.sh tests/scripts/test_db_restore_drill.py`
-- [ ] **Step 3: Implement.** Flow: verify dump hash; read the live image name and TimescaleDB version through the counts file's recorded `extversion` (Task 1 adds `"timescaledb": "<extversion>"` to the counts JSON; add it there in this task's step 4 if absent); start `docker run -d --name ggt_restore_drill_<hex> -p 127.0.0.1::5432 -v <scratch>:/var/lib/postgresql/data -e POSTGRES_PASSWORD=<random>` from the same image; wait ready; create database `ggtrader`; `CREATE EXTENSION timescaledb`; abort if its version differs; `SELECT timescaledb_pre_restore()`; `docker exec -i ... pg_restore --exit-on-error --jobs 1 --no-owner -d ggtrader` fed from the dump file; `SELECT timescaledb_post_restore()`; `ANALYZE`; `snapshot()` on the scratch connection; `compare`; write the report; remove its container and scratch folder unless `--keep`. It never issues `docker rm`, `docker stop` or `docker exec` against any other name.
-- [ ] **Step 4: Add `"timescaledb"` (the live `extversion`) to the counts JSON in `scripts/db_dump.py`** with a test `test_counts_json_records_timescaledb_version` in `tests/scripts/test_db_dump.py`.
-- [ ] **Step 5: Run both test files; expect PASS.** Ruff.
-- [ ] **Step 6: Commit** `feat: disposable-container restore drill`.
+- [ ] **Step 3: Implement.** Flow: verify dump hash; read the TimescaleDB version from the counts file's `timescaledb` value (Task 1 writes it) and the image name from the `--image` argument (default `timescale/timescaledb:latest-pg16`); start `docker run -d --name ggt_restore_drill_<hex> -p 127.0.0.1::5432 -v <scratch>:/var/lib/postgresql/data -e POSTGRES_PASSWORD=<random>` from the same image; wait ready; create database `ggtrader`; `CREATE EXTENSION timescaledb`; abort if its version differs from the `timescaledb` value in the counts file; `SELECT timescaledb_pre_restore()`; `docker exec -i ... pg_restore --exit-on-error --jobs 1 --no-owner -d ggtrader` fed from the dump file; `SELECT timescaledb_post_restore()`; `ANALYZE`; `snapshot()` on the scratch connection; `compare`; write the report; remove its container and scratch folder unless `--keep`. It never issues `docker rm`, `docker stop` or `docker exec` against any other name.
+- [ ] **Step 4: Run; expect PASS.** Ruff.
+- [ ] **Step 5: Commit** `feat: disposable-container restore drill`.
 
 ### C1 (controller): fresh dump, restore drill, owner gate
 
@@ -203,7 +202,8 @@ Most likely first. Each line has a test in the owning task.
 
 - [ ] **Step 1: Write failing tests** (scratch database for the DB checks; pure for the rest): `test_ordinary_run_passes_on_clean_database`, `test_detects_changed_file_size`, `test_detects_complete_load_without_coverage` (insert via a legacy dataset name to bypass the trigger, then use a fresh load) , `test_detects_label_with_wrong_last_date`, `test_derived_load_checked_against_parent`, `test_deep_detects_changed_file_bytes`, `test_deep_detects_altered_stored_row`, `test_record_inserts_one_row_and_nothing_else_changes`, `test_cli_help_and_no_write_without_record`.
 - [ ] **Step 2: Run; expect FAIL.** **Step 3: Implement.** **Step 4: Run; PASS.** Ruff.
-- [ ] **Step 5: Commit** `feat: verify-data integrity check`.
+- [ ] **Step 5: Docs.** Add the `ggt db verify-data` lines to `docs/cli_reference.md` and one line to the `docs/changelog.md` entry Task 8 created. Plain words.
+- [ ] **Step 6: Commit** `feat: verify-data integrity check`.
 
 ### C2 (controller): pilot, owner gate, stage A loads, report
 
