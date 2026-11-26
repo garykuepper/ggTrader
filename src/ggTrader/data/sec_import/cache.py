@@ -49,20 +49,20 @@ class CacheEntry:
 def classify_url(url: str) -> str:
     """Classify the source URL by its SEC path."""
     parts = urlsplit(url)
-    path = parts.path
+    path = parts.path.lower()
     if "/full-index/" in path and path.endswith("/master.zip"):
         return "quarterly_index"
     if (
         parts.hostname == "data.sec.gov"
-        and path.startswith("/submissions/CIK")
+        and path.startswith("/submissions/cik")
         and path.endswith(".json")
     ):
         return "submission_list"
-    if "/Archives/edgar/data/" in path and path.endswith("/"):
+    if "/archives/edgar/data/" in path and path.endswith("/"):
         return "directory_listing"
     if path.endswith(".xml"):
         return "form25_xml"
-    if "/Archives/edgar/data/" in path and path.endswith(".txt"):
+    if "/archives/edgar/data/" in path and path.endswith(".txt"):
         return "filing_text"
     return "other"
 
@@ -91,6 +91,9 @@ def scan_cache(folder: Path) -> list[CacheEntry]:
             with body.open("rb") as source:
                 content = source.read()
             url = note["url"]
+            status = note["status"]
+            if not isinstance(url, str) or isinstance(status, bool) or not isinstance(status, int):
+                raise ValueError("url must be text and status an integer")
             digest = hashlib.sha256(content).hexdigest()
             fetched = datetime.fromisoformat(note["fetched_at"])
             if (
@@ -105,7 +108,7 @@ def scan_cache(folder: Path) -> list[CacheEntry]:
                     url,
                     digest,
                     fetched,
-                    int(note["status"]),
+                    status,
                     len(content),
                     body,
                     classify_url(url),
@@ -144,12 +147,25 @@ def load_cache(
     """Register verified responses in resumable chunks, then publish coverage."""
     backup_fresh(backup_dir)
     groups = [scan_cache(folder) for folder in folders]
+    strays = {str(folder): stray_files(folder) for folder in folders}
     entries = merge_caches(*groups)
     needed = sum(entry.bytes for entry in entries)
     options = {} if margin_bytes is None else {"margin_bytes": margin_bytes}
     if not free_space_ok(db_free_path, needed, **options):
         raise LoadFailed("Insufficient free space on database drive")
     digest = manifest_sha256(entries)
+    # Resuming must see the same folders in the same order, the same chunk layout and the same
+    # fetch notes, none of which the body hashes alone can show.
+    notes = "\n".join(
+        f"{index}:{e.url_hash}:{e.fetched_at.isoformat()}:{e.status}"
+        for index, group in enumerate(groups)
+        for e in group
+    )
+    identity = {
+        "folders": [str(folder) for folder in folders],
+        "chunk_size": CHUNK_SIZE,
+        "notes_sha256": hashlib.sha256(notes.encode("utf-8")).hexdigest(),
+    }
     chunks = [entries[i : i + CHUNK_SIZE] for i in range(0, len(entries), CHUNK_SIZE)]
     keys = [f"fetched-{index:04d}" for index in range(len(chunks))]
     load_id = begin_load(
@@ -161,6 +177,7 @@ def load_cache(
         parser_version="sec-cache-1",
         content_sha256=digest,
         expected_chunks=keys,
+        derivation_identity=identity,
     )
     record_files(
         conn,
@@ -195,7 +212,7 @@ def load_cache(
     complete_load(
         conn,
         load_id,
-        {"stray_files": {str(f): stray_files(f) for f in folders}},
+        {"stray_files": strays},
         expected_chunks=keys,
         coverage=("not_a_stock_source", "SEC download cache, not a stock source"),
     )
