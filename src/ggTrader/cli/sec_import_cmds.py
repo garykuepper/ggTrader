@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import zipfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -119,5 +120,7 @@ def run_sec_import(args: argparse.Namespace, url: str) -> None:
         OSError,
         ValueError,
         PgError,
+        zipfile.BadZipFile,
+        KeyError,
     ) as exc:
         sys.exit(f"SEC import failed: {safe_error(exc)}")

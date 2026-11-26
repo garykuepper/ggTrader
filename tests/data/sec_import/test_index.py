@@ -209,3 +209,59 @@ def test_requesting_a_quarter_that_is_not_there_is_an_error(
         index.load_index(
             None, [], backup_dir=tmp_path, db_free_path=tmp_path, only_quarters=["2005Q2"]
         )
+
+
+def _entry_for(tmp_path: Path, quarter: str, status: int = 200):
+    import hashlib
+    from datetime import datetime, timezone
+
+    from ggTrader.data.sec_import.cache import CacheEntry
+
+    path = tmp_path / f"{quarter}.zip"
+    with ZipFile(path, "w") as archive:
+        archive.writestr("master.idx", HEADER + "1|Co|10-K|2005-01-01|file")
+    return CacheEntry(
+        quarter,
+        f"https://x/full-index/{quarter[:4]}/QTR{quarter[-1]}/master.zip",
+        hashlib.sha256(path.read_bytes()).hexdigest(),
+        datetime.now(timezone.utc),
+        status,
+        path.stat().st_size,
+        path,
+        "quarterly_index",
+    )
+
+
+def test_a_cached_error_response_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+
+    monkeypatch.setattr(index, "backup_fresh", lambda _: None)
+    with pytest.raises(LoadFailed, match="status 404"):
+        index.load_index(
+            None,
+            [_entry_for(tmp_path, "2005Q2", status=404)],
+            backup_dir=tmp_path,
+            db_free_path=tmp_path,
+        )
+
+
+def test_free_space_is_checked_again_before_each_quarter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    from ggTrader.data.kaggle_import.loadlog import LoadFailed
+
+    calls = []
+
+    def space(path, needed, **kwargs):
+        calls.append(needed)
+        return len(calls) < 3  # fine at the start and for the first quarter, then full
+
+    monkeypatch.setattr(index, "backup_fresh", lambda _: None)
+    monkeypatch.setattr(index, "free_space_ok", space)
+    monkeypatch.setattr(index, "begin_load", lambda *a, **k: 1)
+    monkeypatch.setattr(index, "record_files", lambda *a, **k: None)
+    monkeypatch.setattr(index, "commit_chunk", lambda *a, **k: True)
+    entries = [_entry_for(tmp_path, "2005Q1"), _entry_for(tmp_path, "2005Q2")]
+    with pytest.raises(LoadFailed, match="before 2005Q2"):
+        index.load_index(None, entries, backup_dir=tmp_path, db_free_path=tmp_path)
+    assert len(calls) == 3 and calls[0] == index.EXPANSION * sum(e.bytes for e in entries)

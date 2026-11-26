@@ -784,49 +784,6 @@ request (`GGT_TEST_DB_URL`), and use a throwaway database.
 
 ---
 
-## 5. Machine Learning Signal Pre-Screen Script (archived)
-
-`scripts/ml_signal_screen.py` ran on the legacy signal classes and was archived in P5c to
-`research/programme/vectorbt-engine/legacy-scripts/` (it runs only at git tag
-`legacy-engine-vbt0285` through `scripts/legacy_env.sh`). The closed ML-gate findings are in
-`research/RESEARCH_SNAPSHOT.md`.
-
----
-
-*See the [Architecture Guide](architecture.md) for how these components fit together, and [Developer Guidelines](../AGENTS.md) for coding standards.*
-
-*Back to [README.md](../README.md).*
-
-## Event-timing audit research utility
-
-`.venv/bin/python research/audits/event-timing/code/run.py --help` describes the standalone
-read-only evidence audit. It defaults to offline operation; `--smoke` caps each
-stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
-`--detector-flags` ingest checksummed evidence. `--resume` preserves budgets and
-frozen inputs. DB SELECTs and external collection require separate explicit
-`--read-db` / `--network` flags; `.env` is never loaded. Collection remains
-paused after the recorded HTTP 403; the already-authorized contact does not
-clear that stop. The approved offline amendment still needs fresh code review.
-See the
-[implementation handoff](../research/audits/event-timing/event-timing-audit-implementation.md). A completed bounded
-`--network` run can explicitly select `--output research/audits/event-timing/_event_timing_audit.json`
-to publish the registered JSON/Markdown, including honest UNRESOLVED results.
-Smoke, offline and runtime-interrupted work remain partial. Byte references alone
-do not validate semantic facts; see the field-review contract in the handoff.
-
-Every new assessment also reports `insider_filing_date_only`, alongside the
-original `insider_cluster` and unchanged `pead`. No new CLI option is needed.
-Each has its own requirement matrix, annual coverage, reconstructed events and
-disposition. The new timing PASS is date-only convention compliance, with
-observed dissemination UNVERIFIED. Amendment identity/hash binds both progress
-and result metadata; old registrations or changed code/policy cannot resume.
-This does not authorize collection, a budget reset or cache migration.
-
-Paper live runs persist order intents before submission and reconcile unresolved client IDs
-before new orders. Ambiguous submissions, working orders, or conflicting legacy pending rows
-block submissions and require investigation; no reset command is provided. The trader remains
-stopped, and cron resumes only on the owner's explicit authorization. Dry runs do not submit.
-
 ### SEC research imports
 
 These commands read existing SEC files; they make no network requests. A cache is a folder of
@@ -876,3 +833,46 @@ The command prints each result and exits with 0 if all checks pass or 1 if any f
 `--out PATH` writes the full report in JSON, a format other tools can read.
 `--record` saves one report in the database, even if checks fail. That is the command's only
 database write.
+
+## 5. Machine Learning Signal Pre-Screen Script (archived)
+
+`scripts/ml_signal_screen.py` ran on the legacy signal classes and was archived in P5c to
+`research/programme/vectorbt-engine/legacy-scripts/` (it runs only at git tag
+`legacy-engine-vbt0285` through `scripts/legacy_env.sh`). The closed ML-gate findings are in
+`research/RESEARCH_SNAPSHOT.md`.
+
+---
+
+*See the [Architecture Guide](architecture.md) for how these components fit together, and [Developer Guidelines](../AGENTS.md) for coding standards.*
+
+*Back to [README.md](../README.md).*
+
+## Event-timing audit research utility
+
+`.venv/bin/python research/audits/event-timing/code/run.py --help` describes the standalone
+read-only evidence audit. It defaults to offline operation; `--smoke` caps each
+stratum at two and writes partial JSON/Markdown under `/tmp`. `--evidence` and
+`--detector-flags` ingest checksummed evidence. `--resume` preserves budgets and
+frozen inputs. DB SELECTs and external collection require separate explicit
+`--read-db` / `--network` flags; `.env` is never loaded. Collection remains
+paused after the recorded HTTP 403; the already-authorized contact does not
+clear that stop. The approved offline amendment still needs fresh code review.
+See the
+[implementation handoff](../research/audits/event-timing/event-timing-audit-implementation.md). A completed bounded
+`--network` run can explicitly select `--output research/audits/event-timing/_event_timing_audit.json`
+to publish the registered JSON/Markdown, including honest UNRESOLVED results.
+Smoke, offline and runtime-interrupted work remain partial. Byte references alone
+do not validate semantic facts; see the field-review contract in the handoff.
+
+Every new assessment also reports `insider_filing_date_only`, alongside the
+original `insider_cluster` and unchanged `pead`. No new CLI option is needed.
+Each has its own requirement matrix, annual coverage, reconstructed events and
+disposition. The new timing PASS is date-only convention compliance, with
+observed dissemination UNVERIFIED. Amendment identity/hash binds both progress
+and result metadata; old registrations or changed code/policy cannot resume.
+This does not authorize collection, a budget reset or cache migration.
+
+Paper live runs persist order intents before submission and reconcile unresolved client IDs
+before new orders. Ambiguous submissions, working orders, or conflicting legacy pending rows
+block submissions and require investigation; no reset command is provided. The trader remains
+stopped, and cron resumes only on the owner's explicit authorization. Dry runs do not submit.

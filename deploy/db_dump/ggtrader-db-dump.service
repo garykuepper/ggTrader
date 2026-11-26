@@ -6,4 +6,5 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=__REPO_ROOT__
+Environment=GGT_RUN_MAX_SECONDS=14400
 ExecStart=__REPO_ROOT__/scripts/run_capped.sh __REPO_ROOT__/.venv/bin/python scripts/db_dump.py --out-dir /media/thesix/ggTrader-data/db-dumps

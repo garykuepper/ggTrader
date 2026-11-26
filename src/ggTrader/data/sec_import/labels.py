@@ -343,7 +343,12 @@ def load_labels(
     per dataset: a third distinct file version needs the owner's explicit decision, and
     withdrawing an earlier load would remove the labels only it held.
     """
-    source_path = relpath(source_file.resolve(), REPO_ROOT)
+    resolved = source_file.resolve()
+    # Inside the repository the path is stored relative to it, elsewhere as an absolute path, so
+    # that it means the same thing from any checkout depth.
+    source_path = (
+        relpath(resolved, REPO_ROOT) if resolved.is_relative_to(REPO_ROOT) else str(resolved)
+    )
     study = (
         rows[0].study
         if rows

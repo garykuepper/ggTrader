@@ -16,6 +16,7 @@ from pathlib import Path
 
 import psycopg2
 
+from ggTrader.data.kaggle_import.guards import safe_error
 from ggTrader.utils.db_snapshot import snapshot
 
 THESIX = Path("/media/thesix")
@@ -151,7 +152,7 @@ def main(
                 owned_part.unlink(missing_ok=True)
             except OSError:
                 print("Failed to remove partial dump", file=sys.stderr)
-        print(f"Dump failed: {exc}", file=sys.stderr)
+        print(f"Dump failed: {safe_error(exc)}", file=sys.stderr)
         return 1
 
 

@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 
 import psycopg2
+import psycopg2.extras
 import pytest
 from psycopg2.extensions import connection
 
@@ -33,6 +34,7 @@ class FakeConnection:
         self.commits = 0
         self.rollbacks = 0
         self.closed = False
+        self.readonly = False
 
     def cursor(self) -> "FakeConnection":
         return self
@@ -64,6 +66,9 @@ class FakeConnection:
 
     def commit(self) -> None:
         self.commits += 1
+
+    def set_session(self, *, readonly: bool) -> None:
+        self.readonly = readonly
 
     def close(self) -> None:
         self.closed = True
@@ -121,6 +126,7 @@ def test_cli_help_and_no_write_without_record(
     assert "6 of 6 checks passed" in capsys.readouterr().out
     assert not conn.responses
     assert conn.commits == 0
+    assert conn.readonly  # without --record the session cannot write
     assert conn.closed
 
 
@@ -154,6 +160,7 @@ def test_cli_records_failed_deep_report(
     assert (mode, ok) == ("deep", False)
     assert payload.adapted["checks"]["load_row_counts_match_log"]["ok"] is False
     assert conn.commits == 1
+    assert not conn.readonly  # --record needs to write its one row
     assert conn.closed
     output = capsys.readouterr().out
     assert "heavy" in output.lower()
@@ -232,7 +239,9 @@ def test_coverage_check_reports_missing_rows(missing: list[tuple]) -> None:
     from ggTrader.data.sec_import.verify import every_complete_load_has_one_coverage_row
 
     report = every_complete_load_has_one_coverage_row(
-        FakeConnection(("ref.load_coverage", missing))
+        FakeConnection(
+            ("ref.load_coverage", [(load, count, "sec-index") for load, count in missing])
+        )
     )
     assert report["ok"] is (not missing)
     if missing:
@@ -253,22 +262,16 @@ def test_label_check_reports_wrong_stock_spell(mismatch: list[tuple]) -> None:
         assert all(text in report["detail"] for text in ("12345", "2005-06-01", "55"))
 
 
-@pytest.mark.parametrize(("is_label_load", "expected_ok"), [(True, False), (False, True)])
-def test_accessions_search_index_once_for_header_misses(
-    is_label_load: bool, expected_ok: bool
-) -> None:
+def test_accessions_search_index_once_for_header_misses() -> None:
     from ggTrader.data.sec_import.verify import cited_accessions_exist
 
     conn = FakeConnection(
-        (
-            "unnest",
-            [(HEADER_ACCESSION, True), (INDEX_ACCESSION, True), (MISSING_ACCESSION, is_label_load)],
-        ),
+        ("unnest", [(HEADER_ACCESSION,), (INDEX_ACCESSION,), (MISSING_ACCESSION,)]),
         ("FROM sec.filing_headers", [(HEADER_ACCESSION,)]),
-        ("substring(filename", [(INDEX_ACCESSION,)]),
+        ("substring(e.filename", [(INDEX_ACCESSION,)]),
     )
     result = cited_accessions_exist(conn)
-    assert result["ok"] is expected_ok
+    assert result["ok"] is False
     assert MISSING_ACCESSION in result["detail"]
     assert INDEX_ACCESSION not in result["detail"]
     assert conn.params[-1] == ([INDEX_ACCESSION, MISSING_ACCESSION],)
@@ -279,7 +282,7 @@ def test_accessions_skip_index_when_headers_cover_every_citation() -> None:
     from ggTrader.data.sec_import.verify import cited_accessions_exist
 
     conn = FakeConnection(
-        ("unnest", [(HEADER_ACCESSION, True)]),
+        ("unnest", [(HEADER_ACCESSION,)]),
         ("FROM sec.filing_headers", [(HEADER_ACCESSION,)]),
     )
     assert cited_accessions_exist(conn)["ok"]
@@ -292,9 +295,9 @@ def test_accessions_report_first_fifty_and_total() -> None:
     citations = [f"0000000001-05-{number:06}" for number in range(51)]
     report = cited_accessions_exist(
         FakeConnection(
-            ("unnest", [(citation, True) for citation in reversed(citations)]),
+            ("unnest", [(citation,) for citation in reversed(citations)]),
             ("FROM sec.filing_headers", []),
-            ("substring(filename", []),
+            ("substring(e.filename", []),
         )
     )
     assert not report["ok"]
@@ -349,10 +352,13 @@ def test_deep_detects_altered_stored_row() -> None:
 def test_deep_counts_stored_rows_by_load(dataset: str, table: str, actual: int) -> None:
     from ggTrader.data.sec_import.verify import content_sha256_matches_stored_rows
 
-    conn = FakeConnection(
+    responses = [
         ("FROM ref.loads", [(1, dataset, 1, "digest")]),
         (f"count(*) FROM {table} WHERE load_id", [(actual,)]),
-    )
+    ]
+    if dataset.startswith("sec-labels"):
+        responses.append(("source_row_sha256", []))
+    conn = FakeConnection(*responses)
     report = content_sha256_matches_stored_rows(conn)
     assert report["ok"] is (actual == 1)
     assert table in report["detail"]
@@ -453,11 +459,22 @@ def test_ordinary_run_passes_on_clean_database(tmp_path: Path, verify_db: connec
             (release, LAST_DATE),
         )
         cur.execute("UPDATE ref.releases SET status='published' WHERE release_id=%s", (release,))
+        fields = {"permno": "12345"}
+        fingerprint = hashlib.sha256(
+            json.dumps(fields, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
         cur.execute(
-            "INSERT INTO sec.death_labels "
-            "(load_id, study, method_version, permno, last_date, release_id, accessions) "
-            "VALUES (%s, 'study', 'v1', 12345, %s, %s, %s)",
-            (labels, LAST_DATE, release, [HEADER_ACCESSION, INDEX_ACCESSION]),
+            "INSERT INTO sec.death_labels (load_id, study, method_version, permno, last_date, "
+            "release_id, accessions, source_fields, source_row_sha256) "
+            "VALUES (%s, 'study', 'v1', 12345, %s, %s, %s, %s, %s)",
+            (
+                labels,
+                LAST_DATE,
+                release,
+                [HEADER_ACCESSION, INDEX_ACCESSION],
+                psycopg2.extras.Json(fields),
+                fingerprint,
+            ),
         )
         cur.execute(
             "INSERT INTO sec.filing_headers (load_id, accession, cik) VALUES (%s, %s, 1)",
@@ -483,15 +500,17 @@ def test_ordinary_run_passes_on_clean_database(tmp_path: Path, verify_db: connec
 
 @pytest.mark.integration
 @pytest.mark.db
-def test_detects_complete_load_without_coverage(tmp_path: Path, verify_db: connection) -> None:
+def test_older_market_data_load_without_coverage_is_allowed(
+    tmp_path: Path, verify_db: connection
+) -> None:
     from ggTrader.data.sec_import.verify import run_checks
 
     path = tmp_path / "legacy"
     path.touch()
-    load_id = stage_load(verify_db, "crsp-daily-pilot", path, coverage=False)
+    stage_load(verify_db, "crsp-daily-pilot", path, coverage=False)
     result = run_checks(verify_db)["checks"]["every_complete_load_has_one_coverage_row"]
-    assert not result["ok"]
-    assert f"load {load_id}" in result["detail"]
+    assert result["ok"]
+    assert "older market-data loads may have none" in result["detail"]
 
 
 @pytest.mark.integration

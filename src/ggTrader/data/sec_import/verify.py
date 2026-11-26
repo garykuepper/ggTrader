@@ -1,6 +1,7 @@
 """Check import records, source files, and stored research data."""
 
 import hashlib
+import json
 import stat
 from collections.abc import Callable, Sequence
 from contextlib import suppress
@@ -186,15 +187,23 @@ def every_complete_load_has_one_coverage_row(conn: connection) -> Check:
     """Require one record describing what each completed load covers."""
     rows = _rows(
         conn,
-        """SELECT l.load_id, count(c.load_id)
+        """SELECT l.load_id, count(c.load_id), l.dataset
            FROM ref.loads l LEFT JOIN ref.load_coverage c USING (load_id)
            WHERE l.status = 'complete'
-           GROUP BY l.load_id ORDER BY l.load_id""",
+           GROUP BY l.load_id, l.dataset ORDER BY l.load_id""",
     )
+    # The older market-data loaders do not write a label themselves (the database allows that);
+    # for them one label is expected after the schema upgrade, but a missing one is not an error.
+    failures = [
+        f"load {load_id} has {count} coverage records"
+        for load_id, count, dataset in rows
+        if count > 1 or (count == 0 and dataset not in LEGACY_DATASETS)
+    ]
     return _result(
         f"Checked that each of {len(rows)} completed loads has one record describing which data "
-        "it covers. Whether that description is right is not checked.",
-        [f"load {load_id} has {count} coverage records" for load_id, count in rows if count != 1],
+        "it covers (older market-data loads may have none). Whether that description is right "
+        "is not checked.",
+        failures,
     )
 
 
@@ -203,8 +212,8 @@ def labels_match_stock_spells_in_release(conn: connection) -> Check:
     rows = _rows(
         conn,
         """SELECT d.load_id, d.release_id, d.permno, d.last_date, count(*) OVER ()
-           FROM sec.death_labels d
-           WHERE NOT EXISTS (
+           FROM sec.death_labels d JOIN ref.loads dl ON dl.load_id = d.load_id
+           WHERE dl.status = 'complete' AND NOT EXISTS (
                SELECT 1 FROM market.stock_spans s
                WHERE s.release_id = d.release_id AND s.permno = d.permno
                  AND s.last_date = d.last_date
@@ -213,7 +222,11 @@ def labels_match_stock_spells_in_release(conn: connection) -> Check:
            LIMIT %s""",
         (DETAIL_LIMIT,),
     )
-    [(total,)] = _rows(conn, "SELECT count(*) FROM sec.death_labels")
+    [(total,)] = _rows(
+        conn,
+        "SELECT count(*) FROM sec.death_labels d JOIN ref.loads dl USING (load_id) "
+        "WHERE dl.status = 'complete'",
+    )
     detail = (
         f"Matched {total} study labels to stock identifiers and last trading dates in their "
         "releases (nothing was checked if there are none). It does not check the labels' meaning."
@@ -228,22 +241,28 @@ def labels_match_stock_spells_in_release(conn: connection) -> Check:
 
 
 def cited_accessions_exist(conn: connection) -> Check:
-    """Find cited filing identifiers in the headers or in one pass of the index."""
+    """Find cited filing identifiers in the headers or in one pass of the index.
+
+    Only rows of completed loads count, on both sides: a half-finished or failed load must not
+    make a citation look supported, and its labels are not part of the data in use.
+    """
     rows = _rows(
         conn,
-        """SELECT DISTINCT a.accession,
-                  l.dataset = 'sec-labels' OR starts_with(l.dataset, 'sec-labels:')
-           FROM sec.death_labels d LEFT JOIN ref.loads l USING (load_id)
+        """SELECT DISTINCT a.accession
+           FROM sec.death_labels d
+           JOIN ref.loads l ON l.load_id = d.load_id AND l.status = 'complete'
            LEFT JOIN LATERAL unnest(d.accessions) a(accession) ON true""",
     )
     if not rows:
         return _result("no labels loaded")
-    pending = {accession for accession, _ in rows if accession is not None}
+    pending = {accession for (accession,) in rows if accession is not None}
     cited = len(pending)
     if pending:
         headers = _rows(
             conn,
-            "SELECT DISTINCT accession FROM sec.filing_headers WHERE accession = ANY(%s)",
+            """SELECT DISTINCT h.accession FROM sec.filing_headers h
+               JOIN ref.loads l ON l.load_id = h.load_id AND l.status = 'complete'
+               WHERE h.accession = ANY(%s)""",
             (sorted(pending),),
         )
         pending.difference_update(accession for (accession,) in headers)
@@ -251,9 +270,10 @@ def cited_accessions_exist(conn: connection) -> Check:
         index = _rows(
             conn,
             r"""SELECT DISTINCT accession FROM (
-                    SELECT substring(filename from '/([0-9]{10}-[0-9]{2}-[0-9]{6})\.txt$')
+                    SELECT substring(e.filename from '/([0-9]{10}-[0-9]{2}-[0-9]{6})\.txt$')
                            AS accession
-                    FROM sec.index_entries
+                    FROM sec.index_entries e
+                    JOIN ref.loads l ON l.load_id = e.load_id AND l.status = 'complete'
                 ) filings WHERE accession = ANY(%s)""",
             (sorted(pending),),
         )
@@ -266,10 +286,7 @@ def cited_accessions_exist(conn: connection) -> Check:
         detail = "No loaded label cites a filing identifier, so nothing was looked up."
     if pending:
         detail += f" Could not find {_detail(sorted(pending))}."
-    return {
-        "ok": not any(is_label_load and accession in pending for accession, is_label_load in rows),
-        "detail": detail,
-    }
+    return {"ok": not pending, "detail": detail}
 
 
 def load_files_rehash(conn: connection) -> Check:
@@ -312,6 +329,21 @@ def _index_counts(conn: connection, load_id: int, failures: list[str]) -> int:
     return sum(actual.values())
 
 
+def _changed_label_rows(conn: connection, load_id: int) -> list[str]:
+    """List labels whose stored fields no longer hash to the fingerprint saved at load time."""
+    changed = []
+    for permno, last_date, fields, saved in _rows(
+        conn,
+        "SELECT permno, last_date, source_fields, source_row_sha256 FROM sec.death_labels "
+        "WHERE load_id = %s ORDER BY permno, last_date",
+        (load_id,),
+    ):
+        canonical = json.dumps(fields, sort_keys=True, separators=(",", ":"))
+        if hashlib.sha256(canonical.encode("utf-8")).hexdigest() != saved:
+            changed.append(f"stock {permno} last date {last_date}")
+    return changed
+
+
 def _cache_fingerprint(conn: connection, load_id: int) -> str:
     rows = _rows(
         conn,
@@ -347,7 +379,15 @@ def content_sha256_matches_stored_rows(conn: connection) -> Check:
         if actual != expected:
             failures.append(f"{name} has {actual} stored rows, logged {expected}")
 
-        if dataset == "sec-cache":
+        if (dataset or "").startswith("sec-labels"):
+            changed = _changed_label_rows(conn, load_id)
+            compared[-1] += ", each label row against its own fingerprint"
+            if changed:
+                failures.append(
+                    f"{name} has label rows that differ from their fingerprint: {_detail(changed)}"
+                )
+            skips.append(f"{name}, file fingerprint is covered by load_files_rehash")
+        elif dataset == "sec-cache":
             fingerprints.append(name)
             if _cache_fingerprint(conn, load_id) != digest:
                 failures.append(f"{name} has a different fingerprint for its saved response list")

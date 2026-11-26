@@ -225,3 +225,12 @@ def test_exception_after_rename_does_not_touch_final_dump(setup_dump, monkeypatc
     assert run(setup_dump) == 1
     assert final.exists()
     assert not removed
+
+
+def test_failure_message_hides_connection_details(setup_dump, capsys):
+    def failing(_):
+        raise RuntimeError("could not connect postgresql://ggtrader:SECRET@localhost/ggtrader")
+
+    code = db_dump.main(["--out-dir", str(setup_dump)], connect=failing, runner=None)
+    assert code == 1
+    assert "SECRET" not in capsys.readouterr().err

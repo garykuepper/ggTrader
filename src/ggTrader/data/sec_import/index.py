@@ -21,6 +21,8 @@ from ggTrader.data.kaggle_import.loadlog import (
 )
 from ggTrader.data.sec_import.cache import CacheEntry, manifest_sha256
 
+EXPANSION = 20  # table plus indexes, as a multiple of the compressed index file
+
 
 def quarter_of(url: str) -> str:
     """Extract a quarter from a quarterly master index URL."""
@@ -100,6 +102,8 @@ def load_index(
         quarter = quarter_of(entry.url)
         if only_quarters is not None and quarter not in only_quarters:
             continue
+        if entry.status != 200:
+            raise LoadFailed(f"Cached response for {quarter} has status {entry.status}")
         if quarter in selected:
             raise LoadFailed(f"Duplicate quarter: {quarter}")
         selected[quarter] = entry
@@ -111,7 +115,11 @@ def load_index(
         if hashlib.sha256(entry.body_path.read_bytes()).hexdigest() != entry.content_sha256:
             raise LoadFailed(f"Hash mismatch: {entry.body_path}")
     options = {} if margin_bytes is None else {"margin_bytes": margin_bytes}
-    if not free_space_ok(db_free_path, sum(e.bytes for e in selected.values()), **options):
+    # The rows plus their two lookup indexes take roughly 15 times the zip's size (the pilot of
+    # 2005Q2 on a copy of the real layout measured about 12 times); 20 leaves room.
+    if not free_space_ok(
+        db_free_path, EXPANSION * sum(e.bytes for e in selected.values()), **options
+    ):
         raise LoadFailed("Insufficient free space on database drive")
     digest = manifest_sha256(list(selected.values()))
     keys = list(selected)
@@ -124,11 +132,15 @@ def load_index(
         parser_version="sec-index-1",
         content_sha256=digest,
         expected_chunks=keys,
+        derivation_identity={"quarters": keys},
     )
     record_files(
         conn, load_id, [(str(e.body_path), e.content_sha256, e.bytes) for e in selected.values()]
     )
     for quarter, entry in selected.items():
+        # Checked before every quarter, as the design asks, with that quarter's own estimate.
+        if not free_space_ok(db_free_path, EXPANSION * entry.bytes, **options):
+            raise LoadFailed(f"Insufficient free space on database drive before {quarter}")
         rows, bad = parse_master_idx(read_master_zip(entry.body_path), quarter)
 
         def write(cur: cursor, batch: list[tuple] = rows) -> int:

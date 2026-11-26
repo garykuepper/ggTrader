@@ -3,7 +3,6 @@
 import csv
 import hashlib
 import json
-import os
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -17,7 +16,6 @@ from ggTrader.data.kaggle_import.ddl import apply_ddl as apply_kaggle_ddl
 from ggTrader.data.kaggle_import.loadlog import LoadFailed
 from ggTrader.data.sec_import import labels
 from ggTrader.data.sec_import.ddl import apply_ddl
-from ggTrader.utils.paths import REPO_ROOT
 from tests.data.scratch_db import scratch_database
 
 EARLY = {
@@ -293,7 +291,7 @@ def test_load_labels_keeps_two_studies_separate_with_provenance(
             "FROM sec.death_labels WHERE load_id=%s",
             (second,),
         )
-        source_path = os.path.relpath(payout, REPO_ROOT)
+        source_path = str(payout.resolve())  # outside the repository: stored as an absolute path
         digest = hashlib.sha256(payout.read_bytes()).hexdigest()
         assert cur.fetchone() == (
             1,
