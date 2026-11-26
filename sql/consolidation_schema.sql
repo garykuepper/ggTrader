@@ -174,6 +174,31 @@ BEGIN
     END LOOP;
 END $$;
 
+-- The big stock-price tables (nothing in the loaders edits or deletes their rows). TimescaleDB
+-- refuses ENABLE ALWAYS on a table with compression on, so these triggers are the ordinary kind:
+-- they stop every normal UPDATE, DELETE and TRUNCATE, but a superuser who sets
+-- session_replication_role to replica (as a restore does) steps around them.
+DO $$
+DECLARE
+    target regclass;
+BEGIN
+    FOREACH target IN ARRAY ARRAY[
+        'kaggle_crsp.daily'::regclass, 'market.daily_bars'::regclass,
+        'kaggle_chars.mcgill'::regclass
+    ] LOOP
+        EXECUTE format('DROP TRIGGER IF EXISTS frozen ON %s', target);
+        EXECUTE format(
+            'CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON %s'
+            ' FOR EACH ROW EXECUTE FUNCTION ref.reject_change()', target
+        );
+        EXECUTE format('DROP TRIGGER IF EXISTS no_truncate ON %s', target);
+        EXECUTE format(
+            'CREATE TRIGGER no_truncate BEFORE TRUNCATE ON %s'
+            ' FOR EACH STATEMENT EXECUTE FUNCTION ref.reject_change()', target
+        );
+    END LOOP;
+END $$;
+
 INSERT INTO ref.load_coverage (load_id, coverage, note)
 SELECT l.load_id, legacy.coverage, legacy.note
 FROM ref.loads l
@@ -184,3 +209,57 @@ JOIN (VALUES
 ) AS legacy(dataset, coverage, note) ON legacy.dataset = l.dataset
 WHERE l.status = 'complete'
   AND NOT EXISTS (SELECT 1 FROM ref.load_coverage c WHERE c.load_id = l.load_id);
+
+-- Every daily price source side by side, nothing merged or preferred: a query must name the
+-- source it wants, or it sees each source's rows labelled as such. Rows of unfinished loads are
+-- hidden. Raw and adjusted prices are separate columns so one cannot be mistaken for the other.
+-- Filter on permno (CRSP) or symbol (Yahoo), and on date, to use the table indexes.
+-- The Yahoo branch is added only where the shared `public.ohlcv` table exists (a fresh scratch
+-- database has none).
+DO $$
+DECLARE
+    base text := $v$
+SELECT 'crsp_daily'::text AS source, d.load_id, c.coverage,
+       d.permno, NULL::text AS symbol, NULL::integer AS spell, d.date,
+       NULL::double precision AS raw_open, NULL::double precision AS raw_high,
+       NULL::double precision AS raw_low, abs(d.prc) AS raw_close,
+       NULL::double precision AS volume, (d.prc < 0) AS is_midpoint,
+       NULL::double precision AS adj_open, NULL::double precision AS adj_high,
+       NULL::double precision AS adj_low, NULL::double precision AS adj_close,
+       NULL::text AS adj_type, NULL::date AS adj_as_of, d.ret AS total_return
+FROM kaggle_crsp.daily d
+JOIN ref.loads l ON l.load_id = d.load_id AND l.status = 'complete'
+LEFT JOIN ref.load_coverage c ON c.load_id = d.load_id
+UNION ALL
+SELECT 'crsp_derived_bars', b.load_id, c.coverage,
+       b.permno, NULL, b.spell, b.date,
+       NULL, NULL, NULL, b.abs_prc,
+       NULL, b.midpoint_flag,
+       NULL, NULL, NULL, b.close,
+       'crsp_spell_chained_total_return', NULL, NULL
+FROM market.daily_bars b
+JOIN ref.loads l ON l.load_id = b.load_id AND l.status = 'complete'
+LEFT JOIN ref.load_coverage c ON c.load_id = b.load_id
+$v$;
+    -- Yahoo rows carry no load number and the loader overwrites them in place, so their
+    -- adjustment date is not recorded and the coverage is unlabelled.
+    yahoo text := $v$
+UNION ALL
+SELECT 'yahoo', NULL::bigint, NULL::text,
+       NULL::bigint, y.symbol::text, NULL, y.timestamp::date,
+       NULL, NULL, NULL, NULL,
+       y.volume, NULL,
+       y.open, y.high, y.low, y.close,
+       'yahoo_adjusted_vintage_unrecorded', NULL, NULL
+FROM public.ohlcv y
+WHERE y.venue = 'yfinance' AND y.interval = '1d'
+$v$;
+BEGIN
+    -- DROP first: CREATE OR REPLACE VIEW cannot remove a column or branch a rerun might drop.
+    DROP VIEW IF EXISTS market.prices_daily_sources;
+    IF to_regclass('public.ohlcv') IS NOT NULL THEN
+        EXECUTE 'CREATE VIEW market.prices_daily_sources AS ' || base || yahoo;
+    ELSE
+        EXECUTE 'CREATE VIEW market.prices_daily_sources AS ' || base;
+    END IF;
+END $$;

@@ -3826,6 +3826,16 @@ advisory locks coordinate compliant runners but cannot perfectly fence an alread
 call. The paper trader remains stopped pending owner authorization to resume cron.
 
 
+### 2026-11-26 (price tables side by side, edit protection)
+
+Two independent reviews (Astra and Neon, different vendors) rejected a single stitched price table
+with a "best source" rule: it would silently change prices at source handoffs, hide dead stocks
+behind survivor-only sources, and mix raw and adjusted prices. Added instead a read-only view
+`market.prices_daily_sources` that lists the CRSP, CRSP-derived and Yahoo daily prices side by
+side with explicit source, load, coverage and separate raw and adjusted columns, and edit
+protection (`UPDATE`, `DELETE`, `TRUNCATE` refused) on `kaggle_crsp.daily`, `market.daily_bars` and
+`kaggle_chars.mcgill`. Not applied to the live database yet.
+
 ### 2026-11-26 (database consolidation, stage 0a and A)
 
 Added a database dump script and a disposable restore drill to make backups testable. The owner

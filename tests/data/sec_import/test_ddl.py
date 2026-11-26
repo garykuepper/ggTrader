@@ -224,7 +224,12 @@ def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None
             "SELECT indexname FROM pg_indexes WHERE schemaname='sec' AND tablename='index_entries'"
         )
         indexes = {row[0] for row in cur.fetchall()}
-    assert set(found.values()) == {"A"}
+    price_tables = ["kaggle_crsp.daily", "market.daily_bars", "kaggle_chars.mcgill"]
+    # TimescaleDB refuses "always enabled" on compressed tables, so these three carry plain ones.
+    assert {v for (table, _), v in found.items() if table not in price_tables} == {"A"}
+    for table in price_tables:
+        assert found[(table, "frozen")] == "O"
+        assert found[(table, "no_truncate")] == "O"
     protected = [
         "ref.load_files",
         "ref.load_coverage",
@@ -233,6 +238,7 @@ def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None
         "sec.index_entries",
         "sec.filing_headers",
         "sec.death_labels",
+        *price_tables,
     ]
     for table in protected:
         assert (table, "frozen") in found
@@ -356,4 +362,98 @@ def test_filing_index_rows_cannot_be_changed_and_the_view_shows_only_complete_lo
     conn.rollback()
     with pytest.raises(psycopg2.errors.RaiseException), conn.cursor() as cur:
         cur.execute("DELETE FROM sec.index_entries")
+    conn.rollback()
+
+
+def _stage_price_rows(conn: connection, *, with_yahoo: bool) -> tuple[int, int]:
+    """Insert one CRSP row and one derived row for a complete load and for a running load."""
+    done = _begin(conn, "crsp-daily")
+    running = _begin(conn, "crsp-derived-bars")
+    with conn.cursor() as cur:
+        for load_id in (done, running):
+            cur.execute(
+                "INSERT INTO kaggle_crsp.daily (load_id, permno, date, prc, ret)"
+                " VALUES (%s, 14593, '2000-01-03', -111.9375, 0.01)",
+                (load_id,),
+            )
+            cur.execute(
+                "INSERT INTO market.daily_bars (load_id, permno, spell, date, close, abs_prc,"
+                " midpoint_flag) VALUES (%s, 14593, 1, '2000-01-03', 0.843, 111.9375, true)",
+                (load_id,),
+            )
+    complete_load(conn, done, {}, coverage=("includes_dead_stocks", "fixture"))
+    conn.commit()
+    return done, running
+
+
+def test_price_sources_view_labels_sources_and_hides_unfinished_loads(conn: connection) -> None:
+    """Each source keeps its own rows; raw and adjusted prices stay in separate columns."""
+    done, _running = _stage_price_rows(conn, with_yahoo=False)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT source, load_id, coverage, raw_close, adj_close, is_midpoint, adj_type"
+            " FROM market.prices_daily_sources WHERE permno = 14593 ORDER BY source"
+        )
+        rows = cur.fetchall()
+    assert rows == [
+        ("crsp_daily", done, "includes_dead_stocks", 111.9375, None, True, None),
+        (
+            "crsp_derived_bars",
+            done,
+            "includes_dead_stocks",
+            111.9375,
+            0.843,
+            True,
+            "crsp_spell_chained_total_return",
+        ),
+    ]
+
+
+def test_price_sources_view_adds_yahoo_when_the_shared_table_exists(
+    kaggle_conn: connection,
+) -> None:
+    """The Yahoo branch appears only where public.ohlcv exists, with its vintage marked unknown."""
+    with kaggle_conn.cursor() as cur:
+        cur.execute(
+            "CREATE TABLE public.ohlcv (timestamp timestamp, symbol varchar(20),"
+            " interval varchar(5), open double precision, high double precision,"
+            " low double precision, close double precision, volume double precision,"
+            " trades integer, venue varchar(20))"
+        )
+        cur.execute(
+            "INSERT INTO public.ohlcv (timestamp, symbol, interval, open, close, volume, venue)"
+            " VALUES ('2000-01-03', 'AAPL', '1d', 0.78, 0.84, 5.0, 'yfinance'),"
+            " ('2000-01-03', 'BTC', '1m', 1, 1, 1, 'kraken_spot')"
+        )
+    kaggle_conn.commit()
+    apply_ddl(kaggle_conn)
+    with kaggle_conn.cursor() as cur:
+        cur.execute(
+            "SELECT source, symbol, load_id, coverage, adj_open, adj_close, raw_close, adj_type"
+            " FROM market.prices_daily_sources WHERE source = 'yahoo'"
+        )
+        assert cur.fetchall() == [
+            ("yahoo", "AAPL", None, None, 0.78, 0.84, None, "yahoo_adjusted_vintage_unrecorded")
+        ]
+    apply_ddl(kaggle_conn)  # a rerun replaces the view cleanly
+
+
+@pytest.mark.parametrize(
+    ("table", "change"),
+    [
+        ("kaggle_crsp.daily", "UPDATE kaggle_crsp.daily SET prc = 1"),
+        ("kaggle_crsp.daily", "DELETE FROM kaggle_crsp.daily"),
+        ("market.daily_bars", "UPDATE market.daily_bars SET close = 1"),
+        ("market.daily_bars", "DELETE FROM market.daily_bars"),
+        ("kaggle_crsp.daily", "TRUNCATE kaggle_crsp.daily"),
+        ("market.daily_bars", "TRUNCATE market.daily_bars"),
+    ],
+)
+def test_price_tables_refuse_edits_deletes_and_truncate(
+    conn: connection, table: str, change: str
+) -> None:
+    """The big price tables are append-only like the rest of the new tables."""
+    _stage_price_rows(conn, with_yahoo=False)
+    with pytest.raises(psycopg2.errors.RaiseException, match="append-only"), conn.cursor() as cur:
+        cur.execute(change)
     conn.rollback()
