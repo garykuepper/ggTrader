@@ -49,9 +49,12 @@ def parse_master_idx(text: str, quarter: str) -> tuple[list[tuple], list[tuple[s
     for number, line in enumerate(lines[separator + 1 :], start=separator + 2):
         fields = line.split("|")
         try:
-            if len(fields) != 5 or any(not field.strip() for field in fields):
-                raise ValueError("expected five nonempty fields")
+            if len(fields) != 5:
+                raise ValueError("expected five fields")
             cik, company, form, filed, filename = fields
+            # A blank company name is a real value in the index (seen once in 2016Q1).
+            if any(not field.strip() for field in (cik, form, filed, filename)):
+                raise ValueError("empty CIK, form, date or filename")
             if not cik.isascii() or not cik.isdigit():
                 raise ValueError("invalid CIK")
             cik_value = int(cik)

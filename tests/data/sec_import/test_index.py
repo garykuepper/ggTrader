@@ -155,3 +155,12 @@ def test_load_index_writes_rows_quarantine_and_resumes(
             assert cur.fetchone() == (2, 1, 1)
             cur.execute("SELECT count(*) FROM ref.quarantine WHERE load_id=%s", (load_id,))
             assert cur.fetchone() == (1,)
+
+
+def test_parse_keeps_blank_company_name_and_quarantines_blank_form() -> None:
+    text = (
+        "x\n-----\n1||10-K|2016-02-26|edgar/data/1/a.txt\n2|B CO||2016-02-26|edgar/data/2/b.txt\n"
+    )
+    rows, bad = index.parse_master_idx(text, "2016Q1")
+    assert rows == [("2016Q1", 1, "", "10-K", date(2016, 2, 26), "edgar/data/1/a.txt")]
+    assert [(ref, reason) for ref, _, reason in bad] == [("4", "empty CIK, form, date or filename")]
