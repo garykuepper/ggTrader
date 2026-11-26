@@ -16,8 +16,9 @@ class Connection:
 
     autocommit = False
 
-    def __init__(self, version: str) -> None:
+    def __init__(self, version: str, events: list[str] | None = None) -> None:
         self.version = version
+        self.events = events if events is not None else []
 
     def cursor(self) -> "Connection":
         return self
@@ -29,7 +30,7 @@ class Connection:
         pass
 
     def execute(self, query: str) -> None:
-        pass
+        self.events.append(query)
 
     def fetchone(self) -> tuple[str]:
         return (self.version,)
@@ -171,6 +172,9 @@ def test_cleanup_failure_is_reported_and_exit_nonzero(
     args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
 
     def fail(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1:3] == ["run", "-d"]:
+            folder = Path(command[command.index("-v") + 1].split(":")[0])
+            (folder / "owned").write_text("data")
         if command[1:3] == ["run", "--rm"]:
             raise subprocess.CalledProcessError(1, command)
         return runner(command, **kwargs)
@@ -265,9 +269,105 @@ def test_missing_container_after_failed_start_is_not_cleanup_failure(
         if command[1:3] == ["run", "-d"]:
             raise subprocess.CalledProcessError(1, command)
         if command[1] == "rm":
-            raise subprocess.CalledProcessError(1, command, stderr=b"No such container")
+            raise subprocess.CalledProcessError(1, command, stderr=b"nO SuCh CoNtAiNeR")
         return runner(command, **kwargs)
 
     assert drill.main(args, runner=fail, connect=connect, disk_usage=ample_space) == 1
     assert json.loads(out.read_text())["stage"] == "start"
     assert not list(root.iterdir())
+
+
+def test_mismatch_report_keeps_table_and_digest_detail_and_exits_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "snapshot", lambda conn: {"counts": {"a": 2}, "digests": {"a": "y"}})
+    assert drill.main(args, runner=runner, connect=connect, disk_usage=ample_space) == 1
+    report = json.loads(out.read_text())
+    assert report["stage"] == "compare" and report["error"] == "SnapshotMismatch"
+    assert report["tables"]["a"] == {"expected": 1, "actual": 2, "ok": False}
+    assert report["digests"]["a"] == {"expected": "x", "actual": "y", "ok": False}
+
+
+def test_cleanup_failure_does_not_hide_primary_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch, "wrong")
+
+    def fail(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1] == "rm":
+            raise OSError("private detail")
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=fail, connect=connect, disk_usage=ample_space) == 1
+    assert json.loads(out.read_text()) == {
+        "ok": False,
+        "stage": "connect",
+        "error": "ValueError",
+        "cleanup_error": "OSError",
+    }
+
+
+def test_empty_scratch_folder_skips_throwaway_container(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    assert drill.main(args, runner=runner, connect=connect, disk_usage=ample_space) == 0
+    assert not any(command[1:3] == ["run", "--rm"] for command in calls)
+    assert not list(root.iterdir())
+
+
+def test_throwaway_cleanup_runs_as_root_user(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def simulate(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1:3] == ["run", "-d"]:
+            folder = Path(command[command.index("-v") + 1].split(":")[0])
+            (folder / "owned").touch()
+        if command[1:3] == ["run", "--rm"]:
+            assert command[command.index("-u") + 1] == "0"
+            folder = Path(command[command.index("-v") + 1].split(":")[0])
+            (folder / "owned").unlink()
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=simulate, connect=connect, disk_usage=ample_space) == 0
+    assert any(command[1:3] == ["run", "--rm"] for command in calls)
+
+
+def test_happy_path_runs_sql_and_restore_in_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    events: list[str] = []
+
+    def record(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if "pg_restore" in command:
+            events.append("pg_restore")
+        return runner(command, **kwargs)
+
+    def new_connection(**kwargs: object) -> Connection:
+        return Connection("2.1", events)
+
+    assert drill.main(args, runner=record, connect=new_connection, disk_usage=ample_space) == 0
+    assert events == [
+        "CREATE DATABASE ggtrader",
+        "CREATE EXTENSION timescaledb",
+        "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'",
+        "SELECT timescaledb_pre_restore()",
+        "pg_restore",
+        "SELECT timescaledb_post_restore()",
+        "ANALYZE",
+    ]
+
+
+def test_keep_flag_skips_all_cleanup_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    assert (
+        drill.main(args + ["--keep"], runner=runner, connect=connect, disk_usage=ample_space) == 0
+    )
+    assert not any(c[1] in {"rm", "stop"} or c[1:3] == ["run", "--rm"] for c in calls)
+    assert len(list(root.iterdir())) == 1

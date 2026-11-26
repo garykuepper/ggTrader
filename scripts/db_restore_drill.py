@@ -2,6 +2,7 @@
 """Verify a database dump in a disposable TimescaleDB container."""
 
 import argparse
+import errno
 import json
 import os
 import secrets
@@ -218,18 +219,26 @@ def main(
         if report["ok"]:
             status = 0
         else:
-            report = {"ok": False, "stage": stage, "error": "SnapshotMismatch"}
+            report.update(stage=stage, error="SnapshotMismatch")
     except Exception as exc:
         # Exceptions from subprocess and drivers can contain credentials or connection strings.
         print(f"Restore drill failed ({type(exc).__name__})", file=sys.stderr)
         report = {"ok": False, "stage": stage, "error": type(exc).__name__}
     finally:
+
+        def cleanup_failure(exc: Exception) -> None:
+            nonlocal report, status
+            if status == 0:
+                report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
+            else:
+                report.setdefault("cleanup_error", type(exc).__name__)
+            status = 1
+
         if conn is not None:
             try:
                 conn.close()
             except Exception as exc:
-                report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
-                status = 1
+                cleanup_failure(exc)
         if not args.keep:
             container_removed = not attempted
             if attempted:
@@ -239,37 +248,46 @@ def main(
                     container_removed = True
                 except subprocess.CalledProcessError as exc:
                     stderr = exc.stderr or b""
-                    if not started and b"No such container" in stderr:
+                    if not started and b"no such container" in stderr.lower():
                         container_removed = True
                     else:
-                        report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
-                        status = 1
+                        cleanup_failure(exc)
                 except Exception as exc:
-                    report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
-                    status = 1
+                    cleanup_failure(exc)
             if folder_created and container_removed:
                 try:
                     refuse_unsafe(name, folder)
-                    runner(
-                        [
-                            "docker",
-                            "run",
-                            "--rm",
-                            "-v",
-                            f"{folder}:/scratch",
-                            "--entrypoint",
-                            "sh",
-                            args.image,
-                            "-c",
-                            "rm -rf /scratch/* /scratch/.[!.]* /scratch/..?*",
-                        ],
-                        check=True,
-                        capture_output=True,
-                    )
-                    folder.rmdir()
+                    try:
+                        folder.rmdir()
+                    except OSError as exc:
+                        if exc.errno not in {
+                            errno.ENOTEMPTY,
+                            errno.EEXIST,
+                            errno.EACCES,
+                            errno.EPERM,
+                        }:
+                            raise
+                        runner(
+                            [
+                                "docker",
+                                "run",
+                                "--rm",
+                                "-u",
+                                "0",
+                                "-v",
+                                f"{folder}:/scratch",
+                                "--entrypoint",
+                                "sh",
+                                args.image,
+                                "-c",
+                                "rm -rf /scratch/* /scratch/.[!.]* /scratch/..?*",
+                            ],
+                            check=True,
+                            capture_output=True,
+                        )
+                        folder.rmdir()
                 except Exception as exc:
-                    report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
-                    status = 1
+                    cleanup_failure(exc)
         try:
             args.out.write_text(json.dumps(report, indent=2) + "\n")
         except Exception:
