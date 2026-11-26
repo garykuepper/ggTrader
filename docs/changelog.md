@@ -3826,6 +3826,17 @@ advisory locks coordinate compliant runners but cannot perfectly fence an alread
 call. The paper trader remains stopped pending owner authorization to resume cron.
 
 
+### 2026-11-26 (applied to the live database, frozen Yahoo copy)
+
+Both schema changes below were applied to the live database after a full test run on merged
+`main` (2092 passed): the three big CRSP/McGill price tables refuse edits, the
+`market.prices_daily_sources` view exists, and every load now needs a coverage label. Integrity
+check passed 6 of 6 (report 5). Because the Yahoo loader overwrites `public.ohlcv` in place, the
+5,777,834 Yahoo daily rows through 2026-11-05 were copied to `market.yahoo_daily_frozen_20261126`
+(745 MB, refuses edits; the copy's row fingerprint equals the source's, recorded in the table
+comment and in `/media/thesix/ggTrader-data/db-dumps/yahoo_frozen_20261126.json`). Nothing reads
+the copy yet; release 1 still reads `public.ohlcv`.
+
 ### 2026-11-26 (dump retry and strict coverage labels)
 
 The weekly dump script now retakes a dump once when a table changed while it ran (a second
