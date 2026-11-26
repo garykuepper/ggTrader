@@ -210,6 +210,7 @@ def main(
                 "\n".join(stderr.decode("utf-8", errors="replace").splitlines()[-200:])
                 + ("\n" if stderr else "")
             )
+        stage = "reconnect"
         conn = connect(
             host="127.0.0.1",
             port=int(port),
@@ -220,7 +221,9 @@ def main(
         )
         conn.autocommit = True
         with conn.cursor() as cur:
+            stage = "post-restore"
             cur.execute("SELECT timescaledb_post_restore()")
+            stage = "analyze"
             cur.execute("ANALYZE")
         stage = "compare"
         report = compare(expected, snapshot(conn))
@@ -232,6 +235,10 @@ def main(
         # Exceptions from subprocess and drivers can contain credentials or connection strings.
         print(f"Restore drill failed ({type(exc).__name__})", file=sys.stderr)
         report = {"ok": False, "stage": stage, "error": type(exc).__name__}
+        # The server's own message never carries the password, unlike the driver's full text.
+        primary = getattr(getattr(exc, "diag", None), "message_primary", None)
+        if isinstance(primary, str) and primary:
+            report["server_message"] = primary[:500]
     finally:
 
         def cleanup_failure(exc: Exception) -> None:

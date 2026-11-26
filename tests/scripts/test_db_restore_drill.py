@@ -422,3 +422,26 @@ def test_roles_created_before_restore_command(
             < events.index("SELECT timescaledb_pre_restore()")
             < events.index("restore")
         )
+
+
+def test_post_restore_error_reports_stage_and_server_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    class Failing(Connection):
+        def execute(self, query: object) -> None:
+            if "post_restore" in str(query):
+                error = RuntimeError("full text with postgresql://user:secret@host")
+                error.diag = SimpleNamespace(message_primary="server says no")
+                raise error
+            super().execute(query)
+
+    assert (
+        drill.main(args, runner=runner, connect=lambda **k: Failing("2.1"), disk_usage=ample_space)
+        == 1
+    )
+    report = json.loads(out.read_text())
+    assert report["stage"] == "post-restore"
+    assert report["server_message"] == "server says no"
+    assert "secret" not in out.read_text()
