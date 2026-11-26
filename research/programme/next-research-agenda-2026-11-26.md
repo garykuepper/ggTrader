@@ -26,7 +26,7 @@ A [published-portfolio screen](../stock-signals/momentum/2026-10-20-momentum-fre
 
 The loaded CRSP copy has price, return and shares outstanding, but no trading volume or final removal returns, meaning actual recovery when trading ends is unknown.
 
-On 1973-01-02, 2,968 of 5,404 price rows are quote midpoints, the halfway point between quoted buy and sell prices, not recorded trades. On 1969-02-03, only 1,203 NYSE common stocks meet the first test’s $5 price and positive-share requirements for a 1,000-largest list. The read-only queries are recorded below.
+On 1973-01-02, 2,968 of 5,404 price rows are quote midpoints, the halfway point between quoted buy and sell prices, not recorded trades. On 1969-02-03, only 1,203 common stocks on the New York Stock Exchange (NYSE) meet the first test’s $5 price and positive-share requirements for a 1,000-largest list. The read-only queries are recorded below.
 
 Use the owner's stated assumption about what holders recover when a stock stops trading, and show the other recovery scenarios.
 
@@ -66,7 +66,7 @@ The [ledger](window-use-ledger.md) records prior screens of profits, value, inve
 
 The downloaded Gu–Kelly–Xiu file is another source: its exploration audit describes 94 lagged characteristics per stock-month, 4,117,300 rows from 1957–2021, and marks it usable. Unlike McGill it reaches the earlier period, but it is not loaded. A stage B import needs its backup gate and owner approval. See the [inventory](../../docs/database-inventory-2026-11-26.md#downloaded-but-not-loaded).
 
-These dates overlap windows already spent by other rules. Before any score, make and record a window-use ledger decision on whether the precise measures, selection and dates can support an informative exploratory study. Do not call the period untouched. Pin both `--eval-start` and `--eval-end` to the approved dates before running. Their exact values are not established.
+McGill’s 2000–2023 span and the 2000–2021 part of Gu–Kelly–Xiu overlap windows already spent by other rules. Before any score, make and record a window-use ledger decision on whether the precise measures, selection and dates can support an informative exploratory study. Do not call the period untouched. Pin both `--eval-start` and `--eval-end` to the approved dates before running. Their exact values are not established.
 
 Register and report the number and names of measures tried: the count is not established, and more attempts raise the chance of a lucky result. Check when each measure was actually available, link to loaded prices and include dead stocks where supported. Use the common cost and tax treatment.
 
@@ -132,7 +132,6 @@ GROUP BY date;
 ```
 
 The counts are 5,404 rows, 2,968 midpoints and 1,203 qualifying stocks, respectively.
-
 
 The market-return check used this read-only database query:
 
