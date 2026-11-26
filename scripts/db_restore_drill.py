@@ -119,6 +119,8 @@ def main(
                 "POSTGRES_PASSWORD",
                 "-e",
                 "POSTGRES_USER=ggtrader",
+                "-e",
+                "POSTGRES_DB=postgres",
                 args.image,
             ],
             check=True,
@@ -163,7 +165,7 @@ def main(
         )
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute("CREATE EXTENSION timescaledb")
+            cur.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")
             cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'")
             row = cur.fetchone()
             if row is None or row[0] != version:

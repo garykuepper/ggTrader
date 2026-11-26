@@ -354,7 +354,7 @@ def test_happy_path_runs_sql_and_restore_in_order(
     assert drill.main(args, runner=record, connect=new_connection, disk_usage=ample_space) == 0
     assert events == [
         "CREATE DATABASE ggtrader",
-        "CREATE EXTENSION timescaledb",
+        "CREATE EXTENSION IF NOT EXISTS timescaledb",
         "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'",
         sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier("universe_reader")),
         sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier("universe_loader")),
@@ -391,6 +391,7 @@ def test_restore_connects_as_ggtrader_not_postgres(
     assert connections[0]["dbname"] == "postgres"
     run = next(c for c in calls if c[1:3] == ["run", "-d"])
     assert "POSTGRES_USER=ggtrader" in run
+    assert "POSTGRES_DB=postgres" in run
     restore = next(c for c in calls if "pg_restore" in c)
     assert restore[restore.index("-U") + 1] == "ggtrader"
 
@@ -416,7 +417,7 @@ def test_roles_created_before_restore_command(
     ]
     for role in roles:
         assert (
-            events.index("CREATE EXTENSION timescaledb")
+            events.index("CREATE EXTENSION IF NOT EXISTS timescaledb")
             < events.index(role)
             < events.index("SELECT timescaledb_pre_restore()")
             < events.index("restore")

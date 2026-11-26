@@ -203,3 +203,25 @@ def test_existing_part_is_not_removed_on_refusal(setup_dump):
     existing.write_bytes(b"other run")
     assert run(setup_dump) == 1
     assert existing.read_bytes() == b"other run"
+
+
+def test_exception_after_rename_does_not_touch_final_dump(setup_dump, monkeypatch):
+    final = setup_dump / db_dump.dump_filename(date.today())
+    original_open = type(final).open
+    original_unlink = type(final).unlink
+    removed = []
+
+    def fail_sums(path, *args, **kwargs):
+        if path.name == "SHA256SUMS":
+            raise OSError("write failed")
+        return original_open(path, *args, **kwargs)
+
+    def track_unlink(path, *args, **kwargs):
+        removed.append(path)
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(type(final), "open", fail_sums)
+    monkeypatch.setattr(type(final), "unlink", track_unlink)
+    assert run(setup_dump) == 1
+    assert final.exists()
+    assert not removed

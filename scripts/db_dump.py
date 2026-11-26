@@ -131,6 +131,7 @@ def main(
             digest = hashlib.file_digest(dump_file, "sha256").hexdigest()
         size = part.stat().st_size
         part.rename(final)
+        owned_part = None
         with (folder / "SHA256SUMS").open("a") as sums:
             sums.write(f"{digest}  {name}\n")
         record = {
