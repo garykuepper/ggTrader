@@ -39,13 +39,11 @@ commands and paths appear in the [measurements](database-inventory-2026-11-26-me
 The planned next import stages B–D require their backup and owner-approval gates; the separate
 stage 0b backup setup was outside the completed stage-A plan and its completion is not verified
 here. The table explains each source's limitations and planned stage, not a claim that a
-specific limitation alone caused deferral. The [exploration audit](/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/README.md)
-records the counts below; the [market-data audit](/media/thesix/ggTrader-data/market-data/README.md)
-describes price-source coverage.
+specific limitation alone caused deferral. The exploration audit at `/media/thesix/ggTrader-data/market-data/kaggle/explore-2026-11-22/README.md` records the counts below; the market-data audit at `/media/thesix/ggTrader-data/market-data/README.md` describes price-source coverage.
 
 | Files | Bytes | Context and planned handling |
 |---|---:|---|
-| Gu–Kelly–Xiu, a set of stock characteristics | 3,836,203,389 | 4,117,300 stock-month rows; stage B candidate. |
+| Gu–Kelly–Xiu, a set of stock characteristics | 3,836,203,389 | 4,117,300 stock-month rows, 94 lagged characteristics, 1957–2021; exploration audit marks it usable. Stage B candidate; its backup gate and owner approval remain open. |
 | Insider trades, reports of company insiders' transactions | 41,796,717 | About 3.47 million trades; dates need cleaning; stage B candidate. |
 | SEC company facts, company financial disclosures | 332,316,785 | About 82 million facts; coverage is partial; stage B candidate. |
 | SPY holdings, the stocks held by the SPY fund | 411,011 | 26 yearly holdings files for cross-checking ([design](superpowers/specs/2026-11-25-database-consolidation-design.md#53-stage-b-the-kaggle-files-already-downloaded)); stage B candidate. |
@@ -70,8 +68,8 @@ the project has not found a free complete source. Actual historical bid–ask sp
 between real buy and sell quotes, and full-market daily trading volume are also absent from
 the held free sources; this inventory does not establish whether any other free source exists. Neither `kaggle_crsp.daily` nor `market.daily_bars` has a volume
 column for any year; Yahoo's daily stock table has a volume column and price rows from 2000-01-03 onward, with
-incomplete market coverage. See the [market-data audit](/media/thesix/ggTrader-data/market-data/README.md)
-and [research design](superpowers/specs/2026-11-21-all-stocks-honest-test-bench-design.md).
+incomplete market coverage. See the market-data audit at `/media/thesix/ggTrader-data/market-data/README.md`
+and the [research design](superpowers/specs/2026-11-21-all-stocks-honest-test-bench-design.md).
 
 ## Limits
 

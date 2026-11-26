@@ -13,9 +13,9 @@ Status as of 2026-11-26: database consolidation and dead-stock studies are compl
 | Done | Database consolidation, including a dump and restore test, data and labels from the SEC (the US Securities and Exchange Commission), price-table edit protection, a side-by-side price view and a frozen Yahoo copy, is merged and pushed to `origin/main` through `ec42f9ca`. See the [inventory](database-inventory-2026-11-26.md). |
 | Done | Dead-stock studies are closed and merged: [first test](../research/stock-signals/dead-stock-first-test/2026-11-24-dead-stock-first-test.md), [fresh window](../research/stock-signals/dead-stock-fresh-window/2026-11-24-dead-stock-fresh-window.md), [random baseline](../research/stock-signals/dead-stock-random-baseline/2026-11-25-dead-stock-random-baseline.md), [momentum deaths](../research/stock-signals/dead-stock-momentum-deaths/2026-11-25-dead-stock-momentum-deaths.md), [payout rerun](../research/stock-signals/dead-stock-payout-rerun/2026-11-24-dead-stock-payout-rerun.md), [early filings](../research/stock-signals/dead-stock-early-filings/2026-11-25-dead-stock-early-filings.md), and [data integrity](../research/stock-signals/dead-stock-data-integrity/2026-11-24-dead-stock-data-integrity.md). |
 | Waiting on you | Keep or remove the 11 GB `/media/thesix/ggTrader-data/db-dumps/attempts` folder, which contains backup copies. |
-| Waiting on you | Take a fresh database dump now or wait for the Sunday 2026-11-29 04:30 timer. |
+| Waiting on you | Take a fresh database dump now or wait for the Sunday 2026-11-29 04:30 timer. The main `ggtrader_20261125.dump` predates the 24,381,694 rows in SEC loads 4–9 and the frozen Yahoo copy created on 2026-11-26; its count record lists neither. Earlier dump attempts also remain on disk. |
 | Waiting on you | Choose one to three candidates from the [research agenda](../research/programme/next-research-agenda-2026-11-26.md); the [window-use ledger](../research/programme/window-use-ledger.md) records dates already used. |
-| Waiting on you | Decide whether the whole-market return (`vwretd`) from CRSP, the university stock-price database this copy comes from, may stand in for SPY before SPY existed, in 1968–1992. |
+| Waiting on you | Decide whether the whole-market return (`vwretd`) from CRSP, the university stock-price database this copy comes from, may stand in for SPY through July 1998. SPY began in 1993 but its held history starts in 2000; another option is to add free Yahoo SPY history for 1993–1999. |
 | Waiting on you | Decide whether to push `cleanup-and-next-research` to origin; this plan's work is not merged. |
 | Checkpoint | Intraday observer slot 20 is 2026-11-30; supervision remains paused and manual checks continue. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
@@ -34,14 +34,14 @@ Terms:
 - **AVB**: the paper account's frozen holding, which the broker marks untradable.
 - **Parity**: the paper trader doing what the backtest says it would.
 - **WFO**: walk-forward optimization, rolling tests that tune on past data and score on later data.
-- **Part A** (retired for new work): the former first stage of the evidence standard. It needs long free history, a strict significance test and at least +1.0 percentage point a year.
-- **B0 and B1** (retired for new work): a replay that can only rule an idea out, and a forward paper-only copy ("shadow") kept for at least 18 months.
-- **Holm-corrected t and Newey-West t**: significance tests that allow for trying many ideas and for returns that repeat patterns over time.
+- **Part A** (retired for new work): the former first stage of the evidence standard. It needed long free history, a strict significance test and at least +1.0 percentage point a year.
+- **B0 and B1** (retired for new work): a replay that could only rule an idea out, and a forward paper-only copy ("shadow") that was kept for at least 18 months.
+- **Holm-corrected t and Newey-West t** (retired as required bars for new work): significance tests that allowed for trying many ideas and for returns that repeat patterns over time.
 - **A23**: the owner's 70% SPY / 30% SSO allocation. **PEAD**: drift in a stock's price after earnings news.
 
 ### To resume
 
-1. The consolidation is on `origin/main`; this plan’s inventory, ledger and agenda are on `cleanup-and-next-research` and await the owner’s push decision. Deploying the paper changes and restarting the trader are separate owner decisions.
+1. The consolidation is on `origin/main` at `ec42f9ca`; local `main` has one additional commit, the plan at `f0b1537a`. This plan’s inventory, ledger and agenda are on `cleanup-and-next-research`, which is not merged and awaits the owner’s push decision. Deploying the paper changes and restarting the trader are separate owner decisions.
 2. Before the 2026-11-30 checkpoint, do the manual intraday checks, because supervision is paused. Look for Saturday's weekly heartbeat.
 
 New studies need verified inputs and any necessary data rights. A clean paper-trading start waits on the AVB holding.

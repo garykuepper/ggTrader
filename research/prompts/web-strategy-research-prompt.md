@@ -59,7 +59,7 @@ this system currently beats simply holding the S&P 500.** The completed
 century-long momentum screen using Ken French's academic portfolio data is
 **NO-GO** for both large and small companies. Both failed the Holm test, which
 adjusts significance for testing two groups, and the required post-publication
-return advantage (test A2). Under that historical plan, no paid data was bought; Phases 2–5, including
+return advantage (test A2). No paid data will be bought; Phases 2–5 of that historical plan, including
 the after-tax replay, are cancelled. This was an idea-level screen against the
 academic market benchmark, not a new SPY-relative or after-tax result.
 Any new idea is effectively funded by selling an S&P 500 index holding,
@@ -170,7 +170,7 @@ without a genuinely different mechanism:**
   market exposure, not skill) and momentum before 1994 reached their window's gap. So say what
   size of effect your idea claims, and whether free data over a long history could
   resolve an effect that small.
-- Earlier feasibility checks found gaps in analyst estimates, options history, identifier mapping and crypto funding data. The project now holds identifiers from CRSP, the university stock-price database this copy comes from, and limited monthly company characteristics; check the actual historical coverage, mapping and availability dates for each proposed rule. Other gaps may still require unavailable or paid sources.
+- Earlier feasibility checks found four ideas infeasible with then-available data: analyst-estimate revisions, firm-characteristic rebalancing flow, option-implied volatility skew, and crypto funding-rate carry. The checks found gaps in analyst estimates, options history, identifier mapping and crypto funding data. The project now holds identifiers from CRSP, the university stock-price database this copy comes from, and limited monthly company characteristics; check the actual historical coverage, mapping and availability dates for each proposed rule. Other gaps may still require unavailable or paid sources.
 - A later, cross-asset-focused research pass (FX, commodities, rates,
   crypto) already surfaced and evaluated a wide net of ideas in those
   categories. Most were well-supported, but several were found to be
