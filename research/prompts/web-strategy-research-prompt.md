@@ -8,7 +8,7 @@ anything, or assume access to any codebase. Your job is research and
 recommendation only; someone else will implement and test whatever you find.
 
 Refresh the context below from the current research record whenever it is
-materially out of date — last synced 2026-11-20 (adds the stock-portfolio screens of November 2026, the intraday half-hour test and the stock-selection lead that still lacks usable stock-level inputs).
+materially out of date — last context update 2026-11-26 (database consolidation, spent windows and dead-stock studies).
 
 ---
 
@@ -33,19 +33,14 @@ factor/signal research.
 
 ## Context: what's already been tried (don't just resurface these)
 
-The system this feeds is a systematic US-equities (and, secondarily,
-crypto) trading research lab. It tests every candidate through a rigorous
-walk-forward framework before deploying anything. A new stock idea must first pass a
-long free-history test (multiple-testing-adjusted t of at least 3 and at least +1.0
-percentage point a year net of costs since 1994), then a forward shadow book of at
-least 18 months; a better Sharpe ratio alone is not enough.
+The system this feeds is a systematic US-equities research lab; crypto is parked. New work uses data the rule did not see while being chosen, information available on each date, and stocks that later stopped trading. Compare with the S&P 500 fund on identical dates after trading costs and taxes. Paper trading comes first and the owner decides when real money is earned. Previous fixed statistical thresholds and paper stages are retired for new work.
 
-**Currently deployed — and the honest bar:** A majority-vote ensemble of
+**Stopped paper configuration and historical benchmark:** A majority-vote ensemble of
 five technical indicators (Bollinger Bands, RSI, EMA crossover, MACD
 divergence, volume-confirmed Bollinger Bands) buying individual S&P 500
 stocks on short-term mean-reversion with idle cash swept into an S&P 500 ETF.
 Earlier backtests suggested an edge, but a strict 2026-10-19 production-replica
-audit on daily bars found the deployed daily-bar model is **NO-GO**: compound
+audit on daily bars over 2021-01-31 to 2026-04-30 found the then-configured daily-bar model was historically classified **NO-GO**: compound
 annual growth rate (CAGR) of 14.19% versus S&P 500 ETF (SPY) 14.83%, an excess
 of −0.64 percentage points per year, and an autocorrelation-adjusted t-statistic
 (Newey-West) of −0.69 showing no statistical edge (Sharpe ratio 0.925 versus
@@ -54,7 +49,7 @@ combined book beating or tying the index (including the earlier historical
 claim of a 0.80 Sharpe ratio versus 0.78 for SPY, which is now **void and
 superseded**) were based on selected backtest parameters rather than production
 rules. The stock-picking part on its own, re-run on newer simulation software over
-2022 to April 2026, earned about 3.5% a year (Sharpe ratio 0.39) against about 13.0%
+2022-01-31 to 2026-04-29, earned about 3.5% a year (Sharpe ratio 0.39) against about 13.0%
 (Sharpe 0.78) for the index over the same dates. Live operations are frozen and
 the paper-trading account stays switched off until the owner says otherwise. Focus on research and strategy evidence;
 the owner explicitly asks that we stop recommending retirement decisions,
@@ -64,7 +59,7 @@ this system currently beats simply holding the S&P 500.** The completed
 century-long momentum screen using Ken French's academic portfolio data is
 **NO-GO** for both large and small companies. Both failed the Holm test, which
 adjusts significance for testing two groups, and the required post-publication
-return advantage (test A2). No paid data will be bought; Phases 2–5, including
+return advantage (test A2). Under that historical plan, no paid data was bought; Phases 2–5, including
 the after-tax replay, are cancelled. This was an idea-level screen against the
 academic market benchmark, not a new SPY-relative or after-tax result.
 Any new idea is effectively funded by selling an S&P 500 index holding,
@@ -72,7 +67,9 @@ so it must earn more than the index would have on the same days after all taxes
 and frictions. Treat any number this scout is given as provisional until it has
 passed that kind of scrutiny.
 
-**Already tried and rejected — don't propose close variants of these
+**Data and recent studies:** Daily US stock history including companies that later stopped trading is now available from 1968 through 2024, alongside limited monthly company characteristics and partial company filings. The stock history lacks trading volume and the final payout when a stock stops trading; recent free prices do not cover all failed companies. Tests of monthly recent-winner selection, a fresh earlier period, random selections, payment assumptions and company filings are complete. The scoring periods 2000–2004, 2005–2019 and 2020–2024 are spent for those questions; early prices from August 1998 were also used. Earlier decades have prior portfolio studies and other limited uses, so they are not wholly untouched. Whether a broad US market return may replace SPY before that fund existed remains an owner decision. No new study is authorized by this context.
+
+**Historical results and tried ideas — don't propose close variants of these
 without a genuinely different mechanism:**
 - A machine-learning classifier gating which technical-indicator signals to
   trade (proved anti-predictive/worthless across several redesigns).
@@ -118,9 +115,8 @@ without a genuinely different mechanism:**
   +2.63 percentage points a year since 1994 but only t = 2.73 over the full history;
   the accounting score and research-spending portfolios looked strong in older decades
   but trailed recently and fell 74% to 79% at their worst month-end. A published
-  portfolio is not a list of stocks you can buy: the stock-level version needs dated
-  company identities, market values, filing-availability times and years of monthly
-  training history that free sources have not yet supplied. Do not propose another sort
+  portfolio is not a list of stocks you can buy: a stock-level version still needs
+  verified dated identities, market values and filing-availability times. Do not propose another sort
   of the same large U.S. stocks by a company characteristic without a genuinely new
   mechanism.
 - A short-horizon rule on the S&P 500 ETF: buy the last half hour of the trading day
@@ -174,17 +170,7 @@ without a genuinely different mechanism:**
   market exposure, not skill) and momentum before 1994 reached their window's gap. So say what
   size of effect your idea claims, and whether free data over a long history could
   resolve an effect that small.
-- Four other ideas were investigated and found to require data we can't
-  access affordably: analyst-estimate-revision momentum, a firm-
-  characteristics rebalancing-flow signal keyed to an academic database
-  identifier with no free ticker mapping, option-implied volatility skew,
-  and crypto perpetual-futures funding-rate carry beyond about a year of
-  history. The common thread: **genuine point-in-time historical depth for
-  analyst estimates, options chains, and permno/CRSP-style academic
-  identifiers has consistently turned out to be a paid-vendor-only
-  problem** in our experience, no matter how many free sources we checked —
-  if your idea needs one of these, flag the data question loudly rather
-  than assuming a workaround exists.
+- Earlier feasibility checks found gaps in analyst estimates, options history, identifier mapping and crypto funding data. The project now holds CRSP identifiers and limited monthly company characteristics; check the actual historical coverage, mapping and availability dates for each proposed rule. Other gaps may still require unavailable or paid sources.
 - A later, cross-asset-focused research pass (FX, commodities, rates,
   crypto) already surfaced and evaluated a wide net of ideas in those
   categories. Most were well-supported, but several were found to be
