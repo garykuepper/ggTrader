@@ -21,6 +21,9 @@ from ggTrader.utils.db_snapshot import snapshot
 
 THESIX = Path("/media/thesix")
 DUMP_PATTERN = re.compile(r"^ggtrader_(\d{8})\.dump$")
+#: Tries per day: a dump during which a table changed is retaken once before giving up.
+ATTEMPTS = 2
+MISMATCH_PATTERN = re.compile(r"^ggtrader_(\d{8})\.dump\.mismatch$")
 
 
 def dump_filename(day: date) -> str:
@@ -54,6 +57,12 @@ def prune(folder: Path, keep: int) -> list[Path]:
         if counts.is_file():
             counts.unlink()
             removed.append(counts)
+    # A discarded dump from an earlier day is no use to anyone; keep only today's for inspection.
+    for path in folder.iterdir():
+        match = MISMATCH_PATTERN.fullmatch(path.name)
+        if path.is_file() and match and match.group(1) != f"{date.today():%Y%m%d}":
+            path.unlink()
+            removed.append(path)
     return removed
 
 
@@ -112,29 +121,44 @@ def main(
                     raise ValueError("TimescaleDB extension not found")
         finally:
             conn.close()
-        with part.open("xb") as output:
-            owned_part = part
-            runner(build_dump_command(), stdout=output, check=True)
-        if part.stat().st_size < 1024 * 1024:
-            raise ValueError("Dump is smaller than 1 MiB")
-        conn = connect(url.replace("postgresql+psycopg2://", "postgresql://", 1))
-        try:
-            conn.autocommit = True
-            after = snapshot(conn)
-        finally:
-            conn.close()
-        if before != after:
+        for attempt in range(1, ATTEMPTS + 1):
+            with part.open("xb") as output:
+                owned_part = part
+                runner(build_dump_command(), stdout=output, check=True)
+            if part.stat().st_size < 1024 * 1024:
+                raise ValueError("Dump is smaller than 1 MiB")
+            conn = connect(url.replace("postgresql+psycopg2://", "postgresql://", 1))
+            try:
+                conn.autocommit = True
+                after = snapshot(conn)
+            finally:
+                conn.close()
+            if before == after:
+                break
+            # The dump itself is one consistent snapshot, but the restore drill compares it with
+            # the counts taken before it, so a dump taken while something wrote is not usable.
             mismatch = part.with_suffix(".mismatch")
             part.rename(mismatch)
-            print(f"Snapshot mismatch: {mismatch}", file=sys.stderr)
-            return 3
+            owned_part = None
+            print(f"Snapshot mismatch on attempt {attempt}: {mismatch}", file=sys.stderr)
+            if attempt == ATTEMPTS:
+                return 3
+            mismatch.unlink()
+            conn = connect(url.replace("postgresql+psycopg2://", "postgresql://", 1))
+            try:
+                conn.autocommit = True
+                before = snapshot(conn)
+            finally:
+                conn.close()
         with part.open("rb") as dump_file:
             digest = hashlib.file_digest(dump_file, "sha256").hexdigest()
         size = part.stat().st_size
-        part.rename(final)
-        owned_part = None
+        # Checksum first: a crash between the two steps leaves a stray checksum line, never a
+        # dump the restore drill would refuse for lack of one.
         with (folder / "SHA256SUMS").open("a") as sums:
             sums.write(f"{digest}  {name}\n")
+        part.rename(final)
+        owned_part = None
         record = {
             "day": today.isoformat(),
             "dump_bytes": size,

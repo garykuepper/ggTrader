@@ -66,7 +66,10 @@ path as `--db-free-path` before loading.
 Create a dump with `scripts/run_capped.sh .venv/bin/python scripts/db_dump.py --out-dir /media/thesix/ggTrader-data/db-dumps/`.
 The output directory must already exist. The script writes `ggtrader_YYYYMMDD.dump.part` while
 working and renames it to `ggtrader_YYYYMMDD.dump` on success. If the before and after snapshots
-(the recorded counts and content digests) differ, it keeps `ggtrader_YYYYMMDD.dump.mismatch`.
+(the recorded counts and content digests) differ, because something wrote to the database during
+the dump, it discards that dump and takes the dump once more. If the second try also differs, it
+keeps `ggtrader_YYYYMMDD.dump.mismatch` for inspection and exits 3; a mismatch file of an earlier
+day is deleted on the next run. The checksum line is written before the final rename.
 The exit codes are 0 for success, 1 for a failure, 2 for an invalid output directory or
 insufficient space, and 3 for a snapshot mismatch. Digests are computed with the database
 session time zone pinned to UTC. The directory also holds `SHA256SUMS` and dated counts files,
@@ -101,7 +104,7 @@ The four SEC loaders record saved responses, quarterly filing index entries, fil
 frozen study labels respectively. `ref.load_files` records source paths, hashes (content
 fingerprints) and sizes; `ref.load_coverage` records what each load covers; and
 `ref.integrity_checks` stores integrity-check results. The SEC tables hold fetched-file records,
-index entries, headers and death labels. A coverage label describes the scope of stock data:
+index entries, headers and death labels. Every load, the older market-data loads included, must carry exactly one coverage label to complete: the three older loaders now write theirs, and the database refuses to complete a load without one. A coverage label describes the scope of stock data:
 `includes_dead_stocks` includes stocks that later ended; `survivors_only` includes only survivors;
 `partial_dead_stocks` includes some ended stocks; `large_stocks_only` covers large stocks;
 `unaudited_sample` is a sample whose coverage has not been checked; and `not_a_stock_source`

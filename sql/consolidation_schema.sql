@@ -136,9 +136,6 @@ END $$;
 CREATE OR REPLACE FUNCTION ref.require_coverage() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF OLD.status = 'running' AND NEW.status = 'complete'
-        AND (NEW.dataset IS NULL
-            OR NEW.dataset NOT IN (
-                'crsp-daily', 'crsp-daily-pilot', 'mcgill-fiam', 'crsp-derived-bars'))
         AND NOT EXISTS (SELECT 1 FROM ref.load_coverage WHERE load_id = NEW.load_id) THEN
         RAISE EXCEPTION 'coverage label required';
     END IF;

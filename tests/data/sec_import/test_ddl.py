@@ -149,10 +149,13 @@ def test_complete_with_coverage_writes_row_in_same_transaction(conn: connection)
 @pytest.mark.parametrize(
     "dataset", ["crsp-daily", "crsp-daily-pilot", "mcgill-fiam", "crsp-derived-bars"]
 )
-def test_legacy_datasets_complete_without_coverage(conn: connection, dataset: str) -> None:
-    """Existing importers can still complete without a label argument."""
+def test_no_dataset_completes_without_coverage(conn: connection, dataset: str) -> None:
+    """The older market-data datasets are held to the same label rule as every other load."""
     load_id = _begin(conn, dataset)
-    complete_load(conn, load_id, {})
+    with pytest.raises(psycopg2.errors.RaiseException, match="coverage label required"):
+        complete_load(conn, load_id, {})
+    conn.rollback()
+    complete_load(conn, load_id, {}, coverage=("includes_dead_stocks", "fixture"))
     with conn.cursor() as cur:
         cur.execute("SELECT status FROM ref.loads WHERE load_id=%s", (load_id,))
         assert cur.fetchone() == ("complete",)

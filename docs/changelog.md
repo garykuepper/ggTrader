@@ -3826,6 +3826,15 @@ advisory locks coordinate compliant runners but cannot perfectly fence an alread
 call. The paper trader remains stopped pending owner authorization to resume cron.
 
 
+### 2026-11-26 (dump retry and strict coverage labels)
+
+The weekly dump script now retakes a dump once when a table changed while it ran (a second
+difference keeps the `.mismatch` file and exits 3), deletes mismatch files of earlier days and
+writes the checksum before the final rename. The CRSP, McGill and derived-bars loaders now write
+their own coverage label, and the database and `verify-data` no longer exempt those datasets, so a
+future reload without a label is refused instead of passing unlabelled. Existing loads 1 to 3
+already carry labels. The live database keeps the old rule until the schema is applied again.
+
 ### 2026-11-26 (database consolidation, stage 0a and A)
 
 Added a database dump script and a disposable restore drill to make backups testable. The owner

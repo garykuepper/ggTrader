@@ -195,16 +195,16 @@ def every_complete_load_has_one_coverage_row(conn: connection) -> Check:
            WHERE l.status = 'complete'
            GROUP BY l.load_id, l.dataset ORDER BY l.load_id""",
     )
-    # The older market-data loaders do not write a label themselves (the database allows that);
-    # for them one label is expected after the schema upgrade, but a missing one is not an error.
+    # Every completed load needs exactly one label; the three older loads were labelled when the
+    # schema was applied, and the older loaders now write their own.
     failures = [
         f"load {load_id} has {count} coverage records"
-        for load_id, count, dataset in rows
-        if count > 1 or (count == 0 and dataset not in LEGACY_DATASETS)
+        for load_id, count, _dataset in rows
+        if count != 1
     ]
     return _result(
         f"Checked that each of {len(rows)} completed loads has one record describing which data "
-        "it covers (older market-data loads may have none). Whether that description is right "
+        "it covers. Whether that description is right "
         "is not checked.",
         failures,
     )

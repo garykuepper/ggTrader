@@ -23,6 +23,8 @@ from ggTrader.data.kaggle_import.loadlog import (
 )
 
 PARSER_VERSION = "crsp-1"
+#: Coverage label written with every completed CRSP load (same wording as the schema backfill).
+CRSP_COVERAGE = ("includes_dead_stocks", "CRSP; no delisting returns")
 COLUMNS = ("permno", "date", "shrcd", "exchcd", "prc", "ret", "shrout", "vwretd", "year", "month")
 FLOATS = ("prc", "ret", "shrout", "vwretd")
 
@@ -207,7 +209,7 @@ def load_crsp(  # noqa: PLR0913 — public loader contract
                 fail_load(conn, load_id, reason)
                 raise LoadFailed(reason)
     if row_groups is None:
-        complete_load(conn, load_id, {}, expected_chunks=expected)
+        complete_load(conn, load_id, {}, expected_chunks=expected, coverage=CRSP_COVERAGE)
     return load_id
 
 

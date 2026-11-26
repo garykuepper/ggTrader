@@ -435,7 +435,12 @@ def stage_load(
                 "VALUES (%s, 'not_a_stock_source', 'scratch fixture')",
                 (load_id,),
             )
+        if not coverage:
+            # The database refuses an unlabelled load; switch the guard off to stage one.
+            cur.execute("ALTER TABLE ref.loads DISABLE TRIGGER require_coverage")
         cur.execute("UPDATE ref.loads SET status='complete' WHERE load_id=%s", (load_id,))
+        if not coverage:
+            cur.execute("ALTER TABLE ref.loads ENABLE ALWAYS TRIGGER require_coverage")
     conn.commit()
     return load_id
 
@@ -503,7 +508,7 @@ def test_ordinary_run_passes_on_clean_database(tmp_path: Path, verify_db: connec
 
 @pytest.mark.integration
 @pytest.mark.db
-def test_older_market_data_load_without_coverage_is_allowed(
+def test_older_market_data_load_without_coverage_now_fails(
     tmp_path: Path, verify_db: connection
 ) -> None:
     from ggTrader.data.sec_import.verify import run_checks
@@ -512,8 +517,7 @@ def test_older_market_data_load_without_coverage_is_allowed(
     path.touch()
     stage_load(verify_db, "crsp-daily-pilot", path, coverage=False)
     result = run_checks(verify_db)["checks"]["every_complete_load_has_one_coverage_row"]
-    assert result["ok"]
-    assert "older market-data loads may have none" in result["detail"]
+    assert not result["ok"]
 
 
 @pytest.mark.integration

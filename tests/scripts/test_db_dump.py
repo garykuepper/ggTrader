@@ -65,14 +65,44 @@ def test_writes_part_then_renames_and_records_sha256(setup_dump):
     assert not list(setup_dump.glob("*.part"))
 
 
-def test_counts_before_after_mismatch_exits_3_and_keeps_part_file_out_of_final_name(
+def test_mismatch_on_every_attempt_exits_3_and_keeps_the_last_file_out_of_final_name(
     setup_dump, monkeypatch
 ):
-    values = iter([{"counts": {"x": 1}}, {"counts": {"x": 2}}])
+    values = iter([{"counts": {"x": n}} for n in range(10)])
     monkeypatch.setattr(db_dump, "snapshot", lambda _: next(values))
     assert run(setup_dump) == 3
-    assert list(setup_dump.glob("*.mismatch"))
+    assert len(list(setup_dump.glob("*.mismatch"))) == 1
     assert not list(setup_dump.glob("*.dump"))
+
+
+def test_mismatch_on_first_attempt_is_retaken_once(setup_dump, monkeypatch):
+    # before, after (differs) -> retry: before, after (same)
+    values = iter([{"counts": {"x": n}} for n in (1, 2, 3, 3)])
+    monkeypatch.setattr(db_dump, "snapshot", lambda _: next(values))
+    calls = []
+
+    def runner(command, stdout, check):
+        calls.append(1)
+        stdout.write(b"a" * 1024 * 1024)
+
+    code = db_dump.main(
+        ["--out-dir", str(setup_dump)], connect=lambda _: Connection(), runner=runner
+    )
+    assert code == 0
+    assert len(calls) == 2
+    assert not list(setup_dump.glob("*.mismatch"))
+    assert (setup_dump / db_dump.dump_filename(date.today())).exists()
+
+
+def test_prune_removes_mismatch_files_of_earlier_days_only(tmp_path):
+    today = f"{date.today():%Y%m%d}"
+    old = tmp_path / "ggtrader_20200101.dump.mismatch"
+    current = tmp_path / f"ggtrader_{today}.dump.mismatch"
+    old.write_bytes(b"x")
+    current.write_bytes(b"x")
+    db_dump.prune(tmp_path, 4)
+    assert not old.exists()
+    assert current.exists()
 
 
 def test_dump_under_one_megabyte_exits_1(setup_dump):
@@ -205,22 +235,37 @@ def test_existing_part_is_not_removed_on_refusal(setup_dump):
     assert existing.read_bytes() == b"other run"
 
 
-def test_exception_after_rename_does_not_touch_final_dump(setup_dump, monkeypatch):
+def test_failure_writing_checksum_leaves_no_dump_and_no_part_file(setup_dump, monkeypatch):
     final = setup_dump / db_dump.dump_filename(date.today())
     original_open = type(final).open
-    original_unlink = type(final).unlink
-    removed = []
 
     def fail_sums(path, *args, **kwargs):
         if path.name == "SHA256SUMS":
             raise OSError("write failed")
         return original_open(path, *args, **kwargs)
 
+    monkeypatch.setattr(type(final), "open", fail_sums)
+    assert run(setup_dump) == 1
+    assert not final.exists()
+    assert not list(setup_dump.glob("*.part"))
+
+
+def test_exception_after_rename_does_not_touch_final_dump(setup_dump, monkeypatch):
+    final = setup_dump / db_dump.dump_filename(date.today())
+    original_write_text = type(final).write_text
+    original_unlink = type(final).unlink
+    removed = []
+
+    def fail_counts(path, *args, **kwargs):
+        if path.name.startswith("counts_"):
+            raise OSError("write failed")
+        return original_write_text(path, *args, **kwargs)
+
     def track_unlink(path, *args, **kwargs):
         removed.append(path)
         return original_unlink(path, *args, **kwargs)
 
-    monkeypatch.setattr(type(final), "open", fail_sums)
+    monkeypatch.setattr(type(final), "write_text", fail_counts)
     monkeypatch.setattr(type(final), "unlink", track_unlink)
     assert run(setup_dump) == 1
     assert final.exists()
