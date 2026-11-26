@@ -176,8 +176,28 @@ def commit_chunk(
         raise
 
 
+def record_files(conn: connection, load_id: int, files: Sequence[tuple[str, str, int]]) -> None:
+    """Register source files, retaining the first record for each load and path."""
+    try:
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO ref.load_files (load_id, path, sha256, bytes) VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (load_id, path) DO NOTHING",
+                [(load_id, path, sha256, size) for path, sha256, size in files],
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
 def complete_load(
-    conn: connection, load_id: int, checks: dict, *, expected_chunks: Sequence[str] | None = None
+    conn: connection,
+    load_id: int,
+    checks: dict,
+    *,
+    expected_chunks: Sequence[str] | None = None,
+    coverage: tuple[str, str] | None = None,
 ) -> None:
     """Complete only a reconciled load with all expected chunks."""
     try:
@@ -195,6 +215,11 @@ def complete_load(
             if parsed != accepted + quarantined:
                 raise LoadFailed("Parsed rows do not reconcile")
             combined = {**(stored or {}), **checks}
+            if coverage is not None:
+                cur.execute(
+                    "INSERT INTO ref.load_coverage (load_id, coverage, note) VALUES (%s, %s, %s)",
+                    (load_id, *coverage),
+                )
             cur.execute(
                 "UPDATE ref.loads SET status='complete', completed_at=now(), checks=%s"
                 " WHERE load_id=%s",

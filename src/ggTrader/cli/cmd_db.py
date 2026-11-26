@@ -144,7 +144,6 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
     elif args.db_command == "load-sp500":
         _exit_unless_zero(run_load_sp500(args))
     elif args.db_command == "import":
-        from ggTrader.data.kaggle_import.ddl import apply_ddl
         from ggTrader.data.universe_db import connect, to_psycopg_url
 
         url = resolve_import_url(args)
@@ -191,7 +190,11 @@ def run_db(args: argparse.Namespace) -> None:  # noqa: PLR0912, PLR0915, C901 â€
             if args.import_command == "release":
                 _run_release_import(conn, args)
             elif args.import_command == "apply-ddl":
-                apply_ddl(conn)
+                from ggTrader.data.kaggle_import.ddl import apply_ddl as apply_kaggle_ddl
+                from ggTrader.data.sec_import.ddl import apply_ddl as apply_consolidation_ddl
+
+                apply_kaggle_ddl(conn)
+                apply_consolidation_ddl(conn)
             elif args.import_command == "mcgill":
                 from ggTrader.data.kaggle_import.mcgill import load_mcgill
 

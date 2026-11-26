@@ -1,7 +1,9 @@
-"""Load-log integration tests on a throwaway database."""
+"""Load-log bookkeeping tests."""
 
 import getpass
+import re
 from pathlib import Path
+from unittest.mock import MagicMock, call
 
 import psycopg2
 import pytest
@@ -16,9 +18,9 @@ from ggTrader.data.kaggle_import.loadlog import (
     commit_chunk,
     complete_load,
 )
+from ggTrader.data.sec_import.ddl import COVERAGE_VALUES
+from ggTrader.utils.paths import REPO_ROOT
 from tests.data.scratch_db import scratch_database
-
-pytestmark = [pytest.mark.integration, pytest.mark.db]
 
 
 @pytest.fixture
@@ -41,6 +43,8 @@ def begin(conn, digest="a", version="1", **kwargs):
     )
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_resume_counts_and_completion(conn):
     load = begin(conn, expected_chunks=["1999", "2000"])
 
@@ -65,6 +69,8 @@ def test_resume_counts_and_completion(conn):
         assert cur.fetchone() == (2, 1, 1)
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_rollback_and_counter_mismatch(conn):
     load = begin(conn)
 
@@ -83,6 +89,8 @@ def test_rollback_and_counter_mismatch(conn):
         complete_load(conn, load, {})
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_retention_and_published_release(conn):
     first = begin(conn)
     complete_load(conn, first, {})
@@ -103,6 +111,8 @@ def test_retention_and_published_release(conn):
     assert can_delete_load(conn, second)
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_quarantine_commits_with_chunk_and_retry_does_not_duplicate(conn):
     load = begin(conn)
     rejected = [("1", {"v": 1}, "bad"), ("2", {"v": 2}, "bad")]
@@ -130,6 +140,8 @@ def test_quarantine_commits_with_chunk_and_retry_does_not_duplicate(conn):
         assert cur.fetchone()[0] == 0
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_new_parser_version_same_bytes_is_a_new_load(conn):
     first = begin(conn)
     complete_load(conn, first, {})
@@ -138,12 +150,16 @@ def test_new_parser_version_same_bytes_is_a_new_load(conn):
     assert begin(conn, version="2") != first
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_missing_expected_chunk_blocks_complete(conn):
     load = begin(conn, expected_chunks=["missing"])
     with pytest.raises(LoadFailed, match="missing"):
         complete_load(conn, load, {})
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_running_load_resumes_same_id(conn):
     load = begin(conn)
     assert begin(conn) == load
@@ -152,6 +168,8 @@ def test_running_load_resumes_same_id(conn):
         assert cur.fetchone()[0] == 1
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_third_load_refused_without_allow_third(conn):
     for version in ("1", "2"):
         complete_load(conn, begin(conn, version=version), {})
@@ -160,6 +178,8 @@ def test_third_load_refused_without_allow_third(conn):
     assert begin(conn, digest="other", allow_third=True)
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_failed_load_is_terminal_and_retry_starts_new(conn):
     from ggTrader.data.kaggle_import.loadlog import fail_load
 
@@ -181,6 +201,8 @@ def test_failed_load_is_terminal_and_retry_starts_new(conn):
     assert begin(conn) != load
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_running_load_counts_toward_retention_and_can_resume(conn):
     complete_load(conn, begin(conn), {})
     running = begin(conn, version="2")
@@ -189,6 +211,8 @@ def test_running_load_counts_toward_retention_and_can_resume(conn):
         begin(conn, version="3")
 
 
+@pytest.mark.integration
+@pytest.mark.db
 @pytest.mark.parametrize(
     "function,table",
     [
@@ -219,6 +243,8 @@ def test_complete_only_read_helpers(conn, function, table):
         assert cur.fetchone()[0] == 1
 
 
+@pytest.mark.integration
+@pytest.mark.db
 def test_load_provenance(conn):
     load = begin(conn, slug_version="v1", download_date="2026-11-22")
     with conn.cursor() as cur:
@@ -232,3 +258,28 @@ def test_load_provenance(conn):
     assert loaded_by == f"{getpass.getuser()}@{db_user}"
     assert checks["slug_version"] == "v1"
     assert checks["download_date"] == "2026-11-22"
+
+
+def test_complete_load_passes_coverage_through() -> None:
+    """Write coverage before completing the load and commit both writes together."""
+    conn = MagicMock(spec=psycopg2.extensions.connection)
+    cur = conn.cursor.return_value.__enter__.return_value
+    cur.fetchone.return_value = (0, 0, 0, {})
+    cur.fetchall.return_value = []
+
+    complete_load(conn, 42, {}, coverage=("not_a_stock_source", "filing index"))
+
+    insert, update = cur.execute.call_args_list[-2:]
+    assert insert.args[0].startswith("INSERT INTO ref.load_coverage")
+    assert insert.args[1] == (42, "not_a_stock_source", "filing index")
+    assert update.args[0].startswith("UPDATE ref.loads SET status='complete'")
+    conn.commit.assert_called_once_with()
+    assert conn.mock_calls[-1] == call.commit()
+
+
+def test_coverage_values_match_schema() -> None:
+    """Keep the public coverage values synchronized with the database constraint."""
+    sql = (REPO_ROOT / "sql" / "consolidation_schema.sql").read_text(encoding="utf-8")
+    match = re.search(r"CHECK\s*\(\s*coverage\s+IN\s*\(([^)]*)\)\s*\)", sql)
+    assert match is not None
+    assert tuple(value.strip().strip("'") for value in match[1].split(",")) == COVERAGE_VALUES
