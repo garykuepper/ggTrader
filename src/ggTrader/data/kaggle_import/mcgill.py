@@ -20,6 +20,8 @@ from ggTrader.data.kaggle_import.loadlog import (
 )
 
 PARSER_VERSION = "mcgill-1"
+#: Coverage label written with every completed McGill load (same wording as the schema backfill).
+MCGILL_COVERAGE = ("large_stocks_only", "McGill-FIAM, 2000 to 2023, large stocks")
 _TYPES = {
     "date": pa.string(),
     "text": pa.string(),
@@ -213,5 +215,5 @@ def load_mcgill(
             reason = "Parsed row count differs from counting pass"
             fail_load(conn, load_id, reason)
             raise LoadFailed(reason)
-    complete_load(conn, load_id, {}, expected_chunks=expected)
+    complete_load(conn, load_id, {}, expected_chunks=expected, coverage=MCGILL_COVERAGE)
     return load_id

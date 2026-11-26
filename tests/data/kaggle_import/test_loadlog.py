@@ -264,7 +264,7 @@ def test_complete_load_passes_coverage_through() -> None:
     """Write coverage before completing the load and commit both writes together."""
     conn = MagicMock(spec=psycopg2.extensions.connection)
     cur = conn.cursor.return_value.__enter__.return_value
-    cur.fetchone.return_value = (0, 0, 0, {})
+    cur.fetchone.side_effect = [(0, 0, 0, {}), (True,)]
     cur.fetchall.return_value = []
 
     complete_load(conn, 42, {}, coverage=("not_a_stock_source", "filing index"))
@@ -275,6 +275,17 @@ def test_complete_load_passes_coverage_through() -> None:
     assert update.args[0].startswith("UPDATE ref.loads SET status='complete'")
     conn.commit.assert_called_once_with()
     assert conn.mock_calls[-1] == call.commit()
+
+
+def test_older_loaders_write_labels_that_the_database_accepts() -> None:
+    """The three older loaders each carry a coverage label from the allowed list."""
+    from ggTrader.data.kaggle_import.crsp import CRSP_COVERAGE
+    from ggTrader.data.kaggle_import.derive import DERIVED_COVERAGE
+    from ggTrader.data.kaggle_import.mcgill import MCGILL_COVERAGE
+
+    for label, note in (CRSP_COVERAGE, MCGILL_COVERAGE, DERIVED_COVERAGE):
+        assert label in COVERAGE_VALUES
+        assert note
 
 
 def test_coverage_values_match_schema() -> None:

@@ -24,6 +24,8 @@ from ggTrader.data.kaggle_import.spells import assign_spells
 
 # Measured 124 bytes per row uncompressed in the 2026-11-22 rehearsal, rounded up.
 BYTES_PER_ROW = 140
+#: Coverage label for derived bars (same wording as the schema backfill).
+DERIVED_COVERAGE = ("includes_dead_stocks", "derived from the CRSP load")
 
 
 def build_spell_closes(spelled: pd.DataFrame) -> pd.DataFrame:
@@ -175,7 +177,7 @@ def derive_bars(  # noqa: PLR0912, PLR0913, PLR0915 — loader contract and sequ
         source_rows = sum(count for _, count in counts)
         if written != source_rows:
             raise LoadFailed("Derived row count differs from source")
-        complete_load(conn, load_id, {"source_rows": source_rows})
+        complete_load(conn, load_id, {"source_rows": source_rows}, coverage=DERIVED_COVERAGE)
     except (InterfaceError, OperationalError):
         raise
     except Exception as exc:

@@ -229,6 +229,10 @@ def complete_load(
                 raise LoadFailed("Parsed rows do not reconcile")
             combined = {**(stored or {}), **checks}
             if coverage is not None:
+                # A database from before the consolidation schema has no label table to write to.
+                cur.execute("SELECT to_regclass('ref.load_coverage') IS NOT NULL")
+                has_table = cur.fetchone()[0]
+            if coverage is not None and has_table:
                 cur.execute(
                     "INSERT INTO ref.load_coverage (load_id, coverage, note) VALUES (%s, %s, %s)",
                     (load_id, *coverage),
