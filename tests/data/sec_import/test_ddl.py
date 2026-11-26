@@ -8,7 +8,12 @@ import pytest
 from psycopg2.extensions import connection
 
 from ggTrader.data.kaggle_import.ddl import apply_ddl as apply_kaggle_ddl
-from ggTrader.data.kaggle_import.loadlog import begin_load, complete_load, record_files
+from ggTrader.data.kaggle_import.loadlog import (
+    LoadFailed,
+    begin_load,
+    complete_load,
+    record_files,
+)
 from ggTrader.data.sec_import.ddl import apply_ddl
 from tests.data.scratch_db import scratch_database
 
@@ -180,6 +185,61 @@ def test_record_files_is_idempotent(conn: connection) -> None:
             (load_id,),
         )
         assert cur.fetchall() == files
+
+
+def test_record_files_rejects_different_contents_for_same_path(conn: connection) -> None:
+    """A changed hash or size for an already recorded path is an error and records nothing new."""
+    load_id = _begin(conn)
+    record_files(conn, load_id, [("a", "a" * 64, 10)])
+    for changed in (("a", "b" * 64, 10), ("a", "a" * 64, 11)):
+        with pytest.raises(LoadFailed, match="different contents"):
+            record_files(conn, load_id, [("z", "z" * 64, 1), changed])
+    with pytest.raises(LoadFailed, match="Conflicting"):
+        record_files(conn, load_id, [("q", "1" * 64, 1), ("q", "2" * 64, 1)])
+    with conn.cursor() as cur:
+        cur.execute("SELECT path FROM ref.load_files WHERE load_id=%s", (load_id,))
+        assert cur.fetchall() == [("a",)]
+
+
+def test_record_files_requires_a_running_load(conn: connection) -> None:
+    """Files cannot be attached to a completed or unknown load."""
+    load_id = _begin(conn)
+    complete_load(conn, load_id, {}, coverage=("not_a_stock_source", "test"))
+    with pytest.raises(LoadFailed, match="not running"):
+        record_files(conn, load_id, [("a", "a" * 64, 1)])
+    with pytest.raises(LoadFailed, match="not running"):
+        record_files(conn, 999999, [("a", "a" * 64, 1)])
+
+
+def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None:
+    """Replica-mode loads cannot bypass the protections; the filing index keeps its two indexes."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT c.oid::regclass::text, t.tgname, t.tgenabled FROM pg_trigger t "
+            "JOIN pg_class c ON c.oid = t.tgrelid "
+            "WHERE t.tgname IN ('frozen', 'no_truncate', 'require_coverage') AND NOT t.tgisinternal"
+        )
+        found = {(table, name): enabled for table, name, enabled in cur.fetchall()}
+        cur.execute(
+            "SELECT indexname FROM pg_indexes WHERE schemaname='sec' AND tablename='index_entries'"
+        )
+        indexes = {row[0] for row in cur.fetchall()}
+    assert set(found.values()) == {"A"}
+    assert ("sec.index_entries", "frozen") not in found
+    assert ("sec.index_entries", "no_truncate") in found
+    assert ("ref.loads", "require_coverage") in found
+    assert {"index_entries_load_cik_date_idx", "index_entries_load_form_date_idx"} <= indexes
+
+
+def test_backfill_skips_loads_that_are_not_complete(kaggle_conn: connection) -> None:
+    """A running or failed legacy load gets no coverage row, so completing it later still works."""
+    running = _begin(kaggle_conn, "crsp-daily")
+    kaggle_conn.commit()
+    apply_ddl(kaggle_conn)
+    with kaggle_conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.load_coverage WHERE load_id=%s", (running,))
+        assert cur.fetchone()[0] == 0
+    complete_load(kaggle_conn, running, {}, coverage=("includes_dead_stocks", "late label"))
 
 
 def test_backfill_adds_rows_for_existing_loads_and_leaves_loads_unchanged(

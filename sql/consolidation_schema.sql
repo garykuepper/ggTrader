@@ -136,4 +136,5 @@ JOIN (VALUES
     ('mcgill-fiam', 'large_stocks_only', 'McGill-FIAM, 2000 to 2023, large stocks'),
     ('crsp-derived-bars', 'includes_dead_stocks', 'derived from the CRSP load')
 ) AS legacy(dataset, coverage, note) ON legacy.dataset = l.dataset
-WHERE NOT EXISTS (SELECT 1 FROM ref.load_coverage c WHERE c.load_id = l.load_id);
+WHERE l.status = 'complete'
+  AND NOT EXISTS (SELECT 1 FROM ref.load_coverage c WHERE c.load_id = l.load_id);
