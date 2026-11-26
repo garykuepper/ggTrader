@@ -3836,3 +3836,10 @@ quarterly filing indexes, filing headers and frozen study labels, so those resea
 tracked with their sources. The new SEC data has not been loaded into the live database.
 
 `ggt db verify-data` checks imported data and source files and can save the report in the database.
+
+Live load on 2026-11-26: schema applied, then saved responses (706 rows), the 105 quarterly filing
+lists (24,380,319 rows), filing headers (277) and both label files (251 and 141) loaded; ordinary
+and deep integrity checks passed (6 of 6, 8 of 8). The live check showed the filing-list table
+could still be edited and the reader function took 16 seconds for one company-year, so the table
+now refuses changes like the others and a view `sec.index_entries_complete` answers the same
+question in milliseconds.

@@ -230,14 +230,13 @@ def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None
         "ref.load_coverage",
         "ref.integrity_checks",
         "sec.fetched_files",
+        "sec.index_entries",
         "sec.filing_headers",
         "sec.death_labels",
     ]
     for table in protected:
         assert (table, "frozen") in found
         assert (table, "no_truncate") in found
-    assert ("sec.index_entries", "frozen") not in found
-    assert ("sec.index_entries", "no_truncate") in found
     assert ("ref.loads", "require_coverage") in found
     assert {
         "index_entries_load_cik_date_idx",
@@ -330,4 +329,31 @@ def test_sec_readers_refuse_loads_that_are_not_complete(conn: connection, reader
     conn.rollback()
     with pytest.raises(psycopg2.errors.RaiseException, match="not complete"), conn.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM sec.{reader}(%s)", (running,))
+    conn.rollback()
+
+
+def test_filing_index_rows_cannot_be_changed_and_the_view_shows_only_complete_loads(
+    conn: connection,
+) -> None:
+    """Index rows are append-only; the complete-loads view hides rows of unfinished loads."""
+    running = _begin(conn, "sec-headers")
+    done = _begin(conn, "sec-index")
+    with conn.cursor() as cur:
+        for load_id in (running, done):
+            cur.execute(
+                "INSERT INTO sec.index_entries (load_id, quarter, cik, company_name, form_type,"
+                " date_filed, filename) VALUES (%s, '2005Q2', 1, 'A', '8-K', '2005-04-01',"
+                " 'edgar/data/1/0000000001-05-000001.txt')",
+                (load_id,),
+            )
+    complete_load(conn, done, {}, coverage=("not_a_stock_source", "test"))
+    with conn.cursor() as cur:
+        cur.execute("SELECT load_id FROM sec.index_entries_complete")
+        assert cur.fetchall() == [(done,)]
+    conn.commit()
+    with pytest.raises(psycopg2.errors.RaiseException), conn.cursor() as cur:
+        cur.execute("UPDATE sec.index_entries SET quarter='2005Q3'")
+    conn.rollback()
+    with pytest.raises(psycopg2.errors.RaiseException), conn.cursor() as cur:
+        cur.execute("DELETE FROM sec.index_entries")
     conn.rollback()

@@ -492,7 +492,10 @@ def test_ordinary_run_passes_on_clean_database(tmp_path: Path, verify_db: connec
     assert deep["ok"], deep
 
     with verify_db.cursor() as cur:
+        # The table refuses changes; deep verify catches an owner who switches the guard off.
+        cur.execute("ALTER TABLE sec.index_entries DISABLE TRIGGER frozen")
         cur.execute("UPDATE sec.index_entries SET quarter='2005Q3' WHERE load_id=%s", (index,))
+        cur.execute("ALTER TABLE sec.index_entries ENABLE ALWAYS TRIGGER frozen")
     verify_db.commit()
     deep = run_checks(verify_db, deep=True)
     assert not deep["checks"]["content_sha256_matches_stored_rows"]["ok"]

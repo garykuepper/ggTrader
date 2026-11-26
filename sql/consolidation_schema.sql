@@ -108,6 +108,13 @@ BEGIN
     RETURN QUERY SELECT * FROM sec.index_entries WHERE load_id = p_load_id;
 END $$;
 
+-- Fast filtered reads: the planner pushes a company or date filter into the index, which the
+-- function above cannot do. Only rows of completed loads are visible.
+CREATE OR REPLACE VIEW sec.index_entries_complete AS
+SELECT e.* FROM sec.index_entries e
+JOIN ref.loads l ON l.load_id = e.load_id
+WHERE l.status = 'complete';
+
 CREATE OR REPLACE FUNCTION sec.filing_headers_of(p_load_id bigint)
 RETURNS SETOF sec.filing_headers LANGUAGE plpgsql STABLE AS $$
 BEGIN
@@ -151,15 +158,13 @@ BEGIN
         'sec.fetched_files'::regclass, 'sec.index_entries'::regclass,
         'sec.filing_headers'::regclass, 'sec.death_labels'::regclass
     ] LOOP
-        -- Skip row triggers for the large filing index.
-        IF target <> 'sec.index_entries'::regclass THEN
-            EXECUTE format('DROP TRIGGER IF EXISTS frozen ON %s', target);
-            EXECUTE format(
-                'CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON %s'
-                ' FOR EACH ROW EXECUTE FUNCTION ref.reject_change()', target
-            );
-            EXECUTE format('ALTER TABLE %s ENABLE ALWAYS TRIGGER frozen', target);
-        END IF;
+        -- A row trigger on update or delete costs the bulk load nothing: it never fires on insert.
+        EXECUTE format('DROP TRIGGER IF EXISTS frozen ON %s', target);
+        EXECUTE format(
+            'CREATE TRIGGER frozen BEFORE UPDATE OR DELETE ON %s'
+            ' FOR EACH ROW EXECUTE FUNCTION ref.reject_change()', target
+        );
+        EXECUTE format('ALTER TABLE %s ENABLE ALWAYS TRIGGER frozen', target);
         EXECUTE format('DROP TRIGGER IF EXISTS no_truncate ON %s', target);
         EXECUTE format(
             'CREATE TRIGGER no_truncate BEFORE TRUNCATE ON %s'
