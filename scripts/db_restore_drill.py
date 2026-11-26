@@ -82,6 +82,7 @@ def main(
     stage = "verify"
     report: dict = {"ok": False, "stage": stage, "error": "UnknownError"}
     folder_created = False
+    report_notes: dict = {}
     conn = None
     status = 1
     try:
@@ -222,11 +223,21 @@ def main(
         conn.autocommit = True
         with conn.cursor() as cur:
             stage = "post-restore"
+            # The restored catalog keeps the version the database was first created with, which
+            # can trail the installed extension after an in-place upgrade; align it so the check
+            # inside timescaledb_post_restore compares the code actually running.
+            cur.execute(
+                "UPDATE _timescaledb_catalog.metadata SET value = %s "
+                "WHERE key = 'timescaledb_version' AND value <> %s",
+                (version, version),
+            )
+            report_notes["catalog_version_aligned"] = cur.rowcount == 1
             cur.execute("SELECT timescaledb_post_restore()")
             stage = "analyze"
             cur.execute("ANALYZE")
         stage = "compare"
         report = compare(expected, snapshot(conn))
+        report.update(report_notes)
         if report["ok"]:
             status = 0
         else:

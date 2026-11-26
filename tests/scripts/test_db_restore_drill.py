@@ -30,7 +30,9 @@ class Connection:
     def __exit__(self, *args: object) -> None:
         pass
 
-    def execute(self, query: object) -> None:
+    rowcount = 1
+
+    def execute(self, query: object, params: object = None) -> None:
         self.events.append(query)
 
     def fetchone(self) -> tuple[str]:
@@ -360,6 +362,8 @@ def test_happy_path_runs_sql_and_restore_in_order(
         sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier("universe_loader")),
         "SELECT timescaledb_pre_restore()",
         "pg_restore",
+        "UPDATE _timescaledb_catalog.metadata SET value = %s "
+        "WHERE key = 'timescaledb_version' AND value <> %s",
         "SELECT timescaledb_post_restore()",
         "ANALYZE",
     ]
@@ -430,7 +434,7 @@ def test_post_restore_error_reports_stage_and_server_message(
     args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
 
     class Failing(Connection):
-        def execute(self, query: object) -> None:
+        def execute(self, query: object, params: object = None) -> None:
             if "post_restore" in str(query):
                 error = RuntimeError("full text with postgresql://user:secret@host")
                 error.diag = SimpleNamespace(message_primary="server says no")
