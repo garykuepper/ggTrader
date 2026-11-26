@@ -32,7 +32,7 @@ Non-goals
 - Moving the database off the main drive; an off-site backup; any paid data; the paper trader (stays stopped).
 - Reading the McGill measures or settling their date meaning (a separate small study).
 - Joining Quandl or Stooq prices into the combined bars reader.
-- Still deferred from the earlier "version two" list, as before: translating old tickers to current ones, immutable copies of the Yahoo rows, and stricter database roles (but see the open item on roles in section 9).
+- Still deferred from the earlier "version two" list, as before: translating old tickers to current ones, immutable copies of the Yahoo rows, and stricter database roles (a separate research login was offered and the owner said to skip it for now, 2026-11-25; revisit after stages A and B if the convention check in 5.9 has missed something).
 
 Anti-goals (a failure even if it loads)
 - A database row whose file is missing or has changed.
@@ -150,7 +150,7 @@ If a target misses, the builder adds the index that fixes it and reports the bef
 
 ### 5.9 When the information became usable
 
-Loaded is not exposed. The new tables sit in their own schemas, and a study may read one only if its brief names it. Each set keeps the 2026-11-22 design's section 7 rules: GKX measures usable from the first trading session of the month they predict; SEC facts by the filing's accepted time (units still undecided, so none exposed); insider trades and S&P files not exposed until their date meaning is shown; McGill unchanged. SEC labels describe how a stock ended; they are outcomes, never inputs to a signal for a date before the ending. Because research sessions log in as one superuser with a read-only flag, they could still select a raw table, so the plan adds, and the builder tests: named reader functions that take a decision date and return only what was known by then, and a check (in the study checker) that refuses a study whose brief does not name a table it reads. Separate database roles are an open item for the owner (section 9).
+Loaded is not exposed. The new tables sit in their own schemas, and a study may read one only if its brief names it. Each set keeps the 2026-11-22 design's section 7 rules: GKX measures usable from the first trading session of the month they predict; SEC facts by the filing's accepted time (units still undecided, so none exposed); insider trades and S&P files not exposed until their date meaning is shown; McGill unchanged. SEC labels describe how a stock ended; they are outcomes, never inputs to a signal for a date before the ending. Because research sessions log in as one superuser with a read-only flag, they could still select a raw table. The enforcement here is by convention: the plan adds, and the builder tests, named reader functions that take a decision date and return only what was known by then, and a check (in the study checker) that refuses a study whose brief does not name a table it reads. A separate research login that could not open the raw tables was offered and the owner chose to skip it for now; it stays deferred (section 2).
 
 ### 5.10 Documents to update
 
@@ -186,7 +186,6 @@ Calls I made, for the owner to check:
 
 - Approve this design.
 - At 0b: the backup edit and `sudo`.
-- **Roles.** Do you want a separate research database login that can read new data only through the approved reader functions? It is the only way to enforce "loaded is not exposed" instead of checking it by convention, but it changes how research sessions connect, which the 2026-11-22 design put under the owner's say.
 - Whether to keep the study results index (5.4) at all.
 - Whether any of the small Kaggle sets left out in 5.3 should be loaded after all.
 - The old 14 GB February dump (`ggtraderdb-dump-20260218`) is left alone; say if it can ever be retired.
