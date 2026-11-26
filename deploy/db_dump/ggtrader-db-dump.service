@@ -1,0 +1,9 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. See README.md.
+[Unit]
+Description=ggTrader weekly database dump
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=__REPO_ROOT__
+ExecStart=__REPO_ROOT__/scripts/run_capped.sh __REPO_ROOT__/.venv/bin/python scripts/db_dump.py --out-dir /media/thesix/ggTrader-data/db-dumps

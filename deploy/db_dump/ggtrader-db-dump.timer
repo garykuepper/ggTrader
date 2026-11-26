@@ -1,0 +1,11 @@
+# TEMPLATE, NOT INSTALLED, NOT ENABLED. See README.md.
+[Unit]
+Description=ggTrader weekly database dump timer
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00
+Persistent=true
+Unit=ggtrader-db-dump.service
+
+[Install]
+WantedBy=timers.target
