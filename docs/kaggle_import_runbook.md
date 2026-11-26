@@ -69,8 +69,9 @@ working and renames it to `ggtrader_YYYYMMDD.dump` on success. If the before and
 (the recorded counts and content digests) differ, it keeps `ggtrader_YYYYMMDD.dump.mismatch`.
 The exit codes are 0 for success, 1 for a failure, 2 for an invalid output directory or
 insufficient space, and 3 for a snapshot mismatch. Digests are computed with the database
-session time zone pinned to UTC. The directory also holds `SHA256SUMS` and dated counts files;
-The dump directory also has an `attempts/` subfolder. The installed user timer at
+session time zone pinned to UTC. The directory also holds `SHA256SUMS` and dated counts files,
+and an `attempts/` subfolder with the superseded and failed runs from the first drill. The
+installed user timer at
 `~/.config/systemd/user/ggtrader-db-dump.timer` runs Sunday at 04:30 and keeps four dumps.
 
 Run a restore drill (a test restore into a disposable container) with:
