@@ -99,7 +99,7 @@ def test_extension_version_mismatch_aborts_before_restore(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch, "wrong")
-    assert drill.main(args, runner=runner, connect=connect) != 0
+    assert drill.main(args, runner=runner, connect=connect, disk_usage=ample_space) != 0
     assert not any("pg_restore" in command for command in calls)
     assert not list(root.iterdir())
 
@@ -117,7 +117,7 @@ def test_cleanup_removes_only_its_own_container_and_folder_even_after_failure(
             raise subprocess.CalledProcessError(1, command)
         return result
 
-    assert drill.main(args, runner=fail_restore, connect=connect) != 0
+    assert drill.main(args, runner=fail_restore, connect=connect, disk_usage=ample_space) != 0
     run = next(c for c in calls if c[1] == "run")
     name = run[run.index("--name") + 1]
     assert name.startswith("ggt_restore_drill_")
@@ -129,9 +129,9 @@ def test_cleanup_removes_only_its_own_container_and_folder_even_after_failure(
 
 def test_report_has_no_password_or_url(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
-    assert drill.main(args, runner=runner, connect=connect) == 0
-    run = next(c for c in calls if c[1] == "run")
-    password = next(x.split("=", 1)[1] for x in run if x.startswith("POSTGRES_PASSWORD="))
+    monkeypatch.setattr(drill.secrets, "token_urlsafe", lambda _: "private-test-value")
+    assert drill.main(args, runner=runner, connect=connect, disk_usage=ample_space) == 0
+    password = "private-test-value"
     report = out.read_text()
     assert password not in report and "://" not in report
     assert json.loads(report)["ok"]
@@ -142,3 +142,132 @@ def test_help_exits_zero() -> None:
     with pytest.raises(SystemExit) as exc:
         drill.main(["--help"])
     assert exc.value.code == 0
+
+
+def test_cleanup_empties_folder_through_container_before_rmdir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def simulate(command: list[str], **kwargs: object) -> SimpleNamespace:
+        result = runner(command, **kwargs)
+        if command[1:3] == ["run", "-d"]:
+            folder = Path(command[command.index("-v") + 1].split(":")[0])
+            (folder / "owned").write_text("data")
+        if command[1:3] == ["run", "--rm"]:
+            folder = Path(command[command.index("-v") + 1].split(":")[0])
+            assert (folder / "owned").exists()
+            (folder / "owned").unlink()
+        return result
+
+    assert drill.main(args, runner=simulate, connect=connect, disk_usage=ample_space) == 0
+    assert any(command[1:3] == ["run", "--rm"] for command in calls)
+    assert not list(root.iterdir())
+
+
+def test_cleanup_failure_is_reported_and_exit_nonzero(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def fail(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1:3] == ["run", "--rm"]:
+            raise subprocess.CalledProcessError(1, command)
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=fail, connect=connect, disk_usage=ample_space) == 1
+    assert json.loads(out.read_text()) == {
+        "ok": False,
+        "stage": "cleanup",
+        "error": "CalledProcessError",
+    }
+    assert len(list(root.iterdir())) == 1
+
+
+def test_failed_docker_run_still_attempts_removal_of_its_own_name(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def fail(command: list[str], **kwargs: object) -> SimpleNamespace:
+        result = runner(command, **kwargs)
+        if command[1:3] == ["run", "-d"]:
+            raise subprocess.CalledProcessError(1, command)
+        return result
+
+    assert drill.main(args, runner=fail, connect=connect, disk_usage=ample_space) == 1
+    name = calls[0][calls[0].index("--name") + 1]
+    assert ["docker", "rm", "-f", name] in calls
+    assert json.loads(out.read_text())["stage"] == "start"
+
+
+def test_refuses_when_scratch_space_low(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    assert (
+        drill.main(
+            args, runner=runner, connect=connect, disk_usage=lambda path: SimpleNamespace(free=1)
+        )
+        == 2
+    )
+    assert "space" in capsys.readouterr().err.lower()
+    assert not calls and not root.exists()
+    assert json.loads(out.read_text())["stage"] == "verify"
+
+
+def test_failure_writes_report_with_stage_and_no_password(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch, "wrong")
+    assert drill.main(args, runner=runner, connect=connect, disk_usage=ample_space) == 1
+    assert json.loads(out.read_text()) == {"ok": False, "stage": "connect", "error": "ValueError"}
+
+
+def test_restore_stderr_saved_next_to_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def noisy(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if "pg_restore" in command:
+            raise subprocess.CalledProcessError(1, command, stderr=b"restore problem\n")
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=noisy, connect=connect, disk_usage=ample_space) == 1
+    assert out.with_suffix(".restore.log").read_text() == "restore problem\n"
+    assert json.loads(out.read_text())["stage"] == "restore"
+
+
+def test_password_not_in_docker_argv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def inspect(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1:3] == ["run", "-d"]:
+            password = kwargs["env"]["POSTGRES_PASSWORD"]
+            assert "POSTGRES_PASSWORD" in command
+            assert all(password not in argument for argument in command)
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=inspect, connect=connect, disk_usage=ample_space) == 0
+
+
+def ample_space(path: Path) -> SimpleNamespace:
+    return SimpleNamespace(free=10**15)
+
+
+def test_missing_container_after_failed_start_is_not_cleanup_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+
+    def fail(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[1:3] == ["run", "-d"]:
+            raise subprocess.CalledProcessError(1, command)
+        if command[1] == "rm":
+            raise subprocess.CalledProcessError(1, command, stderr=b"No such container")
+        return runner(command, **kwargs)
+
+    assert drill.main(args, runner=fail, connect=connect, disk_usage=ample_space) == 1
+    assert json.loads(out.read_text())["stage"] == "start"
+    assert not list(root.iterdir())

@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 import secrets
 import shutil
 import subprocess
@@ -60,6 +61,7 @@ def main(
     *,
     connect: Callable = psycopg2.connect,
     runner: Callable = subprocess.run,
+    disk_usage: Callable = shutil.disk_usage,
 ) -> int:
     """Restore and compare a dump using an isolated container."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -72,7 +74,10 @@ def main(
     args = parser.parse_args(argv)
     name = container_name(secrets.token_hex(16))
     folder = SCRATCH_ROOT / name
-    created = False
+    attempted = False
+    started = False
+    stage = "verify"
+    report: dict = {"ok": False, "stage": stage, "error": "UnknownError"}
     folder_created = False
     conn = None
     status = 1
@@ -84,10 +89,18 @@ def main(
         expected = record["after"]
         if not isinstance(version, str) or not version:
             raise ValueError("Missing TimescaleDB version")
+        if disk_usage(Path("/media/thesix")).free < 3 * args.dump.stat().st_size + 20 * 10**9:
+            print("Insufficient scratch space", file=sys.stderr)
+            status = 2
+            raise ValueError("Insufficient scratch space")
+        stage = "start"
         SCRATCH_ROOT.mkdir(parents=True, exist_ok=True)
         folder.mkdir(mode=0o700)
         folder_created = True
         password = secrets.token_urlsafe(32)
+        attempted = True
+        env = os.environ.copy()
+        env["POSTGRES_PASSWORD"] = password
         runner(
             [
                 "docker",
@@ -100,13 +113,14 @@ def main(
                 "-v",
                 f"{folder}:/var/lib/postgresql/data",
                 "-e",
-                f"POSTGRES_PASSWORD={password}",
+                "POSTGRES_PASSWORD",
                 args.image,
             ],
             check=True,
             capture_output=True,
+            env=env,
         )
-        created = True
+        started = True
         port_result = runner(
             ["docker", "port", name, "5432/tcp"], check=True, capture_output=True, text=True
         )
@@ -114,6 +128,7 @@ def main(
         host, port = address.rsplit(":", 1)
         if host != "127.0.0.1" or not port.isdecimal() or not 1 <= int(port) <= 65535:
             raise ValueError("Invalid scratch container port")
+        stage = "connect"
         for attempt in range(60):
             try:
                 conn = connect(
@@ -151,26 +166,40 @@ def main(
             cur.execute("SELECT timescaledb_pre_restore()")
         conn.close()
         conn = None
+        stage = "restore"
         with args.dump.open("rb") as source:
-            runner(
-                [
-                    "docker",
-                    "exec",
-                    "-i",
-                    name,
-                    "pg_restore",
-                    "--exit-on-error",
-                    "--jobs",
-                    "1",
-                    "--no-owner",
-                    "-U",
-                    "postgres",
-                    "-d",
-                    "ggtrader",
-                ],
-                stdin=source,
-                check=True,
-                capture_output=True,
+            try:
+                restored = runner(
+                    [
+                        "docker",
+                        "exec",
+                        "-i",
+                        name,
+                        "pg_restore",
+                        "--exit-on-error",
+                        "--jobs",
+                        "1",
+                        "--no-owner",
+                        "-U",
+                        "postgres",
+                        "-d",
+                        "ggtrader",
+                    ],
+                    stdin=source,
+                    check=True,
+                    capture_output=True,
+                )
+            except subprocess.CalledProcessError as exc:
+                stderr = exc.stderr or b""
+                args.out.with_suffix(".restore.log").write_text(
+                    "\n".join(stderr.decode("utf-8", errors="replace").splitlines()[-200:])
+                    + ("\n" if stderr else "")
+                )
+                raise
+            stderr = getattr(restored, "stderr", None) or b""
+            args.out.with_suffix(".restore.log").write_text(
+                "\n".join(stderr.decode("utf-8", errors="replace").splitlines()[-200:])
+                + ("\n" if stderr else "")
             )
         conn = connect(
             host="127.0.0.1",
@@ -184,36 +213,68 @@ def main(
         with conn.cursor() as cur:
             cur.execute("SELECT timescaledb_post_restore()")
             cur.execute("ANALYZE")
+        stage = "compare"
         report = compare(expected, snapshot(conn))
-        args.out.write_text(json.dumps(report, indent=2) + "\n")
-        status = 0 if report["ok"] else 1
+        if report["ok"]:
+            status = 0
+        else:
+            report = {"ok": False, "stage": stage, "error": "SnapshotMismatch"}
     except Exception as exc:
         # Exceptions from subprocess and drivers can contain credentials or connection strings.
         print(f"Restore drill failed ({type(exc).__name__})", file=sys.stderr)
+        report = {"ok": False, "stage": stage, "error": type(exc).__name__}
     finally:
         if conn is not None:
             try:
                 conn.close()
-            except Exception:
-                print("Restore drill connection cleanup failed", file=sys.stderr)
+            except Exception as exc:
+                report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
                 status = 1
         if not args.keep:
-            container_removed = not created
-            if created:
+            container_removed = not attempted
+            if attempted:
                 try:
                     refuse_unsafe(name, folder)
                     runner(["docker", "rm", "-f", name], check=True, capture_output=True)
                     container_removed = True
-                except Exception:
-                    print("Restore drill container cleanup failed", file=sys.stderr)
+                except subprocess.CalledProcessError as exc:
+                    stderr = exc.stderr or b""
+                    if not started and b"No such container" in stderr:
+                        container_removed = True
+                    else:
+                        report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
+                        status = 1
+                except Exception as exc:
+                    report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
                     status = 1
             if folder_created and container_removed:
                 try:
                     refuse_unsafe(name, folder)
-                    shutil.rmtree(folder)
-                except Exception:
-                    print("Restore drill folder cleanup failed", file=sys.stderr)
+                    runner(
+                        [
+                            "docker",
+                            "run",
+                            "--rm",
+                            "-v",
+                            f"{folder}:/scratch",
+                            "--entrypoint",
+                            "sh",
+                            args.image,
+                            "-c",
+                            "rm -rf /scratch/* /scratch/.[!.]* /scratch/..?*",
+                        ],
+                        check=True,
+                        capture_output=True,
+                    )
+                    folder.rmdir()
+                except Exception as exc:
+                    report = {"ok": False, "stage": "cleanup", "error": type(exc).__name__}
                     status = 1
+        try:
+            args.out.write_text(json.dumps(report, indent=2) + "\n")
+        except Exception:
+            print("Restore drill report write failed", file=sys.stderr)
+            status = 1
     return status
 
 
