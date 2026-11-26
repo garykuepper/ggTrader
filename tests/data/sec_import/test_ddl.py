@@ -225,6 +225,17 @@ def test_triggers_are_always_enabled_and_indexes_exist(conn: connection) -> None
         )
         indexes = {row[0] for row in cur.fetchall()}
     assert set(found.values()) == {"A"}
+    protected = [
+        "ref.load_files",
+        "ref.load_coverage",
+        "ref.integrity_checks",
+        "sec.fetched_files",
+        "sec.filing_headers",
+        "sec.death_labels",
+    ]
+    for table in protected:
+        assert (table, "frozen") in found
+        assert (table, "no_truncate") in found
     assert ("sec.index_entries", "frozen") not in found
     assert ("sec.index_entries", "no_truncate") in found
     assert ("ref.loads", "require_coverage") in found
