@@ -141,7 +141,9 @@ def test_complete_with_coverage_writes_row_in_same_transaction(conn: connection)
         assert cur.fetchone() == ("complete", *coverage)
 
 
-@pytest.mark.parametrize("dataset", ["crsp-daily", "mcgill-fiam", "crsp-derived-bars"])
+@pytest.mark.parametrize(
+    "dataset", ["crsp-daily", "crsp-daily-pilot", "mcgill-fiam", "crsp-derived-bars"]
+)
 def test_legacy_datasets_complete_without_coverage(conn: connection, dataset: str) -> None:
     """Existing importers can still complete without a label argument."""
     load_id = _begin(conn, dataset)
