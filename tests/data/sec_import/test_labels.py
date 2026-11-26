@@ -255,10 +255,11 @@ def test_load_labels_appends_only_new_keys(tmp_path: Path, label_db: connection)
         cur.execute("SELECT load_id, permno FROM sec.death_labels ORDER BY load_id")
         assert cur.fetchall() == [(first, 12345), (second, 23456)]
         cur.execute(
-            "SELECT rows_parsed, rows_accepted, rows_quarantined FROM ref.loads WHERE load_id=%s",
+            "SELECT rows_parsed, rows_accepted, rows_quarantined, checks->>'rows_skipped' "
+            "FROM ref.loads WHERE load_id=%s",
             (second,),
         )
-        assert cur.fetchone() == (1, 1, 0)
+        assert cur.fetchone() == (1, 1, 0, "1")
 
 
 @pytest.mark.integration
@@ -334,4 +335,144 @@ def test_load_labels_quarantines_unparseable_rows_and_resumes(
         )
         assert cur.fetchone() == (2, 1, 1, "complete")
         cur.execute("SELECT raw, reason FROM ref.quarantine WHERE load_id=%s", (load_id,))
-        assert cur.fetchall() == [(damaged, "invalid literal for int() with base 10: 'bad'")]
+        assert cur.fetchall() == [(damaged, "invalid PERMNO or date")]
+
+
+def test_bom_non_finite_loss_and_nul_are_handled_on_the_early_csv(tmp_path: Path) -> None:
+    path = tmp_path / "early.csv"
+    write_early(path, EARLY, {**EARLY, "permno": "2", "suggested_loss": "nan"})
+    path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())
+    nul = {**EARLY, "permno": "3", "evidence": "a\x00b"}
+    with path.open("a", encoding="utf-8", newline="") as output:
+        csv.DictWriter(output, fieldnames=list(EARLY)).writerow(nul)
+    rows, bad = labels._parse_file(labels.EARLY_STUDY, path.read_bytes())
+    assert [row.permno for row in rows] == [12345]
+    assert "column" in rows[0].source_fields  # no BOM glued to the first header
+    assert [reason for _, _, reason in bad] == [
+        "suggested_loss is not a finite number",
+        "NUL character in row",
+    ]
+    assert bad[1][1]["evidence"] == "a\\x00b"
+
+
+@pytest.mark.parametrize("permno", ["1_0", " 5", "+7", "-1"])
+def test_odd_permno_text_is_quarantined(tmp_path: Path, permno: str) -> None:
+    path = write_early(tmp_path / "early.csv", {**EARLY, "permno": permno})
+    rows, bad = labels._parse_file(labels.EARLY_STUDY, path.read_bytes())
+    assert not rows and len(bad) == 1
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_same_labels_in_different_bytes_do_not_start_a_new_load(
+    tmp_path: Path, label_db: connection
+) -> None:
+    path = write_early(tmp_path / "early.csv", EARLY)
+    first = load(label_db, path, labels.read_early_labels(path))
+    with path.open("w", encoding="utf-8", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=list(reversed(list(EARLY))))
+        writer.writeheader()
+        writer.writerow(EARLY)
+    assert load(label_db, path, labels.read_early_labels(path)) == first
+    with label_db.cursor() as cur:
+        cur.execute("SELECT count(*) FROM ref.loads")
+        assert cur.fetchone() == (1,)
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_chunks_mix_rows_and_quarantine_and_resume_between_chunks(
+    tmp_path: Path, label_db: connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    other = {**EARLY, "column": "PERMNO-23456", "permno": "23456"}
+    broken = {**EARLY, "permno": "bad"}
+    path = write_early(tmp_path / "early.csv", EARLY, other, broken)
+    rows = labels.read_early_labels(path)
+    monkeypatch.setattr(labels, "CHUNK_SIZE", 2)
+    real_commit = labels.commit_chunk
+    calls: list[str] = []
+
+    def crash_on_second(conn: object, load_id: int, key: str, *args: object, **kw: object) -> bool:
+        calls.append(key)
+        if len(calls) == 2:
+            raise RuntimeError("crash between chunks")
+        return real_commit(conn, load_id, key, *args, **kw)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(labels, "commit_chunk", crash_on_second)
+        with pytest.raises(RuntimeError, match="crash"):
+            load(label_db, path, rows)
+    load_id = load(label_db, path, rows)
+    with label_db.cursor() as cur:
+        cur.execute("SELECT load_id, status FROM ref.loads")
+        assert cur.fetchall() == [(load_id, "complete")]
+        cur.execute("SELECT chunk_key, rows FROM ref.load_chunks ORDER BY chunk_key")
+        assert cur.fetchall() == [("labels-0000", 2), ("labels-0001", 0)]
+        cur.execute("SELECT count(*) FROM sec.death_labels")
+        assert cur.fetchone() == (2,)
+        cur.execute("SELECT count(*) FROM ref.quarantine WHERE load_id=%s", (load_id,))
+        assert cur.fetchone() == (1,)
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_a_pending_load_of_another_file_must_be_resumed_first(
+    tmp_path: Path, label_db: connection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = write_early(tmp_path / "first.csv", EARLY)
+
+    def interrupt(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("interrupted")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(labels, "complete_load", interrupt)
+        with pytest.raises(RuntimeError, match="interrupted"):
+            load(label_db, first, labels.read_early_labels(first))
+    other = {**EARLY, "column": "PERMNO-23456", "permno": "23456"}
+    second = write_early(tmp_path / "second.csv", EARLY, other)
+    with pytest.raises(LoadFailed, match="Resume pending load"):
+        load(label_db, second, labels.read_early_labels(second))
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_a_label_for_another_release_is_a_conflict(tmp_path: Path, label_db: connection) -> None:
+    path = write_early(tmp_path / "early.csv", EARLY)
+    rows = labels.read_early_labels(path)
+    load(label_db, path, rows)
+    with label_db.cursor() as cur:
+        cur.execute("INSERT INTO ref.releases (created_at, status) VALUES (now(), 'building')")
+        cur.execute(
+            "INSERT INTO market.stock_spans (release_id, symbol, permno, spell, first_date, "
+            "last_date, linked, kind) VALUES (2, 'OLD-9', 12345, 1, '2002-01-01', '2004-06-01', "
+            "false, 'spell')"
+        )
+    label_db.commit()
+    with pytest.raises(labels.LabelConflict):
+        labels.load_labels(
+            label_db,
+            rows,
+            source_file=path,
+            release_id=2,
+            backup_dir=path.parent,
+            db_free_path=path.parent,
+            margin_bytes=0,
+        )
+
+
+@pytest.mark.integration
+@pytest.mark.db
+def test_a_third_file_version_hits_the_retention_limit(
+    tmp_path: Path, label_db: connection
+) -> None:
+    from ggTrader.data.kaggle_import.loadlog import RetentionLimit
+
+    second_key = {**EARLY, "last_trading_day": "2001-01-01"}
+    third_key = {**EARLY, "column": "PERMNO-23456", "permno": "23456"}
+    path = write_early(tmp_path / "early.csv", EARLY)
+    load(label_db, path, labels.read_early_labels(path))
+    write_early(path, EARLY, second_key)
+    load(label_db, path, labels.read_early_labels(path))
+    write_early(path, EARLY, second_key, third_key)
+    with pytest.raises(RetentionLimit):
+        load(label_db, path, labels.read_early_labels(path))

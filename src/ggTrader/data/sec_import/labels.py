@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import logging
+import math
+import re
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -95,10 +97,16 @@ def _parse_row(study: str, raw: dict[str, str]) -> LabelRow:
         )
         accessions = tuple(dict.fromkeys(filter(None, parts)))
 
+    if not re.fullmatch(r"[0-9]+", raw["permno"]) or not re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}", last_date
+    ):
+        raise ValueError("invalid PERMNO or date")
     permno = int(raw["permno"])
-    if not -(2**63) <= permno < 2**63 or not label:
+    if permno >= 2**63 or not label:
         raise ValueError("invalid PERMNO or empty label")
     loss = raw.get("suggested_loss")
+    if loss and not math.isfinite(float(loss)):
+        raise ValueError("suggested_loss is not a finite number")
     canonical = json.dumps(raw, sort_keys=True, separators=(",", ":"))
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     return LabelRow(
@@ -119,7 +127,7 @@ def _parse_row(study: str, raw: dict[str, str]) -> LabelRow:
 def _parse_file(study: str, content: bytes) -> tuple[list[LabelRow], list[QuarantinedRow]]:
     """Decode the frozen file, keeping invalid rows for the load log."""
     if study == EARLY_STUDY:
-        raw_rows = csv.DictReader(io.StringIO(content.decode("utf-8"), newline=""), strict=True)
+        raw_rows = csv.DictReader(io.StringIO(content.decode("utf-8-sig"), newline=""), strict=True)
     else:
         payload = json.loads(content)
         if not isinstance(payload, dict) or not isinstance(payload.get("rows"), list):
@@ -134,13 +142,17 @@ def _parse_file(study: str, content: bytes) -> tuple[list[LabelRow], list[Quaran
                 isinstance(key, str) and isinstance(value, str) for key, value in raw.items()
             ):
                 raise ValueError("expected a row with text columns and values")
+            if any("\x00" in text for pair in raw.items() for text in pair):
+                raise ValueError("NUL character in row")
             rows.append(_parse_row(study, raw))
         except (KeyError, ValueError) as exc:
             if isinstance(raw, dict):
                 fields = raw if None not in raw else {"columns": list(raw.items())}
             else:
                 fields = {"row": raw}
-            bad.append((str(number), fields, str(exc)))
+            # PostgreSQL jsonb cannot hold NUL: keep it visible but escaped.
+            escaped = json.loads(json.dumps(fields).replace("\\u0000", "\\\\x00"))
+            bad.append((str(number), escaped, str(exc)))
     return rows, bad
 
 
@@ -190,7 +202,8 @@ def _lock_dataset(conn: connection, dataset: str) -> Iterator[None]:
         conn.commit()
         yield
     except BaseException:
-        conn.rollback()
+        if not conn.closed:
+            conn.rollback()
         raise
     finally:
         if not conn.closed:
@@ -324,12 +337,17 @@ def load_labels(
 
     Return the existing ID for an identical file. If another file supplies only
     previously loaded labels, return the latest matching ID without a new load.
+
+    A load stores only the keys that no earlier complete load of this study holds, so the
+    labels of a study are spread over its loads. The load log keeps at most two retained loads
+    per dataset: a third distinct file version needs the owner's explicit decision, and
+    withdrawing an earlier load would remove the labels only it held.
     """
     source_path = relpath(source_file.resolve(), REPO_ROOT)
     study = (
         rows[0].study
         if rows
-        else {".csv": EARLY_STUDY, ".json": PAYOUT_STUDY}.get(source_file.suffix)
+        else {".csv": EARLY_STUDY, ".json": PAYOUT_STUDY}.get(source_file.suffix.lower())
     )
     if study not in (EARLY_STUDY, PAYOUT_STUDY):
         raise LoadFailed(f"Unknown study for {source_path}")
