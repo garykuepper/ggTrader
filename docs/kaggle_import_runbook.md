@@ -127,3 +127,22 @@ Each retained load counts toward a limit of two per kind of data. A rerun of an 
 The new SEC tables can be read only through `sec.fetched_files_of(load_id)`, `sec.index_entries_of(load_id)`, `sec.filing_headers_of(load_id)` and `sec.death_labels_of(load_id)`, which refuse a load that is not complete, so a half-finished or failed load never shows up in a study. A direct `SELECT` on the tables is not blocked (the research session logs in as the database owner); the study checker is expected to insist on these readers. For filtered reads of the big filing list (one company, one year) use the view `sec.index_entries_complete` (rows of completed loads only) with a `load_id` filter: it answers in milliseconds, while `index_entries_of(n)` builds the whole load first and takes about 16 seconds. All four SEC tables, the filing list included, refuse `UPDATE`, `DELETE` and `TRUNCATE`.
 
 A command that finds nothing to load (a wrong `--folder`, a label file with no readable rows) stops with an explanation instead of recording an empty load. Rows that cannot be read are set aside with their reason, are counted in the preview, and are reported by `ggt db verify-data`.
+
+### Price tables side by side and their edit protection
+
+`market.prices_daily_sources` is a read-only view that lists every daily price set with its own
+label and nothing merged: `crsp_daily` (the raw CRSP file; `raw_close` is the absolute price,
+`is_midpoint` marks a negative price, which is a bid-ask midpoint, and `total_return` is CRSP's
+return), `crsp_derived_bars` (the spell-chained series in `adj_close`, with the raw price in
+`raw_close`) and `yahoo` (adjusted prices in the `adj_*` columns; Yahoo rows have no load number and
+the loader overwrites them in place, so the adjustment date is not recorded). A query must name
+the source it wants or it sees every source's rows; the view never picks a "best" source. Rows of
+loads that are not complete are hidden. Filter on `permno` (CRSP) or `symbol` (Yahoo) and on `date`
+to use the table indexes: one stock on one date answers in about 26 milliseconds. Each later price
+source is added as another branch of the view once it is loaded.
+
+`kaggle_crsp.daily`, `market.daily_bars` and `kaggle_chars.mcgill` refuse `UPDATE`, `DELETE` and
+`TRUNCATE` ("append-only table"). TimescaleDB does not allow an "always enabled" trigger on a table
+with compression on, so these triggers are the ordinary kind: they stop every normal statement,
+including on compressed chunks, but a superuser who sets `session_replication_role` to `replica`
+(as a restore does) can step around them. No loader edits or deletes rows in these tables.
