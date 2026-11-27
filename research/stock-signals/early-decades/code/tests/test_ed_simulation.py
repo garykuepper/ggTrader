@@ -112,11 +112,30 @@ def test_early_driver_writes_metadata_and_cells(monkeypatch, tmp_path, fake_inpu
     )
     data = json.loads(out.read_text())
     assert data["code_commit"] == "test-commit" and data["release_id"] == 1
+    assert data["status"] == "complete"
+    assert data["comparison_daily_curve"][-1][1] == pytest.approx(1.01 * 1.02 * 1.03)
     assert data["arm"] == "C" and len(data["rule_hash"]) == 64
     assert set(data["cells"][0]["periods"]) == {"early", "later", "combined"}
     assert data["comparison"]["early"]["label"] == "CRSP market return (stand-in)"
     assert data["comparison"]["later"]["label"] == "SPY"
     assert "max_drawdown" in data["comparison"]["later"]["metrics"]
+    (tmp_path / "early-decades" / "_early-C.claim").unlink()
+    partial = tmp_path / "partial.json"
+    monkeypatch.setattr(
+        ed_run, "period_metrics", lambda *args: (_ for _ in ()).throw(ValueError("metric failed"))
+    )
+    with pytest.raises(ValueError, match="metric failed"):
+        ed_run.run_early(
+            argparse.Namespace(
+                arm="C",
+                eval_start=ed_run.EARLY_START,
+                eval_end=ed_run.EARLY_END,
+                out=partial,
+                regression_proof=proof,
+            )
+        )
+    checkpoint = json.loads(partial.read_text())
+    assert checkpoint["status"] == "metrics_pending" and checkpoint["cells"]
     with pytest.raises(SystemExit, match="overwrite"):
         ed_run.run_early(
             argparse.Namespace(
@@ -249,3 +268,72 @@ def test_comparison_metrics_include_sale_tax_and_previous_close() -> None:
     )
     result = comparison_metrics(returns, "2020-01-03", "2020-01-06")
     assert result["growth"] == pytest.approx(1.1785)
+
+
+def test_period_metrics_handles_nonpositive_opening_value() -> None:
+    from ed_simulation import period_metrics
+
+    curve = pd.Series([0.0, -1.0], index=pd.to_datetime(["2020-01-02", "2020-01-03"]))
+    metrics = period_metrics(curve, "2020-01-02", "2020-01-03")
+    assert metrics["growth"] is None and metrics["cagr"] is None
+    assert metrics["sharpe"] is None and metrics["max_drawdown"] is None
+    assert metrics["nonpositive_opening"] is True
+
+
+def test_period_drawdown_capped_at_total_loss() -> None:
+    from ed_simulation import period_metrics
+
+    curve = pd.Series([100.0, -20.0], index=pd.to_datetime(["2020-01-02", "2020-01-03"]))
+    assert period_metrics(curve, "2020-01-02", "2020-01-03")["max_drawdown"] == -1.0
+
+
+def test_comparison_risk_uses_pretax_curve() -> None:
+    from ed_simulation import comparison_metrics
+
+    dates = pd.bdate_range("2020-01-02", periods=3)
+    result = comparison_metrics(
+        pd.Series([0.0, 1.0, 0.0], index=dates), str(dates[0].date()), str(dates[-1].date())
+    )
+    assert result["growth"] == pytest.approx(1.85)
+    assert result["max_drawdown"] == pytest.approx(0.0)
+
+
+def test_early_refuses_missing_git_head(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(ed_run, "git_sha", lambda _: None)
+    args = argparse.Namespace(
+        arm="A",
+        eval_start=ed_run.EARLY_START,
+        eval_end=ed_run.EARLY_END,
+        out=tmp_path / "out.json",
+        regression_proof=None,
+    )
+    with pytest.raises(SystemExit, match="git commit"):
+        ed_run.run_early(args)
+
+
+def test_dirty_check_ignores_untracked_but_detects_tracked_changes(tmp_path) -> None:
+    import subprocess
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    tracked = tmp_path / "tracked.txt"
+    tracked.write_text("before")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(tmp_path),
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-qm",
+            "initial",
+        ],
+        check=True,
+    )
+    (tmp_path / "proof.json").write_text("{}")
+    assert not ed_run.git_dirty(tmp_path)
+    tracked.write_text("after")
+    assert ed_run.git_dirty(tmp_path)

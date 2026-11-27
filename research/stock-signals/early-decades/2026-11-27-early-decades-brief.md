@@ -36,3 +36,9 @@ without a hypothetical sale at the first boundary. The comparison assumes a sale
 period end. Therefore a period-end strategy value can include unrealized gains and deferred tax;
 the sub-period readings do not represent two separately liquidated accounts. Realized gain totals
 are sale-time gains net of losses, before later wash-sale adjustments.
+
+For arm C, a reopening price is compared with the last observed price across at most ten missing
+trading sessions. The data preparation can join a gap of one to ten sessions when its other
+continuity checks pass; a longer gap starts a separate price-history column. Comparison Sharpe
+and deepest fall use its pre-tax daily curve; growth and yearly growth include tax once at the
+end of the reported period. The raw output includes that pre-tax daily curve.

@@ -150,15 +150,24 @@ def period_metrics(curve: pd.Series, start: str, end: str) -> dict[str, float | 
     if selected.empty:
         raise ValueError("no account values in the requested period")
     path = pd.concat([prior.iloc[-1:], selected]) if not prior.empty else selected
-    if path.isna().any() or path.iloc[0] <= 0:
-        raise ValueError("missing values or nonpositive opening account value")
+    if path.isna().any():
+        raise ValueError("missing account values")
+    if path.iloc[0] <= 0:
+        return {
+            "growth": None,
+            "cagr": None,
+            "max_drawdown": None,
+            "sharpe": None,
+            "nonpositive_opening": True,
+        }
     growth = float(path.iloc[-1] / path.iloc[0])
     days = (path.index[-1] - path.index[0]).days
     returns = path.pct_change().dropna()
     sharpe = float(stats.sharpe(returns)) if len(returns) and (path > 0).all() else float("nan")
-    drawdown = float((path / path.cummax() - 1).min())
+    drawdown = max(-1.0, float((path / path.cummax() - 1).min()))
     return {
         "growth": growth,
+        "nonpositive_opening": False,
         "cagr": growth ** (365.25 / days) - 1 if days and growth >= 0 else None,
         "max_drawdown": drawdown if math.isfinite(drawdown) else None,
         "sharpe": sharpe if math.isfinite(sharpe) else None,
@@ -199,5 +208,13 @@ def comparison_metrics(returns: pd.Series, start: str, end: str) -> dict[str, fl
     else:
         baseline = pd.Series([1.0], index=earlier.index[-1:])
         curve = pd.concat([baseline, (1.0 + selected).cumprod()])
-    curve.iloc[-1] -= max(float(curve.iloc[-1]) - 1.0, 0.0) * 0.15
-    return period_metrics(curve, start, end)
+    metrics = period_metrics(curve, start, end)
+    pretax_growth = metrics["growth"]
+    if pretax_growth is not None:
+        after_tax = pretax_growth - max(pretax_growth - 1.0, 0.0) * 0.15
+        days = (curve.index[-1] - curve.index[0]).days
+        metrics["growth"] = after_tax
+        metrics["cagr"] = after_tax ** (365.25 / days) - 1 if days else None
+    metrics["sharpe_pretax"] = metrics["sharpe"]
+    metrics["max_drawdown_pretax"] = metrics["max_drawdown"]
+    return metrics

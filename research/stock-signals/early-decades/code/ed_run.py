@@ -4,11 +4,12 @@ import argparse
 import hashlib
 import json
 import shlex
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ggTrader.utils.binding import git_dirty, git_sha
+from ggTrader.utils.binding import git_sha
 from ggTrader.utils.io import write_json
 from ggTrader.utils.study import bootstrap, study_dir
 
@@ -30,6 +31,18 @@ START = "2020-01-02"
 END = "2024-12-31"
 EARLY_START = "1969-02-03"
 EARLY_END = "1998-07-31"
+
+
+def git_dirty(root: Path) -> bool:
+    """Check tracked modifications while allowing untracked result artifacts."""
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return bool(result.stdout.strip())
 
 
 def rule_hash() -> str:
@@ -68,6 +81,9 @@ def run_early(args: argparse.Namespace) -> None:
         raise SystemExit("early window dates must match the registration")
     if args.out.exists():
         raise SystemExit("refusing to overwrite an existing result")
+    current_commit = git_sha(ROOT)
+    if not current_commit:
+        raise SystemExit("early run requires a recorded git commit")
     if args.regression_proof is None:
         raise SystemExit("the matching 2020–2024 regression output is required")
     proof = json.loads(args.regression_proof.read_text())
@@ -89,7 +105,7 @@ def run_early(args: argparse.Namespace) -> None:
     ):
         raise SystemExit("regression output does not exactly match the saved cells")
     if (proof.get("code_commit"), proof.get("rule_hash"), proof.get("clean")) != (
-        git_sha(ROOT),
+        current_commit,
         rule_hash(),
         True,
     ):
@@ -102,7 +118,7 @@ def run_early(args: argparse.Namespace) -> None:
                 json.dumps(
                     {
                         "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "git_head": git_sha(ROOT),
+                        "git_head": current_commit,
                         "command": shlex.join(sys.argv),
                         "output": str(args.out),
                     }
@@ -111,12 +127,34 @@ def run_early(args: argparse.Namespace) -> None:
             )
     except FileExistsError as exc:
         raise SystemExit(f"early arm {args.arm} already claimed: {claim}") from exc
+    checkpoint = {
+        "status": "loading",
+        "eval_start": EARLY_START,
+        "eval_end": EARLY_END,
+        "arm": args.arm,
+        "release_id": 1,
+        "code_commit": current_commit,
+        "rule_hash": rule_hash(),
+    }
+    write_json(args.out, checkpoint)
     inputs = ed_inputs.read_early_inputs(EARLY_START, EARLY_END, 1, 1)
     if inputs["provenance"].get("drift"):
         raise SystemExit("linked Yahoo drift found during input read; claim retained")
     comparison = comparison_returns(EARLY_START, EARLY_END)
     validate_calendar(inputs["close"].index, comparison, EARLY_START, EARLY_END)
     cells = simulate_arm(args.arm, inputs, EARLY_START, EARLY_END)
+    checkpoint.update(
+        {
+            "status": "metrics_pending",
+            "cells": cells,
+            "data_provenance": inputs["provenance"],
+            "comparison_daily_curve": [
+                [str(day.date()), float(value)]
+                for day, value in (1.0 + comparison).cumprod().items()
+            ],
+        }
+    )
+    write_json(args.out, checkpoint)
     for cell in cells:
         account = study.pd.Series(
             [row[1] for row in cell["account_value_daily"]],
@@ -130,12 +168,14 @@ def run_early(args: argparse.Namespace) -> None:
     first = comparison.loc[:"1993-01-29"]
     second = comparison.loc["1993-02-01":]
     result = {
+        "status": "complete",
+        "comparison_daily_curve": checkpoint["comparison_daily_curve"],
         "eval_start": EARLY_START,
         "eval_end": EARLY_END,
         "release_id": 1,
         "crsp_load": 1,
         "rule_hash": rule_hash(),
-        "code_commit": git_sha(ROOT),
+        "code_commit": current_commit,
         "arm": args.arm,
         "cells": cells,
         "loss_monotone_violations": loss_monotone(cells),

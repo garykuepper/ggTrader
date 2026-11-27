@@ -138,3 +138,28 @@ def test_arm_b_historical_execution_intervals_and_first_lot(monkeypatch) -> None
     book.buy("A", 1, 100, steps[0].date)
     realized = book.sell("A", 1, 200, steps[1].date)
     assert realized[0].term == "LT"
+
+
+@pytest.mark.parametrize(("gap", "expected"), [(10, "B"), (11, "A")])
+def test_jump_gap_bridge_limit(gap: int, expected: str) -> None:
+    from ed_arms import plan_arm_trades
+
+    index = pd.bdate_range("2019-01-01", "2020-03-31")
+    close = pd.DataFrame({"A": 10.0, "B": 10.0}, index=index)
+    reopening = index.get_loc(pd.Timestamp("2019-12-23"))
+    close.iloc[reopening - gap : reopening, 0] = float("nan")
+    close.iloc[reopening:, 0] = 15.0
+    eligible = pd.DataFrame(True, index=index, columns=close.columns)
+    spans = pd.DataFrame(columns=["symbol", "last_date", "has_successor"])
+    steps = plan_arm_trades(
+        "C",
+        close,
+        eligible,
+        spans,
+        top_n=1,
+        lookback=60,
+        skip=5,
+        start="2020-01-01",
+        end="2020-03-31",
+    )
+    assert steps[0].targets == {expected: 1.0}

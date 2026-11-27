@@ -32,3 +32,10 @@ not drifted. Claims are `research/stock-signals/early-decades/_early-A.claim`, `
 and `_early-C.claim`; each records the time, commit, command and output path. If a crash occurred
 before any scoring, only the owner may decide to remove the affected claim file after checking
 that no result was produced. Keep a claim when scoring may have occurred.
+
+The regression proof can be written to `research/stock-signals/early-decades/_regression.json`
+and supplied with `--regression-proof` for each arm. Put each arm's `--out` at
+`research/stock-signals/early-decades/_early-A.json`, `_early-B.json` or `_early-C.json`.
+These files are ignored by Git and must not be committed: the proof is tied to the code commit.
+The preflight checks changes to tracked files; it permits untracked output files. A result marked
+`loading` or `metrics_pending` is a checkpoint, not a completed result, and its claim remains.
