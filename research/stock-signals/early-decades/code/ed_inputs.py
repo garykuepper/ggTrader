@@ -96,3 +96,42 @@ def read_inputs(args: argparse.Namespace) -> dict[str, Any]:
 
 def _naive(index: pd.DatetimeIndex) -> pd.DatetimeIndex:
     return index.tz_convert(None) if index.tz is not None else index
+
+
+def read_early_inputs(start: str, end: str, release_id: int, crsp_load: int) -> dict[str, Any]:
+    """Read point-in-time eligibility and closes for the registered early window."""
+    from ggTrader.data.bars import connect_readonly
+
+    read_start = (pd.Timestamp(start) - pd.Timedelta(days=study.WARMUP_CALENDAR_DAYS)).strftime(
+        "%Y-%m-%d"
+    )
+    fields_start = (pd.Timestamp(start) - pd.DateOffset(months=1)).replace(day=1)
+    conn = connect_readonly()
+    try:
+        release_spans = bars_reader.read_release_spans(conn, release_id)
+        fields = universe_frames.month_end_fields(
+            conn, crsp_load, fields_start.strftime("%Y-%m-%d"), end
+        )
+    finally:
+        conn.close()
+    days = pd.bdate_range(start, end)
+    ever = universe_frames.eligibility(fields, release_spans, universe="A", daily_index=days)
+    candidates = sorted(ever.columns[ever.to_numpy().any(axis=0)])
+    del ever
+    provenance: dict[str, Any] = {}
+    close, spans = bars_reader.read_close_batched(
+        candidates, read_start, end, release_id=release_id, provenance_out=provenance
+    )
+    wanted = release_spans[release_spans["symbol"].isin(candidates)]
+    window_days = _naive(close.index)
+    window_days = window_days[window_days >= pd.Timestamp(start)]
+    eligible = universe_frames.eligibility(
+        fields, wanted, universe="A", daily_index=window_days
+    ).reindex(columns=close.columns, fill_value=False)
+    return {
+        "close": close,
+        "eligible": eligible,
+        "span_rows": spans,
+        "release_spans": release_spans,
+        "provenance": provenance,
+    }
