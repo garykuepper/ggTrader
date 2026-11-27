@@ -239,3 +239,13 @@ def test_preflight_refuses_linked_yahoo_drift(monkeypatch) -> None:
     monkeypatch.setattr(ed_run, "read_linked_drift", lambda: ["DRIFTED"])
     with pytest.raises(SystemExit, match="drift"):
         ed_run.preflight()
+
+
+def test_comparison_metrics_include_sale_tax_and_previous_close() -> None:
+    from ed_simulation import comparison_metrics
+
+    returns = pd.Series(
+        [0.0, 0.1, 0.1], index=pd.to_datetime(["2020-01-02", "2020-01-03", "2020-01-06"])
+    )
+    result = comparison_metrics(returns, "2020-01-03", "2020-01-06")
+    assert result["growth"] == pytest.approx(1.1785)
