@@ -1,15 +1,15 @@
-"""Read the registered market comparison without silently joining the missing January gap."""
+"""Read the market stand-in and SPY comparison returns on their registered dates."""
 
 import pandas as pd
 
 from ggTrader.data.bars import connect_readonly
 
-SPY_START = pd.Timestamp("1993-01-29")
-CRSP_END = pd.Timestamp("1992-12-31")
+CRSP_END = pd.Timestamp("1993-01-29")
+SPY_START = pd.Timestamp("1993-02-01")
 
 
 def comparison_label(start: str, end: str) -> str:
-    """Name the single source for the requested period; reject the uncovered gap."""
+    """Name the source for a period, or the combined comparison across the join."""
     first, last = pd.Timestamp(start), pd.Timestamp(end)
     if first > last:
         raise ValueError("start must not follow end")
@@ -17,46 +17,57 @@ def comparison_label(start: str, end: str) -> str:
         return "CRSP market return (stand-in)"
     if first >= SPY_START:
         return "SPY"
-    raise ValueError("comparison unavailable for 1993-01-01 through 1993-01-28")
+    return "CRSP market return (stand-in) + SPY"
 
 
 def comparison_returns(start: str, end: str) -> pd.Series:
-    """Return daily returns for one covered period from a read-only connection."""
+    """Read dated returns, including SPY's return from its first close to the next."""
     label = comparison_label(start, end)
+    first, last = pd.Timestamp(start), pd.Timestamp(end)
     conn = connect_readonly()
     try:
         with conn.cursor() as cursor:
-            if label == "SPY":
-                cursor.execute(
-                    "SELECT date, close FROM market.spy_daily_yahoo_1993_1999 "
-                    "WHERE date BETWEEN %s AND %s ORDER BY date",
-                    (start, end),
-                )
-            else:
+            parts = []
+            if first <= CRSP_END:
                 cursor.execute(
                     "SELECT date, min(vwretd), max(vwretd) FROM kaggle_crsp.daily_of(1) "
                     "WHERE date BETWEEN %s AND %s GROUP BY date ORDER BY date",
-                    (start, end),
+                    (start, min(last, CRSP_END).date()),
                 )
-            rows = cursor.fetchall()
+                rows = cursor.fetchall()
+                if not rows or any(row[1] is None or row[1] != row[2] for row in rows):
+                    raise ValueError("CRSP market returns missing or inconsistent")
+                parts.append(
+                    pd.Series(
+                        [r[1] for r in rows],
+                        index=pd.to_datetime([r[0] for r in rows]),
+                        dtype=float,
+                    )
+                )
+            if last >= SPY_START:
+                spy_first = max(first, SPY_START)
+                cursor.execute(
+                    "SELECT date, close FROM market.spy_daily_yahoo_1993_1999 "
+                    "WHERE date BETWEEN (SELECT max(date) FROM market.spy_daily_yahoo_1993_1999 "
+                    "WHERE date < %s) AND %s ORDER BY date",
+                    (spy_first.date(), end),
+                )
+                rows = cursor.fetchall()
+                if len(rows) < 2:
+                    raise ValueError("SPY needs a preceding close")
+                prices = pd.Series(
+                    [r[1] for r in rows], index=pd.to_datetime([r[0] for r in rows]), dtype=float
+                )
+                if prices.isna().any() or (prices <= 0).any():
+                    raise ValueError("invalid SPY prices")
+                parts.append(prices.pct_change(fill_method=None).iloc[1:])
     finally:
         conn.close()
-    if not rows:
-        raise ValueError("comparison has no observations")
-    dates = pd.DatetimeIndex([row[0] for row in rows])
-    if dates.has_duplicates or not dates.is_monotonic_increasing:
+    returns = pd.concat(parts)
+    if returns.index.has_duplicates or not returns.index.is_monotonic_increasing:
         raise ValueError("comparison dates must be unique and ordered")
-    if dates[0] != pd.Timestamp(start) or dates[-1] != pd.Timestamp(end):
+    if returns.empty or returns.index[0] != first or returns.index[-1] != last:
         raise ValueError("comparison does not cover both requested endpoints")
-    if label == "SPY":
-        prices = pd.Series([row[1] for row in rows], index=dates, dtype=float)
-        if prices.isna().any() or (prices <= 0).any():
-            raise ValueError("invalid SPY prices")
-        returns = prices.pct_change(fill_method=None).fillna(0.0)
-    else:
-        if any(row[1] is None or row[1] != row[2] for row in rows):
-            raise ValueError("CRSP market returns missing or inconsistent")
-        returns = pd.Series([row[1] for row in rows], index=dates, dtype=float)
     return returns.rename(label)
 
 
