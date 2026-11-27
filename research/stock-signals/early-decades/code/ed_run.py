@@ -3,9 +3,12 @@
 import argparse
 import hashlib
 import json
+import shlex
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
-from ggTrader.utils.binding import git_sha
+from ggTrader.utils.binding import git_dirty, git_sha
 from ggTrader.utils.io import write_json
 from ggTrader.utils.study import bootstrap, study_dir
 
@@ -14,7 +17,14 @@ ROOT = bootstrap(__file__)
 import ed_dead_stock_first_test as study  # noqa: E402
 import ed_inputs  # noqa: E402
 from ed_comparison import after_tax_growth, comparison_returns  # noqa: E402
-from ed_simulation import simulate_arm, validate_calendar  # noqa: E402
+from ed_ledger_run import TaxParams, run_spy  # noqa: E402
+from ed_simulation import (
+    comparison_metrics,
+    loss_monotone,
+    period_metrics,
+    simulate_arm,
+    validate_calendar,
+)  # noqa: E402
 
 START = "2020-01-02"
 END = "2024-12-31"
@@ -32,6 +42,26 @@ def rule_hash() -> str:
     return digest.hexdigest()
 
 
+def read_linked_drift() -> list[str]:
+    """Check pinned Yahoo links without reading the study window."""
+    from ggTrader.data.bars import connect_readonly
+
+    conn = connect_readonly()
+    try:
+        return ed_inputs.bars_reader.read_linked_drift(conn, 1)
+    finally:
+        conn.close()
+
+
+def preflight() -> None:
+    """Refuse a dirty checkout or a drifted release before claiming the window."""
+    if git_dirty(ROOT):
+        raise SystemExit("dirty git tree; commit or remove changes before scoring")
+    drift = read_linked_drift()
+    if drift:
+        raise SystemExit(f"linked Yahoo drift detected in {len(drift)} symbols")
+
+
 def run_early(args: argparse.Namespace) -> None:
     """Read the pinned early window and write its six cells with provenance."""
     if (args.eval_start, args.eval_end) != (EARLY_START, EARLY_END):
@@ -44,7 +74,12 @@ def run_early(args: argparse.Namespace) -> None:
     saved = json.loads(
         (study_dir(__file__).parent / "dead-stock-first-test" / "_holdout-A.json").read_text()
     )
-    keys = [study.cell_key(0.0, 0.00183, tax) for tax in ("low", "high")]
+    keys = [
+        study.cell_key(loss, cost, tax)
+        for loss in study.LOSSES
+        for cost in study.COSTS
+        for tax in study.TAXES
+    ]
     expected = {key: saved["result"]["strategy"][key] for key in keys}
     if (proof.get("start"), proof.get("end"), proof.get("matches"), proof.get("cell")) != (
         START,
@@ -53,16 +88,45 @@ def run_early(args: argparse.Namespace) -> None:
         expected,
     ):
         raise SystemExit("regression output does not exactly match the saved cells")
+    if (proof.get("code_commit"), proof.get("rule_hash"), proof.get("clean")) != (
+        git_sha(ROOT),
+        rule_hash(),
+        True,
+    ):
+        raise SystemExit("regression proof does not match the current clean code")
+    preflight()
     claim = study_dir(__file__) / f"_early-{args.arm}.claim"
     try:
         with claim.open("x", encoding="utf-8") as handle:
-            handle.write(f"output: {args.out}\n")
+            handle.write(
+                json.dumps(
+                    {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "git_head": git_sha(ROOT),
+                        "command": shlex.join(sys.argv),
+                        "output": str(args.out),
+                    }
+                )
+                + "\n"
+            )
     except FileExistsError as exc:
         raise SystemExit(f"early arm {args.arm} already claimed: {claim}") from exc
     inputs = ed_inputs.read_early_inputs(EARLY_START, EARLY_END, 1, 1)
+    if inputs["provenance"].get("drift"):
+        raise SystemExit("linked Yahoo drift found during input read; claim retained")
     comparison = comparison_returns(EARLY_START, EARLY_END)
     validate_calendar(inputs["close"].index, comparison, EARLY_START, EARLY_END)
     cells = simulate_arm(args.arm, inputs, EARLY_START, EARLY_END)
+    for cell in cells:
+        account = study.pd.Series(
+            [row[1] for row in cell["account_value_daily"]],
+            index=study.pd.to_datetime([row[0] for row in cell["account_value_daily"]]),
+        )
+        cell["periods"] = {
+            "early": period_metrics(account, EARLY_START, "1993-01-29"),
+            "later": period_metrics(account, "1993-02-01", EARLY_END),
+            "combined": period_metrics(account, EARLY_START, EARLY_END),
+        }
     first = comparison.loc[:"1993-01-29"]
     second = comparison.loc["1993-02-01":]
     result = {
@@ -74,6 +138,7 @@ def run_early(args: argparse.Namespace) -> None:
         "code_commit": git_sha(ROOT),
         "arm": args.arm,
         "cells": cells,
+        "loss_monotone_violations": loss_monotone(cells),
         "data_provenance": inputs["provenance"],
         "comparison": {
             "early": {
@@ -81,14 +146,17 @@ def run_early(args: argparse.Namespace) -> None:
                 "end": "1993-01-29",
                 "label": "CRSP market return (stand-in)",
                 "growth_after_tax": after_tax_growth(first, 0.15),
+                "metrics": comparison_metrics(comparison, EARLY_START, "1993-01-29"),
             },
             "later": {
                 "start": "1993-02-01",
                 "end": EARLY_END,
                 "label": "SPY",
                 "growth_after_tax": after_tax_growth(second, 0.15),
+                "metrics": comparison_metrics(comparison, "1993-02-01", EARLY_END),
             },
             "combined_growth_after_tax": after_tax_growth(comparison, 0.15),
+            "combined_metrics": comparison_metrics(comparison, EARLY_START, EARLY_END),
         },
     }
     write_json(args.out, result)
@@ -109,33 +177,67 @@ def main() -> None:
         return
     if (args.arm, args.eval_start, args.eval_end) != ("A", START, END):
         parser.error("holdout regression requires arm A and the registered 2020–2024 dates")
-    args.universe = "A"
-    args.release_id = 1
-    args.crsp_load = 1
-    inputs = ed_inputs.read_inputs(args)
-    result = study.run_study(
-        inputs["close"],
-        inputs["spy_close"],
-        inputs["eligible"],
-        inputs["span_rows"],
-        start=START,
-        end=END,
-        release_spans=inputs["release_spans"],
+    if git_dirty(ROOT):
+        raise SystemExit("dirty git tree; commit or remove changes before regression")
+    regression_commit = git_sha(ROOT)
+    regression_hash = rule_hash()
+    if not regression_commit:
+        raise SystemExit("regression requires a recorded git commit")
+    inputs = ed_inputs.read_early_inputs(START, END, 1, 1)
+    read_start = (
+        study.pd.Timestamp(START) - study.pd.Timedelta(days=study.WARMUP_CALENDAR_DAYS)
+    ).strftime("%Y-%m-%d")
+    spy, _ = ed_inputs.bars_reader.read_close_batched(["SPY"], read_start, END, release_id=1)
+    cells = simulate_arm(
+        "A",
+        inputs,
+        START,
+        END,
+        costs=study.COSTS,
+        taxes=tuple((name, *rates) for name, rates in study.TAXES.items()),
     )
     saved = json.loads(
         (study_dir(__file__).parent / "dead-stock-first-test" / "_holdout-A.json").read_text()
-    )
-    keys = [study.cell_key(0.0, 0.00183, tax) for tax in ("low", "high")]
-    actual = {key: result["strategy"][key] for key in keys}
-    expected = {key: saved["result"]["strategy"][key] for key in keys}
-    args.out.write_text(
-        json.dumps(
-            {"start": START, "end": END, "cell": actual, "matches": actual == expected}, indent=2
-        )
-        + "\n"
+    )["result"]["strategy"]
+    spy_cagr = {}
+    for cost in study.COSTS:
+        for tax, rates in study.TAXES.items():
+            book = run_spy(
+                spy["SPY"],
+                params=TaxParams(*rates),
+                one_way_cost=cost,
+                start=START,
+                end=END,
+                start_cash=study.START_CASH,
+            )
+            spy_cagr[(cost, tax)] = book.cagr_after_tax
+    actual = {}
+    for cell in cells:
+        key = study.cell_key(cell["dead_stock_loss"], cell["cost"], cell["tax"])
+        result = {field: cell[field] for field in saved[key] if field in cell}
+        result["loss"] = cell["dead_stock_loss"]
+        result["one_way_cost"] = cell["cost"]
+        result["gap_cagr_after_tax_pp"] = (
+            cell["cagr_after_tax"] - spy_cagr[(cell["cost"], cell["tax"])]
+        ) * 100.0
+        actual[key] = result
+    expected = {key: saved[key] for key in saved}
+    if git_dirty(ROOT) or git_sha(ROOT) != regression_commit or rule_hash() != regression_hash:
+        raise SystemExit("code or checkout changed during regression; no proof written")
+    write_json(
+        args.out,
+        {
+            "start": START,
+            "end": END,
+            "cell": actual,
+            "matches": actual == expected,
+            "code_commit": regression_commit,
+            "rule_hash": regression_hash,
+            "clean": True,
+        },
     )
     if actual != expected:
-        raise SystemExit("Regression did not match the saved cell exactly")
+        raise SystemExit("Regression did not match the saved cells exactly")
     print("Regression matched exactly")
 
 

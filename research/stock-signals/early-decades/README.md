@@ -1,6 +1,6 @@
 # early-decades
 
-**Question:** TODO: state the one question this study answers, in one sentence.
+**Question:** How do the three fixed recent-winner rules compare with the market after costs and taxes?
 
 **Kind:** screen. **Status:** open. **Category:** stock-signals (placement row 9).
 
@@ -8,13 +8,13 @@
 
 - Brief (registered plan): [2026-11-27-early-decades-brief.md](2026-11-27-early-decades-brief.md)
 - Study card: [study.toml](study.toml)
-- Code: [code/](code/) (driver [code/run.py](code/run.py), module [code/early_decades.py](code/early_decades.py))
+- Code: [code/](code/) (driver [code/ed_run.py](code/ed_run.py))
 
 ## How to reproduce
 
 Run the driver from the repository root:
 
-    .venv/bin/python research/stock-signals/early-decades/code/run.py --help
+    .venv/bin/python research/stock-signals/early-decades/code/ed_run.py --help
 
 When the study closes, `PIN.json` records the commit, lock hash, data hashes and the exact
 command, and the study tool re-runs it in a scratch clone (the repro subcommand).
@@ -26,3 +26,9 @@ window. After the owner authorizes the one-time runs, pass `--window early --arm
 serially. Each arm claims its window before data are read; a claim remains after a failed run
 and requires the owner to decide what to do. Each output contains six cells (two costs by three
 loss readings), for 18 across all three arms.
+
+Before claiming, the driver checks that the checkout is clean and the linked Yahoo data have
+not drifted. Claims are `research/stock-signals/early-decades/_early-A.claim`, `_early-B.claim`
+and `_early-C.claim`; each records the time, commit, command and output path. If a crash occurred
+before any scoring, only the owner may decide to remove the affected claim file after checking
+that no result was produced. Keep a claim when scoring may have occurred.

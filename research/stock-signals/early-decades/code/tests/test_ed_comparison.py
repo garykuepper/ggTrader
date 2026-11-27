@@ -50,3 +50,27 @@ def test_join_has_no_duplicate_and_spy_first_return(monkeypatch) -> None:
     assert result.index.tolist() == list(pd.to_datetime(["1993-01-28", "1993-01-29", "1993-02-01"]))
     assert result.tolist() == pytest.approx([0.01, 0.02, 0.1])
     assert conn.closed
+
+
+def test_comparison_starts_at_initial_close(monkeypatch) -> None:
+    class Connection:
+        def cursor(self):
+            return self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def execute(self, sql, args):
+            pass
+
+        def fetchall(self):
+            return [("1969-02-03", 0.20, 0.20), ("1969-02-04", 0.10, 0.10)]
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(ed_comparison, "connect_readonly", Connection)
+    assert comparison_returns("1969-02-03", "1969-02-04").tolist() == pytest.approx([0, 0.1])

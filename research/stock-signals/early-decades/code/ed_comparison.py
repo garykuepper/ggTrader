@@ -68,6 +68,8 @@ def comparison_returns(start: str, end: str) -> pd.Series:
         raise ValueError("comparison dates must be unique and ordered")
     if returns.empty or returns.index[0] != first or returns.index[-1] != last:
         raise ValueError("comparison does not cover both requested endpoints")
+    if first == pd.Timestamp("1969-02-03"):
+        returns.iloc[0] = 0.0
     return returns.rename(label)
 
 

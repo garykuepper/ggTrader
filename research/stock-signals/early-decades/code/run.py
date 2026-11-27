@@ -1,48 +1,26 @@
-"""Driver for the early-decades study: run it with --help for the options."""
-
-from __future__ import annotations
+"""Compatibility entry point for the early-decades driver."""
 
 import argparse
-from pathlib import Path
 
-from ggTrader.utils.binding import binding
-from ggTrader.utils.io import write_json
-from ggTrader.utils.paths import EVAL_END_17, EVAL_START_17
-from ggTrader.utils.study import bootstrap, study_dir
+from ggTrader.utils.study import bootstrap
 
-ROOT = bootstrap(__file__)
+bootstrap(__file__)
 
-import early_decades  # noqa: E402  (found on sys.path through bootstrap)
+import ed_run  # noqa: E402
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """The command line: the evaluation window is pinned, never "today"."""
+def main() -> None:
+    """Validate arguments and invoke the registered driver."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--eval-start", default=EVAL_START_17, help="first evaluation date")
-    parser.add_argument("--eval-end", default=EVAL_END_17, help="last evaluation date")
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=study_dir(__file__) / "_early_decades_results.json",
-        help="results JSON to write",
-    )
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Run the study and write its results JSON with a provenance block."""
-    args = build_parser().parse_args(argv)
-    result = early_decades.run_study(args.eval_start, args.eval_end)
-    payload = {
-        "study": "early-decades",
-        "eval_start": args.eval_start,
-        "eval_end": args.eval_end,
-        "result": result,
-        "provenance": binding(ROOT),
-    }
-    write_json(args.out, payload)
-    return 0
+    parser.add_argument("--window", choices=["holdout", "early"], required=True)
+    parser.add_argument("--arm", choices=["A", "B", "C"], required=True)
+    parser.add_argument("--eval-start", required=True)
+    parser.add_argument("--eval-end", required=True)
+    parser.add_argument("--out", required=True)
+    parser.add_argument("--regression-proof")
+    parser.parse_args()
+    ed_run.main()
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

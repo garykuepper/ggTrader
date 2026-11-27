@@ -2,7 +2,7 @@
 id = "early-decades"
 category = "stock-signals"
 placement_rule = 9
-question = "TODO: state the one question this study answers, in one sentence."
+question = "How do the three fixed recent-winner rules compare with the market after costs and taxes?"
 kind = "screen"
 status = "open"
 verdict = ""
