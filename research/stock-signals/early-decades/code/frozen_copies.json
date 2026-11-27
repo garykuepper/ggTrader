@@ -1,0 +1,46 @@
+{
+  "dm_dead_stock_first_test.py": {
+    "copy": "ed_dead_stock_first_test.py",
+    "source_sha256": "0738899aa9c94b36e86271d8e4b6306022b1b5463b31a5802379a2d75fc18bc8",
+    "copy_sha256": "89e6f814cee7bae924cb610d03f62f5a609dd603c35563854ed8a52ac6fd3557",
+    "substitutions": [
+      [
+        "from dm_ledger_run import BookResult, TaxParams, run_book, run_spy\n",
+        "from ed_ledger_run import BookResult, TaxParams, run_book, run_spy\n"
+      ],
+      [
+        "from dm_replay import (\n",
+        "from ed_replay import (\n"
+      ]
+    ]
+  },
+  "dm_bars_reader.py": {
+    "copy": "ed_bars_reader.py",
+    "source_sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618",
+    "copy_sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618",
+    "substitutions": []
+  },
+  "dm_ledger_run.py": {
+    "copy": "ed_ledger_run.py",
+    "source_sha256": "8288f102f0c923bad042a7364b7888ea0c8a394585ddbf61dd53f294037d33cd",
+    "copy_sha256": "a7b3a7ddbd71a7b90db4e06c0fd0184aca0c851706e1e84a4e047714b7e3cbf0",
+    "substitutions": [
+      [
+        "from dm_replay import (\n",
+        "from ed_replay import (\n"
+      ]
+    ]
+  },
+  "dm_replay.py": {
+    "copy": "ed_replay.py",
+    "source_sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a",
+    "copy_sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a",
+    "substitutions": []
+  },
+  "dm_universe_frames.py": {
+    "copy": "ed_universe_frames.py",
+    "source_sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc",
+    "copy_sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc",
+    "substitutions": []
+  }
+}

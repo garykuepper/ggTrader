@@ -1,0 +1,14 @@
+# Study card. Read by scripts/study.py check; edit by hand.
+id = "early-decades"
+category = "stock-signals"
+placement_rule = 9
+question = "TODO: state the one question this study answers, in one sentence."
+kind = "screen"
+status = "open"
+verdict = ""
+aliases = []
+brief = "2026-11-27-early-decades-brief.md"
+reports = []
+results = []
+uses_lib = []
+allow_paper_imports = false
