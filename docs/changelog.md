@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-27 (backup test and SPY history)
+
+- The 2026-11-26 full dump passed a test restore into a disposable database (78 of 78 row counts, 6 of 6 checksums). Added a frozen free Yahoo SPY table for 1993–1999 and removed the old `attempts` dump folder at the owner's request. `scripts/db_restore_drill.py` gained `--scratch-root PATH` so a test restore can build its temporary copy on the main drive instead of the busy RAID.
+
 ## 2026-11-26 (cleanup and next research)
 
 - Documented the consolidated database and its limits, recorded research windows already used, and prepared an agenda for the owner’s next study choices. Refreshed the next-steps status and links and the research snapshot and both research prompt templates’ context; the paper trader remains stopped.

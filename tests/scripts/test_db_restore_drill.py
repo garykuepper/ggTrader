@@ -449,3 +449,56 @@ def test_post_restore_error_reports_stage_and_server_message(
     assert report["stage"] == "post-restore"
     assert report["server_message"] == "server says no"
     assert "secret" not in out.read_text()
+
+
+def test_refuses_scratch_root_equal_to_filesystem_root() -> None:
+    with pytest.raises(ValueError):
+        drill.refuse_unsafe(drill.container_name("abc"), Path("/x"), root=Path("/"))
+
+
+def test_custom_root_accepts_own_folder_and_refuses_outside(tmp_path: Path) -> None:
+    name = drill.container_name("abc")
+    drill.refuse_unsafe(name, tmp_path / "s" / name, root=tmp_path / "s")
+    with pytest.raises(ValueError):
+        drill.refuse_unsafe(name, tmp_path / "other" / name, root=tmp_path / "s")
+
+
+def test_space_path_uses_nearest_existing_parent(tmp_path: Path) -> None:
+    assert drill.space_path(tmp_path / "a" / "b") == tmp_path
+
+
+def test_scratch_root_option_places_folder_and_checks_that_drive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    fast = tmp_path / "fast"
+    seen: list[Path] = []
+
+    def usage(path: Path) -> SimpleNamespace:
+        seen.append(path)
+        return SimpleNamespace(free=10**12)
+
+    drill.main(
+        [*args, "--scratch-root", str(fast), "--keep"],
+        runner=runner,
+        connect=connect,
+        disk_usage=usage,
+    )
+    assert seen == [tmp_path]
+    run = calls[0]
+    assert run[run.index("-v") + 1].startswith(str(fast))
+    assert not root.exists()
+
+
+def test_scratch_root_low_space_refuses_and_creates_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    args, calls, runner, connect, root, out = setup_drill(tmp_path, monkeypatch)
+    fast = tmp_path / "fast"
+    status = drill.main(
+        [*args, "--scratch-root", str(fast)],
+        runner=runner,
+        connect=connect,
+        disk_usage=lambda path: SimpleNamespace(free=1),
+    )
+    assert status == 2 and not fast.exists() and not calls

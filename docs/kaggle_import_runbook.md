@@ -85,6 +85,7 @@ scripts/run_capped.sh .venv/bin/python scripts/db_restore_drill.py --dump DUMP -
 
 `--sums PATH` selects a checksum file; otherwise the drill uses `SHA256SUMS` beside the dump.
 `--image IMAGE` selects the container image, and `--keep` retains the scratch container and files.
+`--scratch-root PATH` chooses the folder where the test builds its temporary copy of the database (the default is the `thesix` RAID). The full database needs about 25 GB and many small writes, which slow other jobs on a spinning RAID, so for a daytime or busy-drive test use a folder on the main drive outside the git checkout; the free-space check follows that folder's drive, and `/` or a folder inside the repository is refused.
 The report's `ok` says whether all recorded counts and digests matched; `stage` identifies where a
 failure occurred and `error` names its error type. `server_message`, when present, is the database
 server's primary error message. `catalog_version_aligned` says whether the drill updated the

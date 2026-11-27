@@ -18,6 +18,7 @@ US Securities and Exchange Commission, which collects company filings.
 | `market.daily_bars`, 3 | Prices derived from CRSP | 68,879,302 | 1968-01-02–2024-12-31 | `includes_dead_stocks`: includes stocks that later stopped trading | `market.prices_daily_sources` with a source filter; `load_bars(source="combined")` | 914,341,888 bytes |
 | `public.ohlcv` Yahoo stocks, no load number | Daily Yahoo prices | 5,777,834 | 2000-01-03–2026-11-05 | Yahoo stock rows; not a complete dead-stock history | `load_bars()` or `market.prices_daily_sources` with a source filter | Stock-only size not measured; shared table 13,345,120,256 bytes |
 | `market.yahoo_daily_frozen_20261126`, no load number | Frozen copy of Yahoo stocks | 5,777,834 | 2000-01-03–2026-11-05 | Same row count and dates as current Yahoo stocks; contents not compared here | Direct `SELECT` on the frozen table; no helper exists | 780,673,024 bytes |
+| `market.spy_daily_yahoo_1993_1999`, no load number | Frozen free Yahoo SPY (the S&P 500 fund) daily prices, adjusted as fetched on 2026-11-26 | 1,749 | 1993-01-29–1999-12-31 | One fund, not a stock source | Direct `SELECT` on the table; manifest `spy_1993_1999_20261126.json` beside the dumps | Not measured |
 | `sec` loads 4–9 | Saved SEC responses, filing lists, headers and study labels | 24,381,694 accepted across loads | Filing list 1999-01-04–2025-03-31; headers 2000-02-08–2004-11-19; labels 2000-02-01–2024-07-05 | `not_a_stock_source`: cached material is partial | `sec.*_of(load_id)`; use `sec.index_entries_complete` for filtered filing-list reads | Filing list 5,755,314,176 bytes; other tables in measurements |
 | `universe` loads 1–3 | S&P 500 membership history | Latest load records 1,269 membership periods | Latest load 1996-01-02–2026-11-04 | S&P 500, not the whole market | `MembershipSource`, selecting `db` or `db:<load_id>` | Membership table 294,912 bytes; other tables in measurements |
 | `market.stock_spans` | Stock history spans in a published release | 29,283 | 1968-01-02–2026-11-05 | Includes linked and unlinked stocks | Read alongside the published release | 4,587,520 bytes |
@@ -70,6 +71,10 @@ the held free sources; this inventory does not establish whether any other free 
 column for any year; Yahoo's daily stock table has a volume column and price rows from 2000-01-03 onward, with
 incomplete market coverage. See the market-data audit at `/media/thesix/ggTrader-data/market-data/README.md`
 and the [research design](superpowers/specs/2026-11-21-all-stocks-honest-test-bench-design.md).
+
+## Backups
+
+The newest full dump is `ggtrader_20261126.dump` (12,019,307,097 bytes), taken after the SEC loads, the frozen Yahoo copy and the SPY table. A test restore into a disposable database on 2026-11-27 matched all 78 table row counts and all 6 checksums (report `drill_report_20261126.json`). The earlier `ggtrader_20261125.dump` also passed its test. The old `attempts` folder of earlier dump tries was deleted at the owner's request on 2026-11-26.
 
 ## Limits
 

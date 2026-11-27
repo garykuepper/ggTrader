@@ -6,9 +6,9 @@ A later check must use data arriving after the rule is registered. The [window l
 
 All studies use free data, a taxable account, information available on each decision date and stocks that later stopped trading. Register the exact rule, date bounds, cost assumptions, tax rates and comparison before scoring. Save raw results and report every tested variant. Compare with SPY, the S&P 500 fund, over the same dates after costs and taxes.
 
-SPY began in January 1993, and the held SPY history starts on 2000-01-03. CRSP, a university stock-price source, supplies a return for the whole US market, not SPY, for the earlier years. Its `vwretd` series weights companies by market value. A read-only database check on 2026-11-26 found no missing values on the loaded rows for 1968–1999. The query is recorded below.
+SPY began in January 1993. The database holds SPY from 2000-01-03, and a frozen free Yahoo table (`market.spy_daily_yahoo_1993_1999`, added 2026-11-26) covers 1993-01-29 to 1999-12-31. CRSP, a university stock-price source, supplies a return for the whole US market, not SPY, for the earlier years. Its `vwretd` series weights companies by market value. A read-only database check on 2026-11-26 found no missing values on the loaded rows for 1968–1999. The query is recorded below.
 
-For years through July 1998, may the CRSP whole-market return stand in for SPY? SPY began in 1993, so another option is to add free Yahoo SPY history for 1993–1999. The owner must decide before a run.
+SPY now covers 1993 onward. For 1969–1992, when no SPY existed, may the CRSP whole-market return stand in, or should the early test start in 1993? The owner must decide before a run.
 
 A market return series does not by itself establish the costs and taxes of an investable fund. Apply costs to purchases and sales and taxes to gains made when a holding is sold, including short- and long-term rates. Disclose dividend tax and other unmodeled items.
 
@@ -153,4 +153,4 @@ Choice 4 needs a window-use ledger decision, a recorded judgment about whether t
 
 Choice 6 depends on a promising earlier result and usable volume. Choice 7 is available for historical clarification but is not recommended ahead of the others.
 
-For years through July 1998, may the CRSP whole-market return stand in for SPY? Alternatively, free Yahoo SPY history could be added for 1993–1999, the years after SPY began. Nothing here changes the production freeze or authorizes a trade.
+For 1969–1992, before SPY began, may the CRSP whole-market return stand in, or should the early test start in 1993? SPY for 1993–1999 is already held. Nothing here changes the production freeze or authorizes a trade.

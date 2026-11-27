@@ -21,6 +21,7 @@ from ggTrader.data.kaggle_import.guards import verify_sha256
 from ggTrader.utils.db_snapshot import snapshot
 
 SCRATCH_ROOT = Path("/media/thesix/ggTrader-data/db-restore-scratch")
+REPO_ROOT = Path(__file__).resolve().parents[1]
 EXTRA_ROLES = ("universe_reader", "universe_loader")
 
 
@@ -29,13 +30,25 @@ def container_name(token: str) -> str:
     return f"ggt_restore_drill_{token}"
 
 
-def refuse_unsafe(name: str, scratch_dir: Path, live_container: str = "ggtrader_db") -> None:
+def space_path(root: Path) -> Path:
+    """Return the nearest existing parent, whose drive holds the scratch folder."""
+    path = root.resolve()
+    while not path.exists():
+        path = path.parent
+    return path
+
+
+def refuse_unsafe(
+    name: str, scratch_dir: Path, live_container: str = "ggtrader_db", root: Path | None = None
+) -> None:
     """Reject targets outside the dedicated disposable namespace."""
-    root = SCRATCH_ROOT.resolve()
+    root = (root or SCRATCH_ROOT).resolve()
     folder = scratch_dir.resolve()
     if (
         not name.startswith("ggt_restore_drill_")
         or name == live_container
+        or root == Path(root.anchor)
+        or root.is_relative_to(REPO_ROOT)
         or folder == root
         or not folder.is_relative_to(root)
     ):
@@ -74,9 +87,15 @@ def main(
     parser.add_argument("--counts", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--keep", action="store_true")
+    parser.add_argument(
+        "--scratch-root",
+        type=Path,
+        help="folder for the temporary copy (default: the thesix drive)",
+    )
     args = parser.parse_args(argv)
     name = container_name(secrets.token_hex(16))
-    folder = SCRATCH_ROOT / name
+    root = args.scratch_root or SCRATCH_ROOT
+    folder = root / name
     attempted = False
     started = False
     stage = "verify"
@@ -86,19 +105,19 @@ def main(
     conn = None
     status = 1
     try:
-        refuse_unsafe(name, folder)
+        refuse_unsafe(name, folder, root=root)
         verify_sha256(args.dump, args.sums or args.dump.parent / "SHA256SUMS")
         record = json.loads(args.counts.read_text())
         version = record["timescaledb"]
         expected = record["after"]
         if not isinstance(version, str) or not version:
             raise ValueError("Missing TimescaleDB version")
-        if disk_usage(Path("/media/thesix")).free < 3 * args.dump.stat().st_size + 20 * 10**9:
+        if disk_usage(space_path(root)).free < 3 * args.dump.stat().st_size + 20 * 10**9:
             print("Insufficient scratch space", file=sys.stderr)
             status = 2
             raise ValueError("Insufficient scratch space")
         stage = "start"
-        SCRATCH_ROOT.mkdir(parents=True, exist_ok=True)
+        root.mkdir(parents=True, exist_ok=True)
         folder.mkdir(mode=0o700)
         folder_created = True
         password = secrets.token_urlsafe(32)
