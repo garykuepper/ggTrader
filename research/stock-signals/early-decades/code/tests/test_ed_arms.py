@@ -98,3 +98,43 @@ def test_reopening_jump_after_missing_days_is_excluded() -> None:
         end="2020-03-31",
     )
     assert steps[0].targets == {"B": 1.0}
+
+
+def test_arm_b_historical_execution_intervals_and_first_lot(monkeypatch) -> None:
+    import ed_replay
+    import pandas_market_calendars as calendars
+    from ed_arms import plan_arm_trades
+    from ed_ledger_run import TaxLotBook, TaxParams
+
+    sessions = calendars.get_calendar("NYSE").valid_days("1969-02-03", "1998-07-31")
+    decisions = (
+        pd.Series(sessions, index=sessions).groupby(sessions.tz_localize(None).to_period("M")).max()
+    )
+    candidates = []
+    for decision in decisions:
+        position = sessions.get_loc(decision) + 1
+        if position < len(sessions):
+            candidates.append(ed_replay.TargetStep(decision, sessions[position], {"A": 1.0}))
+    monkeypatch.setattr(ed_replay, "plan_trades", lambda *args, **kwargs: candidates)
+    steps = plan_arm_trades(
+        "B",
+        pd.DataFrame(),
+        pd.DataFrame(),
+        pd.DataFrame(),
+        top_n=1,
+        lookback=1,
+        skip=0,
+        start="1969-02-03",
+        end="1998-07-31",
+    )
+    assert len(steps) > 2
+    expected = [candidates[0]]
+    for candidate in candidates[1:]:
+        if candidate.date > expected[-1].date + pd.DateOffset(years=1):
+            expected.append(candidate)
+    assert steps == expected
+    assert all(b.date > a.date + pd.DateOffset(years=1) for a, b in zip(steps, steps[1:]))
+    book = TaxLotBook(TaxParams(0.24, 0.15), cash=1000)
+    book.buy("A", 1, 100, steps[0].date)
+    realized = book.sell("A", 1, 200, steps[1].date)
+    assert realized[0].term == "LT"

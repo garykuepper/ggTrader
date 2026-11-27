@@ -56,6 +56,6 @@ def plan_arm_trades(
         end=end,
     )
     if arm == "B":
-        schedule = set(arm_b_schedule([step.decision_date for step in steps]))
-        steps = [step for step in steps if step.decision_date in schedule]
+        schedule = set(arm_b_schedule([step.date for step in steps]))
+        steps = [step for step in steps if step.date in schedule]
     return steps
