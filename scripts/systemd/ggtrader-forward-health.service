@@ -1,11 +1,14 @@
 [Unit]
+Wants=network-online.target
+After=network-online.target
 Description=ggTrader weekly forward collection health report
 
 [Service]
 Type=oneshot
+Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=%h/ggTrader
-Environment=GGT_RUN_MAX_SECONDS=1800
 TimeoutStartSec=1800
-ExecStart=%h/ggTrader/scripts/run_capped.sh %h/ggTrader/.venv/bin/python %h/ggTrader/scripts/forward_health.py
+MemoryMax=1G
+ExecStart=%h/ggTrader/.venv/bin/python %h/ggTrader/scripts/forward_health.py
 StandardOutput=journal
 StandardError=journal

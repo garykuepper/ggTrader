@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+pytestmark = [pytest.mark.db, pytest.mark.integration]
 
 
 def load_file(name: str, path: Path) -> object:
@@ -17,8 +18,6 @@ def load_file(name: str, path: Path) -> object:
     return module
 
 
-fixture_module = load_file("forward_schema_fixture", ROOT / "tests/db/test_forward_schema.py")
-database = fixture_module.database
 collector = load_file("forward_collect", ROOT / "scripts/forward_collect.py")
 
 
@@ -38,6 +37,9 @@ class Source:
         self.listed = ["AAA", "BBB"]
         self.returned = ["AAA"]
         self.calls = 0
+        self.raw = []
+        self.progress = {}
+        self.fillers = [f"FILL{i}" for i in range(8)]
 
     def listing(self) -> list[dict]:
         self.calls += 1
@@ -49,13 +51,13 @@ class Source:
                 "is_etf": False,
                 "is_test": False,
             }
-            for x in self.listed
+            for x in self.listed + self.fillers
         ]
 
     def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
         return [
             {"symbol": x, "open": 1.0, "high": 2.0, "low": 1.0, "close": 2.0, "volume": 10}
-            for x in self.returned
+            for x in self.returned + self.fillers
             if x in symbols
         ]
 
@@ -98,7 +100,10 @@ def test_holiday_makes_no_gaps(conn: object) -> None:
 
 
 def test_low_coverage_returns_alert_flag(conn: object) -> None:
-    assert collector.collect(dt.date(2026, 11, 23), True, Source(), conn)["alert"] is True
+    source = Source()
+    source.returned = []
+    source.fillers = []
+    assert collector.collect(dt.date(2026, 11, 23), True, source, conn)["alert"] is True
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM forward.loads")
         assert cur.fetchone()[0] == 0
@@ -128,11 +133,13 @@ def test_disappearing_symbol_is_recorded_as_gap(conn: object) -> None:
         assert cur.fetchall() == [("BBB",)]
 
 
-def test_new_symbol_missing_for_five_sessions_can_end(conn: object) -> None:
+def test_symbol_never_seen_with_bar_does_not_gain_status(conn: object) -> None:
     source = Source()
-    for day in [16, 17, 18, 19]:
+    for day in [16, 17, 18, 19, 20]:
         assert collector.collect(dt.date(2026, 11, day), False, source, conn)["newly_ended"] == 0
-    assert collector.collect(dt.date(2026, 11, 20), False, source, conn)["newly_ended"] == 1
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.symbol_status WHERE symbol = 'BBB'")
+        assert cur.fetchone()[0] == 0
 
 
 def test_rate_limit_honors_retry_after(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -252,16 +259,16 @@ def test_shares_only_is_idempotent_and_does_not_duplicate_daily(conn: object) ->
         cur.execute("SELECT count(*) FROM forward.loads")
         assert cur.fetchone()[0] == 2
         cur.execute("SELECT count(*) FROM forward.shares_outstanding")
-        assert cur.fetchone()[0] == 2
+        assert cur.fetchone()[0] == 10
         cur.execute("SELECT count(*) FROM forward.daily_bars")
-        assert cur.fetchone()[0] == 1
+        assert cur.fetchone()[0] == 9
 
 
 def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
     result = collector.catch_up(dt.date(2026, 11, 18), lambda day: source, conn)
-    assert result["collected"] == [dt.date(2026, 11, 17), dt.date(2026, 11, 18)]
+    assert result["collected"] == [dt.date(2026, 11, 18), dt.date(2026, 11, 17)]
     collector.catch_up(dt.date(2026, 11, 18), lambda day: source, conn)
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM forward.loads WHERE day='2026-11-17'")
@@ -276,17 +283,17 @@ def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
 
 
 def test_catch_up_stops_without_an_earlier_listing(conn: object) -> None:
-    with pytest.raises(ValueError, match="earlier.*listing"):
-        collector.catch_up(
-            dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
-        )
+    result = collector.catch_up(
+        dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
+    )
+    assert any("earlier saved listing" in item["error"] for item in result["failures"])
 
 
 def test_catch_up_stops_at_ten_days_with_clear_message(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 2), False, source, conn)
     result = collector.catch_up(dt.date(2026, 11, 23), lambda day: source, conn)
-    assert len(result["collected"]) == 10
+    assert len(result["collected"]) == 11
     assert "10" in result["message"]
     assert result["remaining"] > 0
 
@@ -303,10 +310,11 @@ def test_catch_up_uses_saved_same_day_listing_before_earlier_one(conn: object) -
             return None
 
     saved = SavedSource()
+    saved.returned = ["AAA", "BBB", "CCC"]
     collector.catch_up(dt.date(2026, 11, 18), lambda day: saved, conn)
     with conn.cursor() as cur:
         cur.execute("SELECT symbol FROM forward.listing_snapshots WHERE day='2026-11-17'")
-        assert cur.fetchall() == [("CCC",)]
+        assert set(cur.fetchall()) == {("CCC",)} | {(x,) for x in saved.fillers}
         cur.execute(
             "SELECT count(*) FROM forward.gaps WHERE reason='listing_missing' AND day='2026-11-17'"
         )
@@ -315,10 +323,10 @@ def test_catch_up_uses_saved_same_day_listing_before_earlier_one(conn: object) -
 
 def test_catch_up_never_uses_a_later_listing(conn: object) -> None:
     collector.collect(dt.date(2026, 11, 18), False, Source(), conn)
-    with pytest.raises(ValueError, match="earlier.*listing"):
-        collector.catch_up(
-            dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
-        )
+    result = collector.catch_up(
+        dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
+    )
+    assert any("earlier saved listing" in item["error"] for item in result["failures"])
 
 
 def test_shares_load_does_not_block_daily_load(conn: object) -> None:
@@ -350,7 +358,7 @@ def test_shares_failure_writes_no_partial_load_and_can_retry(conn: object) -> No
         cur.execute("SELECT count(*) FROM forward.loads WHERE day=%s", (day,))
         assert cur.fetchone()[0] == 0
     source.fail = False
-    assert collector.collect_shares(day, source, conn)["shares"] == 2
+    assert collector.collect_shares(day, source, conn)["shares"] == 10
     assert collector.collect_shares(day, source, conn)["already_collected"]
 
 
@@ -375,7 +383,7 @@ def test_share_checkpoint_resumes_without_refetching_completed_symbols(
     monkeypatch.setattr(collector.yf, "Ticker", FakeTicker)
     monkeypatch.setattr(collector.time, "sleep", lambda seconds: None)
     path = tmp_path / "shares.json"
-    with pytest.raises(RuntimeError, match="Yahoo shares failed"):
+    with pytest.raises(RuntimeError, match="10%"):
         collector.Sources(path).shares(["AAA", "BBB"], dt.date(2026, 11, 23))
     fail[0] = False
     result = collector.Sources(path).shares(["AAA", "BBB"], dt.date(2026, 11, 23))
@@ -388,7 +396,481 @@ def test_catch_up_fills_hole_before_a_later_success(conn: object) -> None:
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
     collector.collect(dt.date(2026, 11, 18), False, source, conn)
     result = collector.catch_up(dt.date(2026, 11, 19), lambda day: source, conn)
-    assert result["collected"] == [dt.date(2026, 11, 17), dt.date(2026, 11, 19)]
+    assert result["collected"] == [dt.date(2026, 11, 19), dt.date(2026, 11, 17)]
     with conn.cursor() as cur:
         cur.execute("SELECT count(*) FROM forward.loads WHERE day='2026-11-18'")
         assert cur.fetchone()[0] == 1
+
+
+def test_low_coverage_rejected_without_writing(conn: object) -> None:
+    source = Source()
+    source.returned = []
+    source.fillers = []
+    with pytest.raises(ValueError, match="90%"):
+        collector.collect(dt.date(2026, 11, 23), False, source, conn)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads")
+        assert cur.fetchone()[0] == 0
+
+
+def test_transaction_rolls_back_on_midway_invalid_bar(conn: object) -> None:
+    class BadBar(Source):
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            rows = super().bars(symbols, day)
+            rows[-1]["volume"] = -1
+            return rows
+
+    import psycopg2
+
+    with pytest.raises(psycopg2.errors.CheckViolation):
+        collector.collect(dt.date(2026, 11, 23), False, BadBar(), conn)
+    with conn.cursor() as cur:
+        for table in (
+            "loads",
+            "listing_snapshots",
+            "daily_bars",
+            "gaps",
+            "symbol_status",
+            "shares_outstanding",
+        ):
+            from psycopg2 import sql
+
+            cur.execute(sql.SQL("SELECT count(*) FROM forward.{}").format(sql.Identifier(table)))
+            assert cur.fetchone()[0] == 0
+
+
+def test_retry_delay_is_capped() -> None:
+    assert collector.retry_delay("500", dt.datetime.now(dt.timezone.utc), 0) == 120
+
+
+def test_nasdaq_keeps_na_etfs_and_test_issues(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Response:
+        text = (
+            "Symbol|Security Name|ETF|Test Issue\nNA|NA Common Stock|N|N\n"
+            "ETF1|Example ETF|Y|N\nTEST1|Test Common Stock|N|Y\n"
+        )
+
+    class Other:
+        text = "ACT Symbol|Security Name|ETF|Test Issue|Exchange\n"
+
+    source = collector.Sources(None)
+    monkeypatch.setattr(
+        source, "get", lambda url, **kwargs: Response() if "nasdaqlisted" in url else Other()
+    )
+    rows = source.listing()
+    assert {row["symbol"] for row in rows} == {"NA", "ETF1", "TEST1"}
+    assert next(row for row in rows if row["symbol"] == "ETF1")["is_etf"]
+    assert next(row for row in rows if row["symbol"] == "TEST1")["is_test"]
+
+
+def test_today_is_collected_before_old_backlog_and_failure_does_not_block(conn: object) -> None:
+    source = Source()
+    collector.collect(dt.date(2026, 11, 2), False, source, conn)
+    calls = []
+
+    class Flaky(Source):
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            calls.append(day)
+            if day == dt.date(2026, 11, 3):
+                raise RuntimeError("old-day failure")
+            return super().bars(symbols, day)
+
+    result = collector.catch_up(dt.date(2026, 11, 23), lambda day: Flaky(), conn)
+    assert calls[0] == dt.date(2026, 11, 23)
+    assert dt.date(2026, 11, 4) in result["collected"]
+    assert result["failures"][0]["day"] == dt.date(2026, 11, 3)
+    assert len(calls) == 11
+
+
+def test_yahoo_continues_after_one_symbol_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    import pandas as pd
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            if self.symbol == "BAD":
+                raise OSError("failure")
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    source = collector.Sources(None)
+    result = source.shares(["BAD"] + [f"X{i}" for i in range(9)], dt.date(2026, 11, 23))
+    assert len(result) == 9
+    assert source.errors == [{"source": "yahoo", "symbol": "BAD", "error": "OSError"}]
+
+
+def test_yahoo_more_than_ten_percent_failures_refuses_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Ticker:
+        def get_shares_full(self, **kwargs: object) -> object:
+            raise OSError("failure")
+
+    monkeypatch.setattr(collector.yf, "Ticker", lambda symbol: Ticker())
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    with pytest.raises(RuntimeError, match="10%"):
+        collector.Sources(None).shares(["AAA", "BBB"], dt.date(2026, 11, 23))
+
+
+def test_main_commits_using_a_real_unentered_connection(
+    conn: object, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import psycopg2
+
+    import ggTrader.utils.config
+
+    real_connect = psycopg2.connect
+    day = dt.date(2026, 11, 23)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda url: real_connect(
+            host=conn.info.host,
+            port=conn.info.port,
+            user=conn.info.user,
+            password=conn.info.password,
+            dbname=conn.info.dbname,
+        ),
+    )
+    monkeypatch.setattr(ggTrader.utils.config, "get_db_connection_string", lambda: "unused")
+    monkeypatch.setattr(collector, "load_dotenv", lambda *args: None)
+    monkeypatch.setattr(collector, "observation_day", lambda: day)
+    monkeypatch.setattr(collector, "last_closed_day", lambda now: day)
+
+    class FakeMainSource(Source):
+        def __init__(self, path: object) -> None:
+            super().__init__()
+            self.requests = {"listing": 0, "alpaca": 0, "yahoo": 0}
+            self.errors = []
+
+    monkeypatch.setattr(collector, "Sources", FakeMainSource)
+    monkeypatch.setattr("sys.argv", ["forward_collect.py"])
+    collector.main()
+    assert "2026-11-23" in capsys.readouterr().out
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads")
+        assert cur.fetchone()[0] == 1
+
+
+def test_coverage_gate_counts_candidates_not_previously_tracked_symbols(conn: object) -> None:
+    source = Source()
+    source.returned = ["AAA", "BBB"]
+    collector.collect(dt.date(2026, 11, 16), False, source, conn)
+    source.listed = ["AAA"]
+    source.returned = ["AAA"]
+    source.fillers = []
+    result = collector.collect(dt.date(2026, 11, 17), False, source, conn)
+    assert result["alert"] is False
+    assert result["gaps"] == 9
+
+
+def test_http_server_and_connection_failures_are_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    import requests
+
+    class Response:
+        def __init__(self, status: int) -> None:
+            self.status_code = status
+            self.headers = {}
+
+        def raise_for_status(self) -> None:
+            assert self.status_code == 200
+
+    calls = []
+    delays = []
+
+    def request(*args: object, **kwargs: object) -> Response:
+        calls.append(1)
+        if len(calls) == 1:
+            raise requests.ConnectionError("test")
+        return Response(501 if len(calls) == 2 else 200)
+
+    monkeypatch.setattr(collector.requests, "get", request)
+    monkeypatch.setattr(collector.time, "sleep", lambda seconds: delays.append(seconds))
+    source = collector.Sources(None)
+    source.get("https://example.invalid", kind="alpaca")
+    assert source.requests["alpaca"] == 3
+    assert delays == [0.5, 10.0, 0.5, 20.0, 0.5]
+
+
+def test_raw_listing_files_are_kept_outside_results(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    day = dt.date(2026, 11, 23)
+    nasdaq = "Symbol|Security Name|ETF|Test Issue\nNA|NA Common Stock|N|N\n"
+    other = "ACT Symbol|Security Name|ETF|Test Issue|Exchange\n"
+
+    class Response:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+    monkeypatch.setattr(collector, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(collector, "observation_day", lambda: day)
+    source = collector.Sources(tmp_path / "results" / f"{day}.json")
+    monkeypatch.setattr(
+        source, "get", lambda url, **kwargs: Response(nasdaq if "nasdaqlisted" in url else other)
+    )
+    assert source.listing()[0]["symbol"] == "NA"
+    assert (tmp_path / "data" / "forward_raw" / str(day) / "nasdaqlisted.txt").read_text() == nasdaq
+
+
+def test_main_shares_mode_commits_without_nested_connection(
+    conn: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import psycopg2
+
+    import ggTrader.utils.config
+
+    day = dt.date(2026, 11, 23)
+    collector.collect(day, False, Source(), conn)
+    connect = psycopg2.connect
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda url: connect(
+            host=conn.info.host,
+            port=conn.info.port,
+            user=conn.info.user,
+            password=conn.info.password,
+            dbname=conn.info.dbname,
+        ),
+    )
+    monkeypatch.setattr(ggTrader.utils.config, "get_db_connection_string", lambda: "unused")
+    monkeypatch.setattr(collector, "load_dotenv", lambda *args: None)
+    monkeypatch.setattr(collector, "observation_day", lambda: day)
+
+    class FakeSource(Source):
+        def __init__(self, path: object) -> None:
+            super().__init__()
+            self.requests = {"listing": 0, "alpaca": 0, "yahoo": 0}
+            self.errors = []
+
+    monkeypatch.setattr(collector, "Sources", FakeSource)
+    monkeypatch.setattr("sys.argv", ["forward_collect.py", "--shares-only"])
+    collector.main()
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.shares_outstanding")
+        assert cur.fetchone()[0] == 10
+
+
+def test_low_coverage_discards_cached_partial_bars_for_retry(conn: object, tmp_path: Path) -> None:
+    class Partial(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.fillers = []
+            self.returned = []
+            self.checkpoint = tmp_path / "2026-11-23.json"
+            self.cached = self.checkpoint.with_name(self.checkpoint.stem + "_bars.json")
+            self.cached.write_text('{"incomplete": true}')
+
+        def invalidate_bars(self) -> None:
+            self.cached.write_text("{}")
+
+    source = Partial()
+    with pytest.raises(ValueError, match="90%"):
+        collector.collect(dt.date(2026, 11, 23), False, source, conn)
+    assert source.cached.read_text() == "{}"
+
+
+def test_shares_drop_nan_and_reject_negative(monkeypatch: pytest.MonkeyPatch) -> None:
+    import pandas as pd
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            values = [12.0, float("nan")] if self.symbol == "AAA" else [-1.0, float("nan")]
+            return pd.Series(values, index=pd.to_datetime(["2026-11-20", "2026-11-21"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda seconds: None)
+    result = collector.Sources(None).shares(["AAA", "BBB"], dt.date(2026, 11, 23))
+    assert [(row["symbol"], row["shares"]) for row in result] == [("AAA", 12)]
+
+
+def test_conflicting_duplicate_bars_refuse_load(conn: object) -> None:
+    class Duplicates(Source):
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            rows = super().bars(symbols, day)
+            rows.append({**rows[0], "close": 1.5})
+            return rows
+
+    with pytest.raises(ValueError, match="conflicting"):
+        collector.collect(dt.date(2026, 11, 23), False, Duplicates(), conn)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads")
+        assert cur.fetchone()[0] == 0
+
+
+def test_last_closed_day_waits_for_sip_delay() -> None:
+    now = dt.datetime(2026, 11, 25, 21, 5, tzinfo=dt.timezone.utc)
+    assert collector.last_closed_day(now) == dt.date(2026, 11, 24)
+
+
+def test_transaction_rolls_back_after_first_bar_batch(conn: object) -> None:
+    import psycopg2
+    from psycopg2 import sql
+
+    class LargeSource(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.listed = [f"SYM{i}" for i in range(1001)]
+            self.returned = self.listed[:]
+            self.fillers = []
+
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            rows = super().bars(symbols, day)
+            rows[-1]["volume"] = -1
+            return rows
+
+    with pytest.raises(psycopg2.errors.CheckViolation):
+        collector.collect(dt.date(2026, 11, 23), False, LargeSource(), conn)
+    with conn.cursor() as cur:
+        for table in (
+            "loads",
+            "listing_snapshots",
+            "daily_bars",
+            "gaps",
+            "symbol_status",
+            "shares_outstanding",
+        ):
+            cur.execute(sql.SQL("SELECT count(*) FROM forward.{}").format(sql.Identifier(table)))
+            assert cur.fetchone()[0] == 0
+
+
+def test_never_traded_symbol_remains_a_gap_after_leaving_listing(conn: object) -> None:
+    source = Source()
+    collector.collect(dt.date(2026, 11, 16), False, source, conn)
+    source.listed = ["AAA"]
+    collector.collect(dt.date(2026, 11, 17), False, source, conn)
+    collector.collect(dt.date(2026, 11, 18), False, source, conn)
+    with conn.cursor() as cur:
+        cur.execute("SELECT day FROM forward.gaps WHERE symbol='BBB' ORDER BY day")
+        assert [row[0] for row in cur.fetchall()] == [
+            dt.date(2026, 11, day) for day in (16, 17, 18)
+        ]
+        cur.execute("SELECT count(*) FROM forward.symbol_status WHERE symbol='BBB'")
+        assert cur.fetchone()[0] == 0
+
+
+def test_main_exits_nonzero_after_catch_up_failures(
+    conn: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import psycopg2
+
+    import ggTrader.utils.config
+
+    real_connect = psycopg2.connect
+    day = dt.date(2026, 11, 23)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda url: real_connect(
+            host=conn.info.host,
+            port=conn.info.port,
+            user=conn.info.user,
+            password=conn.info.password,
+            dbname=conn.info.dbname,
+        ),
+    )
+    monkeypatch.setattr(ggTrader.utils.config, "get_db_connection_string", lambda: "unused")
+    monkeypatch.setattr(collector, "load_dotenv", lambda *args: None)
+    monkeypatch.setattr(collector, "observation_day", lambda: day)
+    monkeypatch.setattr(collector, "last_closed_day", lambda now: day)
+    monkeypatch.setattr(
+        collector,
+        "catch_up",
+        lambda *args, **kwargs: {
+            "collected": [day],
+            "remaining": 0,
+            "failures": [{"day": day, "error": "failed"}],
+        },
+    )
+    monkeypatch.setattr("sys.argv", ["forward_collect.py"])
+    with pytest.raises(SystemExit) as exc:
+        collector.main()
+    assert exc.value.code == 1
+
+
+def test_git_failure_does_not_discard_shares(conn: object, monkeypatch: pytest.MonkeyPatch) -> None:
+    source = Source()
+    day = dt.date(2026, 11, 23)
+    collector.collect(day, False, source, conn)
+
+    def fail(*args: object, **kwargs: object) -> object:
+        raise FileNotFoundError("git missing")
+
+    monkeypatch.setattr(collector.subprocess, "run", fail)
+    result = collector.collect_shares(day, source, conn)
+    assert result["shares"] == 10
+    with conn.cursor() as cur:
+        cur.execute("SELECT code_commit FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchone()[0] == "unknown"
+
+
+def test_today_first_keeps_earliest_first_seen_after_catch_up(conn: object) -> None:
+    baseline = Source()
+    collector.collect(dt.date(2026, 11, 16), False, baseline, conn)
+
+    class NewStock(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.listed = ["AAA", "BBB", "CCC"]
+            self.returned = ["AAA", "BBB", "CCC"]
+
+        def saved_listing(self, day: dt.date) -> list[dict] | None:
+            return self.listing() if day == dt.date(2026, 11, 17) else None
+
+    source = NewStock()
+    collector.catch_up(dt.date(2026, 11, 18), lambda day: source, conn)
+    collector.collect(dt.date(2026, 11, 19), False, source, conn)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT first_seen FROM forward.symbol_status WHERE symbol='CCC' "
+            "ORDER BY status_id DESC LIMIT 1"
+        )
+        assert cur.fetchone()[0] == dt.date(2026, 11, 17)
+
+
+def test_exhausted_rate_limit_counts_toward_failure_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import pandas as pd
+
+    class YFRateLimitError(Exception):
+        pass
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            if self.symbol == "BAD":
+                raise YFRateLimitError()
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    source = collector.Sources(None)
+    result = source.shares(["BAD"] + [f"X{i}" for i in range(9)], dt.date(2026, 11, 23))
+    assert len(result) == 9
+    assert source.errors[0]["error"] == "YFRateLimitError"
+
+
+def test_legacy_listing_checkpoint_is_rebuilt_from_raw_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import json
+
+    day = dt.date(2026, 11, 23)
+    source = collector.Sources(tmp_path / f"{day}.json")
+    nasdaq = "Symbol|Security Name|ETF|Test Issue\nNA|NA Common Stock|N|N\nETF1|Fund|Y|N\n"
+    other = "ACT Symbol|Security Name|ETF|Test Issue|Exchange\n"
+    source.checkpoint.with_name(f"{day}_listing.json").write_text(
+        json.dumps({"day": str(day), "raw": [nasdaq, other], "listing": [{"symbol": "NA"}]})
+    )
+    monkeypatch.setattr(collector, "REPO_ROOT", tmp_path)
+    rows = source.saved_listing(day)
+    assert {row["symbol"] for row in rows} == {"NA", "ETF1"}
+    assert (tmp_path / "data" / "forward_raw" / str(day) / "nasdaqlisted.txt").read_text() == nasdaq

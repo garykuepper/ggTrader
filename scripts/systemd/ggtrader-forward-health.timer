@@ -3,7 +3,7 @@ Description=Run ggTrader forward collection health report on Saturdays
 
 [Timer]
 OnCalendar=Sat *-*-* 09:00:00 America/Los_Angeles
-Persistent=false
+Persistent=true
 AccuracySec=1min
 
 [Install]

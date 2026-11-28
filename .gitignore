@@ -86,3 +86,10 @@ graphify-out/
 /.ggtrader-heavy.lock*
 # Raw market data lives on /media/thesix/ggTrader-data/; these are symlinks there.
 data/external/intraday_momentum_r9
+
+# Durable forward listing evidence; never tracked or cleaned automatically.
+data/forward_raw/
+
+# Large local research evidence; fingerprints and summaries remain tracked.
+research/stock-signals/forward-check/_alignment_raw.json
+research/stock-signals/forward-check/_source_pilot_checkpoints.json

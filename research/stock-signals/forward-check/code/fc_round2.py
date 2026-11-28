@@ -41,6 +41,11 @@ def main() -> None:
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     path = study_dir(__file__) / "_source_pilot.json"
     report = json.loads(path.read_text()) if path.exists() else {}
+    checkpoint_path = path.with_name("_source_pilot_checkpoints.json")
+    checkpoint = json.loads(checkpoint_path.read_text()) if checkpoint_path.exists() else {}
+    checkpoint.setdefault("provenance", {"description": "Local pilot source checkpoints"})
+    if not args.resume:
+        checkpoint["round2"] = {}
     if not args.resume:
         report["round2"] = {}
     result = report.setdefault("round2", {})
@@ -57,6 +62,7 @@ def main() -> None:
 
     def save() -> None:
         path.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+        checkpoint_path.write_text(json.dumps(checkpoint, indent=2, allow_nan=False) + "\n")
 
     listing = fetch_listing()
     symbols = listing.symbol.tolist()
@@ -82,7 +88,11 @@ def main() -> None:
                 continue
             try:
                 if label == "live":
-                    progress = src.setdefault("live_batches", {})
+                    progress = (
+                        checkpoint.setdefault("round2", {})
+                        .setdefault(source, {})
+                        .setdefault("live_batches", {})
+                    )
                     for offset in range(0, len(symbols), 200):
                         batch = symbols[offset : offset + 200]
                         key = str(offset)

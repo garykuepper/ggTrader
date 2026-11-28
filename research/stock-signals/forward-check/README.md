@@ -18,3 +18,7 @@ Run the driver from the repository root:
 
 When the study closes, `PIN.json` records the commit, lock hash, data hashes and the exact
 command, and the study tool re-runs it in a scratch clone (the repro subcommand).
+
+## Known limits
+
+A provider may correct a daily bar after collection; the first saved version is not automatically revised.

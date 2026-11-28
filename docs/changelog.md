@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collector review fixes)
+
+- Hardened transaction and retry behavior, preserved full dated raw listings, separated today from older catch-up attempts, and moved the network jobs to memory-limited user services. These changes are tested on disposable databases only; the timers remain uninstalled.
+
 ## 2026-11-28 (forward collection split and catch-up)
 
 - Separated weekly Yahoo shares into a checkpointed four-hour job and left daily listings and SIP prices under the 30-minute limit. Daily catch-up uses only same-day or earlier saved listings and marks missing-listing days. Timer files are prepared but not installed.

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+pytestmark = [pytest.mark.db, pytest.mark.integration]
 
 
 def load_file(name: str, path: Path) -> object:
@@ -17,8 +18,6 @@ def load_file(name: str, path: Path) -> object:
     return module
 
 
-fixture_module = load_file("health_db_fixture", ROOT / "tests/db/test_forward_schema.py")
-database = fixture_module.database
 health = load_file("forward_health", ROOT / "scripts/forward_health.py")
 
 
@@ -92,3 +91,26 @@ def test_shares_only_load_and_listing_gap_do_not_distort_coverage(populated: obj
     assert report["mean_coverage"] == 0.75
     assert report["missing_listings"] == [dt.date(2026, 11, 24)]
     assert "listing" in health.format_message(report).lower()
+
+
+def test_weekly_shares_load_is_reported(populated: object) -> None:
+    missing = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert missing["shares_loaded"] is False
+    assert "shares: missing" in health.format_message(missing).lower()
+    with populated.cursor() as cur:
+        cur.execute(
+            "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+            "code_commit, actor) VALUES ('2026-11-23','yahoo-shares',%s,%s,'a','test') "
+            "RETURNING load_id",
+            ("a" * 64, "b" * 64),
+        )
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.shares_outstanding (load_id,day,symbol,shares,source) "
+            "VALUES (%s,'2026-11-23','AAA',100,'yahoo')",
+            (load,),
+        )
+    result = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert result["shares_loaded"] is True
+    assert result["shares_count"] == 1
+    assert "shares: loaded" in health.format_message(result).lower()

@@ -1,11 +1,14 @@
 [Unit]
+Wants=network-online.target
+After=network-online.target
 Description=ggTrader weekly forward shares observation
 
 [Service]
 Type=oneshot
+Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=%h/ggTrader
-Environment=GGT_RUN_MAX_SECONDS=14400
 TimeoutStartSec=14400
-ExecStart=%h/ggTrader/scripts/run_capped.sh %h/ggTrader/.venv/bin/python %h/ggTrader/scripts/forward_collect.py --shares-only
+MemoryMax=1G
+ExecStart=%h/ggTrader/.venv/bin/python %h/ggTrader/scripts/forward_collect.py --shares-only
 StandardOutput=journal
 StandardError=journal

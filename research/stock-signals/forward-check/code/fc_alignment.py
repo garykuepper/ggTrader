@@ -2,6 +2,7 @@
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import logging
 
@@ -95,6 +96,7 @@ def main() -> None:
         "dates": ["2026-11-03", "2026-11-04"],
         "tolerance": 0.005,
         "raw_file": "_alignment_raw.json",
+        "raw_sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest(),
         "alpaca_vs_yahoo": compare(frames["alpaca"], frames["yahoo"]),
         "frozen_counts_by_day": {day: len(frame) for day, frame in days.items()},
         "shifted": {},

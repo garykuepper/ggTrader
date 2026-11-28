@@ -883,24 +883,30 @@ The proposed user units in `scripts/systemd/` assume an editable installation at
 `~/ggTrader/.venv`. Daily listing and raw SIP collection runs weekdays at 14:00 Pacific with
 a 30-minute limit. The separate Yahoo shares timer wakes weekdays at 15:30 Pacific, but its
 service acts only on the first NYSE trading day of the week; it has a four-hour limit. The
-read-only health report runs Saturdays at 09:00 Pacific. Timers use `Persistent=false`, write
-to the journal and use `scripts/run_capped.sh`; no message is sent. The daily collection never
+read-only health report runs Saturdays at 09:00 Pacific. The daily and shares timers use `Persistent=false`; the weekly health timer uses
+`Persistent=true`. The services write to the journal and run Python directly with a 1 GB
+memory limit; no message is sent.
+These network jobs avoid the heavy-job lock and its free-memory preflight; database writes use
+a PostgreSQL advisory lock. The daily collection never
 calls Yahoo. The explicit `--dry-run --shares-sample N` option is a separate source check.
 
-On each daily run the collector fills up to ten missing NYSE days since the first successful
-price load, in order, including gaps before later successful days. It uses the original day's saved listing checkpoint if one exists. Otherwise
+Each daily run first attempts today, then up to ten older missing NYSE days in date order,
+including gaps before later successful days. A failed older day does not block the others, and
+the service exits with an error if any day failed. It uses the original day's saved listing
+checkpoint if one exists. Otherwise
 it uses the most recent **earlier** saved listing, tags the load with that listing's date and
 adds a `listing_missing` gap. Stocks first listed in between are absent from that catch-up
-universe. It never uses a later listing. If no earlier listing exists, catch-up stops and reports
-the missing input. A first run with no prior load starts on its own day; it does not invent a
+universe. It never uses a later listing. If no earlier listing exists, that day fails and
+the missing input is reported. A first run with no prior load starts on its own day; it does not invent a
 history. The weekly health report identifies listing gaps separately from price coverage.
 
+The daily job saves the original Nasdaq listing files under `data/forward_raw/<day>/`.
+A price response covering less than 90% of the listed candidates is refused so it can be retried.
 The shares job records a separate load and observation-dated shares rows, and checkpoints
 completed symbols so the same scheduled day can be retried without duplicating a load. A
 failed or timed-out shares job may need a manual retry; for a previous first-trading-day job,
-use `scripts/run_capped.sh .venv/bin/python scripts/forward_collect.py --shares-only --day YYYY-MM-DD`.
-Values are dated when observed, not back-filled. If the four-hour limit, the shared heavy-job
-lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The
+use `.venv/bin/python scripts/forward_collect.py --shares-only --day YYYY-MM-DD`.
+Values are dated when observed, not back-filled. If the four-hour limit, the PostgreSQL advisory lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The
 shares timer does not automatically retry a failed first-day job later in the week. Catch-up is
 limited to ten missing sessions per daily invocation and reports if more remain.
 
@@ -926,3 +932,7 @@ candidates, missing-price rows and symbol-status observations. The shares job wr
 load and Yahoo observations. The weekly report counts missing trading days, measures coverage
 as bars divided by bars plus missing-price rows, identifies missing listings and lists newly
 ended symbols. It makes no database writes. No timer resumes the paper trader or authorizes orders.
+
+#### Known limits
+
+A provider may correct a daily bar after collection; the first saved version is not automatically revised.
