@@ -111,3 +111,15 @@ def test_classify_security_uses_listing_name() -> None:
     assert classify_security("ABC", "Example Inc Preferred Stock") == "preferred"
     assert classify_security("ABC", "Example Inc Rights") == "rights"
     assert classify_security("ABC", "Unclear security") == "other"
+
+
+def test_alignment_reports_returns_and_largest_disagreements() -> None:
+    from fc_alignment import compare
+
+    a = pd.DataFrame({"symbol": ["A", "B"], "previous": [100.0, 100.0], "close": [102.0, 120.0]})
+    y = pd.DataFrame({"symbol": ["A", "B"], "previous": [100.0, 100.0], "close": [102.0, 100.0]})
+    result = compare(a, y)
+    assert result["matched"] == 2
+    assert result["within_half_point"] == 0.5
+    assert result["largest"][0]["symbol"] == "B"
+    assert result["largest"][0]["difference"] == pytest.approx(0.2)

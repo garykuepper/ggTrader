@@ -28934,5 +28934,778 @@
       }
     },
     "alpaca_shares_outstanding": "Not verified: no documented free endpoint found in reviewed Alpaca market-data documentation."
+  },
+  "alignment": {
+    "dates": [
+      "2026-11-03",
+      "2026-11-04"
+    ],
+    "tolerance": 0.005,
+    "raw_file": "_alignment_raw.json",
+    "alpaca_vs_yahoo": {
+      "matched": 619,
+      "within_half_point": 0.9741518578352181,
+      "largest": [
+        {
+          "symbol": "NFX",
+          "previous_left": 15.54,
+          "close_left": 15.54,
+          "previous_right": 16.1399993896,
+          "close_right": 17.6800003052,
+          "return_left": 0.0,
+          "return_right": 0.09541517805708954,
+          "difference": 0.09541517805708954,
+          "assessment": "Alpaca closes are identical; a stale or thinly traded close is possible, unverified."
+        },
+        {
+          "symbol": "POM",
+          "previous_left": 1.51,
+          "close_left": 1.55,
+          "previous_right": 1.4800000191,
+          "close_right": 1.5499999523,
+          "return_left": 0.026490066225165476,
+          "return_right": 0.047297251551772,
+          "difference": 0.020807185326606525,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "EMC",
+          "previous_left": 33.4,
+          "close_left": 34.31,
+          "previous_right": 33.7280006409,
+          "close_right": 34.0270004272,
+          "return_left": 0.027245508982036037,
+          "return_right": 0.008865031446228633,
+          "difference": 0.018380477535807405,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "INFO",
+          "previous_left": 28.18,
+          "close_left": 28.07,
+          "previous_right": 27.6420001984,
+          "close_right": 28.0109996796,
+          "return_left": -0.0039034776437189,
+          "return_right": 0.013349232275215783,
+          "difference": 0.017252709918934683,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "SPLS",
+          "previous_left": 54.92,
+          "close_left": 54.92,
+          "previous_right": 54.4879989624,
+          "close_right": 55.3639984131,
+          "return_left": 0.0,
+          "return_right": 0.016076924595900266,
+          "difference": 0.016076924595900266,
+          "assessment": "Alpaca closes are identical; a stale or thinly traded close is possible, unverified."
+        },
+        {
+          "symbol": "XRX",
+          "previous_left": 1.235,
+          "close_left": 1.18,
+          "previous_right": 1.2200000286,
+          "close_right": 1.1799999475,
+          "return_left": -0.044534412955465674,
+          "return_right": -0.032786950952699234,
+          "difference": 0.01174746200276644,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "BKNG",
+          "previous_left": 157.17,
+          "close_left": 170.99,
+          "previous_right": 155.6699981689,
+          "close_right": 170.9700012207,
+          "return_left": 0.08793026659031633,
+          "return_right": 0.09828485406160081,
+          "difference": 0.010354587471284482,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "PCL",
+          "previous_left": 45.12,
+          "close_left": 45.12,
+          "previous_right": 46.5569992065,
+          "close_right": 47.0130004883,
+          "return_left": 0.0,
+          "return_right": 0.009794473217172861,
+          "difference": 0.009794473217172861,
+          "assessment": "Alpaca closes are identical; a stale or thinly traded close is possible, unverified."
+        },
+        {
+          "symbol": "LB",
+          "previous_left": 78.985,
+          "close_left": 68.6,
+          "previous_right": 78.9800033569,
+          "close_right": 69.2600021362,
+          "return_left": -0.13148066088497823,
+          "return_right": -0.12306914165066085,
+          "difference": 0.008411519234317377,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        },
+        {
+          "symbol": "STI",
+          "previous_left": 4.77,
+          "close_left": 4.48,
+          "previous_right": 4.7699999809,
+          "close_right": 4.4400000572,
+          "return_left": -0.06079664570230592,
+          "return_right": -0.06918237421831941,
+          "difference": 0.008385728516013491,
+          "assessment": "Cause unverified; price differences alone do not establish a split, dividend, bad print or date shift."
+        }
+      ]
+    },
+    "frozen_counts_by_day": {
+      "2026-11-02": 623,
+      "2026-11-03": 623,
+      "2026-11-04": 623,
+      "2026-11-05": 18
+    },
+    "shifted": {
+      "alpaca": {
+        "earlier": {
+          "matched": 619,
+          "within_half_point": 0.048465266558966075,
+          "largest": [
+            {
+              "symbol": "PARA",
+              "previous_left": 2.72,
+              "close_left": 0.3193,
+              "previous_right": 1.690000057220459,
+              "close_right": 2.7200000286102295,
+              "return_left": -0.882610294117647,
+              "return_right": 0.6094674180566657,
+              "difference": 1.4920777121743127
+            },
+            {
+              "symbol": "STI",
+              "previous_left": 4.77,
+              "close_left": 4.48,
+              "previous_right": 3.930000066757202,
+              "close_right": 4.769999980926514,
+              "return_left": -0.06079664570230592,
+              "return_right": 0.21374043254468145,
+              "difference": 0.27453707824698736
+            },
+            {
+              "symbol": "POM",
+              "previous_left": 1.51,
+              "close_left": 1.55,
+              "previous_right": 1.850000023841858,
+              "close_right": 1.4800000190734863,
+              "return_left": 0.026490066225165476,
+              "return_right": -0.19999999999999996,
+              "difference": 0.22649006622516543
+            },
+            {
+              "symbol": "FIX",
+              "previous_left": 1285.65,
+              "close_left": 1089.56,
+              "previous_right": 1200.1400146484375,
+              "close_right": 1285.1300048828125,
+              "return_left": -0.15252207054797196,
+              "return_right": 0.07081672904579506,
+              "difference": 0.223338799593767
+            },
+            {
+              "symbol": "FIS",
+              "previous_left": 38.97,
+              "close_left": 29.77,
+              "previous_right": 40.150001525878906,
+              "close_right": 38.9900016784668,
+              "return_left": -0.23607903515524764,
+              "return_right": -0.02889165139045946,
+              "difference": 0.20718738376478818
+            },
+            {
+              "symbol": "MOS",
+              "previous_left": 18.45,
+              "close_left": 21.61,
+              "previous_right": 19.030000686645508,
+              "close_right": 18.420000076293945,
+              "return_left": 0.17127371273712733,
+              "return_right": -0.0320546814682795,
+              "difference": 0.20332839420540683
+            },
+            {
+              "symbol": "NAVI",
+              "previous_left": 8.27,
+              "close_left": 9.1,
+              "previous_right": 9.0,
+              "close_right": 8.260000228881836,
+              "return_left": 0.10036275695284158,
+              "return_right": -0.08222219679090714,
+              "difference": 0.18258495374374872
+            },
+            {
+              "symbol": "VRT",
+              "previous_left": 235.95,
+              "close_left": 205.53,
+              "previous_right": 224.24000549316406,
+              "close_right": 235.97000122070312,
+              "return_left": -0.12892561983471074,
+              "return_right": 0.05231000463874258,
+              "difference": 0.18123562447345332
+            },
+            {
+              "symbol": "UNM",
+              "previous_left": 91.08,
+              "close_left": 74.72,
+              "previous_right": 91.0199966430664,
+              "close_right": 91.02999877929688,
+              "return_left": -0.17962231005709262,
+              "return_right": 0.00010988943747913815,
+              "difference": 0.17973219949457175
+            },
+            {
+              "symbol": "VST",
+              "previous_left": 139.685,
+              "close_left": 120.34,
+              "previous_right": 134.61000061035156,
+              "close_right": 139.58999633789062,
+              "return_left": -0.13849017432079325,
+              "return_right": 0.036995733637609884,
+              "difference": 0.17548590795840313
+            }
+          ]
+        },
+        "same": {
+          "matched": 619,
+          "within_half_point": 0.7592891760904685,
+          "largest": [
+            {
+              "symbol": "NFX",
+              "previous_left": 15.54,
+              "close_left": 15.54,
+              "previous_right": 16.139999389648438,
+              "close_right": 17.68000030517578,
+              "return_left": 0.0,
+              "return_right": 0.0954151780523016,
+              "difference": 0.0954151780523016
+            },
+            {
+              "symbol": "QCOM",
+              "previous_left": 164.46,
+              "close_left": 173.73,
+              "previous_right": 164.42999267578125,
+              "close_right": 167.59010314941406,
+              "return_left": 0.056366289675300774,
+              "return_right": 0.019218576989563196,
+              "difference": 0.03714771268573758
+            },
+            {
+              "symbol": "MRNA",
+              "previous_left": 228.385,
+              "close_left": 258.375,
+              "previous_right": 228.44000244140625,
+              "close_right": 250.89999389648438,
+              "return_left": 0.1313133524530945,
+              "return_right": 0.09831899498792462,
+              "difference": 0.03299435746516988
+            },
+            {
+              "symbol": "POM",
+              "previous_left": 1.51,
+              "close_left": 1.55,
+              "previous_right": 1.4800000190734863,
+              "close_right": 1.5499999523162842,
+              "return_left": 0.026490066225165476,
+              "return_right": 0.04729725158153664,
+              "difference": 0.02080718535637116
+            },
+            {
+              "symbol": "EMC",
+              "previous_left": 33.4,
+              "close_left": 34.31,
+              "previous_right": 33.72800064086914,
+              "close_right": 34.027000427246094,
+              "return_left": 0.027245508982036037,
+              "return_right": 0.008865031448518357,
+              "difference": 0.01838047753351768
+            },
+            {
+              "symbol": "INFO",
+              "previous_left": 28.18,
+              "close_left": 28.07,
+              "previous_right": 27.642000198364258,
+              "close_right": 28.01099967956543,
+              "return_left": -0.0039034776437189,
+              "return_right": 0.013349232275275291,
+              "difference": 0.01725270991899419
+            },
+            {
+              "symbol": "SPLS",
+              "previous_left": 54.92,
+              "close_left": 54.92,
+              "previous_right": 54.487998962402344,
+              "close_right": 55.36399841308594,
+              "return_left": 0.0,
+              "return_right": 0.016076924595598507,
+              "difference": 0.016076924595598507
+            },
+            {
+              "symbol": "AMD",
+              "previous_left": 484.075,
+              "close_left": 488.71,
+              "previous_right": 483.8999938964844,
+              "close_right": 480.8399963378906,
+              "return_left": 0.009574962557454825,
+              "return_right": -0.006323615617255696,
+              "difference": 0.01589857817471052
+            },
+            {
+              "symbol": "COHR",
+              "previous_left": 207.365,
+              "close_left": 195.19,
+              "previous_right": 207.49000549316406,
+              "close_right": 192.1300048828125,
+              "return_left": -0.05871289754780229,
+              "return_right": -0.07402766496556679,
+              "difference": 0.015314767417764497
+            },
+            {
+              "symbol": "CRL",
+              "previous_left": 351.755,
+              "close_left": 326.32,
+              "previous_right": 351.8699951171875,
+              "close_right": 331.79998779296875,
+              "return_left": -0.07230885133118226,
+              "return_right": -0.057038132272501985,
+              "difference": 0.015270719058680271
+            }
+          ]
+        },
+        "later": {
+          "matched": 18,
+          "within_half_point": 0.1111111111111111,
+          "largest": [
+            {
+              "symbol": "RDDT",
+              "previous_left": 96.165,
+              "close_left": 101.775,
+              "previous_right": 101.88999938964844,
+              "close_right": 93.80999755859375,
+              "return_left": 0.05833723288098569,
+              "return_right": -0.0793012256301533,
+              "difference": 0.13763845851113898
+            },
+            {
+              "symbol": "P",
+              "previous_left": 117.645,
+              "close_left": 111.7,
+              "previous_right": 111.7699966430664,
+              "close_right": 93.44000244140625,
+              "return_left": -0.05053338433422583,
+              "return_right": -0.1639974479036298,
+              "difference": 0.11346406356940397
+            },
+            {
+              "symbol": "OKTA",
+              "previous_left": 189.54,
+              "close_left": 190.845,
+              "previous_right": 191.0500030517578,
+              "close_right": 171.16000366210938,
+              "return_left": 0.006885090218423651,
+              "return_right": -0.10410886716531476,
+              "difference": 0.1109939573837384
+            },
+            {
+              "symbol": "BE",
+              "previous_left": 214.015,
+              "close_left": 200.35,
+              "previous_right": 200.39999389648438,
+              "close_right": 167.52000427246094,
+              "return_left": -0.0638506646730369,
+              "return_right": -0.16407180950817513,
+              "difference": 0.10022114483513822
+            },
+            {
+              "symbol": "MRVL",
+              "previous_left": 171.885,
+              "close_left": 159.86,
+              "previous_right": 159.8000030517578,
+              "close_right": 133.5500030517578,
+              "return_left": -0.06995956598888775,
+              "return_right": -0.16426783165641023,
+              "difference": 0.09430826566752248
+            },
+            {
+              "symbol": "FERG",
+              "previous_left": 241.94,
+              "close_left": 248.56,
+              "previous_right": 248.52999877929688,
+              "close_right": 235.64999389648438,
+              "return_left": 0.02736215590642299,
+              "return_right": -0.05182474931024472,
+              "difference": 0.07918690521666771
+            },
+            {
+              "symbol": "SKYD",
+              "previous_left": 8.08,
+              "close_left": 8.375,
+              "previous_right": 8.390000343322754,
+              "close_right": 8.149999618530273,
+              "return_left": 0.0365099009900991,
+              "return_right": -0.028605567934629095,
+              "difference": 0.06511546892472819
+            },
+            {
+              "symbol": "SPY",
+              "previous_left": 754.38,
+              "close_left": 766.73,
+              "previous_right": 766.8099975585938,
+              "close_right": 734.3200073242188,
+              "return_left": 0.016371059678146338,
+              "return_right": -0.04237032685778508,
+              "difference": 0.05874138653593142
+            },
+            {
+              "symbol": "TWLO",
+              "previous_left": 213.82,
+              "close_left": 213.51,
+              "previous_right": 213.5,
+              "close_right": 200.9600067138672,
+              "return_left": -0.001449817603591863,
+              "return_right": -0.058735331550973324,
+              "difference": 0.05728551394738146
+            },
+            {
+              "symbol": "ECHO",
+              "previous_left": 101.97,
+              "close_left": 98.6,
+              "previous_right": 98.62000274658203,
+              "close_right": 89.91999816894531,
+              "return_left": -0.033048935961557335,
+              "return_right": -0.0882174440817306,
+              "difference": 0.055168508120173265
+            }
+          ]
+        }
+      },
+      "yahoo": {
+        "earlier": {
+          "matched": 623,
+          "within_half_point": 0.052969502407704656,
+          "largest": [
+            {
+              "symbol": "PARA",
+              "previous_left": 2.7200000286,
+              "close_left": 0.3190000057,
+              "previous_right": 1.690000057220459,
+              "close_right": 2.7200000286102295,
+              "return_left": -0.8827205873728644,
+              "return_right": 0.6094674180566657,
+              "difference": 1.4921880054295302
+            },
+            {
+              "symbol": "STI",
+              "previous_left": 4.7699999809,
+              "close_left": 4.4400000572,
+              "previous_right": 3.930000066757202,
+              "close_right": 4.769999980926514,
+              "return_left": -0.06918237421831941,
+              "return_right": 0.21374043254468145,
+              "difference": 0.28292280676300086
+            },
+            {
+              "symbol": "POM",
+              "previous_left": 1.4800000191,
+              "close_left": 1.5499999523,
+              "previous_right": 1.850000023841858,
+              "close_right": 1.4800000190734863,
+              "return_left": 0.047297251551772,
+              "return_right": -0.19999999999999996,
+              "difference": 0.24729725155177196
+            },
+            {
+              "symbol": "FIX",
+              "previous_left": 1285.1300048828,
+              "close_left": 1091.3100585938,
+              "previous_right": 1200.1400146484375,
+              "close_right": 1285.1300048828125,
+              "return_left": -0.15081738466348837,
+              "return_right": 0.07081672904579506,
+              "difference": 0.22163411370928343
+            },
+            {
+              "symbol": "FIS",
+              "previous_left": 38.9900016785,
+              "close_left": 29.7600002289,
+              "previous_right": 40.150001525878906,
+              "close_right": 38.9900016784668,
+              "return_left": -0.23672739297904777,
+              "return_right": -0.02889165139045946,
+              "difference": 0.2078357415885883
+            },
+            {
+              "symbol": "MOS",
+              "previous_left": 18.4200000763,
+              "close_left": 21.6200008392,
+              "previous_right": 19.030000686645508,
+              "close_right": 18.420000076293945,
+              "return_left": 0.17372425350949183,
+              "return_right": -0.0320546814682795,
+              "difference": 0.20577893497777133
+            },
+            {
+              "symbol": "VRT",
+              "previous_left": 235.9700012207,
+              "close_left": 205.5500030518,
+              "previous_right": 224.24000549316406,
+              "close_right": 235.97000122070312,
+              "return_left": -0.1289146841188874,
+              "return_right": 0.05231000463874258,
+              "difference": 0.18122468875762998
+            },
+            {
+              "symbol": "NAVI",
+              "previous_left": 8.2600002289,
+              "close_left": 9.0699996948,
+              "previous_right": 9.0,
+              "close_right": 8.260000228881836,
+              "return_left": 0.09806288661663509,
+              "return_right": -0.08222219679090714,
+              "difference": 0.18028508340754223
+            },
+            {
+              "symbol": "UNM",
+              "previous_left": 91.0299987793,
+              "close_left": 74.7900009155,
+              "previous_right": 91.0199966430664,
+              "close_right": 91.02999877929688,
+              "return_left": -0.1784027033019464,
+              "return_right": 0.00010988943747913815,
+              "difference": 0.17851259273942555
+            },
+            {
+              "symbol": "SEDG",
+              "previous_left": 32.8800010681,
+              "close_left": 30.0200004578,
+              "previous_right": 30.204999923706055,
+              "close_right": 32.880001068115234,
+              "return_left": -0.08698298410564098,
+              "return_right": 0.0885615345527524,
+              "difference": 0.17554451865839338
+            }
+          ]
+        },
+        "same": {
+          "matched": 623,
+          "within_half_point": 0.7800963081861958,
+          "largest": [
+            {
+              "symbol": "QCOM",
+              "previous_left": 164.4299926758,
+              "close_left": 173.1900024414,
+              "previous_right": 164.42999267578125,
+              "close_right": 167.59010314941406,
+              "return_left": 0.05327501159032311,
+              "return_right": 0.019218576989563196,
+              "difference": 0.03405643460075991
+            },
+            {
+              "symbol": "MRNA",
+              "previous_left": 228.4400024414,
+              "close_left": 258.3800048828,
+              "previous_right": 228.44000244140625,
+              "close_right": 250.89999389648438,
+              "return_left": 0.13106287043172427,
+              "return_right": 0.09831899498792462,
+              "difference": 0.03274387544379964
+            },
+            {
+              "symbol": "AMD",
+              "previous_left": 483.8999938965,
+              "close_left": 488.7799987793,
+              "previous_right": 483.8999938964844,
+              "close_right": 480.8399963378906,
+              "return_left": 0.01008473846735325,
+              "return_right": -0.006323615617255696,
+              "difference": 0.016408354084608945
+            },
+            {
+              "symbol": "CRL",
+              "previous_left": 351.8699951172,
+              "close_left": 326.2900085449,
+              "previous_right": 351.8699951171875,
+              "close_right": 331.79998779296875,
+              "return_left": -0.07269726582904545,
+              "return_right": -0.057038132272501985,
+              "difference": 0.01565913355654347
+            },
+            {
+              "symbol": "MPWR",
+              "previous_left": 1328.3000488281,
+              "close_left": 1261.0799560547,
+              "previous_right": 1328.300048828125,
+              "close_right": 1240.9150390625,
+              "return_left": -0.050606105776104804,
+              "return_right": -0.06578710122213671,
+              "difference": 0.015180995446031909
+            },
+            {
+              "symbol": "FICO",
+              "previous_left": 724.3800048828,
+              "close_left": 701.0300292969,
+              "previous_right": 724.3800048828125,
+              "close_right": 711.8099975585938,
+              "return_left": -0.03223442865416726,
+              "return_right": -0.017352780639289245,
+              "difference": 0.014881648014878013
+            },
+            {
+              "symbol": "COHR",
+              "previous_left": 207.4900054932,
+              "close_left": 195.0899963379,
+              "previous_right": 207.49000549316406,
+              "close_right": 192.1300048828125,
+              "return_left": -0.05976195877881152,
+              "return_right": -0.07402766496556679,
+              "difference": 0.014265706186755267
+            },
+            {
+              "symbol": "TER",
+              "previous_left": 269.3500061035,
+              "close_left": 250.9900054932,
+              "previous_right": 269.3500061035156,
+              "close_right": 247.19000244140625,
+              "return_left": -0.06816409947748436,
+              "return_right": -0.08227214835700769,
+              "difference": 0.014108048879523327
+            },
+            {
+              "symbol": "MCHP",
+              "previous_left": 77.9000015259,
+              "close_left": 75.3399963379,
+              "previous_right": 77.9000015258789,
+              "close_right": 74.24500274658203,
+              "return_left": -0.032862710370408,
+              "return_right": -0.046919110496842054,
+              "difference": 0.014056400126434054
+            },
+            {
+              "symbol": "CTVA",
+              "previous_left": 11.8800001144,
+              "close_left": 12.2600002289,
+              "previous_right": 11.880000114440918,
+              "close_right": 12.095000267028809,
+              "return_left": 0.031986541316560535,
+              "return_right": 0.01809765576740552,
+              "difference": 0.013888885549155017
+            }
+          ]
+        },
+        "later": {
+          "matched": 18,
+          "within_half_point": 0.16666666666666666,
+          "largest": [
+            {
+              "symbol": "RDDT",
+              "previous_left": 96.1500015259,
+              "close_left": 101.8899993896,
+              "previous_right": 101.88999938964844,
+              "close_right": 93.80999755859375,
+              "return_left": 0.05969836476969603,
+              "return_right": -0.0793012256301533,
+              "difference": 0.13899959039984933
+            },
+            {
+              "symbol": "P",
+              "previous_left": 117.6500015259,
+              "close_left": 111.7699966431,
+              "previous_right": 111.7699966430664,
+              "close_right": 93.44000244140625,
+              "return_left": -0.04997879138578287,
+              "return_right": -0.1639974479036298,
+              "difference": 0.11401865651784693
+            },
+            {
+              "symbol": "OKTA",
+              "previous_left": 189.6799926758,
+              "close_left": 191.0500030518,
+              "previous_right": 191.0500030517578,
+              "close_right": 171.16000366210938,
+              "return_left": 0.007222745829295718,
+              "return_right": -0.10410886716531476,
+              "difference": 0.11133161299461047
+            },
+            {
+              "symbol": "BE",
+              "previous_left": 214.0099945068,
+              "close_left": 200.3999938965,
+              "previous_right": 200.39999389648438,
+              "close_right": 167.52000427246094,
+              "return_left": -0.06359516358880879,
+              "return_right": -0.16407180950817513,
+              "difference": 0.10047664591936634
+            },
+            {
+              "symbol": "MRVL",
+              "previous_left": 171.9700012207,
+              "close_left": 159.8000030518,
+              "previous_right": 159.8000030517578,
+              "close_right": 133.5500030517578,
+              "return_left": -0.0707681460866042,
+              "return_right": -0.16426783165641023,
+              "difference": 0.09349968556980603
+            },
+            {
+              "symbol": "FERG",
+              "previous_left": 241.9900054932,
+              "close_left": 248.5299987793,
+              "previous_right": 248.52999877929688,
+              "close_right": 235.64999389648438,
+              "return_left": 0.027025881803551588,
+              "return_right": -0.05182474931024472,
+              "difference": 0.07885063111379631
+            },
+            {
+              "symbol": "SKYD",
+              "previous_left": 8.0799999237,
+              "close_left": 8.3900003433,
+              "previous_right": 8.390000343322754,
+              "close_right": 8.149999618530273,
+              "return_left": 0.038366388926652784,
+              "return_right": -0.028605567934629095,
+              "difference": 0.06697195686128188
+            },
+            {
+              "symbol": "SPY",
+              "previous_left": 754.3499755859,
+              "close_left": 766.8099975586,
+              "previous_right": 766.8099975585938,
+              "close_right": 734.3200073242188,
+              "return_left": 0.016517561312336948,
+              "return_right": -0.04237032685778508,
+              "difference": 0.05888788817012203
+            },
+            {
+              "symbol": "TWLO",
+              "previous_left": 213.7700042725,
+              "close_left": 213.5,
+              "previous_right": 213.5,
+              "close_right": 200.9600067138672,
+              "return_left": -0.0012630596767720936,
+              "return_right": -0.058735331550973324,
+              "difference": 0.05747227187420123
+            },
+            {
+              "symbol": "ECHO",
+              "previous_left": 101.9400024414,
+              "close_left": 98.6200027466,
+              "previous_right": 98.62000274658203,
+              "close_right": 89.91999816894531,
+              "return_left": -0.03256817358532538,
+              "return_right": -0.0882174440817306,
+              "difference": 0.05564927049640522
+            }
+          ]
+        }
+      }
+    },
+    "interpretation": "Direct source returns agree much more closely than either source and the frozen copy. The one-day shift comparisons do not support a uniform one-day shift; the later comparison covers only 18 symbols. Corporate actions, ticker identity and individual prints were not independently verified."
   }
 }
