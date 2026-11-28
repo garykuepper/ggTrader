@@ -123,3 +123,31 @@ def test_alignment_reports_returns_and_largest_disagreements() -> None:
     assert result["within_half_point"] == 0.5
     assert result["largest"][0]["symbol"] == "B"
     assert result["largest"][0]["difference"] == pytest.approx(0.2)
+
+
+def test_alpaca_can_request_sip_feed(monkeypatch: pytest.MonkeyPatch) -> None:
+    import datetime
+
+    import fc_pilot
+    import requests
+
+    class Response:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            pass
+
+        def json(self) -> dict:
+            return {"bars": {}}
+
+    seen = []
+
+    def fake_get(url: str, **kwargs: object) -> Response:
+        seen.append(kwargs["params"].copy())
+        return Response()
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr("time.sleep", lambda _: None)
+    fc_pilot.fetch_bars(["AAA"], datetime.date(2026, 11, 4), "alpaca", feed="sip")
+    assert seen[0]["feed"] == "sip"
+    assert seen[0]["adjustment"] == "raw"

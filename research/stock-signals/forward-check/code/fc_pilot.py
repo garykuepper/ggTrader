@@ -98,7 +98,9 @@ def fetch_listing() -> pd.DataFrame:
     )
 
 
-def fetch_bars(symbols: list[str], day: object, source: str = "yahoo") -> pd.DataFrame:
+def fetch_bars(
+    symbols: list[str], day: object, source: str = "yahoo", feed: str = "iex"
+) -> pd.DataFrame:
     """Fetch daily prices from Yahoo or the free Alpaca IEX feed."""
     import datetime
     import os
@@ -151,7 +153,7 @@ def fetch_bars(symbols: list[str], day: object, source: str = "yahoo") -> pd.Dat
                 "timeframe": "1Day",
                 "start": str(day),
                 "end": str(day + datetime.timedelta(days=1)),
-                "feed": "iex",
+                "feed": feed,
                 "limit": 10000,
                 "adjustment": "raw",
             }
