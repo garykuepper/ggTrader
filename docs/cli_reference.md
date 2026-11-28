@@ -882,7 +882,7 @@ stopped, and cron resumes only on the owner's explicit authorization. Dry runs d
 The proposed user units in `scripts/systemd/` assume an editable installation at
 `~/ggTrader/.venv`. Daily listing and raw SIP collection runs weekdays at 14:00 Pacific with
 a 30-minute limit. The separate Yahoo shares timer wakes weekdays at 15:30 Pacific, but its
-service acts only on the first NYSE trading day of the week; it has a four-hour limit. The
+service acts on NYSE trading days until the week's observations and failed-symbol retries are complete; it has a four-hour limit. The
 read-only health report runs Saturdays at 09:00 Pacific. The daily and shares timers use `Persistent=false`; the weekly health timer uses
 `Persistent=true`. The services write to the journal and run Python directly with a 1 GB
 memory limit; no message is sent.
@@ -896,18 +896,25 @@ the service exits with an error if any day failed. It uses the original day's sa
 checkpoint if one exists. Otherwise
 it uses the most recent **earlier** saved listing, tags the load with that listing's date and
 adds a `listing_missing` gap. Stocks first listed in between are absent from that catch-up
-universe. It never uses a later listing. If no earlier listing exists, that day fails and
-the missing input is reported. A first run with no prior load starts on its own day; it does not invent a
+universe. It never uses a later listing. Catch-up listing rows use the catch-up date but contain the
+earlier listing: readers must join `forward.loads.source` to see the origin date. If no earlier
+listing exists, that day fails and the missing input is reported. A first run with no prior load starts on its own day; it does not invent a
 history. The weekly health report identifies listing gaps separately from price coverage.
 
 The daily job saves the original Nasdaq listing files under `data/forward_raw/<day>/`.
+If a same-day refetch differs from a raw file already saved, collection stops instead of replacing
+it; preserve the files and inspect the saved listing checkpoint before retrying. If a symbol
+appears in both directory files, the last row wins deterministically: `otherlisted.txt` is read
+after `nasdaqlisted.txt`, so its row is retained. Symbols with no bars for five consecutive
+sessions are marked `never_traded` in the gaps table and no longer carried forward; a later
+reappearance needs review before it can be collected again.
 A price response covering less than 90% of the listed candidates is refused so it can be retried.
-The shares job records a separate load and observation-dated shares rows, and checkpoints
-completed symbols so the same scheduled day can be retried without duplicating a load. A
-failed or timed-out shares job may need a manual retry; for a previous first-trading-day job,
-use `.venv/bin/python scripts/forward_collect.py --shares-only --day YYYY-MM-DD`.
-Values are dated when observed, not back-filled. If the four-hour limit, the PostgreSQL advisory lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The
-shares timer does not automatically retry a failed first-day job later in the week. Catch-up is
+The shares job uses Monday as its weekly key, records observation-dated shares rows and
+checkpoints completed symbols. Failed symbols are recorded in `forward.gaps` as
+`shares_failed` and retried later in the week without duplicating successful rows. A
+failed or timed-out shares job retries on the next trading day of that week; a manual retry
+within the same week can use `.venv/bin/python scripts/forward_collect.py --shares-only`.
+Values are dated when observed, not back-filled. If the four-hour limit, the PostgreSQL advisory lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The shares timer retries on subsequent trading days in the same week. Catch-up is
 limited to ten missing sessions per daily invocation and reports if more remain.
 
 Once the owner has approved enabling the timers and the reviewed changes are present in
@@ -930,7 +937,7 @@ journalctl --user -u ggtrader-forward-collect.service -u ggtrader-forward-shares
 A successful daily run appends a load, listing snapshot, raw SIP bars for explicit common-stock
 candidates, missing-price rows and symbol-status observations. The shares job writes its own
 load and Yahoo observations. The weekly report counts missing trading days, measures coverage
-as bars divided by bars plus missing-price rows, identifies missing listings and lists newly
+as candidate stocks with bars divided by candidate stocks, identifies missing listings and lists newly
 ended symbols. It makes no database writes. No timer resumes the paper trader or authorizes orders.
 
 #### Known limits

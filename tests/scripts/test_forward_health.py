@@ -35,6 +35,19 @@ def populated(database: object) -> object:
             )
             load = cur.fetchone()[0]
             cur.execute(
+                "INSERT INTO forward.listing_snapshots "
+                "(load_id,day,symbol,exchange,security_name,is_etf,is_test) "
+                "VALUES (%s,%s,'AAA','Q','AAA Common Stock',false,false)",
+                (load, date),
+            )
+            if gap_count:
+                cur.execute(
+                    "INSERT INTO forward.listing_snapshots "
+                    "(load_id,day,symbol,exchange,security_name,is_etf,is_test) "
+                    "VALUES (%s,%s,'BBB','Q','BBB Common Stock',false,false)",
+                    (load, date),
+                )
+            cur.execute(
                 "INSERT INTO forward.daily_bars VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (load, date, "AAA", "sip", 1, 2, 1, 2, 10),
             )
@@ -114,3 +127,74 @@ def test_weekly_shares_load_is_reported(populated: object) -> None:
     assert result["shares_loaded"] is True
     assert result["shares_count"] == 1
     assert "shares: loaded" in health.format_message(result).lower()
+
+
+def test_coverage_excludes_tracked_symbols_not_in_current_listing(populated: object) -> None:
+    with populated.cursor() as cur:
+        cur.execute("SELECT load_id FROM forward.loads WHERE day='2026-11-23'")
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.gaps VALUES (%s,'2026-11-23','OLD','missing_bar')", (load,)
+        )
+        cur.execute(
+            "INSERT INTO forward.daily_bars VALUES (%s,'2026-11-23','EXTRA','sip',1,2,1,2,10)",
+            (load,),
+        )
+    report = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert report["mean_coverage"] == 0.75
+
+
+def test_late_never_traded_marker_does_not_change_original_coverage(populated: object) -> None:
+    with populated.cursor() as cur:
+        cur.execute(
+            "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+            "code_commit, actor) VALUES ('2026-11-22','catchup',%s,%s,'x','x') RETURNING load_id",
+            ("a" * 64, "b" * 64),
+        )
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.gaps VALUES (%s,'2026-11-22','BBB','never_traded')", (load,)
+        )
+    result = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert result["mean_coverage"] == 0.75
+
+
+def test_weekly_shares_report_shows_unresolved_failures(populated: object) -> None:
+    with populated.cursor() as cur:
+        cur.execute(
+            "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+            "code_commit, actor) VALUES ('2026-11-23','yahoo-shares',%s,%s,'a','test') "
+            "RETURNING load_id",
+            ("a" * 64, "b" * 64),
+        )
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.gaps VALUES (%s,'2026-11-23','BBB','shares_failed')", (load,)
+        )
+    result = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert result["shares_pending"] == 1
+    assert "1 unresolved" in health.format_message(result).lower()
+
+
+def test_resolved_shares_failure_is_not_pending(populated: object) -> None:
+    with populated.cursor() as cur:
+        for index in range(2):
+            cur.execute(
+                "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+                "code_commit, actor) VALUES ('2026-11-23','yahoo-shares',%s,%s,'a','test') "
+                "RETURNING load_id",
+                ("a" * 64, "b" * 64),
+            )
+            load = cur.fetchone()[0]
+            if index == 0:
+                cur.execute(
+                    "INSERT INTO forward.gaps VALUES (%s,'2026-11-23','BBB','shares_failed')",
+                    (load,),
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO forward.shares_outstanding "
+                    "VALUES (%s,'2026-11-24','BBB',100,'yahoo')",
+                    (load,),
+                )
+    assert health.weekly_report(populated, dt.date(2026, 11, 28))["shares_pending"] == 0

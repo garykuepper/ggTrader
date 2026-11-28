@@ -1,5 +1,5 @@
 [Unit]
-Description=Run ggTrader shares on the first trading day of the week
+Description=Retry ggTrader weekly shares on each trading day
 
 [Timer]
 OnCalendar=Mon..Fri *-*-* 15:30:00 America/Los_Angeles

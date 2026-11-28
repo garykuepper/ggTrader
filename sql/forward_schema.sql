@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS forward.loads (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Catch-up rows use the catch-up day with an earlier listing; inspect forward.loads.source.
 CREATE TABLE IF NOT EXISTS forward.listing_snapshots (
     load_id bigint NOT NULL REFERENCES forward.loads(load_id),
     day date NOT NULL,

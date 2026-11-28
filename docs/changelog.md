@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collector re-review fixes)
+
+- Restored pure collector tests to the fast tier, added bounded advisory locking and separate weekly retry records, stopped carrying never-traded symbols after five gaps, and aligned health coverage with the collector candidate rules. The timers remain uninstalled.
+
 ## 2026-11-28 (forward collector review fixes)
 
 - Hardened transaction and retry behavior, preserved full dated raw listings, separated today from older catch-up attempts, and moved the network jobs to memory-limited user services. These changes are tested on disposable databases only; the timers remain uninstalled.

@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-pytestmark = [pytest.mark.db, pytest.mark.integration]
 
 
 def load_file(name: str, path: Path) -> object:
@@ -65,6 +64,8 @@ class Source:
         return [{"symbol": x, "shares": 100} for x in symbols]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_rerun_same_day_adds_no_rows(conn: object) -> None:
     source = Source()
     day = dt.date(2026, 11, 23)
@@ -76,6 +77,8 @@ def test_rerun_same_day_adds_no_rows(conn: object) -> None:
     assert source.calls == 1
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_missing_symbol_is_recorded_as_gap(conn: object) -> None:
     collector.collect(dt.date(2026, 11, 23), False, Source(), conn)
     with conn.cursor() as cur:
@@ -83,6 +86,8 @@ def test_missing_symbol_is_recorded_as_gap(conn: object) -> None:
         assert cur.fetchall() == [("BBB",)]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_symbol_ended_only_after_five_missing_trading_days(conn: object) -> None:
     source = Source()
     source.returned = ["AAA", "BBB"]
@@ -93,12 +98,16 @@ def test_symbol_ended_only_after_five_missing_trading_days(conn: object) -> None
     assert collector.collect(dt.date(2026, 11, 23), False, source, conn)["newly_ended"] == 1
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_holiday_makes_no_gaps(conn: object) -> None:
     source = Source()
     assert collector.collect(dt.date(2026, 11, 26), False, source, conn)["gaps"] == 0
     assert source.calls == 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_low_coverage_returns_alert_flag(conn: object) -> None:
     source = Source()
     source.returned = []
@@ -121,6 +130,8 @@ def test_excludes_special_securities() -> None:
     assert collector.common_candidate({**base, "security_name": "ABC Common Stock"})
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_disappearing_symbol_is_recorded_as_gap(conn: object) -> None:
     source = Source()
     source.returned = ["AAA", "BBB"]
@@ -133,6 +144,8 @@ def test_disappearing_symbol_is_recorded_as_gap(conn: object) -> None:
         assert cur.fetchall() == [("BBB",)]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_symbol_never_seen_with_bar_does_not_gain_status(conn: object) -> None:
     source = Source()
     for day in [16, 17, 18, 19, 20]:
@@ -214,6 +227,8 @@ def test_dry_run_shares_sample_on_nonweekly_day() -> None:
     assert source.sampled == ["AAA"]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_sample_cannot_be_used_for_writes(conn: object) -> None:
     with pytest.raises(ValueError, match="dry.run"):
         collector.collect(dt.date(2026, 11, 27), False, Source(), conn, shares_sample=1)
@@ -238,6 +253,8 @@ def test_retry_after_http_date() -> None:
     assert collector.retry_delay("Sat, 28 Nov 2026 17:00:20 GMT", now, 0) == 20
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_daily_collection_never_calls_yahoo(conn: object) -> None:
     class NoYahoo(Source):
         def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
@@ -249,6 +266,8 @@ def test_daily_collection_never_calls_yahoo(conn: object) -> None:
         assert cur.fetchone()[0] == 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_shares_only_is_idempotent_and_does_not_duplicate_daily(conn: object) -> None:
     source = Source()
     day = dt.date(2026, 11, 23)
@@ -264,6 +283,8 @@ def test_shares_only_is_idempotent_and_does_not_duplicate_daily(conn: object) ->
         assert cur.fetchone()[0] == 9
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
@@ -282,6 +303,8 @@ def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
         assert cur.fetchone()[0] == "listing_missing"
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_stops_without_an_earlier_listing(conn: object) -> None:
     result = collector.catch_up(
         dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
@@ -289,6 +312,8 @@ def test_catch_up_stops_without_an_earlier_listing(conn: object) -> None:
     assert any("earlier saved listing" in item["error"] for item in result["failures"])
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_stops_at_ten_days_with_clear_message(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 2), False, source, conn)
@@ -298,6 +323,8 @@ def test_catch_up_stops_at_ten_days_with_clear_message(conn: object) -> None:
     assert result["remaining"] > 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_uses_saved_same_day_listing_before_earlier_one(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
@@ -321,6 +348,8 @@ def test_catch_up_uses_saved_same_day_listing_before_earlier_one(conn: object) -
         assert cur.fetchone()[0] == 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_never_uses_a_later_listing(conn: object) -> None:
     collector.collect(dt.date(2026, 11, 18), False, Source(), conn)
     result = collector.catch_up(
@@ -329,6 +358,8 @@ def test_catch_up_never_uses_a_later_listing(conn: object) -> None:
     assert any("earlier saved listing" in item["error"] for item in result["failures"])
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_shares_load_does_not_block_daily_load(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
@@ -340,6 +371,8 @@ def test_shares_load_does_not_block_daily_load(conn: object) -> None:
         assert cur.fetchone()[0] == 2
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_shares_failure_writes_no_partial_load_and_can_retry(conn: object) -> None:
     class RetrySource(Source):
         fail = True
@@ -391,6 +424,8 @@ def test_share_checkpoint_resumes_without_refetching_completed_symbols(
     assert [row["symbol"] for row in result] == ["AAA", "BBB"]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_fills_hole_before_a_later_success(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
@@ -402,6 +437,8 @@ def test_catch_up_fills_hole_before_a_later_success(conn: object) -> None:
         assert cur.fetchone()[0] == 1
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_low_coverage_rejected_without_writing(conn: object) -> None:
     source = Source()
     source.returned = []
@@ -413,6 +450,8 @@ def test_low_coverage_rejected_without_writing(conn: object) -> None:
         assert cur.fetchone()[0] == 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_transaction_rolls_back_on_midway_invalid_bar(conn: object) -> None:
     class BadBar(Source):
         def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
@@ -463,6 +502,8 @@ def test_nasdaq_keeps_na_etfs_and_test_issues(monkeypatch: pytest.MonkeyPatch) -
     assert next(row for row in rows if row["symbol"] == "TEST1")["is_test"]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_today_is_collected_before_old_backlog_and_failure_does_not_block(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 2), False, source, conn)
@@ -513,6 +554,8 @@ def test_yahoo_more_than_ten_percent_failures_refuses_run(monkeypatch: pytest.Mo
         collector.Sources(None).shares(["AAA", "BBB"], dt.date(2026, 11, 23))
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_main_commits_using_a_real_unentered_connection(
     conn: object, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -553,6 +596,8 @@ def test_main_commits_using_a_real_unentered_connection(
         assert cur.fetchone()[0] == 1
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_coverage_gate_counts_candidates_not_previously_tracked_symbols(conn: object) -> None:
     source = Source()
     source.returned = ["AAA", "BBB"]
@@ -614,6 +659,8 @@ def test_raw_listing_files_are_kept_outside_results(
     assert (tmp_path / "data" / "forward_raw" / str(day) / "nasdaqlisted.txt").read_text() == nasdaq
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_main_shares_mode_commits_without_nested_connection(
     conn: object, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -653,6 +700,8 @@ def test_main_shares_mode_commits_without_nested_connection(
         assert cur.fetchone()[0] == 10
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_low_coverage_discards_cached_partial_bars_for_retry(conn: object, tmp_path: Path) -> None:
     class Partial(Source):
         def __init__(self) -> None:
@@ -689,6 +738,8 @@ def test_shares_drop_nan_and_reject_negative(monkeypatch: pytest.MonkeyPatch) ->
     assert [(row["symbol"], row["shares"]) for row in result] == [("AAA", 12)]
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_conflicting_duplicate_bars_refuse_load(conn: object) -> None:
     class Duplicates(Source):
         def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
@@ -708,6 +759,8 @@ def test_last_closed_day_waits_for_sip_delay() -> None:
     assert collector.last_closed_day(now) == dt.date(2026, 11, 24)
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_transaction_rolls_back_after_first_bar_batch(conn: object) -> None:
     import psycopg2
     from psycopg2 import sql
@@ -739,21 +792,25 @@ def test_transaction_rolls_back_after_first_bar_batch(conn: object) -> None:
             assert cur.fetchone()[0] == 0
 
 
-def test_never_traded_symbol_remains_a_gap_after_leaving_listing(conn: object) -> None:
+@pytest.mark.db
+@pytest.mark.integration
+def test_never_traded_symbol_stops_after_five_missing_sessions(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
     source.listed = ["AAA"]
-    collector.collect(dt.date(2026, 11, 17), False, source, conn)
-    collector.collect(dt.date(2026, 11, 18), False, source, conn)
+    for day in [17, 18, 19, 20, 23]:
+        collector.collect(dt.date(2026, 11, day), False, source, conn)
     with conn.cursor() as cur:
-        cur.execute("SELECT day FROM forward.gaps WHERE symbol='BBB' ORDER BY day")
-        assert [row[0] for row in cur.fetchall()] == [
-            dt.date(2026, 11, day) for day in (16, 17, 18)
-        ]
+        cur.execute("SELECT day, reason FROM forward.gaps WHERE symbol='BBB' ORDER BY day")
+        rows = cur.fetchall()
+        assert len(rows) == 5
+        assert rows[-1] == (dt.date(2026, 11, 20), "never_traded")
         cur.execute("SELECT count(*) FROM forward.symbol_status WHERE symbol='BBB'")
         assert cur.fetchone()[0] == 0
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_main_exits_nonzero_after_catch_up_failures(
     conn: object, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -793,6 +850,8 @@ def test_main_exits_nonzero_after_catch_up_failures(
     assert exc.value.code == 1
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_git_failure_does_not_discard_shares(conn: object, monkeypatch: pytest.MonkeyPatch) -> None:
     source = Source()
     day = dt.date(2026, 11, 23)
@@ -809,6 +868,8 @@ def test_git_failure_does_not_discard_shares(conn: object, monkeypatch: pytest.M
         assert cur.fetchone()[0] == "unknown"
 
 
+@pytest.mark.db
+@pytest.mark.integration
 def test_today_first_keeps_earliest_first_seen_after_catch_up(conn: object) -> None:
     baseline = Source()
     collector.collect(dt.date(2026, 11, 16), False, baseline, conn)
@@ -874,3 +935,199 @@ def test_legacy_listing_checkpoint_is_rebuilt_from_raw_files(
     rows = source.saved_listing(day)
     assert {row["symbol"] for row in rows} == {"NA", "ETF1"}
     assert (tmp_path / "data" / "forward_raw" / str(day) / "nasdaqlisted.txt").read_text() == nasdaq
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_shares_retry_failed_symbols_later_in_same_week(conn: object) -> None:
+    class Partial(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.errors = []
+            self.calls_by_symbol = []
+            self.first = True
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.calls_by_symbol.append(symbols[:])
+            if self.first:
+                self.first = False
+                self.errors = [{"source": "yahoo", "symbol": "BBB", "error": "OSError"}]
+                return super().shares([x for x in symbols if x != "BBB"], day)
+            self.errors = []
+            return super().shares(symbols, day)
+
+    source = Partial()
+    monday, tuesday = dt.date(2026, 11, 23), dt.date(2026, 11, 24)
+    collector.collect(monday, False, source, conn)
+    first = collector.collect_shares(monday, source, conn)
+    assert first["shares"] == 9 and first["remaining"] == 1
+    second = collector.collect_shares(tuesday, source, conn)
+    assert second["shares"] == 1 and second["remaining"] == 0
+    assert source.calls_by_symbol[-1] == ["BBB"]
+    assert collector.collect_shares(tuesday, source, conn)["already_collected"]
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*),count(DISTINCT symbol) FROM forward.shares_outstanding")
+        assert cur.fetchone() == (10, 10)
+        cur.execute("SELECT count(*) FROM forward.gaps WHERE reason='shares_failed'")
+        assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_conflicting_duplicate_invalidates_bar_checkpoint(conn: object) -> None:
+    class Duplicate(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.invalidated = False
+
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            rows = super().bars(symbols, day)
+            return rows + [{**rows[0], "close": 9}]
+
+        def invalidate_bars(self) -> None:
+            self.invalidated = True
+
+    source = Duplicate()
+    with pytest.raises(ValueError, match="conflicting"):
+        collector.collect(dt.date(2026, 11, 23), False, source, conn)
+    assert source.invalidated
+
+
+def test_advisory_lock_is_bounded_and_has_clear_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Cursor:
+        def __enter__(self) -> object:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+        def execute(self, query: str) -> None:
+            assert "pg_try_advisory_lock" in query
+
+        def fetchone(self) -> tuple[bool]:
+            return (False,)
+
+    class Conn:
+        def cursor(self) -> Cursor:
+            return Cursor()
+
+    sleeps = []
+    monkeypatch.setattr(collector.time, "sleep", lambda n: sleeps.append(n))
+    with pytest.raises(TimeoutError, match="advisory lock"):
+        collector.acquire_lock(Conn())
+    assert len(sleeps) == 4
+
+
+def test_unlock_failure_is_logged_without_masking_original(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class Conn:
+        def cursor(self) -> object:
+            raise OSError("broken connection")
+
+    try:
+        raise ValueError("original")
+    except ValueError:
+        collector.release_lock(Conn())
+        assert "unlock" in caplog.text.lower()
+
+
+def test_duplicate_symbol_uses_otherlisted_row(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Response:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+    nasdaq = "Symbol|Security Name|ETF|Test Issue\nNA|Nasdaq Common Stock|N|N\n"
+    other = "ACT Symbol|Security Name|ETF|Test Issue|Exchange\nNA|Other Common Stock|N|N|N\n"
+    source = collector.Sources(None)
+    monkeypatch.setattr(
+        source, "get", lambda url, **kwargs: Response(nasdaq if "nasdaqlisted" in url else other)
+    )
+    rows = source.listing()
+    assert len(rows) == 1 and rows[0]["security_name"] == "Other Common Stock"
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_weekly_checkpoint_resumes_same_universe_after_failed_run(
+    conn: object, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import pandas as pd
+
+    monday, tuesday = dt.date(2026, 11, 23), dt.date(2026, 11, 24)
+    listing = Source()
+    collector.collect(monday, False, listing, conn)
+    failing = [True]
+    calls = []
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            calls.append(self.symbol)
+            if failing[0] and self.symbol in {"AAA", "BBB"}:
+                raise OSError("offline")
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    monkeypatch.setattr(collector, "observation_day", lambda: tuesday)
+    checkpoint = tmp_path / "week.json"
+    with pytest.raises(RuntimeError, match="10%"):
+        collector.collect_shares(monday, collector.Sources(checkpoint), conn)
+    listing.listed.append("CCC")
+    listing.returned.append("CCC")
+    collector.collect(tuesday, False, listing, conn)
+    failing[0] = False
+    calls.clear()
+    result = collector.collect_shares(tuesday, collector.Sources(checkpoint), conn)
+    assert result["shares"] == 10
+    assert set(calls) == {"AAA", "BBB"}
+
+
+def test_week_key_forbids_backdating_shares() -> None:
+    assert collector.shares_week(dt.date(2026, 11, 24), dt.date(2026, 11, 26)) == dt.date(
+        2026, 11, 23
+    )
+    with pytest.raises(ValueError, match="current week"):
+        collector.shares_week(dt.date(2026, 11, 16), dt.date(2026, 11, 26))
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_shares_failure_is_not_counted_as_missing_price_session(conn: object) -> None:
+    source = Source()
+    source.returned = ["AAA", "BBB"]
+    collector.collect(dt.date(2026, 11, 16), False, source, conn)
+    source.returned = ["BBB"]
+    for day in [17, 18, 19]:
+        collector.collect(dt.date(2026, 11, day), False, source, conn)
+    source.returned = ["AAA", "BBB"]
+    collector.collect(dt.date(2026, 11, 20), False, source, conn)
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO forward.loads (day,source,raw_sha256,normalized_sha256,code_commit,actor) "
+            "VALUES ('2026-11-16','yahoo-shares',%s,%s,'x','test') RETURNING load_id",
+            ("a" * 64, "b" * 64),
+        )
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.gaps VALUES (%s,'2026-11-20','AAA','shares_failed')", (load,)
+        )
+    source.returned = ["BBB"]
+    assert collector.collect(dt.date(2026, 11, 23), False, source, conn)["newly_ended"] == 0
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_never_traded_symbol_is_not_requested_if_still_listed(conn: object) -> None:
+    class Recording(Source):
+        def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.requested = symbols[:]
+            return super().bars(symbols, day)
+
+    source = Recording()
+    for day in [16, 17, 18, 19, 20, 23]:
+        collector.collect(dt.date(2026, 11, day), False, source, conn)
+    assert "BBB" not in source.requested
