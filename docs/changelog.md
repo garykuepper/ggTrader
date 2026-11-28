@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collector)
+
+- Added a daily listing and raw SIP price collector with explicit gaps, five-session status tracking, weekly dated Yahoo share observations and a database-free dry run. Collection writes have been tested only in a disposable database; no timer is enabled.
+
 ## 2026-11-28 (forward collection schema draft)
 
 - Prepared append-only storage for future daily listings, raw SIP prices, gaps, status observations and weekly shares outstanding. The schema was tested in a disposable PostgreSQL container and has not been applied to the live database.
