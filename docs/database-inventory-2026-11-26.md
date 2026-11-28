@@ -72,6 +72,10 @@ column for any year; Yahoo's daily stock table has a volume column and price row
 incomplete market coverage. See the market-data audit at `/media/thesix/ggTrader-data/market-data/README.md`
 and the [research design](superpowers/specs/2026-11-21-all-stocks-honest-test-bench-design.md).
 
+## Forward collection (added 2026-11-28)
+
+The `forward` schema holds free daily stock data collected going forward, so a rule can later be scored on data that arrived after it was registered. It was created on 2026-11-28 with the owner's approval, before any fresh backup (the 2026-11-26 dump predates it; the Sunday 04:30 dump covers it). Six append-only tables (updates, deletes and truncation are refused): `loads` (one row per collection, with source, raw and normalized SHA-256, code commit, actor and time), `listing_snapshots` (the daily Nasdaq Trader symbol list with raw security names), `daily_bars` (raw, unadjusted Alpaca SIP bars), `gaps`, `symbol_status` and `shares_outstanding` (weekly, Yahoo's free method). All were empty when created. DDL: `sql/forward_schema.sql`. Collection has not started.
+
 ## Backups
 
 The newest full dump is `ggtrader_20261126.dump` (12,019,307,097 bytes), taken after the SEC loads, the frozen Yahoo copy and the SPY table. A test restore into a disposable database on 2026-11-27 matched all 78 table row counts and all 6 checksums (report `drill_report_20261126.json`). The earlier `ggtrader_20261125.dump` also passed its test. The old `attempts` folder of earlier dump tries was deleted at the owner's request on 2026-11-26.
