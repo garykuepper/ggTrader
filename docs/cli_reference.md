@@ -902,17 +902,20 @@ listing exists, that day fails and the missing input is reported. A first run wi
 history. The weekly health report identifies listing gaps separately from price coverage.
 
 The daily job saves the original Nasdaq listing files under `data/forward_raw/<day>/`.
-If a same-day refetch differs from a raw file already saved, collection stops instead of replacing
-it; preserve the files and inspect the saved listing checkpoint before retrying. If a symbol
+The two files are fetched before a new dated pair is saved. If the scratch checkpoint is missing,
+the saved raw pair is reused. If an older partial raw pair exists, its saved component is kept
+and the missing component is taken from the new fetch; neither saved file is overwritten. If a symbol
 appears in both directory files, the last row wins deterministically: `otherlisted.txt` is read
 after `nasdaqlisted.txt`, so its row is retained. Symbols with no bars for five consecutive
-sessions are marked `never_traded` in the gaps table and no longer carried forward; a later
-reappearance needs review before it can be collected again.
+sessions are marked `never_traded` in the gaps table. While still listed they remain candidates;
+once they leave the listing they are no longer carried forward as tracked gaps.
 A price response covering less than 90% of the listed candidates is refused so it can be retried.
 The shares job uses Monday as its weekly key, records observation-dated shares rows and
-checkpoints completed symbols. Failed symbols are recorded in `forward.gaps` as
-`shares_failed` and retried later in the week without duplicating successful rows. A
-failed or timed-out shares job retries on the next trading day of that week; a manual retry
+checkpoints completed symbols. Exceptions are recorded in `forward.gaps` as `shares_failed`
+and retried later in the week without duplicating successful rows. Clean no-data answers are
+recorded as `shares_unavailable` and not retried that week. A retry writes a load only when it
+resolves a failure to a value or confirmed unavailable result, including an unavailable-only
+load; if nothing resolves, it writes nothing. A failed or timed-out shares job retries on the next trading day of that week; a manual retry
 within the same week can use `.venv/bin/python scripts/forward_collect.py --shares-only`.
 Values are dated when observed, not back-filled. If the four-hour limit, the PostgreSQL advisory lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The shares timer retries on subsequent trading days in the same week. Catch-up is
 limited to ten missing sessions per daily invocation and reports if more remain.
@@ -943,3 +946,7 @@ ended symbols. It makes no database writes. No timer resumes the paper trader or
 #### Known limits
 
 A provider may correct a daily bar after collection; the first saved version is not automatically revised.
+The gaps table has no index beginning with symbol or day; per-symbol gap counts and individual
+inserts may slow as it grows. A grouped query, bulk inserts and a `(symbol, day)` index are deferred;
+the index requires a live schema change. Catch-up retains each day's source object for request and
+error totals, so its raw responses can use an estimated 50–100 MB until the run ends.

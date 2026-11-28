@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import subprocess
+import tempfile
 import time
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
@@ -59,12 +60,6 @@ def bar_window(day: dt.date, now: dt.datetime | None = None) -> tuple[str, str]:
 def observation_day() -> dt.date:
     """Return today in the New York market timezone."""
     return dt.datetime.now(ZoneInfo("America/New_York")).date()
-
-
-def is_shares_day(day: dt.date) -> bool:
-    """Collect shares on the first trading day of each week."""
-    monday = day - dt.timedelta(days=day.weekday())
-    return sessions(monday, day) == [day]
 
 
 def shares_week(day: dt.date, observed: dt.date) -> dt.date:
@@ -162,24 +157,52 @@ class Sources:
             )
         return rows
 
+    def _persist_listing_pair(self, day: dt.date, raw: list[str]) -> list[str]:
+        """Publish a complete raw pair atomically; preserve any older partial file."""
+        if self.checkpoint is None:
+            return raw
+        root = REPO_ROOT / "data" / "forward_raw"
+        root.mkdir(parents=True, exist_ok=True)
+        folder = root / str(day)
+        names = ("nasdaqlisted.txt", "otherlisted.txt")
+        if folder.exists():
+            chosen = []
+            for name, text in zip(names, raw, strict=True):
+                path = folder / name
+                if path.exists():
+                    text = path.read_text()
+                else:
+                    self._save_raw_listing(day, name, text)
+                chosen.append(text)
+            return chosen
+        with tempfile.TemporaryDirectory(prefix=f".{day}-", dir=root) as staging:
+            stage = Path(staging)
+            for name, text in zip(names, raw, strict=True):
+                (stage / name).write_text(text)
+            stage.rename(folder)
+        return raw
+
     def saved_listing(self, day: dt.date) -> list[dict[str, Any]] | None:
-        """Read a listing captured on the requested date, if available."""
+        """Read the dated listing checkpoint or its durable raw pair."""
         if self.checkpoint is None:
             return None
         path = self.checkpoint.with_name(self.checkpoint.stem + "_listing.json")
-        if not path.exists():
-            return None
-        data = json.loads(path.read_text())
-        if data.get("day") != str(day):
-            return None
-        raw = data["raw"]
+        raw = None
+        if path.exists():
+            data = json.loads(path.read_text())
+            if data.get("day") == str(day):
+                raw = data["raw"]
+        if raw is None:
+            folder = REPO_ROOT / "data" / "forward_raw" / str(day)
+            paths = [folder / "nasdaqlisted.txt", folder / "otherlisted.txt"]
+            if not all(item.is_file() for item in paths):
+                return None
+            raw = [item.read_text() for item in paths]
         if len(raw) != 2:
             raise ValueError("Saved listing checkpoint lacks both raw directories")
+        raw = self._persist_listing_pair(day, raw)
         rows = []
-        for text, (filename, symbol) in zip(
-            raw, [("nasdaqlisted.txt", "Symbol"), ("otherlisted.txt", "ACT Symbol")], strict=True
-        ):
-            self._save_raw_listing(day, filename, text)
+        for text, symbol in zip(raw, ("Symbol", "ACT Symbol"), strict=True):
             rows.extend(self._listing_rows(text, symbol))
         if not rows:
             raise ValueError("Saved Nasdaq directories contain no listings")
@@ -187,30 +210,35 @@ class Sources:
         return list({row["symbol"]: row for row in rows}.values())
 
     def listing(self) -> list[dict[str, Any]]:
-        """Read and retain all Nasdaq directory listings and raw files."""
+        """Fetch both directories before preserving the dated raw pair."""
         day = observation_day()
         saved = self.saved_listing(day)
         if saved is not None:
             return saved
-        raw_start = len(self.raw)
+        if self.checkpoint is not None and self.checkpoint.stem != str(day):
+            raise ValueError("Cannot save a current listing for a different day")
+        raw = [
+            self.get(DIRECTORY + name, kind="listing").text
+            for name in ("nasdaqlisted.txt", "otherlisted.txt")
+        ]
+        if observation_day() != day:
+            raise ValueError("Listing observation date changed while fetching the directories")
         rows = []
-        for filename, symbol in [("nasdaqlisted.txt", "Symbol"), ("otherlisted.txt", "ACT Symbol")]:
-            response = self.get(DIRECTORY + filename, kind="listing")
-            self.raw.append(response.text)
-            self._save_raw_listing(day, filename, response.text)
-            rows.extend(self._listing_rows(response.text, symbol))
+        for text, symbol in zip(raw, ("Symbol", "ACT Symbol"), strict=True):
+            rows.extend(self._listing_rows(text, symbol))
         if not rows:
             raise ValueError("Nasdaq directories returned no listings")
+        raw = self._persist_listing_pair(day, raw)
+        rows = []
+        for text, symbol in zip(raw, ("Symbol", "ACT Symbol"), strict=True):
+            rows.extend(self._listing_rows(text, symbol))
         listing = list({row["symbol"]: row for row in rows}.values())
+        self.raw.extend(raw)
         if self.checkpoint is not None:
-            if self.checkpoint.stem != str(day):
-                raise ValueError("Cannot save a current listing for a different day")
             path = self.checkpoint.with_name(self.checkpoint.stem + "_listing.json")
             path.parent.mkdir(parents=True, exist_ok=True)
             temp = path.with_suffix(".tmp")
-            temp.write_text(
-                json.dumps({"day": str(day), "listing": listing, "raw": self.raw[raw_start:]})
-            )
+            temp.write_text(json.dumps({"day": str(day), "listing": listing, "raw": raw}))
             temp.replace(path)
         return listing
 
@@ -340,7 +368,7 @@ class Sources:
                 del cache["values"][symbol]
         failed = 0
         for symbol in symbols:
-            if symbol in cache["values"]:
+            if symbol in cache["values"] or symbol in unavailable:
                 continue
             value = None
             failed_symbol = False
@@ -379,7 +407,7 @@ class Sources:
                 tmp = self.checkpoint.with_suffix(".tmp")
                 tmp.write_text(json.dumps(cache))
                 tmp.replace(self.checkpoint)
-        if symbols and failed / len(symbols) > 0.1:
+        if symbols and not getattr(self, "share_is_retry", False) and failed / len(symbols) > 0.1:
             raise RuntimeError(f"Yahoo shares errors exceed 10%: {failed} of {len(symbols)}")
         self.raw.append({"values": cache["values"], "unavailable": sorted(unavailable)})
         return [
@@ -393,11 +421,11 @@ class Sources:
         ]
 
 
-def acquire_lock(conn: Any) -> None:
+def acquire_lock(conn: Any, kind: str = "daily") -> None:
     """Try the collector lock briefly rather than waiting indefinitely."""
     for attempt in range(5):
         with conn.cursor() as cur:
-            cur.execute("SELECT pg_try_advisory_lock(hashtext('forward_collect'))")
+            cur.execute("SELECT pg_try_advisory_lock(hashtext(%s))", (f"forward_collect:{kind}",))
             if cur.fetchone()[0]:
                 return
         if attempt < 4:
@@ -405,11 +433,11 @@ def acquire_lock(conn: Any) -> None:
     raise TimeoutError("Forward collection advisory lock is busy after five attempts")
 
 
-def release_lock(conn: Any) -> None:
+def release_lock(conn: Any, kind: str = "daily") -> None:
     """Release the lock without obscuring a preceding exception."""
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT pg_advisory_unlock(hashtext('forward_collect'))")
+            cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f"forward_collect:{kind}",))
     except Exception:
         LOG.exception("Could not unlock the forward collection advisory lock")
 
@@ -458,17 +486,13 @@ def _gather(
 ) -> tuple:
     """Fetch source data and calculate coverage against tracked symbols."""
     listing = listing_override if listing_override is not None else source.listing()
-    candidates = [
-        x["symbol"]
-        for x in listing
-        if common_candidate(x) and x["symbol"] not in (never_traded or set())
-    ]
+    candidates = [x["symbol"] for x in listing if common_candidate(x)]
     if not candidates:
         raise ValueError("No explicit common-stock candidates in listing")
     tracked = {x["symbol"] for x in previous if x["ended_on"] is None}
     ended = {x["symbol"] for x in previous if x["ended_on"] is not None}
     target = sorted(
-        (set(candidates) | tracked | ((tracked_gaps or set()) - ended)) - (never_traded or set())
+        set(candidates) | ((tracked | (tracked_gaps or set())) - ended - (never_traded or set()))
     )
     if hasattr(source, "progress"):
         source.progress.update(listed=len(listing), candidates=len(candidates))
@@ -509,10 +533,12 @@ def write_transaction(conn: Any) -> Iterator[None]:
         yield
         conn.commit()
     except BaseException:
-        conn.rollback()
+        if not conn.closed:
+            conn.rollback()
         raise
     finally:
-        conn.autocommit = original
+        if not conn.closed:
+            conn.autocommit = original
 
 
 def _collect_locked(
@@ -558,8 +584,11 @@ def _collect_locked(
         )
         tracked_gaps = {row[0] for row in cur.fetchall()}
         cur.execute(
-            "SELECT DISTINCT symbol FROM forward.gaps WHERE reason='never_traded' AND day < %s",
-            (day,),
+            "SELECT DISTINCT g.symbol FROM forward.gaps g "
+            "WHERE g.reason='never_traded' AND g.day < %s AND NOT EXISTS "
+            "(SELECT 1 FROM forward.daily_bars b WHERE b.symbol=g.symbol "
+            "AND b.day > g.day AND b.day < %s)",
+            (day, day),
         )
         never_traded = {row[0] for row in cur.fetchall()}
     summary, listing, bars, gaps, shares = _gather(
@@ -635,8 +664,16 @@ def _collect_locked(
                     page_size=1000,
                 )
             for symbol in gaps:
-                reason = "missing_bar"
-                if symbol not in previous_map and len(prior_sessions) == 5:
+                reason = (
+                    "never_traded"
+                    if symbol in never_traded and symbol not in previous_map
+                    else "missing_bar"
+                )
+                if (
+                    symbol not in previous_map
+                    and symbol not in never_traded
+                    and len(prior_sessions) == 5
+                ):
                     cur.execute(
                         "SELECT count(DISTINCT day) FROM forward.gaps WHERE symbol=%s "
                         "AND reason='missing_bar' AND day=ANY(%s)",
@@ -734,7 +771,7 @@ def git_revision() -> str:
 def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
     """Append weekly share observations, retrying unresolved symbols without duplicates."""
     week = day - dt.timedelta(days=day.weekday())
-    acquire_lock(conn)
+    acquire_lock(conn, "shares")
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -744,18 +781,23 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
             loads = [row[0] for row in cur.fetchall()]
             if loads:
                 cur.execute(
-                    "SELECT DISTINCT symbol FROM forward.shares_outstanding WHERE load_id=ANY(%s)",
-                    (loads,),
+                    "SELECT symbol FROM (SELECT DISTINCT ON (symbol) symbol, outcome FROM ("
+                    "SELECT symbol, 'value' AS outcome, load_id FROM forward.shares_outstanding "
+                    "WHERE load_id=ANY(%s) UNION ALL "
+                    "SELECT symbol, reason AS outcome, load_id FROM forward.gaps "
+                    "WHERE load_id=ANY(%s) AND reason IN ('shares_failed','shares_unavailable')"
+                    ") outcomes ORDER BY symbol, load_id DESC) latest "
+                    "WHERE outcome='shares_failed'",
+                    (loads, loads),
                 )
-                completed = {row[0] for row in cur.fetchall()}
-                cur.execute(
-                    "SELECT DISTINCT symbol FROM forward.gaps "
-                    "WHERE load_id=ANY(%s) AND reason='shares_failed'",
-                    (loads,),
-                )
-                candidates = sorted({row[0] for row in cur.fetchall()} - completed)
+                candidates = sorted(row[0] for row in cur.fetchall())
                 if not candidates:
-                    return {"already_collected": True, "shares": 0, "remaining": 0}
+                    return {
+                        "already_collected": True,
+                        "shares": 0,
+                        "remaining": 0,
+                        "message": "Weekly shares complete; no retryable symbols remain",
+                    }
                 checkpoint = getattr(source, "checkpoint", None)
                 previous = (
                     json.loads(checkpoint.read_text())
@@ -776,13 +818,24 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                 else:
                     listing_day, listing = saved_listing(conn, day)
                     candidates = sorted(row["symbol"] for row in listing if common_candidate(row))
+        source.share_is_retry = bool(loads)
         if hasattr(source, "checkpoint"):
-            source.share_listing_day = str(listing_day)
+            source.share_listing_day = str(listing_day) if listing_day is not None else None
         if not candidates:
             raise ValueError("No eligible symbols for weekly shares")
+        before_errors = len(getattr(source, "errors", []))
         shares = source.shares(candidates, week)
         successes = {row["symbol"] for row in shares}
-        failed = sorted(set(candidates) - successes)
+        errors = getattr(source, "errors", [])[before_errors:]
+        failed = sorted(
+            {item["symbol"] for item in errors if item.get("source") == "yahoo"}
+            & set(candidates) - successes
+        )
+        unavailable = sorted(set(candidates) - successes - set(failed))
+        if not shares and not loads:
+            raise ValueError("Yahoo returned no shares; no load was recorded")
+        if not shares and not unavailable:
+            return {"shares": 0, "remaining": len(candidates), "message": "No shares resolved"}
         raw = getattr(source, "raw", shares)
         with write_transaction(conn):
             with conn.cursor() as cur:
@@ -793,7 +846,7 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                         week,
                         SHARES_SOURCE,
                         digest([raw, listing_day]),
-                        digest([shares, failed]),
+                        digest([shares, failed, unavailable]),
                         git_revision(),
                         os.getenv("USER", "unknown"),
                     ),
@@ -816,22 +869,27 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                         ],
                         page_size=1000,
                     )
-                if failed:
+                missing = (
+                    [] if loads else [(load, day, symbol, "shares_failed") for symbol in failed]
+                )
+                missing += [(load, day, symbol, "shares_unavailable") for symbol in unavailable]
+                if missing:
                     execute_values(
                         cur,
                         "INSERT INTO forward.gaps (load_id, day, symbol, reason) VALUES %s",
-                        [(load, day, symbol, "shares_failed") for symbol in failed],
+                        missing,
                         page_size=1000,
                     )
         return {
             "shares": len(shares),
             "candidates": len(candidates),
             "remaining": len(failed),
+            "unavailable": len(unavailable),
             "listing_day": str(listing_day) if listing_day is not None else None,
             "week": str(week),
         }
     finally:
-        release_lock(conn)
+        release_lock(conn, "shares")
 
 
 def catch_up(

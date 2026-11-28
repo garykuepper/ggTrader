@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.study import bootstrap, study_dir
 
-bootstrap(__file__)
+ROOT = bootstrap(__file__)
 
 from fc_pilot import fetch_bars  # noqa: E402
 
@@ -48,7 +48,7 @@ def main() -> None:
     """Fetch the needed prices and save the read-only comparison."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()
-    load_dotenv("/home/flynn/ggTrader/.env")
+    load_dotenv(ROOT / ".env")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     root = study_dir(__file__)
     path = root / "_source_pilot.json"

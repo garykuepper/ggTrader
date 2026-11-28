@@ -43,14 +43,6 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         )
         bars_by_load = cur.fetchall()
         cur.execute(
-            "SELECT symbol, day, load_id FROM forward.gaps "
-            "WHERE reason='never_traded' AND day <= %s",
-            (end_day,),
-        )
-        retired: dict[str, list[tuple[dt.date, int]]] = {}
-        for symbol, retired_day, retired_load in cur.fetchall():
-            retired.setdefault(symbol, []).append((retired_day, retired_load))
-        cur.execute(
             "SELECT DISTINCT symbol FROM forward.symbol_status "
             "WHERE ended_on BETWEEN %s AND %s ORDER BY symbol",
             (start, end_day),
@@ -70,7 +62,12 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
             "AND g.reason='shares_failed' AND NOT EXISTS ("
             "SELECT 1 FROM forward.shares_outstanding s JOIN forward.loads done "
             "ON done.load_id=s.load_id WHERE done.source='yahoo-shares' "
-            "AND done.day=l.day AND s.symbol=g.symbol)",
+            "AND done.day=l.day AND done.load_id > l.load_id AND s.symbol=g.symbol) "
+            "AND NOT EXISTS (SELECT 1 FROM forward.gaps terminal "
+            "JOIN forward.loads resolved ON resolved.load_id=terminal.load_id "
+            "WHERE resolved.source='yahoo-shares' AND resolved.day=l.day "
+            "AND resolved.load_id > l.load_id "
+            "AND terminal.symbol=g.symbol AND terminal.reason='shares_unavailable')",
             (start, end_day),
         )
         shares_pending = cur.fetchone()[0]
@@ -86,9 +83,6 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         day = load_days[load]
         if common_candidate(
             {"symbol": symbol, "security_name": name, "is_etf": is_etf, "is_test": is_test}
-        ) and not any(
-            retired_day < day and retired_load < load
-            for retired_day, retired_load in retired.get(symbol, [])
         ):
             candidate_by_day.setdefault(day, set()).add(symbol)
     for load, symbol in bars_by_load:
@@ -110,7 +104,7 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         "ended": ended,
         "missing_days": [d for d in expected if d not in by_day],
         "missing_listings": missing_listings,
-        "shares_loaded": bool(shares_loads),
+        "shares_loaded": bool(shares_count),
         "shares_count": int(shares_count),
         "shares_pending": int(shares_pending),
     }

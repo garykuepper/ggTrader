@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collector final retry fixes)
+
+- Separated weekly shares failures from clean unavailable answers, made retry thresholds apply to the initial universe only, separated daily and shares locks, and retained listed never-traded candidates. Raw listing pairs now recover from durable files. Timers remain uninstalled.
+
 ## 2026-11-28 (forward collector re-review fixes)
 
 - Restored pure collector tests to the fast tier, added bounded advisory locking and separate weekly retry records, stopped carrying never-traded symbols after five gaps, and aligned health coverage with the collector candidate rules. The timers remain uninstalled.

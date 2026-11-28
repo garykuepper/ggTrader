@@ -198,3 +198,38 @@ def test_resolved_shares_failure_is_not_pending(populated: object) -> None:
                     (load,),
                 )
     assert health.weekly_report(populated, dt.date(2026, 11, 28))["shares_pending"] == 0
+
+
+def test_unavailable_only_load_resolves_previous_share_failure(populated: object) -> None:
+    with populated.cursor() as cur:
+        for reason in ["shares_failed", "shares_unavailable"]:
+            cur.execute(
+                "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+                "code_commit, actor) VALUES ('2026-11-23','yahoo-shares',%s,%s,'a','test') "
+                "RETURNING load_id",
+                ("a" * 64, "b" * 64),
+            )
+            load = cur.fetchone()[0]
+            cur.execute(
+                "INSERT INTO forward.gaps VALUES (%s,'2026-11-24','BBB',%s)", (load, reason)
+            )
+    result = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert result["shares_pending"] == 0
+    assert result["shares_loaded"] is False
+
+
+def test_earlier_unavailable_does_not_resolve_later_failure(populated: object) -> None:
+    with populated.cursor() as cur:
+        for reason in ["shares_unavailable", "shares_failed"]:
+            cur.execute(
+                "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+                "code_commit, actor) VALUES ('2026-11-23','yahoo-shares',%s,%s,'a','test') "
+                "RETURNING load_id",
+                ("a" * 64, "b" * 64),
+            )
+            load = cur.fetchone()[0]
+            cur.execute(
+                "INSERT INTO forward.gaps VALUES (%s,'2026-11-24','BBB',%s)", (load, reason)
+            )
+    result = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert result["shares_pending"] == 1

@@ -118,9 +118,9 @@ def test_low_coverage_returns_alert_flag(conn: object) -> None:
         assert cur.fetchone()[0] == 0
 
 
-def test_first_trading_day_uses_holiday_calendar() -> None:
-    assert collector.is_shares_day(dt.date(2026, 5, 26))
-    assert not collector.is_shares_day(dt.date(2026, 5, 29))
+def test_holiday_week_uses_monday_week_key() -> None:
+    assert collector.sessions(dt.date(2026, 5, 25), dt.date(2026, 5, 26)) == [dt.date(2026, 5, 26)]
+    assert collector.shares_week(dt.date(2026, 5, 26), dt.date(2026, 5, 26)) == dt.date(2026, 5, 25)
 
 
 def test_excludes_special_securities() -> None:
@@ -964,7 +964,8 @@ def test_shares_retry_failed_symbols_later_in_same_week(conn: object) -> None:
     second = collector.collect_shares(tuesday, source, conn)
     assert second["shares"] == 1 and second["remaining"] == 0
     assert source.calls_by_symbol[-1] == ["BBB"]
-    assert collector.collect_shares(tuesday, source, conn)["already_collected"]
+    complete = collector.collect_shares(tuesday, source, conn)
+    assert complete["already_collected"] and "complete" in complete["message"].lower()
     with conn.cursor() as cur:
         cur.execute("SELECT count(*),count(DISTINCT symbol) FROM forward.shares_outstanding")
         assert cur.fetchone() == (10, 10)
@@ -1001,7 +1002,7 @@ def test_advisory_lock_is_bounded_and_has_clear_failure(monkeypatch: pytest.Monk
         def __exit__(self, *args: object) -> None:
             pass
 
-        def execute(self, query: str) -> None:
+        def execute(self, query: str, params: object) -> None:
             assert "pg_try_advisory_lock" in query
 
         def fetchone(self) -> tuple[bool]:
@@ -1121,7 +1122,7 @@ def test_shares_failure_is_not_counted_as_missing_price_session(conn: object) ->
 
 @pytest.mark.db
 @pytest.mark.integration
-def test_never_traded_symbol_is_not_requested_if_still_listed(conn: object) -> None:
+def test_never_traded_symbol_remains_requested_if_still_listed(conn: object) -> None:
     class Recording(Source):
         def bars(self, symbols: list[str], day: dt.date) -> list[dict]:
             self.requested = symbols[:]
@@ -1130,4 +1131,319 @@ def test_never_traded_symbol_is_not_requested_if_still_listed(conn: object) -> N
     source = Recording()
     for day in [16, 17, 18, 19, 20, 23]:
         collector.collect(dt.date(2026, 11, day), False, source, conn)
-    assert "BBB" not in source.requested
+    assert "BBB" in source.requested
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_clean_unavailable_shares_are_not_retried(conn: object) -> None:
+    class NoData(Source):
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.calls += 1
+            self.errors = []
+            return super().shares([x for x in symbols if x != "BBB"], day)
+
+    source = NoData()
+    monday = dt.date(2026, 11, 23)
+    collector.collect(monday, False, source, conn)
+    assert collector.collect_shares(monday, source, conn)["shares"] == 9
+    assert collector.collect_shares(dt.date(2026, 11, 24), source, conn)["already_collected"]
+    with conn.cursor() as cur:
+        cur.execute("SELECT reason FROM forward.gaps WHERE symbol='BBB' AND reason LIKE 'shares_%'")
+        assert cur.fetchall() == [("shares_unavailable",)]
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_empty_first_or_retry_shares_writes_no_load(conn: object) -> None:
+    class Empty(Source):
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            return []
+
+    source = Empty()
+    day = dt.date(2026, 11, 23)
+    collector.collect(day, False, source, conn)
+    with pytest.raises(ValueError, match="no shares"):
+        collector.collect_shares(day, source, conn)
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchone()[0] == 0
+
+
+def test_retry_subset_does_not_fail_ten_percent_gate(monkeypatch: pytest.MonkeyPatch) -> None:
+    import pandas as pd
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            if self.symbol == "BAD":
+                raise OSError("unavailable")
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    source = collector.Sources(None)
+    source.share_is_retry = True
+    rows = source.shares(["BAD", "AAA"], dt.date(2026, 11, 23))
+    assert [row["symbol"] for row in rows] == ["AAA"]
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_never_traded_still_listed_can_start_trading(conn: object) -> None:
+    source = Source()
+    for day in [16, 17, 18, 19, 20]:
+        collector.collect(dt.date(2026, 11, day), False, source, conn)
+    source.returned = ["AAA", "BBB"]
+    collector.collect(dt.date(2026, 11, 23), False, source, conn)
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT count(*) FROM forward.daily_bars WHERE symbol='BBB' AND day='2026-11-23'"
+        )
+        assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_retry_subset_commits_recoveries_and_zero_retry_writes_nothing(
+    conn: object, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import pandas as pd
+
+    class Many(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.listed = [f"S{i:02}" for i in range(50)]
+            self.returned = self.listed[:]
+            self.fillers = []
+
+    day = dt.date(2026, 11, 23)
+    collector.collect(day, False, Many(), conn)
+    first = [True]
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            self.symbol = symbol
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            if self.symbol == "S00" or (first[0] and self.symbol in {"S01", "S02", "S03", "S04"}):
+                raise OSError("offline")
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"]))
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    checkpoint = tmp_path / "shares.json"
+    initial = collector.collect_shares(day, collector.Sources(checkpoint), conn)
+    assert initial["shares"] == 45 and initial["remaining"] == 5
+    first[0] = False
+    retry = collector.collect_shares(dt.date(2026, 11, 24), collector.Sources(checkpoint), conn)
+    assert retry["shares"] == 4 and retry["remaining"] == 1
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads WHERE source='yahoo-shares'")
+        before = cur.fetchone()[0]
+        cur.execute("SELECT count(*) FROM forward.gaps WHERE reason='shares_failed'")
+        before_gaps = cur.fetchone()[0]
+        assert before_gaps == 5
+    result = collector.collect_shares(dt.date(2026, 11, 25), collector.Sources(checkpoint), conn)
+    assert result["shares"] == 0
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchone()[0] == before
+        cur.execute("SELECT count(*) FROM forward.gaps WHERE reason='shares_failed'")
+        assert cur.fetchone()[0] == before_gaps
+
+
+def test_listing_failure_does_not_save_partial_raw_pair(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    day = dt.date(2026, 11, 23)
+    monkeypatch.setattr(collector, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(collector, "observation_day", lambda: day)
+    source = collector.Sources(tmp_path / "results" / f"{day}.json")
+    calls = []
+
+    class Response:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+    def fetch(url: str, **kwargs: object) -> Response:
+        calls.append(url)
+        if len(calls) == 2:
+            raise OSError("second file failed")
+        if "nasdaqlisted" in url:
+            return Response("Symbol|Security Name|ETF|Test Issue\nAAA|A Common Stock|N|N\n")
+        return Response("ACT Symbol|Security Name|ETF|Test Issue|Exchange\n")
+
+    monkeypatch.setattr(source, "get", fetch)
+    with pytest.raises(OSError):
+        source.listing()
+    assert not (tmp_path / "data" / "forward_raw" / str(day)).exists()
+    assert source.listing()[0]["symbol"] == "AAA"
+
+
+def test_saved_listing_falls_back_to_durable_raw_files(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    day = dt.date(2026, 11, 23)
+    monkeypatch.setattr(collector, "REPO_ROOT", tmp_path)
+    folder = tmp_path / "data" / "forward_raw" / str(day)
+    folder.mkdir(parents=True)
+    (folder / "nasdaqlisted.txt").write_text(
+        "Symbol|Security Name|ETF|Test Issue\nNA|A Common Stock|N|N\n"
+    )
+    (folder / "otherlisted.txt").write_text("ACT Symbol|Security Name|ETF|Test Issue|Exchange\n")
+    source = collector.Sources(tmp_path / "results" / f"{day}.json")
+    assert source.saved_listing(day)[0]["symbol"] == "NA"
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_daily_and_shares_advisory_locks_are_independent(
+    conn: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import psycopg2
+
+    other = psycopg2.connect(
+        host=conn.info.host,
+        port=conn.info.port,
+        user=conn.info.user,
+        password=conn.info.password,
+        dbname=conn.info.dbname,
+    )
+    other.autocommit = True
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    try:
+        collector.acquire_lock(conn, "daily")
+        collector.acquire_lock(other, "shares")
+        with pytest.raises(TimeoutError):
+            collector.acquire_lock(other, "daily")
+        collector.release_lock(other, "shares")
+        collector.release_lock(conn, "daily")
+    finally:
+        other.close()
+
+
+def test_closed_connection_does_not_mask_write_failure() -> None:
+    class Conn:
+        autocommit = True
+        closed = False
+
+        def commit(self) -> None:
+            pass
+
+        def rollback(self) -> None:
+            raise AssertionError("must not roll back a closed connection")
+
+    conn = Conn()
+    with pytest.raises(ValueError, match="original"):
+        with collector.write_transaction(conn):
+            conn.closed = True
+            raise ValueError("original")
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_unavailable_only_retry_resolves_failed_without_retrying_again(conn: object) -> None:
+    class SourceWithFailure(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.errors = []
+            self.stage = 0
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            if self.stage == 0:
+                self.stage = 1
+                self.errors.append({"source": "yahoo", "symbol": "BBB", "error": "OSError"})
+                return super().shares([x for x in symbols if x != "BBB"], day)
+            return []
+
+    day = dt.date(2026, 11, 23)
+    source = SourceWithFailure()
+    collector.collect(day, False, source, conn)
+    collector.collect_shares(day, source, conn)
+    result = collector.collect_shares(dt.date(2026, 11, 24), source, conn)
+    assert result["shares"] == 0 and result["unavailable"] == 1
+    assert collector.collect_shares(dt.date(2026, 11, 25), source, conn)["already_collected"]
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT reason FROM forward.gaps WHERE symbol='BBB' "
+            "AND reason LIKE 'shares_%' ORDER BY load_id"
+        )
+        assert cur.fetchall() == [("shares_failed",), ("shares_unavailable",)]
+        cur.execute("SELECT count(*) FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchone()[0] == 2
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_retry_resolving_nothing_adds_no_load(conn: object) -> None:
+    class AlwaysFailed(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.errors = []
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.errors.append({"source": "yahoo", "symbol": "BBB", "error": "OSError"})
+            return super().shares([x for x in symbols if x != "BBB"], day)
+
+    day = dt.date(2026, 11, 23)
+    source = AlwaysFailed()
+    collector.collect(day, False, source, conn)
+    collector.collect_shares(day, source, conn)
+    result = collector.collect_shares(dt.date(2026, 11, 24), source, conn)
+    assert result["shares"] == 0
+    with conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchone()[0] == 1
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_retry_with_unknown_listing_date_uses_null(conn: object) -> None:
+    class Partial(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.errors = []
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.errors.append({"source": "yahoo", "symbol": "BBB", "error": "OSError"})
+            return super().shares([x for x in symbols if x != "BBB"], day)
+
+    class Retry(Source):
+        checkpoint = None
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            assert self.share_listing_day is None
+            return super().shares(symbols, day)
+
+    day = dt.date(2026, 11, 23)
+    source = Partial()
+    collector.collect(day, False, source, conn)
+    collector.collect_shares(day, source, conn)
+    assert collector.collect_shares(dt.date(2026, 11, 24), Retry(), conn)["shares"] == 1
+
+
+def test_listing_is_not_dated_before_second_file_was_observed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    days = iter([dt.date(2026, 11, 23), dt.date(2026, 11, 24)])
+    monkeypatch.setattr(collector, "observation_day", lambda: next(days))
+
+    class Response:
+        def __init__(self, text: str) -> None:
+            self.text = text
+
+    source = collector.Sources(None)
+    monkeypatch.setattr(
+        source,
+        "get",
+        lambda url, **kwargs: Response(
+            "Symbol|Security Name|ETF|Test Issue\nAAA|A Common Stock|N|N\n"
+            if "nasdaqlisted" in url
+            else "ACT Symbol|Security Name|ETF|Test Issue|Exchange\n"
+        ),
+    )
+    with pytest.raises(ValueError, match="date changed"):
+        source.listing()

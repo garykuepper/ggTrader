@@ -206,7 +206,7 @@ def main() -> None:
     from ggTrader.utils.config import get_db_connection_string
     from ggTrader.utils.study import bootstrap, study_dir
 
-    bootstrap(__file__)
+    root = bootstrap(__file__)
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -218,7 +218,7 @@ def main() -> None:
     parser.add_argument("--alpaca-only", action="store_true", help="Retry Alpaca only")
     parser.add_argument("--resume", action="store_true", help="Preserve the prior live Yahoo count")
     args = parser.parse_args()
-    load_dotenv("/home/flynn/ggTrader/.env")
+    load_dotenv(root / ".env")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     output = study_dir(__file__) / "_source_pilot.json"
     report = {

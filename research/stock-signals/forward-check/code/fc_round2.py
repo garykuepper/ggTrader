@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, text
 from ggTrader.utils.config import get_db_connection_string
 from ggTrader.utils.study import bootstrap, study_dir
 
-bootstrap(__file__)
+ROOT = bootstrap(__file__)
 
 from fc_pilot import (  # noqa: E402
     classify_security,
@@ -37,7 +37,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
-    load_dotenv("/home/flynn/ggTrader/.env")
+    load_dotenv(ROOT / ".env")
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
     path = study_dir(__file__) / "_source_pilot.json"
     report = json.loads(path.read_text()) if path.exists() else {}
