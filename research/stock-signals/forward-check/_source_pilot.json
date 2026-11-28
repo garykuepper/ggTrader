@@ -1,0 +1,95 @@
+{
+  "provenance": {
+    "live_day": "2026-11-25",
+    "comparison_day": "2026-11-04",
+    "listing": "Nasdaq Trader, fetched at run time",
+    "alpaca_feed": "IEX free",
+    "yahoo_adjustment": "raw",
+    "reference": "market.yahoo_daily_frozen_20261126",
+    "tolerance_fraction": 0.01,
+    "delisted_sample": [
+      "SIVB",
+      "FRC",
+      "BBBY",
+      "TWTR",
+      "ATVI"
+    ],
+    "run_utc": "2026-11-28T15:49:29.223708+00:00",
+    "reference_columns": [
+      "timestamp",
+      "symbol",
+      "interval",
+      "venue",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume",
+      "trades"
+    ],
+    "delisted_day": "2022-11-04",
+    "yahoo_live_run_utc": "2026-11-28T15:46:25.915732+00:00",
+    "yahoo_comparison_run_utc": "2026-11-28T15:48:17.375210+00:00",
+    "reference_prices": "Frozen Yahoo adjusted closes; source requests raw closes",
+    "alpaca_400_handling": "Rejected batches split; rejected individual symbols count as missing",
+    "shares_source_method": "Yahoo yfinance Ticker.get_shares_full for AAPL"
+  },
+  "sources": {
+    "yahoo": {
+      "live": {
+        "listed": 7440,
+        "returned": 5309,
+        "missing": 2131,
+        "share": 0.7135752688172043
+      },
+      "comparison": {
+        "listed": 623,
+        "returned": 524,
+        "missing": 99,
+        "share": 0.841091492776886,
+        "matched": 524,
+        "within_1_percent": 0.9427480916030534
+      },
+      "delisted": {
+        "listed": 5,
+        "returned": 0,
+        "missing": 5,
+        "share": 0.0,
+        "symbols_returned": []
+      }
+    },
+    "alpaca": {
+      "live": {
+        "error": "HTTPError",
+        "http_status": 429
+      },
+      "comparison": {
+        "error": "HTTPError",
+        "http_status": 429
+      },
+      "delisted": {
+        "listed": 5,
+        "returned": 4,
+        "missing": 1,
+        "share": 0.8,
+        "symbols_returned": [
+          "ATVI",
+          "BBBY",
+          "FRC",
+          "SIVB"
+        ]
+      }
+    }
+  },
+  "errors": {},
+  "previous_yahoo_live": {
+    "listed": 7440,
+    "returned": 5309,
+    "missing": 2131,
+    "share": 0.7135752688172043
+  },
+  "shares_outstanding": {
+    "error": "YFRateLimitError"
+  },
+  "listing_count": 7440
+}
