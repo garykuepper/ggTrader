@@ -894,7 +894,7 @@ def test_today_first_keeps_earliest_first_seen_after_catch_up(conn: object) -> N
         assert cur.fetchone()[0] == dt.date(2026, 11, 17)
 
 
-def test_exhausted_rate_limit_counts_toward_failure_threshold(
+def test_exhausted_rate_limit_stops_job(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import pandas as pd
@@ -914,8 +914,8 @@ def test_exhausted_rate_limit_counts_toward_failure_threshold(
     monkeypatch.setattr(collector.yf, "Ticker", Ticker)
     monkeypatch.setattr(collector.time, "sleep", lambda _: None)
     source = collector.Sources(None)
-    result = source.shares(["BAD"] + [f"X{i}" for i in range(9)], dt.date(2026, 11, 23))
-    assert len(result) == 9
+    with pytest.raises(RuntimeError, match="rate limit persisted"):
+        source.shares(["BAD"] + [f"X{i}" for i in range(9)], dt.date(2026, 11, 23))
     assert source.errors[0]["error"] == "YFRateLimitError"
 
 
@@ -951,9 +951,8 @@ def test_shares_retry_failed_symbols_later_in_same_week(conn: object) -> None:
             self.calls_by_symbol.append(symbols[:])
             if self.first:
                 self.first = False
-                self.errors = [{"source": "yahoo", "symbol": "BBB", "error": "OSError"}]
+                self.errors.append({"source": "yahoo", "symbol": "BBB", "error": "OSError"})
                 return super().shares([x for x in symbols if x != "BBB"], day)
-            self.errors = []
             return super().shares(symbols, day)
 
     source = Partial()
@@ -1084,7 +1083,7 @@ def test_weekly_checkpoint_resumes_same_universe_after_failed_run(
     calls.clear()
     result = collector.collect_shares(tuesday, collector.Sources(checkpoint), conn)
     assert result["shares"] == 10
-    assert set(calls) == {"AAA", "BBB"}
+    assert set(calls) == set(listing.listed + listing.fillers) - {"CCC"}
 
 
 def test_week_key_forbids_backdating_shares() -> None:
@@ -1132,6 +1131,13 @@ def test_never_traded_symbol_remains_requested_if_still_listed(conn: object) -> 
     for day in [16, 17, 18, 19, 20, 23]:
         collector.collect(dt.date(2026, 11, day), False, source, conn)
     assert "BBB" in source.requested
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT count(*) FROM forward.gaps WHERE symbol='BBB' AND reason='never_traded'"
+        )
+        assert cur.fetchone()[0] == 1
+        cur.execute("SELECT count(*) FROM forward.gaps WHERE symbol='BBB' AND day='2026-11-23'")
+        assert cur.fetchone()[0] == 0
 
 
 @pytest.mark.db
@@ -1447,3 +1453,76 @@ def test_listing_is_not_dated_before_second_file_was_observed(
     )
     with pytest.raises(ValueError, match="date changed"):
         source.listing()
+
+
+def test_real_yfinance_connection_exception_is_counted(monkeypatch: pytest.MonkeyPatch) -> None:
+    import requests
+    import yfinance.base
+    from yfinance.data import YfData
+
+    collector.yf.config.debug.hide_exceptions = True
+    monkeypatch.setattr(yfinance.base.TickerBase, "_get_ticker_tz", lambda *args, **kwargs: "UTC")
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise requests.exceptions.ConnectionError("offline")
+
+    monkeypatch.setattr(YfData, "cache_get", fail)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    source = collector.Sources(None)
+    with pytest.raises(RuntimeError, match="exceed 10%"):
+        source.shares(["AAA"], dt.date(2026, 11, 23))
+    assert source.errors[0]["error"] == "ConnectionError"
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_empty_first_shares_retry_refetches(
+    conn: object, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import pandas as pd
+
+    day = dt.date(2026, 11, 23)
+    collector.collect(day, False, Source(), conn)
+    available = [False]
+
+    class Ticker:
+        def __init__(self, symbol: str) -> None:
+            pass
+
+        def get_shares_full(self, **kwargs: object) -> object:
+            return pd.Series([100], index=pd.to_datetime(["2026-11-20"])) if available[0] else None
+
+    monkeypatch.setattr(collector.yf, "Ticker", Ticker)
+    monkeypatch.setattr(collector.time, "sleep", lambda _: None)
+    checkpoint = tmp_path / "week.json"
+    with pytest.raises(ValueError, match="no shares"):
+        collector.collect_shares(day, collector.Sources(checkpoint), conn)
+    assert not checkpoint.exists()
+    available[0] = True
+    assert collector.collect_shares(day, collector.Sources(checkpoint), conn)["shares"] == 10
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_holiday_monday_week_shares_retry_on_wednesday(conn: object) -> None:
+    class Partial(Source):
+        def __init__(self) -> None:
+            super().__init__()
+            self.errors = []
+            self.first = True
+
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            if self.first:
+                self.first = False
+                self.errors.append({"source": "yahoo", "symbol": "BBB", "error": "OSError"})
+                return super().shares([x for x in symbols if x != "BBB"], day)
+            return super().shares(symbols, day)
+
+    source = Partial()
+    tuesday = dt.date(2026, 9, 8)
+    collector.collect(tuesday, False, source, conn)
+    assert collector.collect_shares(tuesday, source, conn)["remaining"] == 1
+    assert collector.collect_shares(dt.date(2026, 9, 9), source, conn)["shares"] == 1
+    with conn.cursor() as cur:
+        cur.execute("SELECT DISTINCT day FROM forward.loads WHERE source='yahoo-shares'")
+        assert cur.fetchall() == [(dt.date(2026, 9, 7),)]

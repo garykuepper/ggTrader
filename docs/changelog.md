@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward shares reliability)
+
+- Surface Yahoo request failures, stop sustained rate limits early, allow empty runs to retry, and report previously never-traded listings separately from daily coverage.
+
 ## 2026-11-28 (forward collector final retry fixes)
 
 - Separated weekly shares failures from clean unavailable answers, made retry thresholds apply to the initial universe only, separated daily and shares locks, and retained listed never-traded candidates. Raw listing pairs now recover from durable files. Timers remain uninstalled.

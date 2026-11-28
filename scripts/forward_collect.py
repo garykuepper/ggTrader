@@ -94,6 +94,7 @@ class Sources:
     """Fetch free listing, raw SIP and shares data with bounded request pacing."""
 
     def __init__(self, checkpoint: Path | None) -> None:
+        yf.config.debug.hide_exceptions = False
         self.checkpoint = checkpoint
         self.requests = {"listing": 0, "alpaca": 0, "yahoo": 0}
         self.raw = []
@@ -170,7 +171,10 @@ class Sources:
             for name, text in zip(names, raw, strict=True):
                 path = folder / name
                 if path.exists():
-                    text = path.read_text()
+                    saved = path.read_text()
+                    if saved != text:
+                        LOG.warning("Saved raw listing differs from supplied text: %s", path)
+                    text = saved
                 else:
                     self._save_raw_listing(day, name, text)
                 chosen.append(text)
@@ -393,6 +397,17 @@ class Sources:
                         failed += 1
                         failed_symbol = True
                         LOG.warning("Yahoo shares failed for %s: %s", symbol, error)
+                        if type(exc).__name__ == "YFRateLimitError":
+                            raise RuntimeError(
+                                "Yahoo rate limit persisted for five attempts"
+                            ) from exc
+                        if (
+                            not getattr(self, "share_is_retry", False)
+                            and failed / len(symbols) > 0.1
+                        ):
+                            raise RuntimeError(
+                                f"Yahoo shares errors exceed 10%: {failed} of {len(symbols)}"
+                            ) from exc
                         break
                     time.sleep(10 * 2**attempt)
             if failed_symbol:
@@ -511,14 +526,16 @@ def _gather(
     bars = list(unique.values())
     returned = {x["symbol"] for x in bars}
     gaps = sorted(set(target) - returned)
+    eligible = set(candidates) - (never_traded or set())
     summary = {
+        "never_traded": len(set(candidates) & (never_traded or set())),
         "listed": len(listing),
         "candidates": len(candidates),
         "bars": len(returned),
         "gaps": len(gaps),
         "shares": len(shares),
         "newly_ended": 0 if not dry_run else None,
-        "alert": len(returned & set(candidates)) / len(candidates) < 0.9,
+        "alert": bool(eligible) and len(returned & eligible) / len(eligible) < 0.9,
     }
     return summary, listing, bars, gaps, shares
 
@@ -664,6 +681,8 @@ def _collect_locked(
                     page_size=1000,
                 )
             for symbol in gaps:
+                if symbol in never_traded and symbol not in previous_map:
+                    continue
                 reason = (
                     "never_traded"
                     if symbol in never_traded and symbol not in previous_map
@@ -833,6 +852,9 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
         )
         unavailable = sorted(set(candidates) - successes - set(failed))
         if not shares and not loads:
+            checkpoint = getattr(source, "checkpoint", None)
+            if checkpoint is not None:
+                checkpoint.unlink(missing_ok=True)
             raise ValueError("Yahoo returned no shares; no load was recorded")
         if not shares and not unavailable:
             return {"shares": 0, "remaining": len(candidates), "message": "No shares resolved"}

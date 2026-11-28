@@ -49,6 +49,19 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         )
         ended = [row[0] for row in cur.fetchall()]
         cur.execute(
+            "SELECT symbol, day, load_id FROM forward.gaps "
+            "WHERE reason='never_traded' AND day <= %s",
+            (end_day,),
+        )
+        never_traded = cur.fetchall()
+        cur.execute(
+            "SELECT b.symbol, b.day FROM forward.daily_bars b WHERE b.day <= %s "
+            "AND EXISTS (SELECT 1 FROM forward.gaps g WHERE g.symbol=b.symbol "
+            "AND g.reason='never_traded' AND g.day < b.day)",
+            (end_day,),
+        )
+        observed_bars = cur.fetchall()
+        cur.execute(
             "SELECT count(*), COALESCE(sum((SELECT count(*) FROM forward.shares_outstanding s "
             "WHERE s.load_id = l.load_id)), 0) FROM forward.loads l "
             "WHERE l.source = 'yahoo-shares' AND l.day BETWEEN %s AND %s",
@@ -87,6 +100,17 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
             candidate_by_day.setdefault(day, set()).add(symbol)
     for load, symbol in bars_by_load:
         bars_by_day.setdefault(load_days[load], set()).add(symbol)
+    excluded_by_day: dict[dt.date, set[str]] = {}
+    for day, symbols in candidate_by_day.items():
+        excluded = {
+            symbol
+            for symbol, marked, marker_load in never_traded
+            if marked < day
+            and any(load_days[load] == day and load > marker_load for load in load_days)
+            and not any(s == symbol and marked < seen < day for s, seen in observed_bars)
+        }
+        excluded_by_day[day] = symbols & excluded
+        candidate_by_day[day] = symbols - excluded
     coverage = {
         day: len(symbols & bars_by_day.get(day, set())) / len(symbols)
         for day, symbols in candidate_by_day.items()
@@ -101,6 +125,7 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         "worst_day": min(coverage, key=coverage.get) if coverage else None,
         "worst_coverage": min(coverage.values()) if coverage else None,
         "gaps": sum(gaps for _, gaps in by_day.values()),
+        "never_traded": sum(len(symbols) for symbols in excluded_by_day.values()),
         "ended": ended,
         "missing_days": [d for d in expected if d not in by_day],
         "missing_listings": missing_listings,
@@ -119,6 +144,9 @@ def format_message(report: dict[str, Any]) -> str:
         lines.append(f"Mean coverage: {report['mean_coverage']:.1%} across {report['days']} days.")
         lines.append(f"Lowest: {report['worst_day']} ({report['worst_coverage']:.1%}).")
     lines.append(f"Missing price rows: {report['gaps']}.")
+    lines.append(
+        f"Previously marked never traded, counted by day: {report.get('never_traded', 0)}."
+    )
     lines.append("Missing trading days: " + (", ".join(map(str, report["missing_days"])) or "none"))
     lines.append("Missing listings: " + (", ".join(map(str, report["missing_listings"])) or "none"))
     lines.append(

@@ -908,7 +908,9 @@ and the missing component is taken from the new fetch; neither saved file is ove
 appears in both directory files, the last row wins deterministically: `otherlisted.txt` is read
 after `nasdaqlisted.txt`, so its row is retained. Symbols with no bars for five consecutive
 sessions are marked `never_traded` in the gaps table. While still listed they remain candidates;
-once they leave the listing they are no longer carried forward as tracked gaps.
+once they leave the listing they are no longer carried forward as tracked gaps. Previously marked
+never-traded symbols are requested while listed but are counted separately from price coverage and
+do not create repeated gap rows.
 A price response covering less than 90% of the listed candidates is refused so it can be retried.
 The shares job uses Monday as its weekly key, records observation-dated shares rows and
 checkpoints completed symbols. Exceptions are recorded in `forward.gaps` as `shares_failed`

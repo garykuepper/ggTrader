@@ -319,6 +319,7 @@ def main() -> None:
         return
     import yfinance as yf
 
+    yf.config.debug.hide_exceptions = False
     try:
         shares = yf.Ticker("AAPL").get_shares_full(start="2026-01-01")
         report["shares_outstanding"] = {
