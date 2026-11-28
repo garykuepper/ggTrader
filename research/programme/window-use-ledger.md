@@ -1,6 +1,6 @@
 # Window use for stock-selection research
 
-**As of 2026-11-26.** A window is **spent** when it has already shaped or scored a rule
+**As of 2026-11-28.** A window is **spent** when it has already shaped or scored a rule
 and cannot give a clean test of a new rule tuned after seeing it. A **development window**
 is the period used to build a rule or choose settings. A **holdout window** is set aside
 until one final scoring. A **fresh window** is a period whose results for the specified
@@ -30,6 +30,7 @@ Exact provider coverage for each older run is not established. The loader is
 | Dead-stock momentum deaths. Do the highest-ranked recent winners stop trading more often? | Combined prices | 2000-01-03 to 2004-12-31, 2005-01-03 to 2019-12-31, and 2020-01-02 to 2024-12-31 | Ranked A again and counted stock endings in the same three windows. | Yes, all three | [Momentum deaths, §§2–3](../stock-signals/dead-stock-momentum-deaths/2026-11-25-dead-stock-momentum-deaths.md#2-what-was-done) and [brief, §0](../stock-signals/dead-stock-momentum-deaths/2026-11-25-dead-stock-momentum-deaths-brief.md#0-registered-parameters) |
 | Dead-stock payout rerun. How do filing-based payment assumptions change the result? | Combined prices and payment assumptions from company filings | 2005-01-03 to 2019-12-31 and 2020-01-02 to 2024-12-31 | Scored A again on its development and holdout windows. | Yes, both | [Payout rerun, §§1–3](../stock-signals/dead-stock-payout-rerun/2026-11-24-dead-stock-payout-rerun.md#2-what-was-done) and [first test, §2, exact dates](../stock-signals/dead-stock-first-test/2026-11-24-dead-stock-first-test.md#2-what-was-tested) |
 | Dead-stock early filings. What do company filings say about stocks that stopped trading in the early window? | Combined prices for the list, McGill stock records for names, and SEC filings, reports submitted to the US securities regulator | 2000-01-03 to 2004-12-31 for stock endings. Filing lists covered 1999 Q1 to 2006 Q4. | Checked endings from the already-scored early window. The filing list extends into 1999. | Yes for stock-rule dates already used. The filing search added no return score. | [Early filings, §§1–2](../stock-signals/dead-stock-early-filings/2026-11-25-dead-stock-early-filings.md#2-what-was-done) and [brief, §0](../stock-signals/dead-stock-early-filings/2026-11-25-dead-stock-early-filings-brief.md#0-registered-parameters) |
+| Early decades. How do the first test's rule and two variants (yearly trading, and skipping stocks with a 20% one-day rise) compare with the market after costs and taxes? | Combined prices, CRSP before Yahoo begins, with the CRSP market return up to 1993-01-29 and SPY (frozen table `market.spy_daily_yahoo_1993_1999`) after | 1969-02-03 to 1998-07-31 | Scored once for each of the three arms, 18 settings in all. The code was first checked on 2020-01-02 to 2024-12-31, reproducing the first test's saved cells exactly. Claim files `_early-A.claim`, `_early-B.claim` and `_early-C.claim` exist. | Yes, for this rule and these three variants | [Early decades, §§2–3](../stock-signals/early-decades/2026-11-28-early-decades.md#2-what-was-done) and [brief](../stock-signals/early-decades/2026-11-27-early-decades-brief.md) |
 | Dead-stock data integrity. Which price histories have gaps or suspect values and did they affect holdings? | CRSP rows and saved first-test holdings | Scan bounds 2004-01-01 to 2024-12-31. | Price-data checks. Holdings came from development and holdout. | Yes for dates already used by a rule | [Data integrity, “What was scanned”](../stock-signals/dead-stock-data-integrity/2026-11-24-dead-stock-data-integrity.md#what-was-scanned) |
 | Dead-stock data integrity, earlier hand check. Were there records before a gap in one stock's history? | CRSP rows for one stock | 1992–1999 within a longer check. | Counted rows by year. | No rule score in this check | [Data integrity, “Earlier measurements and checks made by hand”](../stock-signals/dead-stock-data-integrity/2026-11-24-dead-stock-data-integrity.md#earlier-measurements-and-checks-made-by-hand) and [hand check, §2](../stock-signals/dead-stock-data-integrity/_hand_checks.txt#L22) |
 | Dead-stock data integrity, filing follow-ups. What evidence exists about the stocks the rule held when trading ended? | First-test list A and SEC filing lists and notices | 2005–2019 and 2020–2024 stock endings. Filing lists searched from 2005 Q2 through 2025 Q1. | Checked company filings after the two original scores. | Yes for dates the rule used. The 2025 material was filings. | [Payout evidence, §2](../stock-signals/dead-stock-data-integrity/phase-2/2026-11-24-dead-stock-payout-evidence.md#2-what-was-done-and-what-was-not) and [open cases, §2](../stock-signals/dead-stock-data-integrity/phase-3/2026-11-24-dead-stock-open-cases.md#2-what-was-done) |
@@ -78,8 +79,11 @@ No other `holdout-*.claim` files were found in this checkout.
 
 ## What remains available
 
-- **CRSP, 1968-01-02 through 1999.** No individual-stock account score was found on
-  these dates in the reviewed reports. The early momentum test read from August 1998
+- **CRSP, 1968-01-02 through 1999.** The early-decades study scored 1969-02-03 to
+  1998-07-31 on 2026-11-28, so that span is now spent for the first test's rule and its
+  yearly and jump-skipping variants. Only 1968 and August 1998 through 1999 were not scored
+  (the last stretch was already used as input by earlier studies). Before that run, no
+  individual-stock account score was found on these dates in the reviewed reports. The early momentum test read from August 1998
   for its first picks.
   The random comparison, momentum death audit and early filing study rebuilt the same
   early picks or stock list using those earlier inputs. The integrity study counted
@@ -92,8 +96,8 @@ No other `holdout-*.claim` files were found in this checkout.
   company-size rules. It lacks trading volume and delisting returns, the payout or
   final loss when a stock leaves the market. It cannot show how many shares could
   have traded or what investors actually received at removal. The database's SPY
-  prices start on 2000-01-03, so the ledger establishes no same-date SPY comparison
-  for this earlier span. See the [inventory](../../docs/database-inventory-2026-11-26.md#data-not-available-for-free),
+  prices start on 2000-01-03, with a separate frozen table covering 1993-01-29 to
+  1999-12-31; before 1993 the early-decades study used the CRSP market return as a stand-in. See the [inventory](../../docs/database-inventory-2026-11-26.md#data-not-available-for-free),
   [fresh-window report, §2](../stock-signals/dead-stock-fresh-window/2026-11-24-dead-stock-fresh-window.md#2-what-was-done),
   [random comparison, §2](../stock-signals/dead-stock-random-baseline/2026-11-25-dead-stock-random-baseline.md#2-what-was-done),
   [momentum death audit, brief §2](../stock-signals/dead-stock-momentum-deaths/2026-11-25-dead-stock-momentum-deaths-brief.md#2-data-and-freeze-before-calculation),

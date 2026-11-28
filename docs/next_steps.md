@@ -2,7 +2,7 @@
 
 ## Status at a glance
 
-Status as of 2026-11-26: database consolidation and dead-stock studies are complete. The paper trader remains stopped; the next research runs await the owner’s choices.
+Status as of 2026-11-28: database consolidation, the dead-stock studies and the early-decades test are complete. The paper trader remains stopped; the next research runs await the owner’s choices.
 
 | Status | What |
 |---|---|
@@ -15,7 +15,7 @@ Status as of 2026-11-26: database consolidation and dead-stock studies are compl
 | Done | Fresh dump `ggtrader_20261126.dump` taken after the SEC loads, frozen Yahoo copy and SPY table; its test restore on 2026-11-27 matched all 78 row counts and 6 checksums. The old `attempts` folder was deleted at the owner's request. The Sunday 04:30 timer still runs. |
 | Done | Free Yahoo SPY for 1993–1999 added as the frozen table `market.spy_daily_yahoo_1993_1999` (1,749 rows). |
 | Waiting on you | Choose one to three candidates from the [research agenda](../research/programme/next-research-agenda-2026-11-26.md); the [window-use ledger](../research/programme/window-use-ledger.md) records dates already used. |
-| Waiting on you | For 1969–1992, before SPY existed, may the whole-market return (`vwretd`) from CRSP, the university stock-price database this copy comes from, stand in for SPY, or should the early test start in 1993? SPY for 1993–1999 is now held. |
+| Done | Early-decades test scored once on 1969-02-03 to 1998-07-31 (2026-11-28): the first test's rule monthly, yearly and skipping 20% one-day jumpers, 18 settings, against the CRSP market return then SPY. Before 1993 it beats the comparison at 7 of 18 settings (6 on a continuous-account check), nearly all with dead stocks assumed to pay their last price in full; after 1993 it trails SPY at all 18 as registered; see the [report](../research/stock-signals/early-decades/2026-11-28-early-decades.md). Window spent; the lock files stay until the owner decides. Branch `t3/early-decades-test-tasks-1-5` is not merged or pushed. |
 | Checkpoint | Intraday observer slot 20 is 2026-11-30; supervision remains paused and manual checks continue. |
 | Waiting on you | Two unsent drafts: an [AVB broker inquiry](../research/paper-system/observation-readiness/2026-11-11-avb-broker-inquiry-draft.md) and a [data-permission request](../research/stock-signals/feasibility/2026-11-11-listing-data-permission-draft.md). |
 | Waiting on you | One open ruling on factor-scope wording ([details](working_task_list.md#open-decisions)). |

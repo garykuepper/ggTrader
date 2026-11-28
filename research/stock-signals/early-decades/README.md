@@ -2,11 +2,12 @@
 
 **Question:** How do the three fixed recent-winner rules compare with the market after costs and taxes?
 
-**Kind:** screen. **Status:** open. **Category:** stock-signals (placement row 9).
+**Kind:** screen. **Status:** scored once on 2026-11-28 (report below; no GO or NO-GO label; the window is spent). Reviewed by Gemini 4 Neon and Claude Opus (figures checked against the raw results; wording fixes applied). **Category:** stock-signals (placement row 9).
 
 ## Where things are
 
 - Brief (registered plan): [2026-11-27-early-decades-brief.md](2026-11-27-early-decades-brief.md)
+- Report: [2026-11-28-early-decades.md](2026-11-28-early-decades.md); raw results `_early-A.json`, `_early-B.json`, `_early-C.json` and the regression proof `_regression.json` (git-ignored, kept in this folder)
 - Study card: [study.toml](study.toml)
 - Code: [code/](code/) (driver [code/ed_run.py](code/ed_run.py))
 
