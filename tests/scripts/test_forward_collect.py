@@ -285,6 +285,32 @@ def test_shares_only_is_idempotent_and_does_not_duplicate_daily(conn: object) ->
 
 @pytest.mark.db
 @pytest.mark.integration
+def test_bootstrap_weekend_waits_for_next_session(conn: object) -> None:
+    result = collector.catch_up(
+        dt.date(2026, 11, 27), lambda day: Source(), conn, current_day=dt.date(2026, 11, 28)
+    )
+    assert result["collected"] == []
+    assert result["message"] == "collection starts at the next session"
+    assert not result.get("failures")
+
+
+@pytest.mark.db
+@pytest.mark.integration
+def test_bootstrap_monday_does_not_collect_friday_and_rerun_is_noop(conn: object) -> None:
+    monday = dt.date(2026, 11, 30)
+    calls = []
+
+    def factory(day: dt.date) -> Source:
+        calls.append(day)
+        return Source()
+
+    assert collector.catch_up(monday, factory, conn, current_day=monday)["collected"] == [monday]
+    assert collector.catch_up(monday, factory, conn, current_day=monday)["collected"] == []
+    assert calls == [monday]
+
+
+@pytest.mark.db
+@pytest.mark.integration
 def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
     source = Source()
     collector.collect(dt.date(2026, 11, 16), False, source, conn)
@@ -305,11 +331,12 @@ def test_catch_up_fills_missed_day_from_earlier_listing(conn: object) -> None:
 
 @pytest.mark.db
 @pytest.mark.integration
-def test_catch_up_stops_without_an_earlier_listing(conn: object) -> None:
+def test_bootstrap_ignores_explicit_earlier_start(conn: object) -> None:
     result = collector.catch_up(
         dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
     )
-    assert any("earlier saved listing" in item["error"] for item in result["failures"])
+    assert result["collected"] == [dt.date(2026, 11, 18)]
+    assert not result["failures"]
 
 
 @pytest.mark.db
@@ -352,10 +379,8 @@ def test_catch_up_uses_saved_same_day_listing_before_earlier_one(conn: object) -
 @pytest.mark.integration
 def test_catch_up_never_uses_a_later_listing(conn: object) -> None:
     collector.collect(dt.date(2026, 11, 18), False, Source(), conn)
-    result = collector.catch_up(
-        dt.date(2026, 11, 18), lambda day: Source(), conn, start_day=dt.date(2026, 11, 17)
-    )
-    assert any("earlier saved listing" in item["error"] for item in result["failures"])
+    with pytest.raises(ValueError, match="earlier saved listing"):
+        collector.saved_listing(conn, dt.date(2026, 11, 17), strictly_before=True)
 
 
 @pytest.mark.db

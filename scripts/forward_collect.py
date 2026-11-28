@@ -928,11 +928,15 @@ def catch_up(
     current_day = current_day or end_day
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT min(day) FROM forward.loads WHERE source <> %s AND day <= %s",
-            (SHARES_SOURCE, end_day),
+            "SELECT min(day) FROM forward.loads WHERE source <> %s "
+            "AND source NOT LIKE %s AND day <= %s",
+            (SHARES_SOURCE, "%:catchup-from:%", end_day),
         )
         earliest = cur.fetchone()[0]
-    first = start_day or (earliest + dt.timedelta(days=1) if earliest else end_day)
+    if earliest is None and end_day != current_day:
+        return {"collected": [], "remaining": 0, "message": "collection starts at the next session"}
+    boundary = earliest + dt.timedelta(days=1) if earliest else end_day
+    first = max(start_day, boundary) if start_day else boundary
     if first > end_day:
         return {"collected": [], "remaining": 0, "message": "Already current"}
     with conn.cursor() as cur:
