@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collection schema draft)
+
+- Prepared append-only storage for future daily listings, raw SIP prices, gaps, status observations and weekly shares outstanding. The schema was tested in a disposable PostgreSQL container and has not been applied to the live database.
+
 ## 2026-11-28 (early-decades test)
 
 - Scored the first test's recent-winner rule once on 1969-02-03 to 1998-07-31 in three versions: monthly, yearly rebalancing, and monthly skipping stocks with a 20% one-day rise, with 2 costs and 3 dead-stock readings each (18 settings). The comparison is the CRSP market return to 1993-01-29, then SPY. With dead stocks paid their last price in full the rule led before 1993 (6 to 7 of 18 settings, depending on how tax at the 1993 split is counted) and trailed SPY at all 18 settings after; with half or all lost it trailed the comparison at nearly every setting. New study `research/stock-signals/early-decades/` with copies of the first test's engine, built by Codex Terra, checked on 2020 to 2024 against all 18 saved first-test cells, and reviewed by Gemini 4 Neon and Claude Opus. No label; the window is spent. Not merged or pushed.
