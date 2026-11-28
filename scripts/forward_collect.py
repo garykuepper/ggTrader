@@ -26,6 +26,9 @@ LOG = logging.getLogger(__name__)
 NYSE = calendars.get_calendar("NYSE")
 DIRECTORY = "https://www.nasdaqtrader.com/dynamic/SymDir/"
 ALPACA = "https://data.alpaca.markets/v2/stocks/bars"
+DAILY_SOURCE = "nasdaq+alpaca-sip"
+SHARES_SOURCE = "yahoo-shares"
+LISTING_GAP_SYMBOL = "::listing-missing::"
 
 
 def sessions(start: dt.date, end: dt.date) -> list[dt.date]:
@@ -113,10 +116,28 @@ class Sources:
             time.sleep(retry_delay(retry, dt.datetime.now(dt.timezone.utc), attempt))
         raise RuntimeError("source request failed")
 
+    def saved_listing(self, day: dt.date) -> list[dict[str, Any]] | None:
+        """Read a listing captured on the requested date, if available."""
+        if self.checkpoint is None:
+            return None
+        path = self.checkpoint.with_name(self.checkpoint.stem + "_listing.json")
+        if not path.exists():
+            return None
+        data = json.loads(path.read_text())
+        if data.get("day") != str(day):
+            return None
+        self.raw.extend(data["raw"])
+        return data["listing"]
+
     def listing(self) -> list[dict[str, Any]]:
         """Read both Nasdaq directory files and retain non-ETF, non-test listings."""
         import pandas as pd
 
+        day = observation_day()
+        saved = self.saved_listing(day)
+        if saved is not None:
+            return saved
+        raw_start = len(self.raw)
         rows = []
         for filename, symbol in [("nasdaqlisted.txt", "Symbol"), ("otherlisted.txt", "ACT Symbol")]:
             response = self.get(DIRECTORY + filename, kind="listing")
@@ -139,7 +160,18 @@ class Sources:
                 )
         if not rows:
             raise ValueError("Nasdaq directories returned no eligible listings")
-        return list({x["symbol"]: x for x in rows}.values())
+        listing = list({x["symbol"]: x for x in rows}.values())
+        if self.checkpoint is not None:
+            if self.checkpoint.stem != str(day):
+                raise ValueError("Cannot save a current listing for a different day")
+            path = self.checkpoint.with_name(self.checkpoint.stem + "_listing.json")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temp = path.with_suffix(".tmp")
+            temp.write_text(
+                json.dumps({"day": str(day), "listing": listing, "raw": self.raw[raw_start:]})
+            )
+            temp.replace(path)
+        return listing
 
     def bars(self, symbols: list[str], day: dt.date) -> list[dict[str, Any]]:
         """Fetch raw SIP bars, splitting malformed batches without losing valid symbols."""
@@ -257,10 +289,9 @@ class Sources:
                     break
                 except Exception as exc:
                     if type(exc).__name__ != "YFRateLimitError" or attempt == 4:
-                        self.errors.append(
-                            {"source": "yahoo", "symbol": symbol, "error": type(exc).__name__}
-                        )
-                        break
+                        error = type(exc).__name__
+                        self.errors.append({"source": "yahoo", "symbol": symbol, "error": error})
+                        raise RuntimeError(f"Yahoo shares failed for {symbol}: {error}") from None
                     time.sleep(10 * 2**attempt)
             cache["values"][symbol] = {"shares": value, "observed_day": str(observation_day())}
             if self.checkpoint is not None:
@@ -285,6 +316,8 @@ def collect(
     source: Any,
     conn: Any = None,
     shares_sample: int | None = None,
+    listing_override: list[dict] | None = None,
+    listing_day: dt.date | None = None,
 ) -> dict[str, Any]:
     """Collect one trading day; the dry run never opens or writes a database."""
     if shares_sample is not None and (not dry_run or shares_sample < 1):
@@ -304,7 +337,7 @@ def collect(
         with conn.cursor() as cur:
             cur.execute("SELECT pg_advisory_lock(hashtext('forward_collect'))")
         try:
-            return _collect_locked(day, source, conn)
+            return _collect_locked(day, source, conn, listing_override, listing_day)
         finally:
             with conn.cursor() as cur:
                 cur.execute("SELECT pg_advisory_unlock(hashtext('forward_collect'))")
@@ -317,9 +350,10 @@ def _gather(
     previous: list[dict],
     dry_run: bool,
     shares_sample: int | None = None,
+    listing_override: list[dict] | None = None,
 ) -> tuple:
     """Fetch source data and calculate coverage against tracked symbols."""
-    listing = source.listing()
+    listing = listing_override if listing_override is not None else source.listing()
     candidates = [x["symbol"] for x in listing if common_candidate(x)]
     if not candidates:
         raise ValueError("No explicit common-stock candidates in listing")
@@ -327,13 +361,7 @@ def _gather(
     target = sorted(set(candidates) | tracked)
     if hasattr(source, "progress"):
         source.progress.update(listed=len(listing), candidates=len(candidates))
-    shares = (
-        source.shares(candidates[:shares_sample], day)
-        if shares_sample is not None
-        else source.shares(candidates, day)
-        if is_shares_day(day)
-        else []
-    )
+    shares = source.shares(candidates[:shares_sample], day) if shares_sample is not None else []
     if hasattr(source, "progress"):
         source.progress["shares"] = len(shares)
     bars = source.bars(target, day)
@@ -351,10 +379,19 @@ def _gather(
     return summary, listing, bars, gaps, shares
 
 
-def _collect_locked(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
+def _collect_locked(
+    day: dt.date,
+    source: Any,
+    conn: Any,
+    listing_override: list[dict] | None = None,
+    listing_day: dt.date | None = None,
+) -> dict[str, Any]:
     """Write a complete collection atomically after checking the daily lock."""
     with conn.cursor() as cur:
-        cur.execute("SELECT 1 FROM forward.loads WHERE day = %s LIMIT 1", (day,))
+        cur.execute(
+            "SELECT 1 FROM forward.loads WHERE day = %s AND source <> %s LIMIT 1",
+            (day, SHARES_SOURCE),
+        )
         if cur.fetchone():
             return {
                 "already_collected": True,
@@ -366,13 +403,18 @@ def _collect_locked(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
             }
         cur.execute(
             "SELECT DISTINCT ON (symbol) symbol, first_seen, last_seen, ended_on "
-            "FROM forward.symbol_status ORDER BY symbol, status_id DESC"
+            "FROM forward.symbol_status WHERE first_seen <= %s AND last_seen <= %s "
+            "AND (ended_on IS NULL OR ended_on <= %s) "
+            "ORDER BY symbol, COALESCE(ended_on, last_seen) DESC, status_id DESC",
+            (day, day, day),
         )
         previous = [
             dict(zip(("symbol", "first_seen", "last_seen", "ended_on"), row, strict=True))
             for row in cur.fetchall()
         ]
-    summary, listing, bars, gaps, shares = _gather(day, source, previous, dry_run=False)
+    summary, listing, bars, gaps, shares = _gather(
+        day, source, previous, dry_run=False, listing_override=listing_override
+    )
     previous_map = {x["symbol"]: x for x in previous}
     prior_sessions = sessions(day - dt.timedelta(days=20), day)[-5:]
     raw = getattr(source, "raw", [listing, bars, shares])
@@ -390,8 +432,8 @@ def _collect_locked(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                 "code_commit, actor) VALUES (%s,%s,%s,%s,%s,%s) RETURNING load_id",
                 (
                     day,
-                    "nasdaq+alpaca-sip+yahoo",
-                    digest(raw),
+                    (f"{DAILY_SOURCE}:catchup-from:{listing_day}" if listing_day else DAILY_SOURCE),
+                    digest([raw, {"listing_from": listing_day}] if listing_day else raw),
                     digest(normalized),
                     code,
                     os.getenv("USER", "unknown"),
@@ -431,10 +473,10 @@ def _collect_locked(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                     "INSERT INTO forward.gaps VALUES (%s,%s,%s,%s)",
                     (load, day, symbol, "missing_bar"),
                 )
-            for row in shares:
+            if listing_day is not None:
                 cur.execute(
-                    "INSERT INTO forward.shares_outstanding VALUES (%s,%s,%s,%s,%s)",
-                    (load, row.get("observed_day", day), row["symbol"], row["shares"], "yahoo"),
+                    "INSERT INTO forward.gaps VALUES (%s,%s,%s,%s)",
+                    (load, day, LISTING_GAP_SYMBOL, "listing_missing"),
                 )
             for row in bars:
                 symbol = row["symbol"]
@@ -470,6 +512,131 @@ def _collect_locked(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
     return summary
 
 
+def saved_listing(conn: Any, day: dt.date, *, strictly_before: bool = False) -> tuple:
+    """Return the most recent real, not reconstructed, listing no later than a date."""
+    op = "<" if strictly_before else "<="
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT load_id, day FROM forward.loads WHERE day {op} %s "
+            "AND source IN (%s, %s) AND EXISTS "
+            "(SELECT 1 FROM forward.listing_snapshots s WHERE s.load_id = forward.loads.load_id) "
+            "ORDER BY day DESC, load_id DESC LIMIT 1",
+            (day, DAILY_SOURCE, "nasdaq+alpaca-sip+yahoo"),
+        )
+        found = cur.fetchone()
+        if not found:
+            raise ValueError(f"No earlier saved listing available for {day}")
+        load, listing_day = found
+        cur.execute(
+            "SELECT symbol, exchange, security_name, is_etf, is_test "
+            "FROM forward.listing_snapshots WHERE load_id = %s ORDER BY symbol",
+            (load,),
+        )
+        rows = [
+            dict(
+                zip(("symbol", "exchange", "security_name", "is_etf", "is_test"), row, strict=True)
+            )
+            for row in cur.fetchall()
+        ]
+    return listing_day, rows
+
+
+def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
+    """Append weekly share observations once, using the latest available listing."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT pg_advisory_lock(hashtext('forward_collect'))")
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM forward.loads WHERE day=%s AND source=%s", (day, SHARES_SOURCE)
+            )
+            if cur.fetchone():
+                return {"already_collected": True, "shares": 0}
+        listing_day, listing = saved_listing(conn, day)
+        candidates = sorted(row["symbol"] for row in listing if common_candidate(row))
+        shares = source.shares(candidates, day)
+        if not shares:
+            raise ValueError("Yahoo returned no shares; no load was recorded")
+        raw = getattr(source, "raw", shares)
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+                    "code_commit, actor) VALUES (%s,%s,%s,%s,%s,%s) RETURNING load_id",
+                    (
+                        day,
+                        SHARES_SOURCE,
+                        digest([raw, listing_day]),
+                        digest(shares),
+                        subprocess.run(
+                            ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+                        ).stdout.strip(),
+                        os.getenv("USER", "unknown"),
+                    ),
+                )
+                load = cur.fetchone()[0]
+                for row in shares:
+                    cur.execute(
+                        "INSERT INTO forward.shares_outstanding VALUES (%s,%s,%s,%s,%s)",
+                        (load, row.get("observed_day", day), row["symbol"], row["shares"], "yahoo"),
+                    )
+        return {
+            "shares": len(shares),
+            "candidates": len(candidates),
+            "listing_day": str(listing_day),
+        }
+    finally:
+        with conn.cursor() as cur:
+            cur.execute("SELECT pg_advisory_unlock(hashtext('forward_collect'))")
+
+
+def catch_up(
+    end_day: dt.date,
+    source_factory: Any,
+    conn: Any,
+    *,
+    start_day: dt.date | None = None,
+    current_day: dt.date | None = None,
+) -> dict[str, Any]:
+    """Fill up to ten missing sessions, never using a later listing."""
+    current_day = current_day or end_day
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT min(day) FROM forward.loads WHERE source <> %s AND day <= %s",
+            (SHARES_SOURCE, end_day),
+        )
+        earliest = cur.fetchone()[0]
+    first = start_day or (earliest + dt.timedelta(days=1) if earliest else end_day)
+    if first > end_day:
+        return {"collected": [], "remaining": 0, "message": "Already current"}
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT DISTINCT day FROM forward.loads WHERE source <> %s AND day BETWEEN %s AND %s",
+            (SHARES_SOURCE, first, end_day),
+        )
+        existing = {row[0] for row in cur.fetchall()}
+    missing = [day for day in sessions(first, end_day) if day not in existing]
+    done = []
+    for day in missing[:10]:
+        source = source_factory(day)
+        if day == current_day:
+            result = collect(day, False, source, conn)
+        else:
+            own = source.saved_listing(day) if hasattr(source, "saved_listing") else None
+            if own is not None:
+                result = collect(day, False, source, conn, listing_override=own)
+            else:
+                listing_day, listing = saved_listing(conn, day, strictly_before=True)
+                result = collect(
+                    day, False, source, conn, listing_override=listing, listing_day=listing_day
+                )
+        if not result.get("already_collected"):
+            done.append(day)
+    remaining = max(0, len(missing) - 10)
+    message = f"Stopped after 10 trading days; {remaining} remain" if remaining else "Up to date"
+    return {"collected": done, "remaining": remaining, "message": message}
+
+
 def last_closed_day(now: dt.datetime) -> dt.date:
     """Find the most recent NYSE session whose close has passed."""
     schedule = NYSE.schedule(start_date=now.date() - dt.timedelta(days=14), end_date=now.date())
@@ -487,11 +654,16 @@ def main() -> None:
         "--dry-run", action="store_true", help="Fetch only; do not access the database"
     )
     parser.add_argument("--shares-sample", type=int, help="Dry-run sample size for Yahoo shares")
+    parser.add_argument("--shares-only", action="store_true", help="Collect weekly shares only")
     args = parser.parse_args()
     if args.shares_sample is not None and (not args.dry_run or args.shares_sample < 1):
         parser.error("--shares-sample requires --dry-run and a positive size")
+    if args.shares_only and (args.dry_run or args.shares_sample is not None):
+        parser.error("--shares-only cannot be combined with dry-run or a sample")
     load_dotenv("/home/flynn/ggTrader/.env")
-    day = args.day or last_closed_day(dt.datetime.now(dt.timezone.utc))
+    day = args.day or (
+        observation_day() if args.shares_only else last_closed_day(dt.datetime.now(dt.timezone.utc))
+    )
     source = Sources(None if args.dry_run else Path("results/forward_collection") / f"{day}.json")
     started = time.monotonic()
     if args.dry_run:
@@ -514,22 +686,39 @@ def main() -> None:
 
         from ggTrader.utils.config import get_db_connection_string
 
-        today = dt.datetime.now(ZoneInfo("America/New_York")).date()
-        if day != today or day != last_closed_day(dt.datetime.now(dt.timezone.utc)):
-            raise SystemExit(
-                "Collection requires the current NYSE day after its close; no backfill"
-            )
+        today = observation_day()
+        if day > today:
+            raise SystemExit("Cannot collect a future day")
+        if args.shares_only and (not sessions(day, day) or not is_shares_day(day)):
+            print(json.dumps({"day": str(day), "message": "Not the first trading day of the week"}))
+            return
+        if not args.shares_only and day > last_closed_day(dt.datetime.now(dt.timezone.utc)):
+            raise SystemExit("Daily collection requires an NYSE session after its close")
         url = get_db_connection_string().replace("postgresql+psycopg2://", "postgresql://")
         with psycopg2.connect(url) as conn:
             conn.autocommit = True
-            result = collect(day, False, source, conn)
+            if args.shares_only:
+                result = collect_shares(day, source, conn)
+            else:
+                sources = []
+
+                def make_source(target_day: dt.date) -> Sources:
+                    instance = Sources(Path("results/forward_collection") / f"{target_day}.json")
+                    sources.append(instance)
+                    return instance
+
+                result = catch_up(day, make_source, conn, current_day=today)
+                for instance in sources:
+                    for key, value in instance.requests.items():
+                        source.requests[key] += value
+                    source.errors.extend(instance.errors)
     result.update(
         day=str(day),
         elapsed_seconds=round(time.monotonic() - started, 2),
         requests=source.requests,
         source_errors=source.errors,
     )
-    print(json.dumps(result))
+    print(json.dumps(result, default=str))
 
 
 if __name__ == "__main__":

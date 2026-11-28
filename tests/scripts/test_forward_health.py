@@ -72,3 +72,23 @@ def test_empty_week_is_reported_without_inventing_coverage(populated: object) ->
     assert result["mean_coverage"] is None
     assert result["worst_day"] is None
     assert "no collections" in health.format_message(result).lower()
+
+
+def test_shares_only_load_and_listing_gap_do_not_distort_coverage(populated: object) -> None:
+    with populated.cursor() as cur:
+        cur.execute("SELECT load_id FROM forward.loads WHERE day='2026-11-24'")
+        load = cur.fetchone()[0]
+        cur.execute(
+            "INSERT INTO forward.gaps VALUES (%s,%s,%s,%s)",
+            (load, dt.date(2026, 11, 24), "::listing-missing::", "listing_missing"),
+        )
+        cur.execute(
+            "INSERT INTO forward.loads (day, source, raw_sha256, normalized_sha256, "
+            "code_commit, actor) VALUES ('2026-11-25','yahoo-shares',%s,%s,'a','test')",
+            ("a" * 64, "b" * 64),
+        )
+    report = health.weekly_report(populated, dt.date(2026, 11, 28))
+    assert report["days"] == 2
+    assert report["mean_coverage"] == 0.75
+    assert report["missing_listings"] == [dt.date(2026, 11, 24)]
+    assert "listing" in health.format_message(report).lower()

@@ -879,42 +879,50 @@ stopped, and cron resumes only on the owner's explicit authorization. Dry runs d
 
 ### Forward collection user timers (prepared, not installed)
 
-The proposed user units are in `scripts/systemd/`. They assume the checkout is `~/ggTrader`
-with an editable installation in `~/ggTrader/.venv`. The collection timer runs weekdays at
-14:00 Pacific; the health timer runs Saturdays at 09:00 Pacific. Neither catches up after a
-missed run. The collector uses the NYSE calendar for holidays and early closes. Both services
-write to the journal, use `scripts/run_capped.sh`, and have a 30-minute limit. The health report
-prints plain text; it does not send a Telegram message.
+The proposed user units in `scripts/systemd/` assume an editable installation at
+`~/ggTrader/.venv`. Daily listing and raw SIP collection runs weekdays at 14:00 Pacific with
+a 30-minute limit. The separate Yahoo shares timer wakes weekdays at 15:30 Pacific, but its
+service acts only on the first NYSE trading day of the week; it has a four-hour limit. The
+read-only health report runs Saturdays at 09:00 Pacific. Timers use `Persistent=false`, write
+to the journal and use `scripts/run_capped.sh`; no message is sent. The daily collection never
+calls Yahoo. The explicit `--dry-run --shares-sample N` option is a separate source check.
 
-**Before enabling:** the weekly shares step calls Yahoo at most once a second per symbol. For
-thousands of symbols it cannot finish within 30 minutes. The collector writes its database
-transaction only after fetching all sources, so a timeout leaves that day's database collection
-unwritten. Its local source checkpoints can resume another attempt on the same market day;
-the next day's timer does not automatically finish the missed day. Resolve that limit before
-relying on the schedule. A daily failure or the shared heavy-job lock can also leave a missing
-day. On an exchange holiday, the weekday service exits without collecting and reports the
-current-day guard in the journal. No timer here resumes the paper trader or authorizes orders.
+On each daily run the collector fills up to ten missing NYSE days since the first successful
+price load, in order, including gaps before later successful days. It uses the original day's saved listing checkpoint if one exists. Otherwise
+it uses the most recent **earlier** saved listing, tags the load with that listing's date and
+adds a `listing_missing` gap. Stocks first listed in between are absent from that catch-up
+universe. It never uses a later listing. If no earlier listing exists, catch-up stops and reports
+the missing input. A first run with no prior load starts on its own day; it does not invent a
+history. The weekly health report identifies listing gaps separately from price coverage.
+
+The shares job records a separate load and observation-dated shares rows, and checkpoints
+completed symbols so the same scheduled day can be retried without duplicating a load. A
+failed or timed-out shares job may need a manual retry; for a previous first-trading-day job,
+use `scripts/run_capped.sh .venv/bin/python scripts/forward_collect.py --shares-only --day YYYY-MM-DD`.
+Values are dated when observed, not back-filled. If the four-hour limit, the shared heavy-job
+lock, a missing earlier listing or a source failure prevents a run, inspect the journal. The
+shares timer does not automatically retry a failed first-day job later in the week. Catch-up is
+limited to ten missing sessions per daily invocation and reports if more remain.
 
 Once the owner has approved enabling the timers and the reviewed changes are present in
 `~/ggTrader`, install and enable them with:
 
 ```bash
 install -d ~/.config/systemd/user
-install -m 0644 ~/ggTrader/scripts/systemd/ggtrader-forward-{collect,health}.{service,timer} ~/.config/systemd/user/
+install -m 0644 ~/ggTrader/scripts/systemd/ggtrader-forward-{collect,shares,health}.{service,timer} ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now ggtrader-forward-collect.timer ggtrader-forward-health.timer
+systemctl --user enable --now ggtrader-forward-collect.timer ggtrader-forward-shares.timer ggtrader-forward-health.timer
 ```
 
 Inspect results without changing the services:
 
 ```bash
 systemctl --user list-timers 'ggtrader-forward-*'
-journalctl --user -u ggtrader-forward-collect.service -u ggtrader-forward-health.service
+journalctl --user -u ggtrader-forward-collect.service -u ggtrader-forward-shares.service -u ggtrader-forward-health.service
 ```
 
-The first successful collection appends a load record, the filtered Nasdaq listing with security
-names, raw SIP bars for explicit common-stock candidates, missing-price rows and symbol-status
-observations. On the first NYSE trading day of the week it also appends the Yahoo share counts
-that were obtained, dated when observed. The weekly report counts missing trading days, measures
-coverage as bars divided by bars plus gaps, and lists newly ended symbols. It does not write to
-the database.
+A successful daily run appends a load, listing snapshot, raw SIP bars for explicit common-stock
+candidates, missing-price rows and symbol-status observations. The shares job writes its own
+load and Yahoo observations. The weekly report counts missing trading days, measures coverage
+as bars divided by bars plus missing-price rows, identifies missing listings and lists newly
+ended symbols. It makes no database writes. No timer resumes the paper trader or authorizes orders.

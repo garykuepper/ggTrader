@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward collection split and catch-up)
+
+- Separated weekly Yahoo shares into a checkpointed four-hour job and left daily listings and SIP prices under the 30-minute limit. Daily catch-up uses only same-day or earlier saved listings and marks missing-listing days. Timer files are prepared but not installed.
+
 ## 2026-11-28 (forward health and registration preparation)
 
 - Added a read-only weekly health report, uninstalled user-timer files and a blank forward-rule registration form. The report prints to the journal and does not send messages. The 30-minute timer limit cannot accommodate the current full weekly shares pass; no timer was enabled.

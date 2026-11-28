@@ -1,6 +1,6 @@
 # Next Steps
 
-Forward collection is prepared but its timers are not installed or enabled. The 30-minute service limit is too short for a weekly shares pass over thousands of symbols; resolve that before relying on the timer. No forward rule is registered: wait until a rule survives choices 1–4 of the research agenda and collection covers its intended scoring period.
+Forward collection is prepared but its timers are not installed or enabled. Daily bars and weekly shares now use separate jobs; catch-up marks days without an original listing. No forward rule is registered: wait until a rule survives choices 1–4 of the research agenda and collection covers its intended scoring period.
 
 ## Status at a glance
 

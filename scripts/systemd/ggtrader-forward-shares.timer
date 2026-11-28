@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ggTrader shares on the first trading day of the week
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 15:30:00 America/Los_Angeles
+Persistent=false
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

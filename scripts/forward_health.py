@@ -19,8 +19,12 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         cur.execute(
             "SELECT l.day, "
             "(SELECT count(*) FROM forward.daily_bars b WHERE b.load_id = l.load_id), "
-            "(SELECT count(*) FROM forward.gaps g WHERE g.load_id = l.load_id) "
-            "FROM forward.loads l WHERE l.day BETWEEN %s AND %s ORDER BY l.day, l.load_id",
+            "(SELECT count(*) FROM forward.gaps g WHERE g.load_id = l.load_id "
+            "AND g.reason <> 'listing_missing'), "
+            "(SELECT count(*) FROM forward.gaps g WHERE g.load_id = l.load_id "
+            "AND g.reason = 'listing_missing') "
+            "FROM forward.loads l WHERE l.day BETWEEN %s AND %s "
+            "AND l.source <> 'yahoo-shares' ORDER BY l.day, l.load_id",
             (start, end_day),
         )
         rows = cur.fetchall()
@@ -31,7 +35,8 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         )
         ended = [row[0] for row in cur.fetchall()]
     by_day: dict[dt.date, list[int]] = {}
-    for day, bars, gaps in rows:
+    missing_listings = sorted({day for day, _, _, missing in rows if missing})
+    for day, bars, gaps, _ in rows:
         totals = by_day.setdefault(day, [0, 0])
         totals[0] += bars
         totals[1] += gaps
@@ -47,6 +52,7 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         "gaps": sum(gaps for _, gaps in by_day.values()),
         "ended": ended,
         "missing_days": [d for d in expected if d not in by_day],
+        "missing_listings": missing_listings,
     }
 
 
@@ -60,6 +66,7 @@ def format_message(report: dict[str, Any]) -> str:
         lines.append(f"Lowest: {report['worst_day']} ({report['worst_coverage']:.1%}).")
     lines.append(f"Missing price rows: {report['gaps']}.")
     lines.append("Missing trading days: " + (", ".join(map(str, report["missing_days"])) or "none"))
+    lines.append("Missing listings: " + (", ".join(map(str, report["missing_listings"])) or "none"))
     lines.append("Newly ended: " + (", ".join(report["ended"]) or "none"))
     if report["worst_coverage"] is not None and report["worst_coverage"] < 0.9:
         lines.append("Alert: at least one day had less than 90% coverage.")
