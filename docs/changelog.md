@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-28 (forward health and registration preparation)
+
+- Added a read-only weekly health report, uninstalled user-timer files and a blank forward-rule registration form. The report prints to the journal and does not send messages. The 30-minute timer limit cannot accommodate the current full weekly shares pass; no timer was enabled.
+
 ## 2026-11-28 (forward collector)
 
 - Added a daily listing and raw SIP price collector with explicit gaps, five-session status tracking, weekly dated Yahoo share observations and a database-free dry run. The dry-run shares sample and close-aware SIP window support source checks. Collection writes have been tested only in a disposable database; no timer is enabled.

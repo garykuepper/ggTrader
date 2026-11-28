@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ggTrader forward collection after the market close
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 14:00:00 America/Los_Angeles
+Persistent=false
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

@@ -689,7 +689,12 @@ def naming_problems(ref: StudyRef) -> list[str]:
         rf"^\d{{4}}-\d{{2}}-\d{{2}}-{re.escape(ref.slug)}(-brief|-nogo|-amendment)?\.md$"
     )
     for path in sorted(ref.path.glob("*.md")):
-        if path.name != "README.md" and not pattern.match(path.name):
+        registration_template = (
+            ref.category == "stock-signals"
+            and ref.slug == "forward-check"
+            and path.name == "2026-MM-DD-forward-check-registration-TEMPLATE.md"
+        )
+        if path.name != "README.md" and not registration_template and not pattern.match(path.name):
             problems.append(
                 f"{path.name}: expected YYYY-MM-DD-{ref.slug}[-brief|-nogo|-amendment].md"
             )

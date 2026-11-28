@@ -1,0 +1,11 @@
+[Unit]
+Description=ggTrader daily forward data collection
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/ggTrader
+Environment=GGT_RUN_MAX_SECONDS=1800
+TimeoutStartSec=1800
+ExecStart=%h/ggTrader/scripts/run_capped.sh %h/ggTrader/.venv/bin/python %h/ggTrader/scripts/forward_collect.py
+StandardOutput=journal
+StandardError=journal

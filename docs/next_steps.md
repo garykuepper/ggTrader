@@ -1,5 +1,7 @@
 # Next Steps
 
+Forward collection is prepared but its timers are not installed or enabled. The 30-minute service limit is too short for a weekly shares pass over thousands of symbols; resolve that before relying on the timer. No forward rule is registered: wait until a rule survives choices 1–4 of the research agenda and collection covers its intended scoring period.
+
 ## Status at a glance
 
 Status as of 2026-11-28: database consolidation, the dead-stock studies and the early-decades test are complete. The paper trader remains stopped; the next research runs await the owner’s choices.

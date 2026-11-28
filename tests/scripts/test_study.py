@@ -741,3 +741,13 @@ def test_help_prints_usage_and_writes_nothing(
         os.chdir(cwd)
     assert raised.value.code == 0 and "usage" in capsys.readouterr().out.lower()
     assert list(tmp_path.iterdir()) == []
+
+
+def test_check_allows_forward_registration_template_only(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = new(repo, capsys, slug="forward-check")
+    (folder / "2026-MM-DD-forward-check-registration-TEMPLATE.md").write_text("Blank form.\n")
+    assert check(repo, capsys, folder)[0] == 0
+    (folder / "2026-MM-DD-forward-check-registration-OTHER.md").write_text("Not allowed.\n")
+    assert check(repo, capsys, folder)[0] == 1
