@@ -193,3 +193,39 @@ def test_alpaca_failure_includes_status_without_credentials(
     with pytest.raises(RuntimeError, match="HTTP 403") as exc:
         source.bars(["AAA"], dt.date(2026, 11, 27))
     assert "example_secret" not in str(exc.value)
+
+
+def test_dry_run_shares_sample_on_nonweekly_day() -> None:
+    class SampleSource(Source):
+        def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
+            self.sampled = symbols
+            return super().shares(symbols, day)
+
+    source = SampleSource()
+    result = collector.collect(dt.date(2026, 11, 27), True, source, shares_sample=1)
+    assert result["shares"] == 1
+    assert source.sampled == ["AAA"]
+
+
+def test_sample_cannot_be_used_for_writes(conn: object) -> None:
+    with pytest.raises(ValueError, match="dry.run"):
+        collector.collect(dt.date(2026, 11, 27), False, Source(), conn, shares_sample=1)
+
+
+def test_half_day_window_ends_after_close_and_before_next_session() -> None:
+    start, end = collector.bar_window(dt.date(2026, 11, 27))
+    assert start == "2026-11-27T00:00:00Z"
+    assert end == "2026-11-27T21:00:00Z"
+
+
+def test_same_day_window_waits_for_sip_delay() -> None:
+    day = dt.date(2026, 11, 25)
+    with pytest.raises(ValueError, match="15 minutes"):
+        collector.bar_window(day, dt.datetime(2026, 11, 25, 21, 10, tzinfo=dt.timezone.utc))
+    _, end = collector.bar_window(day, dt.datetime(2026, 11, 25, 21, 20, tzinfo=dt.timezone.utc))
+    assert end == "2026-11-25T21:00:00Z"
+
+
+def test_retry_after_http_date() -> None:
+    now = dt.datetime(2026, 11, 28, 17, 0, tzinfo=dt.timezone.utc)
+    assert collector.retry_delay("Sat, 28 Nov 2026 17:00:20 GMT", now, 0) == 20

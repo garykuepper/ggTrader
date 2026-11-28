@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import time
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -30,6 +31,21 @@ ALPACA = "https://data.alpaca.markets/v2/stocks/bars"
 def sessions(start: dt.date, end: dt.date) -> list[dt.date]:
     """Return NYSE trading dates inclusive of both endpoints."""
     return [x.date() for x in NYSE.valid_days(start_date=start, end_date=end)]
+
+
+def bar_window(day: dt.date, now: dt.datetime | None = None) -> tuple[str, str]:
+    """Return a fixed UTC window ending three hours after the scheduled close."""
+    schedule = NYSE.schedule(start_date=day, end_date=day)
+    if schedule.empty:
+        raise ValueError("Not an NYSE trading day")
+    close = schedule.iloc[0]["market_close"].to_pydatetime()
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if now < close + dt.timedelta(minutes=15):
+        raise ValueError("SIP bars need at least 15 minutes after the market close")
+    end = close + dt.timedelta(hours=3)
+    if now < end + dt.timedelta(minutes=15):
+        end = close
+    return f"{day}T00:00:00Z", end.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def observation_day() -> dt.date:
@@ -61,6 +77,19 @@ def digest(value: Any) -> str:
     ).hexdigest()
 
 
+def retry_delay(value: str, now: dt.datetime, attempt: int) -> float:
+    """Interpret a Retry-After delay or HTTP date, with exponential fallback."""
+    if value.isdecimal():
+        return float(value)
+    try:
+        when = parsedate_to_datetime(value)
+        if when.tzinfo is not None:
+            return max(0.0, (when - now).total_seconds())
+    except (TypeError, ValueError, OverflowError):
+        pass
+    return float(10 * 2**attempt)
+
+
 class Sources:
     """Fetch free listing, raw SIP and shares data with bounded request pacing."""
 
@@ -69,6 +98,7 @@ class Sources:
         self.requests = {"listing": 0, "alpaca": 0, "yahoo": 0}
         self.raw = []
         self.errors = []
+        self.progress = {}
 
     def get(self, url: str, *, kind: str, **kwargs: Any) -> requests.Response:
         """Retry rate limits while respecting the source's request interval."""
@@ -80,7 +110,7 @@ class Sources:
                 response.raise_for_status()
                 return response
             retry = response.headers.get("Retry-After", "")
-            time.sleep(float(retry) if retry.isdecimal() else 10 * 2**attempt)
+            time.sleep(retry_delay(retry, dt.datetime.now(dt.timezone.utc), attempt))
         raise RuntimeError("source request failed")
 
     def listing(self) -> list[dict[str, Any]]:
@@ -130,6 +160,7 @@ class Sources:
         if cache.get("day") != str(day) or cache.get("symbols") != symbols:
             cache = {"day": str(day), "symbols": symbols, "batches": {}}
         rows = []
+        start, end = bar_window(day)
         for offset in range(0, len(symbols), 200):
             key = str(offset)
             if key not in cache["batches"]:
@@ -143,8 +174,8 @@ class Sources:
                         "timeframe": "1Day",
                         "feed": "sip",
                         "adjustment": "raw",
-                        "start": str(day),
-                        "end": str(day + dt.timedelta(days=1)),
+                        "start": start,
+                        "end": end,
                         "limit": 10000,
                     }
                     while True:
@@ -195,6 +226,7 @@ class Sources:
                     temporary.replace(checkpoint)
             completed = cache["batches"][key]
             rows.extend(completed["rows"])
+            self.progress["bars"] = len(rows)
             self.raw.extend(completed["raw"])
         return rows
 
@@ -247,8 +279,16 @@ class Sources:
         ]
 
 
-def collect(day: dt.date, dry_run: bool, source: Any, conn: Any = None) -> dict[str, Any]:
+def collect(
+    day: dt.date,
+    dry_run: bool,
+    source: Any,
+    conn: Any = None,
+    shares_sample: int | None = None,
+) -> dict[str, Any]:
     """Collect one trading day; the dry run never opens or writes a database."""
+    if shares_sample is not None and (not dry_run or shares_sample < 1):
+        raise ValueError("shares sample must be positive and is dry-run only")
     if not sessions(day, day):
         return {
             "listed": 0,
@@ -268,10 +308,16 @@ def collect(day: dt.date, dry_run: bool, source: Any, conn: Any = None) -> dict[
         finally:
             with conn.cursor() as cur:
                 cur.execute("SELECT pg_advisory_unlock(hashtext('forward_collect'))")
-    return _gather(day, source, [], dry_run=True)[0]
+    return _gather(day, source, [], dry_run=True, shares_sample=shares_sample)[0]
 
 
-def _gather(day: dt.date, source: Any, previous: list[dict], dry_run: bool) -> tuple:
+def _gather(
+    day: dt.date,
+    source: Any,
+    previous: list[dict],
+    dry_run: bool,
+    shares_sample: int | None = None,
+) -> tuple:
     """Fetch source data and calculate coverage against tracked symbols."""
     listing = source.listing()
     candidates = [x["symbol"] for x in listing if common_candidate(x)]
@@ -279,10 +325,20 @@ def _gather(day: dt.date, source: Any, previous: list[dict], dry_run: bool) -> t
         raise ValueError("No explicit common-stock candidates in listing")
     tracked = {x["symbol"] for x in previous if x["ended_on"] is None}
     target = sorted(set(candidates) | tracked)
+    if hasattr(source, "progress"):
+        source.progress.update(listed=len(listing), candidates=len(candidates))
+    shares = (
+        source.shares(candidates[:shares_sample], day)
+        if shares_sample is not None
+        else source.shares(candidates, day)
+        if is_shares_day(day)
+        else []
+    )
+    if hasattr(source, "progress"):
+        source.progress["shares"] = len(shares)
     bars = source.bars(target, day)
     returned = {x["symbol"] for x in bars}
     gaps = sorted(set(target) - returned)
-    shares = source.shares(candidates, day) if is_shares_day(day) else []
     summary = {
         "listed": len(listing),
         "candidates": len(candidates),
@@ -430,13 +486,29 @@ def main() -> None:
     parser.add_argument(
         "--dry-run", action="store_true", help="Fetch only; do not access the database"
     )
+    parser.add_argument("--shares-sample", type=int, help="Dry-run sample size for Yahoo shares")
     args = parser.parse_args()
+    if args.shares_sample is not None and (not args.dry_run or args.shares_sample < 1):
+        parser.error("--shares-sample requires --dry-run and a positive size")
     load_dotenv("/home/flynn/ggTrader/.env")
     day = args.day or last_closed_day(dt.datetime.now(dt.timezone.utc))
     source = Sources(None if args.dry_run else Path("results/forward_collection") / f"{day}.json")
     started = time.monotonic()
     if args.dry_run:
-        result = collect(day, True, source)
+        try:
+            result = collect(day, True, source, shares_sample=args.shares_sample)
+        except Exception as exc:
+            result = {
+                "day": str(day),
+                "error": str(exc),
+                "error_type": type(exc).__name__,
+                "elapsed_seconds": round(time.monotonic() - started, 2),
+                "requests": source.requests,
+                "progress": source.progress,
+                "source_errors": source.errors,
+            }
+            print(json.dumps(result))
+            raise SystemExit(1) from None
     else:
         import psycopg2
 
