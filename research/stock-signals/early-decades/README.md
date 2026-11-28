@@ -2,7 +2,7 @@
 
 **Question:** How do the three fixed recent-winner rules compare with the market after costs and taxes?
 
-**Kind:** screen. **Status:** scored once on 2026-11-28 (report below; no GO or NO-GO label; the window is spent). Reviewed by Gemini 4 Neon and Claude Opus (figures checked against the raw results; wording fixes applied). **Category:** stock-signals (placement row 9).
+**Kind:** screen. **Status:** closed (pinned in PIN.json); scored once on 2026-11-28 (report below; no GO or NO-GO label; the window is spent). Reviewed by Gemini 4 Neon and Claude Opus (figures checked against the raw results; wording fixes applied). **Category:** stock-signals (placement row 9).
 
 ## Where things are
 

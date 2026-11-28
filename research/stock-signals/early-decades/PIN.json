@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "study": {
+    "id": "early-decades",
+    "category": "stock-signals",
+    "path": "research/stock-signals/early-decades"
+  },
+  "engine": {
+    "git_sha": "a21e46509c839089a6dc709965acd22b23f317b3",
+    "git_dirty": false,
+    "diff_sha256": null,
+    "tag": null,
+    "uv_lock_sha256": null,
+    "python": null,
+    "vectorbt": null,
+    "vectorbt_rust": null,
+    "contract_version": null,
+    "baseline_epoch": null
+  },
+  "data": {
+    "tape": null,
+    "inputs": []
+  },
+  "code": [
+    {
+      "path": "research/stock-signals/early-decades/code/ed_arms.py",
+      "sha256": "fa8c38694a93d414149586a82121d31aa54635641e6933b0ecd4a2502b2ab366"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_bars_reader.py",
+      "sha256": "da4ef852982e6e4c28b5c44e22d4b7e9af05c0f5d3f5c992100064641834f618"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_comparison.py",
+      "sha256": "6232ad907a0f468f43e11247df0989a37d1cb904e168833b2e68339cde4f359a"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_dead_stock_first_test.py",
+      "sha256": "89e6f814cee7bae924cb610d03f62f5a609dd603c35563854ed8a52ac6fd3557"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_inputs.py",
+      "sha256": "27fca1979a850d4c6d35a1bc3fe01f6952b2c99f773479ebba10f02906efdda2"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_ledger_run.py",
+      "sha256": "a7b3a7ddbd71a7b90db4e06c0fd0184aca0c851706e1e84a4e047714b7e3cbf0"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_replay.py",
+      "sha256": "a33b61e59d2506efb861afd36779b7c0a0358c990adff1abadbb3a265cd05c4a"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_run.py",
+      "sha256": "fc73800e70e7169b72bd47a2dae919df0fcd3dff51ef525ba94e9bb8651595fd"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_simulation.py",
+      "sha256": "fb8ddcc3f89c4bacd2e5f24f145c266a0591697f65ba2a7bb99caa134c8aaf1c"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/ed_universe_frames.py",
+      "sha256": "d72357700170500f004354778e90130b06db7df3edafca48be661becdb9b92bc"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/run.py",
+      "sha256": "da0729968b1958be6970435d4d6507d6e0e37591d7e79803db4b1920b3d2a4dd"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/conftest.py",
+      "sha256": "80615f8fbb048a65d8d5199e985b2af2eb8745059ff46e5d8dfbdb6a29342e00"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_ed_arms.py",
+      "sha256": "6edad5c933cdd8d32819f8a40e11bdb0052bb4f62ccd5ae5c35d58f6bce612e7"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_ed_comparison.py",
+      "sha256": "0601d2cfc58526b91f7fdb97f3521a5b4b402ed8bdf3050e4e2b4c46cd12d56b"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_ed_copies.py",
+      "sha256": "ff5ccc6054e9da4bc38e09a0988aebf94e899b7393d39828a1c6b5358c0b75a6"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_ed_regression.py",
+      "sha256": "53eadd91b8f005bc882b9086648ce79f7f196e5e30470d4bb95486f23b1254ef"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_ed_simulation.py",
+      "sha256": "a62b96fa999227dffb26e833282cb06f091f4a1ed5b4020887719bedb6e42030"
+    },
+    {
+      "path": "research/stock-signals/early-decades/code/tests/test_registration.py",
+      "sha256": "469945b2cab1697cf5ca81bbdaf2b9925d7b0cd44bfbed7ccf5876edd6b30048"
+    }
+  ],
+  "command": {
+    "argv": [
+      "scripts/run_capped.sh",
+      ".venv/bin/python",
+      "research/stock-signals/early-decades/code/ed_run.py",
+      "--window",
+      "early",
+      "--arm",
+      "A",
+      "--eval-start",
+      "1969-02-03",
+      "--eval-end",
+      "1998-07-31",
+      "--regression-proof",
+      "research/stock-signals/early-decades/_regression.json",
+      "--out",
+      "research/stock-signals/early-decades/_early-A.json"
+    ],
+    "cwd": "."
+  },
+  "windows": {
+    "eval_start": "1969-02-03",
+    "eval_end": "1998-07-31"
+  },
+  "seed": null,
+  "results": [
+    {
+      "path": "research/stock-signals/early-decades/_early-A.json",
+      "sha256": "1b27c71ad9b8e0aa7395d406ed60c67314766e3659cc5545eca74884d04864d5"
+    },
+    {
+      "path": "research/stock-signals/early-decades/_early-B.json",
+      "sha256": "118eea37c29ce17304194d55a778e0d967e4747f407f5124ffb94ed8ba9416fe"
+    },
+    {
+      "path": "research/stock-signals/early-decades/_early-C.json",
+      "sha256": "6404edc5fdc636aef5653cfe371ad94740bbf71fde6dd8e4cb6310ace2d3ae47"
+    },
+    {
+      "path": "research/stock-signals/early-decades/_regression.json",
+      "sha256": "7818a32206460aaa8d0825b43e36465e0aac9a4c0dbcf511a2d12f4bc6d491ce"
+    }
+  ],
+  "reproducible": {
+    "status": "PARTLY",
+    "note": "The pinned command is arm A; arms B and C use the same command with --arm B or C and their own --out file, and the 2020 to 2024 proof file comes from --window holdout --arm A. Each arm writes a run-once claim file in the git-ignored study folder and the early-window driver refuses to run while a claim exists, so a replay needs the owner to clear the claims or a scratch clone without them. The window is used, so a replay is a reproduction check, not a new test. Each arm takes 7 to 13 minutes. The provenance blocks in the result files were added after the runs from fields already in them."
+  },
+  "created_utc": "2026-11-28T15:22:25Z"
+}
