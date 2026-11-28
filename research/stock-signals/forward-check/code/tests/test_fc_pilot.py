@@ -75,6 +75,8 @@ def test_alpaca_bars_normalize_response(monkeypatch: pytest.MonkeyPatch) -> None
     import requests
 
     class Response:
+        status_code = 200
+
         def raise_for_status(self) -> None:
             pass
 
@@ -88,3 +90,24 @@ def test_alpaca_bars_normalize_response(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(requests, "get", lambda *args, **kwargs: Response())
     result = fc_pilot.fetch_bars(["AAA"], datetime.date(2026, 11, 4), "alpaca")
     assert result[["symbol", "close"]].to_dict("records") == [{"symbol": "AAA", "close": 2}]
+
+
+def test_return_agreement_compares_daily_changes() -> None:
+    from fc_pilot import return_agreement
+
+    old = pd.DataFrame({"symbol": ["A", "B"], "close": [100.0, 100.0]})
+    new = pd.DataFrame({"symbol": ["A", "B"], "close": [102.0, 110.0]})
+    ref_old = pd.DataFrame({"symbol": ["A", "B"], "close": [50.0, 50.0]})
+    ref_new = pd.DataFrame({"symbol": ["A", "B"], "close": [51.0, 50.0]})
+    assert return_agreement(old, new, ref_old, ref_new, 0.005) == (2, 0.5)
+
+
+def test_classify_security_uses_listing_name() -> None:
+    from fc_pilot import classify_security
+
+    assert classify_security("ABC", "Example Corp - Common Stock") == "common"
+    assert classify_security("ABCW", "Example Corp Warrant") == "warrants"
+    assert classify_security("ABC", "Example Inc Units") == "units"
+    assert classify_security("ABC", "Example Inc Preferred Stock") == "preferred"
+    assert classify_security("ABC", "Example Inc Rights") == "rights"
+    assert classify_security("ABC", "Unclear security") == "other"

@@ -3,6 +3,36 @@
 import pandas as pd
 
 
+def return_agreement(
+    old: pd.DataFrame, new: pd.DataFrame, ref_old: pd.DataFrame, ref_new: pd.DataFrame, tol: float
+) -> tuple[int, float | None]:
+    """Compare same-source daily returns on the intersection of four price sets."""
+    frames = [f.set_index("symbol")["close"] for f in (old, new, ref_old, ref_new)]
+    values = pd.concat(frames, axis=1, join="inner").dropna()
+    values = values[(values.iloc[:, 0] > 0) & (values.iloc[:, 2] > 0)]
+    if values.empty:
+        return 0, None
+    delta = (values.iloc[:, 1] / values.iloc[:, 0] - values.iloc[:, 3] / values.iloc[:, 2]).abs()
+    return len(values), float((delta <= tol).mean())
+
+
+def classify_security(symbol: str, name: str) -> str:
+    """Classify explicit security descriptions; leave ambiguous cases unclassified."""
+    import re
+
+    text = str(name).lower()
+    for pattern, label in [
+        (r"\bwarrants?\b", "warrants"),
+        (r"\brights?\b", "rights"),
+        (r"\bunits?\b", "units"),
+        (r"\bpreferred\b", "preferred"),
+        (r"\bcommon (stock|shares?)\b", "common"),
+    ]:
+        if re.search(pattern, text):
+            return label
+    return "other"
+
+
 def filter_listing(listed: pd.DataFrame) -> pd.DataFrame:
     """Keep ordinary, non-test listings."""
     return listed.loc[~listed["is_etf"] & ~listed["is_test"]].copy()
@@ -54,6 +84,7 @@ def fetch_listing() -> pd.DataFrame:
         frame = pd.DataFrame(
             {
                 "symbol": raw[symbol],
+                "name": raw["Security Name"],
                 "exchange": raw.get("Exchange", "Q"),
                 "is_etf": raw["ETF"].eq("Y"),
                 "is_test": raw["Test Issue"].eq("Y"),
@@ -71,6 +102,7 @@ def fetch_bars(symbols: list[str], day: object, source: str = "yahoo") -> pd.Dat
     """Fetch daily prices from Yahoo or the free Alpaca IEX feed."""
     import datetime
     import os
+    import time
 
     import requests
     import yfinance as yf
@@ -111,7 +143,7 @@ def fetch_bars(symbols: list[str], day: object, source: str = "yahoo") -> pd.Dat
             "APCA-API-KEY-ID": os.environ.get("APCA_API_KEY_ID", ""),
             "APCA-API-SECRET-KEY": os.environ.get("APCA_API_SECRET_KEY", ""),
         }
-        batches = [symbols[offset : offset + 20] for offset in range(0, len(symbols), 20)]
+        batches = [symbols[offset : offset + 200] for offset in range(0, len(symbols), 200)]
         while batches:
             batch = batches.pop(0)
             params = {
@@ -124,12 +156,18 @@ def fetch_bars(symbols: list[str], day: object, source: str = "yahoo") -> pd.Dat
                 "adjustment": "raw",
             }
             while True:
-                response = requests.get(
-                    "https://data.alpaca.markets/v2/stocks/bars",
-                    params=params,
-                    headers=headers,
-                    timeout=60,
-                )
+                for attempt in range(5):
+                    time.sleep(0.5)
+                    response = requests.get(
+                        "https://data.alpaca.markets/v2/stocks/bars",
+                        params=params,
+                        headers=headers,
+                        timeout=60,
+                    )
+                    if response.status_code != 429 or attempt == 4:
+                        break
+                    retry = response.headers.get("Retry-After", "")
+                    time.sleep(float(retry) if retry.isdecimal() else 10 * 2**attempt)
                 try:
                     response.raise_for_status()
                 except requests.HTTPError as exc:
