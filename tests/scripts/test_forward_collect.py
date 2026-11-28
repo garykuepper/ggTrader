@@ -1161,7 +1161,7 @@ def test_clean_unavailable_shares_are_not_retried(conn: object) -> None:
 
 @pytest.mark.db
 @pytest.mark.integration
-def test_empty_first_or_retry_shares_writes_no_load(conn: object) -> None:
+def test_empty_first_shares_writes_no_load(conn: object) -> None:
     class Empty(Source):
         def shares(self, symbols: list[str], day: dt.date) -> list[dict]:
             return []
@@ -1333,8 +1333,18 @@ def test_daily_and_shares_advisory_locks_are_independent(
 
 def test_closed_connection_does_not_mask_write_failure() -> None:
     class Conn:
-        autocommit = True
+        _autocommit = True
         closed = False
+
+        @property
+        def autocommit(self) -> bool:
+            return self._autocommit
+
+        @autocommit.setter
+        def autocommit(self, value: bool) -> None:
+            if self.closed:
+                raise AssertionError("must not restore autocommit on a closed connection")
+            self._autocommit = value
 
         def commit(self) -> None:
             pass
@@ -1499,7 +1509,12 @@ def test_empty_first_shares_retry_refetches(
         collector.collect_shares(day, collector.Sources(checkpoint), conn)
     assert not checkpoint.exists()
     available[0] = True
-    assert collector.collect_shares(day, collector.Sources(checkpoint), conn)["shares"] == 10
+    assert (
+        collector.collect_shares(day + dt.timedelta(days=1), collector.Sources(checkpoint), conn)[
+            "shares"
+        ]
+        == 10
+    )
 
 
 @pytest.mark.db

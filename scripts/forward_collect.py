@@ -823,7 +823,9 @@ def collect_shares(day: dt.date, source: Any, conn: Any) -> dict[str, Any]:
                     if checkpoint is not None and checkpoint.exists()
                     else {}
                 )
-                listing_day = previous.get("listing_day")
+                listing_day = (
+                    previous.get("listing_day") if previous.get("day") == str(week) else None
+                )
             else:
                 checkpoint = getattr(source, "checkpoint", None)
                 previous = (

@@ -62,12 +62,12 @@ def weekly_report(conn: Any, end_day: dt.date) -> dict[str, Any]:
         )
         observed_bars = cur.fetchall()
         cur.execute(
-            "SELECT count(*), COALESCE(sum((SELECT count(*) FROM forward.shares_outstanding s "
+            "SELECT COALESCE(sum((SELECT count(*) FROM forward.shares_outstanding s "
             "WHERE s.load_id = l.load_id)), 0) FROM forward.loads l "
             "WHERE l.source = 'yahoo-shares' AND l.day BETWEEN %s AND %s",
             (start, end_day),
         )
-        shares_loads, shares_count = cur.fetchone()
+        (shares_count,) = cur.fetchone()
         cur.execute(
             "SELECT count(DISTINCT (l.day, g.symbol)) FROM forward.loads l "
             "JOIN forward.gaps g ON g.load_id=l.load_id "
