@@ -173,3 +173,23 @@ def test_share_count_has_observation_date_and_dry_source_no_checkpoint(
     result = collector.Sources(None).shares(["AAA"], dt.date(2026, 11, 23))
     assert result[0]["shares"] == 100
     assert result[0]["observed_day"] == collector.observation_day()
+
+
+def test_alpaca_failure_includes_status_without_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import requests
+
+    response = requests.Response()
+    response.status_code = 403
+    monkeypatch.setenv("APCA_API_KEY_ID", "example_key")
+    monkeypatch.setenv("APCA_API_SECRET_KEY", "example_secret")
+    source = collector.Sources(None)
+
+    def fail(*args: object, **kwargs: object) -> object:
+        raise requests.HTTPError("sensitive response", response=response)
+
+    monkeypatch.setattr(source, "get", fail)
+    with pytest.raises(RuntimeError, match="HTTP 403") as exc:
+        source.bars(["AAA"], dt.date(2026, 11, 27))
+    assert "example_secret" not in str(exc.value)

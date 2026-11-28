@@ -154,7 +154,14 @@ class Sources:
                             )
                         except requests.HTTPError as exc:
                             if exc.response is None or exc.response.status_code != 400:
-                                raise RuntimeError("Alpaca request failed") from None
+                                status = (
+                                    exc.response.status_code
+                                    if exc.response is not None
+                                    else "unknown"
+                                )
+                                raise RuntimeError(
+                                    f"Alpaca request failed: HTTP {status}"
+                                ) from None
                             if len(batch) > 1:
                                 mid = len(batch) // 2
                                 batches[0:0] = [batch[:mid], batch[mid:]]
